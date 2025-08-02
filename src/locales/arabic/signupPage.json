@@ -1,0 +1,20 @@
+{
+    "title": "صفحة التسجيل",
+    "emailPlaceholder": "البريد الإلكتروني",
+    "passwordPlaceholder": "كلمة المرور",
+    "confirmPasswordPlaceholder": "تأكيد كلمة المرور",
+    "signupButton": "تسجيل",
+    "alreadyHaveAccount": "هل لديك حساب بالفعل؟",
+    "loginLink": "تسجيل الدخول",
+    "termsAndConditions": "أوافق على الشروط والأحكام",
+    "privacyPolicy": "سياسة الخصوصية",
+    "errorMessages": {
+      "emailRequired": "البريد الإلكتروني مطلوب",
+      "passwordRequired": "كلمة المرور مطلوبة",
+      "confirmPasswordRequired": "تأكيد كلمة المرور مطلوب",
+      "passwordMismatch": "كلمة المرور وتأكيد كلمة المرور لا يتطابقان",
+      "invalidEmail": "البريد الإلكتروني غير صالح",
+      "weakPassword": "كلمة المرور ضعيفة، يجب أن تحتوي على 8 أحرف على الأقل، وحرف كبير، ورقم، ورمز خاص"
+    },
+    "successMessage": "تم التسجيل بنجاح! يمكنك الآن تسجيل الدخول."  
+}

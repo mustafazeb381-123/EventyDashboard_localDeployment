@@ -1,0 +1,20 @@
+{
+    "title":"Signup",
+    "emailPlaceholder":"Email",
+    "passwordPlaceholder":"Password",
+    "confirmPasswordPlaceholder":"Confirm Password",
+    "signupButton":"Sign Up",
+    "alreadyHaveAccount":"Already have an account?",
+    "loginLink":"Login",        
+    "termsAndConditions":"I agree to the terms and conditions",
+    "privacyPolicy":"Privacy Policy",
+    "errorMessages": {
+      "emailRequired":"Email is required",
+      "passwordRequired":"Password is required",
+      "confirmPasswordRequired":"Confirm Password is required",
+      "passwordMismatch":"Password and Confirm Password do not match",
+      "invalidEmail":"Invalid email address",
+      "weakPassword":"Weak password, must be at least 8 characters long, contain an uppercase letter, a number, and a special character"
+    },
+    "successMessage":"Signup successful! You can now login."    
+}
