@@ -15,18 +15,14 @@ const router = createBrowserRouter([
     element: <MainRoutes />, // this wraps with Header and Footer
     children: [
       {
-        path: "", // /home or /
+        path: "home", // /home or /
         element: <Home />,
-        },
-        {
-            path: "home", // /home
-            element: <Home />, // Home component
         },
         {
             path: "about", // /about
             element: <div>About Page</div>, // Placeholder for About component
             // Add more routes here that need header/footer
-        }
+      },
     ],
   },
   {
