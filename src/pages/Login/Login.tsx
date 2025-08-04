@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import Assets from '../../utils/Assets';
 import { Button } from "@/components/ui/button";
@@ -6,15 +6,49 @@ import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { ToastContainer, toast } from 'react-toastify';
+
+
+
 
 function Login() {
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [isVisible, setIsVisible] = React.useState(false);
+  // isVisible is unused, so it's best to remove it
+  // const [isVisible, setIsVisible] = React.useState(false); 
+  const [loading, setLoading] = useState(false);
+  
+  // Correct the color code for white (#ffffff)
+  
+
+  // 🔐 Redirect to /home if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/home");
+    }
+  }, [navigate]); // Add 'navigate' to the dependency array
 
   const handleSignIn = async () => {
-    // Do validation or API call here
-    navigate('/home');
+    setLoading(true);
+    try {
+      // Do validation or API call here
+      await localStorage.setItem("token", "123");
+      
+      // Use toast.success() for better UX
+      toast.success("Logged in successfully!"); 
+      
+      // Reduce the timeout to a more reasonable time (e.g., 2 seconds)
+      setTimeout(() => {
+        navigate('/home');
+      }, 4000); 
+    } catch (error) {
+      console.error("error", error); // Use console.error for errors
+      toast.error("Login failed. Please try again."); // Provide user feedback on error
+    } finally {
+     
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,26 +62,26 @@ function Login() {
               className="font-light font-poppins text-gray-400 mb-4"
               style={{ fontSize: 12, borderRadius: 20 }}
               type="email"
-              placeholder="Enter your email"
+              placeholder={t('Enter your email')}
             />
             <Input
               className="font-light font-poppins text-gray-400 mb-2"
               style={{ fontSize: 12, borderRadius: 20 }}
               type="password"
-              placeholder="Enter your password"
+              placeholder={t('Enter your password')}
             />
 
             <div className="flex gap-1 mb-4">
-              <p className="text-sm text-gray-900 font-poppins font-light">Forget password?</p>
+              <p className="text-sm text-gray-900 font-poppins font-light">{t('Forget password?')}</p>
               <p className="text-sm font-poppins font-semibold text-[#3563E9] underline cursor-pointer">
-                Reset the password
+                {t('Reset the password')}
               </p>
             </div>
 
             <div className="flex items-center space-x-2 mb-6">
               <Checkbox id="terms" />
               <Label htmlFor="terms" className="text-sm font-poppins text-gray-700">
-                Remember me
+                {t('Remember me')}
               </Label>
             </div>
 
@@ -55,16 +89,27 @@ function Login() {
               onClick={handleSignIn}
               style={{ backgroundColor: '#1A1F58', borderRadius: 20 }}
               className="w-full"
+              disabled={loading}
             >
-              <span className='text-white'>Signin</span>
+              {loading ? (
+                <p style={{color:"white"}}>
+                  ...Loading
+                </p>
+              ) : (
+                <span className='text-white'>{t('Signin')}</span>
+              )}
             </Button>
+
 
             <div className="mt-4 flex justify-center gap-1">
               <p className="text-sm text-gray-900 font-poppins font-light">
-                Don't have an account?
+                {t("Don't have an account?")}
               </p>
-              <p className="text-sm font-poppins font-light text-[#3563E9] underline cursor-pointer">
-                Signup
+              <p
+                className="text-sm font-poppins font-light text-[#3563E9] underline cursor-pointer"
+                onClick={() => navigate("/signup")}
+              >
+                {t("Signup")}
               </p>
             </div>
           </div>
@@ -79,6 +124,7 @@ function Login() {
           />
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }

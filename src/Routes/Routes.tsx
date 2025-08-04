@@ -1,46 +1,48 @@
-// routes.jsx
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import MainRoutes from "./MainRoutes";
+import ProtectedRoute from "./ProtectedRoutes";
 
 import Home from "../pages/Home/Home";
 import NotFound from "../pages/NotFound/NotFound";
 import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
-import path from "path";
-
 
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <MainRoutes />, // this wraps with Header and Footer
+    element: <ProtectedRoute />, // checks for token
     children: [
       {
-        path: "home", // /home or /
-        element: <Home />,
-        },
-        {
-            path: "about", // /about
-            element: <div>About Page</div>, // Placeholder for About component
-            // Add more routes here that need header/footer
+        path: "/",
+        element: <MainRoutes />, // contains Header/Footer
+        children: [
+          {
+            path: "home",
+            element: <Home />,
+          },
+          {
+            path: "about",
+            element: <div>About Page</div>,
+          },
+        ],
       },
     ],
   },
   {
     path: "/login",
-    element: <Login />, // No header/footer
+    element: <Login />,
   },
   {
     path: "/signup",
-    element: <Signup />, // No header/footer
+    element: <Signup />,
   },
   {
     path: "*",
-    element: <NotFound />, // Optional: you can choose to wrap or not
+    element: <NotFound />,
   },
 ]);
 
 const Routes = () => {
-  return <RouterProvider router={router} />;
-};
+  return <RouterProvider router={router} />
+}
 
 export default Routes;
