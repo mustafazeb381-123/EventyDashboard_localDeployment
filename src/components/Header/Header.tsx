@@ -14,6 +14,7 @@ import {
   User
 } from "lucide-react"
 import { Button } from '../ui/button'
+import LanguageToggle from '../LanguageToggle/LanguageToggle'
 
 function Header({ isExpanded }) {
 
@@ -85,7 +86,9 @@ function Header({ isExpanded }) {
         </div>
 
         
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-3">
+        
+        <LanguageToggle />
           <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-100">
             <Bell className="h-5 w-5" />
           </Button>

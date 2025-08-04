@@ -11,6 +11,8 @@ import star from '../assets/icons/stars_expressbadge.png'
 import setting from '../assets/icons/setting.png'
 import settingback from '../assets/images/setting_back.png'
 import expresstabback from '../assets/images/expresstab_back.png'
+import advancedot from '../assets/icons/advance_dot.png'
+import expressdot from '../assets/icons/express_dot.png'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -31,7 +33,9 @@ class AppAssets {
     plus: plus,
     plusBlue: plusblue,
     star: star,
-    setting: setting
+    setting: setting,
+    expressDot: expressdot,
+    advanceDot: advancedot
 
   } as const;
 
