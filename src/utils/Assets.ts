@@ -5,14 +5,21 @@ import eventyLoginLogo from '../assets/images/eventy_login_logo.png';
 import sidebarlogo from '../assets/images/sidebarlogo.png'
 import sidebarexpandedlogo from '../assets/images/sidebarExpandedlogo.png'
 import leftarrow from '../assets/icons/arrow-left.png'
-
+import plus from '../assets/icons/plus.png'
+import plusblue from '../assets/icons/plus_blue.png'
+import star from '../assets/icons/stars_expressbadge.png'
+import setting from '../assets/icons/setting.png'
+import settingback from '../assets/images/setting_back.png'
+import expresstabback from '../assets/images/expresstab_back.png'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
     loginLeftImage: loginLeftImage,
     eventyLoginLogo: eventyLoginLogo,
     sideBarLogo: sidebarlogo,
-    sidebarExpandedLogo : sidebarexpandedlogo
+    sidebarExpandedLogo: sidebarexpandedlogo,
+    settingBack: settingback,
+    expressTabBack: expresstabback
     
     // splash1: require('../assets/images/splash1.png'),
     
@@ -20,7 +27,11 @@ class AppAssets {
 
   readonly icons = {
 
-    leftArrow : leftarrow
+    leftArrow: leftarrow,
+    plus: plus,
+    plusBlue: plusblue,
+    star: star,
+    setting: setting
 
   } as const;
 
