@@ -29,7 +29,6 @@ class AppAssets {
     whiteBackSetting: whitebacksetting,
     eventEmptyCard: eventemptycard
     // splash1: require('../assets/images/splash1.png'),
-    
   } as const;
 
   readonly icons = {
@@ -46,7 +45,6 @@ class AppAssets {
 
   readonly temp = {
     // home: require('../assets/temp/home.png'),
-    
   } as const;
 
   readonly svg = {} as const;
