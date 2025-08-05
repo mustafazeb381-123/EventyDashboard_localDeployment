@@ -25,7 +25,7 @@ const weightMap = {
 export function Text({
   size = "base",
   weight = "normal",
-  color = "text-foreground",
+  color = "text-gray-900",
   as: Comp = "p",
   className,
   ...props

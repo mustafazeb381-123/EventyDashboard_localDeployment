@@ -17,6 +17,7 @@ interface Step1FormData {
   email: string;
   companyName: string;
   password: string;
+  passwordConfirmation: string;
   agreeTerms: boolean;
 }
 
@@ -36,6 +37,10 @@ const Step1Data: React.FC = () => {
       .string()
       .min(8, t("errorMessages.passwordMinLength"))
       .required(t("errorMessages.passwordRequired")),
+    passwordConfirmation: yup
+      .string()
+      .oneOf([yup.ref("password")], t("errorMessages.passwordMismatch"))
+      .required(t("errorMessages.confirmPasswordRequired")),
     agreeTerms: yup
       .boolean()
       .oneOf([true], t("errorMessages.agreeTermsRequired"))
@@ -55,7 +60,7 @@ const Step1Data: React.FC = () => {
       email: "",
       companyName: "",
       password: "",
-      passowrdConfirmation: "",
+      passwordConfirmation: "",
       agreeTerms: false,
     },
   });
@@ -78,7 +83,7 @@ const Step1Data: React.FC = () => {
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
           {/* Logo */}
-          <div className="flex justify-start mb-8">
+          <div className="flex justify-center mb-8">
             <img
               src={AppAssets.images.eventyLoginLogo}
               alt="Eventy Logo"
@@ -88,7 +93,7 @@ const Step1Data: React.FC = () => {
 
           {/* Title and Progress */}
           <div className="space-y-6">
-            <Text size="xl" weight="semibold" color="text-gray-900">
+            <Text size="xl" weight="semibold">
               {t("title")}
             </Text>
 
@@ -98,7 +103,7 @@ const Step1Data: React.FC = () => {
                 <div className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-semibold">
                   1
                 </div>
-                <Text as="span" size="sm" weight="medium" color="text-gray-900">
+                <Text as="span" size="sm" weight="medium">
                   {t("step1Title")}
                 </Text>
               </div>
@@ -141,72 +146,76 @@ const Step1Data: React.FC = () => {
               placeholder={t("namePlaceholder")}
               {...register("name")}
             />
+            {errors.name && (
+              <Text size="sm" color="text-red-500">
+                {errors.name.message}
+              </Text>
+            )}
 
             {/* Email Field */}
-            <div className="space-y-2">
-              <Input
-                id="email"
-                type="email"
-                placeholder={t("emailPlaceholder")}
-                {...register("email")}
-                className={`h-12 ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.email && (
-                <Text size="sm" color="text-red-500">
-                  {errors.email.message}
-                </Text>
-              )}
-            </div>
+            <Input
+              id="email"
+              type="email"
+              placeholder={t("emailPlaceholder")}
+              {...register("email")}
+            />
+            {errors.email && (
+              <Text size="sm" color="text-red-500">
+                {errors.email.message}
+              </Text>
+            )}
 
             {/* Company Name Field */}
-            <div className="space-y-2">
-              <Input
-                id="companyName"
-                type="text"
-                placeholder={t("companyNamePlaceholder")}
-                {...register("companyName")}
-                className={`h-12 ${
-                  errors.companyName ? "border-red-500" : "border-gray-300"
-                }`}
-              />
-              {errors.companyName && (
-                <Text size="sm" color="text-red-500">
-                  {errors.companyName.message}
-                </Text>
-              )}
-            </div>
+            <Input
+              id="companyName"
+              type="text"
+              placeholder={t("companyNamePlaceholder")}
+              {...register("companyName")}
+            />
+            {errors.companyName && (
+              <Text size="sm" color="text-red-500">
+                {errors.companyName.message}
+              </Text>
+            )}
 
             {/* Password Field */}
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder={t("passwordPlaceholder")}
-                  {...register("password")}
-                  className={`h-12 pr-12 ${
-                    errors.password ? "border-red-500" : "border-gray-300"
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={togglePasswordVisibility}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5" />
-                  ) : (
-                    <Eye className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-              {errors.password && (
-                <Text size="sm" color="text-red-500">
-                  {errors.password.message}
-                </Text>
-              )}
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder={t("passwordPlaceholder")}
+                {...register("password")}
+                className="pr-12"
+              />
+              <button
+                type="button"
+                onClick={togglePasswordVisibility}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
             </div>
+            {errors.password && (
+              <Text size="sm" color="text-red-500">
+                {errors.password.message}
+              </Text>
+            )}
+
+            {/* Password Confirmation Field */}
+            <Input
+              id="passwordConfirmation"
+              type="password"
+              placeholder={t("confirmPasswordPlaceholder")}
+              {...register("passwordConfirmation")}
+            />
+            {errors.passwordConfirmation && (
+              <Text size="sm" color="text-red-500">
+                {errors.passwordConfirmation.message}
+              </Text>
+            )}
 
             {/* Terms and Conditions Checkbox */}
             <div className="space-y-3">
