@@ -13,6 +13,9 @@ import settingback from '../assets/images/setting_back.png'
 import expresstabback from '../assets/images/expresstab_back.png'
 import advancedot from '../assets/icons/advance_dot.png'
 import expressdot from '../assets/icons/express_dot.png'
+import whitebackstar from '../assets/images/white_back_star.png'
+import whitebacksetting from '../assets/images/setting_back_white.png'
+import eventemptycard from '../assets/images/event_empty_card.png'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -21,8 +24,10 @@ class AppAssets {
     sideBarLogo: sidebarlogo,
     sidebarExpandedLogo: sidebarexpandedlogo,
     settingBack: settingback,
-    expressTabBack: expresstabback
-    
+    expressTabBack: expresstabback,
+    whiteBackStar: whitebackstar,
+    whiteBackSetting: whitebacksetting,
+    eventEmptyCard: eventemptycard
     // splash1: require('../assets/images/splash1.png'),
     
   } as const;
