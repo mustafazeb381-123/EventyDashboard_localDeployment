@@ -17,40 +17,40 @@ import { toast, ToastContainer } from "react-toastify"
 import { useNavigate } from "react-router-dom"
 import Assets from "@/utils/Assets"
 
-const SideBar = ({ isExpanded, setIsExpanded }) => {
+const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
   // const [isExpanded, setIsExpanded] = useState(false)
   const [activeItem, setActiveItem] = useState("Registered Users")
   const [expandedMenus, setExpandedMenus] = useState({})
-  const [isRTL, setIsRTL] = useState(false)
+  // const [isRTL, setIsRTL] = useState(false)
 
   const naviagte = useNavigate()
   
   // Detect RTL direction and listen for changes
-  useEffect(() => {
-    const checkRTL = () => {
-      const dir = document.documentElement.dir || document.documentElement.getAttribute('dir')
-      setIsRTL(dir === 'rtl')
-    }
+  // useEffect(() => {
+  //   const checkRTL = () => {
+  //     const dir = document.documentElement.dir || document.documentElement.getAttribute('dir')
+  //     setIsRTL(dir === 'rtl')
+  //   }
     
-    // Check initially
-    checkRTL()
+  //   // Check initially
+  //   checkRTL()
     
-    // Create observer to watch for direction changes
-    const observer = new MutationObserver(() => {
-      checkRTL()
-    })
+  //   // Create observer to watch for direction changes
+  //   const observer = new MutationObserver(() => {
+  //     checkRTL()
+  //   })
     
-    // Watch for changes to the dir attribute
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['dir']
-    })
+  //   // Watch for changes to the dir attribute
+  //   observer.observe(document.documentElement, {
+  //     attributes: true,
+  //     attributeFilter: ['dir']
+  //   })
     
-    // Cleanup
-    return () => {
-      observer.disconnect()
-    }
-  }, [])
+  //   // Cleanup
+  //   return () => {
+  //     observer.disconnect()
+  //   }
+  // }, [])
 
   const toggleSubmenu = (label) => {
     setExpandedMenus(prev => ({

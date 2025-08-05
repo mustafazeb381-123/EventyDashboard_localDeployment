@@ -1,17 +1,37 @@
 import { Button } from "@/components/ui/button";
 import Assets from "@/utils/Assets";
-import React from "react";
+import React, { useState } from "react";
 import Recents from "./components/Recents/Recents";
 import Draft from "./components/Drafts/Draft";
 import AllEvents from "./components/AllEvents/AllEvents";
+import PricingModal from "@/components/PricingModal/PricingModal";
 
 const Home = () => {
+
+   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('express');
+
+  const handleExpressEventClick = () => {
+    setSelectedPlan('express');
+    console.log("express event")
+    setIsModalOpen(true);
+  };
+
+  const handleCreateEventClick = () => {
+    setSelectedPlan('advanced');
+    console.log("create event")
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+  };
   return (
     <div className="w-full bg-[#F7FAFF] min-h-screen p-4">
      <div className="flex flex-wrap gap-4">
   {/* Express Event Card */}
         <div
-          onClick={()=> {}}
+          onClick={()=> {handleExpressEventClick()}}
     style={{
       backgroundImage: `url(${Assets.images.expressTabBack})`,
       backgroundRepeat: 'no-repeat',
@@ -41,7 +61,7 @@ const Home = () => {
 
   {/* Create Event Card */}
   <div
-    onClick={() => {}}
+    onClick={() => {handleCreateEventClick()}}
     style={{
       backgroundImage: `url(${Assets.images.settingBack})`,
       backgroundRepeat: 'no-repeat',
@@ -91,6 +111,11 @@ Advanced and more details.
         <AllEvents />
 
       </div>
+         <PricingModal
+        isOpen={isModalOpen} 
+        onClose={closeModal}
+        selectedPlan={selectedPlan}
+      />
 
 
     </div>
