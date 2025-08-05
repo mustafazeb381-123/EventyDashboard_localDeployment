@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { X, Check } from 'lucide-react';
@@ -70,10 +71,11 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
 
   const handlePlanSelect = (planId) => {
     setCurrentPlan(planId);
+    console.log(`Plan selected: ${planId}`);
   };
 
   const handleGetStarted = (plan) => {
-    console.log(`Selected plan: ${plan.name}`);
+    console.log(`Get started with plan: ${plan.name}`);
     // Add your logic here for handling plan selection
     onClose();
   };
@@ -82,27 +84,25 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center gap-4">
-            <h2 className="text-2xl font-semibold text-slate-800">Choose Your Plan</h2>
-            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-              Express Event
-            </span>
+        <div className="relative p-6 border-b">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-4 mb-2">
+              <h2 className="text-2xl font-semibold text-slate-800">Choose Your Plan</h2>
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
+                Express Event
+              </span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
+              <span>Choose Now,</span>
+              <span className="text-pink-500 font-medium">Pay Later</span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X size={24} />
           </button>
-        </div>
-
-        {/* Payment Options */}
-        <div className="px-6 py-4 border-b">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <span>Choose Now,</span>
-            <span className="text-pink-500 font-medium">Pay Later</span>
-          </div>
         </div>
 
         {/* Plans Grid */}
@@ -111,9 +111,12 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                className={`relative border rounded-xl p-6 transition-all duration-200 ${
+                onClick={() => handlePlanSelect(plan.id)}
+                className={`relative border rounded-xl p-6 transition-all duration-200 cursor-pointer flex flex-col h-full ${
                   plan.isPopular 
                     ? 'border-pink-200 bg-pink-50' 
+                    : currentPlan === plan.id
+                    ? 'border-blue-300 bg-blue-50 ring-2 ring-blue-200'
                     : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}
               >
@@ -137,14 +140,14 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
                 </div>
 
                 {/* Features */}
-                <div className="mb-6">
+                <div className="flex-grow mb-6">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">
                     What's included
                   </h4>
                   <ul className="space-y-3">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
-                        <div className="bg-slate-800 rounded-full p-1 mt-0.5">
+                        <div className="bg-slate-800 rounded-full p-1 mt-0.5 flex-shrink-0">
                           <Check size={12} className="text-white" />
                         </div>
                         <span className="text-sm text-gray-700">
@@ -155,13 +158,18 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
                   </ul>
                 </div>
 
-                {/* Button */}
-                <button
-                  onClick={() => handleGetStarted(plan)}
-                  className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${plan.buttonClass}`}
-                >
-                  {plan.buttonText}
-                </button>
+                {/* Button at bottom */}
+                <div className="mt-auto">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGetStarted(plan);
+                    }}
+                    className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${plan.buttonClass}`}
+                  >
+                    {plan.buttonText}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

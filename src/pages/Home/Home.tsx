@@ -35,10 +35,17 @@ const Home = () => {
     style={{
       backgroundImage: `url(${Assets.images.expressTabBack})`,
       backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'right center',
-      backgroundSize: 'contain',
+            backgroundPosition: 'right center',
+            backgroundSize: 'contain',
+            transition: 'all 0.3s ease, background-position 0.3s ease'
     }}
-    className="w-full md:w-[49%] rounded-3xl bg-emerald-100 flex justify-between items-center p-4 shadow-md"
+          //  onMouseEnter={(e) => {
+          //   e.target.style.backgroundPosition = 'right 10px center';
+          // }}
+          // onMouseLeave={(e) => {
+          //   e.target.style.backgroundPosition = 'right center';
+          // }}
+    className="cursor-pointer border border-transparent hover:border-emerald-700 transition-all duration-300 ease-in-out w-full md:w-[49%] rounded-3xl bg-emerald-100 flex justify-between items-center p-4 shadow-md"
   >
     <div className="flex items-center gap-4">
       <div className="bg-emerald-50 p-6 rounded">
@@ -65,10 +72,17 @@ const Home = () => {
     style={{
       backgroundImage: `url(${Assets.images.settingBack})`,
       backgroundRepeat: 'no-repeat',
-      backgroundPosition: 'right center',
-      backgroundSize: 'contain',
+            backgroundPosition: 'right center',
+            backgroundSize: 'contain',
+            transition: 'all 0.3s ease, background-position 0.3s ease'
     }}
-    className="w-full md:w-[49%] rounded-3xl bg-sky-100 flex justify-between items-center p-4 shadow-md cursor-pointer"
+          //  onMouseEnter={(e) => {
+          //   e.target.style.backgroundPosition = 'right 10px center';
+          // }}
+          // onMouseLeave={(e) => {
+          //   e.target.style.backgroundPosition = 'right center';
+          // }}
+    className="cursor-pointer border border-transparent hover:border-sky-700 transition-all duration-300 ease-in-out w-full md:w-[49%] rounded-3xl bg-sky-100 flex justify-between items-center p-4 shadow-md"
   >
     <div className="flex items-center gap-4">
       <div className="bg-sky-50 p-6 rounded">

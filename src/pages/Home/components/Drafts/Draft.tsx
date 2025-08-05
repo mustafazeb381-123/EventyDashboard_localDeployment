@@ -60,7 +60,7 @@ function Draft() {
                 backgroundPosition: 'right center',
                 backgroundSize: 'auto 100%',
               }}
-              className='flex flex-col rounded-2xl bg-neutral-100 w-full md:w-[48%] p-6'
+              className='flex flex-col rounded-2xl bg-neutral-100 w-full md:w-[48%] p-6 hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md'
             >
               <div className='flex'>
                 <div
