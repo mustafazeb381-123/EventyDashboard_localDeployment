@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Text } from "@/components/ui/text";
 import AppAssets from "@/utils/Assets";
+import LanguageToggle from "@/components/LanguageToggle/LanguageToggle";
 
 interface Step1FormData {
   name: string;
@@ -79,6 +80,8 @@ const Step1Data: React.FC = () => {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
+
+      {/* <LanguageToggle /> */}
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md space-y-8">
