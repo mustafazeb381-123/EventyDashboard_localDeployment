@@ -46,7 +46,6 @@ export function TimePicker({ time, setTime, label }) {
               type="time"
               id="time-input"
               value={time}
-              
               onChange={handleTimeChange}
               className="w-full text-center"
             />

@@ -2,9 +2,13 @@ import React, { useState } from 'react';
 import { ChevronLeft, Upload, Calendar, Clock, MapPin, Plus, Trash2, Info, X } from 'lucide-react';
 import MainData from './MainData/MianData'; // Assuming the path is correct
 import { Button } from '@/components/ui/button';
+import { CheckCircle } from "lucide-react";
+import { useNavigate } from 'react-router-dom';
+
 
 const ExpressEvent = () => {
   const [currentStep, setCurrentStep] = useState(0);
+  const navigation = useNavigate()
 
   const steps = [
     { id: 'main-data', label: 'Main Data', description: 'Please provide your event info' },
@@ -22,62 +26,68 @@ const ExpressEvent = () => {
     setCurrentStep(prev => Math.max(prev - 1, 0));
   };
 
-  const StepsNavigation = () => (
-    <div className="bg-[#F7FAFF] ">
-      {/* Header with back button and cancel */}
-      <div className="flex items-center justify-between px-6 py-4 ">
-        <div className="flex items-center gap-3">
-          <Button className="flex items-center gap-2 text-gray-800 hover:text-gray-600">
-            <div className='p-2 bg-white rounded-md'>
-              <ChevronLeft size={20} />
-            </div>
-            <span className="text-lg font-semibold">Express Event</span>
-          </Button>
-        </div>
-        <div className=''>
-          <Button className="text-red-500 hover:text-red-600 flex items-center gap-2 text-sm p-2 bg-white rounded-md">
-            <span>Cancel Creation</span>
-            <X size={18} />
-          </Button>
-        </div>
-      </div>
+ const StepsNavigation = () => (
+  <div className="bg-[#F7FAFF]">
+    {/* Header with back button and cancel */}
+    
+    <div className="flex items-center justify-between px-6 py-4">
+      <div className="flex items-center gap-3">
+        <Button onClick={()=> navigation("/home")} className="flex items-center gap-2 text-gray-800 hover:text-gray-600">
+          <div className="p-2 bg-white rounded-md">
+            <ChevronLeft size={20} />
+          </div>
+          <span className="text-lg font-semibold">Express Event</span>
+        </Button>
+       </div>
 
-      {/* Breadcrumb */}
-      <div className="px-6 py-3 ">
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-gray-500">Home</span>
-          <ChevronLeft className="rotate-180 text-gray-400" size={14} />
-          <span className="text-gray-800 font-medium">Express Event</span>
-        </div>
-      </div>
-      
-      {/* Steps Navigation */}
-      <div className="px-6 ">
-        <div className="flex items-end">
-          {steps.map((step, index) => (
-            <div
-              key={step.id}
-              className={`flex flex-col py-4 px-6 cursor-pointer transition-colors relative min-w-0 ${
-                index === currentStep
-                  ? 'border-t-3  border-teal-500'
-                  : ""
-              }`}
-              onClick={() => setCurrentStep(index)}
-            >
-              <div className={`font-medium text-sm whitespace-nowrap ${
-                index === currentStep ? 'text-teal-600' : 'text-gray-700'
-              }`}>
-                {step.label}
-              </div>
-              <div className="text-xs text-gray-500 leading-tight mt-1">
-                {step.description}
-              </div>
-            </div>
-          ))}
-        </div>
+       {/* cancel button */}
+       <div className='col-auto'>
+      <Button className="text-red-500 hover:text-red-600 flex items-center gap-2 text-sm p-2 bg-white rounded-md">
+        <span>Cancel Creation</span>
+        <X size={18} />
+      </Button>
+       </div>
+    </div>
+
+    {/* Breadcrumb */}
+    <div className="px-6 py-3">
+      <div className="flex items-center gap-2 text-sm">
+        <span className="text-gray-500">Home</span>
+        <ChevronLeft className="rotate-180 text-gray-400" size={14} />
+        <span className="text-gray-800 font-medium">Express Event</span>
       </div>
     </div>
-  );
+
+    {/* Steps Navigation with Gaps and Rounded Corners */}
+    <div className="px-6 pb-4">
+      <div className="flex gap-4 overflow-x-auto no-scrollbar">
+        {steps.map((step, index) => {
+          const isCompleted = index < currentStep;
+          const isActive = index === currentStep;
+
+          let bgColor = ' text-gray-700'; // default gray
+          if (isActive) bgColor = ' text-teal-600 border-teal-500';
+          else if (isCompleted) bgColor = 'bg-green-50 text-green-600 border-green-500';
+
+          return (
+            <div
+              key={step.id}
+              onClick={() => setCurrentStep(index)}
+              className={`flex flex-col justify-between  cursor-pointer min-w-[180px] px-4 py-3 transition-all border-t-4 ${bgColor}`}
+            >
+              <div className="flex items-center gap-2 font-medium text-sm">
+                {isCompleted && <CheckCircle className="w-4 h-4 text-green-500" />}
+                {step.label}
+              </div>
+              <div className="text-xs text-gray-500 leading-tight mt-1">{step.description}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  </div>
+);
+
 
   const renderStepContent = () => {
     switch (currentStep) {
