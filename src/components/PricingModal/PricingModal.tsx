@@ -2,9 +2,17 @@
 import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { X, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
-  const [currentPlan, setCurrentPlan] = useState(selectedPlan);
+const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
+  const navigate = useNavigate()
+
+  console.log("selected plan in the pricing modal :", selectedPlan)
+  
+  // const [currentPlan, setCurrentPlan] = useState(selectedPlan);
+
+ 
+  // console.log("current plan :", currentPlan)
 
   if (!isOpen) return null;
 
@@ -69,13 +77,21 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
     }
   ];
 
-  const handlePlanSelect = (planId) => {
-    setCurrentPlan(planId);
-    console.log(`Plan selected: ${planId}`);
-  };
+  // const handlePlanSelect = (planId) => {
+  //   setCurrentPlan(planId);
+  //   console.log(`Plan selected: ${planId}`);
+  // };
 
   const handleGetStarted = (plan) => {
     console.log(`Get started with plan: ${plan.name}`);
+   if (selectedPlan === "express") {
+  console.log("navigating to express-event");
+  navigate("/home/express-event");
+} else {
+  console.log("navigating to home");
+  navigate("/home");
+}
+
     // Add your logic here for handling plan selection
     onClose();
   };
@@ -88,8 +104,8 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
           <div className="text-center">
             <div className="flex items-center justify-center gap-4 mb-2">
               <h2 className="text-2xl font-semibold text-slate-800">Choose Your Plan</h2>
-              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-medium">
-                Express Event
+              <span className={`${selectedPlan == "express"?  "bg-green-100" : "bg-sky-100"} ${selectedPlan === "express" ? "text-green-700" : "text-sky-700"} px-3 py-1 rounded-full text-sm font-medium`}>
+                {selectedPlan === "express" ? "Express Event" : "Advance Event"}
               </span>
             </div>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
@@ -111,11 +127,11 @@ const PricingModal = ({ isOpen, onClose, selectedPlan = 'express' }) => {
             {plans.map((plan) => (
               <div
                 key={plan.id}
-                onClick={() => handlePlanSelect(plan.id)}
+                // onClick={() => handlePlanSelect(plan.id)}
                 className={`relative border rounded-xl p-6 transition-all duration-200 cursor-pointer flex flex-col h-full ${
                   plan.isPopular 
                     ? 'border-pink-200 bg-pink-50' 
-                    : currentPlan === plan.id
+                    : selectedPlan === plan.id
                     ? 'border-blue-300 bg-blue-50 ring-2 ring-blue-200'
                     : 'border-gray-200 bg-white hover:border-gray-300'
                 }`}

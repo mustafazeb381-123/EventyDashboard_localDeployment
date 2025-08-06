@@ -6,6 +6,7 @@ import Home from "../pages/Home/Home";
 import NotFound from "../pages/NotFound/NotFound";
 import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
+import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 const router = createBrowserRouter([
   {
@@ -16,8 +17,17 @@ const router = createBrowserRouter([
         element: <MainRoutes />, // contains Header/Footer
         children: [
           {
-            path: "home",
-            element: <Home />,
+            path: "/home",
+            children: [
+              {
+                index: true,
+                element: <Home />,
+            },
+              {
+                path: "express-event",
+                element: <ExpressEvent />
+              }
+            ]
           },
           {
             path: "about",
