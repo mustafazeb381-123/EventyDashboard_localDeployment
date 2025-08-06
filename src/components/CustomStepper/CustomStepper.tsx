@@ -41,11 +41,11 @@ const CustomStepper: React.FC<CustomStepperProps> = ({
       transition={{ duration: 0.6, ease: "easeOut" }}>
       <div className="flex justify-between items-center w-full relative">
         {/* Full Width Background Line */}
-        <div className="absolute top-4 left-0 right-0 h-[4px] bg-gray-200 rounded-full z-0"></div>
+        <div className="absolute top-2 md:top-4 left-0 right-0 h-[4px] bg-gray-200 rounded-full z-0"></div>
 
         {/* Active Progress Line */}
         <motion.div
-          className="absolute top-4 left-0 h-[4px] bg-gradient-to-r from-[#0F4999] to-[#1A1F58] rounded-full z-0"
+          className="absolute top-2 md:top-4 left-0 h-[4px] bg-gradient-to-r from-[#0F4999] to-[#1A1F58] rounded-full z-0"
           initial={{ width: "0%" }}
           animate={{
             width: `${
