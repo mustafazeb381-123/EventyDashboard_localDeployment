@@ -125,12 +125,12 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
   return (
     <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 bg-white rounded-3xl">
-      <h2 className="text-xl md:text-2xl font-semibold mb-6 md:mb-8 text-gray-800">Enter event Main data</h2>
+      <h2 className="text-md  md:text-2xl font-poppins font-normal mb-6 md:mb-8 text-neutral-900">Enter event Main data</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
         {/* Event Logo */}
         <div className='border-1 rounded-2xl border-gray-200 p-5'>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Event Logo</label>
+          <label className="block text-xs font-normal text-neutral-700 mb-2">Event Logo</label>
           <div
             className={`
               border-2 border-dashed rounded-lg p-6 md:p-8 text-center transition-colors cursor-pointer h-100 flex flex-col justify-center
@@ -172,15 +172,15 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                 <div className="w-12 h-12 mx-auto mb-3 md:mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                   <Upload className="h-6 w-6 text-gray-400" />
                 </div>
-                <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-semibold text-teal-600">Click to upload</span> or drag and drop
+                <p className="text-sm font-poppins text-neutral-500 mb-1">
+                  <span className="font-medium font-poppins text-sm  text-[#202242]">Click to upload</span> or drag and drop
                 </p>
-                <p className="text-xs text-gray-400">SVG, PNG or JPG (max. 800x400px)</p>
+                <p className="text-xs font-poppins font-normal text-neutral-500">SVG, PNG or JPG (max. 800x400px)</p>
               </>
             )}
           </div>
           {logoError && (
-            <p className="mt-2 flex items-center text-sm text-red-600">
+            <p className="mt-2 flex items-center font-poppins text-xs text-red-600">
               <Info size={14} className="mr-1" />
               {logoError}
             </p>
@@ -405,14 +405,22 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         >
           {currentStep === totalSteps - 1 ? 'Finish' : 'Next →'}
         </button>
-      </div>
+          </div>
+          
+          
+        <div className="mt-8 md:mt-12 flex justify-end">
+  <button className="text-gray-500 hover:text-gray-700 shadow-2xl shadow-black-100 text-sm flex items-center gap-1 p-6 bg-white-200 rounded-2xl">
+    Can't find what you're looking for?
+    <ChevronLeft className="rotate-90" size={14} />
+  </button>
+</div>
 
-      <div className="mt-8 md:mt-12 text-center">
-        <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 mx-auto">
+      {/* <div className="mt-8 md:mt-12 flex flex-row justify-around items-end p-6 ">
+        <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 mx-auto p-6 bg-gray-200 rounded-2xl">
           Can't find what you're looking for?
           <ChevronLeft className="rotate-90" size={14} />
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };

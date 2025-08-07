@@ -86,10 +86,10 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
     console.log(`Get started with plan: ${plan.name}`);
    if (selectedPlan === "express") {
   console.log("navigating to express-event");
-  navigate("/home/express-event");
+  navigate("express-event");
 } else {
   console.log("navigating to home");
-  navigate("/home");
+  navigate("/");
 }
 
     // Add your logic here for handling plan selection

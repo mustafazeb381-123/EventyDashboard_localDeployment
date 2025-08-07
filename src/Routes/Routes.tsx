@@ -10,27 +10,22 @@ import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 const router = createBrowserRouter([
   {
-    element: <ProtectedRoute />, // checks for token
+    path: "/", // The main path for all protected routes
+    element: <ProtectedRoute />,
     children: [
       {
-        path: "/",
-        element: <MainRoutes />, // contains Header/Footer
+        element: <MainRoutes />, // MainRoutes now acts as a layout for children
         children: [
           {
-            path: "/home",
-            children: [
-              {
-                index: true,
-                element: <Home />,
-            },
-              {
-                path: "express-event",
-                element: <ExpressEvent />
-              }
-            ]
+            index: true, // This will render at the root path ("/")
+            element: <Home />,
           },
           {
-            path: "about",
+            path: "express-event", // This path is now relative to "/" -> "/express-event"
+            element: <ExpressEvent />
+          },
+          {
+            path: "about", // This path is now relative to "/" -> "/about"
             element: <div>About Page</div>,
           },
         ],
@@ -50,6 +45,7 @@ const router = createBrowserRouter([
     element: <NotFound />,
   },
 ]);
+
 
 const Routes = () => {
   return <RouterProvider router={router} />
