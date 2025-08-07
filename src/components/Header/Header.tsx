@@ -104,21 +104,21 @@ function Header({ isExpanded }) {
   )
 }
 
-export default Header
+export default Header;
 
 const styles = {
   header: {
-    backgroundColor: '#282c34',
-    padding: '10px 20px',
-    color: 'white',
+    backgroundColor: "#282c34",
+    padding: "10px 20px",
+    color: "white",
   },
   nav: {
-    display: 'flex',
-    justifyContent: 'space-around',
+    display: "flex",
+    justifyContent: "space-around",
   },
   link: {
-    color: 'white',
-    textDecoration: 'none',
-    fontSize: '18px',
-  }
-}
+    color: "white",
+    textDecoration: "none",
+    fontSize: "18px",
+  },
+};

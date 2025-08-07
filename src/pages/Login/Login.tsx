@@ -45,7 +45,7 @@ function Login() {
       await localStorage.setItem("token", "123");
       toast.success("Logged in successfully!");
       setTimeout(() => {
-        navigate('/home');
+        navigate('/');
       }, 2000);
     } catch (error) {
       console.error("Login error", error);
