@@ -1034,6 +1034,7 @@ const Signup: React.FC = () => {
   // bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)]
   return (
     <div className="h-[100svh] p-2 sm:p-4 self-center">
+      
       <div className="flex flex-1 h-full flex-col lg:flex-row gap-2 sm:gap-4">
         <div className="w-full lg:w-1/2 flex rounded-2xl sm:rounded-4xl justify-center items-center flex-col bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)] overflow-hidden p-4 sm:p-6">
           {/* Fixed Logo */}
