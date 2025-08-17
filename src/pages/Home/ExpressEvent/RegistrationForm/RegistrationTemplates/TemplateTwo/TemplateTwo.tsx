@@ -1,21 +1,12 @@
 import React from 'react';
 import { Upload } from 'lucide-react';
+import Assets from '@/utils/Assets';
 
 const TemplateTwo = () => {
   return (
     <div className="flex flex-col md:flex-row gap-8 mt-4">
       <div className="w-full md:w-1/2">
-        <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-          <div className="flex items-center justify-center h-24 bg-gray-100 rounded-md mb-4">
-             <Upload size={24} className="text-gray-400" />
-          </div>
-          <p className="text-sm font-poppins font-semibold mb-2">Add Registration header...</p>
-          <div className="space-y-3">
-            <input className="w-full border-b border-gray-300 p-2 text-sm" placeholder="Full Name" disabled />
-            <input className="w-full border-b border-gray-300 p-2 text-sm" placeholder="Email" disabled />
-            <input className="w-full border-b border-gray-300 p-2 text-sm" placeholder="Position" disabled />
-          </div>
-        </div>
+        <img src={Assets.images.templateTwo} />
       </div>
       <div className="w-full md:w-1/2 flex flex-col justify-between">
         <div>
