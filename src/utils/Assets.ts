@@ -23,10 +23,14 @@ import templatefour from '../assets/images/template_four.png'
 import templatefive from '../assets/images/template_five.png'
 import templatesix from '../assets/images/template_six.png'
 import templateseven from '../assets/images/template_seven.png'
-import uploadbackground from '../assets/images/upload_background.png'
+import uploadbackground from '../assets/images/upload_background.jpg'
+import uploadbackground2 from '../assets/images/upload_background2.jpg'
 import scclogo from '../assets/images/scc_logo.png'
 import location from '../assets/icons/location.png'
 import clock from '../assets/icons/clock.png'
+import upload from '../assets/icons/upload.png'
+import background4 from '../assets/images/background4.jpg'
+import background5 from '../assets/images/background5.png'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -47,7 +51,10 @@ class AppAssets {
     templateSix: templatesix,
     templateSeven: templateseven,
     uploadBackground: uploadbackground,
-    sccLogo: scclogo
+    sccLogo: scclogo,
+    uploadBackground2: uploadbackground2,
+    background4: background4,
+    background5: background5,
     // splash1: require('../assets/images/splash1.png'),
   } as const;
 
@@ -61,7 +68,8 @@ class AppAssets {
     expressDot: expressdot,
     advanceDot: advancedot,
     location: location,
-    clock: clock
+    clock: clock,
+    upload: upload
 
   } as const;
 

@@ -125,6 +125,15 @@ function TemplateForm() {
         className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
+         {!formData.eventLogo ? 
+        <button className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer ">
+          <img src={Assets.icons.upload} style={{height:20, width:20}} />
+          <span className="text-white">
+upload
+          </span>
+          </button>
+          : null
+        }
         <input
           type="file"
           ref={fileInputRef}

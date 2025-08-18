@@ -8,7 +8,7 @@ import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
 import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
-import TemplateForm from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateOne/TemplateForm";
+import TemplateForm from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateTwo/TemplateForm";
 
 const router = createBrowserRouter([
   {

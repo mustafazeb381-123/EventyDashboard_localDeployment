@@ -8,6 +8,8 @@ import TemplateFour from "./RegistrationTemplates/TemplateFour/TemplateFour";
 import TemplateFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
 import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
 import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
+import { X } from 'lucide-react';
+
 
 // Modal Component
 const Modal = ({ selectedTemplate, onClose }) => {
@@ -15,11 +17,15 @@ const Modal = ({ selectedTemplate, onClose }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-6 md:p-8 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-end">
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            &times;
+      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80] max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-end">
+                  
+                  {/* <div className="bg-gray-300 hover:bg-gray-50 rounded-2xl p-1"> */}
+                      
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-800  bg-gray-200 rounded ">
+          <X />
           </button>
+                  {/* </div> */}
         </div>
 
         {/* Render correct template */}
