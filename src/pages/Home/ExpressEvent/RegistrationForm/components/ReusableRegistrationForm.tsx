@@ -6,37 +6,48 @@ const ReusableRegistrationForm = ({
   formFields = [],
   onSubmit,
   submitButtonText = "Register",
-  submitButtonClassName = "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+  submitButtonClassName = "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors",
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
+  const [filePreviewUrls, setFilePreviewUrls] = useState({});
   const [fieldVisibility, setFieldVisibility] = useState(() => {
     const initialVisibility = {};
-    formFields.forEach(field => {
+    formFields.forEach((field) => {
       initialVisibility[field.name] = true;
     });
     return initialVisibility;
   });
 
   const toggleFieldVisibility = (fieldName) => {
-    setFieldVisibility(prev => {
+    setFieldVisibility((prev) => {
       const isCurrentlyVisible = prev[fieldName];
       if (isCurrentlyVisible) {
-        const currentField = formFields.find(f => f.name === fieldName);
-        setFormData(prevData => {
+        const currentField = formFields.find((f) => f.name === fieldName);
+        setFormData((prevData) => {
           const newData = { ...prevData };
-          newData[fieldName] = currentField?.type === 'checkbox' ? false : "";
+          newData[fieldName] = currentField?.type === "checkbox" ? false : "";
           return newData;
         });
-        setErrors(prevErrors => {
+        setErrors((prevErrors) => {
           const newErrors = { ...prevErrors };
           delete newErrors[fieldName];
           return newErrors;
         });
+
+        // Clean up file preview URL if it's a file field
+        if (currentField?.type === "file" && filePreviewUrls[fieldName]) {
+          URL.revokeObjectURL(filePreviewUrls[fieldName]);
+          setFilePreviewUrls((prev) => {
+            const newUrls = { ...prev };
+            delete newUrls[fieldName];
+            return newUrls;
+          });
+        }
       }
       return {
         ...prev,
-        [fieldName]: !isCurrentlyVisible
+        [fieldName]: !isCurrentlyVisible,
       };
     });
   };
@@ -48,15 +59,15 @@ const ReusableRegistrationForm = ({
   const handleInputChange = (fieldName, value, file = null) => {
     if (!isFieldVisible(fieldName)) return;
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [fieldName]: file || value
+      [fieldName]: file || value,
     }));
 
     if (errors[fieldName]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [fieldName]: ""
+        [fieldName]: "",
       }));
     }
   };
@@ -64,12 +75,15 @@ const ReusableRegistrationForm = ({
   const validateForm = () => {
     const newErrors = {};
 
-    formFields.forEach(field => {
+    formFields.forEach((field) => {
       if (!isFieldVisible(field.name)) {
         return;
       }
 
-      if (field.required && (!formData[field.name] || formData[field.name] === "")) {
+      if (
+        field.required &&
+        (!formData[field.name] || formData[field.name] === "")
+      ) {
         newErrors[field.name] = `${field.label} is required`;
       }
 
@@ -101,18 +115,20 @@ const ReusableRegistrationForm = ({
   const renderField = (field) => {
     const isVisible = isFieldVisible(field.name);
     const commonInputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-      errors[field.name] ? 'border-red-300' : 'border-gray-300'
-    } ${!isVisible ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white'}`;
+      errors[field.name] ? "border-red-300" : "border-gray-300"
+    } ${
+      !isVisible ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white"
+    }`;
 
     const inputProps = {
       disabled: !isVisible,
-      className: commonInputClasses
+      className: commonInputClasses,
     };
 
     switch (field.type) {
-      case 'text':
-      case 'email':
-      case 'tel':
+      case "text":
+      case "email":
+      case "tel":
         return (
           <input
             type={field.type}
@@ -123,7 +139,7 @@ const ReusableRegistrationForm = ({
           />
         );
 
-      case 'textarea':
+      case "textarea":
         return (
           <textarea
             placeholder={isVisible ? field.placeholder : "Field is disabled"}
@@ -134,87 +150,172 @@ const ReusableRegistrationForm = ({
           />
         );
 
-      case 'select':
+      case "select":
         return (
           <select
             value={formData[field.name] || ""}
             onChange={(e) => handleInputChange(field.name, e.target.value)}
             {...inputProps}
           >
-            <option value="">{isVisible ? (field.placeholder || `Select ${field.label}`) : "Field is disabled"}</option>
-            {isVisible && field.options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
+            <option value="">
+              {isVisible
+                ? field.placeholder || `Select ${field.label}`
+                : "Field is disabled"}
+            </option>
+            {isVisible &&
+              field.options?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
           </select>
         );
 
-      case 'file':
+      case "file":
         return (
-          <div className="space-y-2">
-            <input
-              type="file"
-              accept={field.accept}
-              disabled={!isVisible}
-              onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  let hasError = false;
+          <div>
+            <div className="relative">
+              <input
+                type="file"
+                accept={field.accept}
+                disabled={!isVisible}
+                onChange={(e) => {
+                  if (!isVisible) return;
 
-                  // File size validation first
-                  if (field.maxSize && file.size > field.maxSize) {
-                    setErrors(prev => ({
-                      ...prev,
-                      [field.name]: `File size exceeds ${(field.maxSize / (1024 * 1024)).toFixed(1)}MB limit`
-                    }));
-                    hasError = true;
-                  }
+                  const file = e.target.files[0];
+                  if (file) {
+                    let hasError = false;
 
-                  // File type validation
-                  if (field.allowedTypes && !field.allowedTypes.includes(file.type)) {
-                    setErrors(prev => ({
-                      ...prev,
-                      [field.name]: `Invalid file type. Allowed: ${field.allowedTypes.join(', ')}`
-                    }));
-                    hasError = true;
-                  }
+                    // File size validation first
+                    if (field.maxSize && file.size > field.maxSize) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        [field.name]: `File size exceeds ${(
+                          field.maxSize /
+                          (1024 * 1024)
+                        ).toFixed(1)}MB limit`,
+                      }));
+                      hasError = true;
+                    }
 
-                  // If there's an error, clear the form data for this field
-                  if (hasError) {
-                    setFormData(prev => ({
-                      ...prev,
-                      [field.name]: ""
-                    }));
+                    // File type validation
+                    if (
+                      field.allowedTypes &&
+                      !field.allowedTypes.includes(file.type)
+                    ) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        [field.name]: `Invalid file type. Allowed: ${field.allowedTypes.join(
+                          ", "
+                        )}`,
+                      }));
+                      hasError = true;
+                    }
+
+                    // If there's an error, clear the form data for this field
+                    if (hasError) {
+                      setFormData((prev) => ({
+                        ...prev,
+                        [field.name]: "",
+                      }));
+                      // Clear the input value
+                      e.target.value = "";
+                    } else {
+                      // If no errors, update the state with the valid file
+                      handleInputChange(field.name, file.name, file);
+
+                      // Create preview URL for image files
+                      if (file.type.startsWith("image/")) {
+                        const previewUrl = URL.createObjectURL(file);
+                        setFilePreviewUrls((prev) => ({
+                          ...prev,
+                          [field.name]: previewUrl,
+                        }));
+                      }
+                    }
                   } else {
-                    // If no errors, update the state with the valid file
-                    handleInputChange(field.name, file.name, file);
-                  }
-                }
-              }}
-              className={`w-full text-sm border rounded-lg py-2 px-3 ${
-                isVisible 
-                  ? 'text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100' 
-                  : 'text-gray-400 bg-gray-100 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-400 cursor-not-allowed'
-              } ${errors[field.name] ? 'border-red-300' : 'border-gray-300'}`}
-            />
-            
-            {/* Conditionally display the selected file name */}
-            {formData[field.name] && isVisible && typeof formData[field.name] === 'string' && (
-              <p className="mt-2 text-sm text-gray-600 truncate">
-                Selected file: **{formData[field.name]}**
-              </p>
-            )}
+                    // Handle case when file is cleared
+                    handleInputChange(field.name, "");
 
+                    // Clean up preview URL
+                    if (filePreviewUrls[field.name]) {
+                      URL.revokeObjectURL(filePreviewUrls[field.name]);
+                      setFilePreviewUrls((prev) => {
+                        const newUrls = { ...prev };
+                        delete newUrls[field.name];
+                        return newUrls;
+                      });
+                    }
+                  }
+                }}
+                className={`w-full text-sm border rounded-lg py-2 px-3 pr-20 transition-colors ${
+                  errors[field.name] ? "border-red-300" : "border-gray-300"
+                } ${
+                  isVisible
+                    ? "text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                    : "text-gray-400 bg-gray-100 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-200 file:text-gray-400 cursor-not-allowed"
+                }`}
+              />
+              {/* Display allowed file types inside the input border */}
+              {field.accept && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
+                  {field.accept
+                    .replace(/image\//g, "")
+                    .replace(/,/g, ", ")
+                    .toUpperCase()}
+                </div>
+              )}
+            </div>
+
+            {/* Display selected file name and image preview */}
+            {isVisible &&
+              formData[field.name] &&
+              typeof formData[field.name] === "string" &&
+              formData[field.name].trim() !== "" && (
+                <div className="mt-2 space-y-2">
+                  <p className="text-sm text-gray-600 truncate">
+                    Selected file: <strong>{formData[field.name]}</strong>
+                  </p>
+
+                  {/* Image preview */}
+                  {filePreviewUrls[field.name] && (
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={filePreviewUrls[field.name]}
+                        alt="Preview"
+                        className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                      />
+                      <div className="text-xs text-gray-500">
+                        <p>Preview</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(filePreviewUrls[field.name], "_blank")
+                          }
+                          className="text-blue-500 hover:text-blue-700 underline"
+                        >
+                          View full size
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+            {/* Display hint based on visibility */}
             {field.hint && (
-              <p className={`text-xs ${isVisible ? 'text-gray-500' : 'text-gray-400'}`}>
+              <p
+                className={`mt-2 text-xs ${
+                  isVisible ? "text-gray-500" : "text-gray-400"
+                }`}
+              >
                 {isVisible ? field.hint : "Field is disabled"}
               </p>
             )}
           </div>
         );
 
-      case 'checkbox':
+      case "checkbox":
         return (
           <div className="flex items-center space-x-2">
             <input
@@ -224,11 +325,15 @@ const ReusableRegistrationForm = ({
               onChange={(e) => handleInputChange(field.name, e.target.checked)}
               className={`rounded border-gray-300 ${
                 isVisible
-                  ? 'text-blue-600 focus:ring-blue-500'
-                  : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                  ? "text-blue-600 focus:ring-blue-500"
+                  : "text-gray-400 bg-gray-100 cursor-not-allowed"
               }`}
             />
-            <label className={`text-sm ${isVisible ? 'text-gray-700' : 'text-gray-400'}`}>
+            <label
+              className={`text-sm ${
+                isVisible ? "text-gray-700" : "text-gray-400"
+              }`}
+            >
               {field.checkboxLabel}
             </label>
           </div>
@@ -243,24 +348,28 @@ const ReusableRegistrationForm = ({
     <form onSubmit={handleSubmit} className="space-y-6">
       {formFields.map((field) => (
         <div key={field.name}>
-          {field.type !== 'checkbox' && (
+          {field.type !== "checkbox" && (
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {field.label}
               {field.required && <span className="text-red-500 ml-1">*</span>}
             </label>
           )}
 
-          <div className="flex items-center gap-3">
-            <div className="flex-1">
-              {renderField(field)}
-            </div>
+          <div className="flex items-start gap-3">
+            <div className="flex-1">{renderField(field)}</div>
 
             <button
-              style={{padding:10, borderRadius:10, backgroundColor:"#f5f5f5",}}
+              style={{
+                padding: 10,
+                borderRadius: 10,
+                backgroundColor: "#f5f5f5",
+              }}
               type="button"
               onClick={() => toggleFieldVisibility(field.name)}
-              className="flex items-center justify-center transition-colors flex-shrink-0"
-              title={isFieldVisible(field.name) ? "Disable field" : "Enable field"}
+              className="flex items-center justify-center transition-colors flex-shrink-0 hover:bg-gray-200 mt-0"
+              title={
+                isFieldVisible(field.name) ? "Disable field" : "Enable field"
+              }
             >
               {isFieldVisible(field.name) ? (
                 <Eye size={24} className="text-red-500" />
@@ -279,10 +388,7 @@ const ReusableRegistrationForm = ({
         </div>
       ))}
 
-      <button
-        type="submit"
-        className={submitButtonClassName}
-      >
+      <button type="submit" className={submitButtonClassName}>
         {submitButtonText}
       </button>
     </form>

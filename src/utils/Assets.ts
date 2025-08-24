@@ -31,6 +31,7 @@ import clock from '../assets/icons/clock.png'
 import upload from '../assets/icons/upload.png'
 import background4 from '../assets/images/background4.jpg'
 import background5 from '../assets/images/background5.png'
+import uploadbackground3 from '../assets/images/upload_background3.jpg'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -53,6 +54,7 @@ class AppAssets {
     uploadBackground: uploadbackground,
     sccLogo: scclogo,
     uploadBackground2: uploadbackground2,
+    uploadBackground3: uploadbackground3,
     background4: background4,
     background5: background5,
     // splash1: require('../assets/images/splash1.png'),

@@ -62,7 +62,7 @@ function TemplateForm() {
       validation: (value) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(value) || "Please enter a valid email address";
-      }
+      },
     },
     {
       name: "phoneNumber",
@@ -101,7 +101,7 @@ function TemplateForm() {
       allowedTypes: ["image/png", "image/jpeg"],
       hint: "PNG or JPG (max. 2MB)",
       required: false,
-    }
+    },
   ];
 
   const handleFormSubmit = (formData) => {
@@ -114,31 +114,31 @@ function TemplateForm() {
     <div className="w-full">
       {/* Event Cover Image Upload */}
       <div
-      style={{
-        //   width: "100%",
-        // minWidth:"100%",
-backgroundImage: ` url(${ formData.eventLogo ? URL.createObjectURL(formData.eventLogo) : Assets.images.uploadBackground2 })`,
+        style={{
+          //   width: "100%",
+          // minWidth:"100%",
+          backgroundImage: ` url(${
+            formData.eventLogo
+              ? URL.createObjectURL(formData.eventLogo)
+              : Assets.images.uploadBackground2
+          })`,
 
-// height: "400px", // Enforce a fixed height of 400px
-}}
+          // height: "400px", // Enforce a fixed height of 400px
+        }}
         className="w-full  h-[400px] flex items-center justify-center border rounded-3xl
         bg-gradient-to-t from-white/50 to-transparent
         
         border-gray-200  sm:p-5 bg-cover bg-center bg-no-repeat relative cursor-pointer"
         onClick={() => fileInputRef.current?.click()}
       >
-
-        {!formData.eventLogo ? 
-        <button className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer ">
-          <img src={Assets.icons.upload} style={{height:20, width:20}} />
-          <span className="text-white">
-upload
-          </span>
+        {!formData.eventLogo ? (
+          <button className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer ">
+            <img src={Assets.icons.upload} style={{ height: 20, width: 20 }} />
+            <span className="text-white">upload</span>
           </button>
-          : null
-        }
-          {/* Blur overlay */}
-  {/* <div className="absolute inset-0 bg-black/20 "></div> */}
+        ) : null}
+        {/* Blur overlay */}
+        {/* <div className="absolute inset-0 bg-black/20 "></div> */}
         <input
           type="file"
           ref={fileInputRef}
@@ -167,26 +167,40 @@ upload
         </p>
       )}
 
-      <div style={{marginTop:16}} />
+      <div style={{ marginTop: 16 }} />
 
       {/* Event Information Display */}
       <div className="gap-3 flex flex-row items-center">
-        <div style={{padding:32}} className=" bg-neutral-50 rounded-2xl">
-          <img src={Assets.images.sccLogo } style={{height:67.12, width:72}} />
+        <div style={{ padding: 32 }} className=" bg-neutral-50 rounded-2xl">
+          <img
+            src={Assets.images.sccLogo}
+            style={{ height: 67.12, width: 72 }}
+          />
         </div>
 
         <div className="flex flex-col gap-3">
           <p className="text-slate-800 text-md font-poppins font-medium">
-            SCC Summit 
+            SCC Summit
           </p>
-          
+
           <div className="flex flex-row items-center gap-3 ">
-            <img src={Assets.icons.clock} style={{height:20, width:20}} alt="" />
-            <p className="text-neutral-600 font-poppins font-normal text-xs"> june 07, 2025 - june 09 2025</p>
+            <img
+              src={Assets.icons.clock}
+              style={{ height: 20, width: 20 }}
+              alt=""
+            />
+            <p className="text-neutral-600 font-poppins font-normal text-xs">
+              {" "}
+              june 07, 2025 - june 09 2025
+            </p>
           </div>
-          
+
           <div className="flex flex-row items-center gap-3 ">
-            <img src={Assets.icons.location} style={{height:20, width:20}} alt="" />
+            <img
+              src={Assets.icons.location}
+              style={{ height: 20, width: 20 }}
+              alt=""
+            />
             <p className=" text-neutral-600 font-poppins font-normal text-xs">
               Riyadh
             </p>
@@ -195,9 +209,12 @@ upload
       </div>
 
       <div style={{ marginTop: 16 }} />
-      
+
       <p className="text-slate-800 text-xs font-poppins font-medium">
-        About <span className="text-neutral-600 text-xs font-normal">(Description)</span>
+        About{" "}
+        <span className="text-neutral-600 text-xs font-normal">
+          (Description)
+        </span>
       </p>
 
       <div style={{ marginTop: 24 }} />
@@ -207,7 +224,7 @@ upload
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill name and contact information of attendees.
         </h3>
-        
+
         <ReusableRegistrationForm
           formFields={formFields}
           onSubmit={handleFormSubmit}

@@ -8,7 +8,7 @@ import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
 import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
-import TemplateForm from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateTwo/TemplateForm";
+import TemplateForm from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFour/TemplateForm";
 
 const router = createBrowserRouter([
   {
@@ -24,7 +24,7 @@ const router = createBrowserRouter([
           },
           {
             path: "express-event", // This path is now relative to "/" -> "/express-event"
-            element: <ExpressEvent />
+            element: <ExpressEvent />,
           },
           {
             path: "about", // This path is now relative to "/" -> "/about"
@@ -32,8 +32,8 @@ const router = createBrowserRouter([
           },
           {
             path: "form",
-            element: <TemplateForm />
-          }
+            element: <TemplateForm />,
+          },
         ],
       },
     ],
@@ -52,9 +52,8 @@ const router = createBrowserRouter([
   },
 ]);
 
-
 const Routes = () => {
-  return <RouterProvider router={router} />
-}
+  return <RouterProvider router={router} />;
+};
 
 export default Routes;

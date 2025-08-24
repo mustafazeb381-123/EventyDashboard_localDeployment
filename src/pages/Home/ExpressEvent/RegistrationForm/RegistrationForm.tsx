@@ -3,13 +3,12 @@ import { ChevronLeft, Check } from "lucide-react";
 import TemplateOne from "./RegistrationTemplates/TemplateOne/TemplateOne";
 import TemplateTwo from "./RegistrationTemplates/TemplateTwo/TemplateTwo";
 import Assets from "@/utils/Assets";
-import TemplateThree from './RegistrationTemplates/TemplateThree/TemplateThree';
+import TemplateThree from "./RegistrationTemplates/TemplateThree/TemplateThree";
 import TemplateFour from "./RegistrationTemplates/TemplateFour/TemplateFour";
-import TemplateFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
+import TemplateFive from "./RegistrationTemplates/TemplateFive/TemplateFive";
 import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
 import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
-import { X } from 'lucide-react';
-
+import { X } from "lucide-react";
 
 // Modal Component
 const Modal = ({ selectedTemplate, onClose }) => {
@@ -18,14 +17,16 @@ const Modal = ({ selectedTemplate, onClose }) => {
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl p-6 md:p-8 w-[80] max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-end">
-                  
-                  {/* <div className="bg-gray-300 hover:bg-gray-50 rounded-2xl p-1"> */}
-                      
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-800  bg-gray-200 rounded ">
-          <X />
+        <div className="flex justify-end">
+          {/* <div className="bg-gray-300 hover:bg-gray-50 rounded-2xl p-1"> */}
+
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-800  bg-gray-200 rounded "
+          >
+            <X />
           </button>
-                  {/* </div> */}
+          {/* </div> */}
         </div>
 
         {/* Render correct template */}
@@ -87,7 +88,11 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           <div className="flex items-center">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                ${isStep1Completed || isStep1Active ? "border-[#ff0080]" : "border-gray-200"}
+                ${
+                  isStep1Completed || isStep1Active
+                    ? "border-[#ff0080]"
+                    : "border-gray-200"
+                }
                 ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
               `}
             >
