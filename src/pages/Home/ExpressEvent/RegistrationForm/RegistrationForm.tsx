@@ -9,10 +9,15 @@ import TemplateFive from "./RegistrationTemplates/TemplateFive/TemplateFive";
 import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
 import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
 import { X } from "lucide-react";
+import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
 
 // Modal Component
-const Modal = ({ selectedTemplate, onClose }) => {
+const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
   if (!selectedTemplate) return null;
+  const handleUseTemplate = (templateId, templateData) => {
+    onUseTemplate(templateId, templateData);
+    onClose();
+  };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -30,7 +35,9 @@ const Modal = ({ selectedTemplate, onClose }) => {
         </div>
 
         {/* Render correct template */}
-        {selectedTemplate === "template-one" && <TemplateOne />}
+        {selectedTemplate === "template-one" && (
+          <TemplateOne onUseTemplate={handleUseTemplate} />
+        )}
         {selectedTemplate === "template-two" && <TemplateTwo />}
         {selectedTemplate === "template-three" && <TemplateThree />}
         {selectedTemplate === "template-four" && <TemplateFour />}
@@ -42,10 +49,12 @@ const Modal = ({ selectedTemplate, onClose }) => {
   );
 };
 
-// Main Component
 const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [confirmedTemplate, setConfirmedTemplate] = useState(null);
+  const [selectedTemplateData, setSelectedTemplateData] = useState(null);
+  const [internalStep, setInternalStep] = useState(0); // 0: selection, 1: confirmation
 
   const templates = [
     { id: "template-one", img: Assets.images.templateOne },
@@ -67,10 +76,42 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     setIsModalOpen(false);
   };
 
-  const isStep1Active = currentStep === 1;
-  const isStep1Completed = currentStep > 1;
-  const isStep2Active = currentStep === 2;
+  const handleUseTemplate = (templateId, templateData) => {
+    console.log("Selected template:", templateId, templateData);
+    setConfirmedTemplate(templateId);
+    setSelectedTemplateData(templateData);
+    setInternalStep(1); // Go to confirmation step
+  };
 
+  const handleConfirmationNext = () => {
+    // Here you can save the final configuration and proceed
+    console.log("Template confirmed with settings");
+    // You can call the parent onNext if needed
+    if (onNext) onNext();
+  };
+
+  const handleConfirmationPrevious = () => {
+    setInternalStep(0); // Go back to template selection
+    setConfirmedTemplate(null);
+    setSelectedTemplateData(null);
+  };
+
+  const isStep1Active = internalStep === 0;
+  const isStep1Completed = internalStep > 0;
+  const isStep2Active = internalStep === 1;
+
+  // Show confirmation details if a template is selected
+  if (internalStep === 1 && confirmedTemplate) {
+    return (
+      <ConfirmationDetails
+        selectedTemplateData={selectedTemplateData}
+        onNext={handleConfirmationNext}
+        onPrevious={handleConfirmationPrevious}
+      />
+    );
+  }
+
+  // Show template selection (default view)
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
       {/* Header */}
@@ -155,7 +196,11 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
       {/* Modal */}
       {isModalOpen && (
-        <Modal selectedTemplate={selectedTemplate} onClose={handleCloseModal} />
+        <Modal
+          selectedTemplate={selectedTemplate}
+          onClose={handleCloseModal}
+          onUseTemplate={handleUseTemplate}
+        />
       )}
 
       {/* Navigation Buttons */}
@@ -174,15 +219,15 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         </button>
         <button
           onClick={onNext}
-          disabled={currentStep === totalSteps - 1}
+          disabled={!confirmedTemplate}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
             ${
-              currentStep === totalSteps - 1
+              !confirmedTemplate
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed"
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
-          {currentStep === totalSteps - 1 ? "Finish" : "Next →"}
+          Next →
         </button>
       </div>
     </div>
