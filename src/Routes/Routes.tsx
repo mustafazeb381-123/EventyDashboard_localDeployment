@@ -6,22 +6,33 @@ import Home from "../pages/Home/Home";
 import NotFound from "../pages/NotFound/NotFound";
 import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
+import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
+
+import TemplateForm from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFour/TemplateForm";
 
 const router = createBrowserRouter([
   {
-    element: <ProtectedRoute />, // checks for token
+    path: "/", // The main path for all protected routes
+    element: <ProtectedRoute />,
     children: [
       {
-        path: "/",
-        element: <MainRoutes />, // contains Header/Footer
+        element: <MainRoutes />, // MainRoutes now acts as a layout for children
         children: [
           {
-            path: "home",
+            index: true, // This will render at the root path ("/")
             element: <Home />,
           },
           {
-            path: "about",
+            path: "express-event", // This path is now relative to "/" -> "/express-event"
+            element: <ExpressEvent />,
+          },
+          {
+            path: "about", // This path is now relative to "/" -> "/about"
             element: <div>About Page</div>,
+          },
+          {
+            path: "form",
+            element: <TemplateForm />,
           },
         ],
       },
@@ -42,7 +53,7 @@ const router = createBrowserRouter([
 ]);
 
 const Routes = () => {
-  return <RouterProvider router={router} />
-}
+  return <RouterProvider router={router} />;
+};
 
 export default Routes;

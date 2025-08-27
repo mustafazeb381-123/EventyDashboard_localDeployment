@@ -9,7 +9,8 @@ import PricingModal from "@/components/PricingModal/PricingModal";
 const Home = () => {
 
    const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('express');
+  const [selectedPlan, setSelectedPlan] = useState("");
+  console.log("selected plan :", selectedPlan)
 
   const handleExpressEventClick = () => {
     setSelectedPlan('express');
@@ -25,13 +26,14 @@ const Home = () => {
 
   const closeModal = () => {
     setIsModalOpen(false);
+    setSelectedPlan("")
   };
   return (
     <div className="w-full bg-[#F7FAFF] min-h-screen p-4">
      <div className="flex flex-wrap gap-4">
   {/* Express Event Card */}
         <div
-          onClick={()=> {handleExpressEventClick()}}
+          onClick={handleExpressEventClick}
     style={{
       backgroundImage: `url(${Assets.images.expressTabBack})`,
       backgroundRepeat: 'no-repeat',
@@ -68,7 +70,7 @@ const Home = () => {
 
   {/* Create Event Card */}
   <div
-    onClick={() => {handleCreateEventClick()}}
+    onClick={handleCreateEventClick}
     style={{
       backgroundImage: `url(${Assets.images.settingBack})`,
       backgroundRepeat: 'no-repeat',
@@ -125,7 +127,8 @@ Advanced and more details.
         <AllEvents />
 
       </div>
-         <PricingModal
+      <PricingModal
+      
         isOpen={isModalOpen} 
         onClose={closeModal}
         selectedPlan={selectedPlan}

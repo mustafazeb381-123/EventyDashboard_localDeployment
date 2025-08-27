@@ -1,6 +1,9 @@
 {
   "title": "إنشاء حساب",
   "step1Title": "بياناتك",
+  "step2Title": "عنوان الشركة",
+  "step3Title": "بيانات تحويل الأموال",
+  "step4Title": "المستندات",
   "nameLabel": "اسمك*",
   "namePlaceholder": "اسمك",
   "emailLabel": "بريدك الإلكتروني*",

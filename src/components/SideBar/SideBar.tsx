@@ -107,42 +107,6 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
 
   return (
     <>
-     
-      {/* <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between z-40 shadow-sm transition-all duration-300"
-        style={{ 
-          paddingLeft: isRTL ? '16px' : (isExpanded ? '296px' : '88px'), 
-          paddingRight: isRTL ? (isExpanded ? '296px' : '88px') : '16px'
-        }}
-      >
-        
-        <div className="flex items-center space-x-4">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            className="text-gray-700 hover:bg-gray-100"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          
-          
-          <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
-        </div>
-
-        
-        <div className="flex items-center space-x-3">
-          <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-100">
-            <Bell className="h-5 w-5" />
-          </Button>
-          
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4" />
-            </div>
-            <span>My Account</span>
-          </div>
-        </div>
-      </header> */}
 
       {/* Sidebar */}
       <aside className={`fixed ${isRTL ? 'right-0' : 'left-0'} top-0 h-screen bg-gradient-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${

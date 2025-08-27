@@ -2,13 +2,14 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 interface TextProps extends React.HTMLAttributes<HTMLParagraphElement> {
-  size?: "sm" | "base" | "lg" | "xl";
+  size?: "xs" | "sm" | "base" | "lg" | "xl";
   weight?: "normal" | "medium" | "semibold" | "bold";
   color?: string; // Tailwind color class, e.g. "text-gray-700"
   as?: React.ElementType;
 }
 
 const sizeMap = {
+  xs: "text-xs",
   sm: "text-sm",
   base: "text-base",
   lg: "text-lg",
