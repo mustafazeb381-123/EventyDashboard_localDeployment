@@ -32,6 +32,7 @@ import upload from '../assets/icons/upload.png'
 import background4 from '../assets/images/background4.jpg'
 import background5 from '../assets/images/background5.png'
 import uploadbackground3 from '../assets/images/upload_background3.jpg'
+import badge1 from '../assets/images/badge1.png'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -57,6 +58,7 @@ class AppAssets {
     uploadBackground3: uploadbackground3,
     background4: background4,
     background5: background5,
+    badge1: badge1,
     // splash1: require('../assets/images/splash1.png'),
   } as const;
 
