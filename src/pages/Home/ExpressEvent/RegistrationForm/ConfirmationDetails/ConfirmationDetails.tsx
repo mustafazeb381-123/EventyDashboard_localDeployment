@@ -1,5 +1,14 @@
 import React, { useState } from "react";
-import { ChevronLeft, Check, MapPin, Info, QrCode } from "lucide-react";
+// import { ScanQrCode } from "lucide-react";
+
+import {
+  ChevronLeft,
+  Check,
+  MapPin,
+  Info,
+  QrCode,
+  ScanQrCode,
+} from "lucide-react";
 
 const ConfirmationDetails = () => {
   const [confirmationMessage, setConfirmationMessage] = useState(true);
@@ -70,16 +79,10 @@ const ConfirmationDetails = () => {
             {title === "Registration Done" && enabled ? (
               <Check size={32} className={styles.iconColor} />
             ) : showQR ? (
-              <div
-                className="w-8 h-8 bg-current opacity-60"
-                style={{
-                  maskImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 7V5a2 2 0 012-2h2M3 17v2a2 2 0 002 2h2m10-4v2a2 2 0 01-2 2h-2m4-14V5a2 2 0 00-2-2h-2M9 12l2 2 4-4' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-                  maskRepeat: "no-repeat",
-                  maskPosition: "center",
-                }}
-                className={styles.iconColor}
-              ></div>
+              <div style={{}} className={styles.iconColor}></div>
             ) : (
+              // <ScanQrCode />
+
               <Icon size={32} className={styles.iconColor} />
             )}
           </div>
@@ -145,11 +148,11 @@ const ConfirmationDetails = () => {
             />
 
             <StatusCard
-              icon={QrCode}
+              icon={ScanQrCode}
               title="User QR Code"
               enabled={userQRCode}
               onChange={setUserQRCode}
-              showQR={true}
+              // showQR={true}
             />
 
             <StatusCard
@@ -240,19 +243,8 @@ const ConfirmationDetails = () => {
                 )}
 
                 {userQRCode && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                    <div className="w-20 h-20 mx-auto bg-gray-800 rounded-lg grid grid-cols-4 gap-1 p-2 mb-3">
-                      {[...Array(16)].map((_, i) => (
-                        <div
-                          key={i}
-                          className={`rounded-sm ${
-                            [0, 1, 4, 5, 8, 9, 12, 13].includes(i)
-                              ? "bg-white"
-                              : "bg-gray-600"
-                          }`}
-                        ></div>
-                      ))}
-                    </div>
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center items-center flex justify-center gap-3">
+                    <ScanQrCode />
                     <span className="text-sm text-blue-800 font-medium">
                       Your Event QR Code
                     </span>

@@ -33,6 +33,9 @@ import background4 from '../assets/images/background4.jpg'
 import background5 from '../assets/images/background5.png'
 import uploadbackground3 from '../assets/images/upload_background3.jpg'
 import badge1 from '../assets/images/badge1.png'
+import locationBlue from '../assets/icons/location_blue.png'
+import infoCircle from '../assets/icons/info_circle.png'
+import registrationDone from '../assets/icons/registrationDone.png'
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -73,7 +76,10 @@ class AppAssets {
     advanceDot: advancedot,
     location: location,
     clock: clock,
-    upload: upload
+    upload: upload,
+    locationBlue: locationBlue,
+    infoCircle: infoCircle,
+    registrationDone: registrationDone,
 
   } as const;
 

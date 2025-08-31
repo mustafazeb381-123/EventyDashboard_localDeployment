@@ -4,7 +4,6 @@ import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 
 const TemplateOne = ({ onUseTemplate }) => {
-
   const navigation = useNavigate();
 
   const handleUseTemplate = () => {
@@ -21,8 +20,6 @@ const TemplateOne = ({ onUseTemplate }) => {
 
   return (
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
-
-
       {/* Right side (fixed, always visible) */}
       <div className="w-full md:w-1/2 flex flex-col justify-between sticky top-0">
         {/* Top section */}
@@ -44,7 +41,6 @@ const TemplateOne = ({ onUseTemplate }) => {
         >
           Use Template →
         </button>
-
       </div>
     </div>
   );

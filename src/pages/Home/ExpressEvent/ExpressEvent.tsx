@@ -16,6 +16,7 @@ import { CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
+import Areas from "./Areas/Areas";
 
 const ExpressEvent = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -195,16 +196,12 @@ const ExpressEvent = () => {
         );
       case 4:
         return (
-          <div className="bg-white rounded-3xl p-8">
-            <h2 className="text-xl font-semibold mb-8 text-gray-800">
-              Event Areas
-            </h2>
-            <p className="text-gray-600">Event areas content will go here...</p>
-            <div className="flex justify-between mt-6 md:mt-8">
-              <button onClick={handlePrevious}>← Previous</button>
-              <button onClick={handleNext}>Finish</button>
-            </div>
-          </div>
+          <Areas
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
         );
       default:
         return (
