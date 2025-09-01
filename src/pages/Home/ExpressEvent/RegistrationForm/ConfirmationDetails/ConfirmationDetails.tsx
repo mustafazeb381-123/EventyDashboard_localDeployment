@@ -284,14 +284,14 @@ const ConfirmationDetails = () => {
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between items-center mt-8 px-8 pb-6 max-w-full">
+      {/* <div className="flex justify-between items-center mt-8 px-8 pb-6 max-w-full">
         <button className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
           ← Previous
         </button>
         <button className="px-8 py-3 bg-gray-900 hover:bg-black text-white rounded-lg transition-colors">
           Next →
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };
