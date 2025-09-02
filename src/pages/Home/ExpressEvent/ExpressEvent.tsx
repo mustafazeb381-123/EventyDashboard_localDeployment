@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
+import EmailConfirmation from "./Confirmation/EmailConfirmation";
 
 const ExpressEvent = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -181,18 +182,12 @@ const ExpressEvent = () => {
         );
       case 3:
         return (
-          <div className="bg-white rounded-3xl p-8">
-            <h2 className="text-xl fon-poppins font-semibold mb-8 text-gray-800">
-              Confirmation Settings
-            </h2>
-            <p className="text-gray-600">
-              Confirmation settings content will go here...
-            </p>
-            <div className="flex justify-between mt-6 md:mt-8">
-              <button onClick={handlePrevious}>← Previous</button>
-              <button onClick={handleNext}>Next →</button>
-            </div>
-          </div>
+          <EmailConfirmation
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
         );
       case 4:
         return (

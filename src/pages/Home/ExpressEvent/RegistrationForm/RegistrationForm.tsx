@@ -10,6 +10,13 @@ import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
 import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
 import { X } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
+import TemplateFormOne from "./RegistrationTemplates/TemplateOne/TemplateForm";
+import TemplateFormTwo from "./RegistrationTemplates/TemplateTwo/TemplateForm";
+import TemplateFormThree from "./RegistrationTemplates/TemplateThree/TemplateForm";
+import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm";
+import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
+import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
+import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
 
 // Modal Component
 const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
@@ -54,13 +61,13 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [internalStep, setInternalStep] = useState(0); // 0: selection, 1: confirmation
 
   const templates = [
-    { id: "template-one", img: Assets.images.templateOne },
-    { id: "template-two", img: Assets.images.templateTwo },
-    { id: "template-three", img: Assets.images.templateThree },
-    { id: "template-four", img: Assets.images.templateFour },
-    { id: "template-five", img: Assets.images.templateFive },
-    { id: "template-six", img: Assets.images.templateSix },
-    { id: "template-seven", img: Assets.images.templateSeven },
+    { id: "template-one", component: <TemplateFormOne /> },
+    { id: "template-two", component: <TemplateFormTwo /> },
+    { id: "template-three", component: <TemplateFormThree /> },
+    { id: "template-four", component: <TemplateFormFour /> },
+    { id: "template-five", component: <TemplateFormFive /> },
+    { id: "template-six", component: <TemplateFormSix /> },
+    { id: "template-seven", component: <TemplateFormSeven /> },
   ];
 
   const handleOpenModal = (id) => {
@@ -216,11 +223,16 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                     : "border-gray-200 hover:border-pink-500"
                 }`}
               >
-                <img
-                  src={tpl.img}
-                  alt={tpl.id}
-                  className="w-full h-48 object-cover rounded-xl"
-                />
+                {/* Render the actual template component */}
+                <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
+                  <div className="transform scale-15 pointer-events-none">
+                    <div className="w-[1200px]  ">
+                      {" "}
+                      {/* or whatever your form's real width is */}
+                      {tpl.component}
+                    </div>
+                  </div>
+                </div>
                 {confirmedTemplate === tpl.id && (
                   <div className="mt-2 flex items-center justify-center">
                     <Check size={16} className="text-pink-500 mr-1" />

@@ -5,7 +5,7 @@ import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
 // import ReusableRegistrationForm from "";
 
-function TemplateForm() {
+function TemplateFormThree() {
   const [formData, setFormData] = useState({
     eventLogo: null,
   });
@@ -186,4 +186,4 @@ function TemplateForm() {
   );
 }
 
-export default TemplateForm;
+export default TemplateFormThree;
