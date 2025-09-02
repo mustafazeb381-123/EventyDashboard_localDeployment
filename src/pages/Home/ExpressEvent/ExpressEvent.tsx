@@ -49,6 +49,8 @@ const ExpressEvent = () => {
     },
   ];
 
+  const [selectedModal, setSelectedModal] = useState<number | null>(null);
+
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
@@ -172,7 +174,10 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
-            onNext={handleNext}
+            onNext={(badgeId) => {
+              setSelectedModal(badgeId); // save which badge was selected
+              handleNext(); // go to next step
+            }}
             onPrevious={handlePrevious}
             currentStep={currentStep}
             totalSteps={steps.length}
@@ -186,6 +191,7 @@ const ExpressEvent = () => {
             </h2>
             <p className="text-gray-600">
               Confirmation settings content will go here...
+              {/* <span className="font-semibold">{selectedModal}</span> */}
             </p>
             <div className="flex justify-between mt-6 md:mt-8">
               <button onClick={handlePrevious}>← Previous</button>

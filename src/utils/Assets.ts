@@ -32,7 +32,24 @@ import upload from '../assets/icons/upload.png'
 import background4 from '../assets/images/background4.jpg'
 import background5 from '../assets/images/background5.png'
 import uploadbackground3 from '../assets/images/upload_background3.jpg'
-import badge1 from '../assets/images/badge1.png'
+import b1_front from '../assets/images/b1-front.png'
+import b1_back from '../assets/images/b1-back.png'
+import b2_front from '../assets/images/b2-front.png'
+import b2_back from '../assets/images/b2-back.png'
+import b3_front from '../assets/images/b3-front.png'
+import b3_back from '../assets/images/b3-back.png'
+import b4_front from '../assets/images/b4-front.png'
+import b4_back from '../assets/images/b4-back.png'
+import b5_front from '../assets/images/b5-front.png'
+import b5_back from '../assets/images/b5-back.png'
+import b6_front from '../assets/images/b6-front.png'
+import b6_back from '../assets/images/b6-back.png'
+import b7_front from '../assets/images/b7-front.png'
+import b7_back from '../assets/images/b7-back.png'
+import b8_front from '../assets/images/b8-front.png'
+import b8_back from '../assets/images/b8-back.png'
+
+
 class AppAssets {
   readonly images = {
     loginRIghtImage: loginRIghtImage,
@@ -58,7 +75,22 @@ class AppAssets {
     uploadBackground3: uploadbackground3,
     background4: background4,
     background5: background5,
-    badge1: badge1,
+    b1_front: b1_front,
+    b1_back: b1_back,
+    b2_front: b2_front,
+    b2_back: b2_back,
+    b3_front: b3_front,
+    b3_back: b3_back,
+    b4_front: b4_front,
+    b4_back: b4_back,
+    b5_front: b5_front,
+    b5_back: b5_back,
+    b6_front: b6_front,
+    b6_back: b6_back,
+    b7_front: b7_front,
+    b7_back: b7_back,
+    b8_front: b8_front,
+    b8_back: b8_back,
     // splash1: require('../assets/images/splash1.png'),
   } as const;
 
