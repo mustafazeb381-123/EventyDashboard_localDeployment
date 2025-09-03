@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { Check, ChevronLeft, X } from "lucide-react";
 import Assets from "@/utils/Assets";
+import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
+import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
+import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
+import ReminderTemplateOne from "./Templates/ReminderEmailTemplate/ReminderTemplateOne";
+import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTemplateTwo";
+import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
+import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
 // Modal Component to preview template
 const TemplateModal = ({ template, onClose, onSelect }) => {
@@ -8,7 +15,7 @@ const TemplateModal = ({ template, onClose, onSelect }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-6 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white p-6 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <button
@@ -20,12 +27,13 @@ const TemplateModal = ({ template, onClose, onSelect }) => {
           </button>
         </div>
         <div className="mb-6">
-          <img
+          {template.component}
+          {/* <img
             src={template.img}
             alt={template.title}
             className="w-full rounded-lg mb-4 shadow-sm"
             loading="lazy"
-          />
+          /> */}
           <p className="text-gray-600">
             {template.description || "Preview of template content..."}
           </p>
@@ -42,7 +50,7 @@ const TemplateModal = ({ template, onClose, onSelect }) => {
 };
 
 // Main Email Confirmation Component
-const EmailConfirmation = () => {
+const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const flows = [
     {
       id: "thanks",
@@ -51,12 +59,12 @@ const EmailConfirmation = () => {
         {
           id: "tpl1",
           title: "Thanks Template 1",
-          img: Assets.images.templateOne,
+          component: <ThanksTemplateOne />,
         },
         {
           id: "tpl2",
           title: "Thanks Template 2",
-          img: Assets.images.templateTwo,
+          component: <ThanksTemplateTwo />,
         },
       ],
     },
@@ -67,12 +75,7 @@ const EmailConfirmation = () => {
         {
           id: "tpl3",
           title: "Confirmation Template 1",
-          img: Assets.images.templateThree,
-        },
-        {
-          id: "tpl4",
-          title: "Confirmation Template 2",
-          img: Assets.images.templateFour,
+          component: <ConfirmationTemplateOne />,
         },
       ],
     },
@@ -83,12 +86,12 @@ const EmailConfirmation = () => {
         {
           id: "tpl5",
           title: "Reminder Template 1",
-          img: Assets.images.templateFive,
+          component: <ReminderTemplateOne />,
         },
         {
           id: "tpl6",
           title: "Reminder Template 2",
-          img: Assets.images.templateSix,
+          component: <ReminderTemplateTwo />,
         },
       ],
     },
@@ -99,12 +102,12 @@ const EmailConfirmation = () => {
         {
           id: "tpl7",
           title: "Rejection Template 1",
-          img: Assets.images.templateSeven,
+          component: <RejectionTemplateOne />,
         },
         {
           id: "tpl8",
           title: "Rejection Template 2",
-          img: Assets.images.templateOne,
+          component: <RejectionTemplateTwo />,
         },
       ],
     },
@@ -135,9 +138,10 @@ const EmailConfirmation = () => {
     if (currentFlowIndex < flows.length - 1) {
       setCurrentFlowIndex(currentFlowIndex + 1);
     } else {
-      alert(
-        "All templates selected:\n" + JSON.stringify(selectedTemplates, null, 2)
-      );
+      if (onNext) onNext();
+      // alert(
+      //   "All templates selected:\n" + JSON.stringify(selectedTemplates, null, 2)
+      // );
     }
   };
 
@@ -223,15 +227,24 @@ const EmailConfirmation = () => {
                 : "border-gray-200 hover:border-pink-300"
             }`}
           >
-            <img
+            <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
+              <div className="transform scale-20 top-5 pointer-events-none">
+                <div className="w-[1800px]  ">
+                  {" "}
+                  {/* or whatever your form's real width is */}
+                  {tpl.component}
+                </div>
+              </div>
+            </div>
+            {/* <img
               src={tpl.img}
               alt={tpl.title}
               className="w-full h-48 object-cover rounded-lg mb-3"
               loading="lazy"
-            />
-            <h3 className="text-base font-medium text-gray-900 mb-1">
+            /> */}
+            {/* <h3 className="text-base font-medium text-gray-900 mb-1">
               {tpl.title}
-            </h3>
+            </h3> */}
             {selectedTemplates[currentFlow.id] === tpl.id && (
               <div className="flex items-center text-pink-500 mt-2">
                 <Check size={16} className="mr-1" />
