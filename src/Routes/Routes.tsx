@@ -8,7 +8,8 @@ import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
 import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
-import TemplateForm from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFour/TemplateForm";
+import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
+import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
 
 const router = createBrowserRouter([
   {
@@ -23,6 +24,10 @@ const router = createBrowserRouter([
             element: <Home />,
           },
           {
+            path: "home", // This path is now relative to "/" -> "/express-event"
+            element: <HomeSummary />,
+          },
+          {
             path: "express-event", // This path is now relative to "/" -> "/express-event"
             element: <ExpressEvent />,
           },
@@ -32,7 +37,7 @@ const router = createBrowserRouter([
           },
           {
             path: "form",
-            element: <TemplateForm />,
+            element: <RejectionTemplateTwo />,
           },
         ],
       },

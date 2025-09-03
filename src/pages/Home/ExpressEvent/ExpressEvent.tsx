@@ -16,6 +16,8 @@ import { CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
+import Areas from "./Areas/Areas";
+import EmailConfirmation from "./Confirmation/EmailConfirmation";
 
 const ExpressEvent = () => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -48,6 +50,8 @@ const ExpressEvent = () => {
       description: "Please provide your name and email",
     },
   ];
+
+  const [selectedModal, setSelectedModal] = useState<number | null>(null);
 
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -172,7 +176,10 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
-            onNext={handleNext}
+            onNext={(badgeId) => {
+              setSelectedModal(badgeId); // save which badge was selected
+              handleNext(); // go to next step
+            }}
             onPrevious={handlePrevious}
             currentStep={currentStep}
             totalSteps={steps.length}
@@ -180,31 +187,21 @@ const ExpressEvent = () => {
         );
       case 3:
         return (
-          <div className="bg-white rounded-3xl p-8">
-            <h2 className="text-xl fon-poppins font-semibold mb-8 text-gray-800">
-              Confirmation Settings
-            </h2>
-            <p className="text-gray-600">
-              Confirmation settings content will go here...
-            </p>
-            <div className="flex justify-between mt-6 md:mt-8">
-              <button onClick={handlePrevious}>← Previous</button>
-              <button onClick={handleNext}>Next →</button>
-            </div>
-          </div>
+          <EmailConfirmation
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
         );
       case 4:
         return (
-          <div className="bg-white rounded-3xl p-8">
-            <h2 className="text-xl font-semibold mb-8 text-gray-800">
-              Event Areas
-            </h2>
-            <p className="text-gray-600">Event areas content will go here...</p>
-            <div className="flex justify-between mt-6 md:mt-8">
-              <button onClick={handlePrevious}>← Previous</button>
-              <button onClick={handleNext}>Finish</button>
-            </div>
-          </div>
+          <Areas
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
         );
       default:
         return (

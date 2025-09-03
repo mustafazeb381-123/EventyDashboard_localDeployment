@@ -10,6 +10,13 @@ import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
 import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
 import { X } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
+import TemplateFormOne from "./RegistrationTemplates/TemplateOne/TemplateForm";
+import TemplateFormTwo from "./RegistrationTemplates/TemplateTwo/TemplateForm";
+import TemplateFormThree from "./RegistrationTemplates/TemplateThree/TemplateForm";
+import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm";
+import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
+import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
+import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
 
 // Modal Component
 const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
@@ -23,15 +30,12 @@ const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl p-6 md:p-8 w-[80] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-end">
-          {/* <div className="bg-gray-300 hover:bg-gray-50 rounded-2xl p-1"> */}
-
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-800  bg-gray-200 rounded "
+            className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded"
           >
             <X />
           </button>
-          {/* </div> */}
         </div>
 
         {/* Render correct template */}
@@ -57,13 +61,13 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [internalStep, setInternalStep] = useState(0); // 0: selection, 1: confirmation
 
   const templates = [
-    { id: "template-one", img: Assets.images.templateOne },
-    { id: "template-two", img: Assets.images.templateTwo },
-    { id: "template-three", img: Assets.images.templateThree },
-    { id: "template-four", img: Assets.images.templateFour },
-    { id: "template-five", img: Assets.images.templateFive },
-    { id: "template-six", img: Assets.images.templateSix },
-    { id: "template-seven", img: Assets.images.templateSeven },
+    { id: "template-one", component: <TemplateFormOne /> },
+    { id: "template-two", component: <TemplateFormTwo /> },
+    { id: "template-three", component: <TemplateFormThree /> },
+    { id: "template-four", component: <TemplateFormFour /> },
+    { id: "template-five", component: <TemplateFormFive /> },
+    { id: "template-six", component: <TemplateFormSix /> },
+    { id: "template-seven", component: <TemplateFormSeven /> },
   ];
 
   const handleOpenModal = (id) => {
@@ -86,7 +90,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const handleConfirmationNext = () => {
     // Here you can save the final configuration and proceed
     console.log("Template confirmed with settings");
-    // You can call the parent onNext if needed
+    // Call the parent onNext to move to the next main step
     if (onNext) onNext();
   };
 
@@ -96,20 +100,47 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     setSelectedTemplateData(null);
   };
 
+  // Fixed navigation handlers
+  const handlePreviousClick = () => {
+    // Always allow going to the previous main step
+    // Reset internal state when going back to main flow
+    if (internalStep === 1) {
+      // Reset to template selection first, but don't stay there
+      setInternalStep(0);
+      setConfirmedTemplate(null);
+      setSelectedTemplateData(null);
+    }
+    // Always go to previous main step
+    if (onPrevious) onPrevious();
+  };
+
+  const handleNextClick = () => {
+    if (internalStep === 0) {
+      // If we're in template selection
+      if (!confirmedTemplate) {
+        // Require template selection - show message and don't proceed
+        alert("Please select a template before proceeding");
+        return;
+      } else {
+        // If template is confirmed, move to confirmation step
+        setInternalStep(1);
+      }
+    } else {
+      // If we're in confirmation step, proceed to next main step
+      console.log(
+        "Proceeding to next main step with template data:",
+        selectedTemplateData
+      );
+      if (onNext) onNext();
+    }
+  };
+
   const isStep1Active = internalStep === 0;
   const isStep1Completed = internalStep > 0;
   const isStep2Active = internalStep === 1;
 
-  // Show confirmation details if a template is selected
-  if (internalStep === 1 && confirmedTemplate) {
-    return (
-      <ConfirmationDetails
-        selectedTemplateData={selectedTemplateData}
-        onNext={handleConfirmationNext}
-        onPrevious={handleConfirmationPrevious}
-      />
-    );
-  }
+  // Don't render ConfirmationDetails here - handle it in the main flow
+  // This was causing the navigation to break
 
   // Show template selection (default view)
   return (
@@ -177,25 +208,56 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         </div>
       </div>
 
-      {/* Template Grid */}
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {templates.map((tpl) => (
-          <div
-            key={tpl.id}
-            onClick={() => handleOpenModal(tpl.id)}
-            className="border-2 border-gray-200 rounded-3xl p-4 cursor-pointer hover:border-pink-500 transition-colors"
-          >
-            <img
-              src={tpl.img}
-              alt={tpl.id}
-              className="w-full h-48 object-cover rounded-xl"
-            />
+      {/* Main Content Area */}
+      {internalStep === 0 ? (
+        <>
+          {/* Template Grid */}
+          <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {templates.map((tpl) => (
+              <div
+                key={tpl.id}
+                onClick={() => handleOpenModal(tpl.id)}
+                className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
+                  confirmedTemplate === tpl.id
+                    ? "border-pink-500 bg-pink-50"
+                    : "border-gray-200 hover:border-pink-500"
+                }`}
+              >
+                {/* Render the actual template component */}
+                <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
+                  <div className="transform scale-15 pointer-events-none">
+                    <div className="w-[1200px]  ">
+                      {" "}
+                      {/* or whatever your form's real width is */}
+                      {tpl.component}
+                    </div>
+                  </div>
+                </div>
+                {confirmedTemplate === tpl.id && (
+                  <div className="mt-2 flex items-center justify-center">
+                    <Check size={16} className="text-pink-500 mr-1" />
+                    <span className="text-sm text-pink-500 font-medium">
+                      Selected
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        /* Confirmation Step */
+        <div className="mt-8">
+          <ConfirmationDetails
+            selectedTemplateData={selectedTemplateData}
+            onNext={handleConfirmationNext}
+            onPrevious={handleConfirmationPrevious}
+          />
+        </div>
+      )}
 
-      {/* Modal */}
-      {isModalOpen && (
+      {/* Modal - Only show when not in confirmation step */}
+      {isModalOpen && internalStep === 0 && (
         <Modal
           selectedTemplate={selectedTemplate}
           onClose={handleCloseModal}
@@ -203,20 +265,16 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         />
       )}
 
-      {/* Navigation Buttons */}
+      {/* Navigation Buttons - Simplified and consistent */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
         <button
           onClick={onPrevious}
-          disabled={currentStep === 0}
-          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
-            ${
-              currentStep === 0
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
-                : "text-slate-800 border-gray-300 hover:bg-gray-50"
-            }`}
+          disabled={false}
+          className="w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
         >
           ← Previous
         </button>
+
         <button
           onClick={onNext}
           disabled={!confirmedTemplate}
@@ -227,7 +285,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
-          Next →
+          {confirmedTemplate ? "Next →" : "Configure Template"}
         </button>
       </div>
     </div>
