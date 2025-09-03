@@ -51,6 +51,8 @@ const ExpressEvent = () => {
     },
   ];
 
+  const [selectedModal, setSelectedModal] = useState<number | null>(null);
+
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
@@ -174,7 +176,10 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
-            onNext={handleNext}
+            onNext={(badgeId) => {
+              setSelectedModal(badgeId); // save which badge was selected
+              handleNext(); // go to next step
+            }}
             onPrevious={handlePrevious}
             currentStep={currentStep}
             totalSteps={steps.length}

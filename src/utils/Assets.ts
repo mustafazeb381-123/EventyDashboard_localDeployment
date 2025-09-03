@@ -1,5 +1,4 @@
 // src/utils/Assets.ts
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 /* eslint-disable global-require */
 
 // Images
@@ -28,6 +27,23 @@ import background5 from '../assets/images/background5.png';
 import badge1 from '../assets/images/badge1.png';
 import sccLogo from '../assets/images/scc_logo.png';
 
+// Badge variations
+import b1_front from '../assets/images/b1-front.png';
+import b1_back from '../assets/images/b1-back.png';
+import b2_front from '../assets/images/b2-front.png';
+import b2_back from '../assets/images/b2-back.png';
+import b3_front from '../assets/images/b3-front.png';
+import b3_back from '../assets/images/b3-back.png';
+import b4_front from '../assets/images/b4-front.png';
+import b4_back from '../assets/images/b4-back.png';
+import b5_front from '../assets/images/b5-front.png';
+import b5_back from '../assets/images/b5-back.png';
+import b6_front from '../assets/images/b6-front.png';
+import b6_back from '../assets/images/b6-back.png';
+import b7_front from '../assets/images/b7-front.png';
+import b7_back from '../assets/images/b7-back.png';
+import b8_front from '../assets/images/b8-front.png';
+import b8_back from '../assets/images/b8-back.png';
 
 // Icons
 import leftArrow from '../assets/icons/arrow-left.png';
@@ -48,9 +64,9 @@ import thanksEmailTwo from '../assets/icons/thank_email_two.png';
 import confirmationEmailOne from '../assets/icons/confirmation_email_one.png';
 import reminderEmailOne from '../assets/icons/reminder_email_one.png';
 import reminderEmailTwo from '../assets/icons/reminder_email_two.png';
-import label from '../assets/icons/label.png'
-import rejectionEmailOne from '../assets/icons/rejection_email_one.png'
-import rejectionEmailTwo from '../assets/icons/rejection_email_two.png'
+import label from '../assets/icons/label.png';
+import rejectionEmailOne from '../assets/icons/rejection_email_one.png';
+import rejectionEmailTwo from '../assets/icons/rejection_email_two.png';
 
 // Images object
 export const images = {
@@ -78,7 +94,22 @@ export const images = {
   background5,
   badge1,
   sccLogo,
-
+  b1_front,
+  b1_back,
+  b2_front,
+  b2_back,
+  b3_front,
+  b3_back,
+  b4_front,
+  b4_back,
+  b5_front,
+  b5_back,
+  b6_front,
+  b6_back,
+  b7_front,
+  b7_back,
+  b8_front,
+  b8_back,
 } as const;
 
 // Icons object
@@ -99,11 +130,11 @@ export const icons = {
   thanksEmailOne,
   thanksEmailTwo,
   confirmationEmailOne,
-  label,
   reminderEmailOne,
   reminderEmailTwo,
+  label,
   rejectionEmailOne,
-  rejectionEmailTwo
+  rejectionEmailTwo,
 } as const;
 
 // Optional temp object
