@@ -123,15 +123,23 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
             <div className="flex items-center">
               <Button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className=" h-2/3  flex flex-row items-center justify-evenly"
+                className=" h-2/3  flex flex-row items-center justify-evenly cursor-pointer"
               >
                 <img src={Assets.icons.leftArrow} height={24} width={24} />
+              </Button>
+              <div
+                onClick={() => {
+                  naviagte("/");
+                  setIsExpanded(!isExpanded);
+                }}
+                className="cursor-pointer"
+              >
                 <img
                   src={Assets.images.sidebarExpandedLogo}
                   className="w-30 h-1/2"
                   alt=""
                 />
-              </Button>
+              </div>
             </div>
           </div>
         )}
