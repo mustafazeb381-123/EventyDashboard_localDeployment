@@ -67,6 +67,11 @@ import reminderEmailTwo from '../assets/icons/reminder_email_two.png';
 import label from '../assets/icons/label.png';
 import rejectionEmailOne from '../assets/icons/rejection_email_one.png';
 import rejectionEmailTwo from '../assets/icons/rejection_email_two.png';
+import approvedRegistration from '../assets/icons/approved_registration.png'
+import invitationRegistration from '../assets/icons/invitation_registration.png'
+import pendingUsers from '../assets/icons/pending_users.png'
+import todayRegistration from '../assets/icons/today_registration.png'
+import totalRegistration from '../assets/icons/total_registration.png'
 
 // Images object
 export const images = {
@@ -135,6 +140,11 @@ export const icons = {
   label,
   rejectionEmailOne,
   rejectionEmailTwo,
+  approvedRegistration,
+  invitationRegistration,
+  pendingUsers,
+  todayRegistration,
+  totalRegistration
 } as const;
 
 // Optional temp object
