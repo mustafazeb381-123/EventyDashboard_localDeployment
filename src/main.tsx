@@ -5,7 +5,7 @@ import App from "./App.tsx";
 import "./styles/fonts.css"; // 👈 Import font definitions
 
 import { Provider } from "react-redux";
-import { store } from "./RTK/store/store.ts";
+import { store } from "./store/store.ts";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import "../src/utils/i18n"; // Import i18n configuration
 
