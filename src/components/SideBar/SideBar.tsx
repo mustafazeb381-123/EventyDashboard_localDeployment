@@ -13,6 +13,7 @@ import {
   Bell,
   User,
   HomeIcon,
+  NotebookTabs,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -70,7 +71,13 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
       icon: Users,
       label: "Registered Users",
       badge: "20",
-      path: "/regester_user",
+      path: "/regesterd_user",
+    },
+    {
+      icon: NotebookTabs,
+      label: "Agenda",
+      // badge: "20",
+      path: "/agenda",
     },
     {
       icon: UserCheck,

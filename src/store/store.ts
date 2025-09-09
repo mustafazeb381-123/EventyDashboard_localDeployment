@@ -1,5 +1,5 @@
 import { configureStore } from '@reduxjs/toolkit'
-import eventReducer from '../RTK/features/event/eventSlice';
+import eventReducer from '../features/event/eventSlice';
 
 export const store = configureStore({
     reducer: {

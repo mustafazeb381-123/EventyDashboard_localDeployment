@@ -10,6 +10,8 @@ import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
+import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
+import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +28,14 @@ const router = createBrowserRouter([
           {
             path: "home", // This path is now relative to "/" -> "/express-event"
             element: <HomeSummary />,
+          },
+          {
+            path: "regesterd_user", // This path is now relative to "/" -> "/express-event"
+            element: <RegisterdUser />,
+          },
+          {
+            path: "agenda", // This path is now relative to "/" -> "/express-event"
+            element: <Agenda />,
           },
           {
             path: "express-event", // This path is now relative to "/" -> "/express-event"

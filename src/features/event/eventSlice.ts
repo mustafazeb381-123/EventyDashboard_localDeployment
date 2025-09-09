@@ -23,12 +23,17 @@ interface Registration {
     showLocation: boolean;
     showEventDetails: boolean;
 }
+interface Badges {
+
+    selectedBadges: string[];
+}
 
 interface EventState {
     eventType: string | null;
     paymentType: string | null;
     mainData: MainData;
     registration: Registration;
+    badges: Badges
 }
 
 // Payload for registration form
@@ -36,6 +41,7 @@ interface RegistrationFormPayload {
     id: number;
     defaultFields: string[];
 }
+
 
 // --- Initial State ---
 const initialState: EventState = {
@@ -60,6 +66,10 @@ const initialState: EventState = {
         showLocation: false,
         showEventDetails: false,
     },
+    badges: {
+
+        selectedBadges: [],
+    }
 };
 
 // --- Slice ---
