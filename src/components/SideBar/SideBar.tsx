@@ -14,6 +14,10 @@ import {
   User,
   HomeIcon,
   NotebookTabs,
+  GalleryHorizontal,
+  Image,
+  NotebookText,
+  NotepadText,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -74,10 +78,16 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
       path: "/regesterd_user",
     },
     {
-      icon: NotebookTabs,
+      icon: NotepadText,
       label: "Agenda",
       // badge: "20",
       path: "/agenda",
+    },
+    {
+      icon: Image,
+      label: "Galleries",
+      // badge: "20",
+      path: "/galleries",
     },
     {
       icon: UserCheck,
