@@ -327,8 +327,8 @@ function Galleries() {
                 <div
                   className={`absolute inset-0 transition-all duration-200 ${
                     image.selected
-                      ? "bg-blue-500 bg-opacity-20"
-                      : "bg-black bg-opacity-0 group-hover:bg-opacity-10"
+                      ? "backdrop-blur-xs bg-opacity-20"
+                      : " bg-opacity-0 group-hover:bg-opacity-10"
                   }`}
                 >
                   {/* Selection checkbox */}
