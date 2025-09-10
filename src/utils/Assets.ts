@@ -26,6 +26,9 @@ import background4 from '../assets/images/background4.jpg';
 import background5 from '../assets/images/background5.png';
 import badge1 from '../assets/images/badge1.png';
 import sccLogo from '../assets/images/scc_logo.png';
+import temp1 from '../assets/images/temp1.png';
+import temp2 from '../assets/images/temp2.png';
+
 
 // Badge variations
 import b1_front from '../assets/images/b1-front.png';
@@ -110,6 +113,8 @@ export const images = {
   b7_back,
   b8_front,
   b8_back,
+  temp1,
+  temp2
 } as const;
 
 // Icons object

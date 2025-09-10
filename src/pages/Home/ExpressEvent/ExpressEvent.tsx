@@ -1,15 +1,5 @@
 import React, { useState } from "react";
-import {
-  ChevronLeft,
-  Upload,
-  Calendar,
-  Clock,
-  MapPin,
-  Plus,
-  Trash2,
-  Info,
-  X,
-} from "lucide-react";
+import { ChevronLeft, Upload, Calendar, Clock, MapPin, Plus, Trash2, Info, X, } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
@@ -19,8 +9,17 @@ import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
 
+export interface ToggleStates {
+  confirmationMsg: boolean;
+  userQRCode: boolean;
+  location: boolean;
+  eventDetails: boolean;
+}
+
 const ExpressEvent = () => {
+
   const [currentStep, setCurrentStep] = useState(0);
+
   const navigation = useNavigate();
 
   const steps = [
@@ -52,6 +51,17 @@ const ExpressEvent = () => {
   ];
 
   const [selectedModal, setSelectedModal] = useState<number | null>(null);
+
+  const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] = useState(false);
+
+  // 🔹 Match the ToggleStates interface
+
+  const [toggleStates, setToggleStates] = useState<ToggleStates>({
+    confirmationMsg: false,
+    userQRCode: false,
+    location: false,
+    eventDetails: false,
+  });
 
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -167,6 +177,8 @@ const ExpressEvent = () => {
       case 1:
         return (
           <RegistrationForm
+            toggleStates={toggleStates}
+            setToggleStates={setToggleStates}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}
@@ -176,6 +188,7 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
+            toggleStates={toggleStates} // <-- pass toggles here
             onNext={(badgeId) => {
               setSelectedModal(badgeId); // save which badge was selected
               handleNext(); // go to next step
