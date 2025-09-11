@@ -10,6 +10,10 @@ import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
+import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
+import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
+import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
+import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 
 const router = createBrowserRouter([
   {
@@ -26,6 +30,22 @@ const router = createBrowserRouter([
           {
             path: "home", // This path is now relative to "/" -> "/express-event"
             element: <HomeSummary />,
+          },
+          {
+            path: "regesterd_user", // This path is now relative to "/" -> "/express-event"
+            element: <RegisterdUser />,
+          },
+          {
+            path: "agenda", // This path is now relative to "/" -> "/express-event"
+            element: <Agenda />,
+          },
+          {
+            path: "galleries", // This path is now relative to "/" -> "/express-event"
+            element: <Galleries />,
+          },
+          {
+            path: "print_badges", // This path is now relative to "/" -> "/express-event"
+            element: <PrintBadges />,
           },
           {
             path: "express-event", // This path is now relative to "/" -> "/express-event"

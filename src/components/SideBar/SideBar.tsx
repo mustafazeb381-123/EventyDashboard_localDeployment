@@ -13,6 +13,12 @@ import {
   Bell,
   User,
   HomeIcon,
+  NotebookTabs,
+  GalleryHorizontal,
+  Image,
+  NotebookText,
+  NotepadText,
+  Printer,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -70,7 +76,25 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
       icon: Users,
       label: "Registered Users",
       badge: "20",
-      path: "/regester_user",
+      path: "/regesterd_user",
+    },
+    {
+      icon: NotepadText,
+      label: "Agenda",
+      // badge: "20",
+      path: "/agenda",
+    },
+    {
+      icon: Image,
+      label: "Galleries",
+      // badge: "20",
+      path: "/galleries",
+    },
+    {
+      icon: Printer,
+      label: "Print Badges",
+      // badge: "20",
+      path: "/print_badges",
     },
     {
       icon: UserCheck,
@@ -123,15 +147,23 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
             <div className="flex items-center">
               <Button
                 onClick={() => setIsExpanded(!isExpanded)}
-                className=" h-2/3  flex flex-row items-center justify-evenly"
+                className=" h-2/3  flex flex-row items-center justify-evenly cursor-pointer"
               >
                 <img src={Assets.icons.leftArrow} height={24} width={24} />
+              </Button>
+              <div
+                onClick={() => {
+                  naviagte("/");
+                  setIsExpanded(!isExpanded);
+                }}
+                className="cursor-pointer"
+              >
                 <img
                   src={Assets.images.sidebarExpandedLogo}
                   className="w-30 h-1/2"
                   alt=""
                 />
-              </Button>
+              </div>
             </div>
           </div>
         )}

@@ -179,7 +179,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
               <Text
                 size="xs"
                 color="text-red-500"
-                className="animate-slide-down">
+                className="animate-slide-down"
+              >
                 {errors.name.message}
               </Text>
             )}
@@ -199,7 +200,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.email.message}
                 </Text>
               )}
@@ -220,7 +222,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.companyName.message}
                 </Text>
               )}
@@ -240,7 +243,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
                 ) : (
@@ -253,7 +257,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.password.message}
                 </Text>
               )}
@@ -273,7 +278,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
               <button
                 type="button"
                 onClick={toggleConfirmPasswordVisibility}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700">
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
                 {showConfirmPassword ? (
                   <EyeOff className="h-4 w-4" />
                 ) : (
@@ -286,7 +292,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.passwordConfirmation.message}
                 </Text>
               )}
@@ -304,7 +311,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
               />
               <Label
                 htmlFor="agreeTerms"
-                className="text-xs sm:text-sm text-gray-600 leading-relaxed cursor-pointer">
+                className="text-xs sm:text-sm text-gray-600 leading-relaxed cursor-pointer"
+              >
                 {t("agreeTerms")
                   .split("&")
                   .map((part, index) => {
@@ -317,7 +325,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                           <Link
                             key={index}
                             to="/terms"
-                            className="text-blue-600 hover:underline">
+                            className="text-blue-600 hover:underline"
+                          >
                             {t("termsAndConditions")}
                           </Link>
                         );
@@ -328,7 +337,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                             <Link
                               key={index}
                               to="/privacy"
-                              className="text-blue-600 hover:underline">
+                              className="text-blue-600 hover:underline"
+                            >
                               {t("privacyPolicy")}
                             </Link>
                           </>
@@ -344,7 +354,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.agreeTerms.message}
                 </Text>
               )}
@@ -356,7 +367,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
             type="submit"
             disabled={isSubmitting}
             variant="default"
-            className={`${myButtonClass} ${myButtonVariants.default} w-full h-10 sm:h-11 text-sm`}>
+            className={`${myButtonClass} ${myButtonVariants.default} w-full h-10 sm:h-11 text-sm`}
+          >
             {isSubmitting ? "Loading..." : t("nextButton")}
           </Button>
 
@@ -366,7 +378,8 @@ const Step1: React.FC<Step1Props> = ({ onNext, initialData }) => {
               {t("doYouHaveAccount")}{" "}
               <Link
                 to="/login"
-                className="text-blue-600 hover:underline font-medium">
+                className="text-blue-600 hover:underline font-medium"
+              >
                 {t("signInLink")}
               </Link>
             </Text>
@@ -454,7 +467,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.country.message}
                 </Text>
               )}
@@ -474,7 +488,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.city.message}
                 </Text>
               )}
@@ -494,7 +509,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.state.message}
                 </Text>
               )}
@@ -514,7 +530,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.addressLine1.message}
                 </Text>
               )}
@@ -534,7 +551,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.addressLine2.message}
                 </Text>
               )}
@@ -554,7 +572,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
                 <Text
                   size="xs"
                   color="text-red-500"
-                  className="animate-slide-down">
+                  className="animate-slide-down"
+                >
                   {errors.zipCode.message}
                 </Text>
               )}
@@ -566,14 +585,16 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
               type="button"
               onClick={onBack}
               variant="outline"
-              className={`${myButtonClass} ${myButtonVariants.outline} flex-1 h-10 sm:h-11 text-sm`}>
+              className={`${myButtonClass} ${myButtonVariants.outline} flex-1 h-10 sm:h-11 text-sm`}
+            >
               Back
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
               variant="default"
-              className={`${myButtonClass} ${myButtonVariants.default} flex-1 h-10 sm:h-11 text-sm`}>
+              className={`${myButtonClass} ${myButtonVariants.default} flex-1 h-10 sm:h-11 text-sm`}
+            >
               {isSubmitting ? "Loading..." : "Next"}
             </Button>
           </div>
@@ -583,7 +604,8 @@ const Step2: React.FC<Step2Props> = ({ onNext, onBack, initialData }) => {
               {t("doYouHaveAccount")}{" "}
               <Link
                 to="/login"
-                className="text-blue-600 hover:underline font-medium">
+                className="text-blue-600 hover:underline font-medium"
+              >
                 {t("signInLink")}
               </Link>
             </Text>
@@ -772,14 +794,16 @@ const Step3: React.FC<Step3Props> = ({ onNext, onBack, initialData }) => {
               type="button"
               onClick={onBack}
               variant="outline"
-              className={`${myButtonClass} ${myButtonVariants.outline} flex-1 h-10 sm:h-11 text-sm`}>
+              className={`${myButtonClass} ${myButtonVariants.outline} flex-1 h-10 sm:h-11 text-sm`}
+            >
               Back
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
               variant="default"
-              className={`${myButtonClass} ${myButtonVariants.default} flex-1 h-10 sm:h-11 text-sm`}>
+              className={`${myButtonClass} ${myButtonVariants.default} flex-1 h-10 sm:h-11 text-sm`}
+            >
               {isSubmitting ? "Loading..." : "Next"}
             </Button>
           </div>
@@ -789,7 +813,8 @@ const Step3: React.FC<Step3Props> = ({ onNext, onBack, initialData }) => {
               {t("doYouHaveAccount")}{" "}
               <Link
                 to="/login"
-                className="text-blue-600 hover:underline font-medium">
+                className="text-blue-600 hover:underline font-medium"
+              >
                 {t("signInLink")}
               </Link>
             </Text>
@@ -896,7 +921,8 @@ const Step4: React.FC<Step4Props> = ({ onNext, onBack, initialData }) => {
               <Text
                 size="xs"
                 color="text-green-600"
-                className="animate-slide-down">
+                className="animate-slide-down"
+              >
                 File selected: {vatFile.name}
               </Text>
             )}
@@ -929,7 +955,8 @@ const Step4: React.FC<Step4Props> = ({ onNext, onBack, initialData }) => {
               <Text
                 size="xs"
                 color="text-green-600"
-                className="animate-slide-down">
+                className="animate-slide-down"
+              >
                 File selected: {crFile.name}
               </Text>
             )}
@@ -940,14 +967,16 @@ const Step4: React.FC<Step4Props> = ({ onNext, onBack, initialData }) => {
               type="button"
               onClick={onBack}
               variant="outline"
-              className={`${myButtonClass} ${myButtonVariants.outline} flex-1 h-10 sm:h-11 text-sm`}>
+              className={`${myButtonClass} ${myButtonVariants.outline} flex-1 h-10 sm:h-11 text-sm`}
+            >
               Back
             </Button>
             <Button
               type="submit"
               disabled={isSubmitting}
               variant="default"
-              className={`${myButtonClass} ${myButtonVariants.default} flex-1 h-10 sm:h-11 text-sm`}>
+              className={`${myButtonClass} ${myButtonVariants.default} flex-1 h-10 sm:h-11 text-sm`}
+            >
               {isSubmitting ? "Loading..." : "Sign up"}
             </Button>
           </div>
@@ -957,7 +986,8 @@ const Step4: React.FC<Step4Props> = ({ onNext, onBack, initialData }) => {
               {t("doYouHaveAccount")}{" "}
               <Link
                 to="/login"
-                className="text-blue-600 hover:underline font-medium">
+                className="text-blue-600 hover:underline font-medium"
+              >
                 {t("signInLink")}
               </Link>
             </Text>
@@ -1034,7 +1064,6 @@ const Signup: React.FC = () => {
   // bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)]
   return (
     <div className="h-[100svh] p-2 sm:p-4 self-center">
-      
       <div className="flex flex-1 h-full flex-col lg:flex-row gap-2 sm:gap-4">
         <div className="w-full lg:w-1/2 flex rounded-2xl sm:rounded-4xl justify-center items-center flex-col bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)] overflow-hidden p-4 sm:p-6">
           {/* Fixed Logo */}
@@ -1057,7 +1086,7 @@ const Signup: React.FC = () => {
         <div className="hidden lg:flex w-full lg:w-1/2 overflow-hidden rounded-2xl sm:rounded-4xl">
           <img
             className="h-full w-full object-cover object-top"
-            src={AppAssets.images.loginRIghtImage}
+            src={AppAssets.images.loginRightImage}
             alt="Signup illustration"
           />
         </div>

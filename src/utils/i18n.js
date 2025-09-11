@@ -30,5 +30,18 @@ i18n
       escapeValue: false,
     },
   });
+// --- Add direction handling ---
+const updateDir = (lng) => {
+  document.documentElement.dir = lng === "ar" ? "rtl" : "ltr";
+};
+
+// Run once on initial load
+updateDir(i18n.language);
+
+// Update whenever language changes
+i18n.on("languageChanged", (lng) => {
+  updateDir(lng);
+});
+
 
 export default i18n;
