@@ -3,6 +3,9 @@ import axios from 'axios';
 
 const TOKEN_KEY = 'token';
 
+
+
+
 // Your identifier
 // const identifier = storage.getString("identifier"); // Your identifier
 // console.log('Identifier in the axios instance file:', identifier);
