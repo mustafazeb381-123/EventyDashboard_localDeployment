@@ -13,6 +13,7 @@ import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
 import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
 import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
 import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
+import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 
 const router = createBrowserRouter([
   {
@@ -41,6 +42,10 @@ const router = createBrowserRouter([
           {
             path: "galleries", // This path is now relative to "/" -> "/express-event"
             element: <Galleries />,
+          },
+          {
+            path: "print_badges", // This path is now relative to "/" -> "/express-event"
+            element: <PrintBadges />,
           },
           {
             path: "express-event", // This path is now relative to "/" -> "/express-event"

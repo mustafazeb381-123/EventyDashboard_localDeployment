@@ -18,6 +18,7 @@ import {
   Image,
   NotebookText,
   NotepadText,
+  Printer,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -88,6 +89,12 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
       label: "Galleries",
       // badge: "20",
       path: "/galleries",
+    },
+    {
+      icon: Printer,
+      label: "Print Badges",
+      // badge: "20",
+      path: "/print_badges",
     },
     {
       icon: UserCheck,
