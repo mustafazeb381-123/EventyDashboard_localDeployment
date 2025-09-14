@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft, X, Eye } from "lucide-react";
 import Assets from "@/utils/Assets";
+import type { ToggleStates } from "../ExpressEvent";
 
 interface Badge {
   id: number;
@@ -10,16 +11,23 @@ interface Badge {
 }
 
 interface BadgesProps {
+  toggleStates: ToggleStates; // All toggles from RegistrationForm
   onNext: (badgeId: number) => void;
   onPrevious: () => void;
   currentStep: number;
   totalSteps: number;
 }
 
-const Badges: React.FC<BadgesProps> = ({ onNext, onPrevious, currentStep, totalSteps }) => {
+const Badges: React.FC<BadgesProps> = ({
+  onNext,
+  onPrevious,
+  currentStep,
+  totalSteps,
+  toggleStates,
+}) => {
   const [openModal, setOpenModal] = useState(false);
-  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null); // for template use
-  const [previewBadge, setPreviewBadge] = useState<Badge | null>(null);   // for modal preview
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [previewBadge, setPreviewBadge] = useState<Badge | null>(null);
 
   const badges: Badge[] = [
     { id: 1, name: "Badge 1", frontImg: Assets.images.b1_front, backImg: Assets.images.b1_back },
@@ -30,11 +38,8 @@ const Badges: React.FC<BadgesProps> = ({ onNext, onPrevious, currentStep, totalS
     { id: 6, name: "Badge 6", frontImg: Assets.images.b6_front, backImg: Assets.images.b6_back },
     { id: 7, name: "Badge 7", frontImg: Assets.images.b7_front, backImg: Assets.images.b7_back },
     { id: 8, name: "Badge 8", frontImg: Assets.images.b8_front, backImg: Assets.images.b8_back },
-
-    // Add more badges here
   ];
 
-  // Open preview modal only
   const openBadgeModal = (badge: Badge) => {
     setPreviewBadge(badge);
     setOpenModal(true);
@@ -63,83 +68,84 @@ const Badges: React.FC<BadgesProps> = ({ onNext, onPrevious, currentStep, totalS
         {badges.map((badge) => (
           <div
             key={badge.id}
-            className={`relative group border-2 rounded-3xl p-4 transition-colors 
-              ${selectedBadge?.id === badge.id ? "border-green-500" : "border-gray-200 hover:border-blue-500"}`}
+            className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${selectedBadge?.id === badge.id
+              ? "border-green-500 bg-green-50"
+              : "border-gray-200 hover:border-blue-500"
+              }`}
+            onClick={() =>
+              setSelectedBadge(selectedBadge?.id === badge.id ? null : badge)
+            }
           >
-            {/* Badge Image */}
             <img
               src={badge.frontImg}
               alt={badge.name}
-              className="w-full h-90 object-cover object-top rounded-xl"
+              className="w-full  object-cover rounded-xl object-top"
             />
 
-            {/* Preview Button Centered */}
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            {/* Preview Button Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
               <button
-                onClick={() => openBadgeModal(badge)}
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg pointer-events-auto"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openBadgeModal(badge);
+                }}
+                className="flex items-center gap-2 bg-[#2E3166E5] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-colors"
               >
+                <Eye size={16} />
                 Preview
               </button>
-            </div>
-
-
-            {/* Checkbox to Select Badge */}
-            <div className="mt-2 flex justify-center">
-              <label className="flex items-center gap-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={selectedBadge?.id === badge.id}
-                  onChange={() => {
-                    if (selectedBadge?.id === badge.id) {
-                      setSelectedBadge(null); // deselect if already selected
-                    } else {
-                      setSelectedBadge(badge); // select if not selected
-                    }
-                  }}
-                  className="w-4 h-4 accent-blue-500"
-                />
-
-                <span className="text-sm font-poppins">{badge.name}</span>
-              </label>
             </div>
           </div>
         ))}
       </div>
 
+
       {/* Preview Modal */}
       {openModal && previewBadge && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex justify-between mb-2">
+          <div className="bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full md:w-3/4">
+            <div className="flex justify-between mb-4">
               <h2 className="text-xl font-poppins font-semibold">{previewBadge.name}</h2>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded"
-              >
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1">
                 <X />
               </button>
             </div>
-
             <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <img
-                  src={previewBadge.frontImg}
-                  alt={`${previewBadge.name} Front`}
-                  className="max-h-[75vh] w-full object-contain"
-                />
-              </div>
-              <div className="flex-1">
-                <img
-                  src={previewBadge.backImg}
-                  alt={`${previewBadge.name} Back`}
-                  className="max-h-[75vh] w-full object-contain"
-                />
-              </div>
+              <img src={previewBadge.frontImg} alt={`${previewBadge.name} Front`} className="flex-1 max-h-[70vh] w-full object-contain" />
+              <img src={previewBadge.backImg} alt={`${previewBadge.name} Back`} className="flex-1 max-h-[70vh] w-full object-contain" />
             </div>
           </div>
         </div>
       )}
+
+      {/* Display ConfirmationMessage toggle */}
+      <div className="text-xs py-2 flex flex-wrap gap-2 items-center">
+        <h6>
+          Msg:{" "}
+          <span className={toggleStates.confirmationMsg ? "text-green-600" : "text-red-600"}>
+            {toggleStates.confirmationMsg ? "ON" : "OFF"}
+          </span>
+        </h6>
+        <h6>
+          Qr:{" "}
+          <span className={toggleStates.userQRCode ? "text-green-600" : "text-red-600"}>
+            {toggleStates.userQRCode ? "ON" : "OFF"}
+          </span>
+        </h6>
+        <h6>
+          Location:{" "}
+          <span className={toggleStates.location ? "text-green-600" : "text-red-600"}>
+            {toggleStates.location ? "ON" : "OFF"}
+          </span>
+        </h6>
+        <h6>
+          Details:{" "}
+          <span className={toggleStates.eventDetails ? "text-green-600" : "text-red-600"}>
+            {toggleStates.eventDetails ? "ON" : "OFF"}
+          </span>
+        </h6>
+      </div>
+
 
       {/* Navigation Buttons */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
@@ -150,7 +156,6 @@ const Badges: React.FC<BadgesProps> = ({ onNext, onPrevious, currentStep, totalS
         >
           ← Previous
         </button>
-
         <button
           onClick={selectBadgeAndContinue}
           disabled={!selectedBadge}
