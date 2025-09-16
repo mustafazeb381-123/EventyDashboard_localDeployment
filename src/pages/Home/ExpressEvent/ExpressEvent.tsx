@@ -1,5 +1,15 @@
 import React, { useState } from "react";
-import { ChevronLeft, Upload, Calendar, Clock, MapPin, Plus, Trash2, Info, X, } from "lucide-react";
+import {
+  ChevronLeft,
+  Upload,
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  Trash2,
+  Info,
+  X,
+} from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
@@ -17,7 +27,6 @@ export interface ToggleStates {
 }
 
 const ExpressEvent = () => {
-
   const [currentStep, setCurrentStep] = useState(0);
 
   const navigation = useNavigate();
@@ -52,7 +61,8 @@ const ExpressEvent = () => {
 
   const [selectedModal, setSelectedModal] = useState<number | null>(null);
 
-  const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] = useState(false);
+  const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] =
+    useState(false);
 
   // 🔹 Match the ToggleStates interface
 

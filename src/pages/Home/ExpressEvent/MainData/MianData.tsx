@@ -8,12 +8,13 @@ import {
   Info,
   XCircle,
   ChevronLeft,
+  Loader2,
 } from "lucide-react";
-import { eventPostApi } from "@/apis/apiHelpers";
 import { toast } from "react-toastify";
 
 const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [newGuestType, setNewGuestType] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     eventName: "",
     description: "",
@@ -27,13 +28,61 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     eventLogo: null,
   });
   const [logoError, setLogoError] = useState("");
+  const [validationErrors, setValidationErrors] = useState({});
   const fileInputRef = useRef(null);
 
-  const handleInputChange = (field: any, value: any) => {
+  const handleInputChange = (field, value) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [field]: "",
+      }));
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.eventName.trim()) {
+      errors.eventName = "Event name is required";
+    }
+
+    if (!formData.description.trim()) {
+      errors.description = "Description is required";
+    }
+
+    if (!formData.dateFrom) {
+      errors.dateFrom = "Start date is required";
+    }
+
+    if (!formData.dateTo) {
+      errors.dateTo = "End date is required";
+    }
+
+    if (
+      formData.dateFrom &&
+      formData.dateTo &&
+      formData.dateFrom > formData.dateTo
+    ) {
+      errors.dateTo = "End date must be after start date";
+    }
+
+    if (!formData.location.trim()) {
+      errors.location = "Location is required";
+    }
+
+    if (formData.guestTypes.length === 0) {
+      errors.guestTypes = "At least one guest type is required";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleFileChange = (e) => {
@@ -101,6 +150,14 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       guestTypes: [...prev.guestTypes, newGuestType.trim()],
     }));
     setNewGuestType("");
+
+    // Clear validation error when guest type is added
+    if (validationErrors.guestTypes) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        guestTypes: "",
+      }));
+    }
   };
 
   const removeGuestType = (index) => {
@@ -116,14 +173,65 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     }
   };
 
-  const handleEventPostApiCall = async () => {
-    const formData = {};
+  const handleNext = async () => {
+    // Validate the form first
+    if (!validateForm()) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const response = await eventPostApi(formData);
-      console.log("response of post api of event :", response);
-      toast.success(response.data.message);
+      // Call the API to save the data for the current step
+      await handleEventPostApiCall();
+
+      // If the API call is successful, move to the next screen
+      onNext();
     } catch (error) {
-      console.log("error of event api :", error);
+      // The API call failed. The user will remain on the current screen,
+      // and the error is already handled by the toast in the API helper.
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEventPostApiCall = async () => {
+    try {
+      const response = await eventPostApi({
+        "event[name]": formData.eventName,
+        "event[about]": formData.description,
+        "event[location]": formData.location,
+        "event[require_approval]": formData.requireApproval.toString(),
+        "event[primary_color]": "#ff0000",
+        "event[secondary_color]": "#00ff00",
+        "event[event_date_from]": formData.dateFrom
+          ?.toISOString()
+          .split("T")[0],
+        "event[event_date_to]": formData.dateTo?.toISOString().split("T")[0],
+        "event[time_from]": formData.timeFrom,
+        "event[time_to]": formData.timeTo,
+        "event[logo]": formData.eventLogo,
+        // Guest types
+        ...formData.guestTypes.reduce((acc, type, index) => {
+          acc[`event[badges_attributes][${index}][name]`] = type;
+          acc[`event[badges_attributes][${index}][default]`] =
+            index === 0 ? "true" : "false";
+          return acc;
+        }, {} as Record<string, any>),
+      });
+      console.log("response of event data :", response);
+      // Success toast message
+      toast.success(response.data.message || "Event data saved successfully!");
+      return response;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        "Error saving event data";
+      // Error toast message
+      toast.error(errorMessage);
+      console.log("error of event data", error);
+      throw error; // Re-throw the error so the calling function can catch it
     }
   };
 
@@ -242,34 +350,52 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Event Name
+              Event Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               placeholder="Event name"
               value={formData.eventName}
               onChange={(e) => handleInputChange("eventName", e.target.value)}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors"
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors ${
+                validationErrors.eventName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
+            {validationErrors.eventName && (
+              <p className="mt-1 text-xs text-red-600">
+                {validationErrors.eventName}
+              </p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description
+              Description <span className="text-red-500">*</span>
             </label>
             <textarea
               placeholder="Enter a description..."
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
               rows={3}
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm resize-none transition-colors"
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm resize-none transition-colors ${
+                validationErrors.description
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
+            {validationErrors.description && (
+              <p className="mt-1 text-xs text-red-600">
+                {validationErrors.description}
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date From
+                Date From <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -284,12 +410,21 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                     e.target.value ? new Date(e.target.value) : undefined
                   )
                 }
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.dateFrom
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
+              {validationErrors.dateFrom && (
+                <p className="mt-1 text-xs text-red-600">
+                  {validationErrors.dateFrom}
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                To
+                To <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -304,8 +439,15 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                     e.target.value ? new Date(e.target.value) : undefined
                   )
                 }
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.dateTo ? "border-red-500" : "border-gray-300"
+                }`}
               />
+              {validationErrors.dateTo && (
+                <p className="mt-1 text-xs text-red-600">
+                  {validationErrors.dateTo}
+                </p>
+              )}
             </div>
           </div>
 
@@ -336,7 +478,7 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Location
+              Location <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
@@ -344,10 +486,19 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                 placeholder="Event location"
                 value={formData.location}
                 onChange={(e) => handleInputChange("location", e.target.value)}
-                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.location
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
               <MapPin className="absolute right-3 top-2.5 sm:top-3.5 h-4 w-4 text-gray-400" />
             </div>
+            {validationErrors.location && (
+              <p className="mt-1 text-xs text-red-600">
+                {validationErrors.location}
+              </p>
+            )}
           </div>
         </div>
 
@@ -356,7 +507,7 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <label className="block text-sm font-medium text-gray-700">
-                Add Guest Types
+                Add Guest Types <span className="text-red-500">*</span>
               </label>
               <Info size={14} className="text-gray-400 flex-shrink-0" />
             </div>
@@ -377,6 +528,11 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                 Add
               </button>
             </div>
+            {validationErrors.guestTypes && (
+              <p className="mb-2 text-xs text-red-600">
+                {validationErrors.guestTypes}
+              </p>
+            )}
           </div>
 
           <div>
@@ -414,10 +570,10 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
         <button
           onClick={onPrevious}
-          disabled={currentStep === 0}
+          disabled={currentStep === 0 || isLoading}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
             ${
-              currentStep === 0
+              currentStep === 0 || isLoading
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
                 : "text-slate-800 border-gray-300 hover:bg-gray-50"
             }`}
@@ -425,16 +581,25 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           ← Previous
         </button>
         <button
-          onClick={onNext}
-          disabled={currentStep === totalSteps - 1}
-          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
+          onClick={handleNext}
+          disabled={isLoading}
+          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
             ${
-              currentStep === totalSteps - 1
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+              isLoading
+                ? "bg-slate-600 cursor-not-allowed text-white"
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
-          {currentStep === totalSteps - 1 ? "Finish" : "Next →"}
+          {isLoading ? (
+            <>
+              <Loader2 size={16} className="animate-spin" />
+              {currentStep === totalSteps - 1 ? "Creating..." : "Loading..."}
+            </>
+          ) : currentStep === totalSteps - 1 ? (
+            "Create Event"
+          ) : (
+            "Next →"
+          )}
         </button>
       </div>
 
@@ -452,3 +617,18 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 };
 
 export default MainData;
+function eventPostApi(arg0: {
+  "event[name]": string;
+  "event[about]": string;
+  "event[location]": string;
+  "event[require_approval]": string;
+  "event[primary_color]": string;
+  "event[secondary_color]": string;
+  "event[event_date_from]": any;
+  "event[event_date_to]": any;
+  "event[time_from]": string;
+  "event[time_to]": string;
+  "event[logo]": null;
+}) {
+  throw new Error("Function not implemented.");
+}
