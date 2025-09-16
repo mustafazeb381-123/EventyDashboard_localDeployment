@@ -1,5 +1,6 @@
 {
   "title": "Sign up",
+  "signupTitle": "Create Account",
   "step1Title": "Your data",
   "step2Title": "Company Address",
   "step3Title": "Money transfer data",
@@ -13,9 +14,9 @@
   "passwordLabel": "Password*",
   "passwordPlaceholder": "Password",
   "confirmPasswordPlaceholder": "Confirm Password",
-  "nextButton": "Next",
   "signupButton": "Sign Up",
   "doYouHaveAccount": "Do you have an account?",
+  "alreadyHaveAccount": "Already have an account?",
   "signInLink": "Sign in",
   "loginLink": "Login",
   "agreeTerms": "Agree to the Terms and Conditions and Privacy Policy",
@@ -34,3 +35,4 @@
   },
   "successMessage": "Signup successful! You can now login."
 }
+
