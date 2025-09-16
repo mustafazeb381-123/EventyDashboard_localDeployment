@@ -421,8 +421,14 @@ function Agenda() {
 
       {/* Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div
+          onClick={() => setIsModalOpen(false)}
+          className="fixed inset-0 bg-black/50 shadow-xl  backdrop-blur-sm flex overflow-y-autoitems-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto transform animate-in zoom-in-95 duration-200"
+          >
             <div className="p-6">
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
