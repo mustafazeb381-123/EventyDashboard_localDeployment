@@ -51,9 +51,9 @@ function Login() {
       password: password,
     };
     try {
-      // const response = await loginApi(data);
-      // console.log("reponse", response);
-      await localStorage.setItem("token", "123");
+      const response = await loginApi(data);
+      console.log("reponse", response);
+      // await localStorage.setItem("token", response);
       toast.success("Logged in successfully!");
       setTimeout(() => {
         navigate("/");
