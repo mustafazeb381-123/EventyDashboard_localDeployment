@@ -4,14 +4,18 @@ import type { SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import AppAssets from "@/utils/Assets";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { myButtonClass, myButtonVariants } from "@/components/ui/myButton";
 import { Text } from "@/components/ui/text";
+
+import { signupApi } from "@/apis/apiHelpers";
 
 interface SignupFormData {
   name: string;
@@ -21,23 +25,41 @@ interface SignupFormData {
   passwordConfirmation: string;
 }
 
-const RHFInput = React.forwardRef<HTMLInputElement, any>((props, ref) => <Input ref={ref} {...props} />);
+const RHFInput = React.forwardRef<HTMLInputElement, any>((props, ref) => (
+  <Input ref={ref} {...props} />
+));
 RHFInput.displayName = "RHFInput";
 
 const Signup: React.FC = () => {
   const { t } = useTranslation("signupPage");
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const validationSchema = yup.object({
     name: yup.string().trim().required(t("errorMessages.nameRequired")),
     company: yup.string().trim().required(t("errorMessages.companyRequired")),
-    email: yup.string().trim().email(t("errorMessages.invalidEmail")).required(t("errorMessages.emailRequired")),
-    password: yup.string().min(8, t("errorMessages.passwordMinLength")).required(t("errorMessages.passwordRequired")),
-    passwordConfirmation: yup.string().oneOf([yup.ref("password")], t("errorMessages.passwordMismatch")).required(t("errorMessages.confirmPasswordRequired")),
+    email: yup
+      .string()
+      .trim()
+      .email(t("errorMessages.invalidEmail"))
+      .required(t("errorMessages.emailRequired")),
+    password: yup
+      .string()
+      .min(8, t("errorMessages.passwordMinLength"))
+      .required(t("errorMessages.passwordRequired")),
+    passwordConfirmation: yup
+      .string()
+      .oneOf([yup.ref("password")], t("errorMessages.passwordMismatch"))
+      .required(t("errorMessages.confirmPasswordRequired")),
   });
 
-  const { register, handleSubmit, setError, formState: { errors, isSubmitting } } = useForm<SignupFormData>({
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupFormData>({
     resolver: yupResolver(validationSchema),
   });
 
@@ -50,50 +72,48 @@ const Signup: React.FC = () => {
         password: data.password,
         password_confirmation: data.passwordConfirmation,
       };
-      console.log("Submitting payload:", payload);
+      console.log("Signup payload:", payload);
 
-      const response = await fetch(
-        "https://scceventy.dev/en/api_dashboard/v1/users/sign_up",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await signupApi(payload);
+      console.log("Signup response:", response);
 
-      let result: any;
-      try {
-        result = await response.json();
-      } catch {
-        const text = await response.text();
-        console.error("Server returned non-JSON:", text);
-        alert("Server error. Please try again later.");
-        return;
-      }
+      // const token =
+      //   response.headers["access-token"] || response.data?.data?.token;
 
-      if (response.ok) {
-        alert(result?.message || "Signup successful!");
-      } else {
-        console.error("Signup error:", result);
+      // if (token) {
+      //   console.log("Token:", token);
+      //   localStorage.setItem("token", token);
+      // }
 
-        if (result?.errors) {
-          Object.entries(result.errors).forEach(([field, messages]) => {
-            const key = field === "password_confirmation" ? "passwordConfirmation" : (field as keyof SignupFormData);
+      toast.success(response?.data?.message || "Signup successful!");
+      setTimeout(() => navigate("/login"), 1000);
+    } catch (error: any) {
+      console.error("Signup error:", error);
+
+      if (error?.response?.data?.errors) {
+        Object.entries(error.response.data.errors).forEach(
+          ([field, messages]) => {
+            const key =
+              field === "password_confirmation"
+                ? "passwordConfirmation"
+                : (field as keyof SignupFormData);
             setError(key, { message: (messages as string[]).join(", ") });
-          });
-        } else if (result?.error) {
-          alert(result.error);
-        } else {
-          alert(result?.message || "Signup failed");
-        }
+          }
+        );
+      } else if (error?.response?.data?.error) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error("Signup failed. Please try again.");
       }
-    } catch (error) {
-      console.error("Network error:", error);
-      alert("Something went wrong. Please try again.");
     }
   };
 
-  const renderPasswordInput = (id: keyof SignupFormData, placeholder: string, show: boolean, toggle: () => void) => (
+  const renderPasswordInput = (
+    id: keyof SignupFormData,
+    placeholder: string,
+    show: boolean,
+    toggle: () => void
+  ) => (
     <div className="relative">
       <RHFInput
         id={id}
@@ -109,11 +129,19 @@ const Signup: React.FC = () => {
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
-      {errors[id] && <Text size="xs" color="text-red-500" className="animate-slide-down">{errors[id]?.message}</Text>}
+      {errors[id] && (
+        <Text size="xs" color="text-red-500" className="animate-slide-down">
+          {errors[id]?.message}
+        </Text>
+      )}
     </div>
   );
 
-  const renderInput = (id: keyof SignupFormData, placeholder: string, type: string = "text") => (
+  const renderInput = (
+    id: keyof SignupFormData,
+    placeholder: string,
+    type: string = "text"
+  ) => (
     <>
       <RHFInput
         id={id}
@@ -122,7 +150,11 @@ const Signup: React.FC = () => {
         {...register(id)}
         className="w-full h-10 sm:h-11 text-sm border-[#A3ADBC] rounded-2xl"
       />
-      {errors[id] && <Text size="xs" color="text-red-500" className="animate-slide-down">{errors[id]?.message}</Text>}
+      {errors[id] && (
+        <Text size="xs" color="text-red-500" className="animate-slide-down">
+          {errors[id]?.message}
+        </Text>
+      )}
     </>
   );
 
@@ -132,8 +164,14 @@ const Signup: React.FC = () => {
         {/* Left side - Form */}
         <div className="w-full lg:w-1/2 flex rounded-2xl sm:rounded-4xl justify-center items-center flex-col bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)] overflow-hidden p-4 sm:p-6">
           <div className="pb-2 flex flex-col items-center">
-            <img className="h-[60px] sm:h-[80px]" src={AppAssets.images.eventyLoginLogo} alt="Eventy Logo" />
-            <span className="pb-2 text-lg font-semibold text-[#0F4999]">Signup</span>
+            <img
+              className="h-[60px] sm:h-[80px]"
+              src={AppAssets.images.eventyLoginLogo}
+              alt="Eventy Logo"
+            />
+            <span className="pb-2 text-lg font-semibold text-[#0F4999]">
+              Signup
+            </span>
           </div>
 
           <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">
@@ -141,17 +179,37 @@ const Signup: React.FC = () => {
               {renderInput("name", t("namePlaceholder"))}
               {renderInput("company", t("companyPlaceholder"))}
               {renderInput("email", t("emailPlaceholder"), "email")}
-              {renderPasswordInput("password", t("passwordPlaceholder"), showPassword, () => setShowPassword(!showPassword))}
-              {renderPasswordInput("passwordConfirmation", t("confirmPasswordPlaceholder"), showConfirmPassword, () => setShowConfirmPassword(!showConfirmPassword))}
+              {renderPasswordInput(
+                "password",
+                t("passwordPlaceholder"),
+                showPassword,
+                () => setShowPassword(!showPassword)
+              )}
+              {renderPasswordInput(
+                "passwordConfirmation",
+                t("confirmPasswordPlaceholder"),
+                showConfirmPassword,
+                () => setShowConfirmPassword(!showConfirmPassword)
+              )}
 
-              <Button type="submit" disabled={isSubmitting} variant="default" className={`${myButtonClass} ${myButtonVariants.default} w-full h-10 sm:h-11 text-sm`}>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                variant="default"
+                className={`${myButtonClass} ${myButtonVariants.default} w-full h-10 sm:h-11 text-sm`}
+              >
                 {isSubmitting ? "Loading..." : t("nextButton")}
               </Button>
 
               <div className="text-center pt-1">
                 <Text size="xs" color="text-gray-600">
                   {t("doYouHaveAccount")}{" "}
-                  <Link to="/login" className="text-blue-600 hover:underline font-medium">{t("signInLink")}</Link>
+                  <Link
+                    to="/login"
+                    className="text-blue-600 hover:underline font-medium"
+                  >
+                    {t("signInLink")}
+                  </Link>
                 </Text>
               </div>
             </form>
@@ -160,7 +218,11 @@ const Signup: React.FC = () => {
 
         {/* Right side Image */}
         <div className="hidden lg:flex w-full lg:w-1/2 overflow-hidden rounded-2xl sm:rounded-4xl">
-          <img className="h-full w-full object-cover object-top" src={AppAssets.images.loginRightImage} alt="Signup illustration" />
+          <img
+            className="h-full w-full object-cover object-top"
+            src={AppAssets.images.loginRightImage}
+            alt="Signup illustration"
+          />
         </div>
       </div>
     </div>

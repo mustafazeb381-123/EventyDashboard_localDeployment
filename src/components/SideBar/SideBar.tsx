@@ -142,7 +142,11 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
               onClick={() => setIsExpanded(!isExpanded)}
               className="h-20 w-20"
             >
-              <img src={Assets.images.sideBarLogo} alt="" />
+              <img
+                style={{ cursor: "pointer" }}
+                src={Assets.images.sideBarLogo}
+                alt=""
+              />
             </Button>
           </div>
         )}

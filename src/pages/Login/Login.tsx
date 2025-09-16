@@ -53,7 +53,14 @@ function Login() {
     try {
       const response = await loginApi(data);
       console.log("reponse", response);
-      // await localStorage.setItem("token", response);
+      const token =
+        response.headers["access-token"] || response.data?.data?.token;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        console.log("Token saved:", token);
+      }
+
       toast.success("Logged in successfully!");
       setTimeout(() => {
         navigate("/");
