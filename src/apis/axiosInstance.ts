@@ -11,10 +11,10 @@ const TOKEN_KEY = 'token';
 // console.log('Identifier in the axios instance file:', identifier);
 const axiosInstance = axios.create({
   baseURL: `https:scceventy.dev/en/api_dashboard/v1`, // Your API URL
-  headers: {
-    'Content-Type': 'application/json',
+  // headers: {
+  //   'Content-Type': 'application/json',
 
-  },
+  // },
 });
 
 // Request Interceptor
