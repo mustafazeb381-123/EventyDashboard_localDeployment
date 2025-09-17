@@ -225,43 +225,56 @@ const MainData = ({
       setIsLoading(false);
     }
   };
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
   const handleEventPostApiCall = async () => {
+    console.log("formData to be sent:", formData);
+
+    const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
+    // Convert logo to base64 if it exists
+    let logoBase64: string | null = null;
+    if (formData.eventLogo) {
+      logoBase64 = await fileToBase64(formData.eventLogo);
+    }
+
+    const payload: any = {
+      event: {
+        name: formData.eventName,
+        about: formData.description,
+        location: formData.location,
+        require_approval: formData.requireApproval,
+        primary_color: "#ff0000",
+        secondary_color: "#00ff00",
+        event_type: "express",
+        event_date_from: formData.dateFrom
+          ? formData.dateFrom.toISOString().split("T")[0]
+          : "",
+        event_date_to: formData.dateTo
+          ? formData.dateTo.toISOString().split("T")[0]
+          : "",
+        event_time_from: formData.timeFrom
+          ? ensureSeconds(formData.timeFrom)
+          : "",
+        event_time_to: formData.timeTo ? ensureSeconds(formData.timeTo) : "",
+        logo_url: formData.eventLogo,
+        template: "form", // ✅ Added
+        badges_attributes: formData.guestTypes.map((type, index) => ({
+          name: type,
+          default: index === 0,
+        })),
+      },
+      locale: "en", // ✅ Added
+    };
+
+    console.log("payload data: ", payload);
     try {
-      console.log("formData to be sent:", formData);
-
-      const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
-
-      const payload: any = {
-        event: {
-          name: formData.eventName,
-          about: formData.description,
-          location: formData.location,
-          require_approval: formData.requireApproval,
-          primary_color: "#ff0000",
-          secondary_color: "#00ff00",
-          event_type: "express",
-          event_date_from: formData.dateFrom
-            ? formData.dateFrom.toISOString().split("T")[0]
-            : undefined,
-          event_date_to: formData.dateTo
-            ? formData.dateTo.toISOString().split("T")[0]
-            : undefined,
-          event_time_from: formData.timeFrom
-            ? ensureSeconds(formData.timeFrom)
-            : undefined,
-          event_time_to: formData.timeTo
-            ? ensureSeconds(formData.timeTo)
-            : undefined,
-          // logo_sign_id: logoSignedId,
-          logo: formData.eventLogo,
-          badges_attributes: formData.guestTypes.map((type, index) => ({
-            name: type,
-            default: index === 0,
-          })),
-        },
-      };
-
       const response = await api.eventPostAPi(payload);
 
       console.log("response of event data :", response);

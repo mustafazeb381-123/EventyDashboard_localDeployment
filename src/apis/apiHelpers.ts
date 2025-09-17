@@ -31,8 +31,8 @@ export const loginApi = (data: any) =>
 
 export const eventPostAPi = (payload: any) => {
   return axiosInstance.post("/events", payload, {
-    headers: {
-      "Content-Type": "application/json",
-    },
+    // headers: {
+    //   "Content-Type": "application/json",
+    // },
   });
 };
