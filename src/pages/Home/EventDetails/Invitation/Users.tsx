@@ -168,7 +168,10 @@ function Users() {
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-blue-600/25 hover:shadow-xl hover:shadow-blue-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700
+               text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-blue-600/25 
+               hover:shadow-xl hover:shadow-blue-600/30 transition-all
+                duration-200 transform hover:-translate-y-0.5 cursor-pointer"
             >
               <Plus size={18} />
               New Invitation
@@ -394,7 +397,10 @@ function Users() {
 
       {/* Modal (unchanged) */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+        <div
+          onClick={() => setShowModal(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
               <div>
@@ -407,7 +413,7 @@ function Users() {
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
@@ -519,14 +525,14 @@ function Users() {
             <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200/60">
               <button
                 onClick={() => setShowModal(false)}
-                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleNewInvitation}
                 disabled={isLoading}
-                className={`flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
+                className={` flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
                   isLoading ? "animate-pulse" : ""
                 }`}
               >

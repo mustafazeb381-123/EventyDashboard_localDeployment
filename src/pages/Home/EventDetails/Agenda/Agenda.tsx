@@ -4,21 +4,52 @@ import {
   Trash2,
   Edit,
   X,
-  Calendar,
-  Clock,
   MapPin,
   CreditCard,
   DollarSign,
 } from "lucide-react";
 
+type Speaker = {
+  id: number;
+  name: string;
+  avatar: string | null;
+};
+
+type Session = {
+  id: number;
+  title: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  type: string;
+  speakers: Speaker[];
+  additionalSpeakers?: number;
+  speakerName?: string;
+};
+
+type FormState = {
+  title: string;
+  date: Date | undefined;
+  timeFrom: string; // HH:mm
+  timeTo: string; // HH:mm
+  location: string;
+  speakers: number[];
+  display: boolean;
+  requiredEnrollment: boolean;
+  paid: boolean;
+  price: string;
+  onlinePayment: boolean;
+  cashPayment: boolean;
+};
+
 function Agenda() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSessions, setSelectedSessions] = useState([]);
-  const [formData, setFormData] = useState({
+  const [selectedSessions, setSelectedSessions] = useState<number[]>([]);
+  const [formData, setFormData] = useState<FormState>({
     title: "",
-    date: "25/07/2025",
-    timeFrom: "09:00 AM",
-    timeTo: "05:00 PM",
+    date: undefined as Date | undefined,
+    timeFrom: "09:00",
+    timeTo: "05:00",
     location: "",
     speakers: [],
     display: true,
@@ -29,7 +60,7 @@ function Agenda() {
     cashPayment: false,
   });
 
-  const [sessions] = useState([
+  const [sessions] = useState<Session[]>([
     {
       id: 1,
       title: "Title One",
@@ -182,7 +213,7 @@ function Agenda() {
     },
   ]);
 
-  const availableSpeakers = [
+  const availableSpeakers: Speaker[] = [
     {
       id: 1,
       name: "Liam Anderson",
@@ -203,9 +234,9 @@ function Agenda() {
     },
   ];
 
-  const [selectedSpeakers, setSelectedSpeakers] = useState([1, 2]);
+  const [selectedSpeakers, setSelectedSpeakers] = useState<number[]>([1, 2]);
 
-  const handleSelectAll = (e) => {
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       setSelectedSessions(sessions.map((session) => session.id));
     } else {
@@ -213,23 +244,26 @@ function Agenda() {
     }
   };
 
-  const handleSelectSession = (sessionId) => {
-    setSelectedSessions((prev) =>
+  const handleSelectSession = (sessionId: number) => {
+    setSelectedSessions((prev: number[]) =>
       prev.includes(sessionId)
         ? prev.filter((id) => id !== sessionId)
         : [...prev, sessionId]
     );
   };
 
-  const handleSpeakerToggle = (speakerId) => {
-    setSelectedSpeakers((prev) =>
+  const handleSpeakerToggle = (speakerId: number) => {
+    setSelectedSpeakers((prev: number[]) =>
       prev.includes(speakerId)
         ? prev.filter((id) => id !== speakerId)
         : [...prev, speakerId]
     );
   };
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = <K extends keyof FormState>(
+    field: K,
+    value: FormState[K]
+  ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -238,7 +272,13 @@ function Agenda() {
     setIsModalOpen(false);
   };
 
-  const SpeakerAvatar = ({ speaker, size = "w-8 h-8" }) => {
+  const SpeakerAvatar = ({
+    speaker,
+    size = "w-8 h-8",
+  }: {
+    speaker: Speaker;
+    size?: string;
+  }) => {
     if (speaker.avatar) {
       return (
         <img
@@ -268,7 +308,7 @@ function Agenda() {
     );
   };
 
-  const SpeakersDisplay = ({ session }) => {
+  const SpeakersDisplay = ({ session }: { session: Session }) => {
     if (session.speakers.length > 5) {
       const visibleSpeakers = session.speakers.slice(0, 5);
       return (
@@ -322,7 +362,7 @@ function Agenda() {
             </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               Add Sessions
@@ -437,7 +477,7 @@ function Agenda() {
                 </h2>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -467,17 +507,21 @@ function Agenda() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Date
                     </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={formData.date}
-                        onChange={(e) =>
-                          handleInputChange("date", e.target.value)
-                        }
-                        className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                      />
-                      <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    </div>
+                    <input
+                      type="date"
+                      value={
+                        formData.date
+                          ? formData.date.toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        handleInputChange(
+                          "date",
+                          e.target.value ? new Date(e.target.value) : undefined
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    />
                   </div>
 
                   {/* Time */}
@@ -486,33 +530,27 @@ function Agenda() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         Time From
                       </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={formData.timeFrom}
-                          onChange={(e) =>
-                            handleInputChange("timeFrom", e.target.value)
-                          }
-                          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                        <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      </div>
+                      <input
+                        type="time"
+                        value={formData.timeFrom}
+                        onChange={(e) =>
+                          handleInputChange("timeFrom", e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
                         To
                       </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={formData.timeTo}
-                          onChange={(e) =>
-                            handleInputChange("timeTo", e.target.value)
-                          }
-                          className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                        />
-                        <Clock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      </div>
+                      <input
+                        type="time"
+                        value={formData.timeTo}
+                        onChange={(e) =>
+                          handleInputChange("timeTo", e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                      />
                     </div>
                   </div>
 
@@ -728,7 +766,7 @@ function Agenda() {
               <div className="mt-8">
                 <button
                   onClick={handleSubmit}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Plus className="w-5 h-5" />
                   Add Sessions

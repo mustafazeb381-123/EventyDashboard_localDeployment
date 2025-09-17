@@ -1,7 +1,6 @@
 import React, { useState, useRef } from "react";
 import {
   Upload,
-  Calendar,
   MapPin,
   Plus,
   Trash2,
@@ -11,11 +10,37 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "react-toastify";
+import * as api from "../../../../apis/apiHelpers";
 
-const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
-  const [newGuestType, setNewGuestType] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
+type MainDataProps = {
+  onNext: () => void;
+  onPrevious: () => void;
+  currentStep: number;
+  totalSteps: number;
+};
+
+type MainFormData = {
+  eventName: string;
+  description: string;
+  dateFrom: Date | undefined;
+  dateTo: Date | undefined;
+  timeFrom: string; // HH:MM
+  timeTo: string; // HH:MM
+  location: string;
+  requireApproval: boolean;
+  guestTypes: string[];
+  eventLogo: File | null;
+};
+
+const MainData = ({
+  onNext,
+  onPrevious,
+  currentStep,
+  totalSteps,
+}: MainDataProps) => {
+  const [newGuestType, setNewGuestType] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
     description: "",
     dateFrom: undefined,
@@ -27,27 +52,32 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     guestTypes: [],
     eventLogo: null,
   });
-  const [logoError, setLogoError] = useState("");
-  const [validationErrors, setValidationErrors] = useState({});
-  const fileInputRef = useRef(null);
+  const [logoError, setLogoError] = useState<string>("");
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handleInputChange = (field, value) => {
+  const handleInputChange = <K extends keyof MainFormData>(
+    field: K,
+    value: MainFormData[K]
+  ) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
 
     // Clear validation error when user starts typing
-    if (validationErrors[field]) {
+    if (validationErrors[String(field)]) {
       setValidationErrors((prev) => ({
         ...prev,
-        [field]: "",
+        [String(field)]: "",
       }));
     }
   };
 
   const validateForm = () => {
-    const errors = {};
+    const errors: Record<string, string> = {};
 
     if (!formData.eventName.trim()) {
       errors.eventName = "Event name is required";
@@ -85,8 +115,9 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    const file = files && files[0];
     if (file) {
       setLogoError("");
       if (file.size > 2 * 1024 * 1024) {
@@ -105,10 +136,10 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    const file = e.dataTransfer.files[0];
+    const file = e.dataTransfer.files && e.dataTransfer.files[0];
     if (file) {
       setLogoError("");
       if (file.size > 2 * 1024 * 1024) {
@@ -127,7 +158,7 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     }
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -160,14 +191,14 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     }
   };
 
-  const removeGuestType = (index) => {
+  const removeGuestType = (index: number) => {
     setFormData((prev) => ({
       ...prev,
       guestTypes: prev.guestTypes.filter((_, i) => i !== index),
     }));
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       addGuestType();
     }
@@ -197,36 +228,50 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
   const handleEventPostApiCall = async () => {
     try {
-      const response = await eventPostApi({
-        "event[name]": formData.eventName,
-        "event[about]": formData.description,
-        "event[location]": formData.location,
-        "event[require_approval]": formData.requireApproval.toString(),
-        "event[primary_color]": "#ff0000",
-        "event[secondary_color]": "#00ff00",
-        "event[event_date_from]": formData.dateFrom
-          ?.toISOString()
-          .split("T")[0],
-        "event[event_date_to]": formData.dateTo?.toISOString().split("T")[0],
-        "event[time_from]": formData.timeFrom,
-        "event[time_to]": formData.timeTo,
-        "event[logo]": formData.eventLogo,
-        // Guest types
-        ...formData.guestTypes.reduce((acc, type, index) => {
-          acc[`event[badges_attributes][${index}][name]`] = type;
-          acc[`event[badges_attributes][${index}][default]`] =
-            index === 0 ? "true" : "false";
-          return acc;
-        }, {} as Record<string, any>),
-      });
+      console.log("formData to be sent:", formData);
+
+      const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
+
+      const payload: any = {
+        event: {
+          name: formData.eventName,
+          about: formData.description,
+          location: formData.location,
+          require_approval: formData.requireApproval,
+          primary_color: "#ff0000",
+          secondary_color: "#00ff00",
+          event_type: "express",
+          event_date_from: formData.dateFrom
+            ? formData.dateFrom.toISOString().split("T")[0]
+            : undefined,
+          event_date_to: formData.dateTo
+            ? formData.dateTo.toISOString().split("T")[0]
+            : undefined,
+          event_time_from: formData.timeFrom
+            ? ensureSeconds(formData.timeFrom)
+            : undefined,
+          event_time_to: formData.timeTo
+            ? ensureSeconds(formData.timeTo)
+            : undefined,
+          // logo_sign_id: logoSignedId,
+          logo: formData.eventLogo,
+          badges_attributes: formData.guestTypes.map((type, index) => ({
+            name: type,
+            default: index === 0,
+          })),
+        },
+      };
+
+      const response = await api.eventPostAPi(payload);
+
       console.log("response of event data :", response);
       // Success toast message
-      toast.success(response.data.message || "Event data saved successfully!");
+      toast.success("Event created successfully");
       return response;
-    } catch (error) {
+    } catch (error: any) {
       const errorMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Error saving event data";
       // Error toast message
       toast.error(errorMessage);
@@ -237,9 +282,7 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
-      <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900">
-        Enter event Main data
-      </h2>
+      <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
 
       {/* Mobile-First Responsive Grid */}
       <div className="w-full space-y-6 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 xl:gap-8">
@@ -617,18 +660,3 @@ const MainData = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 };
 
 export default MainData;
-function eventPostApi(arg0: {
-  "event[name]": string;
-  "event[about]": string;
-  "event[location]": string;
-  "event[require_approval]": string;
-  "event[primary_color]": string;
-  "event[secondary_color]": string;
-  "event[event_date_from]": any;
-  "event[event_date_to]": any;
-  "event[time_from]": string;
-  "event[time_to]": string;
-  "event[logo]": null;
-}) {
-  throw new Error("Function not implemented.");
-}

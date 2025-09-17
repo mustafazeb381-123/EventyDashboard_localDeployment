@@ -14,7 +14,7 @@ import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import RegistrationForm from "./RegistrationForm/RegistrationForm";
+import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
