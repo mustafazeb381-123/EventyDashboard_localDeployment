@@ -29,10 +29,10 @@ export const loginApi = (data: any) =>
 //   )
 // }
 
-export const eventPostAPi = (payload: any) => {
+export const eventPostAPi = (payload: FormData) => {
   return axiosInstance.post("/events", payload, {
     headers: {
-      "Content-Type": "application/json",
-    },
+      "Content-Type": "multipart/form-data"
+    }
   });
 };

@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import { useNavigation } from 'react-router-dom';
 
 const TOKEN_KEY = 'token';
 
@@ -20,7 +20,10 @@ const axiosInstance = axios.create({
 // Request Interceptor
 axiosInstance.interceptors.request.use(
   config => {
-    const token = localStorage.getItem(TOKEN_KEY); // Retrieve token from localStorage
+    const token = localStorage.getItem(TOKEN_KEY);
+    console.log("token in instance", token)
+    //
+    // Retrieve token from localStorage
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
@@ -38,8 +41,12 @@ axiosInstance.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.status === 401) {
+      localStorage.removeItem("token"); // clear old token
+
       console.error('Unauthorized: Redirecting to login...');
       // Redirect to login on 401 error
+      window.location.href = '/login'; // force redirect
+
     }
     return Promise.reject(error);
   },

@@ -13,7 +13,7 @@ import {
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
@@ -27,6 +27,12 @@ export interface ToggleStates {
 }
 
 const ExpressEvent = () => {
+  // console.log("props of express event", props);
+
+  const location = useLocation();
+
+  const { plan } = location.state || {};
+  console.log("selected plan in the express event", plan);
   const [currentStep, setCurrentStep] = useState(0);
 
   const navigation = useNavigate();
@@ -178,6 +184,7 @@ const ExpressEvent = () => {
       case 0:
         return (
           <MainData
+            plan={plan}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}

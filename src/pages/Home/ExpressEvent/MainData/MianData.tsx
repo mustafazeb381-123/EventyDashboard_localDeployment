@@ -11,12 +11,14 @@ import {
 } from "lucide-react";
 import { toast } from "react-toastify";
 import * as api from "../../../../apis/apiHelpers";
+import { eventPostAPi } from "../../../../apis/apiHelpers";
 
 type MainDataProps = {
   onNext: () => void;
   onPrevious: () => void;
   currentStep: number;
   totalSteps: number;
+  plan: any;
 };
 
 type MainFormData = {
@@ -37,7 +39,9 @@ const MainData = ({
   onPrevious,
   currentStep,
   totalSteps,
+  plan,
 }: MainDataProps) => {
+  console.log("selected plans  in main data :", plan);
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [formData, setFormData] = useState<MainFormData>({
@@ -225,8 +229,17 @@ const MainData = ({
       setIsLoading(false);
     }
   };
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = (error) => reject(error);
+    });
+  };
 
   const handleEventPostApiCall = async () => {
+<<<<<<< HEAD
     const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
     
 
@@ -270,17 +283,54 @@ const MainData = ({
 
       console.log("response of event data :", response);
       // Success toast message
+=======
+    const fd = new FormData();
+
+    fd.append("event[name]", formData.eventName);
+    fd.append("event[about]", formData.description);
+    fd.append("event[location]", formData.location);
+    fd.append("event[require_approval]", String(formData.requireApproval));
+    fd.append("event[primary_color]", "#ff0000");
+    fd.append("event[secondary_color]", "#00ff00");
+    fd.append("event[event_type]", plan);
+    if (formData.dateFrom)
+      fd.append(
+        "event[event_date_from]",
+        formData.dateFrom.toISOString().split("T")[0]
+      );
+    if (formData.dateTo)
+      fd.append(
+        "event[event_date_to]",
+        formData.dateTo.toISOString().split("T")[0]
+      );
+    fd.append("event[event_time_from]", formData.timeFrom || "");
+    fd.append("event[event_time_to]", formData.timeTo || "");
+
+    // 👇 Attach file correctly
+    if (formData.eventLogo) {
+      fd.append("event[logo]", formData.eventLogo);
+    }
+
+    // Guest types
+    formData.guestTypes.forEach((type, index) => {
+      fd.append(`event[badges_attributes][${index}][name]`, type);
+      fd.append(
+        `event[badges_attributes][${index}][default]`,
+        String(index === 0)
+      );
+    });
+
+    fd.append("event[template]", "form");
+    fd.append("locale", "en");
+
+    try {
+      const response = await eventPostAPi(fd);
+>>>>>>> origin/express-event
       toast.success("Event created successfully");
       return response;
     } catch (error: any) {
-      const errorMessage =
-        error?.response?.data?.message ||
-        error?.response?.data?.error ||
-        "Error saving event data";
-      // Error toast message
-      toast.error(errorMessage);
-      console.log("error of event data", error);
-      throw error; // Re-throw the error so the calling function can catch it
+      toast.error(error?.response?.data?.message || "Error saving event data");
+      throw error;
     }
   };
 
