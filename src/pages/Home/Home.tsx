@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import Assets from "@/utils/Assets";
 import React, { useState } from "react";
 import Recents from "./components/Recents/Recents";
@@ -53,14 +52,8 @@ const Home = () => {
               <img src={Assets.icons.star} className="w-10 h-10" />
             </div>
             <div>
-<<<<<<< HEAD
-
-      <p className="text-lg font-semibold text-emerald-800 cursor-pointer">
-        Express Event
-=======
-              <p className="text-lg font-semibold text-emerald-800">
+              <p className="text-lg font-semibold text-emerald-800 cursor-pointer">
                 Express Event
->>>>>>> origin/express-event
               </p>
               <p className="font-poppins font-normal text-xs text-emerald-950">
                 Quick and super empowering to use!

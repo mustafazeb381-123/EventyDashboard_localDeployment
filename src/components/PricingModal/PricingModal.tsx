@@ -1,12 +1,11 @@
-import React, { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import React, { useEffect } from "react";
 import { X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PricingModalProps {
-  isOpen: Boolean;
+  isOpen: boolean;
   onClose: () => void;
-  selectedPlan: String;
+  selectedPlan: string;
 }
 const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
@@ -17,9 +16,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
 
   useEffect(() => {
     console.log("selected plan in the pricing modal :", selectedPlan);
-    const selectedPlanofEvent = selectedPlan;
-    console.log("selecled plan of event", selectedPlanofEvent);
-  }, []);
+  }, [selectedPlan]);
 
   // const [currentPlan, setCurrentPlan] = useState(selectedPlan);
 
@@ -40,13 +37,6 @@ const PricingModal: React.FC<PricingModalProps> = ({
         "Automatic QR Code Generation",
         "Attendance Reports",
       ],
-<<<<<<< HEAD
-      buttonText: 'Get started',
-      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
-=======
-      buttonText: "Get started",
-      buttonClass: "bg-slate-800 hover:bg-slate-700 text-white",
->>>>>>> origin/express-event
     },
     {
       id: "advanced",
@@ -60,13 +50,9 @@ const PricingModal: React.FC<PricingModalProps> = ({
         "Automatic QR Code Generation",
         "Attendance Reports",
       ],
-<<<<<<< HEAD
       buttonText: 'Get started',
       buttonClass: 'bg-pink-500 hover:bg-pink-600 text-white cursor-pointer'
-=======
-      buttonText: "Get started",
-      buttonClass: "bg-pink-500 hover:bg-pink-600 text-white",
->>>>>>> origin/express-event
+ 
     },
     {
       id: "full",
@@ -79,13 +65,8 @@ const PricingModal: React.FC<PricingModalProps> = ({
         "Automatic QR Code Generation",
         "Attendance Reports",
       ],
-<<<<<<< HEAD
       buttonText: 'Get started',
       buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
-=======
-      buttonText: "Get started",
-      buttonClass: "bg-slate-800 hover:bg-slate-700 text-white",
->>>>>>> origin/express-event
     },
     {
       id: "unlimited",
@@ -98,16 +79,9 @@ const PricingModal: React.FC<PricingModalProps> = ({
         "Automatic QR Code Generation",
         "Attendance Reports",
       ],
-<<<<<<< HEAD
       buttonText: 'Contact Us',
       buttonClass: 'bg-white hover:bg-gray-50 text-slate-800 border border-slate-800 cursor-pointer'
     }
-=======
-      buttonText: "Contact Us",
-      buttonClass:
-        "bg-white hover:bg-gray-50 text-slate-800 border border-slate-800",
-    },
->>>>>>> origin/express-event
   ];
 
   // const handlePlanSelect = (planId) => {
@@ -119,7 +93,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
     console.log(`Get started with plan: ${plan.name}`);
     if (selectedPlan === "express") {
       console.log("navigating to express-event");
-      navigate("express-event", { state: { plan: selectedPlan } });
+      navigate("/express-event", { state: { plan: selectedPlan } });
     } else {
       console.log("navigating to home");
       navigate("/");
@@ -130,8 +104,8 @@ const PricingModal: React.FC<PricingModalProps> = ({
   };
 
   return (
-    <div  className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div onClick={()=>onclose} className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+    <div className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="relative p-6 border-b">
           <div className="text-center">
@@ -141,7 +115,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
               </h2>
               <span
                 className={`${
-                  selectedPlan == "express" ? "bg-green-100" : "bg-sky-100"
+                  selectedPlan === "express" ? "bg-green-100" : "bg-sky-100"
                 } ${
                   selectedPlan === "express" ? "text-green-700" : "text-sky-700"
                 } px-3 py-1 rounded-full text-sm font-medium`}

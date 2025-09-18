@@ -239,51 +239,6 @@ const MainData = ({
   };
 
   const handleEventPostApiCall = async () => {
-<<<<<<< HEAD
-    const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
-    
-
-    const payload: any = {
-      event: {
-        name: formData.eventName,
-        about: formData.description,
-        location: formData.location,
-        require_approval: formData.requireApproval,
-        primary_color: "#ff0000",
-        secondary_color: "#00ff00",
-        event_type: "express",
-        event_date_from: formData.dateFrom
-          ? formData.dateFrom.toISOString().split("T")[0]
-          : undefined,
-        event_date_to: formData.dateTo
-          ? formData.dateTo.toISOString().split("T")[0]
-          : undefined,
-        event_time_from: formData.timeFrom
-          ? ensureSeconds(formData.timeFrom)
-          : undefined,
-        event_time_to: formData.timeTo
-          ? ensureSeconds(formData.timeTo)
-          : undefined,
-        // logo_sign_id: logoSignedId,
-        logo: formData.eventLogo,
-        template:"form",
-        badges_attributes: formData.guestTypes.map((type, index) => ({
-          name: type,
-          default: index === 0,
-        })),
-      },
-    };
-    console.log("payload to be sent:", payload);
-    try {
-      console.log("formData to be sent:", formData);
-
-    
-
-      const response = await api.eventPostAPi(payload);
-
-      console.log("response of event data :", response);
-      // Success toast message
-=======
     const fd = new FormData();
 
     fd.append("event[name]", formData.eventName);
@@ -325,7 +280,6 @@ const MainData = ({
 
     try {
       const response = await eventPostAPi(fd);
->>>>>>> origin/express-event
       toast.success("Event created successfully");
       return response;
     } catch (error: any) {
