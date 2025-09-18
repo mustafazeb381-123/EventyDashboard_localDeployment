@@ -1,5 +1,5 @@
 import axios from 'axios';
-
+import { useNavigation } from 'react-router-dom';
 
 const TOKEN_KEY = 'token';
 
@@ -41,8 +41,12 @@ axiosInstance.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.status === 401) {
+      localStorage.removeItem("token"); // clear old token
+
       console.error('Unauthorized: Redirecting to login...');
       // Redirect to login on 401 error
+      window.location.href = '/login'; // force redirect
+
     }
     return Promise.reject(error);
   },
