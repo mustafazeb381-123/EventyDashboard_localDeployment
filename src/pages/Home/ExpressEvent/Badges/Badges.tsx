@@ -152,14 +152,14 @@ const Badges: React.FC<BadgesProps> = ({
         <button
           onClick={onPrevious}
           disabled={currentStep === 0}
-          className="w-full sm:w-auto px-6 py-2.5 rounded-lg border text-slate-800 hover:bg-gray-50"
+          className="cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg border text-slate-800 hover:bg-gray-50"
         >
           ← Previous
         </button>
         <button
           onClick={selectBadgeAndContinue}
           disabled={!selectedBadge}
-          className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-white 
+          className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white 
             ${selectedBadge ? "bg-slate-800 hover:bg-slate-900" : "bg-gray-400 cursor-not-allowed"}`}
         >
           Use Template →

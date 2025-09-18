@@ -55,7 +55,7 @@ const Home = () => {
             </div>
             <div>
 
-      <p className="text-lg font-semibold text-emerald-800">
+      <p className="text-lg font-semibold text-emerald-800 cursor-pointer">
         Express Event
               </p>
               <p className="font-poppins font-normal text-xs text-emerald-950">

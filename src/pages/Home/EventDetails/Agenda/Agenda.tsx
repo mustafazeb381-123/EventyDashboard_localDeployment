@@ -443,10 +443,10 @@ function Agenda() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                        <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer">
                           <Trash2 className="w-4 h-4" />
                         </button>
-                        <button className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors">
+                        <button className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer">
                           <Edit className="w-4 h-4" />
                         </button>
                       </div>

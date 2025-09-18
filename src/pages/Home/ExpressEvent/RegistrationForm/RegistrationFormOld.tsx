@@ -265,7 +265,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         <button
           onClick={onPrevious}
           disabled={false}
-          className="w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
+          className= "cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
         >
           ← Previous
         </button>
@@ -273,7 +273,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         <button
           onClick={onNext}
           disabled={!confirmedTemplate}
-          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
+          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
             ${!confirmedTemplate
               ? "text-gray-400 bg-gray-100 cursor-not-allowed"
               : "bg-slate-800 hover:bg-slate-900 text-white"

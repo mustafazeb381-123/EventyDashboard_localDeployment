@@ -90,7 +90,7 @@ const ExpressEvent = () => {
             onClick={() => navigation("/")}
             className="flex items-center gap-2 text-gray-800 hover:text-gray-600"
           >
-            <div className="p-2 bg-white rounded-md">
+            <div className="p-2 bg-white rounded-md cursor-pointer">
               <ChevronLeft size={20} />
             </div>
             <span className="text-sm font-poppins font-medium">
@@ -103,7 +103,7 @@ const ExpressEvent = () => {
         <div className="col-auto">
           <Button
             onClick={() => navigation("/")}
-            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md"
+            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
           >
             <span>Cancel Creation</span>
             <X size={18} />
@@ -117,7 +117,7 @@ const ExpressEvent = () => {
           <span className="text-neutral-500 font-poppins text-xs font-normal">
             Home
           </span>
-          <ChevronLeft className="rotate-180 text-gray-400" size={14} />
+          <ChevronLeft className="rotate-180 text-gray-400 cursor-pointer" size={14} />
           <span className="text-gray-800 text-xs font-normal font-poppins">
             Express Event
           </span>

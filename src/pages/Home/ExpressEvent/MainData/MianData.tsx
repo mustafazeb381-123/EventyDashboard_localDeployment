@@ -227,40 +227,44 @@ const MainData = ({
   };
 
   const handleEventPostApiCall = async () => {
+    const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
+    
+
+    const payload: any = {
+      event: {
+        name: formData.eventName,
+        about: formData.description,
+        location: formData.location,
+        require_approval: formData.requireApproval,
+        primary_color: "#ff0000",
+        secondary_color: "#00ff00",
+        event_type: "express",
+        event_date_from: formData.dateFrom
+          ? formData.dateFrom.toISOString().split("T")[0]
+          : undefined,
+        event_date_to: formData.dateTo
+          ? formData.dateTo.toISOString().split("T")[0]
+          : undefined,
+        event_time_from: formData.timeFrom
+          ? ensureSeconds(formData.timeFrom)
+          : undefined,
+        event_time_to: formData.timeTo
+          ? ensureSeconds(formData.timeTo)
+          : undefined,
+        // logo_sign_id: logoSignedId,
+        logo: formData.eventLogo,
+        template:"form",
+        badges_attributes: formData.guestTypes.map((type, index) => ({
+          name: type,
+          default: index === 0,
+        })),
+      },
+    };
+    console.log("payload to be sent:", payload);
     try {
       console.log("formData to be sent:", formData);
 
-      const ensureSeconds = (t: string) => (t?.length === 5 ? `${t}:00` : t);
-
-      const payload: any = {
-        event: {
-          name: formData.eventName,
-          about: formData.description,
-          location: formData.location,
-          require_approval: formData.requireApproval,
-          primary_color: "#ff0000",
-          secondary_color: "#00ff00",
-          event_type: "express",
-          event_date_from: formData.dateFrom
-            ? formData.dateFrom.toISOString().split("T")[0]
-            : undefined,
-          event_date_to: formData.dateTo
-            ? formData.dateTo.toISOString().split("T")[0]
-            : undefined,
-          event_time_from: formData.timeFrom
-            ? ensureSeconds(formData.timeFrom)
-            : undefined,
-          event_time_to: formData.timeTo
-            ? ensureSeconds(formData.timeTo)
-            : undefined,
-          // logo_sign_id: logoSignedId,
-          logo: formData.eventLogo,
-          badges_attributes: formData.guestTypes.map((type, index) => ({
-            name: type,
-            default: index === 0,
-          })),
-        },
-      };
+    
 
       const response = await api.eventPostAPi(payload);
 
@@ -614,7 +618,7 @@ const MainData = ({
         <button
           onClick={onPrevious}
           disabled={currentStep === 0 || isLoading}
-          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
+          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
             ${
               currentStep === 0 || isLoading
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
@@ -626,7 +630,7 @@ const MainData = ({
         <button
           onClick={handleNext}
           disabled={isLoading}
-          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
+          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
             ${
               isLoading
                 ? "bg-slate-600 cursor-not-allowed text-white"

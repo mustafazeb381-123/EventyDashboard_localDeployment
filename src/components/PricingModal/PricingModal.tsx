@@ -30,7 +30,7 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
         'Attendance Reports'
       ],
       buttonText: 'Get started',
-      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white'
+      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
     },
     {
       id: 'advanced',
@@ -45,7 +45,7 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
         'Attendance Reports'
       ],
       buttonText: 'Get started',
-      buttonClass: 'bg-pink-500 hover:bg-pink-600 text-white'
+      buttonClass: 'bg-pink-500 hover:bg-pink-600 text-white cursor-pointer'
     },
     {
       id: 'full',
@@ -59,7 +59,7 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
         'Attendance Reports'
       ],
       buttonText: 'Get started',
-      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white'
+      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
     },
     {
       id: 'unlimited',
@@ -73,7 +73,7 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
         'Attendance Reports'
       ],
       buttonText: 'Contact Us',
-      buttonClass: 'bg-white hover:bg-gray-50 text-slate-800 border border-slate-800'
+      buttonClass: 'bg-white hover:bg-gray-50 text-slate-800 border border-slate-800 cursor-pointer'
     }
   ];
 
@@ -97,8 +97,8 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+    <div  className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div onClick={()=>onclose} className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="relative p-6 border-b">
           <div className="text-center">
@@ -115,7 +115,7 @@ const PricingModal = ({ isOpen, onClose, selectedPlan }) => {
           </div>
           <button
             onClick={onClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X size={24} />
           </button>
