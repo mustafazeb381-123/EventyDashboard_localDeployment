@@ -32,7 +32,11 @@ export const loginApi = (data: any) =>
 export const eventPostAPi = (payload: FormData) => {
   return axiosInstance.post("/events", payload, {
     headers: {
-      "Content-Type": "multipart/form-data"
-    }
+      "Content-Type": "multipart/form-data",
+    },
   });
+};
+
+export const getAllEvents = (params?: Record<string, any>) => {
+  return axiosInstance.get("/events", { params });
 };

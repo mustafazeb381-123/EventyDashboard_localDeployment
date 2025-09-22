@@ -267,12 +267,16 @@ const MainData = ({
     }
 
     // Guest types
+    // formData.guestTypes.forEach((type, index) => {
+    //   fd.append(`event[badges_attributes][${index}][name]`, type);
+    //   fd.append(
+    //     `event[badges_attributes][${index}][default]`,
+    //     String(index === 0)
+    //   );
+    // });
     formData.guestTypes.forEach((type, index) => {
-      fd.append(`event[badges_attributes][${index}][name]`, type);
-      fd.append(
-        `event[badges_attributes][${index}][default]`,
-        String(index === 0)
-      );
+      fd.append(`event[badges_attributes][][name]`, type);
+      fd.append(`event[badges_attributes][][default]`, String(index === 0));
     });
 
     fd.append("event[template]", "form");
@@ -280,6 +284,7 @@ const MainData = ({
 
     try {
       const response = await eventPostAPi(fd);
+      console.log("response----++++++++---------", response.data);
       toast.success("Event created successfully");
       return response;
     } catch (error: any) {
@@ -622,7 +627,7 @@ const MainData = ({
         <button
           onClick={onPrevious}
           disabled={currentStep === 0 || isLoading}
-          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
+          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
             ${
               currentStep === 0 || isLoading
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
@@ -634,7 +639,7 @@ const MainData = ({
         <button
           onClick={handleNext}
           disabled={isLoading}
-          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
+          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
             ${
               isLoading
                 ? "bg-slate-600 cursor-not-allowed text-white"
