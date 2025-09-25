@@ -1,10 +1,20 @@
 import React, { useState } from "react";
-import { ChevronLeft, Upload, Calendar, Clock, MapPin, Plus, Trash2, Info, X, } from "lucide-react";
+import {
+  ChevronLeft,
+  Upload,
+  Calendar,
+  Clock,
+  MapPin,
+  Plus,
+  Trash2,
+  Info,
+  X,
+} from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-import RegistrationForm from "./RegistrationForm/RegistrationForm";
+import { useLocation, useNavigate } from "react-router-dom";
+import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
@@ -17,7 +27,12 @@ export interface ToggleStates {
 }
 
 const ExpressEvent = () => {
+  // console.log("props of express event", props);
 
+  const location = useLocation();
+
+  const { plan } = location.state || {};
+  console.log("selected plan in the express event", plan);
   const [currentStep, setCurrentStep] = useState(0);
 
   const navigation = useNavigate();
@@ -52,7 +67,8 @@ const ExpressEvent = () => {
 
   const [selectedModal, setSelectedModal] = useState<number | null>(null);
 
-  const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] = useState(false);
+  const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] =
+    useState(false);
 
   // 🔹 Match the ToggleStates interface
 
@@ -80,7 +96,7 @@ const ExpressEvent = () => {
             onClick={() => navigation("/")}
             className="flex items-center gap-2 text-gray-800 hover:text-gray-600"
           >
-            <div className="p-2 bg-white rounded-md">
+            <div className="p-2 bg-white rounded-md cursor-pointer">
               <ChevronLeft size={20} />
             </div>
             <span className="text-sm font-poppins font-medium">
@@ -93,7 +109,7 @@ const ExpressEvent = () => {
         <div className="col-auto">
           <Button
             onClick={() => navigation("/")}
-            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md"
+            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
           >
             <span>Cancel Creation</span>
             <X size={18} />
@@ -107,7 +123,7 @@ const ExpressEvent = () => {
           <span className="text-neutral-500 font-poppins text-xs font-normal">
             Home
           </span>
-          <ChevronLeft className="rotate-180 text-gray-400" size={14} />
+          <ChevronLeft className="rotate-180 text-gray-400 cursor-pointer" size={14} />
           <span className="text-gray-800 text-xs font-normal font-poppins">
             Express Event
           </span>
@@ -168,6 +184,7 @@ const ExpressEvent = () => {
       case 0:
         return (
           <MainData
+            plan={plan}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}

@@ -5,7 +5,9 @@ import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
 // import ReusableRegistrationForm from "";
 
-function TemplateFormOne() {
+function TemplateFormOne({ data = [] }) {
+  console.log("data in template form one :", data);
+
   const [formData, setFormData] = useState({
     eventLogo: null,
   });

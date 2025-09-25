@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { 
-    Home, 
-  Users, 
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  Home,
+  Users,
   UserCheck,
   Settings,
   LogOut,
@@ -11,49 +11,47 @@ import {
   Clock,
   UserPlus,
   Bell,
-  User
-} from "lucide-react"
-import { Button } from '../ui/button'
-import LanguageToggle from '../LanguageToggle/LanguageToggle'
+  User,
+} from "lucide-react";
+import { Button } from "../ui/button";
+import LanguageToggle from "../LanguageToggle/LanguageToggle";
 
 function Header({ isExpanded }) {
-
-
-
   // const [isExpanded, setIsExpanded] = useState(false)
-   const [activeItem, setActiveItem] = useState("Registered Users")
-   const [expandedMenus, setExpandedMenus] = useState({})
-   const [isRTL, setIsRTL] = useState(false)
- 
-   const naviagte = useNavigate()
-   
-  
+  const [activeItem, setActiveItem] = useState("Registered Users");
+  const [expandedMenus, setExpandedMenus] = useState({});
+  const [isRTL, setIsRTL] = useState(false);
+
+  const naviagte = useNavigate();
+
   // Detect RTL direction and listen for changes
   useEffect(() => {
     const checkRTL = () => {
-      const dir = document.documentElement.dir || document.documentElement.getAttribute('dir')
-      setIsRTL(dir === 'rtl')
-    }
-    
+      const dir =
+        document.documentElement.dir ||
+        document.documentElement.getAttribute("dir");
+      setIsRTL(dir === "rtl");
+    };
+
     // Check initially
-    checkRTL()
-    
+    checkRTL();
+
     // Create observer to watch for direction changes
     const observer = new MutationObserver(() => {
-      checkRTL()
-    })
-    
+      checkRTL();
+    });
+
     // Watch for changes to the dir attribute
     observer.observe(document.documentElement, {
       attributes: true,
-      attributeFilter: ['dir']
-    })
-    
+      attributeFilter: ["dir"],
+    });
+
     // Cleanup
     return () => {
-      observer.disconnect()
-    }
-  }, [])
+      observer.disconnect();
+    };
+  }, []);
 
   // const toggleSubmenu = (label) => {
   //   setExpandedMenus(prev => ({
@@ -62,17 +60,16 @@ function Header({ isExpanded }) {
   //   }))
   // }
 
- 
   return (
-    <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between z-40 shadow-sm transition-all duration-300"
-        style={{ 
-          paddingLeft: isRTL ? '16px' : (isExpanded ? '296px' : '88px'), 
-          paddingRight: isRTL ? (isExpanded ? '296px' : '88px') : '16px'
-        }}
-      >
-        
-        <div className="flex items-center space-x-4">
-          {/* <Button 
+    <header
+      className="fixed top-0 left-0 right-0 h-16 bg-white border-b border-gray-200 flex items-center justify-between z-40 shadow-sm transition-all duration-300"
+      style={{
+        paddingLeft: isRTL ? "16px" : isExpanded ? "296px" : "88px",
+        paddingRight: isRTL ? (isExpanded ? "296px" : "88px") : "16px",
+      }}
+    >
+      <div className="flex items-center space-x-4">
+        {/* <Button 
             variant="ghost" 
             size="icon"
             className="text-gray-700 hover:bg-gray-100"
@@ -81,27 +78,29 @@ function Header({ isExpanded }) {
             <Menu className="h-5 w-5" />
           </Button>
            */}
-          
-          <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
-        </div>
 
-        
+        <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
+      </div>
+
       <div className="flex items-center space-x-3">
-        
         <LanguageToggle />
-          <Button variant="ghost" size="icon" className="text-gray-600 hover:bg-gray-100">
-            <Bell className="h-5 w-5" />
-          </Button>
-          
-          <div className="flex items-center space-x-2 text-sm text-gray-600">
-            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-              <User className="h-4 w-4" />
-            </div>
-            <span>My Account</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="text-gray-600 hover:bg-gray-100 cursor-pointer"
+        >
+          <Bell className="h-5 w-5" />
+        </Button>
+
+        <div className="flex items-center space-x-2 text-sm text-gray-600">
+          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+            <User className="h-4 w-4" />
           </div>
+          <span>My Account</span>
         </div>
-      </header>
-  )
+      </div>
+    </header>
+  );
 }
 
 export default Header;

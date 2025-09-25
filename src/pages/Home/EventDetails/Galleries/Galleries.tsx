@@ -232,7 +232,7 @@ function Galleries() {
               type="checkbox"
               checked={selectAll}
               onChange={handleSelectAll}
-              className="mr-3 w-4 h-4 text-blue-600 rounded border-gray-300"
+              className="mr-3 w-4 h-4 text-blue-600 rounded border-gray-300 cursor-pointer"
             />
             <span className="text-gray-700 font-medium">Select All</span>
             {selectedCount > 0 && (
@@ -315,8 +315,12 @@ function Galleries() {
         {/* Image Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-8">
           {currentImages.map((image) => (
-            <div key={image.id} className="relative group">
-              <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video">
+            <div
+              onClick={() => handleImageSelect(image.id)}
+              key={image.id}
+              className="relative group"
+            >
+              <div className="relative bg-gray-100 rounded-lg overflow-hidden aspect-video cursor-pointer">
                 <img
                   src={image.src}
                   alt={`Gallery image ${image.id}`}
@@ -334,7 +338,6 @@ function Galleries() {
                   {/* Selection checkbox */}
                   <div className="absolute top-3 right-3">
                     <button
-                      onClick={() => handleImageSelect(image.id)}
                       className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                         image.selected
                           ? "bg-blue-500 border-blue-500 text-white"
@@ -352,7 +355,7 @@ function Galleries() {
                 onClick={() => setShowDeleteModal(true)}
                 className="absolute bottom-3 left-1/2 transform -translate-x-1/2 bg-red-500 text-white p-2 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 cursor-pointer" />
               </button>
             </div>
           ))}
@@ -428,9 +431,15 @@ function Galleries() {
 
         {/* Delete Confirmation Modal */}
         {showDeleteModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+            onClick={() => setShowDeleteModal(false)}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          >
             <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
-              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <div
+                onClick={() => setShowDeleteModal(false)}
+                className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4 cursor-pointer"
+              >
                 <X className="w-6 h-6 text-red-500" />
               </div>
 
@@ -441,13 +450,13 @@ function Galleries() {
               <div className="flex space-x-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
                 >
                   Delete
                 </button>

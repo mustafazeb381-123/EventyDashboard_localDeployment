@@ -1,7 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronLeft, X, Eye } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
 import Assets from "@/utils/Assets"; // 👈 make sure your template preview images are here
+import {
+  getRegistrationFieldApi,
+  postRegistrationTemplateFieldApi,
+} from "@/apis/apiHelpers";
+import { toast } from "react-toastify";
 
 // 👇 Match the ToggleStates interface from ConfirmationDetails
 interface ToggleStates {
@@ -31,7 +36,9 @@ const Modal: React.FC<ModalProps> = ({ template, onClose }) => {
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full md:w-3/4">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-poppins font-semibold">{template.name}</h2>
+          <h2 className="text-xl font-poppins font-semibold">
+            {template.name}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1"
@@ -47,7 +54,6 @@ const Modal: React.FC<ModalProps> = ({ template, onClose }) => {
             alt={`${template.name} Front`}
             className="flex-1  w-full object-contain rounded-xl"
           />
-
         </div>
       </div>
     </div>
@@ -68,13 +74,15 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   setToggleStates,
 }) => {
   const [internalStep, setInternalStep] = useState(0);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null
+  );
+
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
 
   const templates: Template[] = [
     { id: 1, name: "Temp 1", img: Assets.images.temp1 },
     { id: 2, name: "Temp 2", img: Assets.images.temp2 },
-
   ];
 
   /** Step navigation */
@@ -96,26 +104,28 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
       {/* Header */}
       <div className="flex flex-row justify-between items-center">
-        <div onClick={onPrevious} className="flex flex-row gap-2 items-center">
+        {/* <div onClick={onPrevious} className="flex flex-row gap-2 items-center">
           <ChevronLeft />
           <p className="text-neutral-900 text-md font-poppins font-normal">
             Choose a registration form template
           </p>
-        </div>
+        </div> */}
       </div>
-
       {/* Step Content */}
       {internalStep === 0 ? (
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {templates.map((temp) => (
             <div
               key={temp.id}
-              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${selectedTemplate?.id === temp.id
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-[#2E3166E5]"
-                }`}
+              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
+                selectedTemplate?.id === temp.id
+                  ? "border-green-500 bg-green-50"
+                  : "border-gray-200 hover:border-[#2E3166E5]"
+              }`}
               onClick={() =>
-                setSelectedTemplate(selectedTemplate?.id === temp.id ? null : temp)
+                setSelectedTemplate(
+                  selectedTemplate?.id === temp.id ? null : temp
+                )
               }
             >
               <img
@@ -152,54 +162,72 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
             <h6>Temp: {selectedTemplate?.id}</h6>
             <h6>
               Msg:{" "}
-              <span className={toggleStates.confirmationMsg ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  toggleStates.confirmationMsg
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
+              >
                 {toggleStates.confirmationMsg ? "ON" : "OFF"}
               </span>
             </h6>
             <h6>
               Qr:{" "}
-              <span className={toggleStates.userQRCode ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  toggleStates.userQRCode ? "text-green-600" : "text-red-600"
+                }
+              >
                 {toggleStates.userQRCode ? "ON" : "OFF"}
               </span>
             </h6>
             <h6>
               Location:{" "}
-              <span className={toggleStates.location ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  toggleStates.location ? "text-green-600" : "text-red-600"
+                }
+              >
                 {toggleStates.location ? "ON" : "OFF"}
               </span>
             </h6>
             <h6>
               Details:{" "}
-              <span className={toggleStates.eventDetails ? "text-green-600" : "text-red-600"}>
+              <span
+                className={
+                  toggleStates.eventDetails ? "text-green-600" : "text-red-600"
+                }
+              >
                 {toggleStates.eventDetails ? "ON" : "OFF"}
               </span>
             </h6>
           </div>
-
         </div>
       )}
-
       {/* Modal */}
       {previewTemplate && (
-        <Modal template={previewTemplate} onClose={() => setPreviewTemplate(null)} />
+        <Modal
+          template={previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+        />
       )}
-
-      {/* Step Navigation */}
+      Step Navigation
       {internalStep === 0 && (
         <div className="flex justify-end gap-4 mt-6 sm:mt-8">
           <button
             onClick={handleStepNext}
             disabled={!selectedTemplate}
-            className={`w-full sm:w-auto p-2 text-sm rounded-lg text-white ${!selectedTemplate
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-slate-800 hover:bg-slate-900"
-              }`}
+            className={`w-full sm:w-auto p-2 text-sm rounded-lg text-white ${
+              !selectedTemplate
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-slate-800 hover:bg-slate-900"
+            }`}
           >
             Step 2 →
           </button>
         </div>
       )}
-
       {internalStep === 1 && (
         <div className="flex justify-start gap-4 mt-6 sm:mt-8">
           <button
@@ -210,7 +238,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </button>
         </div>
       )}
-
       {/* Stage Navigation */}
       <div className="flex justify-between gap-4 mt-6 sm:mt-8">
         <button
@@ -223,10 +250,11 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         <button
           onClick={onNext}
           disabled={internalStep < 1}
-          className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-white ${internalStep < 1
-            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-            : "bg-slate-800 hover:bg-slate-900"
-            }`}
+          className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-white ${
+            internalStep < 1
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-slate-800 hover:bg-slate-900"
+          }`}
         >
           Badges →
         </button>

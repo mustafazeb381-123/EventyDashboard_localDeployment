@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css"; // Make sure this is imported
-import { Eye, EyeOff } from "lucide-react"; // Use icons for show/hide
+import "react-toastify/dist/ReactToastify.css";
+import { Eye, EyeOff } from "lucide-react";
 import { loginApi } from "@/apis/apiHelpers";
 
 function Login() {
@@ -19,6 +19,7 @@ function Login() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false); // New state for remember me
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
@@ -27,6 +28,24 @@ function Login() {
     const token = localStorage.getItem("token");
     if (token) {
       navigate("/home");
+      return;
+    }
+
+    const savedEmail = localStorage.getItem("rememberedEmail");
+    const savedPassword = localStorage.getItem("rememberedPassword");
+    const wasLoggedOut = localStorage.getItem("loggedOut");
+
+    if (savedEmail) {
+      setEmail(savedEmail);
+      setRememberMe(true);
+    }
+    if (savedPassword) {
+      setPassword(savedPassword);
+    }
+
+    if (wasLoggedOut) {
+      toast.info("You have been logged out.");
+      localStorage.removeItem("loggedOut");
     }
   }, [navigate]);
 
@@ -36,8 +55,8 @@ function Login() {
     else if (!/\S+@\S+\.\S+/.test(email))
       newErrors.email = "Invalid email address.";
     if (!password) newErrors.password = "Password is required.";
-    else if (password.length <= 5)
-      newErrors.password = "Password should be atleast 6 digits";
+    else if (password.length < 6)
+      newErrors.password = "Password should be at least 6 characters long.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -52,15 +71,24 @@ function Login() {
     };
     try {
       const response = await loginApi(data);
-      console.log("reponse", response);
-      await localStorage.setItem("token", response?.token);
+      const token = response?.headers?.["access-token"];
+      localStorage.setItem("token", token);
+
+      if (rememberMe) {
+        localStorage.setItem("rememberedEmail", email);
+        localStorage.setItem("rememberedPassword", password);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+        localStorage.removeItem("rememberedPassword");
+      }
+
       toast.success("Logged in successfully!");
       setTimeout(() => {
         navigate("/");
       }, 1000);
     } catch (error) {
       console.error("Login error", error);
-      toast.error("Login failed. Please try again.");
+      toast.error(error?.response?.data?.error || "Login failed");
     } finally {
       setLoading(false);
     }
@@ -142,9 +170,13 @@ function Login() {
 
             {/* Remember Me */}
             <div className="flex items-center space-x-2">
-              <Checkbox id="terms" />
+              <Checkbox
+                id="remember-me"
+                checked={rememberMe}
+                onCheckedChange={setRememberMe}
+              />
               <Label
-                htmlFor="terms"
+                htmlFor="remember-me"
                 className="text-sm font-poppins text-gray-700"
               >
                 {t("Remember me")}
