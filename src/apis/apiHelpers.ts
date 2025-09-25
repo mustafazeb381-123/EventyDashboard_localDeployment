@@ -1,4 +1,3 @@
-import axios from "axios";
 import axiosInstance from "./axiosInstance";
 
 // Example: get location
@@ -39,4 +38,8 @@ export const eventPostAPi = (payload: FormData) => {
 
 export const getAllEvents = (params?: Record<string, any>) => {
   return axiosInstance.get("/events", { params });
+};
+
+export const deleteEvent = (id: string | number) => {
+  return axiosInstance.delete(`/events/${id}`);
 };
