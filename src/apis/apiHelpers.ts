@@ -40,3 +40,7 @@ export const eventPostAPi = (payload: FormData) => {
 export const getAllEvents = (params?: Record<string, any>) => {
   return axiosInstance.get("/events", { params });
 };
+
+export const postBadgesApi = (data: any, id: number) => {
+  return axiosInstance.post(`/events/${id}/badges`, data);
+};

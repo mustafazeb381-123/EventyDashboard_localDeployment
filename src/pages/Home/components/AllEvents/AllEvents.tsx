@@ -55,7 +55,11 @@ function AllEvents() {
         const response = await getAllEvents();
         console.log("All Events Response:", response.data);
 
-        if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        if (
+          response.data &&
+          response.data.data &&
+          Array.isArray(response.data.data)
+        ) {
           const mappedEvents = response.data.data.map((item: ApiEventItem) => ({
             id: item.id,
             type: item.attributes.event_type,
@@ -120,6 +124,7 @@ function AllEvents() {
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "right center",
                 backgroundSize: "auto 100%",
+                cursor: "pointer",
               }}
               className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
             >
@@ -164,7 +169,6 @@ function AllEvents() {
           />
         </div>
       )}
-      
     </div>
   );
 }
