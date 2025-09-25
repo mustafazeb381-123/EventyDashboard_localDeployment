@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 
+import { useNavigate } from "react-router-dom";
+
 interface Event {
   id: string;
   type: string;
@@ -25,6 +27,7 @@ function AllEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const getEventStyle = (type: string) => {
     switch (type) {
@@ -93,17 +96,7 @@ function AllEvents() {
     fetchAllEventsApi();
   }, []);
 
-  const getEventDataById = async (id: string | number) => {
-    try {
-      const response = await getEventbyId(id);
-      console.log("Event by ID Response:", response.data);
 
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching event by ID:", error);
-      throw error;
-    }
-  };
 
   const handleDelete = async (id: any) => {
     console.log("idddddddddddddddd", id);
@@ -146,7 +139,11 @@ function AllEvents() {
 
           return (
             <div
-              onClick={() => getEventDataById(event.id)}
+              onClick={() =>
+                navigate(`/home/${event.id}`, {
+                  state: { eventId: event.id }, // 👈 pass event object
+                })
+              }
               key={event.id}
               style={{
                 padding: 24,
@@ -179,11 +176,10 @@ function AllEvents() {
                 <button
                   onClick={() => handleDelete(event.id)}
                   disabled={deletingId === event.id}
-                  className={`p-1 rounded-full cursor-pointer ${
-                    deletingId === event.id
-                      ? "bg-red-300"
-                      : "bg-red-500 hover:bg-red-600"
-                  }`}
+                  className={`p-1 rounded-full cursor-pointer ${deletingId === event.id
+                    ? "bg-red-300"
+                    : "bg-red-500 hover:bg-red-600"
+                    }`}
                 >
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>

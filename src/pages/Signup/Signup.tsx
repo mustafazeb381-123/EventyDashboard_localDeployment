@@ -27,7 +27,6 @@ const RHFInput = React.forwardRef<HTMLInputElement, any>((props, ref) => (
 RHFInput.displayName = "RHFInput";
 
 function Signup() {
-  const navigate = useNavigate();
   const { t } = useTranslation("signupPage");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
