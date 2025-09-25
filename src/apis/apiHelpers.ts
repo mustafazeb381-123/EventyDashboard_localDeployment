@@ -59,3 +59,30 @@ export const deleteEvent = (id: string | number) => {
 export const getEventbyId = (id: string | number) => {
   return axiosInstance.get(`/events/${id}`);
 }
+
+export const updateEventBannerById = (id: string | number, data: FormData) => {
+  return axiosInstance.patch(`/events/${id}`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+}
+
+
+export const updateRegistrationFieldToggleApi = (data: any, eventId: string, fieldId: string) => {
+  return axiosInstance.patch(`events/${eventId}/registration_fields/${fieldId}/toggle_active`);
+}
+
+export const updateEventById = (id: string | number, data: any) => {
+  return axiosInstance.patch(`/events/${id}`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+
+    }
+  });
+
+}
+
+export const createTemplatePostApi = (data: any, id: string) => {
+  return axiosInstance.post(`/events/${id}/registration_templates`, data);
+}

@@ -4,8 +4,10 @@ import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
-const TemplateOne = ({ onUseTemplate }) => {
+const TemplateOne = ({ onUseTemplate, data }) => {
   const navigation = useNavigate();
+
+  console.log("form data in template  one ::::", data);
 
   // const navigationHandle = () => {
 
@@ -28,7 +30,7 @@ const TemplateOne = ({ onUseTemplate }) => {
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
       {/* Left side (scrollable TemplateForm) */}
       <div className="w-full md:w-[70%] overflow-y-auto pr-2">
-        <TemplateForm />
+        <TemplateForm data={data} />
       </div>
 
       {/* Right side (fixed, always visible) */}

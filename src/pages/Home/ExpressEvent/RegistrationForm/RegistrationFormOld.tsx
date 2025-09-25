@@ -45,7 +45,7 @@ const Modal = ({ selectedTemplate, onClose, onUseTemplate, formData }) => {
 
         {/* Render correct template */}
         {selectedTemplate === "template-one" && (
-          <TemplateFormOne data={formData} onUseTemplate={handleUseTemplate} />
+          <TemplateOne data={formData} onUseTemplate={handleUseTemplate} />
         )}
         {selectedTemplate === "template-two" && <TemplateTwo />}
         {selectedTemplate === "template-three" && <TemplateThree />}
