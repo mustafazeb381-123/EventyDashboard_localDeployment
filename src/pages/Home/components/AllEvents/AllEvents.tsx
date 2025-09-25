@@ -1,6 +1,8 @@
-import { getAllEvents } from "@/apis/apiHelpers";
+import { getAllEvents, deleteEvent } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
+import { toast } from "react-toastify";
 
 interface Event {
   id: string;
@@ -22,6 +24,7 @@ interface ApiEventItem {
 function AllEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const getEventStyle = (type: string) => {
     switch (type) {
@@ -90,6 +93,20 @@ function AllEvents() {
     fetchAllEventsApi();
   }, []);
 
+  const handleDelete = async (id: any) => {
+    console.log("idddddddddddddddd", id);
+    try {
+      setDeletingId(id);
+      await deleteEvent(id);
+      setEvents((prev) => prev.filter((e) => e.id !== id));
+      toast.success("Event Deleted Successfully")
+    } catch (error) {
+      toast.error("Error deleting event:", error);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
@@ -128,10 +145,9 @@ function AllEvents() {
               }}
               className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
             >
-              <div className="flex">
+              <div className="flex flex-row items-center justify-between">
                 <div
-                  className={`${bg} rounded-2xl flex flex-row items-center gap-2`}
-                  style={{ padding: 12, width: "auto" }}
+                  className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
                 >
                   <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
                   <p
@@ -146,6 +162,18 @@ function AllEvents() {
                     {event.type}
                   </p>
                 </div>
+
+                <button
+                  onClick={() => handleDelete(event.id)}
+                  disabled={deletingId === event.id}
+                  className={`p-1 rounded-full cursor-pointer ${
+                    deletingId === event.id
+                      ? "bg-red-300"
+                      : "bg-red-500 hover:bg-red-600"
+                  }`}
+                >
+                  <Trash2 className="w-4 h-4 text-white" />
+                </button>
               </div>
 
               <div className="flex flex-col gap-2 mt-10">

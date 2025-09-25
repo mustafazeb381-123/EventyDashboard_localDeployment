@@ -1,4 +1,3 @@
-import axios from "axios";
 import axiosInstance from "./axiosInstance";
 
 // Example: get location
@@ -47,4 +46,7 @@ export const postBadgesApi = (data: any, id: number) => {
 
 export const postRegistrationTemplateApi = (data: any, id: string) => {
   return axiosInstance.post(`events/${id}/registration_templates`, data);
+}
+export const deleteEvent = (id: string | number) => {
+  return axiosInstance.delete(`/events/${id}`);
 };
