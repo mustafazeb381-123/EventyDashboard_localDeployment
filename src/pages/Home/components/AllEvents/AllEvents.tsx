@@ -97,6 +97,7 @@ function AllEvents() {
     try {
       const response = await getEventbyId(id);
       console.log("Event by ID Response:", response.data);
+
       return response.data;
     } catch (error) {
       console.error("Error fetching event by ID:", error);
