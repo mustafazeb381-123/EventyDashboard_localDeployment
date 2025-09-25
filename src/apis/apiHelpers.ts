@@ -44,3 +44,7 @@ export const getAllEvents = (params?: Record<string, any>) => {
 export const postBadgesApi = (data: any, id: number) => {
   return axiosInstance.post(`/events/${id}/badges`, data);
 };
+
+export const postRegistrationTemplateApi = (data: any, id: string) => {
+  return axiosInstance.post(`events/${id}/registration_templates`, data);
+};

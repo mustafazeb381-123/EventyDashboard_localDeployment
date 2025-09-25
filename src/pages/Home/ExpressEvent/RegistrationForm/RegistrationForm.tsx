@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { ChevronLeft, X, Eye } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
 import Assets from "@/utils/Assets"; // 👈 make sure your template preview images are here
+import { postRegistrationTemplateApi } from "@/apis/apiHelpers";
+import { toast } from "react-toastify";
 
 // 👇 Match the ToggleStates interface from ConfirmationDetails
 interface ToggleStates {
@@ -92,6 +94,27 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
 
   const handleStepPrevious = () => {
     if (internalStep === 1) setInternalStep(0);
+  };
+
+  const postRegistrationTemplate = async () => {
+    const savedEventId = localStorage.getItem("create_eventId");
+    const data = {
+      registration_template: {
+        name: selectedTemplate?.name,
+        default: false,
+        content: "html content here", // Placeholder, replace with actual content if needed
+      },
+    };
+    try {
+      const response = await postRegistrationTemplateApi(data, savedEventId);
+
+      console.log("Registration Template API Response:", response.data);
+      toast.success("Registration template created successfully!");
+      return response;
+    } catch (error) {
+      console.error("Failed to create registration template:", error);
+      toast.error("Failed to create registration template.");
+    }
   };
 
   return (
