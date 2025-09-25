@@ -1,4 +1,4 @@
-import { getAllEvents, deleteEvent } from "@/apis/apiHelpers";
+import { getAllEvents, deleteEvent, getEventbyId } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
@@ -93,13 +93,24 @@ function AllEvents() {
     fetchAllEventsApi();
   }, []);
 
+  const getEventDataById = async (id: string | number) => {
+    try {
+      const response = await getEventbyId(id);
+      console.log("Event by ID Response:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching event by ID:", error);
+      throw error;
+    }
+  };
+
   const handleDelete = async (id: any) => {
     console.log("idddddddddddddddd", id);
     try {
       setDeletingId(id);
       await deleteEvent(id);
       setEvents((prev) => prev.filter((e) => e.id !== id));
-      toast.success("Event Deleted Successfully")
+      toast.success("Event Deleted Successfully");
     } catch (error) {
       toast.error("Error deleting event:", error);
     } finally {
@@ -134,6 +145,7 @@ function AllEvents() {
 
           return (
             <div
+              onClick={() => getEventDataById(event.id)}
               key={event.id}
               style={{
                 padding: 24,

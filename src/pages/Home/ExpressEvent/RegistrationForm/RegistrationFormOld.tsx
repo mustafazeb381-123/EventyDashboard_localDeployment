@@ -24,7 +24,7 @@ import {
 } from "@/apis/apiHelpers";
 
 // Modal Component
-const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
+const Modal = ({ selectedTemplate, onClose, onUseTemplate, formData }) => {
   if (!selectedTemplate) return null;
   const handleUseTemplate = (templateId, templateData) => {
     onUseTemplate(templateId, templateData);
@@ -45,7 +45,7 @@ const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
 
         {/* Render correct template */}
         {selectedTemplate === "template-one" && (
-          <TemplateOne onUseTemplate={handleUseTemplate} />
+          <TemplateFormOne data={formData} onUseTemplate={handleUseTemplate} />
         )}
         {selectedTemplate === "template-two" && <TemplateTwo />}
         {selectedTemplate === "template-three" && <TemplateThree />}
@@ -315,6 +315,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       {/* Modal - Only show when not in confirmation step */}
       {isModalOpen && internalStep === 0 && (
         <Modal
+          formData={formData}
           selectedTemplate={selectedTemplate}
           onClose={handleCloseModal}
           onUseTemplate={handleUseTemplate}
