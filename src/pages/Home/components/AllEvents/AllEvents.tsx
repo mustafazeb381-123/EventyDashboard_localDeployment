@@ -141,6 +141,7 @@ function AllEvents() {
                 backgroundRepeat: "no-repeat",
                 backgroundPosition: "right center",
                 backgroundSize: "auto 100%",
+                cursor: "pointer",
               }}
               className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
             >

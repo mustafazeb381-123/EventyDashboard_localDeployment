@@ -1,14 +1,23 @@
 import React, { useState } from "react";
 import Assets from "../../../../utils/Assets";
-import { Clock, Edit, MapPin, ChevronDown } from "lucide-react";
-import ExpressEvent from "../../ExpressEvent/ExpressEvent";
-import { Button } from "@/components/ui/button";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Clock, Edit, MapPin } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
+import { useNavigate } from "react-router-dom";
 
-function HomeSummary({ chartData, onTimeRangeChange }) {
+type HomeSummaryProps = {
+  chartData?: Array<Record<string, any>>;
+  onTimeRangeChange?: (range: string) => void;
+};
+
+function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [selectedMonth, setSelectedMonth] = useState("6 Month");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const handleEditEvent = () => {
+    // Navigate to Express Event flow where step 0 is Main Data
+    navigate("/express-event");
+  };
 
   // Define stats config (label + icon + key)
   const stats = [
@@ -49,56 +58,7 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
     { month: "Jun", registered: 200 },
   ];
 
-  const monthOptions = ["1 Month", "3 Month", "6 Month", "1 Year"];
-
-  // Custom dot component for the highlighted point
-  const CustomDot = (props) => {
-    const { cx, cy, payload } = props;
-    if (payload.month === "Mar") {
-      return (
-        <g>
-          <circle
-            cx={cx}
-            cy={cy}
-            r={6}
-            fill="#4F46E5"
-            stroke="white"
-            strokeWidth={2}
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={10}
-            fill="none"
-            stroke="#4F46E5"
-            strokeWidth={1}
-            opacity={0.3}
-          />
-          <rect
-            x={cx - 15}
-            y={cy - 25}
-            width={30}
-            height={18}
-            rx={4}
-            fill="#374151"
-          />
-          <text
-            x={cx}
-            y={cy - 12}
-            textAnchor="middle"
-            fontSize={10}
-            fill="white"
-            fontWeight="500"
-          >
-            155
-          </text>
-        </g>
-      );
-    }
-    return null;
-  };
-
-  const handleTimeRangeChange = (newRange) => {
+  const handleTimeRangeChange = (newRange: string) => {
     setSelectedMonth(newRange);
     setIsDropdownOpen(false);
     // Call parent callback if provided
@@ -175,7 +135,7 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
           </div>
 
           {/* edit button  */}
-          <div className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0">
+          <div onClick={handleEditEvent} className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0">
             <Edit size={16} className="lg:w-5 lg:h-5" />
             <p className="text-[#202242] text-xs sm:text-sm font-normal">
               Edit Event

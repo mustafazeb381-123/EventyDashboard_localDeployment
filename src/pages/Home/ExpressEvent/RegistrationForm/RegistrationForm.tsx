@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { ChevronLeft, X, Eye } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
 import Assets from "@/utils/Assets"; // 👈 make sure your template preview images are here
+import { postRegistrationTemplateApi } from "@/apis/apiHelpers";
+import { toast } from "react-toastify";
 
 // 👇 Match the ToggleStates interface from ConfirmationDetails
 interface ToggleStates {
@@ -93,6 +95,53 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const handleStepPrevious = () => {
     if (internalStep === 1) setInternalStep(0);
   };
+
+  const postRegistrationTemplate = async () => {
+    const savedEventId = localStorage.getItem("create_eventId");
+    const data = {
+      registration_template: {
+        name: selectedTemplate?.name,
+        default: false,
+        content: "html content here",
+      },
+    };
+    try {
+      const response = await postRegistrationTemplateApi(data, savedEventId);
+
+      console.log("Registration Template API Response:", response.data);
+      toast.success("Registration template created successfully!");
+      return response;
+    } catch (error) {
+      console.error("Failed to create registration template:", error);
+      toast.error("Failed to create registration template.");
+    }
+  };
+
+
+
+// const createRegistrationField = async () => {
+//   const savedEventId = localStorage.getItem("create_eventId");
+//   if (!savedEventId) { toast.error("Event ID not found."); return; }
+
+//   const payload = {
+//     event_registration_field: {
+//       field: "custom_field_1",
+//       name: "Custom Field 1",
+//       order: 1,
+//       active: true,
+//       custom: true,
+//       required: false,
+//       full_width: true,
+//       validation_type: "none",
+//       max_companion: null,
+//       field_options: [],
+//     },
+//   };
+
+//   const res = await postEventRegistrationFieldApi(payload, savedEventId);
+//   toast.success("Registration field created.");
+//   return res;
+// };
 
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">

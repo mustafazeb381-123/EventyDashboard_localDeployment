@@ -42,4 +42,19 @@ export const getAllEvents = (params?: Record<string, any>) => {
 
 export const deleteEvent = (id: string | number) => {
   return axiosInstance.delete(`/events/${id}`);
+}
+export const postBadgesApi = (data: any, id: number) => {
+  return axiosInstance.post(`/events/${id}/badges`, data);
 };
+
+export const postRegistrationTemplateApi = (data: any, id: string) => {
+  return axiosInstance.post(`events/${id}/registration_templates`, data);
+};
+
+// event registration fields (payload constructed at call site)
+// export const postEventRegistrationFieldApi = (
+//   data: any,
+//   eventId: string | number
+// ) => {
+//   return axiosInstance.post(`/events/${eventId}/registration_fields`, data);
+// };

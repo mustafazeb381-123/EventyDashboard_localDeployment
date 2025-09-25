@@ -285,6 +285,9 @@ const MainData = ({
     try {
       const response = await eventPostAPi(fd);
       console.log("response----++++++++---------", response.data);
+      console.log("event id in create event ---------", response.data.data.id);
+      localStorage.setItem("create_eventId", response.data.data.id);
+
       toast.success("Event created successfully");
       return response;
     } catch (error: any) {
