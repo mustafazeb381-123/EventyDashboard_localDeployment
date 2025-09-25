@@ -54,3 +54,8 @@ export const getRegistrationFieldApi = (id: string) => {
 export const deleteEvent = (id: string | number) => {
   return axiosInstance.delete(`/events/${id}`);
 };
+
+
+export const getEventbyId = (id: string | number) => {
+  return axiosInstance.get(`/events/${id}`);
+}
