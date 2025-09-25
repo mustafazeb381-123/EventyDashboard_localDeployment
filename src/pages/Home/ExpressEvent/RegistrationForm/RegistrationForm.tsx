@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronLeft, X, Eye } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
 import Assets from "@/utils/Assets"; // 👈 make sure your template preview images are here
-import { postRegistrationTemplateApi } from "@/apis/apiHelpers";
+import {
+  getRegistrationFieldApi,
+  postRegistrationTemplateFieldApi,
+} from "@/apis/apiHelpers";
 import { toast } from "react-toastify";
 
 // 👇 Match the ToggleStates interface from ConfirmationDetails
@@ -74,6 +77,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null
   );
+
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
 
   const templates: Template[] = [
@@ -96,39 +100,17 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     if (internalStep === 1) setInternalStep(0);
   };
 
-  const postRegistrationTemplate = async () => {
-    const savedEventId = localStorage.getItem("create_eventId");
-    const data = {
-      registration_template: {
-        name: selectedTemplate?.name,
-        default: false,
-        content: "html content here", // Placeholder, replace with actual content if needed
-      },
-    };
-    try {
-      const response = await postRegistrationTemplateApi(data, savedEventId);
-
-      console.log("Registration Template API Response:", response.data);
-      toast.success("Registration template created successfully!");
-      return response;
-    } catch (error) {
-      console.error("Failed to create registration template:", error);
-      toast.error("Failed to create registration template.");
-    }
-  };
-
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
       {/* Header */}
       <div className="flex flex-row justify-between items-center">
-        <div onClick={onPrevious} className="flex flex-row gap-2 items-center">
+        {/* <div onClick={onPrevious} className="flex flex-row gap-2 items-center">
           <ChevronLeft />
           <p className="text-neutral-900 text-md font-poppins font-normal">
             Choose a registration form template
           </p>
-        </div>
+        </div> */}
       </div>
-
       {/* Step Content */}
       {internalStep === 0 ? (
         <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -223,7 +205,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </div>
         </div>
       )}
-
       {/* Modal */}
       {previewTemplate && (
         <Modal
@@ -231,8 +212,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           onClose={() => setPreviewTemplate(null)}
         />
       )}
-
-      {/* Step Navigation */}
+      Step Navigation
       {internalStep === 0 && (
         <div className="flex justify-end gap-4 mt-6 sm:mt-8">
           <button
@@ -248,7 +228,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </button>
         </div>
       )}
-
       {internalStep === 1 && (
         <div className="flex justify-start gap-4 mt-6 sm:mt-8">
           <button
@@ -259,7 +238,6 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           </button>
         </div>
       )}
-
       {/* Stage Navigation */}
       <div className="flex justify-between gap-4 mt-6 sm:mt-8">
         <button
