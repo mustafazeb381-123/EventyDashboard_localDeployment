@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Assets from "../../../../utils/Assets";
-import { Clock, Edit, MapPin } from "lucide-react";
+import { Clock, Edit, MapPin, Loader2 } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
-import { getEventbyId } from "@/apis/apiHelpers";
+import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
+import { toast, ToastContainer } from "react-toastify";
 
 type HomeSummaryProps = {
   chartData?: Array<Record<string, any>>;
@@ -11,9 +12,9 @@ type HomeSummaryProps = {
 };
 
 function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
-  const [selectedMonth, setSelectedMonth] = useState("6 Month");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 const navigate = useNavigate()
   const location = useLocation();
@@ -92,20 +93,63 @@ const navigate = useNavigate()
   ];
 
   const handleTimeRangeChange = (newRange: string) => {
-    setSelectedMonth(newRange);
-    setIsDropdownOpen(false);
     // Call parent callback if provided
     if (onTimeRangeChange) {
       onTimeRangeChange(newRange);
     }
   };
 
-  const currentChartData = chartData || defaultChartData;
-
   // Format time nicely
   const formatTime = (timeStr: string) => {
     const date = new Date(timeStr);
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Direct image upload function
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    const file = files && files[0];
+    if (!file || !eventId) return;
+
+    // File validation
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("File size exceeds the 2MB limit.");
+      return;
+    }
+    const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Invalid file type. Please upload SVG, PNG, or JPG.");
+      return;
+    }
+
+    // Direct upload
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("event[logo]", file);
+
+      const response = await updateEventById(eventId, fd);
+      console.log("Logo updated successfully:", response.data);
+      
+      // Update the event data with new logo URL
+      setEventData((prev: any) => ({
+        ...prev,
+        attributes: {
+          ...prev.attributes,
+          logo_url: response.data.data.attributes.logo_url
+        }
+      }));
+      
+      toast.success("Logo updated successfully");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Error updating logo");
+    } finally {
+      setIsUploading(false);
+      // Clear the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
   };
 
   return (
@@ -117,10 +161,28 @@ const navigate = useNavigate()
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
             <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl flex-shrink-0">
-              <div className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white cursor-pointer drop-shadow-2xl">
-                <Edit size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+              {/* Edit button - directly triggers file selection */}
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white cursor-pointer drop-shadow-2xl hover:bg-gray-50 transition-colors"
+              >
+                {isUploading ? (
+                  <Loader2 size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 animate-spin" />
+                ) : (
+                  <Edit size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+                )}
               </div>
 
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".svg,.png,.jpg,.jpeg"
+              />
+
+              {/* Current logo display */}
               {eventData?.attributes?.logo_url ? (
                 <img
                   src={eventData.attributes.logo_url}
@@ -132,8 +194,6 @@ const navigate = useNavigate()
                   No Logo
                 </div>
               )}
-
-
             </div>
 
             {/* text detail part */}
@@ -265,12 +325,13 @@ const navigate = useNavigate()
             legend="Registered"
             highlightDataKey="Mar"
             highlightValue={155}
-            onTimeRangeChange={onTimeRangeChange}
+            onTimeRangeChange={handleTimeRangeChange}
             height="320px"
             className="shadow-sm hover:shadow-md transition-shadow"
           />
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 }
