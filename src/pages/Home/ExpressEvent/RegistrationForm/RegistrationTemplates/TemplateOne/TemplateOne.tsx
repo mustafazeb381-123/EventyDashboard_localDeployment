@@ -4,28 +4,26 @@ import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
-const TemplateOne = ({ onUseTemplate, data }) => {
+const TemplateOne = ({ onUseTemplate, data, isLoading }) => {
   const navigation = useNavigate();
 
-  console.log("form data in template  one ::::", data);
+  console.log("form data in template one ::::", data);
 
-  // const navigationHandle = () => {
-
-  //   navigation('/')
-
-  // }
-
+  // Handle the use template click
   const handleUseTemplate = () => {
-    // Instead of navigation, call the onUseTemplate callback
-    if (onUseTemplate) {
+    if (onUseTemplate && !isLoading) {
+      // Call the parent function with template data
       onUseTemplate("template-one", {
         name: "Event Registration Form",
         description:
           "A new guest's registration form is a form designed to streamline the process of collecting personal and contact information from new guests.",
-        templateComponent: TemplateForm, // Pass the form component
+        templateComponent: TemplateForm,
+        // Add any additional template-specific data here
+        fields: data || [], // Pass the form data as fields
       });
     }
   };
+
   return (
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
       {/* Left side (scrollable TemplateForm) */}
@@ -34,7 +32,7 @@ const TemplateOne = ({ onUseTemplate, data }) => {
       </div>
 
       {/* Right side (fixed, always visible) */}
-      <div className="w-full md:w-1/2 flex flex-col  justify-between sticky top-0">
+      <div className="w-full md:w-1/2 flex flex-col justify-between sticky top-0">
         {/* Top section */}
         <div>
           <h2 className="text-xl font-poppins font-semibold mb-2">
@@ -50,9 +48,21 @@ const TemplateOne = ({ onUseTemplate, data }) => {
         {/* Bottom button */}
         <button
           onClick={handleUseTemplate}
-          className="cursor-pointer bg-slate-800 text-white p-3 rounded-lg text-sm font-poppins font-medium hover:bg-slate-900 transition-colors"
+          disabled={isLoading}
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
+            isLoading
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-slate-800 text-white hover:bg-slate-900"
+          }`}
         >
-          Use Template →
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+              Loading...
+            </>
+          ) : (
+            "Use Template →"
+          )}
         </button>
       </div>
     </div>

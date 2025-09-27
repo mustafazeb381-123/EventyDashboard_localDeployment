@@ -9,7 +9,7 @@ import {
   ChevronLeft,
   Loader2,
 } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import * as api from "../../../../apis/apiHelpers";
 import { eventPostAPi } from "../../../../apis/apiHelpers";
 
@@ -260,6 +260,7 @@ const MainData = ({
       );
     fd.append("event[event_time_from]", formData.timeFrom || "");
     fd.append("event[event_time_to]", formData.timeTo || "");
+    fd.append("event[registration_page_banner]", "");
 
     // 👇 Attach file correctly
     if (formData.eventLogo) {
@@ -671,6 +672,7 @@ const MainData = ({
           <ChevronLeft className="rotate-90 flex-shrink-0" size={14} />
         </button>
       </div>
+      <ToastContainer />
     </div>
   );
 };

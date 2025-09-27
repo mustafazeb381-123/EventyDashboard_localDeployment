@@ -86,3 +86,5 @@ export const updateEventById = (id: string | number, data: any) => {
 export const createTemplatePostApi = (data: any, id: string) => {
   return axiosInstance.post(`/events/${id}/registration_templates`, data);
 }
+
+

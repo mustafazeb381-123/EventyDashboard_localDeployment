@@ -17,42 +17,82 @@ import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm"
 import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
 import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
 import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import {
+  createTemplatePostApi,
   getRegistrationFieldApi,
   postRegistrationTemplateFieldApi,
 } from "@/apis/apiHelpers";
 
 // Modal Component
-const Modal = ({ selectedTemplate, onClose, onUseTemplate, formData }) => {
+const Modal = ({
+  selectedTemplate,
+  onClose,
+  onUseTemplate,
+  formData,
+  isLoading,
+}) => {
   if (!selectedTemplate) return null;
-  const handleUseTemplate = (templateId, templateData) => {
-    onUseTemplate(templateId, templateData);
-    onClose();
-  };
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80] max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80%] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded"
+            disabled={isLoading}
+            className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${
+              isLoading ? "cursor-not-allowed opacity-50" : ""
+            }`}
           >
             <X />
           </button>
         </div>
 
-        {/* Render correct template */}
+        {/* Render correct template with loading state */}
         {selectedTemplate === "template-one" && (
-          <TemplateOne data={formData} onUseTemplate={handleUseTemplate} />
+          <TemplateOne
+            data={formData}
+            onUseTemplate={() => onUseTemplate("template-one")}
+            isLoading={isLoading}
+          />
         )}
-        {selectedTemplate === "template-two" && <TemplateTwo />}
-        {selectedTemplate === "template-three" && <TemplateThree />}
-        {selectedTemplate === "template-four" && <TemplateFour />}
-        {selectedTemplate === "template-five" && <TemplateFive />}
-        {selectedTemplate === "template-six" && <TemplateSix />}
-        {selectedTemplate === "template-seven" && <TemplateSeven />}
+        {selectedTemplate === "template-two" && (
+          <TemplateTwo
+            onUseTemplate={() => onUseTemplate("template-two")}
+            isLoading={isLoading}
+          />
+        )}
+        {selectedTemplate === "template-three" && (
+          <TemplateThree
+            onUseTemplate={() => onUseTemplate("template-three")}
+            isLoading={isLoading}
+          />
+        )}
+        {selectedTemplate === "template-four" && (
+          <TemplateFour
+            onUseTemplate={() => onUseTemplate("template-four")}
+            isLoading={isLoading}
+          />
+        )}
+        {selectedTemplate === "template-five" && (
+          <TemplateFive
+            onUseTemplate={() => onUseTemplate("template-five")}
+            isLoading={isLoading}
+          />
+        )}
+        {selectedTemplate === "template-six" && (
+          <TemplateSix
+            onUseTemplate={() => onUseTemplate("template-six")}
+            isLoading={isLoading}
+          />
+        )}
+        {selectedTemplate === "template-seven" && (
+          <TemplateSeven
+            onUseTemplate={() => onUseTemplate("template-seven")}
+            isLoading={isLoading}
+          />
+        )}
       </div>
     </div>
   );
@@ -63,12 +103,16 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [confirmedTemplate, setConfirmedTemplate] = useState(null);
   const [selectedTemplateData, setSelectedTemplateData] = useState(null);
-  const [internalStep, setInternalStep] = useState(0); // 0: selection, 1: confirmation
+  const [internalStep, setInternalStep] = useState(0);
   const [formData, setFormData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  console.log("confirmed template", confirmedTemplate);
+  console.log("selected template data", selectedTemplateData);
 
   useEffect(() => {
-    const rvrntid = localStorage.getItem("create_eventId");
-    console.log("event id in reg form ---------", rvrntid);
+    const eventId = localStorage.getItem("create_eventId");
+    console.log("event id in reg form ---------", eventId);
     getFieldAPi();
     console.log("toggleStates in reg form");
   }, [selectedTemplate]);
@@ -89,41 +133,109 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   };
 
   const handleCloseModal = () => {
-    setSelectedTemplate(null);
-    setIsModalOpen(false);
+    if (!isLoading) {
+      setSelectedTemplate(null);
+      setIsModalOpen(false);
+    }
   };
 
-  const handleUseTemplate = (templateId, templateData) => {
-    console.log("Selected template:", templateId, templateData);
-    setConfirmedTemplate(templateId);
-    setSelectedTemplateData(templateData);
-    setInternalStep(1); // Go to confirmation step
+  // The main handler for using a template
+  const handleUseTemplate = async (templateId) => {
+    setIsLoading(true);
+
+    try {
+      const savedEventId = localStorage.getItem("create_eventId");
+
+      if (!savedEventId) {
+        throw new Error("Event ID not found");
+      }
+
+      // Create template data based on templateId
+      let templateData = {};
+      switch (templateId) {
+        case "template-one":
+          templateData = {
+            name: "Event Registration Form",
+            description:
+              "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
+            fields: formData || [],
+            templateComponent: "TemplateFormOne",
+          };
+          break;
+        case "template-two":
+          templateData = {
+            name: "Template Two",
+            description: "Template Two description",
+            fields: [],
+            templateComponent: "TemplateFormTwo",
+          };
+          break;
+        // Add other template cases here
+        default:
+          templateData = {
+            name: `Template ${templateId}`,
+            description: `Description for ${templateId}`,
+            fields: formData || [],
+            templateComponent: templateId,
+          };
+      }
+
+      const payload = {
+        registration_template: {
+          name: templateId,
+          content: JSON.stringify(templateData),
+          default: false,
+        },
+      };
+
+      const response = await createTemplatePostApi(payload, savedEventId);
+      console.log("Template creation response:", response.data);
+
+      // Success handling
+      toast.success("Event template added successfully!");
+      setSelectedTemplateData(templateData);
+      setConfirmedTemplate(templateId);
+      setInternalStep(1); // Go to confirmation step
+      handleCloseModal(); // Close modal on success
+    } catch (error) {
+      console.error("Error creating template:", error);
+
+      // Error handling with specific messages
+      if (error.response?.status === 400) {
+        toast.error("Invalid template data. Please try again.");
+      } else if (error.response?.status === 401) {
+        toast.error("Authentication failed. Please login again.");
+      } else if (error.response?.status === 500) {
+        toast.error("Server error. Please try again later.");
+      } else {
+        toast.error(
+          error.message || "Error adding template. Please try again."
+        );
+      }
+
+      // Don't close modal on error - user can retry
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleConfirmationNext = () => {
-    // Here you can save the final configuration and proceed
     console.log("Template confirmed with settings");
-    // Call the parent onNext to move to the next main step
     if (onNext) onNext();
   };
 
   const handleConfirmationPrevious = () => {
-    setInternalStep(0); // Go back to template selection
+    setInternalStep(0);
     setConfirmedTemplate(null);
     setSelectedTemplateData(null);
   };
 
-  // Fixed navigation handlers
   const handlePreviousClick = () => {
-    // Always allow going to the previous main step
-    // Reset internal state when going back to main flow
     if (internalStep === 1) {
-      // Reset to template selection first, but don't stay there
       setInternalStep(0);
       setConfirmedTemplate(null);
       setSelectedTemplateData(null);
     }
-    // Always go to previous main step
     if (onPrevious) onPrevious();
   };
 
@@ -136,53 +248,19 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       setFormData(response.data.data);
     } catch (error) {
       console.error("Failed to get registration field:", error);
-    }
-  };
-
-  const postRegistrationTemplate = async () => {
-    const savedEventId = localStorage.getItem("create_eventId");
-    const payload = {
-      event_registration_field: {
-        field: "custom_field_1",
-        name: "Custom Field 1",
-        order: 1,
-        active: true,
-        custom: true,
-        required: false,
-        full_width: true,
-        validation_type: "none",
-        max_companion: null,
-        field_options: [],
-      },
-    };
-    try {
-      const response = await postRegistrationTemplateFieldApi(
-        payload,
-        savedEventId
-      );
-
-      console.log("Registration Template API Response:", response.data);
-      toast.success("Registration template created successfully!");
-      return response;
-    } catch (error) {
-      console.error("Failed to create registration template:", error);
-      toast.error("Failed to create registration template.");
+      toast.error("Failed to load form data");
     }
   };
 
   const handleNextClick = () => {
     if (internalStep === 0) {
-      // If we're in template selection
       if (!confirmedTemplate) {
-        // Require template selection - show message and don't proceed
-        alert("Please select a template before proceeding");
+        toast.warning("Please select a template before proceeding");
         return;
       } else {
-        // If template is confirmed, move to confirmation step
         setInternalStep(1);
       }
     } else {
-      // If we're in confirmation step, proceed to next main step
       console.log(
         "Proceeding to next main step with template data:",
         selectedTemplateData
@@ -195,10 +273,6 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const isStep1Completed = internalStep > 0;
   const isStep2Active = internalStep === 1;
 
-  // Don't render ConfirmationDetails here - handle it in the main flow
-  // This was causing the navigation to break
-
-  // Show template selection (default view)
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
       {/* Header */}
@@ -279,14 +353,10 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                     : "border-gray-200 hover:border-pink-500"
                 }`}
               >
-                {/* Render the actual template component */}
+                {/* Render the template preview */}
                 <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
-                  <div className="transform scale-15 pointer-events-none">
-                    <div className="w-[1200px]  ">
-                      {" "}
-                      {/* or whatever your form's real width is */}
-                      {tpl.component}
-                    </div>
+                  <div className="transform scale-[0.15] pointer-events-none">
+                    <div className="w-[1200px]">{tpl.component}</div>
                   </div>
                 </div>
                 {confirmedTemplate === tpl.id && (
@@ -319,25 +389,28 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           selectedTemplate={selectedTemplate}
           onClose={handleCloseModal}
           onUseTemplate={handleUseTemplate}
+          isLoading={isLoading}
         />
       )}
 
-      {/* Navigation Buttons - Simplified and consistent */}
+      {/* Navigation Buttons */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
         <button
           onClick={onPrevious}
-          disabled={false}
-          className="cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
+          disabled={isLoading}
+          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50 ${
+            isLoading ? "cursor-not-allowed opacity-50" : ""
+          }`}
         >
           ← Previous
         </button>
 
         <button
           onClick={onNext}
-          disabled={!confirmedTemplate}
+          disabled={!confirmedTemplate || isLoading}
           className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
             ${
-              !confirmedTemplate
+              !confirmedTemplate || isLoading
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed"
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
@@ -345,6 +418,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           {confirmedTemplate ? "Next →" : "Configure Template"}
         </button>
       </div>
+      <ToastContainer />
     </div>
   );
 };
