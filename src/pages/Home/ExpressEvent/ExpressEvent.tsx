@@ -13,7 +13,7 @@ import {
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { CheckCircle } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
@@ -30,6 +30,7 @@ const ExpressEvent = () => {
   // console.log("props of express event", props);
 
   const location = useLocation();
+  const { id: routeEventId } = useParams();
 
   const { 
     plan, 
@@ -43,6 +44,9 @@ const ExpressEvent = () => {
     lastEdit, 
     currentStep: initialStep 
   } = location.state || {};
+
+  // Use route event ID if available, otherwise fall back to location state eventId
+  const finalEventId = routeEventId || eventId;
   
   console.log("selected plan in the express event", plan);
   console.log("event data for editing", eventData);
@@ -50,7 +54,9 @@ const ExpressEvent = () => {
   console.log("event attributes", eventAttributes);
   console.log("chart data", chartData);
   console.log("stats", stats);
-  console.log("event ID", eventId);
+  console.log("event ID from location state", eventId);
+  console.log("event ID from route params", routeEventId);
+  console.log("final event ID", finalEventId);
   const [currentStep, setCurrentStep] = useState(initialStep || 0);
 
   const navigation = useNavigate();
@@ -98,11 +104,11 @@ const ExpressEvent = () => {
   });
 
   const handleNext = () => {
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep((prev: number) => Math.min(prev + 1, steps.length - 1));
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep((prev: number) => Math.max(prev - 1, 0));
   };
 
   const StepsNavigation = () => (
@@ -206,7 +212,7 @@ const ExpressEvent = () => {
             eventData={eventData}
             isEditing={isEditing}
             eventAttributes={eventAttributes}
-            eventId={eventId}
+            eventId={finalEventId}
             stats={stats}
             chartData={chartData}
             onTimeRangeChange={onTimeRangeChange}
@@ -262,6 +268,15 @@ const ExpressEvent = () => {
       default:
         return (
           <MainData
+            plan={plan}
+            eventData={eventData}
+            isEditing={isEditing}
+            eventAttributes={eventAttributes}
+            eventId={finalEventId}
+            stats={stats}
+            chartData={chartData}
+            onTimeRangeChange={onTimeRangeChange}
+            lastEdit={lastEdit}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}

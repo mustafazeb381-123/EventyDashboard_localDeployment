@@ -53,7 +53,7 @@ const router = createBrowserRouter([
             element: <Users />,
           },
           {
-            path: "express-event", // This path is now relative to "/" -> "/express-event"
+            path: "express-event/:id?", // This path is now relative to "/" -> "/express-event" with optional ID parameter
             element: <ExpressEvent />,
           },
           {

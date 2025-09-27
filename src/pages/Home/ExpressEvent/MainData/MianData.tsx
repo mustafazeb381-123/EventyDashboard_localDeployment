@@ -9,8 +9,8 @@ import {
   ChevronLeft,
   Loader2,
 } from "lucide-react";
-import { toast } from "react-toastify";
-import { eventPostAPi, getShowEventData } from "../../../../apis/apiHelpers";
+import { toast, ToastContainer } from "react-toastify";
+import { eventPostAPi, getShowEventData, updateEventById } from "../../../../apis/apiHelpers";
 
 type MainDataProps = {
   onNext: () => void;
@@ -40,6 +40,7 @@ type MainFormData = {
   requireApproval: boolean;
   guestTypes: string[];
   eventLogo: File | null;
+  existingLogoUrl: string | null;
 };
 
 const MainData = ({
@@ -79,6 +80,7 @@ const MainData = ({
     requireApproval: false,
     guestTypes: [],
     eventLogo: null,
+    existingLogoUrl: null,
   });
   const [logoError, setLogoError] = useState<string>("");
   const [validationErrors, setValidationErrors] = useState<
@@ -160,6 +162,7 @@ const MainData = ({
       setFormData((prev) => ({
         ...prev,
         eventLogo: file,
+        existingLogoUrl: null, // Clear existing logo when new file is uploaded
       }));
     }
   };
@@ -182,6 +185,7 @@ const MainData = ({
       setFormData((prev) => ({
         ...prev,
         eventLogo: file,
+        existingLogoUrl: null, // Clear existing logo when new file is uploaded
       }));
     }
   };
@@ -195,6 +199,7 @@ const MainData = ({
     setFormData((prev) => ({
       ...prev,
       eventLogo: null,
+      existingLogoUrl: null,
     }));
     setLogoError("");
     if (fileInputRef.current) {
@@ -255,6 +260,7 @@ const MainData = ({
         requireApproval: attributes.require_approval || false,
         guestTypes: [], // You might need to fetch badges separately
         eventLogo: null, // You might need to handle existing logo
+        existingLogoUrl: attributes.logo_url || null,
       });
       
       setShowEventData(true);
@@ -284,14 +290,6 @@ const MainData = ({
       setIsLoading(false);
     }
   };
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-    });
-  };
 
   const handleEventPostApiCall = async () => {
     const fd = new FormData();
@@ -315,6 +313,7 @@ const MainData = ({
       );
     fd.append("event[event_time_from]", formData.timeFrom || "");
     fd.append("event[event_time_to]", formData.timeTo || "");
+    fd.append("event[registration_page_banner]", "");
 
     // 👇 Attach file correctly
     if (formData.eventLogo) {
@@ -322,13 +321,6 @@ const MainData = ({
     }
 
     // Guest types
-    // formData.guestTypes.forEach((type, index) => {
-    //   fd.append(`event[badges_attributes][${index}][name]`, type);
-    //   fd.append(
-    //     `event[badges_attributes][${index}][default]`,
-    //     String(index === 0)
-    //   );
-    // });
     formData.guestTypes.forEach((type, index) => {
       fd.append(`event[badges_attributes][][name]`, type);
       fd.append(`event[badges_attributes][][default]`, String(index === 0));
@@ -338,12 +330,22 @@ const MainData = ({
     fd.append("locale", "en");
 
     try {
-      const response = await eventPostAPi(fd);
-      console.log("response----++++++++---------", response.data);
-      console.log("event id in create event ---------", response.data.data.id);
-      localStorage.setItem("create_eventId", response.data.data.id);
-
-      toast.success("Event created successfully");
+      let response;
+      
+      // If we have an eventId, we're editing an existing event
+      if (eventId) {
+        response = await updateEventById(eventId, fd);
+        console.log("Event updated successfully:", response.data);
+        toast.success("Event updated successfully");
+      } else {
+        // Creating a new event
+        response = await eventPostAPi(fd);
+        console.log("response----++++++++---------", response.data);
+        console.log("event id in create event ---------", response.data.data.id);
+        localStorage.setItem("create_eventId", response.data.data.id);
+        toast.success("Event created successfully");
+      }
+      
       return response;
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Error saving event data");
@@ -378,6 +380,7 @@ const MainData = ({
         requireApproval: attributes.require_approval || false,
         guestTypes: [], 
         eventLogo: null, 
+        existingLogoUrl: attributes.logo_url || null,
       });
       
       console.log("Form populated with event data:", {
@@ -402,21 +405,81 @@ const MainData = ({
   }, [isEditing, eventData, eventAttributes]);
 
   useEffect(()=>{
+    if (eventId) {
+      const fetchGetShowEventApi = async ()=>{
+        try {
+          setIsLoading(true);
+          const response = await getShowEventData(eventId)
+          console.log("Show event data:", response);
+          
+          // Populate form with API response data
+          if (response.data && response.data.data) {
+            const eventData = response.data.data;
+            const attributes = eventData.attributes;
+            
+            // Format time from ISO string to HH:MM format
+            const formatTimeFromISO = (isoString: string) => {
+              if (!isoString) return "09:00";
+              const date = new Date(isoString);
+              return date.toTimeString().slice(0, 5);
+            };
+            
+            setFormData({
+              eventName: attributes.name || "",
+              description: attributes.about || "",
+              dateFrom: attributes.event_date_from ? new Date(attributes.event_date_from) : undefined,
+              dateTo: attributes.event_date_to ? new Date(attributes.event_date_to) : undefined,
+              timeFrom: formatTimeFromISO(attributes.event_time_from) || "09:00",
+              timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
+              location: attributes.location || "",
+              requireApproval: attributes.require_approval || false,
+              guestTypes: [], // You might need to fetch badges separately
+              eventLogo: null, // You might need to handle existing logo
+              existingLogoUrl: attributes.logo_url || null,
+            });
+            
+            setShowEventData(true);
+            console.log("Form populated with API data:", {
+              name: attributes.name,
+              about: attributes.about,
+              event_date_from: attributes.event_date_from,
+              event_date_to: attributes.event_date_to,
+              event_time_from: attributes.event_time_from,
+              event_time_to: attributes.event_time_to,
+              location: attributes.location,
+              require_approval: attributes.require_approval,
+              event_type: attributes.event_type,
+              logo_url: attributes.logo_url,
+              primary_color: attributes.primary_color,
+              secondary_color: attributes.secondary_color,
+              registration_page_banner: attributes.registration_page_banner
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching event data:", error);
+          toast.error("Failed to load event data");
+        } finally {
+          setIsLoading(false);
+        }
+      }
 
-const fetchGetShowEventApi = async ()=>{
- const response = await getShowEventData()
- console.log("Show event data:", response);
-}
-
-fetchGetShowEventApi()
-
-  })
+      fetchGetShowEventApi()
+    }
+  }, [eventId])
 
 
 
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
+      
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 size={24} className="animate-spin text-teal-500" />
+          <span className="ml-2 text-gray-600">Loading event data...</span>
+        </div>
+      )}
       
       {/* Event Data Flag Indicator */}
       {showEventData && (
@@ -487,11 +550,11 @@ fetchGetShowEventApi()
               className="hidden"
               accept=".svg,.png,.jpg,.jpeg"
             />
-            {formData.eventLogo ? (
+            {formData.eventLogo || formData.existingLogoUrl ? (
               <div className="flex flex-col items-center justify-center h-full">
                 <div className="relative">
                   <img
-                    src={URL.createObjectURL(formData.eventLogo)}
+                    src={formData.eventLogo ? URL.createObjectURL(formData.eventLogo) : formData.existingLogoUrl!}
                     alt="Event Logo Preview"
                     className="max-h-24 sm:max-h-32 lg:max-h-36 max-w-full object-contain"
                   />
@@ -831,6 +894,7 @@ fetchGetShowEventApi()
           <ChevronLeft className="rotate-90 flex-shrink-0" size={14} />
         </button>
       </div>
+      <ToastContainer />
     </div>
   );
 };
