@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronLeft, Check } from "lucide-react";
 import TemplateOne from "./RegistrationTemplates/TemplateOne/TemplateOne";
 import TemplateTwo from "./RegistrationTemplates/TemplateTwo/TemplateTwo";
@@ -17,6 +17,11 @@ import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm"
 import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
 import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
 import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
+import { toast } from "react-toastify";
+import {
+  getRegistrationFieldApi,
+  postRegistrationTemplateFieldApi,
+} from "@/apis/apiHelpers";
 
 // Modal Component
 const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
@@ -59,9 +64,17 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [confirmedTemplate, setConfirmedTemplate] = useState(null);
   const [selectedTemplateData, setSelectedTemplateData] = useState(null);
   const [internalStep, setInternalStep] = useState(0); // 0: selection, 1: confirmation
+  const [formData, setFormData] = useState([]);
+
+  useEffect(() => {
+    const rvrntid = localStorage.getItem("create_eventId");
+    console.log("event id in reg form ---------", rvrntid);
+    getFieldAPi();
+    console.log("toggleStates in reg form");
+  }, [selectedTemplate]);
 
   const templates = [
-    { id: "template-one", component: <TemplateFormOne /> },
+    { id: "template-one", component: <TemplateFormOne data={formData} /> },
     { id: "template-two", component: <TemplateFormTwo /> },
     { id: "template-three", component: <TemplateFormThree /> },
     { id: "template-four", component: <TemplateFormFour /> },
@@ -114,6 +127,49 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     if (onPrevious) onPrevious();
   };
 
+  const getFieldAPi = async () => {
+    const eventId = localStorage.getItem("create_eventId");
+
+    try {
+      const response = await getRegistrationFieldApi(eventId);
+      console.log("getFieldAPi response:", response.data);
+      setFormData(response.data.data);
+    } catch (error) {
+      console.error("Failed to get registration field:", error);
+    }
+  };
+
+  const postRegistrationTemplate = async () => {
+    const savedEventId = localStorage.getItem("create_eventId");
+    const payload = {
+      event_registration_field: {
+        field: "custom_field_1",
+        name: "Custom Field 1",
+        order: 1,
+        active: true,
+        custom: true,
+        required: false,
+        full_width: true,
+        validation_type: "none",
+        max_companion: null,
+        field_options: [],
+      },
+    };
+    try {
+      const response = await postRegistrationTemplateFieldApi(
+        payload,
+        savedEventId
+      );
+
+      console.log("Registration Template API Response:", response.data);
+      toast.success("Registration template created successfully!");
+      return response;
+    } catch (error) {
+      console.error("Failed to create registration template:", error);
+      toast.error("Failed to create registration template.");
+    }
+  };
+
   const handleNextClick = () => {
     if (internalStep === 0) {
       // If we're in template selection
@@ -160,9 +216,10 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           <div className="flex items-center">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                ${isStep1Completed || isStep1Active
-                  ? "border-[#ff0080]"
-                  : "border-gray-200"
+                ${
+                  isStep1Completed || isStep1Active
+                    ? "border-[#ff0080]"
+                    : "border-gray-200"
                 }
                 ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
               `}
@@ -171,8 +228,9 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
                 <Check size={18} color="white" />
               ) : (
                 <p
-                  className={`text-sm font-poppins ${isStep1Active ? "text-[#ff0080]" : "text-gray-400"
-                    }`}
+                  className={`text-sm font-poppins ${
+                    isStep1Active ? "text-[#ff0080]" : "text-gray-400"
+                  }`}
                 >
                   01
                 </p>
@@ -182,8 +240,9 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
           {/* Connector */}
           <div
-            className={`flex-1 h-1 rounded-full ${isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
-              }`}
+            className={`flex-1 h-1 rounded-full ${
+              isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
+            }`}
           ></div>
 
           {/* Step 2 */}
@@ -194,8 +253,9 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
               `}
             >
               <p
-                className={`text-sm font-poppins ${isStep2Active ? "text-[#ff0080]" : "text-gray-400"
-                  }`}
+                className={`text-sm font-poppins ${
+                  isStep2Active ? "text-[#ff0080]" : "text-gray-400"
+                }`}
               >
                 02
               </p>
@@ -213,10 +273,11 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
               <div
                 key={tpl.id}
                 onClick={() => handleOpenModal(tpl.id)}
-                className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${confirmedTemplate === tpl.id
+                className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
+                  confirmedTemplate === tpl.id
                     ? "border-pink-500 bg-pink-50"
                     : "border-gray-200 hover:border-pink-500"
-                  }`}
+                }`}
               >
                 {/* Render the actual template component */}
                 <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
@@ -265,7 +326,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         <button
           onClick={onPrevious}
           disabled={false}
-          className= "cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
+          className="cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
         >
           ← Previous
         </button>
@@ -274,9 +335,10 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           onClick={onNext}
           disabled={!confirmedTemplate}
           className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
-            ${!confirmedTemplate
-              ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-              : "bg-slate-800 hover:bg-slate-900 text-white"
+            ${
+              !confirmedTemplate
+                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
           {confirmedTemplate ? "Next →" : "Configure Template"}

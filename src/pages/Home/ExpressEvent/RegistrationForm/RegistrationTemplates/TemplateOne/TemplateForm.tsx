@@ -5,12 +5,15 @@ import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
 // import ReusableRegistrationForm from "";
 
-function TemplateFormOne() {
+function TemplateFormOne({ data = [] }) {
+  console.log("data in template form one :", data);
+
   const [formData, setFormData] = useState({
     eventLogo: null,
   });
   const [logoError, setLogoError] = useState("");
   const fileInputRef = useRef(null);
+  
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
