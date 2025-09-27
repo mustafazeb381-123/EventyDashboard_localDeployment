@@ -5,6 +5,8 @@ import { Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 
+// import { useNavigate } from "react-router-dom";
+
 interface Event {
   id: string;
   type: string;
@@ -91,21 +93,7 @@ function AllEvents() {
     fetchAllEventsApi();
   }, []);
 
-  const getEventDataById = async (id: string | number) => {
-    try {
-      const response = await getEventbyId(id);
-      console.log("Event by ID Response:", response.data);
 
-      // Navigate after successful fetch
-      // navigate("/express-event");
-      navigate("/express-event", { state: { event: response.data } });
-
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching event by ID:", error);
-      throw error;
-    }
-  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -148,7 +136,11 @@ function AllEvents() {
 
           return (
             <div
-              onClick={() => getEventDataById(event.id)}
+              onClick={() =>
+                navigate(`/home/${event.id}`, {
+                  state: { eventId: event.id },
+                })
+              }
               key={event.id}
               style={{
                 padding: 24,
@@ -184,11 +176,10 @@ function AllEvents() {
                     handleDelete(event.id);
                   }}
                   disabled={deletingId === event.id}
-                  className={`p-1 rounded-full cursor-pointer ${
-                    deletingId === event.id
-                      ? "bg-red-300"
-                      : "bg-red-500 hover:bg-red-600"
-                  }`}
+                  className={`p-1 rounded-full cursor-pointer ${deletingId === event.id
+                    ? "bg-red-300"
+                    : "bg-red-500 hover:bg-red-600"
+                    }`}
                 >
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>

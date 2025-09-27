@@ -18,7 +18,16 @@ type MainDataProps = {
   currentStep: number;
   totalSteps: number;
   plan: any;
+  eventData?: any;
+  isEditing?: boolean;
+  eventAttributes?: any;
+  eventId?: string | number;
+  stats?: any[];
+  chartData?: any[];
+  onTimeRangeChange?: (range: string) => void;
+  lastEdit?: string;
 };
+
 
 type MainFormData = {
   eventName: string;
@@ -39,10 +48,26 @@ const MainData = ({
   currentStep,
   totalSteps,
   plan,
+  eventData,
+  isEditing,
+  eventAttributes,
+  eventId,
+  stats,
+  chartData,
+  onTimeRangeChange,
+  lastEdit,
 }: MainDataProps) => {
   console.log("selected plans  in main data :", plan);
+  console.log("event data for editing:", eventData);
+  console.log("is editing mode:", isEditing);
+  console.log("event attributes:", eventAttributes);
+  console.log("event ID:", eventId);
+  console.log("stats:", stats);
+  console.log("chart data:", chartData);
+  console.log("last edit:", lastEdit);
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showEventData, setShowEventData] = useState<boolean>(false);
   const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
     description: "",
@@ -207,6 +232,37 @@ const MainData = ({
     }
   };
 
+  // Function to manually populate form with event data
+  const populateFormWithEventData = () => {
+    if (isEditing && (eventData || eventAttributes)) {
+      const attributes = eventAttributes || eventData?.attributes;
+      
+      // Format time from ISO string to HH:MM format
+      const formatTimeFromISO = (isoString: string) => {
+        if (!isoString) return "09:00";
+        const date = new Date(isoString);
+        return date.toTimeString().slice(0, 5);
+      };
+      
+      setFormData({
+        eventName: attributes.name || "",
+        description: attributes.about || "",
+        dateFrom: attributes.event_date_from ? new Date(attributes.event_date_from) : undefined,
+        dateTo: attributes.event_date_to ? new Date(attributes.event_date_to) : undefined,
+        timeFrom: formatTimeFromISO(attributes.event_time_from) || "09:00",
+        timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
+        location: attributes.location || "",
+        requireApproval: attributes.require_approval || false,
+        guestTypes: [], // You might need to fetch badges separately
+        eventLogo: null, // You might need to handle existing logo
+      });
+      
+      setShowEventData(true);
+      
+      console.log("Form manually populated with event data");
+    }
+  };
+
   const handleNext = async () => {
     // Validate the form first
     if (!validateForm()) {
@@ -296,10 +352,60 @@ const MainData = ({
   };
 
 
+  // Populate form with existing event data when editing
+  useEffect(() => {
+    if (isEditing && (eventData || eventAttributes)) {
+      const attributes = eventAttributes || eventData?.attributes;
+      
+      // Format time from ISO string to HH:MM format
+      const formatTimeFromISO = (isoString: string) => {
+        if (!isoString) return "09:00";
+        const date = new Date(isoString);
+        return date.toTimeString().slice(0, 5);
+      };
+      
+      // Set flag to show event data
+      setShowEventData(true);
+      
+      setFormData({
+        eventName: attributes.name || "",
+        description: attributes.about || "",
+        dateFrom: attributes.event_date_from ? new Date(attributes.event_date_from) : undefined,
+        dateTo: attributes.event_date_to ? new Date(attributes.event_date_to) : undefined,
+        timeFrom: formatTimeFromISO(attributes.event_time_from) || "09:00",
+        timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
+        location: attributes.location || "",
+        requireApproval: attributes.require_approval || false,
+        guestTypes: [], 
+        eventLogo: null, 
+      });
+      
+      console.log("Form populated with event data:", {
+        name: attributes.name,
+        about: attributes.about,
+        event_date_from: attributes.event_date_from,
+        event_date_to: attributes.event_date_to,
+        event_time_from: attributes.event_time_from,
+        event_time_to: attributes.event_time_to,
+        location: attributes.location,
+        require_approval: attributes.require_approval,
+        event_type: attributes.event_type,
+        logo_url: attributes.logo_url,
+        primary_color: attributes.primary_color,
+        secondary_color: attributes.secondary_color,
+        registration_page_banner: attributes.registration_page_banner
+      });
+    } else {
+      // If not editing, don't show event data
+      setShowEventData(false);
+    }
+  }, [isEditing, eventData, eventAttributes]);
+
   useEffect(()=>{
 
 const fetchGetShowEventApi = async ()=>{
- const respose = await getShowEventData()
+ const response = await getShowEventData()
+ console.log("Show event data:", response);
 }
 
 fetchGetShowEventApi()
@@ -311,6 +417,48 @@ fetchGetShowEventApi()
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
+      
+      {/* Event Data Flag Indicator */}
+      {showEventData && (
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <p className="text-sm font-medium text-blue-800">Editing Existing Event</p>
+            </div>
+            <button
+              onClick={() => setShowEventData(false)}
+              className="text-xs text-blue-600 hover:text-blue-800 underline"
+            >
+              Hide Event Data
+            </button>
+          </div>
+          <p className="text-xs text-blue-600">
+            Event data has been loaded from the database. You can modify the fields below.
+          </p>
+        </div>
+      )}
+      
+      {/* Show Event Data Button (when hidden) */}
+      {!showEventData && isEditing && (eventData || eventAttributes) && (
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+              <p className="text-sm font-medium text-gray-700">Event Data Available</p>
+            </div>
+            <button
+              onClick={populateFormWithEventData}
+              className="text-xs text-blue-600 hover:text-blue-800 underline"
+            >
+              Show Event Data
+            </button>
+          </div>
+          <p className="text-xs text-gray-600">
+            Click to load existing event data into the form fields.
+          </p>
+        </div>
+      )}
 
       {/* Mobile-First Responsive Grid */}
       <div className="w-full space-y-6 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 xl:gap-8">

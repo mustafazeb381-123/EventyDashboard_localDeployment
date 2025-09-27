@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Assets from "../../../../utils/Assets";
 import { Clock, Edit, MapPin } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { getEventbyId } from "@/apis/apiHelpers";
 
 type HomeSummaryProps = {
   chartData?: Array<Record<string, any>>;
@@ -12,12 +13,44 @@ type HomeSummaryProps = {
 function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [selectedMonth, setSelectedMonth] = useState("6 Month");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const navigate = useNavigate();
+  const [eventData, setEventData] = useState<any>(null);
 
-  const handleEditEvent = () => {
-    // Navigate to Express Event flow where step 0 is Main Data
-    navigate("/express-event");
+const navigate = useNavigate()
+  const location = useLocation();
+  const { id: paramId } = useParams();
+  const eventId = location.state?.eventId || paramId;
+
+  // Fetch event data
+  const getEventDataById = async (id: string | number) => {
+    try {
+      const response = await getEventbyId(id);
+      setEventData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching event by ID:", error);
+    }
   };
+
+  useEffect(() => {
+    if (eventId) getEventDataById(eventId);
+  }, [eventId]);
+
+  if (!eventData) return <div>Loading...</div>;
+
+  const {
+    name,
+    event_type,
+    event_date_from,
+    event_date_to,
+    event_time_from,
+    event_time_to,
+    about,
+    location: eventLocation,
+    logo_url,
+    primary_color,
+    secondary_color,
+    registration_page_banner,
+    require_approval,
+  } = eventData.attributes;
 
   // Define stats config (label + icon + key)
   const stats = [
@@ -69,10 +102,17 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
   const currentChartData = chartData || defaultChartData;
 
+  // Format time nicely
+  const formatTime = (timeStr: string) => {
+    const date = new Date(timeStr);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
   return (
     <>
       <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* edit event details */}
+
         <div className="p-4 sm:p-6 lg:p-[24px] bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
@@ -80,11 +120,20 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               <div className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white cursor-pointer drop-shadow-2xl">
                 <Edit size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
               </div>
-              <img
-                src={Assets.images.sccLogo}
-                className="h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px]"
-                alt="SCC Logo"
-              />
+
+              {eventData?.attributes?.logo_url ? (
+                <img
+                  src={eventData.attributes.logo_url}
+                  alt="Event Logo"
+                  className="h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] rounded-2xl"
+                />
+              ) : (
+                <div className="h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] bg-gray-300 flex items-center justify-center rounded-2xl">
+                  No Logo
+                </div>
+              )}
+
+
             </div>
 
             {/* text detail part */}
@@ -97,13 +146,13 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   alt=""
                 />
                 <p className="text-emerald-500 text-xs sm:text-sm">
-                  Express Event
+                  {event_type}
                 </p>
               </div>
 
               {/* event name */}
               <p className="mt-4 lg:mt-[16px] text-sm sm:text-base lg:text-lg text-slate-800 font-medium">
-                SCC Summit
+                {name}
               </p>
 
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
@@ -113,7 +162,8 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   color="#525252"
                 />
                 <p className="text-neutral-500 text-xs sm:text-sm font-normal">
-                  June 07, 2025 - June 09, 2025
+                  {event_date_from} {formatTime(event_time_from)} to {event_date_to} {formatTime(event_time_to)}
+
                 </p>
               </div>
 
@@ -124,7 +174,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   color="#525252"
                 />
                 <p className="text-neutral-500 text-xs sm:text-sm font-normal">
-                  Riyadh, Saudi Arabia
+                  {eventLocation}
                 </p>
               </div>
 
@@ -135,7 +185,45 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
 
           {/* edit button  */}
-          <div onClick={handleEditEvent} className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0">
+          <div onClick={()=>navigate("/express-event", { 
+            state: { 
+              // Event type and basic info
+              plan: event_type,
+              eventData: eventData,
+              isEditing: true,
+              
+              // All event attributes
+              eventAttributes: {
+                name,
+                event_type,
+                event_date_from,
+                event_date_to,
+                event_time_from,
+                event_time_to,
+                about,
+                location: eventLocation,
+                logo_url,
+                primary_color,
+                secondary_color,
+                registration_page_banner,
+                require_approval,
+              },
+              
+              // Component props
+              chartData,
+              onTimeRangeChange,
+              
+              // Event ID for reference
+              eventId,
+              
+              // Stats data
+              stats,
+              
+              // Additional metadata
+              lastEdit: "Before 3hr",
+              currentStep: 0, // Start from first step when editing
+            } 
+          })} className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0">
             <Edit size={16} className="lg:w-5 lg:h-5" />
             <p className="text-[#202242] text-xs sm:text-sm font-normal">
               Edit Event

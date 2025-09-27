@@ -1,8 +1,4 @@
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import type { SubmitHandler } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
@@ -30,7 +26,7 @@ const RHFInput = React.forwardRef<HTMLInputElement, any>((props, ref) => (
 ));
 RHFInput.displayName = "RHFInput";
 
-const Signup: React.FC = () => {
+function Signup() {
   const { t } = useTranslation("signupPage");
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
@@ -225,8 +221,10 @@ const Signup: React.FC = () => {
           />
         </div>
       </div>
+
+      <ToastContainer />
     </div>
   );
-};
+}
 
 export default Signup;

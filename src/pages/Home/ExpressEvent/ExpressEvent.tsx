@@ -31,9 +31,27 @@ const ExpressEvent = () => {
 
   const location = useLocation();
 
-  const { plan } = location.state || {};
+  const { 
+    plan, 
+    eventData, 
+    isEditing, 
+    eventAttributes, 
+    chartData, 
+    onTimeRangeChange, 
+    eventId, 
+    stats, 
+    lastEdit, 
+    currentStep: initialStep 
+  } = location.state || {};
+  
   console.log("selected plan in the express event", plan);
-  const [currentStep, setCurrentStep] = useState(0);
+  console.log("event data for editing", eventData);
+  console.log("is editing mode", isEditing);
+  console.log("event attributes", eventAttributes);
+  console.log("chart data", chartData);
+  console.log("stats", stats);
+  console.log("event ID", eventId);
+  const [currentStep, setCurrentStep] = useState(initialStep || 0);
 
   const navigation = useNavigate();
 
@@ -185,6 +203,14 @@ const ExpressEvent = () => {
         return (
           <MainData
             plan={plan}
+            eventData={eventData}
+            isEditing={isEditing}
+            eventAttributes={eventAttributes}
+            eventId={eventId}
+            stats={stats}
+            chartData={chartData}
+            onTimeRangeChange={onTimeRangeChange}
+            lastEdit={lastEdit}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}
