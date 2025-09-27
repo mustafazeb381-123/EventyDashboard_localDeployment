@@ -8,12 +8,14 @@ import { Provider } from "react-redux";
 import { store } from "./store/store.ts";
 import { AuthProvider } from "./context/AuthContext.tsx";
 import "../src/utils/i18n"; // Import i18n configuration
+import { ToastContainer } from "react-toastify";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <AuthProvider>
       <Provider store={store}>
         <App />
+        <ToastContainer />
       </Provider>
     </AuthProvider>
   </StrictMode>
