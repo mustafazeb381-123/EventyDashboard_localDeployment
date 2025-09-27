@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Upload,
   MapPin,
@@ -10,8 +10,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import * as api from "../../../../apis/apiHelpers";
-import { eventPostAPi } from "../../../../apis/apiHelpers";
+import { eventPostAPi, getShowEventData } from "../../../../apis/apiHelpers";
 
 type MainDataProps = {
   onNext: () => void;
@@ -279,7 +278,7 @@ const MainData = ({
       fd.append(`event[badges_attributes][][default]`, String(index === 0));
     });
 
-    fd.append("event[template]", "form");
+    fd.append("event[registration_template]", "form");
     fd.append("locale", "en");
 
     try {
@@ -295,6 +294,19 @@ const MainData = ({
       throw error;
     }
   };
+
+
+  useEffect(()=>{
+
+const fetchGetShowEventApi = async ()=>{
+ const respose = await getShowEventData()
+}
+
+fetchGetShowEventApi()
+
+  })
+
+
 
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">

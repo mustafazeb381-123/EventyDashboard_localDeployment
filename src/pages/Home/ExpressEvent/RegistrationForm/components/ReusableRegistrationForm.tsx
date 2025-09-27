@@ -1,65 +1,22 @@
-// ReusableRegistrationForm.jsx
 import React, { useState } from "react";
 import { Info, Eye, EyeOff } from "lucide-react";
 
 const ReusableRegistrationForm = ({
   formFields = [],
   onSubmit,
+  onToggleField,
+  toggleLoading = {},
   submitButtonText = "Register",
   submitButtonClassName = "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors",
 }) => {
   const [formData, setFormData] = useState({});
-  // console.log("formData in reusbale registration form", formData);
   const [errors, setErrors] = useState({});
   const [filePreviewUrls, setFilePreviewUrls] = useState({});
-  const [fieldVisibility, setFieldVisibility] = useState(() => {
-    const initialVisibility = {};
-    formFields.forEach((field) => {
-      initialVisibility[field.name] = true;
-    });
-    return initialVisibility;
-  });
 
-  const toggleFieldVisibility = (fieldName) => {
-    setFieldVisibility((prev) => {
-      const isCurrentlyVisible = prev[fieldName];
-      if (isCurrentlyVisible) {
-        const currentField = formFields.find((f) => f.name === fieldName);
-        setFormData((prevData) => {
-          const newData = { ...prevData };
-          newData[fieldName] = currentField?.type === "checkbox" ? false : "";
-          return newData;
-        });
-        setErrors((prevErrors) => {
-          const newErrors = { ...prevErrors };
-          delete newErrors[fieldName];
-          return newErrors;
-        });
-
-        // Clean up file preview URL if it's a file field
-        if (currentField?.type === "file" && filePreviewUrls[fieldName]) {
-          URL.revokeObjectURL(filePreviewUrls[fieldName]);
-          setFilePreviewUrls((prev) => {
-            const newUrls = { ...prev };
-            delete newUrls[fieldName];
-            return newUrls;
-          });
-        }
-      }
-      return {
-        ...prev,
-        [fieldName]: !isCurrentlyVisible,
-      };
-    });
-  };
-
-  const isFieldVisible = (fieldName) => {
-    return fieldVisibility[fieldName] !== false;
-  };
+  // Use field.active for visibility (from parent/API)
+  const isFieldVisible = (field) => field.active !== false;
 
   const handleInputChange = (fieldName, value, file = null) => {
-    if (!isFieldVisible(fieldName)) return;
-
     setFormData((prev) => ({
       ...prev,
       [fieldName]: file || value,
@@ -77,9 +34,7 @@ const ReusableRegistrationForm = ({
     const newErrors = {};
 
     formFields.forEach((field) => {
-      if (!isFieldVisible(field.name)) {
-        return;
-      }
+      if (!isFieldVisible(field)) return;
 
       if (
         field.required &&
@@ -104,7 +59,8 @@ const ReusableRegistrationForm = ({
     e.preventDefault();
     if (validateForm()) {
       const dataToSubmit = Object.keys(formData).reduce((acc, key) => {
-        if (isFieldVisible(key)) {
+        const field = formFields.find((f) => f.name === key);
+        if (field && isFieldVisible(field)) {
           acc[key] = formData[key];
         }
         return acc;
@@ -114,7 +70,8 @@ const ReusableRegistrationForm = ({
   };
 
   const renderField = (field) => {
-    const isVisible = isFieldVisible(field.name);
+    const isVisible = isFieldVisible(field);
+
     const commonInputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
       errors[field.name] ? "border-red-300" : "border-gray-300"
     } ${
@@ -219,10 +176,8 @@ const ReusableRegistrationForm = ({
                         ...prev,
                         [field.name]: "",
                       }));
-                      // Clear the input value
                       e.target.value = "";
                     } else {
-                      // If no errors, update the state with the valid file
                       handleInputChange(field.name, file.name, file);
 
                       // Create preview URL for image files
@@ -235,7 +190,6 @@ const ReusableRegistrationForm = ({
                       }
                     }
                   } else {
-                    // Handle case when file is cleared
                     handleInputChange(field.name, "");
 
                     // Clean up preview URL
@@ -257,7 +211,6 @@ const ReusableRegistrationForm = ({
                     : "text-gray-400 bg-gray-100 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-200 file:text-gray-400 cursor-not-allowed"
                 }`}
               />
-              {/* Display allowed file types inside the input border */}
               {field.accept && (
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
                   {field.accept
@@ -268,7 +221,6 @@ const ReusableRegistrationForm = ({
               )}
             </div>
 
-            {/* Display selected file name and image preview */}
             {isVisible &&
               formData[field.name] &&
               typeof formData[field.name] === "string" &&
@@ -277,8 +229,6 @@ const ReusableRegistrationForm = ({
                   <p className="text-sm text-gray-600 truncate">
                     Selected file: <strong>{formData[field.name]}</strong>
                   </p>
-
-                  {/* Image preview */}
                   {filePreviewUrls[field.name] && (
                     <div className="flex items-center gap-3">
                       <img
@@ -303,7 +253,6 @@ const ReusableRegistrationForm = ({
                 </div>
               )}
 
-            {/* Display hint based on visibility */}
             {field.hint && (
               <p
                 className={`mt-2 text-xs ${
@@ -366,16 +315,18 @@ const ReusableRegistrationForm = ({
                 backgroundColor: "#f5f5f5",
               }}
               type="button"
-              onClick={() => toggleFieldVisibility(field.name)}
+              onClick={() => onToggleField && onToggleField(field.id)}
               className="flex items-center justify-center transition-colors flex-shrink-0 hover:bg-gray-200 mt-0"
-              title={
-                isFieldVisible(field.name) ? "Disable field" : "Enable field"
-              }
+              title={isFieldVisible(field) ? "Disable field" : "Enable field"}
+              disabled={!!toggleLoading[field.id]} // <-- disable while loading
             >
-              {isFieldVisible(field.name) ? (
+              {isFieldVisible(field) ? (
                 <Eye size={24} className="text-red-500" />
               ) : (
                 <EyeOff size={24} className="text-gray-400" />
+              )}
+              {toggleLoading[field.id] && (
+                <span className="ml-2 text-xs text-gray-400">...</span>
               )}
             </button>
           </div>

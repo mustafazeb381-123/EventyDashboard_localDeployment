@@ -1,8 +1,9 @@
-import { getAllEvents, deleteEvent } from "@/apis/apiHelpers";
+import { getAllEvents, deleteEvent, getEventbyId } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
 import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
 
 interface Event {
   id: string;
@@ -25,6 +26,7 @@ function AllEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const getEventStyle = (type: string) => {
     switch (type) {
@@ -58,11 +60,7 @@ function AllEvents() {
         const response = await getAllEvents();
         console.log("All Events Response:", response.data);
 
-        if (
-          response.data &&
-          response.data.data &&
-          Array.isArray(response.data.data)
-        ) {
+        if (response.data?.data && Array.isArray(response.data.data)) {
           const mappedEvents = response.data.data.map((item: ApiEventItem) => ({
             id: item.id,
             type: item.attributes.event_type,
@@ -93,15 +91,31 @@ function AllEvents() {
     fetchAllEventsApi();
   }, []);
 
-  const handleDelete = async (id: any) => {
-    console.log("idddddddddddddddd", id);
+  const getEventDataById = async (id: string | number) => {
+    try {
+      const response = await getEventbyId(id);
+      console.log("Event by ID Response:", response.data);
+
+      // Navigate after successful fetch
+      // navigate("/express-event");
+      navigate("/express-event", { state: { event: response.data } });
+
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching event by ID:", error);
+      throw error;
+    }
+  };
+
+  const handleDelete = async (id: string) => {
     try {
       setDeletingId(id);
       await deleteEvent(id);
       setEvents((prev) => prev.filter((e) => e.id !== id));
-      toast.success("Event Deleted Successfully")
+      toast.success("Event Deleted Successfully");
     } catch (error) {
-      toast.error("Error deleting event:", error);
+      toast.error("Error deleting event");
+      console.error(error);
     } finally {
       setDeletingId(null);
     }
@@ -134,6 +148,7 @@ function AllEvents() {
 
           return (
             <div
+              onClick={() => getEventDataById(event.id)}
               key={event.id}
               style={{
                 padding: 24,
@@ -164,7 +179,10 @@ function AllEvents() {
                 </div>
 
                 <button
-                  onClick={() => handleDelete(event.id)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent parent click
+                    handleDelete(event.id);
+                  }}
                   disabled={deletingId === event.id}
                   className={`p-1 rounded-full cursor-pointer ${
                     deletingId === event.id
