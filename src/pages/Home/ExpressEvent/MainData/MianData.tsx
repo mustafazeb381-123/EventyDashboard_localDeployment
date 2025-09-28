@@ -10,7 +10,11 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
-import { eventPostAPi, getShowEventData, updateEventById } from "../../../../apis/apiHelpers";
+import {
+  eventPostAPi,
+  getShowEventData,
+  updateEventById,
+} from "../../../../apis/apiHelpers";
 
 type MainDataProps = {
   onNext: () => void;
@@ -27,7 +31,6 @@ type MainDataProps = {
   onTimeRangeChange?: (range: string) => void;
   lastEdit?: string;
 };
-
 
 type MainFormData = {
   eventName: string;
@@ -241,19 +244,23 @@ const MainData = ({
   const populateFormWithEventData = () => {
     if (isEditing && (eventData || eventAttributes)) {
       const attributes = eventAttributes || eventData?.attributes;
-      
+
       // Format time from ISO string to HH:MM format
       const formatTimeFromISO = (isoString: string) => {
         if (!isoString) return "09:00";
         const date = new Date(isoString);
         return date.toTimeString().slice(0, 5);
       };
-      
+
       setFormData({
         eventName: attributes.name || "",
         description: attributes.about || "",
-        dateFrom: attributes.event_date_from ? new Date(attributes.event_date_from) : undefined,
-        dateTo: attributes.event_date_to ? new Date(attributes.event_date_to) : undefined,
+        dateFrom: attributes.event_date_from
+          ? new Date(attributes.event_date_from)
+          : undefined,
+        dateTo: attributes.event_date_to
+          ? new Date(attributes.event_date_to)
+          : undefined,
         timeFrom: formatTimeFromISO(attributes.event_time_from) || "09:00",
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
@@ -262,9 +269,9 @@ const MainData = ({
         eventLogo: null, // You might need to handle existing logo
         existingLogoUrl: attributes.logo_url || null,
       });
-      
+
       setShowEventData(true);
-      
+
       console.log("Form manually populated with event data");
     }
   };
@@ -331,7 +338,7 @@ const MainData = ({
 
     try {
       let response;
-      
+
       // If we have an eventId, we're editing an existing event
       if (eventId) {
         response = await updateEventById(eventId, fd);
@@ -341,11 +348,14 @@ const MainData = ({
         // Creating a new event
         response = await eventPostAPi(fd);
         console.log("response----++++++++---------", response.data);
-        console.log("event id in create event ---------", response.data.data.id);
+        console.log(
+          "event id in create event ---------",
+          response.data.data.id
+        );
         localStorage.setItem("create_eventId", response.data.data.id);
         toast.success("Event created successfully");
       }
-      
+
       return response;
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Error saving event data");
@@ -353,36 +363,39 @@ const MainData = ({
     }
   };
 
-
   // Populate form with existing event data when editing
   useEffect(() => {
     if (isEditing && (eventData || eventAttributes)) {
       const attributes = eventAttributes || eventData?.attributes;
-      
+
       // Format time from ISO string to HH:MM format
       const formatTimeFromISO = (isoString: string) => {
         if (!isoString) return "09:00";
         const date = new Date(isoString);
         return date.toTimeString().slice(0, 5);
       };
-      
+
       // Set flag to show event data
       setShowEventData(true);
-      
+
       setFormData({
         eventName: attributes.name || "",
         description: attributes.about || "",
-        dateFrom: attributes.event_date_from ? new Date(attributes.event_date_from) : undefined,
-        dateTo: attributes.event_date_to ? new Date(attributes.event_date_to) : undefined,
+        dateFrom: attributes.event_date_from
+          ? new Date(attributes.event_date_from)
+          : undefined,
+        dateTo: attributes.event_date_to
+          ? new Date(attributes.event_date_to)
+          : undefined,
         timeFrom: formatTimeFromISO(attributes.event_time_from) || "09:00",
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
-        guestTypes: [], 
-        eventLogo: null, 
+        guestTypes: [],
+        eventLogo: null,
         existingLogoUrl: attributes.logo_url || null,
       });
-      
+
       console.log("Form populated with event data:", {
         name: attributes.name,
         about: attributes.about,
@@ -396,7 +409,7 @@ const MainData = ({
         logo_url: attributes.logo_url,
         primary_color: attributes.primary_color,
         secondary_color: attributes.secondary_color,
-        registration_page_banner: attributes.registration_page_banner
+        registration_page_banner: attributes.registration_page_banner,
       });
     } else {
       // If not editing, don't show event data
@@ -404,32 +417,37 @@ const MainData = ({
     }
   }, [isEditing, eventData, eventAttributes]);
 
-  useEffect(()=>{
+  useEffect(() => {
     if (eventId) {
-      const fetchGetShowEventApi = async ()=>{
+      const fetchGetShowEventApi = async () => {
         try {
           setIsLoading(true);
-          const response = await getShowEventData(eventId)
+          const response = await getShowEventData(eventId);
           console.log("Show event data:", response);
-          
+
           // Populate form with API response data
           if (response.data && response.data.data) {
             const eventData = response.data.data;
             const attributes = eventData.attributes;
-            
+
             // Format time from ISO string to HH:MM format
             const formatTimeFromISO = (isoString: string) => {
               if (!isoString) return "09:00";
               const date = new Date(isoString);
               return date.toTimeString().slice(0, 5);
             };
-            
+
             setFormData({
               eventName: attributes.name || "",
               description: attributes.about || "",
-              dateFrom: attributes.event_date_from ? new Date(attributes.event_date_from) : undefined,
-              dateTo: attributes.event_date_to ? new Date(attributes.event_date_to) : undefined,
-              timeFrom: formatTimeFromISO(attributes.event_time_from) || "09:00",
+              dateFrom: attributes.event_date_from
+                ? new Date(attributes.event_date_from)
+                : undefined,
+              dateTo: attributes.event_date_to
+                ? new Date(attributes.event_date_to)
+                : undefined,
+              timeFrom:
+                formatTimeFromISO(attributes.event_time_from) || "09:00",
               timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
               location: attributes.location || "",
               requireApproval: attributes.require_approval || false,
@@ -437,7 +455,7 @@ const MainData = ({
               eventLogo: null, // You might need to handle existing logo
               existingLogoUrl: attributes.logo_url || null,
             });
-            
+
             setShowEventData(true);
             console.log("Form populated with API data:", {
               name: attributes.name,
@@ -452,7 +470,7 @@ const MainData = ({
               logo_url: attributes.logo_url,
               primary_color: attributes.primary_color,
               secondary_color: attributes.secondary_color,
-              registration_page_banner: attributes.registration_page_banner
+              registration_page_banner: attributes.registration_page_banner,
             });
           }
         } catch (error) {
@@ -461,18 +479,16 @@ const MainData = ({
         } finally {
           setIsLoading(false);
         }
-      }
+      };
 
-      fetchGetShowEventApi()
+      fetchGetShowEventApi();
     }
-  }, [eventId])
-
-
+  }, [eventId]);
 
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
-      
+
       {/* Loading State */}
       {isLoading && (
         <div className="flex items-center justify-center py-8">
@@ -480,14 +496,16 @@ const MainData = ({
           <span className="ml-2 text-gray-600">Loading event data...</span>
         </div>
       )}
-      
+
       {/* Event Data Flag Indicator */}
       {showEventData && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-sm font-medium text-blue-800">Editing Existing Event</p>
+              <p className="text-sm font-medium text-blue-800">
+                Editing Existing Event
+              </p>
             </div>
             <button
               onClick={() => setShowEventData(false)}
@@ -497,18 +515,21 @@ const MainData = ({
             </button>
           </div>
           <p className="text-xs text-blue-600">
-            Event data has been loaded from the database. You can modify the fields below.
+            Event data has been loaded from the database. You can modify the
+            fields below.
           </p>
         </div>
       )}
-      
+
       {/* Show Event Data Button (when hidden) */}
       {!showEventData && isEditing && (eventData || eventAttributes) && (
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
-              <p className="text-sm font-medium text-gray-700">Event Data Available</p>
+              <p className="text-sm font-medium text-gray-700">
+                Event Data Available
+              </p>
             </div>
             <button
               onClick={populateFormWithEventData}
@@ -554,7 +575,11 @@ const MainData = ({
               <div className="flex flex-col items-center justify-center h-full">
                 <div className="relative">
                   <img
-                    src={formData.eventLogo ? URL.createObjectURL(formData.eventLogo) : formData.existingLogoUrl!}
+                    src={
+                      formData.eventLogo
+                        ? URL.createObjectURL(formData.eventLogo)
+                        : formData.existingLogoUrl!
+                    }
                     alt="Event Logo Preview"
                     className="max-h-24 sm:max-h-32 lg:max-h-36 max-w-full object-contain"
                   />

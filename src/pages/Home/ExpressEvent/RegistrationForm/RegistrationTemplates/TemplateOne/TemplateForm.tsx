@@ -24,7 +24,6 @@ function TemplateFormOne({ data }) {
   const [logoError, setLogoError] = useState("");
   const [toggleLoading, setToggleLoading] = useState({});
   const fileInputRef = useRef(null);
-  
 
   // Fetch event and banner on mount and after upload
   useEffect(() => {
@@ -41,7 +40,6 @@ function TemplateFormOne({ data }) {
     fetchBanner();
   }, []);
 
-  // Build form fields dynamically from API data
   const formFields = useMemo(() => {
     if (!Array.isArray(data)) return [];
     return data.map((field) => {
@@ -59,7 +57,7 @@ function TemplateFormOne({ data }) {
         placeholder: `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
-        active: !!attr.active,
+        active: attr.active, // 👈 use directly
       };
     });
   }, [data]);

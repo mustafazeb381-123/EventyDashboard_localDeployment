@@ -150,6 +150,11 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         throw new Error("Event ID not found");
       }
 
+      const activeFieldIds = (formData || [])
+        .filter((field) => field?.attributes?.active) // only active
+        .map((field) => field.id); // just IDs
+      console.log("active field ids ::", activeFieldIds);
+
       // Create template data based on templateId
       let templateData = {};
       switch (templateId) {
@@ -183,10 +188,12 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       const payload = {
         registration_template: {
           name: templateId,
-          content: JSON.stringify(templateData),
+          event_registration_fields_ids: activeFieldIds,
           default: false,
         },
       };
+
+      console.log("payload of the createdTemplate`post APi :::", payload);
 
       const response = await createTemplatePostApi(payload, savedEventId);
       console.log("Template creation response:", response.data);
