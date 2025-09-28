@@ -17,12 +17,13 @@ import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm"
 import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
 import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
 import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
-import { toast, ToastContainer } from "react-toastify";
 import {
   createTemplatePostApi,
   getRegistrationFieldApi,
   postRegistrationTemplateFieldApi,
+  updateEventById,
 } from "@/apis/apiHelpers";
+import { toast, ToastContainer } from "react-toastify";
 
 // Modal Component
 const Modal = ({
@@ -35,7 +36,7 @@ const Modal = ({
   if (!selectedTemplate) return null;
 
   return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-40">
       <div className="bg-white rounded-3xl p-6 md:p-8 w-[80%] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-end">
           <button
@@ -106,6 +107,12 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [internalStep, setInternalStep] = useState(0);
   const [formData, setFormData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmationToggleStates, setConfirmationToggleStates] = useState({
+    confirmationMsg: true,
+    userQRCode: false,
+    location: false,
+    eventDetails: false,
+  });
 
   console.log("confirmed template", confirmedTemplate);
   console.log("selected template data", selectedTemplateData);
@@ -150,11 +157,6 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         throw new Error("Event ID not found");
       }
 
-      const activeFieldIds = (formData || [])
-        .filter((field) => field?.attributes?.active) // only active
-        .map((field) => field.id); // just IDs
-      console.log("active field ids ::", activeFieldIds);
-
       // Create template data based on templateId
       let templateData = {};
       switch (templateId) {
@@ -188,12 +190,10 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       const payload = {
         registration_template: {
           name: templateId,
-          event_registration_fields_ids: activeFieldIds,
+          content: JSON.stringify(templateData),
           default: false,
         },
       };
-
-      console.log("payload of the createdTemplate`post APi :::", payload);
 
       const response = await createTemplatePostApi(payload, savedEventId);
       console.log("Template creation response:", response.data);
@@ -202,8 +202,10 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
       toast.success("Event template added successfully!");
       setSelectedTemplateData(templateData);
       setConfirmedTemplate(templateId);
-      setInternalStep(1); // Go to confirmation step
-      handleCloseModal(); // Close modal on success
+      setTimeout(() => {
+        setInternalStep(1); // Go to confirmation step
+        handleCloseModal(); // Close modal on success
+      }, 1000);
     } catch (error) {
       console.error("Error creating template:", error);
 
@@ -226,9 +228,25 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     }
   };
 
-  const handleConfirmationNext = () => {
-    console.log("Template confirmed with settings");
-    if (onNext) onNext();
+  // Handler for receiving toggle states from ConfirmationDetails
+  const handleToggleStatesChange = (toggleStates) => {
+    setConfirmationToggleStates(toggleStates);
+    console.log("Updated toggle states:", toggleStates);
+  };
+
+  const handleConfirmationNext = async () => {
+    try {
+      setIsLoading(true);
+      await updateTheconfirmationDetails();
+      setTimeout(() => {
+        if (onNext) onNext();
+      }, 1000); // 300ms delay is enough
+    } catch (error) {
+      console.error("Failed to update confirmation details:", error);
+      // Toast error is already handled in updateTheconfirmationDetails
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleConfirmationPrevious = () => {
@@ -279,6 +297,46 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const isStep1Active = internalStep === 0;
   const isStep1Completed = internalStep > 0;
   const isStep2Active = internalStep === 1;
+
+  const updateTheconfirmationDetails = async () => {
+    const formData = new FormData();
+    const id = await localStorage.getItem("create_eventId");
+
+    // Use actual toggle states from ConfirmationDetails component
+    formData.append(`event[print_qr]`, confirmationToggleStates.userQRCode);
+    formData.append(
+      `event[display_confirmation]`,
+      confirmationToggleStates.confirmationMsg
+    );
+    formData.append(
+      `event[display_event_details]`,
+      confirmationToggleStates.eventDetails
+    );
+    formData.append(
+      `event[display_location]`,
+      confirmationToggleStates.location
+    );
+
+    console.log("Updating confirmation details with:", {
+      print_qr: confirmationToggleStates.userQRCode,
+      display_confirmation: confirmationToggleStates.confirmationMsg,
+      display_event_details: confirmationToggleStates.eventDetails,
+      display_location: confirmationToggleStates.location,
+    });
+
+    try {
+      const response = await updateEventById(id, formData);
+      console.log(
+        "Response of update api for qr, location, etc in confirmation details:",
+        response
+      );
+      toast.success("Confirmation Details Updated Successfully");
+    } catch (error) {
+      console.log("Error in confirmation details:", error);
+      toast.error("Error in Confirmation data");
+      throw error; // Re-throw to handle in calling function
+    }
+  };
 
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
@@ -385,6 +443,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
             selectedTemplateData={selectedTemplateData}
             onNext={handleConfirmationNext}
             onPrevious={handleConfirmationPrevious}
+            onToggleStatesChange={handleToggleStatesChange}
           />
         </div>
       )}
@@ -413,16 +472,27 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         </button>
 
         <button
-          onClick={onNext}
+          onClick={
+            internalStep === 1 ? handleConfirmationNext : handleNextClick
+          }
           disabled={!confirmedTemplate || isLoading}
-          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
+          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center
             ${
               !confirmedTemplate || isLoading
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed"
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
-          {confirmedTemplate ? "Next →" : "Configure Template"}
+          {isLoading ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent mr-2"></div>
+              Loading...
+            </>
+          ) : confirmedTemplate ? (
+            "Next →"
+          ) : (
+            "Configure Template"
+          )}
         </button>
       </div>
       <ToastContainer />

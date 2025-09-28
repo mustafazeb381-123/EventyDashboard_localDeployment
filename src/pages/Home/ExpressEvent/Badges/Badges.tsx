@@ -111,7 +111,7 @@ const Badges: React.FC<BadgesProps> = ({
     badgeName: string
   ) => {
     const savedEventId = localStorage.getItem("create_eventId");
-    console.log('saved event id-------+++++++-------', savedEventId)
+    console.log("saved event id-------+++++++-------", savedEventId);
 
     const data = {
       badge: {

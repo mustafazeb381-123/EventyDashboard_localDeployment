@@ -93,8 +93,6 @@ function AllEvents() {
     fetchAllEventsApi();
   }, []);
 
-
-
   const handleDelete = async (id: string) => {
     try {
       setDeletingId(id);
@@ -176,10 +174,11 @@ function AllEvents() {
                     handleDelete(event.id);
                   }}
                   disabled={deletingId === event.id}
-                  className={`p-1 rounded-full cursor-pointer ${deletingId === event.id
-                    ? "bg-red-300"
-                    : "bg-red-500 hover:bg-red-600"
-                    }`}
+                  className={`p-1 rounded-full cursor-pointer ${
+                    deletingId === event.id
+                      ? "bg-red-300"
+                      : "bg-red-500 hover:bg-red-600"
+                  }`}
                 >
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>

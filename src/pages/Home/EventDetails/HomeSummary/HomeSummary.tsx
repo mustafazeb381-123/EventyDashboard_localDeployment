@@ -16,7 +16,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-const navigate = useNavigate()
+  const navigate = useNavigate();
   const location = useLocation();
   const { id: paramId } = useParams();
   const eventId = location.state?.eventId || paramId;
@@ -130,16 +130,16 @@ const navigate = useNavigate()
 
       const response = await updateEventById(eventId, fd);
       console.log("Logo updated successfully:", response.data);
-      
+
       // Update the event data with new logo URL
       setEventData((prev: any) => ({
         ...prev,
         attributes: {
           ...prev.attributes,
-          logo_url: response.data.data.attributes.logo_url
-        }
+          logo_url: response.data.data.attributes.logo_url,
+        },
       }));
-      
+
       toast.success("Logo updated successfully");
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Error updating logo");
@@ -162,12 +162,15 @@ const navigate = useNavigate()
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
             <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl flex-shrink-0">
               {/* Edit button - directly triggers file selection */}
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
                 className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white cursor-pointer drop-shadow-2xl hover:bg-gray-50 transition-colors"
               >
                 {isUploading ? (
-                  <Loader2 size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 animate-spin" />
+                  <Loader2
+                    size={16}
+                    className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 animate-spin"
+                  />
                 ) : (
                   <Edit size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
                 )}
@@ -222,8 +225,8 @@ const navigate = useNavigate()
                   color="#525252"
                 />
                 <p className="text-neutral-500 text-xs sm:text-sm font-normal">
-                  {event_date_from} {formatTime(event_time_from)} to {event_date_to} {formatTime(event_time_to)}
-
+                  {event_date_from} {formatTime(event_time_from)} to{" "}
+                  {event_date_to} {formatTime(event_time_to)}
                 </p>
               </div>
 
@@ -245,45 +248,50 @@ const navigate = useNavigate()
           </div>
 
           {/* edit button  */}
-          <div onClick={()=>navigate("/express-event", { 
-            state: { 
-              // Event type and basic info
-              plan: event_type,
-              eventData: eventData,
-              isEditing: true,
-              
-              // All event attributes
-              eventAttributes: {
-                name,
-                event_type,
-                event_date_from,
-                event_date_to,
-                event_time_from,
-                event_time_to,
-                about,
-                location: eventLocation,
-                logo_url,
-                primary_color,
-                secondary_color,
-                registration_page_banner,
-                require_approval,
-              },
-              
-              // Component props
-              chartData,
-              onTimeRangeChange,
-              
-              // Event ID for reference
-              eventId,
-              
-              // Stats data
-              stats,
-              
-              // Additional metadata
-              lastEdit: "Before 3hr",
-              currentStep: 0, // Start from first step when editing
-            } 
-          })} className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0">
+          <div
+            onClick={() =>
+              navigate("/express-event", {
+                state: {
+                  // Event type and basic info
+                  plan: event_type,
+                  eventData: eventData,
+                  isEditing: true,
+
+                  // All event attributes
+                  eventAttributes: {
+                    name,
+                    event_type,
+                    event_date_from,
+                    event_date_to,
+                    event_time_from,
+                    event_time_to,
+                    about,
+                    location: eventLocation,
+                    logo_url,
+                    primary_color,
+                    secondary_color,
+                    registration_page_banner,
+                    require_approval,
+                  },
+
+                  // Component props
+                  chartData,
+                  onTimeRangeChange,
+
+                  // Event ID for reference
+                  eventId,
+
+                  // Stats data
+                  stats,
+
+                  // Additional metadata
+                  lastEdit: "Before 3hr",
+                  currentStep: 0, // Start from first step when editing
+                },
+              })
+            }
+            className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0"
+          >
             <Edit size={16} className="lg:w-5 lg:h-5" />
             <p className="text-[#202242] text-xs sm:text-sm font-normal">
               Edit Event
