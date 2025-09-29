@@ -3,7 +3,7 @@ import { ChevronLeft, X, Eye } from "lucide-react";
 import Assets from "@/utils/Assets";
 import type { ToggleStates } from "../ExpressEvent";
 import { postBadgesApi } from "@/apis/apiHelpers";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 interface Badge {
   id: number;
@@ -96,10 +96,18 @@ const Badges: React.FC<BadgesProps> = ({
 
     setLoading(true);
     try {
-      await handleBadgeApiSelection(selectedBadge.id, selectedBadge.name);
-      onNext(selectedBadge.id); // Only go next if API succeeds
+      const response = await handleBadgeApiSelection(
+        selectedBadge.id,
+        selectedBadge.name
+      );
+      console.log("response of badges api ::", response.data);
+      toast.success("Badges Added Successfully");
+      setTimeout(() => {
+        onNext(selectedBadge.id); // Only go next if API succeeds
+      }, 1000);
     } catch (error) {
       console.error("Failed to proceed:", error);
+      toast.error("Error while adding badges");
       // You could also show a toast or inline error here
     } finally {
       setLoading(false);
@@ -304,6 +312,7 @@ const Badges: React.FC<BadgesProps> = ({
           )}
         </button>
       </div>
+      <ToastContainer />
     </div>
   );
 };
