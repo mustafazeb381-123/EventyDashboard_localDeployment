@@ -30,6 +30,7 @@ type MainDataProps = {
   chartData?: any[];
   onTimeRangeChange?: (range: string) => void;
   lastEdit?: string;
+  onEventCreated?: (id: string) => void;
 };
 
 type MainFormData = {
@@ -60,8 +61,9 @@ const MainData = ({
   chartData,
   onTimeRangeChange,
   lastEdit,
+  onEventCreated,
 }: MainDataProps) => {
-  console.log("selected plans  in main data :", plan);
+  console.log("selected plans in main data :", plan);
   console.log("event data for editing:", eventData);
   console.log("is editing mode:", isEditing);
   console.log("event attributes:", eventAttributes);
@@ -69,6 +71,7 @@ const MainData = ({
   console.log("stats:", stats);
   console.log("chart data:", chartData);
   console.log("last edit:", lastEdit);
+  
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showEventData, setShowEventData] = useState<boolean>(false);
@@ -242,6 +245,8 @@ const MainData = ({
 
   // Function to manually populate form with event data
   const populateFormWithEventData = () => {
+    console.log("Populating form with event data. Event ID:", eventId);
+    
     if (isEditing && (eventData || eventAttributes)) {
       const attributes = eventAttributes || eventData?.attributes;
 
@@ -272,11 +277,13 @@ const MainData = ({
 
       setShowEventData(true);
 
-      console.log("Form manually populated with event data");
+      console.log("Form manually populated with event data. Event ID:", eventId);
     }
   };
 
   const handleNext = async () => {
+    console.log("Next button clicked. Current Event ID:", eventId);
+    
     // Validate the form first
     if (!validateForm()) {
       toast.error("Please fill in all required fields");
@@ -299,6 +306,8 @@ const MainData = ({
   };
 
   const handleEventPostApiCall = async () => {
+    console.log("Making API call with Event ID:", eventId);
+    
     const fd = new FormData();
 
     fd.append("event[name]", formData.eventName);
@@ -341,11 +350,13 @@ const MainData = ({
 
       // If we have an eventId, we're editing an existing event
       if (eventId) {
+        console.log("Updating existing event with ID:", eventId);
         response = await updateEventById(eventId, fd);
         console.log("Event updated successfully:", response.data);
         toast.success("Event updated successfully");
       } else {
         // Creating a new event
+        console.log("Creating new event");
         response = await eventPostAPi(fd);
         console.log("response----++++++++---------", response.data);
         console.log(
@@ -353,6 +364,13 @@ const MainData = ({
           response.data.data.id
         );
         localStorage.setItem("create_eventId", response.data.data.id);
+        if (onEventCreated && response?.data?.data?.id) {
+          try {
+            onEventCreated(String(response.data.data.id));
+          } catch (e) {
+            console.warn("onEventCreated callback threw an error", e);
+          }
+        }
         toast.success("Event created successfully");
       }
 
@@ -366,6 +384,8 @@ const MainData = ({
   // Populate form with existing event data when editing
   useEffect(() => {
     if (isEditing && (eventData || eventAttributes)) {
+      console.log("Editing mode detected. Event ID:", eventId);
+      
       const attributes = eventAttributes || eventData?.attributes;
 
       // Format time from ISO string to HH:MM format
@@ -396,29 +416,17 @@ const MainData = ({
         existingLogoUrl: attributes.logo_url || null,
       });
 
-      console.log("Form populated with event data:", {
-        name: attributes.name,
-        about: attributes.about,
-        event_date_from: attributes.event_date_from,
-        event_date_to: attributes.event_date_to,
-        event_time_from: attributes.event_time_from,
-        event_time_to: attributes.event_time_to,
-        location: attributes.location,
-        require_approval: attributes.require_approval,
-        event_type: attributes.event_type,
-        logo_url: attributes.logo_url,
-        primary_color: attributes.primary_color,
-        secondary_color: attributes.secondary_color,
-        registration_page_banner: attributes.registration_page_banner,
-      });
+      console.log("Form populated with event data. Event ID:", eventId);
     } else {
       // If not editing, don't show event data
       setShowEventData(false);
     }
-  }, [isEditing, eventData, eventAttributes]);
+  }, [isEditing, eventData, eventAttributes, eventId]);
 
   useEffect(() => {
     if (eventId) {
+      console.log("Fetching event data for Event ID:", eventId);
+      
       const fetchGetShowEventApi = async () => {
         try {
           setIsLoading(true);
@@ -457,24 +465,10 @@ const MainData = ({
             });
 
             setShowEventData(true);
-            console.log("Form populated with API data:", {
-              name: attributes.name,
-              about: attributes.about,
-              event_date_from: attributes.event_date_from,
-              event_date_to: attributes.event_date_to,
-              event_time_from: attributes.event_time_from,
-              event_time_to: attributes.event_time_to,
-              location: attributes.location,
-              require_approval: attributes.require_approval,
-              event_type: attributes.event_type,
-              logo_url: attributes.logo_url,
-              primary_color: attributes.primary_color,
-              secondary_color: attributes.secondary_color,
-              registration_page_banner: attributes.registration_page_banner,
-            });
+            console.log("Form populated with API data. Event ID:", eventId);
           }
         } catch (error) {
-          console.error("Error fetching event data:", error);
+          console.error("Error fetching event data for Event ID:", eventId, error);
           toast.error("Failed to load event data");
         } finally {
           setIsLoading(false);
@@ -484,6 +478,36 @@ const MainData = ({
       fetchGetShowEventApi();
     }
   }, [eventId]);
+
+  // Handle Previous button click
+  const handlePreviousClick = () => {
+    console.log("Previous button clicked. Current Event ID:", eventId);
+    onPrevious();
+  };
+
+  // Handle Add Guest Type button click
+  const handleAddGuestTypeClick = () => {
+    console.log("Add Guest Type button clicked. Current Event ID:", eventId);
+    addGuestType();
+  };
+
+  // Handle Remove Guest Type button click
+  const handleRemoveGuestTypeClick = (index: number) => {
+    console.log("Remove Guest Type button clicked. Event ID:", eventId, "Index:", index);
+    removeGuestType(index);
+  };
+
+  // Handle Show Event Data button click
+  const handleShowEventDataClick = () => {
+    console.log("Show Event Data button clicked. Event ID:", eventId);
+    populateFormWithEventData();
+  };
+
+  // Handle Hide Event Data button click
+  const handleHideEventDataClick = () => {
+    console.log("Hide Event Data button clicked. Event ID:", eventId);
+    setShowEventData(false);
+  };
 
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
@@ -504,11 +528,11 @@ const MainData = ({
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
               <p className="text-sm font-medium text-blue-800">
-                Editing Existing Event
+                Editing Existing Event (ID: {eventId})
               </p>
             </div>
             <button
-              onClick={() => setShowEventData(false)}
+              onClick={handleHideEventDataClick}
               className="text-xs text-blue-600 hover:text-blue-800 underline"
             >
               Hide Event Data
@@ -528,11 +552,11 @@ const MainData = ({
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
               <p className="text-sm font-medium text-gray-700">
-                Event Data Available
+                Event Data Available (ID: {eventId})
               </p>
             </div>
             <button
-              onClick={populateFormWithEventData}
+              onClick={handleShowEventDataClick}
               className="text-xs text-blue-600 hover:text-blue-800 underline"
             >
               Show Event Data
@@ -562,7 +586,10 @@ const MainData = ({
             `}
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              console.log("Upload area clicked. Event ID:", eventId);
+              fileInputRef.current?.click();
+            }}
           >
             <input
               type="file"
@@ -587,6 +614,7 @@ const MainData = ({
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
+                      console.log("Remove image clicked. Event ID:", eventId);
                       removeImage();
                     }}
                     className="absolute -top-2 -right-2 p-1 bg-white rounded-full shadow-md text-red-500 hover:text-red-700 transition-colors"
@@ -631,9 +659,10 @@ const MainData = ({
               <input
                 type="checkbox"
                 checked={formData.requireApproval}
-                onChange={(e) =>
-                  handleInputChange("requireApproval", e.target.checked)
-                }
+                onChange={(e) => {
+                  console.log("Require approval toggled. Event ID:", eventId, "Checked:", e.target.checked);
+                  handleInputChange("requireApproval", e.target.checked);
+                }}
                 className="sr-only"
               />
               <div
@@ -828,7 +857,7 @@ const MainData = ({
                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
               />
               <button
-                onClick={addGuestType}
+                onClick={handleAddGuestTypeClick}
                 className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 flex-shrink-0 transition-colors"
               >
                 <Plus size={16} />
@@ -856,7 +885,7 @@ const MainData = ({
                     {type}
                   </span>
                   <button
-                    onClick={() => removeGuestType(index)}
+                    onClick={() => handleRemoveGuestTypeClick(index)}
                     className="text-red-400 hover:text-red-500 flex-shrink-0 transition-colors"
                   >
                     <Trash2 size={16} />
@@ -876,7 +905,7 @@ const MainData = ({
       {/* Navigation Buttons */}
       <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
         <button
-          onClick={onPrevious}
+          onClick={handlePreviousClick}
           disabled={currentStep === 0 || isLoading}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
             ${
@@ -912,7 +941,10 @@ const MainData = ({
 
       {/* Help Section */}
       <div className="mt-6 sm:mt-8 lg:mt-12 flex justify-center sm:justify-end">
-        <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors">
+        <button 
+          onClick={() => console.log("Help button clicked. Event ID:", eventId)}
+          className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors"
+        >
           <span className="text-center sm:text-left">
             Can't find what you're looking for?
           </span>

@@ -46,7 +46,10 @@ const ExpressEvent = () => {
   } = location.state || {};
 
   // Use route event ID if available, otherwise fall back to location state eventId
-  const finalEventId = routeEventId || eventId;
+  const [createdEventId, setCreatedEventId] = useState<string | undefined>(
+    (routeEventId as string) || (eventId as string)
+  );
+  const finalEventId = createdEventId;
   
   console.log("selected plan in the express event", plan);
   console.log("event data for editing", eventData);
@@ -217,6 +220,7 @@ const ExpressEvent = () => {
             chartData={chartData}
             onTimeRangeChange={onTimeRangeChange}
             lastEdit={lastEdit}
+            onEventCreated={(id) => setCreatedEventId(id)}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}
@@ -228,6 +232,7 @@ const ExpressEvent = () => {
           <RegistrationForm
             toggleStates={toggleStates}
             setToggleStates={setToggleStates}
+            eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}

@@ -4,13 +4,15 @@ import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
-const TemplateOne = ({ onUseTemplate, data, isLoading }) => {
+const TemplateOne = ({ onUseTemplate, data, isLoading, eventId }: { onUseTemplate?: any; data: any; isLoading?: boolean; eventId?: string }) => {
+  console.log('onUse template-----+++++------', onUseTemplate, eventId, data)
   const navigation = useNavigate();
 
   console.log("form data in template one ::::", data);
 
   // Handle the use template click
   const handleUseTemplate = () => {
+    console.log('fsdasfsdfsdfsd')
     if (onUseTemplate && !isLoading) {
       // Call the parent function with template data
       onUseTemplate("template-one", {
@@ -28,7 +30,7 @@ const TemplateOne = ({ onUseTemplate, data, isLoading }) => {
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
       {/* Left side (scrollable TemplateForm) */}
       <div className="w-full md:w-[70%] overflow-y-auto pr-2">
-        <TemplateForm data={data} />
+        <TemplateForm data={data} eventId={eventId} />
       </div>
 
       {/* Right side (fixed, always visible) */}
