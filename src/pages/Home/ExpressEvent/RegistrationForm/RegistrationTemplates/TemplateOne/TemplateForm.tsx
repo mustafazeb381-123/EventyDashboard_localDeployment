@@ -1,4 +1,5 @@
 import React, { useRef, useState, useMemo, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { Upload, Info, XCircle } from "lucide-react";
 import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
@@ -8,7 +9,7 @@ import {
   updateRegistrationFieldToggleApi,
 } from "@/apis/apiHelpers";
 
-function TemplateFormOne({ data }) {
+function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: string }) {
   // Log all field attributes
   useMemo(() => {
     if (Array.isArray(data)) {
@@ -26,11 +27,13 @@ function TemplateFormOne({ data }) {
   const fileInputRef = useRef(null);
 
   // Fetch event and banner on mount and after upload
+  const { id: routeId } = useParams();
+  const effectiveEventId = (propEventId as string | undefined) || (routeId as string | undefined) || localStorage.getItem("create_eventId") || undefined;
+
   useEffect(() => {
     const fetchBanner = async () => {
-      const eventId = localStorage.getItem("create_eventId");
       try {
-        const response = await getEventbyId(eventId);
+        const response = await getEventbyId(effectiveEventId);
         // Adjust this path based on your API response structure
         setBannerUrl(response.data.data.registration_page_banner || null);
       } catch (error) {
@@ -38,7 +41,7 @@ function TemplateFormOne({ data }) {
       }
     };
     fetchBanner();
-  }, []);
+  }, [effectiveEventId]);
 
   const formFields = useMemo(() => {
     if (!Array.isArray(data)) return [];
@@ -71,12 +74,11 @@ function TemplateFormOne({ data }) {
 
   const handleToggleField = async (fieldId, setLoading) => {
     setLoading((prev) => ({ ...prev, [fieldId]: true }));
-    const eventId = localStorage.getItem("create_eventId");
     const newActive = !fieldActiveStates[fieldId];
     try {
       await updateRegistrationFieldToggleApi(
         { active: newActive },
-        eventId,
+        effectiveEventId,
         fieldId
       );
       setFieldActiveStates((prev) => ({
@@ -123,18 +125,17 @@ function TemplateFormOne({ data }) {
 
   // Upload banner and refresh from API
   const updateBanner = async () => {
-    const eventId = localStorage.getItem("create_eventId");
     if (!formData.eventLogo) return;
     try {
       // You may need to send FormData if your API expects file upload
       const payload = new FormData();
       payload.append("event[registration_page_banner]", formData.eventLogo);
 
-      const response = await updateEventById(eventId, payload);
+      const response = await updateEventById(effectiveEventId, payload);
       console.log("Event banner updated:", response);
 
       // Fetch updated event/banner
-      const eventResponse = await getEventbyId(eventId);
+      const eventResponse = await getEventbyId(effectiveEventId);
       console.log("Fetched event after banner update:", eventResponse);
       fetchEventData();
       setBannerUrl(eventResponse.data.data.eventLogo || null);
@@ -154,9 +155,8 @@ function TemplateFormOne({ data }) {
   };
   const [eventData, setEventData] = useState("");
   const fetchEventData = async () => {
-    const eventId = localStorage.getItem("create_eventId");
     try {
-      const response = await getEventbyId(eventId);
+      const response = await getEventbyId(effectiveEventId);
       console.log("Event data fetched in useEffect :: ", response.data.data);
       setEventData(response.data.data);
     } catch (error) {

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import { ChevronLeft, Check } from "lucide-react";
 import TemplateOne from "./RegistrationTemplates/TemplateOne/TemplateOne";
 import TemplateTwo from "./RegistrationTemplates/TemplateTwo/TemplateTwo";
@@ -25,6 +26,22 @@ import {
 } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 
+type ToggleStates = {
+  confirmationMsg: boolean;
+  userQRCode: boolean;
+  location: boolean;
+  eventDetails: boolean;
+};
+
+type ModalProps = {
+  selectedTemplate: string | null;
+  onClose: () => void;
+  onUseTemplate: (id: string) => void;
+  formData: any;
+  isLoading: boolean;
+  eventId?: string;
+};
+
 // Modal Component
 const Modal = ({
   selectedTemplate,
@@ -32,7 +49,8 @@ const Modal = ({
   onUseTemplate,
   formData,
   isLoading,
-}) => {
+  eventId,
+}: ModalProps) => {
   if (!selectedTemplate) return null;
 
   return (
@@ -54,80 +72,93 @@ const Modal = ({
         {selectedTemplate === "template-one" && (
           <TemplateOne
             data={formData}
-            onUseTemplate={() => onUseTemplate("template-one")}
+            eventId={eventId}
             isLoading={isLoading}
+            onUseTemplate={(tid: string) => onUseTemplate(tid)}
           />
         )}
-        {selectedTemplate === "template-two" && (
-          <TemplateTwo
-            onUseTemplate={() => onUseTemplate("template-two")}
-            isLoading={isLoading}
-          />
-        )}
-        {selectedTemplate === "template-three" && (
-          <TemplateThree
-            onUseTemplate={() => onUseTemplate("template-three")}
-            isLoading={isLoading}
-          />
-        )}
-        {selectedTemplate === "template-four" && (
-          <TemplateFour
-            onUseTemplate={() => onUseTemplate("template-four")}
-            isLoading={isLoading}
-          />
-        )}
-        {selectedTemplate === "template-five" && (
-          <TemplateFive
-            onUseTemplate={() => onUseTemplate("template-five")}
-            isLoading={isLoading}
-          />
-        )}
-        {selectedTemplate === "template-six" && (
-          <TemplateSix
-            onUseTemplate={() => onUseTemplate("template-six")}
-            isLoading={isLoading}
-          />
-        )}
-        {selectedTemplate === "template-seven" && (
-          <TemplateSeven
-            onUseTemplate={() => onUseTemplate("template-seven")}
-            isLoading={isLoading}
-          />
-        )}
+        {selectedTemplate === "template-two" && <TemplateTwo />}
+        {selectedTemplate === "template-three" && <TemplateThree />}
+        {selectedTemplate === "template-four" && <TemplateFour />}
+        {selectedTemplate === "template-five" && <TemplateFive />}
+        {selectedTemplate === "template-six" && <TemplateSix />}
+        {selectedTemplate === "template-seven" && <TemplateSeven />}
+
+        <div className="mt-6 flex justify-center">
+          {/* <button
+            onClick={() => selectedTemplate && onUseTemplate(selectedTemplate)}
+            disabled={isLoading}
+            className={`px-4 py-2 rounded-lg text-white ${
+              isLoading ? "bg-gray-400" : "bg-slate-800 hover:bg-slate-900"
+            }`}
+          >
+            {isLoading ? "Applying..." : "Use this template"}
+          </button> */}
+        </div>
       </div>
     </div>
   );
 };
 
-const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [confirmedTemplate, setConfirmedTemplate] = useState(null);
-  const [selectedTemplateData, setSelectedTemplateData] = useState(null);
-  const [internalStep, setInternalStep] = useState(0);
-  const [formData, setFormData] = useState([]);
+type RegistrationFormProps = {
+  onNext: () => void;
+  onPrevious: () => void;
+  currentStep: any;
+  totalSteps: any;
+  eventId?: string;
+  toggleStates?: ToggleStates;
+  setToggleStates?: React.Dispatch<React.SetStateAction<ToggleStates>>;
+};
 
-  console.log("form data ids =>", formData);
+const RegistrationForm = ({
+  onNext,
+  onPrevious,
+  currentStep,
+  totalSteps,
+  eventId,
+}: RegistrationFormProps) => {
+  const { id: routeId } = useParams();
+  const effectiveEventId =
+    (routeId as string | undefined) ||
+    (eventId as string | undefined) ||
+    (typeof window !== "undefined"
+      ? (localStorage.getItem("create_eventId") as string | null) || undefined
+      : undefined);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
+  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
+    null
+  );
+  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(
+    null
+  );
+  const [internalStep, setInternalStep] = useState<number>(0);
+  const [formData, setFormData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [confirmationToggleStates, setConfirmationToggleStates] = useState({
-    confirmationMsg: true,
-    userQRCode: false,
-    location: false,
-    eventDetails: false,
-  });
+  const [confirmationToggleStates, setConfirmationToggleStates] =
+    useState<ToggleStates>({
+      confirmationMsg: true,
+      userQRCode: false,
+      location: false,
+      eventDetails: false,
+    });
 
   console.log("confirmed template", confirmedTemplate);
   console.log("selected template data", selectedTemplateData);
 
   useEffect(() => {
-    const eventId = localStorage.getItem("create_eventId");
-    console.log("event id in reg form ---------", eventId);
-    getFieldAPi();
+    console.log("event id in reg form (effective) ---------", effectiveEventId);
+    if (effectiveEventId) {
+      getFieldAPi(effectiveEventId);
+    }
     console.log("toggleStates in reg form");
-  }, [selectedTemplate]);
+  }, [selectedTemplate, effectiveEventId]);
 
   const templates = [
-    { id: "template-one", component: <TemplateFormOne data={formData} /> },
+    {
+      id: "template-one",
+      component: <TemplateFormOne data={formData} eventId={effectiveEventId} />,
+    },
     { id: "template-two", component: <TemplateFormTwo /> },
     { id: "template-three", component: <TemplateFormThree /> },
     { id: "template-four", component: <TemplateFormFour /> },
@@ -136,7 +167,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     { id: "template-seven", component: <TemplateFormSeven /> },
   ];
 
-  const handleOpenModal = (id) => {
+  const handleOpenModal = (id: string) => {
     setSelectedTemplate(id);
     setIsModalOpen(true);
   };
@@ -149,19 +180,18 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   };
 
   // The main handler for using a template
-  const handleUseTemplate = async (templateId) => {
+  const handleUseTemplate = async (templateId: string) => {
     setIsLoading(true);
 
     try {
-      const savedEventId = localStorage.getItem("create_eventId");
-      console.log("saved event id ", savedEventId);
+      const savedEventId = effectiveEventId;
 
       if (!savedEventId) {
         throw new Error("Event ID not found");
       }
 
       // Create template data based on templateId
-      let templateData = {};
+      let templateData: any = {};
       switch (templateId) {
         case "template-one":
           templateData = {
@@ -214,7 +244,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         setInternalStep(1); // Go to confirmation step
         handleCloseModal(); // Close modal on success
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating template:", error);
 
       // Error handling with specific messages
@@ -237,7 +267,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   };
 
   // Handler for receiving toggle states from ConfirmationDetails
-  const handleToggleStatesChange = (toggleStates) => {
+  const handleToggleStatesChange = (toggleStates: ToggleStates) => {
     setConfirmationToggleStates(toggleStates);
     console.log("Updated toggle states:", toggleStates);
   };
@@ -272,11 +302,9 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     if (onPrevious) onPrevious();
   };
 
-  const getFieldAPi = async () => {
-    const eventId = localStorage.getItem("create_eventId");
-
+  const getFieldAPi = async (id: string) => {
     try {
-      const response = await getRegistrationFieldApi(eventId);
+      const response = await getRegistrationFieldApi(id);
       console.log("getFieldAPi response:", response.data);
       setFormData(response.data.data);
     } catch (error) {
@@ -308,21 +336,29 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
   const updateTheconfirmationDetails = async () => {
     const formData = new FormData();
-    const id = await localStorage.getItem("create_eventId");
+    const id = effectiveEventId;
+
+    if (!id) {
+      toast.error("Event ID not found");
+      throw new Error("Event ID not found");
+    }
 
     // Use actual toggle states from ConfirmationDetails component
-    formData.append(`event[print_qr]`, confirmationToggleStates.userQRCode);
+    formData.append(
+      `event[print_qr]`,
+      String(confirmationToggleStates.userQRCode)
+    );
     formData.append(
       `event[display_confirmation]`,
-      confirmationToggleStates.confirmationMsg
+      String(confirmationToggleStates.confirmationMsg)
     );
     formData.append(
       `event[display_event_details]`,
-      confirmationToggleStates.eventDetails
+      String(confirmationToggleStates.eventDetails)
     );
     formData.append(
       `event[display_location]`,
-      confirmationToggleStates.location
+      String(confirmationToggleStates.location)
     );
 
     console.log("Updating confirmation details with:", {
@@ -464,6 +500,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           onClose={handleCloseModal}
           onUseTemplate={handleUseTemplate}
           isLoading={isLoading}
+          eventId={effectiveEventId}
         />
       )}
 
