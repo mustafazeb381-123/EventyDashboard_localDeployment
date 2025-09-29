@@ -76,6 +76,7 @@ function AllEvents() {
               }
             ),
           }));
+          console.log("mappped event  data", mappedEvents);
 
           setEvents(mappedEvents);
         } else {
@@ -106,6 +107,21 @@ function AllEvents() {
       setDeletingId(null);
     }
   };
+  const handleEventClick = (eventId) => {
+    // Navigate
+
+    setTimeout(() => {
+      navigate(`/home/${eventId}`, {
+        state: { eventId: eventId },
+      });
+    }, 300);
+
+    console.log();
+    console.log("event id for specific event:", eventId);
+
+    // Save in localStorage
+    localStorage.setItem("edit_eventId", eventId);
+  };
 
   if (loading) {
     return (
@@ -134,11 +150,7 @@ function AllEvents() {
 
           return (
             <div
-              onClick={() =>
-                navigate(`/home/${event.id}`, {
-                  state: { eventId: event.id },
-                })
-              }
+              onClick={() => handleEventClick(event.id)}
               key={event.id}
               style={{
                 padding: 24,

@@ -15,6 +15,7 @@ import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
 import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
 import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 import Users from "@/pages/Home/EventDetails/Invitation/Users";
+import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
 
 const router = createBrowserRouter([
   {
@@ -47,6 +48,10 @@ const router = createBrowserRouter([
           {
             path: "print_badges", // This path is now relative to "/" -> "/express-event"
             element: <PrintBadges />,
+          },
+          {
+            path: "user/registration",
+            element: <UserRegistration />,
           },
           {
             path: "invitation/user", // This path is now relative to "/" -> "/express-event"

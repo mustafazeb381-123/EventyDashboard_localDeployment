@@ -106,6 +106,8 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [selectedTemplateData, setSelectedTemplateData] = useState(null);
   const [internalStep, setInternalStep] = useState(0);
   const [formData, setFormData] = useState([]);
+
+  console.log("form data ids =>", formData);
   const [isLoading, setIsLoading] = useState(false);
   const [confirmationToggleStates, setConfirmationToggleStates] = useState({
     confirmationMsg: true,
@@ -152,6 +154,7 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
     try {
       const savedEventId = localStorage.getItem("create_eventId");
+      console.log("saved event id ", savedEventId);
 
       if (!savedEventId) {
         throw new Error("Event ID not found");
@@ -191,9 +194,14 @@ const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         registration_template: {
           name: templateId,
           content: JSON.stringify(templateData),
+          event_registration_fields_ids: formData
+            .filter((item) => item.attributes?.active === true) // keep only active
+            .map((item) => item.id), // grab the root-level id
           default: false,
         },
       };
+
+      console.log("reponse of the payload of template creation", payload);
 
       const response = await createTemplatePostApi(payload, savedEventId);
       console.log("Template creation response:", response.data);

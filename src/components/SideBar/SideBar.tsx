@@ -19,6 +19,7 @@ import {
   NotebookText,
   NotepadText,
   Printer,
+  UserCircle,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +59,11 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
       icon: Image,
       label: "Galleries",
       path: "/galleries",
+    },
+    {
+      icon: UserCircle,
+      label: "User Registration",
+      path: "/user/registration",
     },
     {
       icon: Printer,

@@ -92,3 +92,8 @@ export const getShowEventData = (id: string | number) => {
   return axiosInstance.get(`/events/${id}`);
 }
 
+
+export const getRegistrationTemplateData = (id: string | number) => {
+  return axiosInstance.get(`events/${id}/registration_templates/default`)
+}
+
