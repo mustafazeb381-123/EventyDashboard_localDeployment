@@ -9,12 +9,18 @@ import {
   updateRegistrationFieldToggleApi,
 } from "@/apis/apiHelpers";
 
-function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: string }) {
+function TemplateFormOne({
+  data,
+  eventId: propEventId,
+}: {
+  data: any;
+  eventId?: string;
+}) {
   // Log all field attributes
   useMemo(() => {
     if (Array.isArray(data)) {
       data.forEach((field, idx) => {
-        console.log(`Field in template form one ${idx}:`, field.attributes);
+        // console.log(`Field in template form one ${idx}:`, field.attributes);
       });
     }
   }, [data]);
@@ -28,7 +34,11 @@ function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: 
 
   // Fetch event and banner on mount and after upload
   const { id: routeId } = useParams();
-  const effectiveEventId = (propEventId as string | undefined) || (routeId as string | undefined) || localStorage.getItem("create_eventId") || undefined;
+  const effectiveEventId =
+    (propEventId as string | undefined) ||
+    (routeId as string | undefined) ||
+    localStorage.getItem("create_eventId") ||
+    undefined;
 
   useEffect(() => {
     const fetchBanner = async () => {

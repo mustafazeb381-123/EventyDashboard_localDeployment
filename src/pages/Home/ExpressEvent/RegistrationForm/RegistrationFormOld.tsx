@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronLeft, Check } from "lucide-react";
+import { ChevronLeft, Check, Loader2 } from "lucide-react";
 import TemplateOne from "./RegistrationTemplates/TemplateOne/TemplateOne";
 import TemplateTwo from "./RegistrationTemplates/TemplateTwo/TemplateTwo";
 import Assets from "@/utils/Assets";
@@ -39,6 +39,7 @@ type ModalProps = {
   onUseTemplate: (id: string) => void;
   formData: any;
   isLoading: boolean;
+  isLoadingFormData: boolean;
   eventId?: string;
 };
 
@@ -49,6 +50,7 @@ const Modal = ({
   onUseTemplate,
   formData,
   isLoading,
+  isLoadingFormData,
   eventId,
 }: ModalProps) => {
   if (!selectedTemplate) return null;
@@ -70,19 +72,159 @@ const Modal = ({
 
         {/* Render correct template with loading state */}
         {selectedTemplate === "template-one" && (
-          <TemplateOne
-            data={formData}
-            eventId={eventId}
-            isLoading={isLoading}
-            onUseTemplate={(tid: string) => onUseTemplate(tid)}
-          />
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateOne
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
         )}
-        {selectedTemplate === "template-two" && <TemplateTwo />}
-        {selectedTemplate === "template-three" && <TemplateThree />}
-        {selectedTemplate === "template-four" && <TemplateFour />}
-        {selectedTemplate === "template-five" && <TemplateFive />}
-        {selectedTemplate === "template-six" && <TemplateSix />}
-        {selectedTemplate === "template-seven" && <TemplateSeven />}
+        {selectedTemplate === "template-two" && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateTwo
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
+        )}
+        {selectedTemplate === "template-three" && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateThree
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
+        )}
+        {selectedTemplate === "template-four" && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFour
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
+        )}
+        {selectedTemplate === "template-five" && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFive
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
+        )}
+        {selectedTemplate === "template-six" && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateSix
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
+        )}
+        {selectedTemplate === "template-seven" && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateSeven
+                data={formData}
+                eventId={eventId}
+                isLoading={isLoading || isLoadingFormData}
+                onUseTemplate={(tid: string) => onUseTemplate(tid)}
+              />
+            )}
+          </>
+        )}
 
         <div className="mt-6 flex justify-center">
           {/* <button
@@ -118,6 +260,7 @@ const RegistrationForm = ({
   eventId,
 }: RegistrationFormProps) => {
   const { id: routeId } = useParams();
+  console.log("route id", routeId);
   const effectiveEventId =
     (routeId as string | undefined) ||
     (eventId as string | undefined) ||
@@ -135,6 +278,7 @@ const RegistrationForm = ({
   const [internalStep, setInternalStep] = useState<number>(0);
   const [formData, setFormData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
   const [confirmationToggleStates, setConfirmationToggleStates] =
     useState<ToggleStates>({
       confirmationMsg: true,
@@ -157,14 +301,81 @@ const RegistrationForm = ({
   const templates = [
     {
       id: "template-one",
-      component: <TemplateFormOne data={formData} eventId={effectiveEventId} />,
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormOne data={formData} eventId={effectiveEventId} />
+      ),
     },
-    { id: "template-two", component: <TemplateFormTwo /> },
-    { id: "template-three", component: <TemplateFormThree /> },
-    { id: "template-four", component: <TemplateFormFour /> },
-    { id: "template-five", component: <TemplateFormFive /> },
-    { id: "template-six", component: <TemplateFormSix /> },
-    { id: "template-seven", component: <TemplateFormSeven /> },
+    {
+      id: "template-two",
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormTwo />
+      ),
+    },
+    {
+      id: "template-three",
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormThree />
+      ),
+    },
+    {
+      id: "template-four",
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormFour />
+      ),
+    },
+    {
+      id: "template-five",
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormFive />
+      ),
+    },
+    {
+      id: "template-six",
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormSix />
+      ),
+    },
+    {
+      id: "template-seven",
+      component: isLoadingFormData ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-slate-600 mb-2" />
+          <p className="text-slate-600 text-sm">Loading template data...</p>
+        </div>
+      ) : (
+        <TemplateFormSeven />
+      ),
+    },
   ];
 
   const handleOpenModal = (id: string) => {
@@ -227,7 +438,7 @@ const RegistrationForm = ({
           event_registration_fields_ids: formData
             .filter((item) => item.attributes?.active === true) // keep only active
             .map((item) => item.id), // grab the root-level id
-          default: false,
+          default: true,
         },
       };
 
@@ -303,6 +514,7 @@ const RegistrationForm = ({
   };
 
   const getFieldAPi = async (id: string) => {
+    setIsLoadingFormData(true);
     try {
       const response = await getRegistrationFieldApi(id);
       console.log("getFieldAPi response:", response.data);
@@ -310,6 +522,8 @@ const RegistrationForm = ({
     } catch (error) {
       console.error("Failed to get registration field:", error);
       toast.error("Failed to load form data");
+    } finally {
+      setIsLoadingFormData(false);
     }
   };
 
@@ -450,35 +664,55 @@ const RegistrationForm = ({
       {/* Main Content Area */}
       {internalStep === 0 ? (
         <>
-          {/* Template Grid */}
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {templates.map((tpl) => (
-              <div
-                key={tpl.id}
-                onClick={() => handleOpenModal(tpl.id)}
-                className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
-                  confirmedTemplate === tpl.id
-                    ? "border-pink-500 bg-pink-50"
-                    : "border-gray-200 hover:border-pink-500"
-                }`}
-              >
-                {/* Render the template preview */}
-                <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
-                  <div className="transform scale-[0.15] pointer-events-none">
-                    <div className="w-[1200px]">{tpl.component}</div>
+          {/* Loading State for Form Data */}
+          {isLoadingFormData ? (
+            <div className="mt-16 flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+              <p className="text-slate-600 text-lg font-medium">
+                Loading templates...
+              </p>
+              <p className="text-slate-500 text-sm mt-2">
+                Please wait while we prepare your registration forms
+              </p>
+            </div>
+          ) : (
+            /* Template Grid */
+            <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {templates.map((tpl) => (
+                <div
+                  key={tpl.id}
+                  onClick={() => !isLoadingFormData && handleOpenModal(tpl.id)}
+                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
+                    confirmedTemplate === tpl.id
+                      ? "border-pink-500 bg-pink-50"
+                      : "border-gray-200 hover:border-pink-500"
+                  } ${
+                    isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
+                  }`}
+                >
+                  {/* Render the template preview */}
+                  <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
+                    {isLoadingFormData && (
+                      <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                        <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
+                      </div>
+                    )}
+                    <div className="transform scale-[0.15] pointer-events-none">
+                      <div className="w-[1200px]">{tpl.component}</div>
+                    </div>
                   </div>
+                  {confirmedTemplate === tpl.id && (
+                    <div className="mt-2 flex items-center justify-center">
+                      <Check size={16} className="text-pink-500 mr-1" />
+                      <span className="text-sm text-pink-500 font-medium">
+                        Selected
+                      </span>
+                    </div>
+                  )}
                 </div>
-                {confirmedTemplate === tpl.id && (
-                  <div className="mt-2 flex items-center justify-center">
-                    <Check size={16} className="text-pink-500 mr-1" />
-                    <span className="text-sm text-pink-500 font-medium">
-                      Selected
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       ) : (
         /* Confirmation Step */
@@ -500,6 +734,7 @@ const RegistrationForm = ({
           onClose={handleCloseModal}
           onUseTemplate={handleUseTemplate}
           isLoading={isLoading}
+          isLoadingFormData={isLoadingFormData}
           eventId={effectiveEventId}
         />
       )}
@@ -508,9 +743,11 @@ const RegistrationForm = ({
       <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
         <button
           onClick={onPrevious}
-          disabled={isLoading}
+          disabled={isLoading || isLoadingFormData}
           className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50 ${
-            isLoading ? "cursor-not-allowed opacity-50" : ""
+            isLoading || isLoadingFormData
+              ? "cursor-not-allowed opacity-50"
+              : ""
           }`}
         >
           ← Previous
@@ -520,17 +757,17 @@ const RegistrationForm = ({
           onClick={
             internalStep === 1 ? handleConfirmationNext : handleNextClick
           }
-          disabled={!confirmedTemplate || isLoading}
+          disabled={!confirmedTemplate || isLoading || isLoadingFormData}
           className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center
             ${
-              !confirmedTemplate || isLoading
+              !confirmedTemplate || isLoading || isLoadingFormData
                 ? "text-gray-400 bg-gray-100 cursor-not-allowed"
                 : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
-          {isLoading ? (
+          {isLoading || isLoadingFormData ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-gray-400 border-t-transparent mr-2"></div>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Loading...
             </>
           ) : confirmedTemplate ? (

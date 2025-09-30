@@ -35,7 +35,24 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     if (eventId) getEventDataById(eventId);
   }, [eventId]);
 
-  if (!eventData) return <div>Loading...</div>;
+  if (!eventData) {
+    return (
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex flex-col items-center justify-center">
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+            <div className="absolute inset-0 h-12 w-12 border-2 border-blue-100 rounded-full"></div>
+          </div>
+          <p className="text-gray-600 text-lg font-medium mt-6">
+            Loading event details...
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            Please wait while we fetch your event information
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const {
     name,
@@ -111,15 +128,52 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     const file = files && files[0];
     if (!file || !eventId) return;
 
-    // File validation
+    // File size validation
+    const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("File size exceeds the 2MB limit.");
+      toast.error(
+        `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
+      );
       return;
     }
+
+    // File type validation
     const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Invalid file type. Please upload SVG, PNG, or JPG.");
       return;
+    }
+
+    // Image dimension validation for non-SVG files
+    if (file.type !== "image/svg+xml") {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      const dimensionValidation = await new Promise<boolean>((resolve) => {
+        img.onload = function () {
+          URL.revokeObjectURL(objectUrl);
+          if (img.width > 400 || img.height > 400) {
+            toast.error(
+              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
+            );
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        };
+
+        img.onerror = function () {
+          URL.revokeObjectURL(objectUrl);
+          toast.error("Failed to load image. Please try a different file.");
+          resolve(false);
+        };
+
+        img.src = objectUrl;
+      });
+
+      if (!dimensionValidation) {
+        return;
+      }
     }
 
     // Direct upload
@@ -161,18 +215,41 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
             <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl flex-shrink-0">
+              {/* Upload Loading Overlay */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
+                  <div className="relative">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <div className="absolute inset-0 h-8 w-8 border-2 border-blue-100 rounded-full"></div>
+                  </div>
+                  <p className="text-blue-600 text-xs font-medium mt-3">
+                    Uploading...
+                  </p>
+                </div>
+              )}
+
               {/* Edit button - directly triggers file selection */}
               <div
-                onClick={() => fileInputRef.current?.click()}
-                className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white cursor-pointer drop-shadow-2xl hover:bg-gray-50 transition-colors"
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                className={`h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white drop-shadow-2xl transition-all duration-200 z-20 ${
+                  isUploading
+                    ? "cursor-not-allowed opacity-75"
+                    : "cursor-pointer hover:bg-gray-50 hover:scale-105"
+                }`}
               >
                 {isUploading ? (
-                  <Loader2
-                    size={16}
-                    className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 animate-spin"
-                  />
+                  <div className="relative">
+                    <Loader2
+                      size={16}
+                      className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 animate-spin text-blue-600"
+                    />
+                    <div className="absolute inset-0 w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 border border-blue-100 rounded-full"></div>
+                  </div>
                 ) : (
-                  <Edit size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+                  <Edit
+                    size={16}
+                    className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600"
+                  />
                 )}
               </div>
 
@@ -183,6 +260,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 onChange={handleFileChange}
                 className="hidden"
                 accept=".svg,.png,.jpg,.jpeg"
+                disabled={isUploading}
               />
 
               {/* Current logo display */}
@@ -190,10 +268,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 <img
                   src={eventData.attributes.logo_url}
                   alt="Event Logo"
-                  className="h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] rounded-2xl"
+                  className={`h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] rounded-2xl transition-opacity duration-200 ${
+                    isUploading ? "opacity-50" : "opacity-100"
+                  }`}
                 />
               ) : (
-                <div className="h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] bg-gray-300 flex items-center justify-center rounded-2xl">
+                <div
+                  className={`h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] bg-gray-300 flex items-center justify-center rounded-2xl text-gray-500 text-xs font-medium transition-opacity duration-200 ${
+                    isUploading ? "opacity-50" : "opacity-100"
+                  }`}
+                >
                   No Logo
                 </div>
               )}

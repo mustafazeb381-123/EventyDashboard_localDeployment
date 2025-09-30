@@ -1,37 +1,87 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Home,
   Users,
   UserCheck,
   Settings,
   LogOut,
-  Menu,
   CheckCircle,
   Clock,
   UserPlus,
-  Bell,
-  User,
   HomeIcon,
-  NotebookTabs,
-  GalleryHorizontal,
   Image,
-  NotebookText,
   NotepadText,
   Printer,
   UserCircle,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
-import path from "path";
 
-const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
+interface SideBarProps {
+  isExpanded: boolean;
+  setIsExpanded: (expanded: boolean) => void;
+  isRTL: boolean;
+  canToggle?: boolean;
+  currentEventId?: string;
+}
+
+const SideBar = ({
+  isExpanded,
+  setIsExpanded,
+  isRTL,
+  canToggle = true,
+  currentEventId,
+}: SideBarProps) => {
   const [activeItem, setActiveItem] = useState("Registered Users");
-  const [expandedMenus, setExpandedMenus] = useState({});
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
+    {}
+  );
   const naviagte = useNavigate();
+  const location = useLocation();
 
-  const toggleSubmenu = (label) => {
+  // Debug log to track sidebar state
+  console.log("SideBar props:", {
+    isExpanded,
+    canToggle,
+    currentEventId,
+    isRTL,
+  });
+
+  // Set active item based on current route
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    if ((currentPath.startsWith("/home/") || currentPath.startsWith("/express-event/")) && currentEventId) {
+      setActiveItem("Home summary");
+    } else if (currentPath === "/regesterd_user") {
+      setActiveItem("Registered Users");
+    } else if (currentPath === "/agenda") {
+      setActiveItem("Agenda");
+    } else if (currentPath === "/galleries") {
+      setActiveItem("Galleries");
+    } else if (currentPath === "/user/registration") {
+      setActiveItem("User Registration");
+    } else if (currentPath === "/print_badges") {
+      setActiveItem("Print Badges");
+    } else if (currentPath.startsWith("/invitation")) {
+      setActiveItem("Inviation");
+      // Expand the Invitation submenu if we're on a submenu page
+      if (currentPath.includes("/user") || currentPath.includes("/vip")) {
+        setExpandedMenus(prev => ({ ...prev, "Inviation": true }));
+      }
+    } else if (currentPath.startsWith("/attendees")) {
+      setActiveItem("Attendees");
+      // Expand the Attendees submenu if we're on a submenu page
+      if (currentPath.includes("/check-in") || currentPath.includes("/check-out")) {
+        setExpandedMenus(prev => ({ ...prev, "Attendees": true }));
+      }
+    } else if (currentPath === "/committees") {
+      setActiveItem("Committees");
+    }
+  }, [currentEventId, location.pathname]);
+
+  const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) => ({
       ...prev,
       [label]: !prev[label],
@@ -42,55 +92,91 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
     {
       icon: HomeIcon,
       label: "Home summary",
-      path: "/home",
+      path: currentEventId ? `/home/${currentEventId}` : "/",
     },
     {
       icon: Users,
       label: "Registered Users",
       badge: "20",
-      path: "/regesterd_user",
+      path: currentEventId
+        ? `/regesterd_user?eventId=${currentEventId}`
+        : "/regesterd_user",
     },
     {
       icon: NotepadText,
       label: "Agenda",
-      path: "/agenda",
+      path: currentEventId ? `/agenda?eventId=${currentEventId}` : "/agenda",
     },
     {
       icon: Image,
       label: "Galleries",
-      path: "/galleries",
+      path: currentEventId
+        ? `/galleries?eventId=${currentEventId}`
+        : "/galleries",
     },
     {
       icon: UserCircle,
       label: "User Registration",
-      path: "/user/registration",
+      path: currentEventId
+        ? `/user/registration?eventId=${currentEventId}`
+        : "/user/registration",
     },
     {
       icon: Printer,
       label: "Print Badges",
-      path: "/print_badges",
+      path: currentEventId
+        ? `/print_badges?eventId=${currentEventId}`
+        : "/print_badges",
     },
     {
       icon: UserCheck,
       label: "Inviation",
-      path: "/invitation",
+      path: currentEventId
+        ? `/invitation?eventId=${currentEventId}`
+        : "/invitation",
       submenu: [
-        { label: "Users", icon: Users, path: "/invitation/user" },
-        { label: "VIP Users", icon: UserPlus, path: "/invitation/vip" },
+        {
+          label: "Users",
+          icon: Users,
+          path: currentEventId
+            ? `/invitation/user?eventId=${currentEventId}`
+            : "/invitation/user",
+        },
+        {
+          label: "VIP Users",
+          icon: UserPlus,
+          path: currentEventId
+            ? `/invitation/vip?eventId=${currentEventId}`
+            : "/invitation/vip",
+        },
       ],
     },
     {
       icon: CheckCircle,
       label: "Attendees",
       submenu: [
-        { label: "Check In", icon: CheckCircle, path: "/attendees/check-in" },
-        { label: "Check Out", icon: Clock, path: "/attendees/check-out" },
+        {
+          label: "Check In",
+          icon: CheckCircle,
+          path: currentEventId
+            ? `/attendees/check-in?eventId=${currentEventId}`
+            : "/attendees/check-in",
+        },
+        {
+          label: "Check Out",
+          icon: Clock,
+          path: currentEventId
+            ? `/attendees/check-out?eventId=${currentEventId}`
+            : "/attendees/check-out",
+        },
       ],
     },
     {
       icon: Users,
       label: "Committees",
-      path: "/committees",
+      path: currentEventId
+        ? `/committees?eventId=${currentEventId}`
+        : "/committees",
     },
   ];
 
@@ -119,16 +205,20 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
         {isExpanded && (
           <div className="px-4 py-4 border-b">
             <div className="flex items-center">
-              <Button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className=" h-2/3  flex flex-row items-center justify-evenly cursor-pointer"
-              >
-                <img src={Assets.icons.leftArrow} height={24} width={24} />
-              </Button>
+              {canToggle && (
+                <Button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className=" h-2/3  flex flex-row items-center justify-evenly cursor-pointer"
+                >
+                  <img src={Assets.icons.leftArrow} height={24} width={24} />
+                </Button>
+              )}
               <div
                 onClick={() => {
                   naviagte("/");
-                  setIsExpanded(!isExpanded);
+                  if (canToggle) {
+                    setIsExpanded(!isExpanded);
+                  }
                 }}
                 className="cursor-pointer"
               >
@@ -145,11 +235,12 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
         {!isExpanded && (
           <div className="px-4 py-4 border-b border-slate-700/50 flex justify-center">
             <Button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => canToggle && setIsExpanded(!isExpanded)}
               className="h-20 w-20"
+              disabled={!canToggle}
             >
               <img
-                style={{ cursor: "pointer" }}
+                style={{ cursor: canToggle ? "pointer" : "default" }}
                 src={Assets.images.sideBarLogo}
                 alt=""
               />

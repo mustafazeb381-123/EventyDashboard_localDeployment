@@ -1,24 +1,65 @@
 import React from "react";
-import { Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
-const TemplateSeven = () => {
+const TemplateSeven = ({
+  onUseTemplate,
+  data,
+  isLoading,
+  eventId,
+}: {
+  onUseTemplate?: any;
+  data: any;
+  isLoading?: boolean;
+  eventId?: string;
+}) => {
+  console.log(
+    "onUse template TemplateSeven-----+++++------",
+    onUseTemplate,
+    eventId,
+    data
+  );
   const navigation = useNavigate();
 
-  const navigationHandle = () => {
-    navigation("/");
+  console.log("form data in template seven ::::", data);
+
+  // Handle the use template click
+  const handleUseTemplate = () => {
+    console.log("TemplateSeven handleUseTemplate");
+    if (onUseTemplate && !isLoading) {
+      // Call the parent function with template data
+      onUseTemplate("template-seven", {
+        name: "Event Registration Form Template Seven",
+        description:
+          "A premium registration form template with luxury design for exclusive events.",
+        templateComponent: TemplateForm,
+        fields: data || [], // Pass the form data as fields
+      });
+    }
   };
   return (
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
       {/* Left side (scrollable TemplateForm) */}
       <div className="w-full md:w-[70%] overflow-y-auto pr-2">
-        <TemplateForm />
+        {isLoading || !data || data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+            <p className="text-slate-600 text-lg font-medium mb-2">
+              Loading Template
+            </p>
+            <p className="text-slate-500 text-sm">
+              Please wait while we prepare the form fields...
+            </p>
+          </div>
+        ) : (
+          <TemplateForm />
+        )}
       </div>
 
       {/* Right side (fixed, always visible) */}
-      <div className="w-full md:w-1/2 flex flex-col  justify-between sticky top-0">
+      <div className="w-full md:w-1/2 flex flex-col justify-between sticky top-0">
         {/* Top section */}
         <div>
           <h2 className="text-xl font-poppins font-semibold mb-2">
@@ -33,10 +74,22 @@ const TemplateSeven = () => {
 
         {/* Bottom button */}
         <button
-          onClick={navigationHandle}
-          className="cursor-pointer bg-slate-800 text-white p-3 rounded-lg text-sm font-poppins font-medium hover:bg-slate-900 transition-colors"
+          onClick={handleUseTemplate}
+          disabled={isLoading}
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
+            isLoading
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-slate-800 text-white hover:bg-slate-900"
+          }`}
         >
-          Use Template →
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Loading...
+            </>
+          ) : (
+            "Use Template →"
+          )}
         </button>
       </div>
     </div>
