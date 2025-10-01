@@ -3,6 +3,7 @@ import { ChevronLeft, Check, MapPin, Info, QrCode } from "lucide-react";
 import { ToastContainer } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { getEventbyId } from "@/apis/apiHelpers";
+import { set } from "date-fns";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -39,6 +40,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   });
 
   const [isLoading, setIsLoading] = useState(true);
+  const [eventName, setEventName] = useState<string>("");
 
   useEffect(() => {
     onToggleStatesChange?.(toggleStates);
@@ -67,6 +69,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
           location: eventData.attributes?.display_location || false,
           eventDetails: eventData.attributes?.display_event_details || false,
         };
+
+        setEventName(eventData.attributes?.name || "");
 
         console.log(
           "ConfirmationDetails - Setting toggle states:",
@@ -174,23 +178,6 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   return (
     <div className="w-full bg-white min-h-screen">
-      <div className="flex justify-between items-center mb-8 px-8 pt-6 max-w-full">
-        <div className="flex items-center gap-3">
-          <h1 className="text-gray-900 text-lg font-medium">
-            Confirmation details
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-[#ff0080] bg-[#ff0080]">
-            <Check size={16} color="white" />
-          </div>
-          <div className="w-16 h-1 bg-[#ff0080] rounded-full"></div>
-          <div className="w-8 h-8 rounded-full flex items-center justify-center border-2 border-[#ff0080] bg-white">
-            <span className="text-sm text-[#ff0080] font-medium">02</span>
-          </div>
-        </div>
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-8 max-w-full">
         <div className="space-y-6">
           {isLoading ? (
@@ -254,14 +241,15 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
             <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
               <div className="bg-white rounded px-3 py-1 text-xs text-gray-500 border">
-                https://figma.com
+                https://www.eventy.com/registration/
+                {eventName}
               </div>
             </div>
 
             <div className="p-6">
               <div className="text-center mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-2">
-                  SCC Summit
+                  {eventName || "Event Name"}
                 </h2>
                 <p className="text-sm text-gray-500 mb-1">
                   📅 June 23, 2024 - June 05, 2025
