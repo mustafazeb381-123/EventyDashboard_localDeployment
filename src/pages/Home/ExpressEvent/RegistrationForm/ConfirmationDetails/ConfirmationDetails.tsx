@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, Check, MapPin, Info, QrCode } from "lucide-react";
 import { ToastContainer } from "react-toastify";
+import { useParams } from "react-router-dom";
+import { getEventbyId } from "@/apis/apiHelpers";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -11,21 +13,79 @@ interface ToggleStates {
 
 interface ConfirmationDetailsProps {
   onToggleStatesChange?: (states: ToggleStates) => void;
+  eventId?: string;
+  selectedTemplateData?: any;
+  onNext?: () => void;
+  onPrevious?: () => void;
 }
 
 const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   onToggleStatesChange,
+  eventId: propEventId,
 }) => {
+  // Get effective event ID
+  const { id: routeId } = useParams();
+  const effectiveEventId =
+    (propEventId as string | undefined) ||
+    (routeId as string | undefined) ||
+    localStorage.getItem("create_eventId") ||
+    undefined;
+
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
-    confirmationMsg: true,
+    confirmationMsg: false, // Start with false, will be updated from API
     userQRCode: false,
     location: false,
     eventDetails: false,
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     onToggleStatesChange?.(toggleStates);
   }, [toggleStates, onToggleStatesChange]);
+
+  // Fetch event data and set initial toggle states
+  useEffect(() => {
+    const fetchEventData = async () => {
+      if (!effectiveEventId) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const response = await getEventbyId(effectiveEventId);
+        const eventData = response.data.data;
+
+        console.log("ConfirmationDetails - Fetched event data:", eventData);
+
+        // Map API fields to toggle states
+        const newToggleStates: ToggleStates = {
+          confirmationMsg:
+            eventData.attributes?.display_confirmation_message || false,
+          userQRCode: eventData.attributes?.print_qr || false,
+          location: eventData.attributes?.display_location || false,
+          eventDetails: eventData.attributes?.display_event_details || false,
+        };
+
+        console.log(
+          "ConfirmationDetails - Setting toggle states:",
+          newToggleStates
+        );
+        setToggleStates(newToggleStates);
+      } catch (error) {
+        console.error(
+          "ConfirmationDetails - Failed to fetch event data:",
+          error
+        );
+        // Keep default false values on error
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEventData();
+  }, [effectiveEventId]);
 
   const updateToggle = (key: keyof ToggleStates, value: boolean) => {
     setToggleStates((prev) => ({ ...prev, [key]: value }));
@@ -133,33 +193,52 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-8 max-w-full">
         <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <StatusCard
-              icon={Check}
-              title="Confirmation message"
-              enabled={toggleStates.confirmationMsg}
-              onChange={(val) => updateToggle("confirmationMsg", val)}
-            />
-            <StatusCard
-              icon={QrCode}
-              title="User QR Code"
-              enabled={toggleStates.userQRCode}
-              onChange={(val) => updateToggle("userQRCode", val)}
-              showQR
-            />
-            <StatusCard
-              icon={MapPin}
-              title="Location"
-              enabled={toggleStates.location}
-              onChange={(val) => updateToggle("location", val)}
-            />
-            <StatusCard
-              icon={Info}
-              title="Event details"
-              enabled={toggleStates.eventDetails}
-              onChange={(val) => updateToggle("eventDetails", val)}
-            />
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="p-6 rounded-2xl bg-gray-100 border-2 h-64 animate-pulse"
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    <div className="w-11 h-6 bg-gray-200 rounded-full"></div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center flex-1">
+                    <div className="w-20 h-20 bg-gray-200 rounded-full mb-4"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <StatusCard
+                icon={Check}
+                title="Confirmation message"
+                enabled={toggleStates.confirmationMsg}
+                onChange={(val) => updateToggle("confirmationMsg", val)}
+              />
+              <StatusCard
+                icon={QrCode}
+                title="User QR Code"
+                enabled={toggleStates.userQRCode}
+                onChange={(val) => updateToggle("userQRCode", val)}
+                showQR
+              />
+              <StatusCard
+                icon={MapPin}
+                title="Location"
+                enabled={toggleStates.location}
+                onChange={(val) => updateToggle("location", val)}
+              />
+              <StatusCard
+                icon={Info}
+                title="Event details"
+                enabled={toggleStates.eventDetails}
+                onChange={(val) => updateToggle("eventDetails", val)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="bg-gray-50 rounded-lg p-4">

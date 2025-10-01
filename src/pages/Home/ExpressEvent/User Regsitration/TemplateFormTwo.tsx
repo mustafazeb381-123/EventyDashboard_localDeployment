@@ -1,8 +1,8 @@
 import Assets from "@/utils/Assets";
 import RegistrationFormPreview from "./components/RegistrationFormPreview";
 
-// Template One - Matches registration template structure
-const TemplateFormOne = ({
+// Template Two - Matches registration template structure
+const TemplateFormTwo = ({
   eventData,
   formFields,
 }: {
@@ -10,21 +10,21 @@ const TemplateFormOne = ({
   formFields: any[];
 }) => {
   return (
-    <div className="w-full p-4">
-      {/* Banner Section */}
+    <div className="w-full p-2">
+      {/* Event Cover Image - Full width banner */}
       <div
         style={{
           width: "100%",
           backgroundImage: eventData?.attributes?.registration_page_banner
             ? `url(${eventData.attributes.registration_page_banner})`
-            : `url(${Assets.images.uploadBackground})`,
+            : `url(${Assets.images.uploadBackground2})`,
         }}
-        className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
+        className="w-full h-[400px] flex items-center justify-center border rounded-3xl bg-gradient-to-t from-white/50 to-transparent border-gray-200 sm:p-5 bg-cover bg-center bg-no-repeat relative"
       >
         {!eventData?.attributes?.registration_page_banner && (
           <div className="text-white text-center">
             <h1 className="text-3xl font-bold">Event Banner</h1>
-            <p className="mt-2 text-lg opacity-90">Template One Design</p>
+            <p className="mt-2 text-lg opacity-90">Template Two Design</p>
           </div>
         )}
       </div>
@@ -96,4 +96,4 @@ const TemplateFormOne = ({
   );
 };
 
-export default TemplateFormOne;
+export default TemplateFormTwo;

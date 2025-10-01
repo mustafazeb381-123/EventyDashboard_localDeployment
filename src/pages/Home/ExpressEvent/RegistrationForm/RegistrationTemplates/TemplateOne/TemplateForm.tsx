@@ -9,12 +9,20 @@ import {
   updateRegistrationFieldToggleApi,
 } from "@/apis/apiHelpers";
 
-function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: string }) {
+function TemplateFormOne({
+  data,
+  eventId: propEventId,
+  isUserRegistration = false,
+}: {
+  data: any;
+  eventId?: string;
+  isUserRegistration?: boolean;
+}) {
   // Log all field attributes
   useMemo(() => {
     if (Array.isArray(data)) {
       data.forEach((field, idx) => {
-        console.log(`Field in template form one ${idx}:`, field.attributes);
+        // console.log(`Field in template form one ${idx}:`, field.attributes);
       });
     }
   }, [data]);
@@ -28,7 +36,11 @@ function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: 
 
   // Fetch event and banner on mount and after upload
   const { id: routeId } = useParams();
-  const effectiveEventId = (propEventId as string | undefined) || (routeId as string | undefined) || localStorage.getItem("create_eventId") || undefined;
+  const effectiveEventId =
+    (propEventId as string | undefined) ||
+    (routeId as string | undefined) ||
+    localStorage.getItem("create_eventId") ||
+    undefined;
 
   useEffect(() => {
     const fetchBanner = async () => {
@@ -101,13 +113,28 @@ function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: 
       }
       const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
       if (!allowedTypes.includes(file.type)) {
-        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
+        setLogoError(
+          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
+        );
         return;
       }
-      setFormData((prev) => ({
-        ...prev,
-        eventLogo: file,
-      }));
+
+      // Validate image dimensions for banner (900x300px)
+      const img = new Image();
+      img.onload = () => {
+        if (img.naturalWidth !== 900 || img.naturalHeight !== 300) {
+          setLogoError("Image must be exactly 900x300 pixels.");
+          return;
+        }
+        setFormData((prev) => ({
+          ...prev,
+          eventLogo: file,
+        }));
+      };
+      img.onerror = () => {
+        setLogoError("Error loading image. Please try another file.");
+      };
+      img.src = URL.createObjectURL(file);
     }
   };
 
@@ -199,7 +226,7 @@ function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: 
                 src={Assets.icons.upload}
                 style={{ height: 20, width: 20 }}
               />
-              <span className="text-white">Choose Image</span>
+              <span className="text-white">Choose Image (900x300px)</span>
             </button>
           )}
 
@@ -325,6 +352,7 @@ function TemplateFormOne({ data, eventId: propEventId }: { data: any; eventId?: 
           toggleLoading={toggleLoading}
           onSubmit={handleFormSubmit}
           submitButtonText="Register"
+          isUserRegistration={isUserRegistration}
         />
       </div>
     </div>

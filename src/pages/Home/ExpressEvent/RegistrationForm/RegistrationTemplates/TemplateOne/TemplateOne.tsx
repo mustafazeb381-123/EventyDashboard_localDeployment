@@ -1,18 +1,28 @@
 import React from "react";
-import { Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
-const TemplateOne = ({ onUseTemplate, data, isLoading, eventId }: { onUseTemplate?: any; data: any; isLoading?: boolean; eventId?: string }) => {
-  console.log('onUse template-----+++++------', onUseTemplate, eventId, data)
+const TemplateOne = ({
+  onUseTemplate,
+  data,
+  isLoading,
+  eventId,
+}: {
+  onUseTemplate?: any;
+  data: any;
+  isLoading?: boolean;
+  eventId?: string;
+}) => {
+  console.log("onUse template-----+++++------", onUseTemplate, eventId, data);
   const navigation = useNavigate();
 
   console.log("form data in template one ::::", data);
 
   // Handle the use template click
   const handleUseTemplate = () => {
-    console.log('fsdasfsdfsdfsd')
+    console.log("fsdasfsdfsdfsd");
     if (onUseTemplate && !isLoading) {
       // Call the parent function with template data
       onUseTemplate("template-one", {
@@ -30,7 +40,19 @@ const TemplateOne = ({ onUseTemplate, data, isLoading, eventId }: { onUseTemplat
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
       {/* Left side (scrollable TemplateForm) */}
       <div className="w-full md:w-[70%] overflow-y-auto pr-2">
-        <TemplateForm data={data} eventId={eventId} />
+        {isLoading || !data || data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+            <p className="text-slate-600 text-lg font-medium mb-2">
+              Loading Template
+            </p>
+            <p className="text-slate-500 text-sm">
+              Please wait while we prepare the form fields...
+            </p>
+          </div>
+        ) : (
+          <TemplateForm data={data} eventId={eventId} />
+        )}
       </div>
 
       {/* Right side (fixed, always visible) */}
@@ -59,7 +81,7 @@ const TemplateOne = ({ onUseTemplate, data, isLoading, eventId }: { onUseTemplat
         >
           {isLoading ? (
             <>
-              <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
               Loading...
             </>
           ) : (

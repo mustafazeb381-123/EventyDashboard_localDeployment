@@ -67,11 +67,11 @@ const MainData = ({
   console.log("event data for editing:", eventData);
   console.log("is editing mode:", isEditing);
   console.log("event attributes:", eventAttributes);
-  console.log("event ID:", eventId);
+  console.log("event ID  1:", eventId);
   console.log("stats:", stats);
   console.log("chart data:", chartData);
   console.log("last edit:", lastEdit);
-  
+
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showEventData, setShowEventData] = useState<boolean>(false);
@@ -84,7 +84,7 @@ const MainData = ({
     timeTo: "17:00",
     location: "",
     requireApproval: false,
-    guestTypes: [],
+    guestTypes: ["Guest"], // Default guest type
     eventLogo: null,
     existingLogoUrl: null,
   });
@@ -156,20 +156,61 @@ const MainData = ({
     const file = files && files[0];
     if (file) {
       setLogoError("");
+
+      // Check file size (2MB limit)
+      const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
       if (file.size > 2 * 1024 * 1024) {
-        setLogoError("File size exceeds the 2MB limit.");
+        setLogoError(
+          `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
+        );
         return;
       }
+
+      // Check file type
       const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
       if (!allowedTypes.includes(file.type)) {
-        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
+        setLogoError(
+          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
+        );
         return;
       }
-      setFormData((prev) => ({
-        ...prev,
-        eventLogo: file,
-        existingLogoUrl: null, // Clear existing logo when new file is uploaded
-      }));
+
+      // Check image dimensions for non-SVG files
+      if (file.type !== "image/svg+xml") {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        img.onload = function () {
+          URL.revokeObjectURL(objectUrl);
+          if (img.width > 400 || img.height > 400) {
+            setLogoError(
+              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
+            );
+            return;
+          }
+
+          // If all validations pass, set the file
+          setFormData((prev) => ({
+            ...prev,
+            eventLogo: file,
+            existingLogoUrl: null,
+          }));
+        };
+
+        img.onerror = function () {
+          URL.revokeObjectURL(objectUrl);
+          setLogoError("Failed to load image. Please try a different file.");
+        };
+
+        img.src = objectUrl;
+      } else {
+        // For SVG files, skip dimension check
+        setFormData((prev) => ({
+          ...prev,
+          eventLogo: file,
+          existingLogoUrl: null,
+        }));
+      }
     }
   };
 
@@ -179,20 +220,61 @@ const MainData = ({
     const file = e.dataTransfer.files && e.dataTransfer.files[0];
     if (file) {
       setLogoError("");
+
+      // Check file size (2MB limit)
+      const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
       if (file.size > 2 * 1024 * 1024) {
-        setLogoError("File size exceeds the 2MB limit.");
+        setLogoError(
+          `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
+        );
         return;
       }
+
+      // Check file type
       const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
       if (!allowedTypes.includes(file.type)) {
-        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
+        setLogoError(
+          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
+        );
         return;
       }
-      setFormData((prev) => ({
-        ...prev,
-        eventLogo: file,
-        existingLogoUrl: null, // Clear existing logo when new file is uploaded
-      }));
+
+      // Check image dimensions for non-SVG files
+      if (file.type !== "image/svg+xml") {
+        const img = new Image();
+        const objectUrl = URL.createObjectURL(file);
+
+        img.onload = function () {
+          URL.revokeObjectURL(objectUrl);
+          if (img.width > 400 || img.height > 400) {
+            setLogoError(
+              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
+            );
+            return;
+          }
+
+          // If all validations pass, set the file
+          setFormData((prev) => ({
+            ...prev,
+            eventLogo: file,
+            existingLogoUrl: null,
+          }));
+        };
+
+        img.onerror = function () {
+          URL.revokeObjectURL(objectUrl);
+          setLogoError("Failed to load image. Please try a different file.");
+        };
+
+        img.src = objectUrl;
+      } else {
+        // For SVG files, skip dimension check
+        setFormData((prev) => ({
+          ...prev,
+          eventLogo: file,
+          existingLogoUrl: null,
+        }));
+      }
     }
   };
 
@@ -215,9 +297,21 @@ const MainData = ({
 
   const addGuestType = () => {
     if (!newGuestType.trim()) return;
+
+    // Check if the guest type already exists
+    const trimmedType = newGuestType.trim();
+    if (
+      formData.guestTypes.some(
+        (type) => type.toLowerCase() === trimmedType.toLowerCase()
+      )
+    ) {
+      toast.error("This guest type already exists");
+      return;
+    }
+
     setFormData((prev) => ({
       ...prev,
-      guestTypes: [...prev.guestTypes, newGuestType.trim()],
+      guestTypes: [...prev.guestTypes, trimmedType],
     }));
     setNewGuestType("");
 
@@ -246,7 +340,7 @@ const MainData = ({
   // Function to manually populate form with event data
   const populateFormWithEventData = () => {
     console.log("Populating form with event data. Event ID:", eventId);
-    
+
     if (isEditing && (eventData || eventAttributes)) {
       const attributes = eventAttributes || eventData?.attributes;
 
@@ -270,21 +364,28 @@ const MainData = ({
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
-        guestTypes: [], // You might need to fetch badges separately
+        guestTypes:
+          attributes.badges && attributes.badges.length > 0
+            ? attributes.badges
+                .map((badge: any) => badge.name || badge.attributes?.name)
+                .filter(Boolean)
+            : ["Guest"], // Default to Guest if no badges exist
         eventLogo: null, // You might need to handle existing logo
         existingLogoUrl: attributes.logo_url || null,
       });
 
       setShowEventData(true);
 
-      console.log("Form manually populated with event data. Event ID:", eventId);
+      console.log(
+        "Form manually populated with event data. Event ID:",
+        eventId
+      );
     }
   };
 
   const handleNext = async () => {
     console.log("Next button clicked. Current Event ID:", eventId);
-    
-    // Validate the form first
+
     if (!validateForm()) {
       toast.error("Please fill in all required fields");
       return;
@@ -293,13 +394,18 @@ const MainData = ({
     setIsLoading(true);
     try {
       // Call the API to save the data for the current step
-      await handleEventPostApiCall();
+      const response = await handleEventPostApiCall();
 
-      // If the API call is successful, move to the next screen
-      onNext();
+      // If editing, use eventId from props. If creating, use the new ID from response.
+      let nextEventId = eventId;
+      if (!eventId && response?.data?.data?.id) {
+        nextEventId = response.data.data.id;
+      }
+
+      // Pass the correct event ID to the next screen
+      onNext(nextEventId);
     } catch (error) {
-      // The API call failed. The user will remain on the current screen,
-      // and the error is already handled by the toast in the API helper.
+      // ...existing error handling...
     } finally {
       setIsLoading(false);
     }
@@ -307,7 +413,7 @@ const MainData = ({
 
   const handleEventPostApiCall = async () => {
     console.log("Making API call with Event ID:", eventId);
-    
+
     const fd = new FormData();
 
     fd.append("event[name]", formData.eventName);
@@ -385,7 +491,7 @@ const MainData = ({
   useEffect(() => {
     if (isEditing && (eventData || eventAttributes)) {
       console.log("Editing mode detected. Event ID:", eventId);
-      
+
       const attributes = eventAttributes || eventData?.attributes;
 
       // Format time from ISO string to HH:MM format
@@ -411,7 +517,12 @@ const MainData = ({
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
-        guestTypes: [],
+        guestTypes:
+          attributes.badges && attributes.badges.length > 0
+            ? attributes.badges
+                .map((badge: any) => badge.name || badge.attributes?.name)
+                .filter(Boolean)
+            : ["Guest"], // Default to Guest if no badges exist
         eventLogo: null,
         existingLogoUrl: attributes.logo_url || null,
       });
@@ -426,7 +537,7 @@ const MainData = ({
   useEffect(() => {
     if (eventId) {
       console.log("Fetching event data for Event ID:", eventId);
-      
+
       const fetchGetShowEventApi = async () => {
         try {
           setIsLoading(true);
@@ -459,7 +570,12 @@ const MainData = ({
               timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
               location: attributes.location || "",
               requireApproval: attributes.require_approval || false,
-              guestTypes: [], // You might need to fetch badges separately
+              guestTypes:
+                attributes.badges && attributes.badges.length > 0
+                  ? attributes.badges
+                      .map((badge: any) => badge.name || badge.attributes?.name)
+                      .filter(Boolean)
+                  : ["Guest"], // Default to Guest if no badges exist
               eventLogo: null, // You might need to handle existing logo
               existingLogoUrl: attributes.logo_url || null,
             });
@@ -468,7 +584,11 @@ const MainData = ({
             console.log("Form populated with API data. Event ID:", eventId);
           }
         } catch (error) {
-          console.error("Error fetching event data for Event ID:", eventId, error);
+          console.error(
+            "Error fetching event data for Event ID:",
+            eventId,
+            error
+          );
           toast.error("Failed to load event data");
         } finally {
           setIsLoading(false);
@@ -493,7 +613,12 @@ const MainData = ({
 
   // Handle Remove Guest Type button click
   const handleRemoveGuestTypeClick = (index: number) => {
-    console.log("Remove Guest Type button clicked. Event ID:", eventId, "Index:", index);
+    console.log(
+      "Remove Guest Type button clicked. Event ID:",
+      eventId,
+      "Index:",
+      index
+    );
     removeGuestType(index);
   };
 
@@ -635,7 +760,7 @@ const MainData = ({
                   or drag and drop
                 </p>
                 <p className="text-xs text-neutral-500">
-                  SVG, PNG or JPG (max. 800x400px)
+                  SVG, PNG, JPG, or JPEG (max. 400x400px, 2MB)
                 </p>
               </>
             )}
@@ -660,7 +785,12 @@ const MainData = ({
                 type="checkbox"
                 checked={formData.requireApproval}
                 onChange={(e) => {
-                  console.log("Require approval toggled. Event ID:", eventId, "Checked:", e.target.checked);
+                  console.log(
+                    "Require approval toggled. Event ID:",
+                    eventId,
+                    "Checked:",
+                    e.target.checked
+                  );
                   handleInputChange("requireApproval", e.target.checked);
                 }}
                 className="sr-only"
@@ -883,6 +1013,11 @@ const MainData = ({
                 >
                   <span className="text-sm text-gray-700 truncate pr-2">
                     {type}
+                    {index === 0 && (
+                      <span className="ml-2 text-xs text-blue-600 font-medium">
+                        (default)
+                      </span>
+                    )}
                   </span>
                   <button
                     onClick={() => handleRemoveGuestTypeClick(index)}
@@ -941,7 +1076,7 @@ const MainData = ({
 
       {/* Help Section */}
       <div className="mt-6 sm:mt-8 lg:mt-12 flex justify-center sm:justify-end">
-        <button 
+        <button
           onClick={() => console.log("Help button clicked. Event ID:", eventId)}
           className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors"
         >

@@ -1,18 +1,6 @@
 import React, { useState } from "react";
-import {
-  ChevronLeft,
-  Upload,
-  Calendar,
-  Clock,
-  MapPin,
-  Plus,
-  Trash2,
-  Info,
-  X,
-} from "lucide-react";
+import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
-import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
@@ -27,22 +15,20 @@ export interface ToggleStates {
 }
 
 const ExpressEvent = () => {
-  // console.log("props of express event", props);
-
   const location = useLocation();
   const { id: routeEventId } = useParams();
 
-  const { 
-    plan, 
-    eventData, 
-    isEditing, 
-    eventAttributes, 
-    chartData, 
-    onTimeRangeChange, 
-    eventId, 
-    stats, 
-    lastEdit, 
-    currentStep: initialStep 
+  const {
+    plan,
+    eventData,
+    isEditing,
+    eventAttributes,
+    chartData,
+    onTimeRangeChange,
+    eventId,
+    stats,
+    lastEdit,
+    currentStep: initialStep,
   } = location.state || {};
 
   // Use route event ID if available, otherwise fall back to location state eventId
@@ -50,16 +36,7 @@ const ExpressEvent = () => {
     (routeEventId as string) || (eventId as string)
   );
   const finalEventId = createdEventId;
-  
-  console.log("selected plan in the express event", plan);
-  console.log("event data for editing", eventData);
-  console.log("is editing mode", isEditing);
-  console.log("event attributes", eventAttributes);
-  console.log("chart data", chartData);
-  console.log("stats", stats);
-  console.log("event ID from location state", eventId);
-  console.log("event ID from route params", routeEventId);
-  console.log("final event ID", finalEventId);
+
   const [currentStep, setCurrentStep] = useState(initialStep || 0);
 
   const navigation = useNavigate();
@@ -97,8 +74,6 @@ const ExpressEvent = () => {
   const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] =
     useState(false);
 
-  // 🔹 Match the ToggleStates interface
-
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
     confirmationMsg: false,
     userQRCode: false,
@@ -106,7 +81,9 @@ const ExpressEvent = () => {
     eventDetails: false,
   });
 
-  const handleNext = () => {
+  // Accept eventId from child and update for next steps
+  const handleNext = (nextEventId?: string | number) => {
+    if (nextEventId) setCreatedEventId(String(nextEventId));
     setCurrentStep((prev: number) => Math.min(prev + 1, steps.length - 1));
   };
 
@@ -114,50 +91,64 @@ const ExpressEvent = () => {
     setCurrentStep((prev: number) => Math.max(prev - 1, 0));
   };
 
+  // Handle back navigation based on context
+  const handleBackNavigation = () => {
+    if (isEditing && finalEventId) {
+      // If editing an existing event, go back to the event details page
+      navigation(`/home/${finalEventId}`, {
+        state: { eventId: finalEventId },
+      });
+    } else {
+      // If creating a new event, go back to home
+      navigation("/");
+    }
+  };
+
   const StepsNavigation = () => (
     <div className="bg-[#F7FAFF]">
-      {/* Header with back button and cancel */}
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <Button
-            onClick={() => navigation("/")}
-            className="flex items-center gap-2 text-gray-800 hover:text-gray-600"
+          <button
+            onClick={handleBackNavigation}
+            className="flex items-center gap-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl px-4 py-1 shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer"
           >
-            <div className="p-2 bg-white rounded-md cursor-pointer">
-              <ChevronLeft size={20} />
+            <div className="p-2">
+              <ChevronLeft
+                size={18}
+                className="text-gray-700 group-hover:text-gray-900 transition-colors duration-200"
+              />
             </div>
-            <span className="text-sm font-poppins font-medium">
-              Express Event
-            </span>
-          </Button>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-poppins font-semibold text-gray-800 leading-tight">
+                Express Event
+              </span>
+            </div>
+          </button>
         </div>
-
-        {/* cancel button */}
         <div className="col-auto">
-          <Button
+          <button
             onClick={() => navigation("/")}
-            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
+            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 hover:bg-red-100 rounded-md cursor-pointer transition-all duration-200"
           >
             <span>Cancel Creation</span>
             <X size={18} />
-          </Button>
+          </button>
         </div>
       </div>
-
-      {/* Breadcrumb */}
       <div className="px-6 py-3">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-neutral-500 font-poppins text-xs font-normal">
             Home
           </span>
-          <ChevronLeft className="rotate-180 text-gray-400 cursor-pointer" size={14} />
+          <ChevronLeft
+            className="rotate-180 text-gray-400 cursor-pointer"
+            size={14}
+          />
           <span className="text-gray-800 text-xs font-normal font-poppins">
             Express Event
           </span>
         </div>
       </div>
-
-      {/* Steps Navigation with Gaps and Rounded Corners */}
       <div className="px-6 pb-4">
         <div className="flex gap-4 overflow-x-auto no-scrollbar">
           {steps.map((step, index) => {
@@ -242,11 +233,9 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
-            toggleStates={toggleStates} // <-- pass toggles here
-            onNext={(badgeId) => {
-              setSelectedModal(badgeId); // save which badge was selected
-              handleNext(); // go to next step
-            }}
+            toggleStates={toggleStates}
+            eventId={finalEventId}
+            onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}
             totalSteps={steps.length}
@@ -255,6 +244,7 @@ const ExpressEvent = () => {
       case 3:
         return (
           <EmailConfirmation
+            eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}
@@ -264,6 +254,7 @@ const ExpressEvent = () => {
       case 4:
         return (
           <Areas
+            eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
             currentStep={currentStep}
@@ -295,7 +286,6 @@ const ExpressEvent = () => {
     <div className="min-h-screen bg-[#F7FAFF] ">
       <StepsNavigation />
       <div className="bg-[#F7FAFF] min-h-[calc(100vh-140px)]">
-        {/* This wrapper div ensures all content is centered and has a max width */}
         <div className="max-w-full mx-auto p-4 md:p-6 lg:p-8">
           {renderStepContent()}
         </div>

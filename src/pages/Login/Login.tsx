@@ -193,7 +193,7 @@ function Login() {
               {loading ? (
                 <p className="text-white">...Loading</p>
               ) : (
-                <span className="text-white">{t("Signin")}</span>
+                <span className="text-white">{t("signin")}</span>
               )}
             </Button>
 
@@ -206,7 +206,7 @@ function Login() {
                 className="text-sm font-poppins font-light text-[#3563E9] underline cursor-pointer"
                 onClick={() => navigate("/signup")}
               >
-                {t("Signup")}
+                {t("signup")}
               </p>
             </div>
           </div>
