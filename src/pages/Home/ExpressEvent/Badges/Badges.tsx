@@ -2,14 +2,19 @@ import React, { useEffect, useState } from "react";
 import { ChevronLeft, X, Eye } from "lucide-react";
 import Assets from "@/utils/Assets";
 import type { ToggleStates } from "../ExpressEvent";
-import { postBadgesApi } from "@/apis/apiHelpers";
+import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
+
 
 interface Badge {
   id: number;
   name: string;
   frontImg: string;
   backImg: string;
+  userImg: string;
+  qrImg: string;
+  cardHeader: string;
+  cardFooter: string;
 }
 
 interface BadgesProps {
@@ -29,7 +34,9 @@ const Badges: React.FC<BadgesProps> = ({
 }) => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
-  const [previewBadge, setPreviewBadge] = useState<Badge | null>(null);
+  const [previewBadge, setPreviewBadge] = useState<Badge | null>(null)
+  const eventId = localStorage.getItem("create_eventId");
+  const [event, setEvent] = useState<any>(null);
 
   const badges: Badge[] = [
     {
@@ -37,49 +44,22 @@ const Badges: React.FC<BadgesProps> = ({
       name: "Badge 1",
       frontImg: Assets.images.b1_front,
       backImg: Assets.images.b1_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header,
+      cardFooter: Assets.images.card_footer,
     },
     {
       id: 2,
       name: "Badge 2",
       frontImg: Assets.images.b2_front,
       backImg: Assets.images.b2_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header,
+      cardFooter: Assets.images.card_footer,
     },
-    {
-      id: 3,
-      name: "Badge 3",
-      frontImg: Assets.images.b3_front,
-      backImg: Assets.images.b3_back,
-    },
-    {
-      id: 4,
-      name: "Badge 4",
-      frontImg: Assets.images.b4_front,
-      backImg: Assets.images.b4_back,
-    },
-    {
-      id: 5,
-      name: "Badge 5",
-      frontImg: Assets.images.b5_front,
-      backImg: Assets.images.b5_back,
-    },
-    {
-      id: 6,
-      name: "Badge 6",
-      frontImg: Assets.images.b6_front,
-      backImg: Assets.images.b6_back,
-    },
-    {
-      id: 7,
-      name: "Badge 7",
-      frontImg: Assets.images.b7_front,
-      backImg: Assets.images.b7_back,
-    },
-    {
-      id: 8,
-      name: "Badge 8",
-      frontImg: Assets.images.b8_front,
-      backImg: Assets.images.b8_back,
-    },
+
   ];
 
   const openBadgeModal = (badge: Badge) => {
@@ -118,19 +98,20 @@ const Badges: React.FC<BadgesProps> = ({
     badgeId: number,
     badgeName: string
   ) => {
-    const savedEventId = localStorage.getItem("create_eventId");
-    console.log("saved event id-------+++++++-------", savedEventId);
+    const eventId = localStorage.getItem("create_eventId");
+    console.log("saved event id-------+++++++-------", eventId);
 
     const data = {
       badge: {
         name: badgeName,
-        event_id: savedEventId,
+        event_id: eventId,
         default: false,
+
       },
     };
 
     try {
-      const response = await postBadgesApi(data, savedEventId);
+      const response = await postBadgesApi(data, eventId ? parseInt(eventId, 10) : 0);
       console.log("Badge API Response:", response.data);
       toast.success("Badge selected successfully!");
       return response;
@@ -139,6 +120,21 @@ const Badges: React.FC<BadgesProps> = ({
       toast.error("Failed to select badge.");
     }
   };
+
+  useEffect(() => {
+    (async () => {
+      if (!eventId) return console.error("Event ID is missing");
+      try {
+        const response = await getEventbyId(eventId);
+        setEvent(response?.data?.data);
+        console.log("event data by id", response?.data?.data);
+      } catch (error) {
+        console.error("Failed to fetch event data:", error);
+      }
+    })();
+  }, [eventId]);
+
+
 
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
@@ -157,11 +153,10 @@ const Badges: React.FC<BadgesProps> = ({
         {badges.map((badge) => (
           <div
             key={badge.id}
-            className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
-              selectedBadge?.id === badge.id
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-blue-500"
-            }`}
+            className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${selectedBadge?.id === badge.id
+              ? "border-green-500 bg-green-50"
+              : "border-gray-200 hover:border-blue-500"
+              }`}
             onClick={() =>
               setSelectedBadge(selectedBadge?.id === badge.id ? null : badge)
             }
@@ -193,29 +188,74 @@ const Badges: React.FC<BadgesProps> = ({
       {openModal && previewBadge && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full md:w-3/4">
+
             <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-poppins font-semibold">
-                {previewBadge.name}
-              </h2>
-              <button
-                onClick={closeModal}
-                className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1"
-              >
-                <X />
-              </button>
+              <h2 className="text-xl font-poppins font-semibold"> {previewBadge.name}</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1"> <X /> </button>
             </div>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <img
-                src={previewBadge.frontImg}
-                alt={`${previewBadge.name} Front`}
-                className="flex-1 max-h-[70vh] w-full object-contain"
-              />
-              <img
-                src={previewBadge.backImg}
-                alt={`${previewBadge.name} Back`}
-                className="flex-1 max-h-[70vh] w-full object-contain"
-              />
+
+            <div className="flex flex-col justify-center items-center sm:flex-row gap-6">
+
+              {/* Card Front */}
+              <div className="flex flex-col h-[100vh] w-[100%] rounded-xl">
+                {/* Top */}
+                <div
+                  className="flex justify-center items-center gap-2 bg-cover bg-center w-full rounded-xl"
+                  style={{ backgroundImage: "url('/cardHeader.svg')", height: "33vh" }}
+
+                >
+                  {event?.attributes?.logo_url && (
+                    <img
+                      src={event.attributes.logo_url}
+                      alt={`${event.attributes.name} Logo`}
+                      className="w-8 h-8 mb-6"
+                    />
+                  )}
+                  <h6 className="font-semibold mb-6">Company Name</h6>
+                </div>
+
+                {/* Center */}
+                <div className="flex flex-1 flex-col justify-center items-center">
+                  <img src={previewBadge.userImg} className="w-48 rounded-full border-4 border-gray-200 object-cover" />
+                  <h2 className=" text-lg font-bold text-gray-900">User Name</h2>
+                  <p className="text-gray-600 text-sm">User Title</p>
+                  <h6>Primary Color : {event.attributes.primary_color}</h6>
+
+
+                </div>
+
+                {/* Bottom */}
+                <div
+                  className="flex justify-center items-center gap-2 bg-cover bg-center w-full rounded-b-xl"
+                  style={{ backgroundImage: "url('/cardFooter.svg')", height: "15vh" }}
+                >
+                </div>
+
+
+              </div>
+
+              {/* Card Back */}
+              <div className="flex flex-col h-[100vh] w-[100%] bg-gray-100 rounded-2xl p-6">
+                {/* Top */}
+                <div className="flex items-center justify-center gap-2 m-6">
+                  {event?.attributes?.logo_url && (
+                    <img src={event.attributes.logo_url} alt={`${event.attributes.name} Logo`} className="w-8 h-8" />
+                  )}
+                  <h6 className="font-semibold">Company Name</h6>
+                </div>
+                {/* Center */}
+                <div className="flex flex-1 flex-col justify-center items-center">
+                  {event?.attributes?.name && (
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      {event.attributes.name}
+                    </h3>
+                  )}
+                  <img src={previewBadge.qrImg} className="w-30 h-30 rounded border-4 border-gray-200 object-cover" />
+                </div>
+              </div>
+
             </div>
+
           </div>
         </div>
       )}
@@ -277,11 +317,10 @@ const Badges: React.FC<BadgesProps> = ({
           onClick={selectBadgeAndContinue}
           disabled={!selectedBadge || loading}
           className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center
-    ${
-      selectedBadge && !loading
-        ? "bg-slate-800 hover:bg-slate-900"
-        : "bg-gray-400 cursor-not-allowed"
-    }`}
+    ${selectedBadge && !loading
+              ? "bg-slate-800 hover:bg-slate-900"
+              : "bg-gray-400 cursor-not-allowed"
+            }`}
         >
           {loading ? (
             <span className="flex items-center gap-2">
