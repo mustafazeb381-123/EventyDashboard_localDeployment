@@ -1,8 +1,8 @@
 import Assets from "@/utils/Assets";
 import RegistrationFormPreview from "./components/RegistrationFormPreview";
 
-// Template One - Matches registration template structure
-const TemplateFormOne = ({
+// Template Three - Matches registration template 3 structure exactly
+const TemplateFormThree = ({
   eventData,
   formFields,
 }: {
@@ -11,29 +11,11 @@ const TemplateFormOne = ({
 }) => {
   return (
     <div className="w-full p-4">
-      {/* Banner Section */}
-      <div
-        style={{
-          width: "100%",
-          backgroundImage: eventData?.attributes?.registration_page_banner
-            ? `url(${eventData.attributes.registration_page_banner})`
-            : `url(${Assets.images.uploadBackground})`,
-        }}
-        className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
-      >
-        {!eventData?.attributes?.registration_page_banner && (
-          <div className="text-white text-center">
-            <h1 className="text-3xl font-bold">Event Banner</h1>
-            <p className="mt-2 text-lg opacity-90">Template One Design</p>
-          </div>
-        )}
-      </div>
-
-      <div style={{ marginTop: 16 }} />
+      {/* No Banner Upload - Removed as requested */}
 
       {/* Event Information Display */}
       <div className="gap-3 flex flex-row items-center">
-        <div style={{ padding: 32 }} className="bg-neutral-100 rounded-2xl">
+        <div style={{ padding: 32 }} className=" bg-neutral-100 rounded-2xl">
           <img
             src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
             style={{ height: 67.12, width: 72 }}
@@ -46,7 +28,7 @@ const TemplateFormOne = ({
             {eventData?.attributes?.name || "Event Name"}
           </p>
 
-          <div className="flex flex-row items-center gap-3">
+          <div className="flex flex-row items-center gap-3 ">
             <img
               src={Assets.icons.clock}
               style={{ height: 20, width: 20 }}
@@ -58,13 +40,13 @@ const TemplateFormOne = ({
             </p>
           </div>
 
-          <div className="flex flex-row items-center gap-3">
+          <div className="flex flex-row items-center gap-3 ">
             <img
               src={Assets.icons.location}
               style={{ height: 20, width: 20 }}
               alt=""
             />
-            <p className="text-neutral-600 font-poppins font-normal text-xs">
+            <p className=" text-neutral-600 font-poppins font-normal text-xs">
               {eventData?.attributes?.location || "Location"}
             </p>
           </div>
@@ -88,7 +70,7 @@ const TemplateFormOne = ({
           Please fill name and contact information of attendees.
         </h3>
         <RegistrationFormPreview
-          formFields={formFields || []}
+          formFields={formFields}
           submitButtonText="Register"
         />
       </div>
@@ -96,4 +78,4 @@ const TemplateFormOne = ({
   );
 };
 
-export default TemplateFormOne;
+export default TemplateFormThree;

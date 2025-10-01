@@ -1,12 +1,17 @@
 import React, { useEffect, useState } from "react";
-import { ChevronLeft, X, Eye } from "lucide-react";
+import { X, Eye, Loader2 } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
 import Assets from "@/utils/Assets"; // 👈 make sure your template preview images are here
-import {
-  getRegistrationFieldApi,
-  postRegistrationTemplateFieldApi,
-} from "@/apis/apiHelpers";
+import { getRegistrationFieldApi } from "@/apis/apiHelpers";
 import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
+import TemplateFormOne from "./RegistrationTemplates/TemplateOne/TemplateForm";
+import TemplateFormTwo from "./RegistrationTemplates/TemplateTwo/TemplateForm";
+import TemplateFormThree from "./RegistrationTemplates/TemplateThree/TemplateForm";
+import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm";
+import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
+import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
+import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
 
 // 👇 Match the ToggleStates interface from ConfirmationDetails
 interface ToggleStates {
@@ -16,7 +21,7 @@ interface ToggleStates {
   eventDetails: boolean;
 }
 
-type TemplateId = 1 | 2;
+type TemplateId = 1 | 2 | 3 | 4 | 5 | 6;
 
 interface Template {
   id: TemplateId;
@@ -27,18 +32,24 @@ interface Template {
 interface ModalProps {
   template: Template | null;
   onClose: () => void;
+  formData: any[];
+  isLoadingFormData: boolean;
+  eventId?: string;
 }
 
-const Modal: React.FC<ModalProps> = ({ template, onClose }) => {
+const Modal: React.FC<ModalProps> = ({
+  template,
+  onClose,
+  formData,
+  isLoadingFormData,
+  eventId,
+}) => {
   if (!template) return null;
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full md:w-3/4">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-poppins font-semibold">
-            {template.name}
-          </h2>
+      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80%] max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-end">
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1"
@@ -47,14 +58,109 @@ const Modal: React.FC<ModalProps> = ({ template, onClose }) => {
           </button>
         </div>
 
-        {/* Template preview */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <img
-            src={template.img}
-            alt={`${template.name} Front`}
-            className="flex-1  w-full object-contain rounded-xl"
-          />
-        </div>
+        {/* Render correct template with loading state */}
+        {template.id === 1 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormOne data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 2 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormTwo data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 3 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormThree data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 4 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormFour data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 5 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormFive data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 6 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormSix data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
       </div>
     </div>
   );
@@ -73,17 +179,50 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
   toggleStates,
   setToggleStates,
 }) => {
+  const { id: routeId } = useParams();
   const [internalStep, setInternalStep] = useState(0);
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
     null
   );
-
   const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [formData, setFormData] = useState<any[]>([]);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+
+  // Get effective event ID
+  const effectiveEventId =
+    (routeId as string | undefined) ||
+    (typeof window !== "undefined"
+      ? (localStorage.getItem("create_eventId") as string | null) || undefined
+      : undefined);
 
   const templates: Template[] = [
     { id: 1, name: "Temp 1", img: Assets.images.temp1 },
     { id: 2, name: "Temp 2", img: Assets.images.temp2 },
+    { id: 3, name: "Temp 3", img: Assets.images.templateThree },
+    { id: 4, name: "Temp 4", img: Assets.images.templateFour },
+    { id: 5, name: "Temp 5", img: Assets.images.templateFive },
   ];
+
+  // Load form data when component mounts or eventId changes
+  useEffect(() => {
+    const getFieldApi = async () => {
+      if (!effectiveEventId) return;
+
+      setIsLoadingFormData(true);
+      try {
+        const response = await getRegistrationFieldApi(effectiveEventId);
+        console.log("getFieldApi response:", response.data);
+        setFormData(response.data.data);
+      } catch (error) {
+        console.error("Failed to get registration field:", error);
+        toast.error("Failed to load form data");
+      } finally {
+        setIsLoadingFormData(false);
+      }
+    };
+
+    getFieldApi();
+  }, [effectiveEventId]);
 
   /** Step navigation */
   const handleStepNext = () => {
@@ -154,7 +293,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         <div className="mt-8">
           <ConfirmationDetails
             onToggleStatesChange={setToggleStates}
-            toggleStates={toggleStates}
+            eventId={effectiveEventId}
           />
 
           {/* Debug Info */}
@@ -210,6 +349,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         <Modal
           template={previewTemplate}
           onClose={() => setPreviewTemplate(null)}
+          formData={formData}
+          isLoadingFormData={isLoadingFormData}
+          eventId={effectiveEventId}
         />
       )}
       Step Navigation

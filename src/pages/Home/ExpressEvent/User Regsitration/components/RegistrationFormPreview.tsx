@@ -1,21 +1,41 @@
-import React, { useState } from "react";
-import { Clock, MapPin } from "lucide-react";
+import { useState } from "react";
+
+interface FormField {
+  id: number;
+  name: string;
+  type: string;
+  label: string;
+  placeholder?: string;
+  required?: boolean;
+  active?: boolean;
+  fullWidth?: boolean;
+  options?: Array<{ value: string; label: string }>;
+  accept?: string;
+  hint?: string;
+  rows?: number;
+  checkboxLabel?: string;
+}
+
+interface RegistrationFormPreviewProps {
+  formFields?: FormField[];
+  submitButtonText?: string;
+}
 
 // Simple Registration Form Component (UI Only - No Toggle/Functionality)
 const RegistrationFormPreview = ({
   formFields = [],
   submitButtonText = "Register",
-}) => {
-  const [formData, setFormData] = useState({});
+}: RegistrationFormPreviewProps) => {
+  const [formData, setFormData] = useState<Record<string, any>>({});
 
-  const handleInputChange = (fieldName, value) => {
+  const handleInputChange = (fieldName: string, value: any) => {
     setFormData((prev) => ({
       ...prev,
       [fieldName]: value,
     }));
   };
 
-  const renderField = (field) => {
+  const renderField = (field: FormField) => {
     const commonInputClasses =
       "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white";
 
@@ -69,9 +89,9 @@ const RegistrationFormPreview = ({
               type="file"
               accept={field.accept}
               onChange={(e) => {
-                const file = e.target.files[0];
-                if (file) {
-                  handleInputChange(field.name, file.name);
+                const files = e.target.files;
+                if (files && files[0]) {
+                  handleInputChange(field.name, files[0].name);
                 }
               }}
               className="w-full text-sm border border-gray-300 rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"

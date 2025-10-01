@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
-import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
@@ -109,26 +108,31 @@ const ExpressEvent = () => {
     <div className="bg-[#F7FAFF]">
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
-          <Button
+          <button
             onClick={handleBackNavigation}
-            className="flex items-center gap-2 text-gray-800 hover:text-gray-600"
+            className="flex items-center gap-3 bg-white hover:bg-gray-50 border border-gray-200 rounded-xl px-4 py-1 shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer"
           >
-            <div className="p-2 bg-white rounded-md cursor-pointer">
-              <ChevronLeft size={20} />
+            <div className="p-2">
+              <ChevronLeft
+                size={18}
+                className="text-gray-700 group-hover:text-gray-900 transition-colors duration-200"
+              />
             </div>
-            <span className="text-sm font-poppins font-medium">
-              Express Event
-            </span>
-          </Button>
+            <div className="flex flex-col items-start">
+              <span className="text-sm font-poppins font-semibold text-gray-800 leading-tight">
+                Express Event
+              </span>
+            </div>
+          </button>
         </div>
         <div className="col-auto">
-          <Button
+          <button
             onClick={() => navigation("/")}
-            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
+            className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 hover:bg-red-100 rounded-md cursor-pointer transition-all duration-200"
           >
             <span>Cancel Creation</span>
             <X size={18} />
-          </Button>
+          </button>
         </div>
       </div>
       <div className="px-6 py-3">

@@ -21,6 +21,7 @@ import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateFor
 import {
   createTemplatePostApi,
   getRegistrationFieldApi,
+  getRegistrationTemplateData,
   postRegistrationTemplateFieldApi,
   updateEventById,
 } from "@/apis/apiHelpers";
@@ -267,6 +268,8 @@ const RegistrationForm = ({
     (typeof window !== "undefined"
       ? (localStorage.getItem("create_eventId") as string | null) || undefined
       : undefined);
+
+  console.log("effective event id ", effectiveEventId);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
@@ -290,13 +293,78 @@ const RegistrationForm = ({
   console.log("confirmed template", confirmedTemplate);
   console.log("selected template data", selectedTemplateData);
 
+  const [getTemplatesData, setGetTemplatesData] = useState<any[]>([]);
+  const [selectedTemplateName, setSelectedTemplateName] = useState<
+    string | null
+  >(null);
+
+  const getCreateTemplateApiData = async () => {
+    try {
+      if (!effectiveEventId) {
+        console.warn("No event ID available");
+        return;
+      }
+
+      const result = await getRegistrationTemplateData(effectiveEventId);
+
+      console.log("Fetched templates data: which is already created", result);
+
+      // Check if the response has the expected structure
+      const responseData = result?.data?.data;
+      console.log("response data of get template api", responseData);
+      if (!responseData) {
+        console.warn("No data found in response");
+        setGetTemplatesData([]);
+        return;
+      }
+
+      // Map the event registration fields data
+      const registrationFields =
+        responseData.attributes?.event_registration_fields?.data || [];
+      const templateData = registrationFields.map((item: any) => ({
+        id: item.id,
+        type: item.type,
+        attributes: item.attributes,
+      }));
+
+      console.log("template data mapping:", templateData);
+
+      const nameOfTemplate = responseData.attributes?.name;
+      console.log("name of template:", nameOfTemplate);
+
+      // Set the selected template name and highlight it
+      setSelectedTemplateName(nameOfTemplate);
+      setConfirmedTemplate(nameOfTemplate);
+      setGetTemplatesData(templateData);
+    } catch (error) {
+      console.error("Failed to fetch template data:", error);
+      toast.error("Failed to fetch template data");
+      setGetTemplatesData([]);
+    }
+  };
+
+  useEffect(() => {
+    getCreateTemplateApiData();
+  }, []);
+
   useEffect(() => {
     console.log("event id in reg form (effective) ---------", effectiveEventId);
     if (effectiveEventId) {
       getFieldAPi(effectiveEventId);
     }
+
     console.log("toggleStates in reg form");
   }, [selectedTemplate, effectiveEventId]);
+
+  // Function to determine which data to pass to each template
+  const getTemplateData = (templateId: string) => {
+    // If this template matches the selected template name, pass the fetched data
+    if (templateId === selectedTemplateName) {
+      return getTemplatesData.length > 0 ? getTemplatesData : formData;
+    }
+    // For other templates, pass the general form data
+    return formData;
+  };
 
   const templates = [
     {
@@ -307,7 +375,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormOne data={formData} eventId={effectiveEventId} />
+        <TemplateFormOne
+          data={getTemplateData("template-one")}
+          eventId={effectiveEventId}
+        />
       ),
     },
     {
@@ -318,7 +389,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormTwo />
+        <TemplateFormTwo
+          data={getTemplateData("template-two")}
+          eventId={effectiveEventId}
+        />
       ),
     },
     {
@@ -329,7 +403,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormThree />
+        <TemplateFormThree
+          data={getTemplateData("template-three")}
+          eventId={effectiveEventId}
+        />
       ),
     },
     {
@@ -340,7 +417,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormFour />
+        <TemplateFormFour
+          data={getTemplateData("template-four")}
+          eventId={effectiveEventId}
+        />
       ),
     },
     {
@@ -351,7 +431,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormFive />
+        <TemplateFormFive
+          data={getTemplateData("template-five")}
+          eventId={effectiveEventId}
+        />
       ),
     },
     {
@@ -362,7 +445,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormSix />
+        <TemplateFormSix
+          data={getTemplateData("template-six")}
+          eventId={effectiveEventId}
+        />
       ),
     },
     {
@@ -373,7 +459,10 @@ const RegistrationForm = ({
           <p className="text-slate-600 text-sm">Loading template data...</p>
         </div>
       ) : (
-        <TemplateFormSeven />
+        <TemplateFormSeven
+          data={getTemplateData("template-seven")}
+          eventId={effectiveEventId}
+        />
       ),
     },
   ];
@@ -722,6 +811,7 @@ const RegistrationForm = ({
             onNext={handleConfirmationNext}
             onPrevious={handleConfirmationPrevious}
             onToggleStatesChange={handleToggleStatesChange}
+            eventId={effectiveEventId}
           />
         </div>
       )}

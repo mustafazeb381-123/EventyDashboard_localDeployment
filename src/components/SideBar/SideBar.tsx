@@ -51,8 +51,12 @@ const SideBar = ({
   // Set active item based on current route
   useEffect(() => {
     const currentPath = location.pathname;
-    
-    if ((currentPath.startsWith("/home/") || currentPath.startsWith("/express-event/")) && currentEventId) {
+
+    if (
+      (currentPath.startsWith("/home/") ||
+        currentPath.startsWith("/express-event/")) &&
+      currentEventId
+    ) {
       setActiveItem("Home summary");
     } else if (currentPath === "/regesterd_user") {
       setActiveItem("Registered Users");
@@ -68,13 +72,16 @@ const SideBar = ({
       setActiveItem("Inviation");
       // Expand the Invitation submenu if we're on a submenu page
       if (currentPath.includes("/user") || currentPath.includes("/vip")) {
-        setExpandedMenus(prev => ({ ...prev, "Inviation": true }));
+        setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
       }
     } else if (currentPath.startsWith("/attendees")) {
       setActiveItem("Attendees");
       // Expand the Attendees submenu if we're on a submenu page
-      if (currentPath.includes("/check-in") || currentPath.includes("/check-out")) {
-        setExpandedMenus(prev => ({ ...prev, "Attendees": true }));
+      if (
+        currentPath.includes("/check-in") ||
+        currentPath.includes("/check-out")
+      ) {
+        setExpandedMenus((prev) => ({ ...prev, Attendees: true }));
       }
     } else if (currentPath === "/committees") {
       setActiveItem("Committees");

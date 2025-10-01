@@ -169,7 +169,9 @@ const MainData = ({
       // Check file type
       const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
       if (!allowedTypes.includes(file.type)) {
-        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
+        setLogoError(
+          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
+        );
         return;
       }
 
@@ -231,7 +233,9 @@ const MainData = ({
       // Check file type
       const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
       if (!allowedTypes.includes(file.type)) {
-        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
+        setLogoError(
+          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
+        );
         return;
       }
 
@@ -756,7 +760,7 @@ const MainData = ({
                   or drag and drop
                 </p>
                 <p className="text-xs text-neutral-500">
-                  SVG, PNG or JPG (max. 400x400px, 2MB)
+                  SVG, PNG, JPG, or JPEG (max. 400x400px, 2MB)
                 </p>
               </>
             )}
