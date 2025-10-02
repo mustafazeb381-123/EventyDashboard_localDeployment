@@ -8,7 +8,6 @@ const ReusableRegistrationForm = ({
   toggleLoading = {},
   submitButtonText = "Register",
   submitButtonClassName = "w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors",
-  isUserRegistration = false, // New prop to hide toggle functionality
 }) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
@@ -309,30 +308,27 @@ const ReusableRegistrationForm = ({
           <div className="flex items-start gap-3">
             <div className="flex-1">{renderField(field)}</div>
 
-            {/* Only show toggle button when NOT in user registration mode */}
-            {!isUserRegistration && (
-              <button
-                style={{
-                  padding: 10,
-                  borderRadius: 10,
-                  backgroundColor: "#f5f5f5",
-                }}
-                type="button"
-                onClick={() => onToggleField && onToggleField(field.id)}
-                className="flex items-center justify-center transition-colors flex-shrink-0 hover:bg-gray-200 mt-0"
-                title={isFieldVisible(field) ? "Disable field" : "Enable field"}
-                disabled={!!toggleLoading[field.id]} // <-- disable while loading
-              >
-                {isFieldVisible(field) ? (
-                  <Eye size={24} className="text-red-500" />
-                ) : (
-                  <EyeOff size={24} className="text-gray-400" />
-                )}
-                {toggleLoading[field.id] && (
-                  <span className="ml-2 text-xs text-gray-400">...</span>
-                )}
-              </button>
-            )}
+            <button
+              style={{
+                padding: 10,
+                borderRadius: 10,
+                backgroundColor: "#f5f5f5",
+              }}
+              type="button"
+              onClick={() => onToggleField && onToggleField(field.id)}
+              className="flex items-center justify-center transition-colors flex-shrink-0 hover:bg-gray-200 mt-0"
+              title={isFieldVisible(field) ? "Disable field" : "Enable field"}
+              disabled={!!toggleLoading[field.id]} // <-- disable while loading
+            >
+              {isFieldVisible(field) ? (
+                <Eye size={24} className="text-red-500" />
+              ) : (
+                <EyeOff size={24} className="text-gray-400" />
+              )}
+              {toggleLoading[field.id] && (
+                <span className="ml-2 text-xs text-gray-400">...</span>
+              )}
+            </button>
           </div>
 
           {errors[field.name] && (
