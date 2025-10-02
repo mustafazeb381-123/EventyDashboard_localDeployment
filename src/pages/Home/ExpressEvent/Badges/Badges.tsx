@@ -5,6 +5,40 @@ import type { ToggleStates } from "../ExpressEvent";
 import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 
+// CardHeader component for dynamic SVG coloring
+const CardHeader: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+  <svg 
+    width="100%" 
+    height="100%" 
+    viewBox="0 0 204 90" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className="absolute inset-0 w-full h-full object-cover rounded-xl"
+  >
+    <path d="M111.273 56.0935C64.6585 45.6916 29.5725 53.1215 0 66V0H204V47.6729C172.322 62.3346 125.307 59.2252 111.273 56.0935Z" fill={color}/>
+    <path d="M106 64.6191C56.4 55.4191 14.6667 74.7858 0 85.6191V89.6191C40 63.6191 87.3333 62.1191 106 64.6191Z" fill={color}/>
+    <path d="M107 61.6188C60.5 51.1189 17.3333 65.9522 0 74.6188V80.1187C39.5 55.1189 89.5 58.7806 107 61.6188Z" fill={color}/>
+    <path d="M119.5 62.5C165.5 68 189 60.5 204 54.5V58.5C170.5 68.5 133.5 66 119.5 62.5Z" fill={color}/>
+    <path d="M119 65.5C157 73.5 191.5 67.5 204 62.5V67.5C164 76 130 68.5 119 65.5Z" fill={color}/>
+  </svg>
+);
+
+// CardFooter component for dynamic SVG coloring
+const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+  <svg 
+    width="100%" 
+    height="100%" 
+    viewBox="0 0 204 41" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg"
+    className="absolute inset-0 w-full h-full object-cover rounded-b-xl"
+  >
+    <path d="M129 22.6273C166.5 23.0083 194.5 8.33636 204 0V8.33636C166.5 27.5 150.5 25.5 129 22.6273Z" fill={color}/>
+    <path d="M0 20.4307V28C51.5 4.56204 91.5 17.1777 98 18.4392C57.6 1.28214 16 14.6544 0 20.4307Z" fill={color}/>
+    <path d="M0 33.6364V41H204V14C172.078 29.7091 147.138 29.953 126.688 26.2717C59.8521 14.2401 35.912 15.2273 0 33.6364Z" fill={color}/>
+  </svg>
+);
+
 
 interface Badge {
   id: number;
@@ -37,6 +71,7 @@ const Badges: React.FC<BadgesProps> = ({
   const [previewBadge, setPreviewBadge] = useState<Badge | null>(null)
   const eventId = localStorage.getItem("create_eventId");
   const [event, setEvent] = useState<any>(null);
+  console.log("event----------", event)
 
   const badges: Badge[] = [
     {
@@ -112,12 +147,13 @@ const Badges: React.FC<BadgesProps> = ({
 
     try {
       const response = await postBadgesApi(data, eventId ? parseInt(eventId, 10) : 0);
-      console.log("Badge API Response:", response.data);
+      console.log("Badge API Response:", response?.data);
       toast.success("Badge selected successfully!");
       return response;
     } catch (error) {
       console.error("Failed to select badge:", error);
       toast.error("Failed to select badge.");
+      throw error;
     }
   };
 
@@ -200,18 +236,20 @@ const Badges: React.FC<BadgesProps> = ({
               <div className="flex flex-col h-[100vh] w-[100%] rounded-xl">
                 {/* Top */}
                 <div
-                  className="flex justify-center items-center gap-2 bg-cover bg-center w-full rounded-xl"
-                  style={{ backgroundImage: "url('/cardHeader.svg')", height: "33vh" }}
-
+                  className="relative flex justify-center items-center gap-2 w-full rounded-xl"
+                  style={{ height: "33vh" }}
                 >
-                  {event?.attributes?.logo_url && (
-                    <img
-                      src={event.attributes.logo_url}
-                      alt={`${event.attributes.name} Logo`}
-                      className="w-8 h-8 mb-6"
-                    />
-                  )}
-                  <h6 className="font-semibold mb-6">Company Name</h6>
+                  <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  <div className="relative z-10 flex items-center gap-2">
+                    {event?.attributes?.logo_url && (
+                      <img
+                        src={event.attributes.logo_url}
+                        alt={`${event.attributes.name} Logo`}
+                        className="w-8 h-8 mb-6"
+                      />
+                    )}
+                    <h6 className="font-semibold mb-6 text-white">Company Name</h6>
+                  </div>
                 </div>
 
                 {/* Center */}
@@ -226,9 +264,10 @@ const Badges: React.FC<BadgesProps> = ({
 
                 {/* Bottom */}
                 <div
-                  className="flex justify-center items-center gap-2 bg-cover bg-center w-full rounded-b-xl"
-                  style={{ backgroundImage: "url('/cardFooter.svg')", height: "15vh" }}
+                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl"
+                  style={{ height: "15vh" }}
                 >
+                  <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
                 </div>
 
 
