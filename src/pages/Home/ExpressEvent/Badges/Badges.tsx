@@ -13,7 +13,8 @@ const CardHeader: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
     viewBox="0 0 204 90" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
-    className="absolute inset-0 w-full h-full object-cover rounded-xl"
+    className="w-full h-full rounded-t-xl"
+    preserveAspectRatio="none"
   >
     <path d="M111.273 56.0935C64.6585 45.6916 29.5725 53.1215 0 66V0H204V47.6729C172.322 62.3346 125.307 59.2252 111.273 56.0935Z" fill={color}/>
     <path d="M106 64.6191C56.4 55.4191 14.6667 74.7858 0 85.6191V89.6191C40 63.6191 87.3333 62.1191 106 64.6191Z" fill={color}/>
@@ -31,7 +32,8 @@ const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
     viewBox="0 0 204 41" 
     fill="none" 
     xmlns="http://www.w3.org/2000/svg"
-    className="absolute inset-0 w-full h-full object-cover rounded-b-xl"
+    className="w-full h-full rounded-b-xl"
+    preserveAspectRatio="none"
   >
     <path d="M129 22.6273C166.5 23.0083 194.5 8.33636 204 0V8.33636C166.5 27.5 150.5 25.5 129 22.6273Z" fill={color}/>
     <path d="M0 20.4307V28C51.5 4.56204 91.5 17.1777 98 18.4392C57.6 1.28214 16 14.6544 0 20.4307Z" fill={color}/>
@@ -233,13 +235,15 @@ const Badges: React.FC<BadgesProps> = ({
             <div className="flex flex-col justify-center items-center sm:flex-row gap-6">
 
               {/* Card Front */}
-              <div className="flex flex-col h-[100vh] w-[100%] rounded-xl">
+              <div className="flex flex-col h-[100vh] w-[100%] rounded-xl bg-yellow-500">
                 {/* Top */}
                 <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-xl"
+                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                   style={{ height: "33vh" }}
                 >
-                  <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  <div className="absolute inset-0">
+                    <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
                   <div className="relative z-10 flex items-center gap-2">
                     {event?.attributes?.logo_url && (
                       <img
@@ -264,10 +268,12 @@ const Badges: React.FC<BadgesProps> = ({
 
                 {/* Bottom */}
                 <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl"
+                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
                   style={{ height: "15vh" }}
                 >
-                  <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  <div className="absolute inset-0">
+                    <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
                 </div>
 
 
