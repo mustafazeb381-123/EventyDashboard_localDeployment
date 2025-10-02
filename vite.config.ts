@@ -15,5 +15,11 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    host: true,            // expose on all hosts
+    port: 5173,
+    allowedHosts: ['lvh.me', '*.lvh.me']
+
+  },
 
 })

@@ -101,3 +101,9 @@ export const getRegistrationTemplateData = (id: string | number) => {
   return axiosInstance.get(`events/${id}/registration_templates/default`)
 }
 
+
+// Get all badge templates for a specific event.
+export const getEventBadges = (id: string | number) => {
+  return axiosInstance.get(`/events/${id}/badge_templates`);
+}
+
