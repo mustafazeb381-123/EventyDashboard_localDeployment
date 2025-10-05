@@ -107,3 +107,8 @@ export const getEventBadges = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badge_templates`);
 }
 
+export const getBadgeType = (id: string | number) => {
+  return axiosInstance.get(`/events/${id}/badges`);
+};
+
+

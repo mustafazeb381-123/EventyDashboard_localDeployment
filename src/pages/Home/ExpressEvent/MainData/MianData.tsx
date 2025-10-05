@@ -47,6 +47,16 @@ type MainFormData = {
   existingLogoUrl: string | null;
 };
 
+type Badge = {
+  id: string;
+  type: string;
+  attributes: {
+    name: string;
+    default: boolean;
+    // Add other badge attributes as needed
+  };
+};
+
 const MainData = ({
   onNext,
   onPrevious,
@@ -75,6 +85,8 @@ const MainData = ({
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showEventData, setShowEventData] = useState<boolean>(false);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
   const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
     description: "",
@@ -143,7 +155,7 @@ const MainData = ({
       errors.location = "Location is required";
     }
 
-    if (formData.guestTypes.length === 0) {
+    if (formData.guestTypes.length === 0 && badges.length === 0) {
       errors.guestTypes = "At least one guest type is required";
     }
 
@@ -298,10 +310,15 @@ const MainData = ({
   const addGuestType = () => {
     if (!newGuestType.trim()) return;
 
-    // Check if the guest type already exists
+    // Check if the guest type already exists (in both local and API badges)
     const trimmedType = newGuestType.trim();
+    const allGuestTypes = [
+      ...formData.guestTypes,
+      ...badges.map(badge => badge.attributes.name)
+    ];
+    
     if (
-      formData.guestTypes.some(
+      allGuestTypes.some(
         (type) => type.toLowerCase() === trimmedType.toLowerCase()
       )
     ) {
@@ -442,8 +459,13 @@ const MainData = ({
       fd.append("event[logo]", formData.eventLogo);
     }
 
-    // Guest types
-    formData.guestTypes.forEach((type, index) => {
+    // Guest types - combine local guest types and API badges
+    const allGuestTypes = [
+      ...formData.guestTypes,
+      ...badges.map(badge => badge.attributes.name)
+    ];
+
+    allGuestTypes.forEach((type, index) => {
       fd.append(`event[badges_attributes][][name]`, type);
       fd.append(`event[badges_attributes][][default]`, String(index === 0));
     });
@@ -484,6 +506,49 @@ const MainData = ({
     } catch (error: any) {
       toast.error(error?.response?.data?.message || "Error saving event data");
       throw error;
+    }
+  };
+
+  const fetchBadgeApi = async () => {
+    if (!eventId) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+
+    try {
+      setIsLoadingBadges(true);
+      console.log("Fetching badges for event ID:", eventId);
+
+      const response = await fetch(
+        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/badges`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Badges API Response:", response);
+
+      if (!response.ok) {
+        console.error("API Error:", response);
+        const errorText = await response.text();
+        console.log("Error response:", errorText);
+        return;
+      }
+
+      const result = await response.json();
+      console.log("✅ Badges fetched successfully:", result);
+      setBadges(result?.data || []);
+    } catch (error) {
+      console.error("❌ Fetch error:", error);
+    } finally {
+      setIsLoadingBadges(false);
     }
   };
 
@@ -596,6 +661,12 @@ const MainData = ({
       };
 
       fetchGetShowEventApi();
+    }
+  }, [eventId]);
+
+  useEffect(() => {
+    if (eventId) {
+      fetchBadgeApi();
     }
   }, [eventId]);
 
@@ -1003,31 +1074,68 @@ const MainData = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Types
+              Guest Types
             </label>
+            
+            {/* Loading state for badges */}
+            {isLoadingBadges && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 size={16} className="animate-spin text-teal-500 mr-2" />
+                <span className="text-sm text-gray-600">Loading badges...</span>
+              </div>
+            )}
+
             <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-              {formData.guestTypes.map((type, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
-                >
-                  <span className="text-sm text-gray-700 truncate pr-2">
-                    {type}
-                    {index === 0 && (
-                      <span className="ml-2 text-xs text-blue-600 font-medium">
-                        (default)
+              {/* Show API Badges with different styling */}
+              {badges.length > 0 && (
+                <div className="mb-4">
+                  {badges.map((badge, index) => (
+                    <div
+                      key={`api-${badge.id}`}
+                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
+                    >
+                      <span className="text-sm text-gray-700 truncate pr-2">
+                        {badge.attributes.name}
+                        {/* {badge.attributes.default && (
+                          <span className="ml-2 text-xs text-blue-600 font-medium">
+                            (default)
+                          </span>
+                        )} */}
                       </span>
-                    )}
-                  </span>
-                  <button
-                    onClick={() => handleRemoveGuestTypeClick(index)}
-                    className="text-red-400 hover:text-red-500 flex-shrink-0 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {formData.guestTypes.length === 0 && (
+              )}
+
+              {/* Show Local Guest Types */}
+              {formData.guestTypes.length > 0 && (
+                <div className='mb-4'>
+                  {formData.guestTypes.map((type, index) => (
+                    <div
+                      key={index}
+                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
+                    >
+                      <span className="text-sm text-gray-700 truncate pr-2">
+                        {type}
+                        {index === 0 && formData.guestTypes.length > 0 && (
+                          <span className="ml-2 text-xs text-blue-600 font-medium">
+                            (default)
+                          </span>
+                        )}
+                      </span>
+                      <button
+                        onClick={() => handleRemoveGuestTypeClick(index)}
+                        className="text-red-400 hover:text-red-500 flex-shrink-0 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Show message when no guest types exist */}
+              {formData.guestTypes.length === 0 && badges.length === 0 && (
                 <p className="text-gray-500 text-sm text-center py-4">
                   No guest types added yet
                 </p>
