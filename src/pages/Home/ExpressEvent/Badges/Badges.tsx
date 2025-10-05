@@ -4,40 +4,57 @@ import Assets from "@/utils/Assets";
 import type { ToggleStates } from "../ExpressEvent";
 import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
+import Badge1 from "./components/Badge1";
+import Badge2 from "./components/Badge2";
+import Badge3 from "./components/Badge3";
 
 // CardHeader component for dynamic SVG coloring
-const CardHeader: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
-  <svg 
-    width="100%" 
-    height="100%" 
-    viewBox="0 0 204 90" 
-    fill="none" 
+const CardHeader: React.FC<{ color?: string }> = ({ color = "" }) => (
+  <svg
+    width="100%"
+    height="100%"
+    viewBox="0 0 204 90"
+    fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className="w-full h-full rounded-t-xl"
     preserveAspectRatio="none"
   >
-    <path d="M111.273 56.0935C64.6585 45.6916 29.5725 53.1215 0 66V0H204V47.6729C172.322 62.3346 125.307 59.2252 111.273 56.0935Z" fill={color}/>
-    <path d="M106 64.6191C56.4 55.4191 14.6667 74.7858 0 85.6191V89.6191C40 63.6191 87.3333 62.1191 106 64.6191Z" fill={color}/>
-    <path d="M107 61.6188C60.5 51.1189 17.3333 65.9522 0 74.6188V80.1187C39.5 55.1189 89.5 58.7806 107 61.6188Z" fill={color}/>
-    <path d="M119.5 62.5C165.5 68 189 60.5 204 54.5V58.5C170.5 68.5 133.5 66 119.5 62.5Z" fill={color}/>
-    <path d="M119 65.5C157 73.5 191.5 67.5 204 62.5V67.5C164 76 130 68.5 119 65.5Z" fill={color}/>
+    <path d="M111.273 56.0935C64.6585 45.6916 29.5725 53.1215 0 66V0H204V47.6729C172.322 62.3346 125.307 59.2252 111.273 56.0935Z" fill={color} />
+    <path d="M106 64.6191C56.4 55.4191 14.6667 74.7858 0 85.6191V89.6191C40 63.6191 87.3333 62.1191 106 64.6191Z" fill={color} />
+    <path d="M107 61.6188C60.5 51.1189 17.3333 65.9522 0 74.6188V80.1187C39.5 55.1189 89.5 58.7806 107 61.6188Z" fill={color} />
+    <path d="M119.5 62.5C165.5 68 189 60.5 204 54.5V58.5C170.5 68.5 133.5 66 119.5 62.5Z" fill={color} />
+    <path d="M119 65.5C157 73.5 191.5 67.5 204 62.5V67.5C164 76 130 68.5 119 65.5Z" fill={color} />
+  </svg>
+);
+
+const CardHeader2: React.FC<{ color?: string }> = ({ color = "" }) => (
+  <svg
+    width="100%"
+    height="100%"
+    viewBox="0 0 204 106"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    preserveAspectRatio="none"
+  >
+    <path d="M204 26V13L154.5 38.5L162.5 46L204 26Z" fill={color} />
+    <path d="M0 106V0H204L0 106Z" fill={color} />
   </svg>
 );
 
 // CardFooter component for dynamic SVG coloring
 const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
-  <svg 
-    width="100%" 
-    height="100%" 
-    viewBox="0 0 204 41" 
-    fill="none" 
+  <svg
+    width="100%"
+    height="100%"
+    viewBox="0 0 204 41"
+    fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className="w-full h-full rounded-b-xl"
     preserveAspectRatio="none"
   >
-    <path d="M129 22.6273C166.5 23.0083 194.5 8.33636 204 0V8.33636C166.5 27.5 150.5 25.5 129 22.6273Z" fill={color}/>
-    <path d="M0 20.4307V28C51.5 4.56204 91.5 17.1777 98 18.4392C57.6 1.28214 16 14.6544 0 20.4307Z" fill={color}/>
-    <path d="M0 33.6364V41H204V14C172.078 29.7091 147.138 29.953 126.688 26.2717C59.8521 14.2401 35.912 15.2273 0 33.6364Z" fill={color}/>
+    <path d="M129 22.6273C166.5 23.0083 194.5 8.33636 204 0V8.33636C166.5 27.5 150.5 25.5 129 22.6273Z" fill={color} />
+    <path d="M0 20.4307V28C51.5 4.56204 91.5 17.1777 98 18.4392C57.6 1.28214 16 14.6544 0 20.4307Z" fill={color} />
+    <path d="M0 33.6364V41H204V14C172.078 29.7091 147.138 29.953 126.688 26.2717C59.8521 14.2401 35.912 15.2273 0 33.6364Z" fill={color} />
   </svg>
 );
 
@@ -47,7 +64,7 @@ interface Badge {
   name: string;
   frontImg: string;
   backImg: string;
-  userImg: string;
+  userImg?: string;
   qrImg: string;
   cardHeader: string;
   cardFooter: string;
@@ -91,9 +108,18 @@ const Badges: React.FC<BadgesProps> = ({
       name: "Badge 2",
       frontImg: Assets.images.b2_front,
       backImg: Assets.images.b2_back,
-      userImg: Assets.images.user_img,
       qrImg: Assets.images.qr_img,
       cardHeader: Assets.images.card_header,
+      cardFooter: Assets.images.card_footer,
+    },
+    {
+      id: 3,
+      name: "Badge 3",
+      frontImg: Assets.images.b3_front,
+      backImg: Assets.images.b3_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header2,
       cardFooter: Assets.images.card_footer,
     },
 
@@ -172,9 +198,8 @@ const Badges: React.FC<BadgesProps> = ({
     })();
   }, [eventId]);
 
-
-
   return (
+
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
       {/* Header */}
       <div className="flex flex-row justify-between items-center">
@@ -202,7 +227,7 @@ const Badges: React.FC<BadgesProps> = ({
             <img
               src={badge.frontImg}
               alt={badge.name}
-              className="w-full  object-cover rounded-xl object-top"
+              className="w-full object-cover rounded-xl object-top"
             />
 
             {/* Preview Button Overlay */}
@@ -222,88 +247,40 @@ const Badges: React.FC<BadgesProps> = ({
         ))}
       </div>
 
+
       {/* Preview Modal */}
       {openModal && previewBadge && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 max-h-[90vh] overflow-y-auto w-full md:w-3/4">
-
-            <div className="flex justify-between mb-4">
-              <h2 className="text-xl font-poppins font-semibold"> {previewBadge.name}</h2>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1"> <X /> </button>
-            </div>
-
-            <div className="flex flex-col justify-center items-center sm:flex-row gap-6">
-
-              {/* Card Front */}
-              <div className="flex flex-col h-[100vh] w-[100%] rounded-xl bg-yellow-500">
-                {/* Top */}
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                  style={{ height: "33vh" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
-                  </div>
-                  <div className="relative z-10 flex items-center gap-2">
-                    {event?.attributes?.logo_url && (
-                      <img
-                        src={event.attributes.logo_url}
-                        alt={`${event.attributes.name} Logo`}
-                        className="w-8 h-8 mb-6"
-                      />
-                    )}
-                    <h6 className="font-semibold mb-6 text-white">Company Name</h6>
-                  </div>
-                </div>
-
-                {/* Center */}
-                <div className="flex flex-1 flex-col justify-center items-center">
-                  <img src={previewBadge.userImg} className="w-48 rounded-full border-4 border-gray-200 object-cover" />
-                  <h2 className=" text-lg font-bold text-gray-900">User Name</h2>
-                  <p className="text-gray-600 text-sm">User Title</p>
-                  <h6>Primary Color : {event.attributes.primary_color}</h6>
-
-
-                </div>
-
-                {/* Bottom */}
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                  style={{ height: "15vh" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
-                  </div>
-                </div>
-
-
-              </div>
-
-              {/* Card Back */}
-              <div className="flex flex-col h-[100vh] w-[100%] bg-gray-100 rounded-2xl p-6">
-                {/* Top */}
-                <div className="flex items-center justify-center gap-2 m-6">
-                  {event?.attributes?.logo_url && (
-                    <img src={event.attributes.logo_url} alt={`${event.attributes.name} Logo`} className="w-8 h-8" />
-                  )}
-                  <h6 className="font-semibold">Company Name</h6>
-                </div>
-                {/* Center */}
-                <div className="flex flex-1 flex-col justify-center items-center">
-                  {event?.attributes?.name && (
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      {event.attributes.name}
-                    </h3>
-                  )}
-                  <img src={previewBadge.qrImg} className="w-30 h-30 rounded border-4 border-gray-200 object-cover" />
-                </div>
-              </div>
-
-            </div>
-
-          </div>
-        </div>
+        <>
+          {previewBadge.id === 1 && (
+            <Badge1
+              badge={previewBadge}
+              event={event}
+              onClose={closeModal}
+              CardHeader={CardHeader}
+              CardFooter={CardFooter}
+            />
+          )}
+          {previewBadge.id === 2 && (
+            <Badge2
+              badge={previewBadge}
+              event={event}
+              onClose={closeModal}
+              CardHeader={CardHeader}
+              CardFooter={CardFooter}
+            />
+          )}
+          {previewBadge.id === 3 && (
+            <Badge3
+              badge={previewBadge}
+              event={event}
+              onClose={closeModal}
+              CardHeader={CardHeader2}
+              CardFooter={CardFooter}
+            />
+          )}
+        </>
       )}
+
 
       {/* Display ConfirmationMessage toggle */}
       <div className="text-xs py-2 flex flex-wrap gap-2 items-center">
