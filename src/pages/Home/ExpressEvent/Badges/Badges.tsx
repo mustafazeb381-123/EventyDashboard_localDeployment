@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ChevronLeft, X, Eye } from "lucide-react";
+import { ChevronLeft, Eye } from "lucide-react";
 import Assets from "@/utils/Assets";
 import type { ToggleStates } from "../ExpressEvent";
 import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
@@ -75,14 +75,13 @@ interface BadgesProps {
   onNext: (badgeId: number) => void;
   onPrevious: () => void;
   currentStep: number;
-  totalSteps: number;
+  totalSteps?: number;
 }
 
 const Badges: React.FC<BadgesProps> = ({
   onNext,
   onPrevious,
   currentStep,
-  totalSteps,
   toggleStates,
 }) => {
   const [openModal, setOpenModal] = useState(false);
@@ -158,7 +157,7 @@ const Badges: React.FC<BadgesProps> = ({
   };
 
   const handleBadgeApiSelection = async (
-    badgeId: number,
+    _badgeId: number,
     badgeName: string
   ) => {
     const eventId = localStorage.getItem("create_eventId");
@@ -224,11 +223,125 @@ const Badges: React.FC<BadgesProps> = ({
               setSelectedBadge(selectedBadge?.id === badge.id ? null : badge)
             }
           >
-            <img
-              src={badge.frontImg}
-              alt={badge.name}
-              className="w-full object-cover rounded-xl object-top"
-            />
+            {/* Dynamic Badge Preview based on badge type */}
+            {badge.id === 1 && (
+              <div className="flex flex-col h-80 w-full rounded-xl border-1 overflow-hidden">
+                {/* Badge 1 Layout */}
+                <div
+                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                  style={{ height: "33%" }}
+                >
+                  <div className="absolute inset-0">
+                    <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
+                  <div className="relative z-10 flex items-center gap-2">
+                    {event?.attributes?.logo_url && (
+                      <img
+                        src={event.attributes.logo_url}
+                        alt={`${event.attributes.name} Logo`}
+                        className="w-4 h-4 mb-3"
+                      />
+                    )}
+                    <h6 className="font-semibold mb-3 text-white text-xs">Company Name</h6>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col justify-center items-center bg-white">
+                  <img 
+                    src={badge.userImg} 
+                    className="w-16 h-16 rounded-full object-cover" 
+                  />
+                  <h2 className="text-xs font-bold text-gray-900 mt-1">User Name</h2>
+                  <p className="text-gray-600 text-xs">User Title</p>
+                </div>
+
+                <div
+                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                  style={{ height: "15%" }}
+                >
+                  <div className="absolute inset-0">
+                    <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {badge.id === 2 && (
+              <div className="flex flex-col h-80 w-full rounded-xl border-1 overflow-hidden">
+                {/* Badge 2 Layout */}
+                <div
+                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                  style={{ height: "33%" }}
+                >
+                  <div className="absolute inset-0">
+                    <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col justify-evenly items-center bg-white">
+                  <div className="text-center">
+                    <h2 className="text-xs font-bold text-gray-900">User Name</h2>
+                    <p className="text-gray-600 text-xs">User Title</p>
+                  </div>
+                  <div className="relative z-10 flex items-center gap-2">
+                    {event?.attributes?.logo_url && (
+                      <img
+                        src={event.attributes.logo_url}
+                        alt={`${event.attributes.name} Logo`}
+                        className="w-4 h-4 mb-3"
+                      />
+                    )}
+                    <h6 className="font-semibold mb-3 text-black text-xs">Company Name</h6>
+                  </div>
+                </div>
+
+                <div
+                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                  style={{ height: "15%" }}
+                >
+                  <div className="absolute inset-0">
+                    <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {badge.id === 3 && (
+              <div className="flex flex-col h-80 w-full rounded-xl border-1 overflow-hidden">
+                {/* Badge 3 Layout */}
+                <div
+                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                  style={{ height: "33%" }}
+                >
+                  <div className="absolute inset-0">
+                    <CardHeader2 color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col justify-center items-center bg-white">
+                  <img 
+                    src={badge.userImg} 
+                    className="w-16 h-16 object-cover" 
+                  />
+                  <h2 className="text-xs font-bold text-gray-900 mt-1">User Name</h2>
+                  <p className="text-gray-600 text-xs">User Title</p>
+                </div>
+
+                <div
+                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                  style={{ height: "15%" }}
+                >
+                  <div className="absolute inset-0">
+                    <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Badge Name */}
+            <div className="mt-3 text-center">
+              <h3 className="text-sm font-medium text-gray-900">{badge.name}</h3>
+            </div>
 
             {/* Preview Button Overlay */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
