@@ -48,11 +48,13 @@ import b7_back from '../assets/images/b7-back.png';
 import b8_front from '../assets/images/b8-front.png';
 import b8_back from '../assets/images/b8-back.png';
 import user_img from '../assets/images/userImg.png';
+import square_user_img from '../assets/images/squareUserImg.png';
 import qr_img from '../assets/images/qrImg.png';
 
 import card_header from '../assets/images/cardHeader.svg';
 import card_header2 from '../assets/images/cardHeader2.svg';
 import card_footer from '../assets/images/cardFooter.svg';
+import card_footer2 from '../assets/images/cardFooter2.svg';
 
 // Icons
 import leftArrow from '../assets/icons/arrow-left.png';
@@ -127,10 +129,12 @@ export const images = {
   temp1,
   temp2,
   user_img,
+  square_user_img,
   qr_img,
   card_header,
   card_footer,
   card_header2,
+  card_footer2,
 } as const;
 
 // Icons object
