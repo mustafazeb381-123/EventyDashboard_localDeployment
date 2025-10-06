@@ -157,20 +157,23 @@ const Badges: React.FC<BadgesProps> = ({
   };
 
   const handleBadgeApiSelection = async (
-    _badgeId: number,
+    badgeId: number,
     badgeName: string
   ) => {
     const eventId = localStorage.getItem("create_eventId");
     console.log("saved event id-------+++++++-------", eventId);
+    console.log("Sending badge_background:", badgeId);
 
     const data = {
       badge: {
         name: badgeName,
         event_id: eventId,
         default: false,
-
+        badge_background: badgeId, // Add badge_background with the badge ID
       },
     };
+
+    console.log("API Payload:", JSON.stringify(data, null, 2));
 
     try {
       const response = await postBadgesApi(data, eventId ? parseInt(eventId, 10) : 0);
@@ -225,7 +228,7 @@ const Badges: React.FC<BadgesProps> = ({
           >
             {/* Dynamic Badge Preview based on badge type */}
             {badge.id === 1 && (
-              <div className="flex flex-col h-80 w-full rounded-xl border-1 overflow-hidden">
+              <div className="flex flex-col h-125 w-100% rounded-xl border-1 overflow-hidden">
                 {/* Badge 1 Layout */}
                 <div
                   className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
@@ -247,9 +250,9 @@ const Badges: React.FC<BadgesProps> = ({
                 </div>
 
                 <div className="flex flex-1 flex-col justify-center items-center bg-white">
-                  <img 
-                    src={badge.userImg} 
-                    className="w-16 h-16 rounded-full object-cover" 
+                  <img
+                    src={badge.userImg}
+                    className="w-16 h-16 rounded-full object-cover"
                   />
                   <h2 className="text-xs font-bold text-gray-900 mt-1">User Name</h2>
                   <p className="text-gray-600 text-xs">User Title</p>
@@ -267,7 +270,7 @@ const Badges: React.FC<BadgesProps> = ({
             )}
 
             {badge.id === 2 && (
-              <div className="flex flex-col h-80 w-full rounded-xl border-1 overflow-hidden">
+              <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden">
                 {/* Badge 2 Layout */}
                 <div
                   className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
@@ -307,7 +310,7 @@ const Badges: React.FC<BadgesProps> = ({
             )}
 
             {badge.id === 3 && (
-              <div className="flex flex-col h-80 w-full rounded-xl border-1 overflow-hidden">
+              <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden">
                 {/* Badge 3 Layout */}
                 <div
                   className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
@@ -319,9 +322,9 @@ const Badges: React.FC<BadgesProps> = ({
                 </div>
 
                 <div className="flex flex-1 flex-col justify-center items-center bg-white">
-                  <img 
-                    src={badge.userImg} 
-                    className="w-16 h-16 object-cover" 
+                  <img
+                    src={badge.userImg}
+                    className="w-16 h-16 object-cover"
                   />
                   <h2 className="text-xs font-bold text-gray-900 mt-1">User Name</h2>
                   <p className="text-gray-600 text-xs">User Title</p>
@@ -337,11 +340,6 @@ const Badges: React.FC<BadgesProps> = ({
                 </div>
               </div>
             )}
-
-            {/* Badge Name */}
-            <div className="mt-3 text-center">
-              <h3 className="text-sm font-medium text-gray-900">{badge.name}</h3>
-            </div>
 
             {/* Preview Button Overlay */}
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
