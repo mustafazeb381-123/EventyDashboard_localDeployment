@@ -1,6 +1,8 @@
-
 {
   "title": "تسجيل الدخول",
   "emailPlaceholder": "البريد الإلكتروني",
-  "passwordPlaceholder": "كلمة المرور"
+  "passwordPlaceholder": "كلمة المرور",
+  "signin": "تسجيل الدخول",
+  "forgotPassword": "هل نسيت كلمة المرور؟",
+  "signup": "إنشاء حساب جديد"
 }

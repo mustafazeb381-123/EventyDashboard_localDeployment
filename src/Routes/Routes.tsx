@@ -10,6 +10,12 @@ import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
+import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
+import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
+import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
+import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
+import Users from "@/pages/Home/EventDetails/Invitation/Users";
+import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
 
 const router = createBrowserRouter([
   {
@@ -24,11 +30,35 @@ const router = createBrowserRouter([
             element: <Home />,
           },
           {
-            path: "home", // This path is now relative to "/" -> "/express-event"
+            path: "home/:id", // This path is now relative to "/" -> "/express-event"
             element: <HomeSummary />,
           },
           {
-            path: "express-event", // This path is now relative to "/" -> "/express-event"
+            path: "regesterd_user", // This path is now relative to "/" -> "/express-event"
+            element: <RegisterdUser />,
+          },
+          {
+            path: "agenda", // This path is now relative to "/" -> "/express-event"
+            element: <Agenda />,
+          },
+          {
+            path: "galleries", // This path is now relative to "/" -> "/express-event"
+            element: <Galleries />,
+          },
+          {
+            path: "print_badges", // This path is now relative to "/" -> "/express-event"
+            element: <PrintBadges />,
+          },
+          {
+            path: "user/registration",
+            element: <UserRegistration />,
+          },
+          {
+            path: "invitation/user", // This path is now relative to "/" -> "/express-event"
+            element: <Users />,
+          },
+          {
+            path: "express-event/:id?", // This path is now relative to "/" -> "/express-event" with optional ID parameter
             element: <ExpressEvent />,
           },
           {

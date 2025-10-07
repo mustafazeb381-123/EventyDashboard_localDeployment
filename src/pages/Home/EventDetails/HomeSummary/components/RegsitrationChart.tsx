@@ -45,6 +45,28 @@ const CustomActiveDot = (props) => {
   );
 };
 
+type RegistrationChartProps = {
+  data?: Array<Record<string, any>>;
+  title?: string;
+  legend?: string | null;
+  height?: string | number;
+  timeRangeOptions?: string[];
+  defaultTimeRange?: string;
+  showTimeRangeSelector?: boolean;
+  lineColor?: string;
+  highlightColor?: string;
+  backgroundColor?: string;
+  highlightDataKey?: string | null;
+  highlightValue?: number | string | null;
+  onTimeRangeChange?: (range: string) => void;
+  className?: string;
+  chartMargin?: { top?: number; right?: number; left?: number; bottom?: number };
+  yAxisDomain?: [number, number | string];
+  yAxisTicks?: number[];
+  xAxisKey?: string;
+  yAxisKey?: string;
+};
+
 const RegistrationChart = ({
   // Data props
   data = [],
@@ -82,7 +104,7 @@ const RegistrationChart = ({
   // Data keys
   xAxisKey = "month",
   yAxisKey = "registered",
-}) => {
+}: RegistrationChartProps) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState(defaultTimeRange);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);

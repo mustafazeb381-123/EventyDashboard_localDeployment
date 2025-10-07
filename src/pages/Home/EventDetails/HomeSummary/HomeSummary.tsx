@@ -1,14 +1,74 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Assets from "../../../../utils/Assets";
-import { Clock, Edit, MapPin, ChevronDown } from "lucide-react";
-import ExpressEvent from "../../ExpressEvent/ExpressEvent";
-import { Button } from "@/components/ui/button";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer } from "recharts";
+import { Clock, Edit, MapPin, Loader2 } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
+import { toast, ToastContainer } from "react-toastify";
 
-function HomeSummary({ chartData, onTimeRangeChange }) {
-  const [selectedMonth, setSelectedMonth] = useState("6 Month");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+type HomeSummaryProps = {
+  chartData?: Array<Record<string, any>>;
+  onTimeRangeChange?: (range: string) => void;
+};
+
+function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
+  const [eventData, setEventData] = useState<any>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id: paramId } = useParams();
+  const eventId = location.state?.eventId || paramId;
+
+  // Fetch event data
+  const getEventDataById = async (id: string | number) => {
+    try {
+      const response = await getEventbyId(id);
+      setEventData(response.data.data);
+    } catch (error) {
+      console.error("Error fetching event by ID:", error);
+    }
+  };
+
+  useEffect(() => {
+    if (eventId) getEventDataById(eventId);
+  }, [eventId]);
+
+  if (!eventData) {
+    return (
+      <div className="w-full px-4 sm:px-6 lg:px-8">
+        <div className="min-h-screen flex flex-col items-center justify-center">
+          <div className="relative">
+            <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
+            <div className="absolute inset-0 h-12 w-12 border-2 border-blue-100 rounded-full"></div>
+          </div>
+          <p className="text-gray-600 text-lg font-medium mt-6">
+            Loading event details...
+          </p>
+          <p className="text-gray-400 text-sm mt-2">
+            Please wait while we fetch your event information
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const {
+    name,
+    event_type,
+    event_date_from,
+    event_date_to,
+    event_time_from,
+    event_time_to,
+    about,
+    location: eventLocation,
+    logo_url,
+    primary_color,
+    secondary_color,
+    registration_page_banner,
+    require_approval,
+  } = eventData.attributes;
 
   // Define stats config (label + icon + key)
   const stats = [
@@ -49,82 +109,178 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
     { month: "Jun", registered: 200 },
   ];
 
-  const monthOptions = ["1 Month", "3 Month", "6 Month", "1 Year"];
-
-  // Custom dot component for the highlighted point
-  const CustomDot = (props) => {
-    const { cx, cy, payload } = props;
-    if (payload.month === "Mar") {
-      return (
-        <g>
-          <circle
-            cx={cx}
-            cy={cy}
-            r={6}
-            fill="#4F46E5"
-            stroke="white"
-            strokeWidth={2}
-          />
-          <circle
-            cx={cx}
-            cy={cy}
-            r={10}
-            fill="none"
-            stroke="#4F46E5"
-            strokeWidth={1}
-            opacity={0.3}
-          />
-          <rect
-            x={cx - 15}
-            y={cy - 25}
-            width={30}
-            height={18}
-            rx={4}
-            fill="#374151"
-          />
-          <text
-            x={cx}
-            y={cy - 12}
-            textAnchor="middle"
-            fontSize={10}
-            fill="white"
-            fontWeight="500"
-          >
-            155
-          </text>
-        </g>
-      );
-    }
-    return null;
-  };
-
-  const handleTimeRangeChange = (newRange) => {
-    setSelectedMonth(newRange);
-    setIsDropdownOpen(false);
+  const handleTimeRangeChange = (newRange: string) => {
     // Call parent callback if provided
     if (onTimeRangeChange) {
       onTimeRangeChange(newRange);
     }
   };
 
-  const currentChartData = chartData || defaultChartData;
+  // Format time nicely
+  const formatTime = (timeStr: string) => {
+    const date = new Date(timeStr);
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Direct image upload function
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    const file = files && files[0];
+    if (!file || !eventId) return;
+
+    // File size validation
+    const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error(
+        `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
+      );
+      return;
+    }
+
+    // File type validation
+    const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Invalid file type. Please upload SVG, PNG, or JPG.");
+      return;
+    }
+
+    // Image dimension validation for non-SVG files
+    if (file.type !== "image/svg+xml") {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+
+      const dimensionValidation = await new Promise<boolean>((resolve) => {
+        img.onload = function () {
+          URL.revokeObjectURL(objectUrl);
+          if (img.width > 400 || img.height > 400) {
+            toast.error(
+              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
+            );
+            resolve(false);
+            return;
+          }
+          resolve(true);
+        };
+
+        img.onerror = function () {
+          URL.revokeObjectURL(objectUrl);
+          toast.error("Failed to load image. Please try a different file.");
+          resolve(false);
+        };
+
+        img.src = objectUrl;
+      });
+
+      if (!dimensionValidation) {
+        return;
+      }
+    }
+
+    // Direct upload
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("event[logo]", file);
+
+      const response = await updateEventById(eventId, fd);
+      console.log("Logo updated successfully:", response.data);
+
+      // Update the event data with new logo URL
+      setEventData((prev: any) => ({
+        ...prev,
+        attributes: {
+          ...prev.attributes,
+          logo_url: response.data.data.attributes.logo_url,
+        },
+      }));
+
+      toast.success("Logo updated successfully");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Error updating logo");
+    } finally {
+      setIsUploading(false);
+      // Clear the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   return (
     <>
       <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* edit event details */}
+
         <div className="p-4 sm:p-6 lg:p-[24px] bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
             <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl flex-shrink-0">
-              <div className="h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white cursor-pointer drop-shadow-2xl">
-                <Edit size={16} className="sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+              {/* Upload Loading Overlay */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
+                  <div className="relative">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <div className="absolute inset-0 h-8 w-8 border-2 border-blue-100 rounded-full"></div>
+                  </div>
+                  <p className="text-blue-600 text-xs font-medium mt-3">
+                    Uploading...
+                  </p>
+                </div>
+              )}
+
+              {/* Edit button - directly triggers file selection */}
+              <div
+                onClick={() => !isUploading && fileInputRef.current?.click()}
+                className={`h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white drop-shadow-2xl transition-all duration-200 z-20 ${
+                  isUploading
+                    ? "cursor-not-allowed opacity-75"
+                    : "cursor-pointer hover:bg-gray-50 hover:scale-105"
+                }`}
+              >
+                {isUploading ? (
+                  <div className="relative">
+                    <Loader2
+                      size={16}
+                      className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 animate-spin text-blue-600"
+                    />
+                    <div className="absolute inset-0 w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 border border-blue-100 rounded-full"></div>
+                  </div>
+                ) : (
+                  <Edit
+                    size={16}
+                    className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600"
+                  />
+                )}
               </div>
-              <img
-                src={Assets.images.sccLogo}
-                className="h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px]"
-                alt="SCC Logo"
+
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept=".svg,.png,.jpg,.jpeg"
+                disabled={isUploading}
               />
+
+              {/* Current logo display */}
+              {eventData?.attributes?.logo_url ? (
+                <img
+                  src={eventData.attributes.logo_url}
+                  alt="Event Logo"
+                  className={`h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] rounded-2xl transition-opacity duration-200 ${
+                    isUploading ? "opacity-50" : "opacity-100"
+                  }`}
+                />
+              ) : (
+                <div
+                  className={`h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] bg-gray-300 flex items-center justify-center rounded-2xl text-gray-500 text-xs font-medium transition-opacity duration-200 ${
+                    isUploading ? "opacity-50" : "opacity-100"
+                  }`}
+                >
+                  No Logo
+                </div>
+              )}
             </div>
 
             {/* text detail part */}
@@ -137,13 +293,13 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
                   alt=""
                 />
                 <p className="text-emerald-500 text-xs sm:text-sm">
-                  Express Event
+                  {event_type}
                 </p>
               </div>
 
               {/* event name */}
               <p className="mt-4 lg:mt-[16px] text-sm sm:text-base lg:text-lg text-slate-800 font-medium">
-                SCC Summit
+                {name}
               </p>
 
               <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
@@ -153,7 +309,8 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
                   color="#525252"
                 />
                 <p className="text-neutral-500 text-xs sm:text-sm font-normal">
-                  June 07, 2025 - June 09, 2025
+                  {event_date_from} {formatTime(event_time_from)} to{" "}
+                  {event_date_to} {formatTime(event_time_to)}
                 </p>
               </div>
 
@@ -164,7 +321,7 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
                   color="#525252"
                 />
                 <p className="text-neutral-500 text-xs sm:text-sm font-normal">
-                  Riyadh, Saudi Arabia
+                  {eventLocation}
                 </p>
               </div>
 
@@ -175,7 +332,50 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
           </div>
 
           {/* edit button  */}
-          <div className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0">
+          <div
+            onClick={() =>
+              navigate("/express-event", {
+                state: {
+                  // Event type and basic info
+                  plan: event_type,
+                  eventData: eventData,
+                  isEditing: true,
+
+                  // All event attributes
+                  eventAttributes: {
+                    name,
+                    event_type,
+                    event_date_from,
+                    event_date_to,
+                    event_time_from,
+                    event_time_to,
+                    about,
+                    location: eventLocation,
+                    logo_url,
+                    primary_color,
+                    secondary_color,
+                    registration_page_banner,
+                    require_approval,
+                  },
+
+                  // Component props
+                  chartData,
+                  onTimeRangeChange,
+
+                  // Event ID for reference
+                  eventId,
+
+                  // Stats data
+                  stats,
+
+                  // Additional metadata
+                  lastEdit: "Before 3hr",
+                  currentStep: 0, // Start from first step when editing
+                },
+              })
+            }
+            className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0"
+          >
             <Edit size={16} className="lg:w-5 lg:h-5" />
             <p className="text-[#202242] text-xs sm:text-sm font-normal">
               Edit Event
@@ -217,12 +417,13 @@ function HomeSummary({ chartData, onTimeRangeChange }) {
             legend="Registered"
             highlightDataKey="Mar"
             highlightValue={155}
-            onTimeRangeChange={onTimeRangeChange}
+            onTimeRangeChange={handleTimeRangeChange}
             height="320px"
             className="shadow-sm hover:shadow-md transition-shadow"
           />
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 }

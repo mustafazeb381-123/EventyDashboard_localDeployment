@@ -1,38 +1,62 @@
 import React from "react";
-import { Upload } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Assets from "@/utils/Assets";
 import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
-const TemplateOne = ({ onUseTemplate }) => {
+const TemplateOne = ({
+  onUseTemplate,
+  data,
+  isLoading,
+  eventId,
+}: {
+  onUseTemplate?: any;
+  data: any;
+  isLoading?: boolean;
+  eventId?: string;
+}) => {
+  console.log("onUse template-----+++++------", onUseTemplate, eventId, data);
   const navigation = useNavigate();
 
-  // const navigationHandle = () => {
+  console.log("form data in template one ::::", data);
 
-  //   navigation('/')
-
-  // }
-
+  // Handle the use template click
   const handleUseTemplate = () => {
-    // Instead of navigation, call the onUseTemplate callback
-    if (onUseTemplate) {
+    console.log("fsdasfsdfsdfsd");
+    if (onUseTemplate && !isLoading) {
+      // Call the parent function with template data
       onUseTemplate("template-one", {
         name: "Event Registration Form",
         description:
           "A new guest's registration form is a form designed to streamline the process of collecting personal and contact information from new guests.",
-        templateComponent: TemplateForm, // Pass the form component
+        templateComponent: TemplateForm,
+        // Add any additional template-specific data here
+        fields: data || [], // Pass the form data as fields
       });
     }
   };
+
   return (
     <div className="flex flex-col md:flex-row gap-8 mt-4 max-h-[80vh]">
       {/* Left side (scrollable TemplateForm) */}
       <div className="w-full md:w-[70%] overflow-y-auto pr-2">
-        <TemplateForm />
+        {isLoading || !data || data.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
+            <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+            <p className="text-slate-600 text-lg font-medium mb-2">
+              Loading Template
+            </p>
+            <p className="text-slate-500 text-sm">
+              Please wait while we prepare the form fields...
+            </p>
+          </div>
+        ) : (
+          <TemplateForm data={data} eventId={eventId} />
+        )}
       </div>
 
       {/* Right side (fixed, always visible) */}
-      <div className="w-full md:w-1/2 flex flex-col  justify-between sticky top-0">
+      <div className="w-full md:w-1/2 flex flex-col justify-between sticky top-0">
         {/* Top section */}
         <div>
           <h2 className="text-xl font-poppins font-semibold mb-2">
@@ -48,9 +72,21 @@ const TemplateOne = ({ onUseTemplate }) => {
         {/* Bottom button */}
         <button
           onClick={handleUseTemplate}
-          className="cursor-pointer bg-slate-800 text-white p-3 rounded-lg text-sm font-poppins font-medium hover:bg-slate-900 transition-colors"
+          disabled={isLoading}
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
+            isLoading
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-slate-800 text-white hover:bg-slate-900"
+          }`}
         >
-          Use Template →
+          {isLoading ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Loading...
+            </>
+          ) : (
+            "Use Template →"
+          )}
         </button>
       </div>
     </div>

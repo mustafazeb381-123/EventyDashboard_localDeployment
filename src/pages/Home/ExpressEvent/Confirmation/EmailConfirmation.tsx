@@ -269,7 +269,7 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         <button
           onClick={handleBack}
           disabled={currentFlowIndex === 0}
-          className={`px-6 py-2 border rounded-lg transition-colors ${
+          className={`cursor-pointer px-6 py-2 border rounded-lg transition-colors ${
             currentFlowIndex === 0
               ? "text-gray-400 border-gray-200 cursor-not-allowed"
               : "text-gray-700 border-gray-300 hover:bg-gray-50"
@@ -284,7 +284,7 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
 
         <button
           onClick={handleNext}
-          className={`px-6 py-2 rounded-lg text-white transition-colors font-medium ${
+          className={`cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium ${
             selectedTemplates[currentFlow.id]
               ? "bg-pink-500 hover:bg-pink-600"
               : "bg-gray-300 cursor-not-allowed"

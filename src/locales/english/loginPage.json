@@ -1,5 +1,8 @@
 {
   "title": "Login",
   "emailPlaceholder": "Email",
-  "passwordPlaceholder": "Password"
+  "passwordPlaceholder": "Password",
+  "signin": "Sign In",
+  "forgotPassword": "Forgot Password?",
+  "signup": "Sign up"
 }

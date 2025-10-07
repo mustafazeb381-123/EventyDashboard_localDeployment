@@ -1,5 +1,6 @@
 {
   "title": "Sign up",
+  "signupTitle": "Create Account",
   "step1Title": "Your data",
   "step2Title": "Company Address",
   "step3Title": "Money transfer data",
@@ -9,13 +10,13 @@
   "emailLabel": "Your email*",
   "emailPlaceholder": "Your email",
   "companyNameLabel": "Company Name*",
-  "companyNamePlaceholder": "Company Name",
+  "companyPlaceholder": "Company Name",
   "passwordLabel": "Password*",
   "passwordPlaceholder": "Password",
   "confirmPasswordPlaceholder": "Confirm Password",
-  "nextButton": "Next",
   "signupButton": "Sign Up",
   "doYouHaveAccount": "Do you have an account?",
+  "alreadyHaveAccount": "Already have an account?",
   "signInLink": "Sign in",
   "loginLink": "Login",
   "agreeTerms": "Agree to the Terms and Conditions and Privacy Policy",
@@ -24,7 +25,7 @@
   "errorMessages": {
     "nameRequired": "Name is required",
     "emailRequired": "Email is required",
-    "companyNameRequired": "Company name is required",
+    "companyRequired": "Company name is required",
     "passwordRequired": "Password is required",
     "confirmPasswordRequired": "Confirm Password is required",
     "passwordMismatch": "Password and Confirm Password do not match",
@@ -34,3 +35,4 @@
   },
   "successMessage": "Signup successful! You can now login."
 }
+

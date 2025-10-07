@@ -1,15 +1,10 @@
-import React, { useState } from "react";
-import { ChevronLeft, Check } from "lucide-react";
-import TemplateOne from "./RegistrationTemplates/TemplateOne/TemplateOne";
-import TemplateTwo from "./RegistrationTemplates/TemplateTwo/TemplateTwo";
-import Assets from "@/utils/Assets";
-import TemplateThree from "./RegistrationTemplates/TemplateThree/TemplateThree";
-import TemplateFour from "./RegistrationTemplates/TemplateFour/TemplateFour";
-import TemplateFive from "./RegistrationTemplates/TemplateFive/TemplateFive";
-import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
-import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
-import { X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X, Eye, Loader2 } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
+import Assets from "@/utils/Assets"; // 👈 make sure your template preview images are here
+import { getRegistrationFieldApi } from "@/apis/apiHelpers";
+import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
 import TemplateFormOne from "./RegistrationTemplates/TemplateOne/TemplateForm";
 import TemplateFormTwo from "./RegistrationTemplates/TemplateTwo/TemplateForm";
 import TemplateFormThree from "./RegistrationTemplates/TemplateThree/TemplateForm";
@@ -18,274 +13,392 @@ import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm"
 import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
 import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
 
-// Modal Component
-const Modal = ({ selectedTemplate, onClose, onUseTemplate }) => {
-  if (!selectedTemplate) return null;
-  const handleUseTemplate = (templateId, templateData) => {
-    onUseTemplate(templateId, templateData);
-    onClose();
-  };
+// 👇 Match the ToggleStates interface from ConfirmationDetails
+interface ToggleStates {
+  confirmationMsg: boolean;
+  userQRCode: boolean;
+  location: boolean;
+  eventDetails: boolean;
+}
+
+type TemplateId = 1 | 2 | 3 | 4 | 5 | 6;
+
+interface Template {
+  id: TemplateId;
+  name: string;
+  img: string;
+}
+
+interface ModalProps {
+  template: Template | null;
+  onClose: () => void;
+  formData: any[];
+  isLoadingFormData: boolean;
+  eventId?: string;
+}
+
+const Modal: React.FC<ModalProps> = ({
+  template,
+  onClose,
+  formData,
+  isLoadingFormData,
+  eventId,
+}) => {
+  if (!template) return null;
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80] max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80%] max-h-[90vh] overflow-y-auto">
         <div className="flex justify-end">
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded"
+            className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1"
           >
             <X />
           </button>
         </div>
 
-        {/* Render correct template */}
-        {selectedTemplate === "template-one" && (
-          <TemplateOne onUseTemplate={handleUseTemplate} />
+        {/* Render correct template with loading state */}
+        {template.id === 1 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormOne data={formData} eventId={eventId} />
+            )}
+          </>
         )}
-        {selectedTemplate === "template-two" && <TemplateTwo />}
-        {selectedTemplate === "template-three" && <TemplateThree />}
-        {selectedTemplate === "template-four" && <TemplateFour />}
-        {selectedTemplate === "template-five" && <TemplateFive />}
-        {selectedTemplate === "template-six" && <TemplateSix />}
-        {selectedTemplate === "template-seven" && <TemplateSeven />}
+        {template.id === 2 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormTwo data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 3 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormThree data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 4 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormFour data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 5 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormFive data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
+        {template.id === 6 && (
+          <>
+            {isLoadingFormData || !formData || formData.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                <p className="text-slate-600 text-lg font-medium">
+                  Loading template...
+                </p>
+                <p className="text-slate-500 text-sm mt-2">
+                  Preparing template data for preview
+                </p>
+              </div>
+            ) : (
+              <TemplateFormSix data={formData} eventId={eventId} />
+            )}
+          </>
+        )}
       </div>
     </div>
   );
 };
 
-const RegistrationForm = ({ onNext, onPrevious, currentStep, totalSteps }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState(null);
-  const [confirmedTemplate, setConfirmedTemplate] = useState(null);
-  const [selectedTemplateData, setSelectedTemplateData] = useState(null);
-  const [internalStep, setInternalStep] = useState(0); // 0: selection, 1: confirmation
+interface RegistrationFormProps {
+  onNext?: () => void; // Go to Badges
+  onPrevious?: () => void; // Go back to Main Data
+  toggleStates: ToggleStates;
+  setToggleStates: (states: ToggleStates) => void;
+}
 
-  const templates = [
-    { id: "template-one", component: <TemplateFormOne /> },
-    { id: "template-two", component: <TemplateFormTwo /> },
-    { id: "template-three", component: <TemplateFormThree /> },
-    { id: "template-four", component: <TemplateFormFour /> },
-    { id: "template-five", component: <TemplateFormFive /> },
-    { id: "template-six", component: <TemplateFormSix /> },
-    { id: "template-seven", component: <TemplateFormSeven /> },
+const RegistrationForm: React.FC<RegistrationFormProps> = ({
+  onNext,
+  onPrevious,
+  toggleStates,
+  setToggleStates,
+}) => {
+  const { id: routeId } = useParams();
+  const [internalStep, setInternalStep] = useState(0);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null
+  );
+  const [previewTemplate, setPreviewTemplate] = useState<Template | null>(null);
+  const [formData, setFormData] = useState<any[]>([]);
+  const [isLoadingFormData, setIsLoadingFormData] = useState(false);
+
+  // Get effective event ID
+  const effectiveEventId =
+    (routeId as string | undefined) ||
+    (typeof window !== "undefined"
+      ? (localStorage.getItem("create_eventId") as string | null) || undefined
+      : undefined);
+
+  const templates: Template[] = [
+    { id: 1, name: "Temp 1", img: Assets.images.temp1 },
+    { id: 2, name: "Temp 2", img: Assets.images.temp2 },
+    { id: 3, name: "Temp 3", img: Assets.images.templateThree },
+    { id: 4, name: "Temp 4", img: Assets.images.templateFour },
+    { id: 5, name: "Temp 5", img: Assets.images.templateFive },
   ];
 
-  const handleOpenModal = (id) => {
-    setSelectedTemplate(id);
-    setIsModalOpen(true);
-  };
+  // Load form data when component mounts or eventId changes
+  useEffect(() => {
+    const getFieldApi = async () => {
+      if (!effectiveEventId) return;
 
-  const handleCloseModal = () => {
-    setSelectedTemplate(null);
-    setIsModalOpen(false);
-  };
+      setIsLoadingFormData(true);
+      try {
+        const response = await getRegistrationFieldApi(effectiveEventId);
+        console.log("getFieldApi response:", response.data);
+        setFormData(response.data.data);
+      } catch (error) {
+        console.error("Failed to get registration field:", error);
+        toast.error("Failed to load form data");
+      } finally {
+        setIsLoadingFormData(false);
+      }
+    };
 
-  const handleUseTemplate = (templateId, templateData) => {
-    console.log("Selected template:", templateId, templateData);
-    setConfirmedTemplate(templateId);
-    setSelectedTemplateData(templateData);
-    setInternalStep(1); // Go to confirmation step
-  };
+    getFieldApi();
+  }, [effectiveEventId]);
 
-  const handleConfirmationNext = () => {
-    // Here you can save the final configuration and proceed
-    console.log("Template confirmed with settings");
-    // Call the parent onNext to move to the next main step
-    if (onNext) onNext();
-  };
-
-  const handleConfirmationPrevious = () => {
-    setInternalStep(0); // Go back to template selection
-    setConfirmedTemplate(null);
-    setSelectedTemplateData(null);
-  };
-
-  // Fixed navigation handlers
-  const handlePreviousClick = () => {
-    // Always allow going to the previous main step
-    // Reset internal state when going back to main flow
-    if (internalStep === 1) {
-      // Reset to template selection first, but don't stay there
-      setInternalStep(0);
-      setConfirmedTemplate(null);
-      setSelectedTemplateData(null);
-    }
-    // Always go to previous main step
-    if (onPrevious) onPrevious();
-  };
-
-  const handleNextClick = () => {
+  /** Step navigation */
+  const handleStepNext = () => {
     if (internalStep === 0) {
-      // If we're in template selection
-      if (!confirmedTemplate) {
-        // Require template selection - show message and don't proceed
+      if (!selectedTemplate) {
         alert("Please select a template before proceeding");
         return;
-      } else {
-        // If template is confirmed, move to confirmation step
-        setInternalStep(1);
       }
-    } else {
-      // If we're in confirmation step, proceed to next main step
-      console.log(
-        "Proceeding to next main step with template data:",
-        selectedTemplateData
-      );
-      if (onNext) onNext();
+      setInternalStep(1);
     }
   };
 
-  const isStep1Active = internalStep === 0;
-  const isStep1Completed = internalStep > 0;
-  const isStep2Active = internalStep === 1;
+  const handleStepPrevious = () => {
+    if (internalStep === 1) setInternalStep(0);
+  };
 
-  // Don't render ConfirmationDetails here - handle it in the main flow
-  // This was causing the navigation to break
-
-  // Show template selection (default view)
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
       {/* Header */}
       <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
+        {/* <div onClick={onPrevious} className="flex flex-row gap-2 items-center">
           <ChevronLeft />
           <p className="text-neutral-900 text-md font-poppins font-normal">
             Choose a registration form template
           </p>
-        </div>
-
-        {/* Steps */}
-        <div className="flex items-center gap-2">
-          {/* Step 1 */}
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                ${
-                  isStep1Completed || isStep1Active
-                    ? "border-[#ff0080]"
-                    : "border-gray-200"
-                }
-                ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
-              `}
-            >
-              {isStep1Completed ? (
-                <Check size={18} color="white" />
-              ) : (
-                <p
-                  className={`text-sm font-poppins ${
-                    isStep1Active ? "text-[#ff0080]" : "text-gray-400"
-                  }`}
-                >
-                  01
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Connector */}
-          <div
-            className={`flex-1 h-1 rounded-full ${
-              isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
-            }`}
-          ></div>
-
-          {/* Step 2 */}
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                ${isStep2Active ? "border-[#ff0080]" : "border-gray-200"}
-              `}
-            >
-              <p
-                className={`text-sm font-poppins ${
-                  isStep2Active ? "text-[#ff0080]" : "text-gray-400"
-                }`}
-              >
-                02
-              </p>
-            </div>
-          </div>
-        </div>
+        </div> */}
       </div>
-
-      {/* Main Content Area */}
+      {/* Step Content */}
       {internalStep === 0 ? (
-        <>
-          {/* Template Grid */}
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {templates.map((tpl) => (
-              <div
-                key={tpl.id}
-                onClick={() => handleOpenModal(tpl.id)}
-                className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
-                  confirmedTemplate === tpl.id
-                    ? "border-pink-500 bg-pink-50"
-                    : "border-gray-200 hover:border-pink-500"
-                }`}
-              >
-                {/* Render the actual template component */}
-                <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
-                  <div className="transform scale-15 pointer-events-none">
-                    <div className="w-[1200px]  ">
-                      {" "}
-                      {/* or whatever your form's real width is */}
-                      {tpl.component}
-                    </div>
-                  </div>
-                </div>
-                {confirmedTemplate === tpl.id && (
-                  <div className="mt-2 flex items-center justify-center">
-                    <Check size={16} className="text-pink-500 mr-1" />
-                    <span className="text-sm text-pink-500 font-medium">
-                      Selected
-                    </span>
-                  </div>
-                )}
+        <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {templates.map((temp) => (
+            <div
+              key={temp.id}
+              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
+                selectedTemplate?.id === temp.id
+                  ? "border-green-500 bg-green-50"
+                  : "border-gray-200 hover:border-[#2E3166E5]"
+              }`}
+              onClick={() =>
+                setSelectedTemplate(
+                  selectedTemplate?.id === temp.id ? null : temp
+                )
+              }
+            >
+              <img
+                src={temp.img}
+                alt={temp.name}
+                className="w-full h-50 object-cover object-top rounded-xl"
+              />
+
+              {/* Preview Button */}
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewTemplate(temp);
+                  }}
+                  className="flex items-center gap-2 bg-[#2E3166E5] text-white px-4 py-2 rounded-full text-sm hover:opacity-90 transition-colors"
+                >
+                  <Eye size={16} />
+                  Preview
+                </button>
               </div>
-            ))}
-          </div>
-        </>
+            </div>
+          ))}
+        </div>
       ) : (
-        /* Confirmation Step */
         <div className="mt-8">
           <ConfirmationDetails
-            selectedTemplateData={selectedTemplateData}
-            onNext={handleConfirmationNext}
-            onPrevious={handleConfirmationPrevious}
+            onToggleStatesChange={setToggleStates}
+            eventId={effectiveEventId}
           />
+
+          {/* Debug Info */}
+          <div className="text-xs py-2 flex flex-wrap gap-2 items-center">
+            <h6>Temp: {selectedTemplate?.id}</h6>
+            <h6>
+              Msg:{" "}
+              <span
+                className={
+                  toggleStates.confirmationMsg
+                    ? "text-green-600"
+                    : "text-red-600"
+                }
+              >
+                {toggleStates.confirmationMsg ? "ON" : "OFF"}
+              </span>
+            </h6>
+            <h6>
+              Qr:{" "}
+              <span
+                className={
+                  toggleStates.userQRCode ? "text-green-600" : "text-red-600"
+                }
+              >
+                {toggleStates.userQRCode ? "ON" : "OFF"}
+              </span>
+            </h6>
+            <h6>
+              Location:{" "}
+              <span
+                className={
+                  toggleStates.location ? "text-green-600" : "text-red-600"
+                }
+              >
+                {toggleStates.location ? "ON" : "OFF"}
+              </span>
+            </h6>
+            <h6>
+              Details:{" "}
+              <span
+                className={
+                  toggleStates.eventDetails ? "text-green-600" : "text-red-600"
+                }
+              >
+                {toggleStates.eventDetails ? "ON" : "OFF"}
+              </span>
+            </h6>
+          </div>
         </div>
       )}
-
-      {/* Modal - Only show when not in confirmation step */}
-      {isModalOpen && internalStep === 0 && (
+      {/* Modal */}
+      {previewTemplate && (
         <Modal
-          selectedTemplate={selectedTemplate}
-          onClose={handleCloseModal}
-          onUseTemplate={handleUseTemplate}
+          template={previewTemplate}
+          onClose={() => setPreviewTemplate(null)}
+          formData={formData}
+          isLoadingFormData={isLoadingFormData}
+          eventId={effectiveEventId}
         />
       )}
-
-      {/* Navigation Buttons - Simplified and consistent */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
+      Step Navigation
+      {internalStep === 0 && (
+        <div className="flex justify-end gap-4 mt-6 sm:mt-8">
+          <button
+            onClick={handleStepNext}
+            disabled={!selectedTemplate}
+            className={`w-full sm:w-auto p-2 text-sm rounded-lg text-white ${
+              !selectedTemplate
+                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                : "bg-slate-800 hover:bg-slate-900"
+            }`}
+          >
+            Step 2 →
+          </button>
+        </div>
+      )}
+      {internalStep === 1 && (
+        <div className="flex justify-start gap-4 mt-6 sm:mt-8">
+          <button
+            onClick={handleStepPrevious}
+            className="w-full sm:w-auto p-2 text-sm rounded-lg border text-slate-800 border-gray-300 hover:bg-gray-50"
+          >
+            ← Step 1
+          </button>
+        </div>
+      )}
+      {/* Stage Navigation */}
+      <div className="flex justify-between gap-4 mt-6 sm:mt-8">
         <button
           onClick={onPrevious}
-          disabled={false}
-          className="w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50"
+          className="w-full sm:w-auto px-6 py-2.5 rounded-lg border text-slate-800 border-gray-300 hover:bg-gray-50"
         >
-          ← Previous
+          ← Main Data
         </button>
 
         <button
           onClick={onNext}
-          disabled={!confirmedTemplate}
-          className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors
-            ${
-              !confirmedTemplate
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "bg-slate-800 hover:bg-slate-900 text-white"
-            }`}
+          disabled={internalStep < 1}
+          className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-white ${
+            internalStep < 1
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-slate-800 hover:bg-slate-900"
+          }`}
         >
-          {confirmedTemplate ? "Next →" : "Configure Template"}
+          Badges →
         </button>
       </div>
     </div>

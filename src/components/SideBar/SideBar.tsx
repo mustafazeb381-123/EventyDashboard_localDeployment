@@ -1,59 +1,94 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
-  Home,
   Users,
   UserCheck,
   Settings,
   LogOut,
-  Menu,
   CheckCircle,
   Clock,
   UserPlus,
-  Bell,
-  User,
   HomeIcon,
+  Image,
+  NotepadText,
+  Printer,
+  UserCircle,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
 
-const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
-  // const [isExpanded, setIsExpanded] = useState(false)
+interface SideBarProps {
+  isExpanded: boolean;
+  setIsExpanded: (expanded: boolean) => void;
+  isRTL: boolean;
+  canToggle?: boolean;
+  currentEventId?: string;
+}
+
+const SideBar = ({
+  isExpanded,
+  setIsExpanded,
+  isRTL,
+  canToggle = true,
+  currentEventId,
+}: SideBarProps) => {
   const [activeItem, setActiveItem] = useState("Registered Users");
-  const [expandedMenus, setExpandedMenus] = useState({});
-  // const [isRTL, setIsRTL] = useState(false)
-
+  const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
+    {}
+  );
   const naviagte = useNavigate();
+  const location = useLocation();
 
-  // Detect RTL direction and listen for changes
-  // useEffect(() => {
-  //   const checkRTL = () => {
-  //     const dir = document.documentElement.dir || document.documentElement.getAttribute('dir')
-  //     setIsRTL(dir === 'rtl')
-  //   }
+  // Debug log to track sidebar state
+  console.log("SideBar props:", {
+    isExpanded,
+    canToggle,
+    currentEventId,
+    isRTL,
+  });
 
-  //   // Check initially
-  //   checkRTL()
+  // Set active item based on current route
+  useEffect(() => {
+    const currentPath = location.pathname;
 
-  //   // Create observer to watch for direction changes
-  //   const observer = new MutationObserver(() => {
-  //     checkRTL()
-  //   })
+    if (
+      (currentPath.startsWith("/home/") ||
+        currentPath.startsWith("/express-event/")) &&
+      currentEventId
+    ) {
+      setActiveItem("Home summary");
+    } else if (currentPath === "/regesterd_user") {
+      setActiveItem("Registered Users");
+    } else if (currentPath === "/agenda") {
+      setActiveItem("Agenda");
+    } else if (currentPath === "/galleries") {
+      setActiveItem("Galleries");
+    } else if (currentPath === "/user/registration") {
+      setActiveItem("User Registration");
+    } else if (currentPath === "/print_badges") {
+      setActiveItem("Print Badges");
+    } else if (currentPath.startsWith("/invitation")) {
+      setActiveItem("Inviation");
+      // Expand the Invitation submenu if we're on a submenu page
+      if (currentPath.includes("/user") || currentPath.includes("/vip")) {
+        setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
+      }
+    } else if (currentPath.startsWith("/attendees")) {
+      setActiveItem("Attendees");
+      // Expand the Attendees submenu if we're on a submenu page
+      if (
+        currentPath.includes("/check-in") ||
+        currentPath.includes("/check-out")
+      ) {
+        setExpandedMenus((prev) => ({ ...prev, Attendees: true }));
+      }
+    } else if (currentPath === "/committees") {
+      setActiveItem("Committees");
+    }
+  }, [currentEventId, location.pathname]);
 
-  //   // Watch for changes to the dir attribute
-  //   observer.observe(document.documentElement, {
-  //     attributes: true,
-  //     attributeFilter: ['dir']
-  //   })
-
-  //   // Cleanup
-  //   return () => {
-  //     observer.disconnect()
-  //   }
-  // }, [])
-
-  const toggleSubmenu = (label) => {
+  const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) => ({
       ...prev,
       [label]: !prev[label],
@@ -64,33 +99,91 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
     {
       icon: HomeIcon,
       label: "Home summary",
-      path: "/home",
+      path: currentEventId ? `/home/${currentEventId}` : "/",
     },
     {
       icon: Users,
       label: "Registered Users",
       badge: "20",
-      path: "/regester_user",
+      path: currentEventId
+        ? `/regesterd_user?eventId=${currentEventId}`
+        : "/regesterd_user",
+    },
+    {
+      icon: NotepadText,
+      label: "Agenda",
+      path: currentEventId ? `/agenda?eventId=${currentEventId}` : "/agenda",
+    },
+    {
+      icon: Image,
+      label: "Galleries",
+      path: currentEventId
+        ? `/galleries?eventId=${currentEventId}`
+        : "/galleries",
+    },
+    {
+      icon: UserCircle,
+      label: "User Registration",
+      path: currentEventId
+        ? `/user/registration?eventId=${currentEventId}`
+        : "/user/registration",
+    },
+    {
+      icon: Printer,
+      label: "Print Badges",
+      path: currentEventId
+        ? `/print_badges?eventId=${currentEventId}`
+        : "/print_badges",
     },
     {
       icon: UserCheck,
-      label: "Participants",
+      label: "Inviation",
+      path: currentEventId
+        ? `/invitation?eventId=${currentEventId}`
+        : "/invitation",
       submenu: [
-        { label: "Users", icon: Users },
-        { label: "VIP Users", icon: UserPlus },
+        {
+          label: "Users",
+          icon: Users,
+          path: currentEventId
+            ? `/invitation/user?eventId=${currentEventId}`
+            : "/invitation/user",
+        },
+        {
+          label: "VIP Users",
+          icon: UserPlus,
+          path: currentEventId
+            ? `/invitation/vip?eventId=${currentEventId}`
+            : "/invitation/vip",
+        },
       ],
     },
     {
       icon: CheckCircle,
       label: "Attendees",
       submenu: [
-        { label: "Check In", icon: CheckCircle },
-        { label: "Check Out", icon: Clock },
+        {
+          label: "Check In",
+          icon: CheckCircle,
+          path: currentEventId
+            ? `/attendees/check-in?eventId=${currentEventId}`
+            : "/attendees/check-in",
+        },
+        {
+          label: "Check Out",
+          icon: Clock,
+          path: currentEventId
+            ? `/attendees/check-out?eventId=${currentEventId}`
+            : "/attendees/check-out",
+        },
       ],
     },
     {
       icon: Users,
       label: "Committees",
+      path: currentEventId
+        ? `/committees?eventId=${currentEventId}`
+        : "/committees",
     },
   ];
 
@@ -109,7 +202,6 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
 
   return (
     <>
-      {/* Sidebar */}
       <aside
         className={`fixed ${
           isRTL ? "right-0" : "left-0"
@@ -117,38 +209,52 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
           isExpanded ? "w-[280px]" : "w-20"
         }`}
       >
-        {/* Sidebar Header */}
         {isExpanded && (
           <div className="px-4 py-4 border-b">
             <div className="flex items-center">
-              <Button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className=" h-2/3  flex flex-row items-center justify-evenly"
+              {canToggle && (
+                <Button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className=" h-2/3  flex flex-row items-center justify-evenly cursor-pointer"
+                >
+                  <img src={Assets.icons.leftArrow} height={24} width={24} />
+                </Button>
+              )}
+              <div
+                onClick={() => {
+                  naviagte("/");
+                  if (canToggle) {
+                    setIsExpanded(!isExpanded);
+                  }
+                }}
+                className="cursor-pointer"
               >
-                <img src={Assets.icons.leftArrow} height={24} width={24} />
                 <img
                   src={Assets.images.sidebarExpandedLogo}
                   className="w-30 h-1/2"
                   alt=""
                 />
-              </Button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Collapsed Header - Just Logo */}
         {!isExpanded && (
           <div className="px-4 py-4 border-b border-slate-700/50 flex justify-center">
             <Button
-              onClick={() => setIsExpanded(!isExpanded)}
+              onClick={() => canToggle && setIsExpanded(!isExpanded)}
               className="h-20 w-20"
+              disabled={!canToggle}
             >
-              <img src={Assets.images.sideBarLogo} alt="" />
+              <img
+                style={{ cursor: canToggle ? "pointer" : "default" }}
+                src={Assets.images.sideBarLogo}
+                alt=""
+              />
             </Button>
           </div>
         )}
 
-        {/* Event Details Label */}
         {isExpanded && (
           <div className="px-4 py-3 border-b border-slate-700/30">
             <span className="text-slate-400 text-sm font-medium">
@@ -157,7 +263,6 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
           </div>
         )}
 
-        {/* Navigation Menu - Only show when expanded */}
         {isExpanded && (
           <nav className="flex-1 px-2 py-4 space-y-2">
             {menuItems.map((item, index) => {
@@ -196,7 +301,6 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
                     )}
                   </div>
 
-                  {/* Submenu - Only show when expanded and submenu is toggled */}
                   {item.submenu && isSubmenuExpanded && (
                     <div className="ml-6 mt-1 space-y-1">
                       {item.submenu.map((subItem, subIndex) => {
@@ -210,7 +314,12 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
                                 ? "bg-blue-500/20 text-white border border-blue-400/30"
                                 : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
                             }`}
-                            onClick={() => setActiveItem(subItem.label)}
+                            onClick={() => {
+                              setActiveItem(subItem.label);
+                              if (subItem.path) {
+                                naviagte(subItem.path);
+                              }
+                            }}
                           >
                             <SubIcon className="h-3.5 w-3.5" />
                             <span className="text-sm">{subItem.label}</span>
@@ -225,7 +334,6 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
           </nav>
         )}
 
-        {/* Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-slate-700/50 space-y-2 bg-gradient-to-b from-slate-900 to-blue-900">
           <Button
             variant="ghost"
@@ -255,7 +363,6 @@ const SideBar = ({ isExpanded, setIsExpanded, isRTL }) => {
         </div>
       </aside>
 
-      {/* Overlay for mobile when expanded */}
       {isExpanded && (
         <div
           className="fixed inset-0 bg-black bg-opacity-50 z-20 md:hidden"
