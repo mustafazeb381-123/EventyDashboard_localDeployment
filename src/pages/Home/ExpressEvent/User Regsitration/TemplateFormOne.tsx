@@ -9,6 +9,13 @@ const TemplateFormOne = ({
   eventData: any;
   formFields: any[];
 }) => {
+
+  console.log('Event Attributes:', eventData?.attributes);
+
+  // ✅ Get tenant_uuid from localStorage
+  const tenantUuid = localStorage.getItem("tenant_uuid");
+  console.log("TENANT TEMP:", tenantUuid);
+
   return (
     <div className="w-full p-4">
       {/* Banner Section */}
@@ -87,10 +94,14 @@ const TemplateFormOne = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill name and contact information of attendees.
         </h3>
+
         <RegistrationFormPreview
           formFields={formFields || []}
-          submitButtonText="Register"
+          eventId={eventData?.attributes?.uuid}
+          tenantUuid={tenantUuid || undefined}
+          submitButtonText="Register Now"
         />
+
       </div>
     </div>
   );

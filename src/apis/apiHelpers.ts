@@ -101,8 +101,6 @@ export const getRegistrationTemplateData = (id: string | number) => {
   return axiosInstance.get(`events/${id}/registration_templates/default`)
 }
 
-
-// Get all badge templates for a specific event.
 export const getEventBadges = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badge_templates`);
 }
@@ -110,5 +108,29 @@ export const getEventBadges = (id: string | number) => {
 export const getBadgeType = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badges`);
 };
+
+export const createEventUser = (
+  eventId: string,
+  userData: any,
+  tenantUuid?: string
+) => {
+  console.log("TENANT API:", tenantUuid); // ✅ log tenant UUID before sending
+  return axiosInstance.post(`/events/${eventId}/event_users`, {
+    tenant_uuid: tenantUuid,
+    event_user: {
+      name: userData.name,
+      phone_number: userData.phone_number,
+      email: userData.email,
+      position: userData.position,
+      organization: userData.organization,
+    },
+  });
+};
+
+
+
+
+
+
 
 

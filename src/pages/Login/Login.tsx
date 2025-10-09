@@ -71,6 +71,16 @@ function Login() {
     };
     try {
       const response = await loginApi(data);
+
+      console.log("Login response", response);
+      const tenantUuid = response?.data?.data?.current_user?.data?.attributes?.tenant_uuid;
+      if (tenantUuid) {
+        localStorage.setItem("tenant_uuid", tenantUuid);
+        console.log("✅ TENANT LOGIN:", tenantUuid);
+      } else {
+        console.warn("⚠️ No tenant UUID found in response");
+      }
+
       const token = response?.headers?.["access-token"];
       localStorage.setItem("token", token);
 
