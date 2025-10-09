@@ -6,13 +6,12 @@ interface Badge {
     name: string;
     frontImg: string;
     backImg: string;
-    squareUserImg?: string;
     qrImg: string;
     cardHeader: string;
     cardFooter: string;
 }
 
-interface Badge3Props {
+interface Badge4Props {
     badge: Badge;
     event: any;
     onClose: () => void;
@@ -20,7 +19,7 @@ interface Badge3Props {
     CardFooter: React.FC<{ color?: string }>;
 }
 
-const Badge3: React.FC<Badge3Props> = ({ badge, event, onClose, CardHeader, CardFooter }) => {
+const Badge4: React.FC<Badge4Props> = ({ badge, event, onClose, CardHeader, CardFooter }) => {
 
     return (
 
@@ -50,10 +49,17 @@ const Badge3: React.FC<Badge3Props> = ({ badge, event, onClose, CardHeader, Card
                         </div>
 
                         {/* Center */}
-                        <div className="flex flex-1 flex-col justify-center items-center">
-                            <img src={badge.squareUserImg} className="w-48 object-cover" />
-                            <h2 className="text-lg font-bold text-gray-900">User Name</h2>
-                            <p className="text-gray-600 text-sm">User Title</p>
+                        <div className="flex flex-1 flex-col justify-evenly items-center">
+                            <div className="text-center ">
+                                <h2 className="text-lg font-bold text-gray-900">User Name</h2>
+                                <p className="text-gray-600 text-sm">User Title</p>
+                            </div>
+                            <div className="relative z-10 flex items-center gap-2">
+                                {event?.attributes?.logo_url && (
+                                    <img src={event.attributes.logo_url} className="w-8 h-8 mb-6" />
+                                )}
+                                <h6 className="font-semibold mb-6 text-black">Company Name</h6>
+                            </div>
                         </div>
 
                         {/* Bottom */}
@@ -82,7 +88,6 @@ const Badge3: React.FC<Badge3Props> = ({ badge, event, onClose, CardHeader, Card
                                 <h6 className="font-semibold mb-6 text-black">Company Name</h6>
                             </div>
                             <h2 className="text-lg font-bold text-gray-900">{event?.attributes?.name}</h2>
-
                         </div>
 
                         {/* Bottom */}
@@ -101,4 +106,4 @@ const Badge3: React.FC<Badge3Props> = ({ badge, event, onClose, CardHeader, Card
     );
 };
 
-export default Badge3;
+export default Badge4;

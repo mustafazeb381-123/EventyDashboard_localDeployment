@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { createEventUser } from "@/apis/apiHelpers";
+import { toast } from "react-toastify";
 
 interface FormField {
   id: number;
@@ -19,14 +21,40 @@ interface FormField {
 interface RegistrationFormPreviewProps {
   formFields?: FormField[];
   submitButtonText?: string;
+  eventId: string;
+  tenantUuid?: string;
 }
 
 // Simple Registration Form Component (UI Only - No Toggle/Functionality)
 const RegistrationFormPreview = ({
   formFields = [],
   submitButtonText = "Register",
+  eventId,
+  tenantUuid,
 }: RegistrationFormPreviewProps) => {
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Log tenant UUID
+  console.log("TENANT FORM:", tenantUuid);
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+
+      console.log("📤 Sending data:", { eventId, tenantUuid, formData });
+      const response = await createEventUser(eventId, formData, tenantUuid);
+
+      toast.success("User registered successfully!");
+      console.log("✅ User created:", response);
+      setFormData({});
+    } catch (error: any) {
+      console.error("❌ Error creating event user:", error);
+      toast.error(error.response?.data?.message || "Registration failed");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (fieldName: string, value: any) => {
     setFormData((prev) => ({
@@ -138,10 +166,13 @@ const RegistrationFormPreview = ({
 
       <button
         type="button"
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+        disabled={loading}
+        onClick={handleSubmit}
+        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {submitButtonText}
+        {loading ? "Submitting..." : submitButtonText}
       </button>
+
     </div>
   );
 };

@@ -7,8 +7,9 @@ import { toast, ToastContainer } from "react-toastify";
 import Badge1 from "./components/Badge1";
 import Badge2 from "./components/Badge2";
 import Badge3 from "./components/Badge3";
+import Badge4 from "./components/Badge4";
 
-const CardHeader: React.FC<{ color?: string }> = ({ color = "" }) => (
+const CardHeader: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   <svg
     width="100%"
     height="100%"
@@ -41,7 +42,7 @@ const CardHeader: React.FC<{ color?: string }> = ({ color = "" }) => (
   </svg>
 );
 
-const CardHeader2: React.FC<{ color?: string }> = ({ color = "" }) => (
+const CardHeader2: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   <svg
     width="100%"
     height="100%"
@@ -80,12 +81,21 @@ const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   </svg>
 );
 
+const CardFooter2: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+  <svg width="100%" height="100%" viewBox="0 0 204 54" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+    <path d="M89.4059 9L0 54H54.5792L105 28.7802L89.4059 9Z" fill={color} />
+
+    <path d="M204 0L106 54H204V0Z" fill={color} />
+  </svg>
+);
+
 interface Badge {
   id: number;
   name: string;
   frontImg: string;
   backImg: string;
   userImg?: string;
+  squareUserImg?: string;
   qrImg: string;
   cardHeader: string;
   cardFooter: string;
@@ -137,10 +147,19 @@ const Badges: React.FC<BadgesProps> = ({
       name: "Badge 3",
       frontImg: Assets.images.b3_front,
       backImg: Assets.images.b3_back,
-      userImg: Assets.images.user_img,
+      squareUserImg: Assets.images.square_user_img,
       qrImg: Assets.images.qr_img,
       cardHeader: Assets.images.card_header2,
-      cardFooter: Assets.images.card_footer,
+      cardFooter: Assets.images.card_footer2,
+    },
+    {
+      id: 4,
+      name: "Badge 4",
+      frontImg: Assets.images.b4_front,
+      backImg: Assets.images.b4_back,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header2,
+      cardFooter: Assets.images.card_footer2,
     },
   ];
 
@@ -240,11 +259,10 @@ const Badges: React.FC<BadgesProps> = ({
           return (
             <div
               key={badge.id}
-              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
-                isActive
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 hover:border-blue-500"
-              }`}
+              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${isActive
+                ? "border-green-500 bg-green-50"
+                : "border-gray-200 hover:border-blue-500"
+                }`}
               onClick={() =>
                 setSelectedBadge(
                   selectedBadge?.id === badge.id ? null : badge
@@ -253,7 +271,8 @@ const Badges: React.FC<BadgesProps> = ({
             >
               {/* Badge Preview */}
               {badge.id === 1 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden">
+                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }} >
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
@@ -276,7 +295,7 @@ const Badges: React.FC<BadgesProps> = ({
                       </h6>
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col justify-center items-center bg-white">
+                  <div className="flex flex-1 flex-col justify-center items-center">
                     <img
                       src={badge.userImg}
                       className="w-16 h-16 rounded-full object-cover"
@@ -300,7 +319,8 @@ const Badges: React.FC<BadgesProps> = ({
               )}
 
               {badge.id === 2 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden">
+                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}>
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
@@ -311,7 +331,7 @@ const Badges: React.FC<BadgesProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col justify-evenly items-center bg-white">
+                  <div className="flex flex-1 flex-col justify-evenly items-center">
                     <div className="text-center">
                       <h2 className="text-xs font-bold text-gray-900">
                         User Name
@@ -345,7 +365,8 @@ const Badges: React.FC<BadgesProps> = ({
               )}
 
               {badge.id === 3 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden">
+                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}>
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
@@ -356,10 +377,10 @@ const Badges: React.FC<BadgesProps> = ({
                       />
                     </div>
                   </div>
-                  <div className="flex flex-1 flex-col justify-center items-center bg-white">
+                  <div className="flex flex-1 flex-col justify-center items-center">
                     <img
-                      src={badge.userImg}
-                      className="w-16 h-16 object-cover"
+                      src={badge.squareUserImg}
+                      className="w-16 object-cover"
                     />
                     <h2 className="text-xs font-bold text-gray-900 mt-1">
                       User Name
@@ -371,7 +392,53 @@ const Badges: React.FC<BadgesProps> = ({
                     style={{ height: "15%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardFooter
+                      <CardFooter2
+                        color={event?.attributes?.primary_color || "#4D4D4D"}
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {badge.id === 4 && (
+                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}>
+                  <div
+                    className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                    style={{ height: "33%" }}
+                  >
+                    <div className="absolute inset-0">
+                      <CardHeader2
+                        color={event?.attributes?.primary_color || "#4D4D4D"}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col justify-evenly items-center">
+                    <div className="text-center">
+                      <h2 className="text-xs font-bold text-gray-900">
+                        User Name
+                      </h2>
+                      <p className="text-gray-600 text-xs">User Title</p>
+                    </div>
+                    <div className="relative z-10 flex items-center gap-2">
+                      {event?.attributes?.logo_url && (
+                        <img
+                          src={event.attributes.logo_url}
+                          alt="Logo"
+                          className="w-4 h-4 mb-3"
+                        />
+                      )}
+                      <h6 className="font-semibold mb-3 text-black text-xs">
+                        Company Name
+                      </h6>
+                    </div>
+                  </div>
+                  <div
+                    className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                    style={{ height: "15%" }}
+                  >
+                    <div className="absolute inset-0">
+                      <CardFooter2
                         color={event?.attributes?.primary_color || "#4D4D4D"}
                       />
                     </div>
@@ -423,7 +490,16 @@ const Badges: React.FC<BadgesProps> = ({
               event={event}
               onClose={closeModal}
               CardHeader={CardHeader2}
-              CardFooter={CardFooter}
+              CardFooter={CardFooter2}
+            />
+          )}
+          {previewBadge.id === 4 && (
+            <Badge4
+              badge={previewBadge}
+              event={event}
+              onClose={closeModal}
+              CardHeader={CardHeader2}
+              CardFooter={CardFooter2}
             />
           )}
         </>
@@ -442,11 +518,10 @@ const Badges: React.FC<BadgesProps> = ({
         <button
           onClick={selectBadgeAndContinue}
           disabled={!selectedBadge || loading}
-          className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center ${
-            selectedBadge && !loading
-              ? "bg-slate-800 hover:bg-slate-900"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
+          className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center ${selectedBadge && !loading
+            ? "bg-slate-800 hover:bg-slate-900"
+            : "bg-gray-400 cursor-not-allowed"
+            }`}
         >
           {loading ? (
             <span className="flex items-center gap-2">
