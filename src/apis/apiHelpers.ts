@@ -112,3 +112,9 @@ export const getBadgeType = (id: string | number) => {
 };
 
 
+export const createAreaSessionApi = (data: any, id: string) => {
+  return axiosInstance.post(`events/${id}/session_areas`, data);
+}
+
+
+

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { Edit, Trash2, Plus } from "lucide-react";
+import { createAreaSessionApi } from "@/apis/apiHelpers";
+import { Area } from "recharts";
 
 export type Area = {
   id: string;
@@ -46,6 +48,57 @@ export default function Areas({}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const eventId = localStorage.getItem("create_eventId");
+  console.log("event id in areas", eventId);
+
+
+
+  const AreaData = {
+    session_area: {
+      name: "Main Hall",
+      location: "Building A, Floor 1",
+      user_type: "VIP",
+      guest_number: 100,
+      event_id: eventId,
+    },
+  };
+
+
+  const handleAdd = async () => {
+    try {
+      console.log("event id in areas", eventId); // make sure this logs a valid value
+  
+      const response = await createAreaSessionApi(AreaData, eventId);
+      console.log("response in areas", response);
+    } catch (error) {
+      console.log("error in areas", error);
+    }
+  };
+  
+
+
+  // const handleAdd = () => {
+  //   if (
+  //     newArea.name &&
+  //     newArea.location &&
+  //     newArea.type &&
+  //     newArea.guestNumbers
+  //   ) {
+  //     const newId = `area-${Date.now()}`;
+  //     setData([
+  //       ...data,
+  //       {
+  //         id: newId,
+  //         name: newArea.name,
+  //         location: newArea.location,
+  //         type: newArea.type,
+  //         guestNumbers: parseInt(newArea.guestNumbers),
+  //       },
+  //     ]);
+  //     setNewArea({ name: "", location: "", type: "", guestNumbers: "" });
+  //   }
+  // };
+
 
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this area?")) {
@@ -57,6 +110,8 @@ export default function Areas({}) {
       });
     }
   };
+
+  
 
   const handleEdit = (area: Area) => {
     setEditingRow(area.id);
@@ -76,27 +131,7 @@ export default function Areas({}) {
     setEditData(null);
   };
 
-  const handleAdd = () => {
-    if (
-      newArea.name &&
-      newArea.location &&
-      newArea.type &&
-      newArea.guestNumbers
-    ) {
-      const newId = `area-${Date.now()}`;
-      setData([
-        ...data,
-        {
-          id: newId,
-          name: newArea.name,
-          location: newArea.location,
-          type: newArea.type,
-          guestNumbers: parseInt(newArea.guestNumbers),
-        },
-      ]);
-      setNewArea({ name: "", location: "", type: "", guestNumbers: "" });
-    }
-  };
+
 
   const toggleRowSelection = (id: string) => {
     const newSelection = new Set(selectedRows);
