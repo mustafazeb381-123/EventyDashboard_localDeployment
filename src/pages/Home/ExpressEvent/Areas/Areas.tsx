@@ -50,32 +50,69 @@ export default function Areas({}) {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const eventId = localStorage.getItem("create_eventId");
   console.log("event id in areas", eventId);
-
-
+  const [validationErrors, setValidationErrors] = useState({
+    name: "",
+    location: "",
+    type: "",
+    guestNumbers: "",
+  });
 
   const AreaData = {
     session_area: {
-      name: "Main Hall",
-      location: "Building A, Floor 1",
-      user_type: "VIP",
-      guest_number: 100,
-      event_id: eventId,
+      name: newArea?.name,
+      location: newArea?.location,
+      user_type: newArea?.type,
+      guest_number: newArea?.guestNumbers,
+      event_id: eventId as string,
     },
   };
 
-
   const handleAdd = async () => {
+    const errors = {
+      name: newArea?.name ? "" : "Name is required",
+      location: newArea?.location ? "" : "Location is required",
+      type: newArea?.type ? "" : "Type is required",
+      guestNumbers: newArea?.guestNumbers ? "" : "Guest numbers are required",
+    };
+
+    setValidationErrors(errors);
+    const hasError = Object.values(errors).some((err) => err !== "");
+    if (hasError) {
+      console.log("Validation failed");
+      return;
+    }
+
     try {
-      console.log("event id in areas", eventId); // make sure this logs a valid value
-  
-      const response = await createAreaSessionApi(AreaData, eventId);
-      console.log("response in areas", response);
+      if (
+        newArea.name &&
+        newArea.location &&
+        newArea.type &&
+        newArea.guestNumbers
+      ) {
+        console.log("event id in areas", eventId);
+
+        const response = await createAreaSessionApi(
+          AreaData,
+          eventId as string
+        );
+        console.log("response in areas", response);
+
+        if (response?.data) {
+          setData((prevData) => [...prevData, response.data]);
+          setNewArea({
+            name: "",
+            location: "",
+            type: "",
+            guestNumbers: "",
+          });
+        }
+      } else {
+        console.log("Please fill all fields before adding area");
+      }
     } catch (error) {
       console.log("error in areas", error);
     }
   };
-  
-
 
   // const handleAdd = () => {
   //   if (
@@ -99,7 +136,6 @@ export default function Areas({}) {
   //   }
   // };
 
-
   const handleDelete = (id: string) => {
     if (window.confirm("Are you sure you want to delete this area?")) {
       setData(data.filter((area) => area.id !== id));
@@ -110,8 +146,6 @@ export default function Areas({}) {
       });
     }
   };
-
-  
 
   const handleEdit = (area: Area) => {
     setEditingRow(area.id);
@@ -130,8 +164,6 @@ export default function Areas({}) {
     setEditingRow(null);
     setEditData(null);
   };
-
-
 
   const toggleRowSelection = (id: string) => {
     const newSelection = new Set(selectedRows);
@@ -238,6 +270,11 @@ export default function Areas({}) {
                 outline: "none",
               }}
             />
+            {validationErrors.name && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.name}
+              </div>
+            )}
           </div>
 
           <div>
@@ -269,6 +306,11 @@ export default function Areas({}) {
                 outline: "none",
               }}
             />
+            {validationErrors.location && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.location}
+              </div>
+            )}
           </div>
 
           <div>
@@ -304,6 +346,11 @@ export default function Areas({}) {
               <option value="Type 02">Type 02</option>
               <option value="Type 03">Type 03</option>
             </select>
+            {validationErrors.type && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.type}
+              </div>
+            )}
           </div>
 
           <div>
@@ -335,6 +382,11 @@ export default function Areas({}) {
                 outline: "none",
               }}
             />
+            {validationErrors.guestNumbers && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.guestNumbers}
+              </div>
+            )}
           </div>
 
           <button

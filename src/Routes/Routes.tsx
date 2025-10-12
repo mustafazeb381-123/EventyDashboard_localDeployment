@@ -16,6 +16,7 @@ import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
 import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 import Users from "@/pages/Home/EventDetails/Invitation/Users";
 import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
+import Poll from "@/pages/Home/EventDetails/Poll/Poll";
 
 const router = createBrowserRouter([
   {
@@ -56,6 +57,10 @@ const router = createBrowserRouter([
           {
             path: "invitation/user", // This path is now relative to "/" -> "/express-event"
             element: <Users />,
+          },
+          {
+            path: "communication/Poll", // This path is now relative to "/" -> "/express-event"
+            element: <Poll />,
           },
           {
             path: "express-event/:id?", // This path is now relative to "/" -> "/express-event" with optional ID parameter
