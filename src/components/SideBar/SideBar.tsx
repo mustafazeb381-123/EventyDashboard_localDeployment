@@ -172,14 +172,14 @@ const SideBar = ({
           icon: Users,
           path: currentEventId
             ? `/communication/Poll?eventId=${currentEventId}`
-            : "/communication/Poll", // ✅ FIXED
+            : "/communication/Poll",
         },
         {
           label: "Q & A",
           icon: UserPlus,
           path: currentEventId
-            ? `/communication/QnA?eventId=${currentEventId}`
-            : "/communication/QnA", // optional: prepare for next screen
+            ? `/communication/QA?eventId=${currentEventId}`
+            : "/communication/QA",
         },
       ],
     },

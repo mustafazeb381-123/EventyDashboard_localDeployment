@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Plus, Trash2, X } from "lucide-react";
+import { Edit2, Plus, Trash2, X } from "lucide-react";
 
 const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,13 +44,12 @@ const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
 
   return (
     <div className="space-y-8">
-      {/* Add Question Button */}
       <div className="flex justify-end">
         <button
           onClick={openModal}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
+          className="bg-black  text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
         >
-          <Plus className="w-5 h-5" />
+          {/* <Plus className="w-5 h-5" /> */}
           Add Question
         </button>
       </div>
@@ -58,7 +57,7 @@ const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
       {/* Existing Questions List */}
       <div className="space-y-6">
         {poll.questions.map((question) => (
-          <div key={question.id} className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
+          <div key={question.id} className="border-b border-gray-200 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">{question.text}</h3>
@@ -78,12 +77,20 @@ const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
               </div>
               
               {/* Delete button */}
+              <div className="flex items-center">
               <button 
                 onClick={() => onRemoveQuestion(question.id)}
-                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-4"
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-4"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4" color="red" />
               </button>
+              <button 
+                // onClick={() => onRemoveQuestion(question.id)}
+                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-4"
+              >
+                <Edit2 className="w-4 h-4" color="yellow" />
+              </button>
+              </div>
             </div>
           </div>
         ))}
@@ -91,7 +98,7 @@ const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
 
       {/* Add Question Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
@@ -132,7 +139,7 @@ const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
                 <div className="space-y-3">
                   {newAnswers.map((answer, index) => (
                     <div key={index} className="flex items-center gap-3">
-                      <div className="w-4 h-4 rounded border border-gray-300 flex-shrink-0"></div>
+                      {/* <div className="w-4 h-4 rounded border border-gray-300 flex-shrink-0"></div> */}
                       <input
                         type="text"
                         value={answer}

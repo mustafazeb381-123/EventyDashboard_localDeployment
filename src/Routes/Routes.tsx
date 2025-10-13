@@ -18,6 +18,7 @@ import Users from "@/pages/Home/EventDetails/Invitation/Users";
 import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
 import Poll from "@/pages/Home/EventDetails/Poll/Poll";
 import PollDetails from "@/pages/Home/EventDetails/PollDetails/PollDetails";
+import Qa from "@/pages/Home/EventDetails/QA/QA";
 
 const router = createBrowserRouter([
   {
@@ -67,7 +68,11 @@ const router = createBrowserRouter([
                 element: <Poll />,
               },
               {
-                path: "poll/:id", // This will show PollDetails within the same layout
+                path: "QA",
+                element: <Qa />,
+              },
+              {
+                path: "poll/:id", 
                 element: <PollDetails />,
               },
             ],

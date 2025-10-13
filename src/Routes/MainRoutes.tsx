@@ -35,6 +35,7 @@ function MainRoutes() {
     "/committees",
     "/communication/Poll", 
     "/communication/Poll/", 
+    "/communication/QA", 
   ];
   const isEventContextPage =
     eventRelatedPaths.includes(location.pathname) && isEventRelatedPage;

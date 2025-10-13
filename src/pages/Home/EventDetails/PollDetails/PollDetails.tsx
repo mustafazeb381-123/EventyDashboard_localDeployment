@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import QuestionsTab from "./component/questionsTab";
 import AnswersTab from "./component/answersTab";
 
@@ -18,9 +18,9 @@ const PollDetails = () => {
         id: 1,
         text: "Do participants need an account to join?",
         answers: [
-          { id: 1, text: "Yes, account is required", percentage: 60 },
-          { id: 2, text: "No, guest access available", percentage: 30 },
-          { id: 3, text: "Not sure", percentage: 10 }
+          { id: 1, text: "Ans 1 :", percentage: 60 },
+          { id: 2, text: "Ans 2 :", percentage: 30 },
+          { id: 3, text: "Ans 3 :", percentage: 10 }
         ]
       }
     ]
@@ -59,16 +59,13 @@ const PollDetails = () => {
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-8">
       <div className="mx-auto">
-        {/* Header - Simple breadcrumb */}
         <div className="flex items-center gap-3 mb-2">
           <button
             onClick={handleBack}
             className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
           >
             <ChevronLeft className="w-6 h-6" />
-            {/* <span className="font-medium">Polls</span> */}
           </button>
-          {/* <div className="text-gray-400">→</div> */}
           <h1 className="text-xl font-semibold text-gray-900">{poll.name}</h1>
         </div>
         <div className="flex items-center gap-2 mb-8 ms-8">
@@ -77,23 +74,31 @@ const PollDetails = () => {
             <p>{poll.name}</p>
         </div>
 
-        {/* Tabs */}
-        <div className="flex mb-6">
-          {["questions", "answers"].map((tab) => (
-         <button
-         key={tab}
-         onClick={() => setActiveTab(tab)}
-         className={`px-8 py-2 rounded-md font-medium text-sm transition-colors capitalize ${
-           activeTab === tab
-             ? "bg-blue-100 text-blue-600"
-             : "bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-         }`}
-       >
-         {tab}
-       </button>
-       
-          ))}
-        </div>
+        <div className="flex justify-between items-center mb-6">
+  {/* Tabs */}
+  <div className="flex space-x-4">
+    {["questions", "answers"].map((tab) => (
+      <button
+        key={tab}
+        onClick={() => setActiveTab(tab)}
+        className={`px-8 py-2 rounded-md font-medium text-sm transition-colors capitalize ${
+          activeTab === tab
+            ? "bg-blue-100 text-pri-color-800"
+            : "bg-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+        }`}
+      >
+        {tab}
+      </button>
+    ))}
+  </div>
+
+  {/* Add Question Button */}
+  <button className="flex items-center gap-2 px-4 py-2 rounded-md bg-blue-100 text-pri-color-800 font-medium text-sm hover:bg-blue-200 transition-colors">
+  <Plus className="w-4 h-4" />
+    Add New Question
+  </button>
+</div>
+
 
         {/* Render Active Tab */}
         {activeTab === "questions" && (
