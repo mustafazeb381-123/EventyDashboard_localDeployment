@@ -33,6 +33,8 @@ function MainRoutes() {
     "/attendees/check-in",
     "/attendees/check-out",
     "/committees",
+    "/communication/Poll", 
+    "/communication/Poll/", 
   ];
   const isEventContextPage =
     eventRelatedPaths.includes(location.pathname) && isEventRelatedPage;
@@ -134,3 +136,81 @@ function MainRoutes() {
 }
 
 export default MainRoutes;
+
+
+
+
+
+
+// import { useState, useEffect } from "react";
+// import { Outlet, useLocation, useParams } from "react-router-dom";
+// import SideBar from "@/components/SideBar/SideBar";
+// import Footer from "@/components/Footer/Footer";
+// import Header from "@/components/Header/Header";
+
+// function MainRoutes() {
+//   const location = useLocation();
+//   const params = useParams();
+
+//   // Simple logic: Expand sidebar for all routes except home
+//   const getSidebarState = () => {
+//     return location.pathname !== "/";
+//   };
+
+//   const [isExpanded, setIsExpanded] = useState(getSidebarState());
+//   const [isRTL, setIsRTL] = useState(false);
+
+//   // Update sidebar state when route changes
+//   useEffect(() => {
+//     const newState = getSidebarState();
+//     console.log("Route changed:", {
+//       pathname: location.pathname,
+//       newSidebarState: newState
+//     });
+//     setIsExpanded(newState);
+//   }, [location.pathname]);
+
+//   // Allow toggle for all non-home pages
+//   const canToggleSidebar = location.pathname !== "/";
+
+//   // Detect RTL direction
+//   useEffect(() => {
+//     const checkRTL = () => {
+//       const dir = document.documentElement.dir || document.documentElement.getAttribute("dir");
+//       setIsRTL(dir === "rtl");
+//     };
+//     checkRTL();
+    
+//     const observer = new MutationObserver(() => checkRTL());
+//     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["dir"] });
+    
+//     return () => observer.disconnect();
+//   }, []);
+
+//   return (
+//     <div className="min-h-screen bg-gray-50/30">
+//       <SideBar
+//         isExpanded={isExpanded}
+//         setIsExpanded={setIsExpanded}
+//         isRTL={isRTL}
+//         canToggle={canToggleSidebar}
+//         currentEventId={params.id || undefined}
+//       />
+//       <Header isExpanded={isExpanded} />
+
+//       <main
+//         className={`relative bg-[#F7FAFF] p-4 h-full pt-20 transition-all duration-300 ease-in-out ${
+//           isRTL
+//             ? isExpanded ? "mr-[280px]" : "mr-[80px]"
+//             : isExpanded ? "ml-[280px]" : "ml-[80px]"
+//         }`}
+//       >
+//         <Outlet />
+//       </main>
+
+//       <Footer />
+//     </div>
+//   );
+// }
+
+// export default MainRoutes;
