@@ -1,7 +1,154 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { getEventUsers } from "@/apis/apiHelpers";
+import { deleteEventUser } from "@/apis/apiHelpers";
+import { updateEventUser } from "@/apis/apiHelpers";
+
 import { Trash2, Mail, Eye, EyeOff, Plus } from "lucide-react";
 
 function RegisterdUser() {
+
+  const location = useLocation();
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventUsers, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    email: "",
+  });
+
+  const handleUpdateUser = async () => {
+    if (!eventId || !editingUser) return;
+
+    try {
+      console.log("Updating user payload:", {
+        eventId,
+        userId: editingUser.id,
+        data: editForm,
+      });
+
+      await updateEventUser(eventId, editingUser.id, editForm);
+
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === editingUser.id
+            ? {
+              ...u,
+              attributes: {
+                ...u.attributes,
+                name: editForm.name, // update the name you edited
+                updated_at: new Date().toISOString(), // update the updated_at timestamp
+              },
+            }
+            : u
+        )
+      );
+
+
+      alert("User updated successfully!");
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("Failed to update user. Please try again.");
+    }
+  };
+
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const idFromQuery = searchParams.get("eventId");
+    setEventId(idFromQuery);
+
+    if (idFromQuery) {
+      fetchUsers(idFromQuery);
+    }
+  }, [location.search]);
+
+  const fetchUsers = async (id: string) => {
+    try {
+      setLoading(true);
+      const response = await getEventUsers(id);
+      console.log("Fetched users:", response.data);
+
+      // adjust depending on backend shape
+      const users = response.data.data || response.data || [];
+      setUsers(users);
+    } catch (error) {
+      console.error("Error fetching event users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+
+    const formattedDate = date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+    const formattedTime = date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    return (
+      <>
+        {formattedDate}
+        <br />
+        {formattedTime}
+      </>
+    );
+  };
+
+
+  const handleDeleteUser = async (user: any) => {
+    // Add detailed logging to debug
+    console.log("Current eventId:", eventId);
+    console.log("User to delete:", user);
+
+    if (!eventId) {
+      alert("Error: Event ID is missing. Cannot delete user.");
+      console.error("Event ID is null or undefined");
+      return;
+    }
+
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+
+    try {
+      console.log("Deleting user with:", {
+        eventId,
+        userId: user.id,
+        apiCall: `/events/${eventId}/event_users/${user.id}`
+      });
+
+      await deleteEventUser(eventId, user.id);
+
+      // Remove user from local state
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+
+      alert("User deleted successfully!");
+    } catch (error: any) {
+      console.error("Error deleting user:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        requestUrl: error.config?.url
+      });
+
+      alert(`Failed to delete user: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+
   const [users] = useState([
     {
       id: "01",
@@ -12,50 +159,6 @@ function RegisterdUser() {
       createdAt: "06/04/2025",
       type: "Type 01",
       avatar: null,
-    },
-    {
-      id: "02",
-      name: "Luca",
-      email: "contact@te...",
-      password: "************",
-      organization: "",
-      createdAt: "06/04/2025",
-      type: "Type 01",
-      avatar:
-        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=40&h=40&fit=crop&crop=face",
-    },
-    {
-      id: "03",
-      name: "Liam",
-      email: "support@e...",
-      password: "************",
-      organization: "",
-      createdAt: "06/04/2025",
-      type: "Type 01",
-      avatar:
-        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face",
-    },
-    {
-      id: "04",
-      name: "Sam",
-      email: "luna_star9...",
-      password: "************",
-      organization: "",
-      createdAt: "06/04/2025",
-      type: "Type 01",
-      avatar:
-        "https://images.unsplash.com/photo-1494790108755-2616b9f70ce5?w=40&h=40&fit=crop&crop=face",
-    },
-    {
-      id: "05",
-      name: "Sam",
-      email: "info@creati...",
-      password: "************",
-      organization: "",
-      createdAt: "06/04/2025",
-      type: "Type 01",
-      avatar:
-        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop&crop=face",
     },
   ]);
 
@@ -85,12 +188,14 @@ function RegisterdUser() {
     }));
   };
 
-  const UserAvatar = ({ user }) => {
-    if (user.avatar) {
+  const UserAvatar = ({ user }: { user: any }) => {
+    const imageUrl = user?.attributes?.image; // use image from attributes
+
+    if (imageUrl) {
       return (
         <img
-          src={user.avatar}
-          alt={user.name}
+          src={imageUrl}
+          alt={user?.attributes?.name || "User Avatar"}
           className="w-10 h-10 rounded-full object-cover"
         />
       );
@@ -113,15 +218,33 @@ function RegisterdUser() {
     );
   };
 
+
   return (
     <div className="bg-white min-h-screen p-6">
+
+      <div className="p-6">
+        <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
+
+        {eventId && <p>Event ID: {eventId}</p>}
+
+        {loading ? (
+          <p>Loading users...</p>
+        ) : (
+          <>
+            {/* <pre className="bg-gray-100 p-3 rounded mt-3 overflow-x-auto">
+              {JSON.stringify(eventUsers, null, 1)}
+            </pre> */}
+          </>
+        )}
+      </div>
+
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Users</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {users.length} Users
+              {eventUsers.length} Users
             </span>
           </div>
           <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
@@ -133,6 +256,7 @@ function RegisterdUser() {
         {/* Table */}
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <table className="w-full">
+
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="w-12 px-6 py-3 text-left">
@@ -159,7 +283,10 @@ function RegisterdUser() {
                   Organization
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created at
+                  Created
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Updated
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Type
@@ -169,8 +296,9 @@ function RegisterdUser() {
                 </th>
               </tr>
             </thead>
+
             <tbody className="divide-y divide-gray-200">
-              {users.map((user, index) => (
+              {eventUsers.map((user, index) => (
                 <tr
                   key={user.id}
                   className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -190,12 +318,12 @@ function RegisterdUser() {
                     <div className="flex items-center gap-3">
                       <UserAvatar user={user} />
                       <span className="text-sm font-medium text-gray-900">
-                        {user.name}
+                        {user?.attributes?.name}
                       </span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.email}
+                    {user?.attributes?.email}
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
@@ -215,10 +343,13 @@ function RegisterdUser() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.organization}
+                    {user?.attributes?.organization}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.createdAt}
+                    {formatDate(user?.attributes?.created_at)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-600">
+                    {formatDate(user?.attributes?.updated_at)}
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -227,18 +358,77 @@ function RegisterdUser() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      <button className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+
+                      <button
+                        onClick={() => handleDeleteUser(user)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
                         <Trash2 className="w-4 h-4" />
                       </button>
+
+                      <button
+                        onClick={() => {
+                          setEditingUser(user);
+                          setEditForm({
+                            name: user?.attributes?.name || "",
+                            email: user?.attributes?.email || "",
+                          });
+                        }}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      >
+                        Edit
+                      </button>
+
                       <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                         <Mail className="w-4 h-4" />
                       </button>
+
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+
+          {editingUser && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <div className="bg-white p-6 rounded-lg w-96">
+                <h2 className="text-xl font-bold mb-4">Edit User</h2>
+
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  className="w-full mb-2 p-2 border rounded"
+                />
+
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={editForm.email}
+                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full mb-2 p-2 border rounded"
+                />
+
+                <div className="flex justify-end gap-2 mt-4">
+                  <button
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2 bg-gray-200 rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateUser}
+                    className="px-4 py-2 bg-blue-600 text-white rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
         </div>
       </div>
     </div>

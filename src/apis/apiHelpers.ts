@@ -109,23 +109,55 @@ export const getBadgeType = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badges`);
 };
 
+// Create a new user for a specific event, with optional tenant UUID and image upload
 export const createEventUser = (
   eventId: string,
   userData: any,
-  tenantUuid?: string
+  tenantUuid?: string,
+  imageFile?: File // optional image
 ) => {
-  console.log("TENANT API:", tenantUuid); // ✅ log tenant UUID before sending
-  return axiosInstance.post(`/events/${eventId}/event_users`, {
-    tenant_uuid: tenantUuid,
-    event_user: {
-      name: userData.name,
-      phone_number: userData.phone_number,
-      email: userData.email,
-      position: userData.position,
-      organization: userData.organization,
+  const formData = new FormData();
+
+  // Append tenant_uuid if provided
+  if (tenantUuid) formData.append("tenant_uuid", tenantUuid);
+
+  // Append user data
+  formData.append("event_user[name]", userData.name);
+  formData.append("event_user[phone_number]", userData.phone_number);
+  formData.append("event_user[email]", userData.email);
+  if (userData.position) formData.append("event_user[position]", userData.position);
+  if (userData.organization) formData.append("event_user[organization]", userData.organization);
+
+  // Append image if provided
+  if (imageFile) formData.append("event_user[image]", imageFile);
+
+  return axiosInstance.post(`/events/${eventId}/event_users`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
     },
   });
 };
+
+// Get all users for a specific event
+export const getEventUsers = (eventId: string) => {
+  return axiosInstance.get(`/events/${eventId}/event_users`);
+};
+
+// Delete a specific user from an event
+export const deleteEventUser = (eventId: string, userId: string | number) => {
+  return axiosInstance.delete(`/events/${eventId}/event_users/${userId}`);
+};
+
+// Update a specific user's details for an event
+export const updateEventUser = (eventId: string, userId: string, data: any) => {
+  return axiosInstance.patch(`/events/${eventId}/event_users/${userId}`, {
+    event_user: data,
+  });
+};
+
+
+
+
 
 
 
