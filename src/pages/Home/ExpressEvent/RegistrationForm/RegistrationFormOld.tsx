@@ -244,7 +244,7 @@ const Modal = ({
 };
 
 type RegistrationFormProps = {
-  onNext: () => void;
+  onNext: (eventId?: string | number) => void; // Updated to accept eventId
   onPrevious: () => void;
   currentStep: any;
   totalSteps: any;
@@ -261,7 +261,6 @@ const RegistrationForm = ({
   eventId,
 }: RegistrationFormProps) => {
   const { id: routeId } = useParams();
-  console.log("route id", routeId);
   const effectiveEventId =
     (routeId as string | undefined) ||
     (eventId as string | undefined) ||
@@ -269,34 +268,25 @@ const RegistrationForm = ({
       ? (localStorage.getItem("create_eventId") as string | null) || undefined
       : undefined);
 
-  console.log("effective event id ", effectiveEventId);
+  console.log("RegistrationForm - effective event id:", effectiveEventId);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
-    null
-  );
-  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(
-    null
-  );
+  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(null);
+  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(null);
   const [internalStep, setInternalStep] = useState<number>(0);
   const [formData, setFormData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingFormData, setIsLoadingFormData] = useState(false);
-  const [confirmationToggleStates, setConfirmationToggleStates] =
-    useState<ToggleStates>({
-      confirmationMsg: true,
-      userQRCode: false,
-      location: false,
-      eventDetails: false,
-    });
-
-  console.log("confirmed template", confirmedTemplate);
-  console.log("selected template data", selectedTemplateData);
+  const [confirmationToggleStates, setConfirmationToggleStates] = useState<ToggleStates>({
+    confirmationMsg: true,
+    userQRCode: false,
+    location: false,
+    eventDetails: false,
+  });
 
   const [getTemplatesData, setGetTemplatesData] = useState<any[]>([]);
-  const [selectedTemplateName, setSelectedTemplateName] = useState<
-    string | null
-  >(null);
+  const [selectedTemplateName, setSelectedTemplateName] = useState<string | null>(null);
 
   const getCreateTemplateApiData = async () => {
     try {
@@ -306,33 +296,22 @@ const RegistrationForm = ({
       }
 
       const result = await getRegistrationTemplateData(effectiveEventId);
-
-      console.log("Fetched templates data: which is already created", result);
-
-      // Check if the response has the expected structure
       const responseData = result?.data?.data;
-      console.log("response data of get template api", responseData);
+      
       if (!responseData) {
         console.warn("No data found in response");
         setGetTemplatesData([]);
         return;
       }
 
-      // Map the event registration fields data
-      const registrationFields =
-        responseData.attributes?.event_registration_fields?.data || [];
+      const registrationFields = responseData.attributes?.event_registration_fields?.data || [];
       const templateData = registrationFields.map((item: any) => ({
         id: item.id,
         type: item.type,
         attributes: item.attributes,
       }));
 
-      console.log("template data mapping:", templateData);
-
       const nameOfTemplate = responseData.attributes?.name;
-      console.log("name of template:", nameOfTemplate);
-
-      // Set the selected template name and highlight it
       setSelectedTemplateName(nameOfTemplate);
       setConfirmedTemplate(nameOfTemplate);
       setGetTemplatesData(templateData);
@@ -348,21 +327,16 @@ const RegistrationForm = ({
   }, []);
 
   useEffect(() => {
-    console.log("event id in reg form (effective) ---------", effectiveEventId);
+    console.log("RegistrationForm - event id:", effectiveEventId);
     if (effectiveEventId) {
       getFieldAPi(effectiveEventId);
     }
-
-    console.log("toggleStates in reg form");
   }, [selectedTemplate, effectiveEventId]);
 
-  // Function to determine which data to pass to each template
   const getTemplateData = (templateId: string) => {
-    // If this template matches the selected template name, pass the fetched data
     if (templateId === selectedTemplateName) {
       return getTemplatesData.length > 0 ? getTemplatesData : formData;
     }
-    // For other templates, pass the general form data
     return formData;
   };
 
@@ -479,25 +453,20 @@ const RegistrationForm = ({
     }
   };
 
-  // The main handler for using a template
   const handleUseTemplate = async (templateId: string) => {
     setIsLoading(true);
-
     try {
       const savedEventId = effectiveEventId;
-
       if (!savedEventId) {
         throw new Error("Event ID not found");
       }
 
-      // Create template data based on templateId
       let templateData: any = {};
       switch (templateId) {
         case "template-one":
           templateData = {
             name: "Event Registration Form",
-            description:
-              "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
+            description: "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
             fields: formData || [],
             templateComponent: "TemplateFormOne",
           };
@@ -510,7 +479,6 @@ const RegistrationForm = ({
             templateComponent: "TemplateFormTwo",
           };
           break;
-        // Add other template cases here
         default:
           templateData = {
             name: `Template ${templateId}`,
@@ -525,29 +493,22 @@ const RegistrationForm = ({
           name: templateId,
           content: JSON.stringify(templateData),
           event_registration_fields_ids: formData
-            .filter((item) => item.attributes?.active === true) // keep only active
-            .map((item) => item.id), // grab the root-level id
+            .filter((item) => item.attributes?.active === true)
+            .map((item) => item.id),
           default: true,
         },
       };
 
-      console.log("reponse of the payload of template creation", payload);
-
       const response = await createTemplatePostApi(payload, savedEventId);
-      console.log("Template creation response:", response.data);
-
-      // Success handling
       toast.success("Event template added successfully!");
       setSelectedTemplateData(templateData);
       setConfirmedTemplate(templateId);
       setTimeout(() => {
-        setInternalStep(1); // Go to confirmation step
-        handleCloseModal(); // Close modal on success
+        setInternalStep(1);
+        handleCloseModal();
       }, 1000);
     } catch (error: any) {
       console.error("Error creating template:", error);
-
-      // Error handling with specific messages
       if (error.response?.status === 400) {
         toast.error("Invalid template data. Please try again.");
       } else if (error.response?.status === 401) {
@@ -555,33 +516,32 @@ const RegistrationForm = ({
       } else if (error.response?.status === 500) {
         toast.error("Server error. Please try again later.");
       } else {
-        toast.error(
-          error.message || "Error adding template. Please try again."
-        );
+        toast.error(error.message || "Error adding template. Please try again.");
       }
-
-      // Don't close modal on error - user can retry
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Handler for receiving toggle states from ConfirmationDetails
   const handleToggleStatesChange = (toggleStates: ToggleStates) => {
     setConfirmationToggleStates(toggleStates);
-    console.log("Updated toggle states:", toggleStates);
   };
 
+  // Updated to pass eventId to parent
   const handleConfirmationNext = async () => {
     try {
       setIsLoading(true);
       await updateTheconfirmationDetails();
-      setTimeout(() => {
-        if (onNext) onNext();
-      }, 1000); // 300ms delay is enough
+      
+      // Pass the eventId to parent
+      if (effectiveEventId && onNext) {
+        console.log('RegistrationForm - Sending eventId to ExpressEvent:', effectiveEventId);
+        onNext(effectiveEventId);
+      } else {
+        toast.error('Cannot proceed without event ID');
+      }
     } catch (error) {
       console.error("Failed to update confirmation details:", error);
-      // Toast error is already handled in updateTheconfirmationDetails
     } finally {
       setIsLoading(false);
     }
@@ -606,7 +566,6 @@ const RegistrationForm = ({
     setIsLoadingFormData(true);
     try {
       const response = await getRegistrationFieldApi(id);
-      console.log("getFieldAPi response:", response.data);
       setFormData(response.data.data);
     } catch (error) {
       console.error("Failed to get registration field:", error);
@@ -625,10 +584,6 @@ const RegistrationForm = ({
         setInternalStep(1);
       }
     } else {
-      console.log(
-        "Proceeding to next main step with template data:",
-        selectedTemplateData
-      );
       if (onNext) onNext();
     }
   };
@@ -646,42 +601,18 @@ const RegistrationForm = ({
       throw new Error("Event ID not found");
     }
 
-    // Use actual toggle states from ConfirmationDetails component
-    formData.append(
-      `event[print_qr]`,
-      String(confirmationToggleStates.userQRCode)
-    );
-    formData.append(
-      `event[display_confirmation]`,
-      String(confirmationToggleStates.confirmationMsg)
-    );
-    formData.append(
-      `event[display_event_details]`,
-      String(confirmationToggleStates.eventDetails)
-    );
-    formData.append(
-      `event[display_location]`,
-      String(confirmationToggleStates.location)
-    );
-
-    console.log("Updating confirmation details with:", {
-      print_qr: confirmationToggleStates.userQRCode,
-      display_confirmation: confirmationToggleStates.confirmationMsg,
-      display_event_details: confirmationToggleStates.eventDetails,
-      display_location: confirmationToggleStates.location,
-    });
+    formData.append(`event[print_qr]`, String(confirmationToggleStates.userQRCode));
+    formData.append(`event[display_confirmation]`, String(confirmationToggleStates.confirmationMsg));
+    formData.append(`event[display_event_details]`, String(confirmationToggleStates.eventDetails));
+    formData.append(`event[display_location]`, String(confirmationToggleStates.location));
 
     try {
       const response = await updateEventById(id, formData);
-      console.log(
-        "Response of update api for qr, location, etc in confirmation details:",
-        response
-      );
       toast.success("Confirmation Details Updated Successfully");
     } catch (error) {
       console.log("Error in confirmation details:", error);
       toast.error("Error in Confirmation data");
-      throw error; // Re-throw to handle in calling function
+      throw error;
     }
   };
 
@@ -808,7 +739,7 @@ const RegistrationForm = ({
         <div className="mt-8">
           <ConfirmationDetails
             selectedTemplateData={selectedTemplateData}
-            onNext={handleConfirmationNext}
+            onNext={handleConfirmationNext} // This now passes eventId
             onPrevious={handleConfirmationPrevious}
             onToggleStatesChange={handleToggleStatesChange}
             eventId={effectiveEventId}
@@ -844,9 +775,7 @@ const RegistrationForm = ({
         </button>
 
         <button
-          onClick={
-            internalStep === 1 ? handleConfirmationNext : handleNextClick
-          }
+          onClick={internalStep === 1 ? handleConfirmationNext : handleNextClick}
           disabled={!confirmedTemplate || isLoading || isLoadingFormData}
           className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center
             ${

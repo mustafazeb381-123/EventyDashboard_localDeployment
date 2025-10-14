@@ -42,7 +42,7 @@ const Qa: React.FC = () => {
     },
   ];
 
-  const requests = [
+  const requestsData = [
     {
       id: 1,
       name: "Anonymous",
@@ -225,7 +225,7 @@ const Qa: React.FC = () => {
       {/* Requests Tab */}
       {activeTab === "requests" && (
         <div className="space-y-3">
-          {requests.map((r) => (
+          {requestsData.map((r) => (
             <div
               key={r.id}
               className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
@@ -237,9 +237,9 @@ const Qa: React.FC = () => {
                 </div>
 
                 <div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span className="font-medium text-gray-800">{r.name}</span>
-                    <span className="text-gray-400 text-xs">{r.time}</span>
+                  <div className="items-center gap-2 text-sm text-gray-600 mb-4">
+                    <p className="font-medium text-gray-800">{r.name}</p>
+                    <p className="text-gray-400 text-xs">{r.time}</p>
                   </div>
                   <p className="text-gray-700 mt-1 text-sm">{r.question}</p>
                 </div>

@@ -84,7 +84,6 @@ const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
 const CardFooter2: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   <svg width="100%" height="100%" viewBox="0 0 204 54" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
     <path d="M89.4059 9L0 54H54.5792L105 28.7802L89.4059 9Z" fill={color} />
-
     <path d="M204 0L106 54H204V0Z" fill={color} />
   </svg>
 );
@@ -103,22 +102,30 @@ interface Badge {
 
 interface BadgesProps {
   toggleStates: ToggleStates;
-  onNext: (badgeId: number) => void;
+  onNext: (eventId?: string | number) => void; // Updated to match ExpressEvent signature
   onPrevious: () => void;
   currentStep: number;
   totalSteps?: number;
+  eventId?: string;
 }
 
 const Badges: React.FC<BadgesProps> = ({
   onNext,
   onPrevious,
   currentStep,
+  eventId,
 }) => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [activeBadgeId, setActiveBadgeId] = useState<number | null>(null);
   const [previewBadge, setPreviewBadge] = useState<Badge | null>(null);
-  const eventId = localStorage.getItem("create_eventId");
+  
+  // Use eventId from props first, then fall back to localStorage
+  const effectiveEventId = eventId || localStorage.getItem("create_eventId");
+  
+  console.log('Badges - Received eventId:', eventId);
+  console.log('Badges - Effective eventId:', effectiveEventId);
+  
   const [event, setEvent] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -170,23 +177,21 @@ const Badges: React.FC<BadgesProps> = ({
 
   const closeModal = () => setOpenModal(false);
 
-  const handleBadgeApiSelection = async (
-    badgeId: number,
-    badgeName: string
-  ) => {
+  const handleBadgeApiSelection = async (badgeId: number, badgeName: string) => {
+    if (!effectiveEventId) {
+      throw new Error("Event ID not found");
+    }
+
     const data = {
       badge: {
         name: badgeName,
-        event_id: eventId,
+        event_id: effectiveEventId,
         default: true,
         badge_background: badgeId,
       },
     };
 
-    const response = await postBadgesApi(
-      data,
-      eventId ? parseInt(eventId, 10) : 0
-    );
+    const response = await postBadgesApi(data, parseInt(effectiveEventId, 10));
     return response;
   };
 
@@ -194,10 +199,7 @@ const Badges: React.FC<BadgesProps> = ({
     if (!selectedBadge) return toast.error("Please select a badge first!");
     setLoading(true);
     try {
-      const response = await handleBadgeApiSelection(
-        selectedBadge.id,
-        selectedBadge.name
-      );
+      const response = await handleBadgeApiSelection(selectedBadge.id, selectedBadge.name);
       toast.success("Badge template selected!");
       setActiveBadgeId(selectedBadge.id);
 
@@ -205,7 +207,14 @@ const Badges: React.FC<BadgesProps> = ({
       localStorage.setItem("active_badge_id", selectedBadge.id.toString());
 
       setTimeout(() => {
-        onNext(selectedBadge.id);
+        // FIX: Pass the eventId instead of badgeId to onNext
+        if (effectiveEventId && onNext) {
+          console.log('Badges - Sending eventId to ExpressEvent:', effectiveEventId);
+          onNext(effectiveEventId); // Pass eventId instead of badgeId
+        } else {
+          console.error('Badges - No eventId available to send');
+          onNext(); // Fallback without eventId
+        }
       }, 1000);
     } catch (error) {
       toast.error("Failed to select badge.");
@@ -217,9 +226,13 @@ const Badges: React.FC<BadgesProps> = ({
   // 🟢 Fetch event data + restore previously active badge
   useEffect(() => {
     (async () => {
-      if (!eventId) return;
+      if (!effectiveEventId) {
+        console.warn('Badges - No eventId available');
+        return;
+      }
+      
       try {
-        const response = await getEventbyId(eventId);
+        const response = await getEventbyId(effectiveEventId);
         const eventData = response?.data?.data;
         setEvent(eventData);
 
@@ -237,7 +250,7 @@ const Badges: React.FC<BadgesProps> = ({
         console.error("Failed to fetch event data:", error);
       }
     })();
-  }, [eventId]);
+  }, [effectiveEventId]);
 
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
@@ -254,33 +267,29 @@ const Badges: React.FC<BadgesProps> = ({
       {/* Badge Grid */}
       <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {badges.map((badge) => {
-          const isActive =
-            selectedBadge?.id === badge.id || activeBadgeId === badge.id;
+          const isActive = selectedBadge?.id === badge.id || activeBadgeId === badge.id;
           return (
             <div
               key={badge.id}
-              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${isActive
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-blue-500"
-                }`}
-              onClick={() =>
-                setSelectedBadge(
-                  selectedBadge?.id === badge.id ? null : badge
-                )
-              }
+              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
+                isActive
+                  ? "border-green-500 bg-green-50"
+                  : "border-gray-200 hover:border-blue-500"
+              }`}
+              onClick={() => setSelectedBadge(selectedBadge?.id === badge.id ? null : badge)}
             >
               {/* Badge Preview */}
               {badge.id === 1 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }} >
+                <div 
+                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}
+                >
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardHeader
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                     <div className="relative z-10 flex items-center gap-2">
                       {event?.attributes?.logo_url && (
@@ -310,25 +319,23 @@ const Badges: React.FC<BadgesProps> = ({
                     style={{ height: "15%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardFooter
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                 </div>
               )}
 
               {badge.id === 2 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}>
+                <div 
+                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}
+                >
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardHeader
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardHeader color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col justify-evenly items-center">
@@ -356,25 +363,23 @@ const Badges: React.FC<BadgesProps> = ({
                     style={{ height: "15%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardFooter
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardFooter color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                 </div>
               )}
 
               {badge.id === 3 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}>
+                <div 
+                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}
+                >
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardHeader2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardHeader2 color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col justify-center items-center">
@@ -392,25 +397,23 @@ const Badges: React.FC<BadgesProps> = ({
                     style={{ height: "15%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardFooter2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardFooter2 color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                 </div>
               )}
 
               {badge.id === 4 && (
-                <div className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}>
+                <div 
+                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+                  style={{ backgroundColor: event?.attributes?.secondary_color || "white" }}
+                >
                   <div
                     className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
                     style={{ height: "33%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardHeader2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardHeader2 color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                   <div className="flex flex-1 flex-col justify-evenly items-center">
@@ -438,9 +441,7 @@ const Badges: React.FC<BadgesProps> = ({
                     style={{ height: "15%" }}
                   >
                     <div className="absolute inset-0">
-                      <CardFooter2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
+                      <CardFooter2 color={event?.attributes?.primary_color || "#4D4D4D"} />
                     </div>
                   </div>
                 </div>
@@ -518,10 +519,11 @@ const Badges: React.FC<BadgesProps> = ({
         <button
           onClick={selectBadgeAndContinue}
           disabled={!selectedBadge || loading}
-          className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center ${selectedBadge && !loading
-            ? "bg-slate-800 hover:bg-slate-900"
-            : "bg-gray-400 cursor-not-allowed"
-            }`}
+          className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center ${
+            selectedBadge && !loading
+              ? "bg-slate-800 hover:bg-slate-900"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
         >
           {loading ? (
             <span className="flex items-center gap-2">

@@ -3,7 +3,6 @@ import { ChevronLeft, Check, MapPin, Info, QrCode } from "lucide-react";
 import { ToastContainer } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { getEventbyId } from "@/apis/apiHelpers";
-import { set } from "date-fns";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -16,13 +15,15 @@ interface ConfirmationDetailsProps {
   onToggleStatesChange?: (states: ToggleStates) => void;
   eventId?: string;
   selectedTemplateData?: any;
-  onNext?: () => void;
+  onNext?: (eventId: string) => void; // Updated to accept eventId
   onPrevious?: () => void;
 }
 
 const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   onToggleStatesChange,
   eventId: propEventId,
+  onNext,
+  onPrevious,
 }) => {
   // Get effective event ID
   const { id: routeId } = useParams();
@@ -31,9 +32,11 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
     (routeId as string | undefined) ||
     localStorage.getItem("create_eventId") ||
     undefined;
+    
+  console.log('ConfirmationDetails - event id:', effectiveEventId);
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
-    confirmationMsg: false, // Start with false, will be updated from API
+    confirmationMsg: false,
     userQRCode: false,
     location: false,
     eventDetails: false,
@@ -71,18 +74,9 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
         };
 
         setEventName(eventData.attributes?.name || "");
-
-        console.log(
-          "ConfirmationDetails - Setting toggle states:",
-          newToggleStates
-        );
         setToggleStates(newToggleStates);
       } catch (error) {
-        console.error(
-          "ConfirmationDetails - Failed to fetch event data:",
-          error
-        );
-        // Keep default false values on error
+        console.error("Failed to fetch event data:", error);
       } finally {
         setIsLoading(false);
       }
@@ -93,6 +87,15 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   const updateToggle = (key: keyof ToggleStates, value: boolean) => {
     setToggleStates((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleNextClick = () => {
+    if (effectiveEventId && onNext) {
+      console.log('ConfirmationDetails - Sending eventId to parent:', effectiveEventId);
+      onNext(effectiveEventId);
+    } else {
+      console.error('ConfirmationDetails - No eventId available to send');
+    }
   };
 
   const StatusCard = ({
@@ -326,6 +329,26 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Navigation Buttons */}
+      {/* <div className="flex justify-between items-center mt-8 px-8 py-4 border-t border-gray-200">
+        <button
+          onClick={onPrevious}
+          className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-800 transition-colors border border-gray-300 rounded-lg hover:bg-gray-50"
+        >
+          <ChevronLeft size={20} />
+          Previous
+        </button>
+        
+        <button
+          onClick={handleNextClick}
+          disabled={!effectiveEventId}
+          className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+        >
+          Next
+        </button>
+      </div> */}
+
       <ToastContainer />
     </div>
   );

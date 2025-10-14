@@ -84,7 +84,12 @@ const ExpressEvent = () => {
 
   // Accept eventId from child and update for next steps
   const handleNext = (nextEventId?: string | number) => {
-    if (nextEventId) setCreatedEventId(String(nextEventId));
+    console.log('ExpressEvent - Received eventId from child:', nextEventId);
+    if (nextEventId) {
+      setCreatedEventId(String(nextEventId));
+      // Also update localStorage to persist
+      localStorage.setItem("create_eventId", String(nextEventId));
+    }
     setCurrentStep((prev: number) => Math.min(prev + 1, steps.length - 1));
   };
 

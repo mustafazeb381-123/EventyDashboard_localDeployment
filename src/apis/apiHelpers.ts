@@ -128,9 +128,22 @@ export const createEventUser = (
 };
 
 
-export const createAreaSessionApi = (data: any, id: string) => {
+export const createSessionAreaApi = (data: any, id: string) => {
   return axiosInstance.post(`events/${id}/session_areas`, data);
 }
+
+export const getSessionAreaApi = (id: string) => {
+  return axiosInstance.get(`events/${id}/session_areas`);
+};
+
+export const deleteSessionAreaApi = (eventId: string, areaId: string) => {
+  return axiosInstance.delete(`events/${eventId}/session_areas/${areaId}`);
+};
+
+export const updateSessionAreaApi = (eventId: string, areaId: string, data: any) => {
+  return axiosInstance.patch(`events/${eventId}/session_areas/${areaId}`, data);
+}
+
 
 
 
