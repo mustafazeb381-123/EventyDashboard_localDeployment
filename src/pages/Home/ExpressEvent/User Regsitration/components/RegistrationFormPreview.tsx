@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createEventUser } from "@/apis/apiHelpers";
 import { toast } from "react-toastify";
 
@@ -25,7 +25,6 @@ interface RegistrationFormPreviewProps {
   tenantUuid?: string;
 }
 
-// Simple Registration Form Component (UI Only - No Toggle/Functionality)
 const RegistrationFormPreview = ({
   formFields = [],
   submitButtonText = "Register",
@@ -35,19 +34,33 @@ const RegistrationFormPreview = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
 
-  // ✅ Log tenant UUID
-  console.log("TENANT FORM:", tenantUuid);
+  // Refs for file inputs
+  const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
 
   const handleSubmit = async () => {
     try {
       setLoading(true);
 
       console.log("📤 Sending data:", { eventId, tenantUuid, formData });
-      const response = await createEventUser(eventId, formData, tenantUuid);
+
+      // Send image file if present
+      const response = await createEventUser(
+        eventId,
+        formData,
+        tenantUuid,
+        formData.image // Pass the File object
+      );
 
       toast.success("User registered successfully!");
       console.log("✅ User created:", response);
+
+      // Reset form data
       setFormData({});
+
+      // Clear all file inputs
+      Object.values(fileInputRefs.current).forEach((input) => {
+        if (input) input.value = "";
+      });
     } catch (error: any) {
       console.error("❌ Error creating event user:", error);
       toast.error(error.response?.data?.message || "Registration failed");
@@ -116,10 +129,13 @@ const RegistrationFormPreview = ({
             <input
               type="file"
               accept={field.accept}
+              ref={(el) => {
+                if (el) fileInputRefs.current[field.name] = el;
+              }}
               onChange={(e) => {
                 const files = e.target.files;
                 if (files && files[0]) {
-                  handleInputChange(field.name, files[0].name);
+                  handleInputChange(field.name, files[0]); // Store File object
                 }
               }}
               className="w-full text-sm border border-gray-300 rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
@@ -139,9 +155,7 @@ const RegistrationFormPreview = ({
               onChange={(e) => handleInputChange(field.name, e.target.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label className="text-sm text-gray-700">
-              {field.checkboxLabel}
-            </label>
+            <label className="text-sm text-gray-700">{field.checkboxLabel}</label>
           </div>
         );
 
@@ -172,7 +186,6 @@ const RegistrationFormPreview = ({
       >
         {loading ? "Submitting..." : submitButtonText}
       </button>
-
     </div>
   );
 };

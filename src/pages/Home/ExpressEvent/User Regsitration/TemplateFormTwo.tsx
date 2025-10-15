@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import Assets from "@/utils/Assets";
 import RegistrationFormPreview from "./components/RegistrationFormPreview";
 
@@ -9,6 +10,49 @@ const TemplateFormTwo = ({
   eventData: any;
   formFields: any[];
 }) => {
+
+  console.log('Event Attributes:', eventData?.attributes);
+  console.log('Event Form Data Attributes (RAW):', formFields);
+
+  // ✅ Get tenant_uuid from localStorage
+  const tenantUuid = localStorage.getItem("tenant_uuid");
+  console.log("TENANT TEMP:", tenantUuid);
+
+  // ✅ Fix the type for image fields and move them to the end
+  const mappedFormFields = useMemo(() => {
+    if (!Array.isArray(formFields) || formFields.length === 0) return [];
+
+    const mapped = formFields.map((field: any) => {
+      // ✅ Only rename if it's specifically the "company" field
+      const isCompanyField = field.name === "company";
+      const fieldName = isCompanyField ? "organization" : field.name;
+
+      const isImageField = fieldName === "image";
+
+      return {
+        ...field,
+        name: fieldName, // only changed for company → organization
+        type: isImageField ? "file" : field.type,
+        placeholder: isImageField ? "" : field.placeholder,
+        ...(isImageField && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)",
+        }),
+      };
+    });
+
+    // ✅ Move image fields to the end
+    const nonImageFields = mapped.filter(f => f.name !== "image");
+    const imageFields = mapped.filter(f => f.name === "image");
+
+    return [...nonImageFields, ...imageFields];
+  }, [formFields]);
+
+
+  console.log('Mapped Form Fields:', mappedFormFields);
+
   return (
     <div className="w-full p-2">
       {/* Event Cover Image - Full width banner */}
@@ -87,9 +131,12 @@ const TemplateFormTwo = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill name and contact information of attendees.
         </h3>
+
         <RegistrationFormPreview
-          formFields={formFields || []}
-          submitButtonText="Register"
+          formFields={mappedFormFields}
+          eventId={eventData?.attributes?.uuid}
+          tenantUuid={tenantUuid || undefined}
+          submitButtonText="Register Now"
         />
       </div>
     </div>

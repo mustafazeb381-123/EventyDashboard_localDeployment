@@ -139,16 +139,25 @@ function TemplateFormTwo({
         id: field.id,
         name: attr.field || attr.name || "field_" + field.id,
         type:
-          attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+          attr.field === "image"
+            ? "file"
+            : attr.validation_type === "email"
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
-        placeholder: `Enter ${attr.name || "value"}`,
+        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
         active: attr.active,
+        // Add file-specific properties for image fields
+        ...(attr.field === "image" && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)"
+        }),
       };
     });
   }, [data, apiFormData]);
@@ -282,15 +291,14 @@ function TemplateFormTwo({
       <div
         style={{
           width: "100%",
-          backgroundImage: ` url(${
-            formData.eventLogo
-              ? URL.createObjectURL(formData.eventLogo)
-              : eventData?.attributes?.registration_page_banner
+          backgroundImage: ` url(${formData.eventLogo
+            ? URL.createObjectURL(formData.eventLogo)
+            : eventData?.attributes?.registration_page_banner
               ? eventData.attributes.registration_page_banner
               : bannerUrl
-              ? bannerUrl
-              : Assets.images.uploadBackground2
-          })`,
+                ? bannerUrl
+                : Assets.images.uploadBackground2
+            })`,
         }}
         className="w-full  h-[400px] flex items-center justify-center border rounded-3xl
         bg-gradient-to-t from-white/50 to-transparent
