@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import { Check, ChevronLeft, X } from "lucide-react";
-import Assets from "@/utils/Assets";
+import React, { useState, useRef } from "react";
+import { Check, ChevronLeft, X, Pencil } from "lucide-react";
+import EmailEditor from "react-email-editor";
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
@@ -9,7 +9,59 @@ import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTempl
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
-// Modal Component to preview template
+// -------- Email Editor Modal --------
+const EmailEditorModal = ({ open, onClose }) => {
+  const emailEditorRef = useRef(null);
+
+  if (!open) return null;
+
+  const exportHtml = () => {
+    emailEditorRef.current?.editor?.exportHtml((data) => {
+      const { design, html } = data;
+      console.log("Exported HTML:", html);
+      console.log("Design JSON:", design);
+      alert("Template saved successfully!");
+      onClose();
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
+        <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Edit Email Template
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-200"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="flex-1">
+          <EmailEditor
+            ref={emailEditorRef}
+            minHeight="100%"
+            appearance={{ theme: "dark" }}
+          />
+        </div>
+
+        <div className="p-3 border-t flex justify-end bg-gray-50">
+          <button
+            onClick={exportHtml}
+            className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium"
+          >
+            Save Template
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// -------- Template Preview Modal --------
 const TemplateModal = ({ template, onClose, onSelect }) => {
   if (!template) return null;
 
@@ -21,23 +73,11 @@ const TemplateModal = ({ template, onClose, onSelect }) => {
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Close modal"
           >
             <X size={20} className="text-gray-500" />
           </button>
         </div>
-        <div className="mb-6">
-          {template.component}
-          {/* <img
-            src={template.img}
-            alt={template.title}
-            className="w-full rounded-lg mb-4 shadow-sm"
-            loading="lazy"
-          /> */}
-          <p className="text-gray-600">
-            {template.description || "Preview of template content..."}
-          </p>
-        </div>
+        <div className="mb-6">{template.component}</div>
         <button
           onClick={() => onSelect(template.id)}
           className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors font-medium"
@@ -49,66 +89,36 @@ const TemplateModal = ({ template, onClose, onSelect }) => {
   );
 };
 
-// Main Email Confirmation Component
-const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
+// -------- Main Component --------
+const EmailConfirmation = ({ onNext }) => {
   const flows = [
     {
       id: "thanks",
       label: "Thanks Email",
       templates: [
-        {
-          id: "tpl1",
-          title: "Thanks Template 1",
-          component: <ThanksTemplateOne />,
-        },
-        {
-          id: "tpl2",
-          title: "Thanks Template 2",
-          component: <ThanksTemplateTwo />,
-        },
+        { id: "tpl1", title: "Thanks Template 1", component: <ThanksTemplateOne /> },
+        { id: "tpl2", title: "Thanks Template 2", component: <ThanksTemplateTwo /> },
       ],
     },
     {
       id: "confirmation",
       label: "Confirmation Email",
-      templates: [
-        {
-          id: "tpl3",
-          title: "Confirmation Template 1",
-          component: <ConfirmationTemplateOne />,
-        },
-      ],
+      templates: [{ id: "tpl3", title: "Confirmation Template 1", component: <ConfirmationTemplateOne /> }],
     },
     {
       id: "reminder",
       label: "Reminder Email",
       templates: [
-        {
-          id: "tpl5",
-          title: "Reminder Template 1",
-          component: <ReminderTemplateOne />,
-        },
-        {
-          id: "tpl6",
-          title: "Reminder Template 2",
-          component: <ReminderTemplateTwo />,
-        },
+        { id: "tpl5", title: "Reminder Template 1", component: <ReminderTemplateOne /> },
+        { id: "tpl6", title: "Reminder Template 2", component: <ReminderTemplateTwo /> },
       ],
     },
     {
       id: "rejection",
       label: "Rejection Email",
       templates: [
-        {
-          id: "tpl7",
-          title: "Rejection Template 1",
-          component: <RejectionTemplateOne />,
-        },
-        {
-          id: "tpl8",
-          title: "Rejection Template 2",
-          component: <RejectionTemplateTwo />,
-        },
+        { id: "tpl7", title: "Rejection Template 1", component: <RejectionTemplateOne /> },
+        { id: "tpl8", title: "Rejection Template 2", component: <RejectionTemplateTwo /> },
       ],
     },
   ];
@@ -116,6 +126,7 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState({});
   const [modalTemplate, setModalTemplate] = useState(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   const currentFlow = flows[currentFlowIndex];
 
@@ -123,10 +134,7 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   const handleCloseModal = () => setModalTemplate(null);
 
   const handleSelectTemplate = (templateId) => {
-    setSelectedTemplates({
-      ...selectedTemplates,
-      [currentFlow.id]: templateId,
-    });
+    setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: templateId });
     setModalTemplate(null);
   };
 
@@ -137,11 +145,8 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
     }
     if (currentFlowIndex < flows.length - 1) {
       setCurrentFlowIndex(currentFlowIndex + 1);
-    } else {
-      if (onNext) onNext();
-      // alert(
-      //   "All templates selected:\n" + JSON.stringify(selectedTemplates, null, 2)
-      // );
+    } else if (onNext) {
+      onNext();
     }
   };
 
@@ -150,14 +155,13 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
   };
 
   const handleStepClick = (index) => {
-    // Allow navigation to completed steps or current step
     if (index <= currentFlowIndex || selectedTemplates[flows[index].id]) {
       setCurrentFlowIndex(index);
     }
   };
 
   return (
-    <div className="w-full bg-white p-6 rounded-2xl shadow-sm">
+    <div className="w-full bg-white p-6 rounded-2xl shadow-sm relative">
       {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
@@ -167,52 +171,60 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           </h2>
         </div>
 
-        {/* Progress Stepper */}
-        <div className="flex items-center gap-2">
-          {flows.map((flow, index) => {
-            const isCompleted = selectedTemplates[flow.id];
-            const isActive = index === currentFlowIndex;
+        {/* 🔧 Edit Template Button (top-right) */}
+        {selectedTemplates[currentFlow.id] && (
+          <button
+            onClick={() => setIsEditorOpen(true)}
+            className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg transition"
+          >
+            <Pencil size={16} />
+            Edit Template
+          </button>
+        )}
+      </div>
 
-            return (
-              <div key={flow.id} className="flex items-center">
-                {/* Step Circle */}
-                <button
-                  onClick={() => handleStepClick(index)}
-                  disabled={index > currentFlowIndex && !isCompleted}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                    isCompleted
-                      ? "bg-pink-500 border-pink-500 cursor-pointer"
-                      : isActive
-                      ? "border-pink-500 bg-white cursor-pointer"
-                      : "border-gray-300 bg-white cursor-not-allowed"
-                  }`}
-                  aria-label={`Step ${index + 1}: ${flow.label}`}
-                >
-                  {isCompleted ? (
-                    <Check size={16} className="text-white" />
-                  ) : (
-                    <span
-                      className={`text-sm font-medium ${
-                        isActive ? "text-pink-500" : "text-gray-400"
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
-                  )}
-                </button>
+      {/* Progress Stepper */}
+      <div className="flex items-center justify-center mb-8">
+        {flows.map((flow, index) => {
+          const isCompleted = selectedTemplates[flow.id];
+          const isActive = index === currentFlowIndex;
 
-                {/* Connector Line */}
-                {index !== flows.length - 1 && (
-                  <div
-                    className={`w-8 h-0.5 mx-1 ${
-                      selectedTemplates[flow.id] ? "bg-pink-500" : "bg-gray-300"
+          return (
+            <div key={flow.id} className="flex items-center">
+              <button
+                onClick={() => handleStepClick(index)}
+                disabled={index > currentFlowIndex && !isCompleted}
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                  isCompleted
+                    ? "bg-pink-500 border-pink-500 cursor-pointer"
+                    : isActive
+                    ? "border-pink-500 bg-white cursor-pointer"
+                    : "border-gray-300 bg-white cursor-not-allowed"
+                }`}
+              >
+                {isCompleted ? (
+                  <Check size={16} className="text-white" />
+                ) : (
+                  <span
+                    className={`text-sm font-medium ${
+                      isActive ? "text-pink-500" : "text-gray-400"
                     }`}
-                  />
+                  >
+                    {index + 1}
+                  </span>
                 )}
-              </div>
-            );
-          })}
-        </div>
+              </button>
+
+              {index !== flows.length - 1 && (
+                <div
+                  className={`w-8 h-0.5 mx-1 ${
+                    selectedTemplates[flow.id] ? "bg-pink-500" : "bg-gray-300"
+                  }`}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Template Grid */}
@@ -229,22 +241,10 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           >
             <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50">
               <div className="transform scale-20 top-5 pointer-events-none">
-                <div className="w-[1800px]  ">
-                  {" "}
-                  {/* or whatever your form's real width is */}
-                  {tpl.component}
-                </div>
+                <div className="w-[1800px]">{tpl.component}</div>
               </div>
             </div>
-            {/* <img
-              src={tpl.img}
-              alt={tpl.title}
-              className="w-full h-48 object-cover rounded-lg mb-3"
-              loading="lazy"
-            /> */}
-            {/* <h3 className="text-base font-medium text-gray-900 mb-1">
-              {tpl.title}
-            </h3> */}
+
             {selectedTemplates[currentFlow.id] === tpl.id && (
               <div className="flex items-center text-pink-500 mt-2">
                 <Check size={16} className="mr-1" />
@@ -255,7 +255,7 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
         ))}
       </div>
 
-      {/* Modal */}
+      {/* Modals */}
       {modalTemplate && (
         <TemplateModal
           template={modalTemplate}
@@ -263,6 +263,7 @@ const EmailConfirmation = ({ onNext, onPrevious, currentStep, totalSteps }) => {
           onSelect={handleSelectTemplate}
         />
       )}
+      <EmailEditorModal open={isEditorOpen} onClose={() => setIsEditorOpen(false)} />
 
       {/* Navigation */}
       <div className="flex justify-between items-center pt-6 border-t border-gray-100">
