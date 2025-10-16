@@ -211,6 +211,18 @@ const SideBar = ({
         ? `/committees?eventId=${currentEventId}`
         : "/committees",
     },
+    // {
+    //   path: "TicketManagement",
+    //   element: <TicketManagement />,
+    // },
+    {
+      icon: Printer,
+      label: "Ticket Management",
+      path: currentEventId
+        ? `/TicketManagement?eventId=${currentEventId}`
+        : "/TicketManagement",
+    },
+    
   ];
 
   const handleLogout = async () => {

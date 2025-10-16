@@ -19,6 +19,7 @@ import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRe
 import Poll from "@/pages/Home/EventDetails/Poll/Poll";
 import PollDetails from "@/pages/Home/EventDetails/PollDetails/PollDetails";
 import Qa from "@/pages/Home/EventDetails/QA/QA";
+import TicketManagement from "@/pages/Home/EventDetails/TicketManagement/TicketManagement";
 
 const router = createBrowserRouter([
   {
@@ -61,6 +62,10 @@ const router = createBrowserRouter([
             element: <Users />,
           },
           {
+            path: "TicketManagement",
+            element: <TicketManagement />,
+          },
+          {
             path: "communication",
             children: [
               {
@@ -77,6 +82,7 @@ const router = createBrowserRouter([
               },
             ],
           },
+         
           {
             path: "express-event/:id?",
             element: <ExpressEvent />,

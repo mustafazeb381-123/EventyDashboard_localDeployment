@@ -248,11 +248,11 @@ const Qa: React.FC = () => {
               <div className="flex gap-2">
                 <Button
                   variant="destructive"
-                  className="text-sm px-4 py-2 bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 flex items-center gap-1"
+                  className="text-sm px-4 py-2 text-red-600 border border-red-200 hover:bg-red-100 flex items-center gap-1"
                 >
                   <X className="w-4 h-4" /> Reject
                 </Button>
-                <Button className="bg-green-50 hover:bg-green-100 text-green-600 border border-green-200 text-sm px-4 py-2 flex items-center gap-1">
+                <Button className="hover:bg-green-100 text-green-600 border border-green-200 text-sm px-4 py-2 flex items-center gap-1">
                   <Check className="w-4 h-4" /> Accept
                 </Button>
               </div>

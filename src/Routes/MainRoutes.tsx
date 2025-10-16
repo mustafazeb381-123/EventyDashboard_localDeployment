@@ -35,6 +35,7 @@ function MainRoutes() {
     "/committees",
     "/communication/Poll",
     "/communication/QA",
+    "/TicketManagement",
   ];
 
   // --- FIXED: use startsWith() instead of includes() ---

@@ -83,6 +83,8 @@ import invitationRegistration from '../assets/icons/invitation_registration.png'
 import pendingUsers from '../assets/icons/pending_users.png'
 import todayRegistration from '../assets/icons/today_registration.png'
 import totalRegistration from '../assets/icons/total_registration.png'
+import totalTicket from '../assets/icons/total_ticket.png';
+import totalSold from '../assets/icons/total_sold.png'
 
 // Images object
 export const images = {
@@ -164,7 +166,10 @@ export const icons = {
   invitationRegistration,
   pendingUsers,
   todayRegistration,
-  totalRegistration
+  totalRegistration,
+  totalTicket,
+  totalSold
+
 } as const;
 
 // Optional temp object
