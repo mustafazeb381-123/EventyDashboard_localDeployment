@@ -43,13 +43,22 @@ const RegistrationFormPreview = ({
 
       console.log("📤 Sending data:", { eventId, tenantUuid, formData });
 
-      // Send image file if present
-      const response = await createEventUser(
-        eventId,
-        formData,
-        tenantUuid,
-        formData.image // Pass the File object
-      );
+      const formDataToSend = new FormData();
+
+      // Append tenant_uuid if provided
+      if (tenantUuid) formDataToSend.append("tenant_uuid", tenantUuid);
+
+      // Append user data
+      formDataToSend.append("event_user[name]", formData.name);
+      formDataToSend.append("event_user[phone_number]", formData.phone_number);
+      formDataToSend.append("event_user[email]", formData.email);
+      if (formData.position) formDataToSend.append("event_user[position]", formData.position);
+      if (formData.organization) formDataToSend.append("event_user[organization]", formData.organization);
+
+      // Append image if provided
+      if (formData.image) formDataToSend.append("event_user[image]", formData.image);
+
+      const response = await createEventUser(eventId, formDataToSend);
 
       toast.success("User registered successfully!");
       console.log("✅ User created:", response);
