@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Check, ChevronLeft, X, Pencil } from "lucide-react";
+import { Check, ChevronLeft, X, Pencil, Plus } from "lucide-react";
 import EmailEditor from "react-email-editor";
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
@@ -162,90 +162,53 @@ const TemplateThumbnail = ({ template }: any) => {
 
 // -------- Main Component --------
 const EmailConfirmation = ({ onNext }: any) => {
-  // Initialize templates as part of state so we can update design/html per-template
-  const [flows, setFlows] = useState<any[]>([
-    {
-      id: "thanks",
-      label: "Thanks Email",
-      templates: [
-        {
-          id: "tpl1",
-          title: "Thanks Template 1",
-          component: <ThanksTemplateOne />,
-          design: null, // design JSON (if user edits)
-          html: null, // exported html (if user edits)
-        },
-        {
-          id: "tpl2",
-          title: "Thanks Template 2",
-          component: <ThanksTemplateTwo />,
-          design: null,
-          html: null,
-        },
-      ],
-    },
-    {
-      id: "confirmation",
-      label: "Confirmation Email",
-      templates: [
-        {
-          id: "tpl3",
-          title: "Confirmation Template 1",
-          component: <ConfirmationTemplateOne />,
-          design: null,
-          html: null,
-        },
-      ],
-    },
-    {
-      id: "reminder",
-      label: "Reminder Email",
-      templates: [
-        {
-          id: "tpl5",
-          title: "Reminder Template 1",
-          component: <ReminderTemplateOne />,
-          design: null,
-          html: null,
-        },
-        {
-          id: "tpl6",
-          title: "Reminder Template 2",
-          component: <ReminderTemplateTwo />,
-          design: null,
-          html: null,
-        },
-      ],
-    },
-    {
-      id: "rejection",
-      label: "Rejection Email",
-      templates: [
-        {
-          id: "tpl7",
-          title: "Rejection Template 1",
-          component: <RejectionTemplateOne />,
-          design: null,
-          html: null,
-        },
-        {
-          id: "tpl8",
-          title: "Rejection Template 2",
-          component: <RejectionTemplateTwo />,
-          design: null,
-          html: null,
-        },
-      ],
-    },
-  ]);
+  // Initialize templates from localStorage or with default structure
+  const [flows, setFlows] = useState<any[]>(() => {
+    const savedFlows = localStorage.getItem('emailTemplates');
+    if (savedFlows) {
+      return JSON.parse(savedFlows);
+    }
+    
+    // Default structure for first-time users
+    return [
+      {
+        id: "thanks",
+        label: "Thanks Email",
+        templates: [
+          // Empty for first-time users - will show "Create New Template"
+        ],
+      },
+      {
+        id: "confirmation",
+        label: "Confirmation Email",
+        templates: [],
+      },
+      {
+        id: "reminder",
+        label: "Reminder Email",
+        templates: [],
+      },
+      {
+        id: "rejection",
+        label: "Rejection Email",
+        templates: [],
+      },
+    ];
+  });
 
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
   const [modalTemplate, setModalTemplate] = useState<any | null>(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
+  const [isCreatingNew, setIsCreatingNew] = useState(false);
 
   const currentFlow = flows[currentFlowIndex];
+
+  // Save to localStorage whenever flows change
+  useEffect(() => {
+    localStorage.setItem('emailTemplates', JSON.stringify(flows));
+  }, [flows]);
 
   // Open template preview modal
   const handleOpenModal = (template: any) => setModalTemplate(template);
@@ -264,8 +227,47 @@ const EmailConfirmation = ({ onNext }: any) => {
     setIsEditorOpen(true); // open editor
   };
 
-  // Callback when editor saves design & html
+  // Handle creating a new template
+  const handleCreateNewTemplate = () => {
+    setIsCreatingNew(true);
+    setIsEditorOpen(true);
+  };
+
+  // Callback when editor saves design & html for a NEW template
+  const handleSaveNewTemplate = (design: any, html: string) => {
+    if (!isCreatingNew) return;
+
+    const newTemplate = {
+      id: `custom-${Date.now()}`,
+      title: `Custom ${currentFlow.label} Template`,
+      component: null,
+      design,
+      html,
+    };
+
+    // Update flows with the new template
+    setFlows((prevFlows) =>
+      prevFlows.map((flow, index) =>
+        index === currentFlowIndex
+          ? { ...flow, templates: [...flow.templates, newTemplate] }
+          : flow
+      )
+    );
+
+    // Auto-select the newly created template
+    setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });
+
+    setIsCreatingNew(false);
+    setIsEditorOpen(false);
+  };
+
+  // Callback when editor saves design & html for an EXISTING template
   const handleSaveFromEditor = (design: any, html: string) => {
+    if (isCreatingNew) {
+      handleSaveNewTemplate(design, html);
+      return;
+    }
+
     if (!editingTemplate) {
       console.warn("No editing template set when saving.");
       return;
@@ -357,6 +359,19 @@ const EmailConfirmation = ({ onNext }: any) => {
 
       {/* Template Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Create New Template Card - Always show first */}
+        <div
+          onClick={handleCreateNewTemplate}
+          className="border-2 border-dashed border-gray-300 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-400 hover:bg-pink-50 flex flex-col items-center justify-center min-h-[200px]"
+        >
+          <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-3">
+            <Plus className="text-pink-500" size={24} />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-1">Create New Template</h3>
+          <p className="text-sm text-gray-500 text-center">Design a custom email template from scratch</p>
+        </div>
+
+        {/* Existing Templates */}
         {currentFlow.templates.map((tpl: any) => (
           <div
             key={tpl.id}
@@ -369,6 +384,9 @@ const EmailConfirmation = ({ onNext }: any) => {
           >
             {/* Template Thumbnail */}
             <TemplateThumbnail template={tpl} />
+            <div className="mt-3">
+              <h3 className="font-medium text-gray-900">{tpl.title}</h3>
+            </div>
           </div>
         ))}
       </div>
@@ -389,6 +407,7 @@ const EmailConfirmation = ({ onNext }: any) => {
         onClose={() => {
           setIsEditorOpen(false);
           setEditingTemplate(null);
+          setIsCreatingNew(false);
         }}
         onSave={(design: any, html: string) => {
           handleSaveFromEditor(design, html);
@@ -425,4 +444,3 @@ const EmailConfirmation = ({ onNext }: any) => {
 };
 
 export default EmailConfirmation;
-
