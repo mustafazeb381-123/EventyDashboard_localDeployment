@@ -112,25 +112,8 @@ export const getBadgeType = (id: string | number) => {
 // Create a new user for a specific event, with optional tenant UUID and image upload
 export const createEventUser = (
   eventId: string,
-  userData: any,
-  tenantUuid?: string,
-  imageFile?: File // optional image
+  formData: FormData
 ) => {
-  const formData = new FormData();
-
-  // Append tenant_uuid if provided
-  if (tenantUuid) formData.append("tenant_uuid", tenantUuid);
-
-  // Append user data
-  formData.append("event_user[name]", userData.name);
-  formData.append("event_user[phone_number]", userData.phone_number);
-  formData.append("event_user[email]", userData.email);
-  if (userData.position) formData.append("event_user[position]", userData.position);
-  if (userData.organization) formData.append("event_user[organization]", userData.organization);
-
-  // Append image if provided
-  if (imageFile) formData.append("event_user[image]", imageFile);
-
   return axiosInstance.post(`/events/${eventId}/event_users`, formData, {
     headers: {
       "Content-Type": "multipart/form-data",
@@ -149,9 +132,44 @@ export const deleteEventUser = (eventId: string, userId: string | number) => {
 };
 
 // Update a specific user's details for an event
-export const updateEventUser = (eventId: string, userId: string, data: any) => {
-  return axiosInstance.patch(`/events/${eventId}/event_users/${userId}`, {
-    event_user: data,
+export const updateEventUser = (eventId: string, userId: string, formData: FormData) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/event_users/${userId}`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+};
+
+
+// ✅ Download Excel template for event users
+export const downloadEventUserTemplate = (eventId: string) => {
+  return axiosInstance.get(`/events/${eventId}/event_users/download_template`, {
+    responseType: "blob", // very important for binary files
+  });
+};
+
+export const uploadEventUserTemplate = (eventId: string, file: File) => {
+  const formData = new FormData();
+  formData.append("file", file); // 'file' is what the backend expects
+
+  return axiosInstance.post(
+    `/events/${eventId}/event_users/import`,
+    formData,
+    {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
+};
+
+export const sendCredentials = (eventId: string, userIds: number[] | string[]) => {
+  return axiosInstance.post(`/events/${eventId}/event_users/send_credentials`, {
+    user_ids: userIds,
   });
 };
 
@@ -175,6 +193,7 @@ export const deleteSessionAreaApi = (eventId: string, areaId: string) => {
 export const updateSessionAreaApi = (eventId: string, areaId: string, data: any) => {
   return axiosInstance.patch(`events/${eventId}/session_areas/${areaId}`, data);
 }
+
 
 
 
