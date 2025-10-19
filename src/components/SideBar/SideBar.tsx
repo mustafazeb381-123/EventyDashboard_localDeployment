@@ -13,6 +13,8 @@ import {
   NotepadText,
   Printer,
   UserCircle,
+  MessagesSquare 
+
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -159,6 +161,30 @@ const SideBar = ({
       ],
     },
     {
+      icon: MessagesSquare,
+      label: "Communications",
+      path: currentEventId
+        ? `/communication?eventId=${currentEventId}`
+        : "/communication",
+      submenu: [
+        {
+          label: "Poll",
+          icon: Users,
+          path: currentEventId
+            ? `/communication/Poll?eventId=${currentEventId}`
+            : "/communication/Poll",
+        },
+        {
+          label: "Q & A",
+          icon: UserPlus,
+          path: currentEventId
+            ? `/communication/QA?eventId=${currentEventId}`
+            : "/communication/QA",
+        },
+      ],
+    },
+    
+    {
       icon: CheckCircle,
       label: "Attendees",
       submenu: [
@@ -185,6 +211,18 @@ const SideBar = ({
         ? `/committees?eventId=${currentEventId}`
         : "/committees",
     },
+    // {
+    //   path: "TicketManagement",
+    //   element: <TicketManagement />,
+    // },
+    {
+      icon: Printer,
+      label: "Ticket Management",
+      path: currentEventId
+        ? `/TicketManagement?eventId=${currentEventId}`
+        : "/TicketManagement",
+    },
+    
   ];
 
   const handleLogout = async () => {

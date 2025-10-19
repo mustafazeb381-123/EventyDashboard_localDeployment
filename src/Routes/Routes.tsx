@@ -16,6 +16,10 @@ import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
 import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 import Users from "@/pages/Home/EventDetails/Invitation/Users";
 import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
+import Poll from "@/pages/Home/EventDetails/Poll/Poll";
+import PollDetails from "@/pages/Home/EventDetails/PollDetails/PollDetails";
+import Qa from "@/pages/Home/EventDetails/QA/QA";
+import TicketManagement from "@/pages/Home/EventDetails/TicketManagement/TicketManagement";
 
 const router = createBrowserRouter([
   {
@@ -30,23 +34,23 @@ const router = createBrowserRouter([
             element: <Home />,
           },
           {
-            path: "home/:id", // This path is now relative to "/" -> "/express-event"
+            path: "home/:id",
             element: <HomeSummary />,
           },
           {
-            path: "regesterd_user", // This path is now relative to "/" -> "/express-event"
+            path: "regesterd_user",
             element: <RegisterdUser />,
           },
           {
-            path: "agenda", // This path is now relative to "/" -> "/express-event"
+            path: "agenda",
             element: <Agenda />,
           },
           {
-            path: "galleries", // This path is now relative to "/" -> "/express-event"
+            path: "galleries",
             element: <Galleries />,
           },
           {
-            path: "print_badges", // This path is now relative to "/" -> "/express-event"
+            path: "print_badges",
             element: <PrintBadges />,
           },
           {
@@ -54,15 +58,37 @@ const router = createBrowserRouter([
             element: <UserRegistration />,
           },
           {
-            path: "invitation/user", // This path is now relative to "/" -> "/express-event"
+            path: "invitation/user",
             element: <Users />,
           },
           {
-            path: "express-event/:id?", // This path is now relative to "/" -> "/express-event" with optional ID parameter
+            path: "TicketManagement",
+            element: <TicketManagement />,
+          },
+          {
+            path: "communication",
+            children: [
+              {
+                path: "poll",
+                element: <Poll />,
+              },
+              {
+                path: "QA",
+                element: <Qa />,
+              },
+              {
+                path: "poll/:id", 
+                element: <PollDetails />,
+              },
+            ],
+          },
+         
+          {
+            path: "express-event/:id?",
             element: <ExpressEvent />,
           },
           {
-            path: "about", // This path is now relative to "/" -> "/about"
+            path: "about",
             element: <div>About Page</div>,
           },
           {

@@ -8,19 +8,19 @@ function MainRoutes() {
   const location = useLocation();
   const params = useParams();
 
-  // Determine the current page type
+  // --- Identify route contexts ---
   const isHomePage = location.pathname === "/";
   const isEventDetailsPage =
     location.pathname.startsWith("/home/") && Boolean(params.id);
   const isExpressEventEditPage =
     location.pathname.startsWith("/express-event/") && Boolean(params.id);
 
-  // Check if we're on an event-related page (with eventId in query params)
+  // --- Check if we have eventId (param or query) ---
   const urlParams = new URLSearchParams(location.search);
   const eventIdFromQuery = urlParams.get("eventId");
   const isEventRelatedPage = Boolean(eventIdFromQuery) || Boolean(params.id);
 
-  // Event-related pages that should have expanded sidebar
+  // --- Event-related paths that should expand sidebar ---
   const eventRelatedPaths = [
     "/regesterd_user",
     "/agenda",
@@ -33,50 +33,51 @@ function MainRoutes() {
     "/attendees/check-in",
     "/attendees/check-out",
     "/committees",
+    "/communication/Poll",
+    "/communication/QA",
+    "/TicketManagement",
   ];
-  const isEventContextPage =
-    eventRelatedPaths.includes(location.pathname) && isEventRelatedPage;
 
-  // Determine sidebar state based on current page
+  // --- FIXED: use startsWith() instead of includes() ---
+  const isEventContextPage =
+    eventRelatedPaths.some((path) => location.pathname.startsWith(path)) &&
+    isEventRelatedPage;
+
+  // --- Determine sidebar default state ---
   const getSidebarState = () => {
     if (isHomePage) {
-      return false; // Minimized on home screen
+      return false; // collapsed on home page
     } else if (
       isEventDetailsPage ||
       isExpressEventEditPage ||
       isEventContextPage
     ) {
-      return true; // Expanded on event-related pages
+      return true; // expanded on event-related pages
     }
-    return false; // Default to minimized for other pages
+    return false; // default collapsed
   };
 
   const [isExpanded, setIsExpanded] = useState(getSidebarState());
   const [isRTL, setIsRTL] = useState(false);
 
-  // Update sidebar state when route changes
+  // --- Allow toggle when in event context or edit/detail ---
+  const canToggleSidebar =
+    isExpressEventEditPage || isEventDetailsPage || isEventContextPage;
+
+  // --- Update sidebar when route changes ---
   useEffect(() => {
     const newState = getSidebarState();
-    console.log("Route changed:", {
+    console.log("Sidebar route update:", {
       pathname: location.pathname,
       eventId: params.id,
       eventIdFromQuery,
-      isHomePage,
-      isEventDetailsPage,
-      isExpressEventEditPage,
       isEventContextPage,
       newSidebarState: newState,
-      canToggle: canToggleSidebar,
     });
     setIsExpanded(newState);
   }, [location.pathname, params.id]);
 
-  // Determine if expand/minimize functionality should be available
-  // Allow toggle when in any event context (editing event or viewing event-related pages)
-  const canToggleSidebar =
-    isExpressEventEditPage || isEventDetailsPage || isEventContextPage;
-
-  // Detect RTL direction and listen for changes
+  // --- Handle RTL (right-to-left) direction dynamically ---
   useEffect(() => {
     const checkRTL = () => {
       const dir =
@@ -87,23 +88,19 @@ function MainRoutes() {
 
     checkRTL();
 
-    const observer = new MutationObserver(() => {
-      checkRTL();
-    });
-
+    const observer = new MutationObserver(() => checkRTL());
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["dir"],
     });
 
-    return () => {
-      observer.disconnect();
-    };
+    return () => observer.disconnect();
   }, []);
 
+  // --- Layout ---
   return (
     <div className="min-h-screen bg-gray-50/30">
-      {/* Pass states as props */}
+      {/* Sidebar */}
       <SideBar
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
@@ -111,23 +108,26 @@ function MainRoutes() {
         canToggle={canToggleSidebar}
         currentEventId={params.id || eventIdFromQuery || undefined}
       />
+
+      {/* Header */}
       <Header isExpanded={isExpanded} />
 
-      {/* Main content with dynamic margin based on isRTL */}
+      {/* Main content */}
       <main
         className={`relative bg-[#F7FAFF] p-4 h-full pt-20 transition-all duration-300 ease-in-out ${
           isRTL
             ? isExpanded
               ? "mr-[280px]"
-              : "mr-[80px]" // Use margin-right for RTL
+              : "mr-[80px]"
             : isExpanded
             ? "ml-[280px]"
-            : "ml-[80px]" // Use margin-left for LTR
+            : "ml-[80px]"
         }`}
       >
         <Outlet />
       </main>
 
+      {/* Footer */}
       <Footer />
     </div>
   );

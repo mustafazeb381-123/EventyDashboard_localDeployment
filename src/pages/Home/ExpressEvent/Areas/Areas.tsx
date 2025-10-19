@@ -1,5 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Edit, Trash2, Plus } from "lucide-react";
+import { createSessionAreaApi, getSessionAreaApi, deleteSessionAreaApi, updateSessionAreaApi } from "@/apis/apiHelpers";
+import { Area } from "recharts";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export type Area = {
   id: string;
@@ -9,32 +13,16 @@ export type Area = {
   guestNumbers: number;
 };
 
-const initialData: Area[] = [
-  {
-    id: "area-01",
-    name: "Area 01",
-    location: "Location here",
-    type: "Type 01",
-    guestNumbers: 50,
-  },
-  {
-    id: "area-02",
-    name: "Area 02",
-    location: "Location here",
-    type: "Type 01",
-    guestNumbers: 75,
-  },
-  {
-    id: "area-03",
-    name: "Area 03",
-    location: "Location here",
-    type: "Type 01",
-    guestNumbers: 100,
-  },
-];
+export type Badge = {
+  id: string;
+  attributes: {
+    name: string;
+    badge_type: string;
+  };
+};
 
 export default function Areas({}) {
-  const [data, setData] = useState<Area[]>(initialData);
+  const [data, setData] = useState<Area[]>([]);
   const [editingRow, setEditingRow] = useState<string | null>(null);
   const [editData, setEditData] = useState<Area | null>(null);
   const [newArea, setNewArea] = useState({
@@ -46,15 +34,229 @@ export default function Areas({}) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [validationErrors, setValidationErrors] = useState({
+    name: "",
+    location: "",
+    type: "",
+    guestNumbers: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState<string | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeLoading, setBadgeLoading] = useState(false);
 
-  const handleDelete = (id: string) => {
+  const eventId = localStorage.getItem("create_eventId");
+  console.log('event id----------+++++-----------------', eventId)
+
+  const fetchBadgeApi = async () => {
+    if (!eventId) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+
+    try {
+      setBadgeLoading(true);
+      console.log("Fetching badges for event ID:", eventId);
+
+      const response = await fetch(
+        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/badges`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("Badges API Response:", response);
+
+      if (!response.ok) {
+        console.error("API Error:", response);
+        const errorText = await response.text();
+        console.log("Error response:", errorText);
+        return;
+      }
+
+      const result = await response.json();
+      console.log("✅ Badges fetched successfully:", result);
+      setBadges(result?.data || []);
+    } catch (error) {
+      console.error("❌ Fetch error:", error);
+    } finally {
+      setBadgeLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (eventId) {
+      fetchBadgeApi();
+    }
+  }, [eventId]);
+  
+  // Fetch session areas on component mount
+  useEffect(() => {
+    if (eventId) {
+      console.log('event id---', eventId)
+      fetchSessionAreas();
+    }
+  }, [eventId]);
+
+  const fetchSessionAreas = async () => {
+    if (!eventId) {
+      console.log("No event ID found");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await getSessionAreaApi(eventId);
+      console.log("GET API Response:", response);
+
+      if (response?.data?.data) {
+        // Transform API response to match our Area type
+        const areas: Area[] = response.data.data.map((item: any) => ({
+          id: item.id,
+          name: item.attributes.name,
+          location: item.attributes.location,
+          type: item.attributes.user_type,
+          guestNumbers: item.attributes.guest_number
+        }));
+        
+        setData(areas);
+      } else {
+        setData([]);
+      }
+    } catch (error) {
+      console.error("Error fetching session areas:", error);
+      setError("Failed to fetch session areas");
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const AreaData = {
+    session_area: {
+      name: newArea?.name,
+      location: newArea?.location,
+      user_type: newArea?.type,
+      guest_number: newArea?.guestNumbers,
+      event_id: eventId as string,
+    },
+  };
+
+  const handleAdd = async () => {
+    const errors = {
+      name: newArea?.name ? "" : "Name is required",
+      location: newArea?.location ? "" : "Location is required",
+      type: newArea?.type ? "" : "Type is required",
+      guestNumbers: newArea?.guestNumbers ? "" : "Guest numbers are required",
+    };
+
+    setValidationErrors(errors);
+    const hasError = Object.values(errors).some((err) => err !== "");
+    if (hasError) {
+      console.log("Validation failed");
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    try {
+      if (
+        newArea.name &&
+        newArea.location &&
+        newArea.type &&
+        newArea.guestNumbers
+      ) {
+        console.log("event id in areas", eventId);
+
+        const response = await createSessionAreaApi(
+          AreaData,
+          eventId as string
+        );
+        console.log("POST API Response:", response);
+
+        if (response?.data) {
+          // Transform the new area data to match our Area type
+          const newAreaData: Area = {
+            id: response.data.data.id,
+            name: response.data.data.attributes.name,
+            location: response.data.data.attributes.location,
+            type: response.data.data.attributes.user_type,
+            guestNumbers: response.data.data.attributes.guest_number
+          };
+
+          // Update local state immediately instead of refetching
+          setData(prevData => [...prevData, newAreaData]);
+          setNewArea({
+            name: "",
+            location: "",
+            type: "",
+            guestNumbers: "",
+          });
+          
+          toast.success("Area added successfully!");
+        }
+      } else {
+        console.log("Please fill all fields before adding area");
+        toast.error("Please fill all fields before adding area");
+      }
+    } catch (error) {
+      console.log("Error in adding area:", error);
+      setError("Failed to add session area");
+      toast.error("Failed to add session area");
+      // If add fails, refresh to get actual state from server
+      await fetchSessionAreas();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!eventId) {
+      setError("Event ID not found");
+      toast.error("Event ID not found");
+      return;
+    }
+  
     if (window.confirm("Are you sure you want to delete this area?")) {
-      setData(data.filter((area) => area.id !== id));
-      setSelectedRows((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(id);
-        return newSet;
-      });
+      try {
+        setDeleteLoading(id);
+        
+        console.log(`Deleting area ${id} for event ${eventId}`);
+        
+        // Call the DELETE API
+        const response = await deleteSessionAreaApi(eventId, id);
+        console.log("DELETE API Response:", response);
+        console.log("DELETE API Status:", response.status);
+        console.log("DELETE API Data:", response.data);
+  
+        // Check for success
+        if (response.status === 200 || response.status === 204) {
+          console.log(`Successfully deleted area with id: ${id}`);
+          
+          // Refresh data to ensure UI matches server state
+          await fetchSessionAreas();
+          toast.success("Area deleted successfully!");
+        } else {
+          throw new Error(`Delete failed with status: ${response.status}`);
+        }
+      } catch (error) {
+        console.error("Error deleting area:", error);
+        setError("Failed to delete session area");
+        toast.error("Failed to delete session area");
+        
+        // Refresh to get current state
+        await fetchSessionAreas();
+      } finally {
+        setDeleteLoading(null);
+      }
     }
   };
 
@@ -63,39 +265,78 @@ export default function Areas({}) {
     setEditData({ ...area });
   };
 
-  const handleSaveEdit = () => {
-    if (editData) {
-      setData(data.map((area) => (area.id === editData.id ? editData : area)));
-      setEditingRow(null);
-      setEditData(null);
+  const handleSaveEdit = async () => {
+    if (!editData || !eventId) {
+      setError("Edit data or Event ID not found");
+      toast.error("Edit data or Event ID not found");
+      return;
+    }
+  
+    try {
+      setSaveLoading(editData.id);
+  
+      // Store previous data for rollback
+      const previousData = data;
+  
+      // Optimistically update UI
+      setData(prevData => 
+        prevData.map((area) => (area.id === editData.id ? editData : area))
+      );
+  
+      // Prepare data for UPDATE API - REMOVE THE ID FROM THE PAYLOAD
+      const updateData = {
+        session_area: {
+          name: editData.name,
+          location: editData.location,
+          user_type: editData.type,
+          guest_number: editData.guestNumbers,
+          event_id: eventId
+        }
+      };
+  
+      console.log("UPDATE API Data:", updateData);
+      
+      // Call the UPDATE API
+      const response = await updateSessionAreaApi(eventId, editData.id, updateData);
+      console.log("UPDATE API Response:", response);
+  
+      if (response?.data?.data) {
+        // Use the response data to ensure consistency
+        const updatedArea: Area = {
+          id: response.data.data.id,
+          name: response.data.data.attributes.name,
+          location: response.data.data.attributes.location,
+          type: response.data.data.attributes.user_type,
+          guestNumbers: response.data.data.attributes.guest_number
+        };
+  
+        // Update with server response
+        setData(prevData => 
+          prevData.map((area) => (area.id === updatedArea.id ? updatedArea : area))
+        );
+        
+        setEditingRow(null);
+        setEditData(null);
+        console.log(`Successfully updated area with id: ${editData.id}`);
+        toast.success("Area updated successfully!");
+      } else {
+        throw new Error("Update response format is invalid");
+      }
+    } catch (error) {
+      console.error("Error updating area:", error);
+      setError("Failed to update session area");
+      toast.error("Failed to update session area");
+      
+      // Rollback on error
+      await fetchSessionAreas();
+    } finally {
+      setSaveLoading(null);
     }
   };
 
   const handleCancelEdit = () => {
     setEditingRow(null);
     setEditData(null);
-  };
-
-  const handleAdd = () => {
-    if (
-      newArea.name &&
-      newArea.location &&
-      newArea.type &&
-      newArea.guestNumbers
-    ) {
-      const newId = `area-${Date.now()}`;
-      setData([
-        ...data,
-        {
-          id: newId,
-          name: newArea.name,
-          location: newArea.location,
-          type: newArea.type,
-          guestNumbers: parseInt(newArea.guestNumbers),
-        },
-      ]);
-      setNewArea({ name: "", location: "", type: "", guestNumbers: "" });
-    }
   };
 
   const toggleRowSelection = (id: string) => {
@@ -160,13 +401,69 @@ export default function Areas({}) {
       style={{
         padding: "24px",
         minHeight: "100vh",
-
         fontFamily: "system-ui, -apple-system, sans-serif",
       }}
       className="bg-white rounded-2xl"
     >
+      {/* Toast Container */}
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+
       {/* Header with Add Form */}
       <div style={{ marginBottom: "32px" }}>
+        <h1 style={{ fontSize: "24px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>
+          Session Areas
+        </h1>
+
+        {/* Error Message */}
+        {error && (
+          <div style={{
+            padding: "12px",
+            backgroundColor: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: "6px",
+            color: "#dc2626",
+            marginBottom: "16px"
+          }}>
+            {error}
+            <button 
+              onClick={() => setError(null)}
+              style={{
+                marginLeft: "10px",
+                background: "none",
+                border: "none",
+                color: "#dc2626",
+                cursor: "pointer",
+                fontSize: "16px"
+              }}
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div style={{
+            padding: "12px",
+            textAlign: "center",
+            color: "#6b7280",
+            marginBottom: "16px"
+          }}>
+            Loading session areas...
+          </div>
+        )}
+
         <div
           style={{
             display: "grid",
@@ -203,6 +500,11 @@ export default function Areas({}) {
                 outline: "none",
               }}
             />
+            {validationErrors.name && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.name}
+              </div>
+            )}
           </div>
 
           <div>
@@ -234,6 +536,11 @@ export default function Areas({}) {
                 outline: "none",
               }}
             />
+            {validationErrors.location && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.location}
+              </div>
+            )}
           </div>
 
           <div>
@@ -265,10 +572,21 @@ export default function Areas({}) {
               <option value="" disabled>
                 Select User Type
               </option>
-              <option value="Type 01">Type 01</option>
-              <option value="Type 02">Type 02</option>
-              <option value="Type 03">Type 03</option>
+              {badgeLoading ? (
+                <option value="" disabled>Loading badges...</option>
+              ) : (
+                badges.map((badge) => (
+                  <option key={badge.id} value={badge.attributes.badge_type}>
+                    {badge.attributes.name}
+                  </option>
+                ))
+              )}
             </select>
+            {validationErrors.type && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.type}
+              </div>
+            )}
           </div>
 
           <div>
@@ -284,8 +602,8 @@ export default function Areas({}) {
               Guest numbers
             </label>
             <input
-              type="text"
-              placeholder="text here"
+              type="number"
+              placeholder="Type number"
               value={newArea.guestNumbers}
               onChange={(e) =>
                 setNewArea({ ...newArea, guestNumbers: e.target.value })
@@ -300,6 +618,11 @@ export default function Areas({}) {
                 outline: "none",
               }}
             />
+            {validationErrors.guestNumbers && (
+              <div style={{ color: "red", fontSize: "12px" }}>
+                {validationErrors.guestNumbers}
+              </div>
+            )}
           </div>
 
           <button
@@ -601,9 +924,11 @@ export default function Areas({}) {
                         textAlign: "center",
                       }}
                     >
-                      <option value="Type 01">Type 01</option>
-                      <option value="Type 02">Type 02</option>
-                      <option value="Type 03">Type 03</option>
+                      {badges.map((badge) => (
+                        <option key={badge.id} value={badge.attributes.badge_type}>
+                          {badge.attributes.name}
+                        </option>
+                      ))}
                     </select>
                   ) : (
                     area.type
@@ -665,20 +990,39 @@ export default function Areas({}) {
                       <>
                         <button
                           onClick={handleSaveEdit}
+                          disabled={saveLoading === area.id}
                           style={{
                             padding: "6px 12px",
-                            backgroundColor: "#10b981",
+                            backgroundColor: saveLoading === area.id ? "#9ca3af" : "#10b981",
                             color: "white",
                             border: "none",
                             borderRadius: "4px",
                             fontSize: "12px",
-                            cursor: "pointer",
+                            cursor: saveLoading === area.id ? "not-allowed" : "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
                           }}
                         >
-                          Save
+                          {saveLoading === area.id ? (
+                            <>
+                              <div style={{
+                                width: "12px",
+                                height: "12px",
+                                border: "2px solid #f3f4f6",
+                                borderTop: "2px solid #ffffff",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite"
+                              }} />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save"
+                          )}
                         </button>
                         <button
                           onClick={handleCancelEdit}
+                          disabled={saveLoading === area.id}
                           style={{
                             padding: "6px 12px",
                             backgroundColor: "#6b7280",
@@ -686,7 +1030,7 @@ export default function Areas({}) {
                             border: "none",
                             borderRadius: "4px",
                             fontSize: "12px",
-                            cursor: "pointer",
+                            cursor: saveLoading === area.id ? "not-allowed" : "pointer",
                           }}
                         >
                           Cancel
@@ -719,26 +1063,41 @@ export default function Areas({}) {
                         </button>
                         <button
                           onClick={() => handleDelete(area.id)}
+                          disabled={deleteLoading === area.id}
                           style={{
                             padding: "6px",
                             backgroundColor: "transparent",
                             border: "none",
                             borderRadius: "4px",
-                            cursor: "pointer",
-                            color: "#ef4444",
+                            cursor: deleteLoading === area.id ? "not-allowed" : "pointer",
+                            color: deleteLoading === area.id ? "#9ca3af" : "#ef4444",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            opacity: deleteLoading === area.id ? 0.6 : 1,
                           }}
-                          onMouseOver={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#fee2e2")
-                          }
+                          onMouseOver={(e) => {
+                            if (deleteLoading !== area.id) {
+                              e.currentTarget.style.backgroundColor = "#fee2e2";
+                            }
+                          }}
                           onMouseOut={(e) =>
                             (e.currentTarget.style.backgroundColor =
                               "transparent")
                           }
                         >
-                          <Trash2 size={16} />
+                          {deleteLoading === area.id ? (
+                            <div style={{
+                              width: "16px",
+                              height: "16px",
+                              border: "2px solid #f3f4f6",
+                              borderTop: "2px solid #ef4444",
+                              borderRadius: "50%",
+                              animation: "spin 1s linear infinite"
+                            }} />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
                         </button>
                       </>
                     )}
@@ -749,7 +1108,7 @@ export default function Areas({}) {
           </tbody>
         </table>
 
-        {getCurrentPageData().length === 0 && (
+        {getCurrentPageData().length === 0 && !loading && (
           <div
             style={{
               padding: "40px",
@@ -858,6 +1217,16 @@ export default function Areas({}) {
         Create event
         <span style={{ fontSize: "16px" }}>→</span>
       </button>
+
+      {/* Add CSS for spinner animation */}
+      <style>
+        {`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}
+      </style>
     </div>
   );
 }
