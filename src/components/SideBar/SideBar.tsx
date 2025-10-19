@@ -13,7 +13,12 @@ import {
   NotepadText,
   Printer,
   UserCircle,
-  MessagesSquare 
+  MessagesSquare,
+  Vote,
+  BarChart3,
+  Ticket,
+  IdCard,
+  
 
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
@@ -155,11 +160,11 @@ const SideBar = ({
           label: "VIP Users",
           icon: UserPlus,
           path: currentEventId
-            ? `/invitation/vip?eventId=${currentEventId}`
-            : "/invitation/vip",
+            ? `/invitation/VipUsers?eventId=${currentEventId}`
+            : "/invitation/VipUsers",
         },
       ],
-    },
+    },  
     {
       icon: MessagesSquare,
       label: "Communications",
@@ -169,14 +174,14 @@ const SideBar = ({
       submenu: [
         {
           label: "Poll",
-          icon: Users,
+          icon: Vote,
           path: currentEventId
             ? `/communication/Poll?eventId=${currentEventId}`
             : "/communication/Poll",
         },
         {
           label: "Q & A",
-          icon: UserPlus,
+          icon: BarChart3,
           path: currentEventId
             ? `/communication/QA?eventId=${currentEventId}`
             : "/communication/QA",
@@ -205,6 +210,14 @@ const SideBar = ({
       ],
     },
     {
+      icon: IdCard,
+      label: "Onboarding",
+      path: currentEventId
+        ? `/Onboarding?eventId=${currentEventId}`
+        : "/Onboarding",
+    },
+    
+    {
       icon: Users,
       label: "Committees",
       path: currentEventId
@@ -216,7 +229,7 @@ const SideBar = ({
     //   element: <TicketManagement />,
     // },
     {
-      icon: Printer,
+      icon: Ticket,
       label: "Ticket Management",
       path: currentEventId
         ? `/TicketManagement?eventId=${currentEventId}`
