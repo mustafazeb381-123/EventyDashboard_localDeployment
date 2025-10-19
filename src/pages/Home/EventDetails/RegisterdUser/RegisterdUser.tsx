@@ -38,6 +38,15 @@ function RegisterdUser() {
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
 
+  // Store event user length in localStorage whenever eventUsers changes
+  useEffect(() => {
+    if (eventId) {
+      const storageKey = `eventUsersLength_${eventId}`;
+      localStorage.setItem(storageKey, eventUsers.length?.toString());
+    }
+  }, [eventUsers, eventId]);
+
+
   const getPaginationNumbers = () => {
     let pages = [];
     for (let i = 1; i <= totalPages; i++) {

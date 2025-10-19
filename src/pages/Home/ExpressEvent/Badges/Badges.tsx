@@ -202,10 +202,10 @@ const Badges: React.FC<BadgesProps> = ({
       const response = await handleBadgeApiSelection(selectedBadge.id, selectedBadge.name);
       toast.success("Badge template selected!");
       setActiveBadgeId(selectedBadge.id);
-
+  
       // Save active badge to localStorage so it persists between reloads
       localStorage.setItem("active_badge_id", selectedBadge.id.toString());
-
+  
       setTimeout(() => {
         // FIX: Pass the eventId instead of badgeId to onNext
         if (effectiveEventId && onNext) {

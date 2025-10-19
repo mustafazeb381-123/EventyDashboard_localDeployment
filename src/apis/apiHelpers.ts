@@ -194,6 +194,23 @@ export const updateSessionAreaApi = (eventId: string, areaId: string, data: any)
   return axiosInstance.patch(`events/${eventId}/session_areas/${areaId}`, data);
 }
 
+export const getConfirmations = (eventId: string | number) => {
+  return axiosInstance.get(`events/${eventId}/confirmations`);
+};
+
+export const createConfirmation = (eventId: string | number, confirmationData: {
+  content: string;
+  default: boolean;
+}) => {
+  return axiosInstance.post(`events/${eventId}/confirmations`, {
+    confirmation: confirmationData
+  });
+};
+
+export const deleteConfirmation = (eventId: string | number, confirmationId: string | number) => {
+  return axiosInstance.delete(`events/${eventId}/confirmations/${confirmationId}`);
+};
+
 
 
 

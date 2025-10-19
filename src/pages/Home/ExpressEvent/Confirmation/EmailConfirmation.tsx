@@ -9,14 +9,6 @@ import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTempl
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
-/**
- * EmailEditorModal
- * - props:
- *    open: boolean
- *    initialDesign: any (optional) — load this into editor when opened
- *    onClose: () => void
- *    onSave: (design: any, html: string) => void
- */
 const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   const emailEditorRef = useRef<any>(null);
 
@@ -161,7 +153,24 @@ const TemplateThumbnail = ({ template }: any) => {
 };
 
 // -------- Main Component --------
-const EmailConfirmation = ({ onNext }: any) => {
+interface EmailConfirmationProps {
+  onNext: (eventId?: string | number) => void;
+  onPrevious?: () => void;
+  eventId?: string | number;
+}
+
+const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPrevious, eventId }) => {
+  // Log the received eventId
+  console.log('EmailConfirmation - Received eventId:', eventId);
+  
+  // Also check localStorage as fallback
+  const localStorageEventId = localStorage.getItem("create_eventId");
+  console.log('EmailConfirmation - localStorage eventId:', localStorageEventId);
+  
+  // Use the eventId from props first, then fall back to localStorage
+  const effectiveEventId = eventId || localStorageEventId;
+  console.log('EmailConfirmation - Effective eventId:', effectiveEventId);
+
   // Initialize templates from localStorage or with default structure
   const [flows, setFlows] = useState<any[]>(() => {
     const savedFlows = localStorage.getItem('emailTemplates');
@@ -295,15 +304,29 @@ const EmailConfirmation = ({ onNext }: any) => {
       alert("Please select a template before proceeding");
       return;
     }
+    
+    console.log('EmailConfirmation - Proceeding to next step with eventId:', effectiveEventId);
+    
     if (currentFlowIndex < flows.length - 1) {
       setCurrentFlowIndex(currentFlowIndex + 1);
     } else if (onNext) {
-      onNext();
+      // Pass the eventId to the next component
+      if (effectiveEventId) {
+        console.log('EmailConfirmation - Sending eventId to next component:', effectiveEventId);
+        onNext(effectiveEventId);
+      } else {
+        console.log('EmailConfirmation - No eventId available, calling onNext without parameter');
+        onNext();
+      }
     }
   };
 
   const handleBack = () => {
-    if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1);
+    if (currentFlowIndex > 0) {
+      setCurrentFlowIndex(currentFlowIndex - 1);
+    } else if (onPrevious) {
+      onPrevious();
+    }
   };
 
   const handleStepClick = (index: number) => {
@@ -314,6 +337,11 @@ const EmailConfirmation = ({ onNext }: any) => {
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm relative">
+      {/* Debug info - you can remove this in production */}
+      <div className="mb-4 p-2 bg-blue-50 rounded-lg text-xs">
+        <strong>Debug Info:</strong> Event ID: {effectiveEventId || 'Not available'}
+      </div>
+
       {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
@@ -420,9 +448,9 @@ const EmailConfirmation = ({ onNext }: any) => {
       <div className="flex justify-between items-center pt-6 border-t border-gray-100">
         <button
           onClick={handleBack}
-          disabled={currentFlowIndex === 0}
+          disabled={currentFlowIndex === 0 && !onPrevious}
           className={`cursor-pointer px-6 py-2 border rounded-lg transition-colors ${
-            currentFlowIndex === 0 ? "text-gray-400 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-100"
+            currentFlowIndex === 0 && !onPrevious ? "text-gray-400 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-100"
           }`}
         >
           ← Previous
