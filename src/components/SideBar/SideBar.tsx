@@ -347,8 +347,9 @@ const SideBar = ({
           </div>
         )}
 
-        {isExpanded && (
-          <nav className="flex-1 px-2 py-4 space-y-2">
+        {/* Scrollable Navigation Area with Thin Scrollbar */}
+        <div className="flex flex-col h-[calc(100vh-200px)] pb-8">
+          <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto thin-scrollbar">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = activeItem === item.label;
@@ -416,9 +417,10 @@ const SideBar = ({
               );
             })}
           </nav>
-        )}
+        </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-slate-700/50 space-y-2 bg-gradient-to-b from-slate-900 to-blue-900">
+        {/* Fixed Bottom Section */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
           <Button
             variant="ghost"
             className={`w-full ${
@@ -453,6 +455,31 @@ const SideBar = ({
           onClick={() => setIsExpanded(false)}
         />
       )}
+
+      {/* Add CSS for thin scrollbar */}
+      <style jsx>{`
+        .thin-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(148, 163, 184, 0.3);
+          border-radius: 2px;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(148, 163, 184, 0.5);
+        }
+      `}</style>
     </>
   );
 };
