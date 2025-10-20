@@ -786,14 +786,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         theme="light"
       />
 
-      {/* Debug info - you can remove this in production */}
-      <div className="mb-4 p-2 bg-blue-50 rounded-lg text-xs">
-        <strong>Debug Info:</strong> Event ID: {effectiveEventId || 'Not available'} | 
-        Current Flow: {currentFlow.label} | 
-        API Type: {apiService.getTypeParam(currentFlow.id)}
-        {isLoading && <span className="ml-2 text-pink-500">Loading...</span>}
-      </div>
-
       {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
