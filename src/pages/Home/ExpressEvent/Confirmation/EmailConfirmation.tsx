@@ -9,14 +9,6 @@ import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTempl
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
-/**
- * EmailEditorModal
- * - props:
- *    open: boolean
- *    initialDesign: any (optional) — load this into editor when opened
- *    onClose: () => void
- *    onSave: (design: any, html: string) => void
- */
 const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   const emailEditorRef = useRef<any>(null);
 
@@ -52,7 +44,7 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
-        <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-50">
+        <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-100">
           <h3 className="text-lg font-semibold text-gray-800">Edit Email Template</h3>
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200">
             <X size={20} />
@@ -63,7 +55,7 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
           <EmailEditor ref={emailEditorRef} minHeight="100%" appearance={{ theme: "dark" }} />
         </div>
 
-        <div className="p-3 border-t flex justify-end bg-gray-50">
+        <div className="p-3 border-t flex justify-end bg-gray-100">
           <button
             onClick={handleExport}
             className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium"
@@ -135,7 +127,7 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit }: any) => {
  */
 const TemplateThumbnail = ({ template }: any) => {
   return (
-    <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
+    <div className="w-full aspect-square overflow-hidden rounded-xl flex items-center justify-center bg-gray-100 relative">
       {template.html ? (
         // For edited templates: Show scaled preview of the actual HTML
         <div 
@@ -161,7 +153,24 @@ const TemplateThumbnail = ({ template }: any) => {
 };
 
 // -------- Main Component --------
-const EmailConfirmation = ({ onNext }: any) => {
+interface EmailConfirmationProps {
+  onNext: (eventId?: string | number) => void;
+  onPrevious?: () => void;
+  eventId?: string | number;
+}
+
+const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPrevious, eventId }) => {
+  // Log the received eventId
+  console.log('EmailConfirmation - Received eventId:', eventId);
+  
+  // Also check localStorage as fallback
+  const localStorageEventId = localStorage.getItem("create_eventId");
+  console.log('EmailConfirmation - localStorage eventId:', localStorageEventId);
+  
+  // Use the eventId from props first, then fall back to localStorage
+  const effectiveEventId = eventId || localStorageEventId;
+  console.log('EmailConfirmation - Effective eventId:', effectiveEventId);
+
   // Initialize templates from localStorage or with default structure
   const [flows, setFlows] = useState<any[]>(() => {
     const savedFlows = localStorage.getItem('emailTemplates');
@@ -295,15 +304,29 @@ const EmailConfirmation = ({ onNext }: any) => {
       alert("Please select a template before proceeding");
       return;
     }
+    
+    console.log('EmailConfirmation - Proceeding to next step with eventId:', effectiveEventId);
+    
     if (currentFlowIndex < flows.length - 1) {
       setCurrentFlowIndex(currentFlowIndex + 1);
     } else if (onNext) {
-      onNext();
+      // Pass the eventId to the next component
+      if (effectiveEventId) {
+        console.log('EmailConfirmation - Sending eventId to next component:', effectiveEventId);
+        onNext(effectiveEventId);
+      } else {
+        console.log('EmailConfirmation - No eventId available, calling onNext without parameter');
+        onNext();
+      }
     }
   };
 
   const handleBack = () => {
-    if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1);
+    if (currentFlowIndex > 0) {
+      setCurrentFlowIndex(currentFlowIndex - 1);
+    } else if (onPrevious) {
+      onPrevious();
+    }
   };
 
   const handleStepClick = (index: number) => {
@@ -314,6 +337,11 @@ const EmailConfirmation = ({ onNext }: any) => {
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm relative">
+      {/* Debug info - you can remove this in production */}
+      <div className="mb-4 p-2 bg-blue-50 rounded-lg text-xs">
+        <strong>Debug Info:</strong> Event ID: {effectiveEventId || 'Not available'}
+      </div>
+
       {/* Header Section */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
@@ -362,12 +390,12 @@ const EmailConfirmation = ({ onNext }: any) => {
         {/* Create New Template Card - Always show first */}
         <div
           onClick={handleCreateNewTemplate}
-          className="border-2 border-dashed border-gray-300 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-400 hover:bg-pink-50 flex flex-col items-center justify-center min-h-[200px]"
+          className="border-2 border-dashed border-gray-300 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-400 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square"
         >
           <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-3">
             <Plus className="text-pink-500" size={24} />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-1">Create New Template</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">Create New Template</h3>
           <p className="text-sm text-gray-500 text-center">Design a custom email template from scratch</p>
         </div>
 
@@ -376,16 +404,18 @@ const EmailConfirmation = ({ onNext }: any) => {
           <div
             key={tpl.id}
             onClick={() => handleOpenModal(tpl)}
-            className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md ${
+            className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col ${
               selectedTemplates[currentFlow.id] === tpl.id 
                 ? "border-pink-500 bg-pink-50 shadow-md" 
                 : "border-gray-200 hover:border-pink-300"
             }`}
           >
             {/* Template Thumbnail */}
-            <TemplateThumbnail template={tpl} />
+            <div className="flex-1">
+              <TemplateThumbnail template={tpl} />
+            </div>
             <div className="mt-3">
-              <h3 className="font-medium text-gray-900">{tpl.title}</h3>
+              <h3 className="font-medium text-gray-900 text-center">{tpl.title}</h3>
             </div>
           </div>
         ))}
@@ -418,9 +448,9 @@ const EmailConfirmation = ({ onNext }: any) => {
       <div className="flex justify-between items-center pt-6 border-t border-gray-100">
         <button
           onClick={handleBack}
-          disabled={currentFlowIndex === 0}
+          disabled={currentFlowIndex === 0 && !onPrevious}
           className={`cursor-pointer px-6 py-2 border rounded-lg transition-colors ${
-            currentFlowIndex === 0 ? "text-gray-400 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-50"
+            currentFlowIndex === 0 && !onPrevious ? "text-gray-400 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-100"
           }`}
         >
           ← Previous

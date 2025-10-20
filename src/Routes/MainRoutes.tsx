@@ -29,13 +29,14 @@ function MainRoutes() {
     "/print_badges",
     "/invitation",
     "/invitation/user",
-    "/invitation/vip",
+    "/invitation/VipUsers",
     "/attendees/check-in",
     "/attendees/check-out",
     "/committees",
     "/communication/Poll",
     "/communication/QA",
     "/TicketManagement",
+    "/Onboarding"
   ];
 
   // --- FIXED: use startsWith() instead of includes() ---

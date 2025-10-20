@@ -20,6 +20,8 @@ import Poll from "@/pages/Home/EventDetails/Poll/Poll";
 import PollDetails from "@/pages/Home/EventDetails/PollDetails/PollDetails";
 import Qa from "@/pages/Home/EventDetails/QA/QA";
 import TicketManagement from "@/pages/Home/EventDetails/TicketManagement/TicketManagement";
+import VipUsers from "@/pages/Home/EventDetails/Invitation/VipUsers";
+import Onboarding from "@/pages/Home/EventDetails/Onboarding/onboarding";
 
 const router = createBrowserRouter([
   {
@@ -62,8 +64,16 @@ const router = createBrowserRouter([
             element: <Users />,
           },
           {
+            path: "invitation/VipUsers",
+            element: <VipUsers />,
+          },
+          {
             path: "TicketManagement",
             element: <TicketManagement />,
+          },
+          {
+            path: "Onboarding",
+            element: <Onboarding />,
           },
           {
             path: "communication",

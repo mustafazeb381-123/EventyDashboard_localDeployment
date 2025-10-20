@@ -13,8 +13,11 @@ import {
   NotepadText,
   Printer,
   UserCircle,
-  MessagesSquare 
-
+  MessagesSquare,
+  Vote,
+  BarChart3,
+  Ticket,
+  IdCard,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -39,7 +42,8 @@ const SideBar = ({
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
     {}
   );
-  const naviagte = useNavigate();
+  const [registeredUsersCount, setRegisteredUsersCount] = useState<string>("0");
+  const navigate = useNavigate();
   const location = useLocation();
 
   // Debug log to track sidebar state
@@ -49,6 +53,25 @@ const SideBar = ({
     currentEventId,
     isRTL,
   });
+
+  // Get registered users count from localStorage
+  const getRegisteredUsersCount = () => {
+    if (!currentEventId) {
+      setRegisteredUsersCount("0");
+      return;
+    }
+
+    const storageKey = `eventUsersLength_${currentEventId}`;
+    const storedCount = localStorage.getItem(storageKey);
+    
+    if (storedCount) {
+      setRegisteredUsersCount(storedCount);
+      console.log(`Retrieved registered users count: ${storedCount} for event: ${currentEventId}`);
+    } else {
+      setRegisteredUsersCount("0");
+      console.log(`No stored count found for event: ${currentEventId}`);
+    }
+  };
 
   // Set active item based on current route
   useEffect(() => {
@@ -88,7 +111,30 @@ const SideBar = ({
     } else if (currentPath === "/committees") {
       setActiveItem("Committees");
     }
+
+    // Get registered users count when route or eventId changes
+    getRegisteredUsersCount();
   }, [currentEventId, location.pathname]);
+
+  // Listen for storage changes to update the count in real-time
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (currentEventId && e.key === `eventUsersLength_${currentEventId}`) {
+        console.log('Storage changed, updating registered users count:', e.newValue);
+        setRegisteredUsersCount(e.newValue || "0");
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also set up a periodic check for changes (in case same tab updates)
+    const interval = setInterval(getRegisteredUsersCount, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [currentEventId]);
 
   const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) => ({
@@ -106,7 +152,7 @@ const SideBar = ({
     {
       icon: Users,
       label: "Registered Users",
-      badge: "20",
+      badge: registeredUsersCount, // Use the dynamic count from localStorage
       path: currentEventId
         ? `/regesterd_user?eventId=${currentEventId}`
         : "/regesterd_user",
@@ -155,11 +201,11 @@ const SideBar = ({
           label: "VIP Users",
           icon: UserPlus,
           path: currentEventId
-            ? `/invitation/vip?eventId=${currentEventId}`
-            : "/invitation/vip",
+            ? `/invitation/VipUsers?eventId=${currentEventId}`
+            : "/invitation/VipUsers",
         },
       ],
-    },
+    },  
     {
       icon: MessagesSquare,
       label: "Communications",
@@ -169,21 +215,20 @@ const SideBar = ({
       submenu: [
         {
           label: "Poll",
-          icon: Users,
+          icon: Vote,
           path: currentEventId
             ? `/communication/Poll?eventId=${currentEventId}`
             : "/communication/Poll",
         },
         {
           label: "Q & A",
-          icon: UserPlus,
+          icon: BarChart3,
           path: currentEventId
             ? `/communication/QA?eventId=${currentEventId}`
             : "/communication/QA",
         },
       ],
     },
-    
     {
       icon: CheckCircle,
       label: "Attendees",
@@ -205,36 +250,37 @@ const SideBar = ({
       ],
     },
     {
+      icon: IdCard,
+      label: "Onboarding",
+      path: currentEventId
+        ? `/Onboarding?eventId=${currentEventId}`
+        : "/Onboarding",
+    },
+    {
       icon: Users,
       label: "Committees",
       path: currentEventId
         ? `/committees?eventId=${currentEventId}`
         : "/committees",
     },
-    // {
-    //   path: "TicketManagement",
-    //   element: <TicketManagement />,
-    // },
     {
-      icon: Printer,
+      icon: Ticket,
       label: "Ticket Management",
       path: currentEventId
         ? `/TicketManagement?eventId=${currentEventId}`
         : "/TicketManagement",
     },
-    
   ];
 
   const handleLogout = async () => {
     try {
       await localStorage.removeItem("token");
-      toast.success("Logout Succssfuly");
+      toast.success("Logout Successful");
       setTimeout(() => {
-        naviagte("/login");
+        navigate("/login");
       }, 4000);
     } catch (error) {
       console.log("error", error);
-    } finally {
     }
   };
 
@@ -260,7 +306,7 @@ const SideBar = ({
               )}
               <div
                 onClick={() => {
-                  naviagte("/");
+                  navigate("/");
                   if (canToggle) {
                     setIsExpanded(!isExpanded);
                   }
@@ -323,7 +369,7 @@ const SideBar = ({
                       } else {
                         setActiveItem(item.label);
                         if (item.path) {
-                          naviagte(item.path);
+                          navigate(item.path);
                         }
                       }
                     }}
@@ -355,7 +401,7 @@ const SideBar = ({
                             onClick={() => {
                               setActiveItem(subItem.label);
                               if (subItem.path) {
-                                naviagte(subItem.path);
+                                navigate(subItem.path);
                               }
                             }}
                           >
