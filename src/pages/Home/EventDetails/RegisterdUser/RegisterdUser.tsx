@@ -124,17 +124,15 @@ function RegisterdUser() {
     }
   };
 
-  const handleSendCredentials = async () => {
-    if (!eventId || selectedUsers.length === 0) return;
+  const handleSendCredentials = async (userIds?: string[]) => {
+    const idsToSend = userIds || selectedUsers;
 
-    const apiUrl = `/events/${eventId}/event_users/send_credentials`;
-    console.log("Sending credentials to:", apiUrl);
-    console.log("Selected user IDs:", selectedUsers);
+    if (!eventId || idsToSend.length === 0) return;
 
-    setSendingCredentials(true); // start loader
+    setSendingCredentials(true);
 
     try {
-      const response = await sendCredentials(eventId, selectedUsers);
+      const response = await sendCredentials(eventId, idsToSend);
       console.log("API response:", response.data);
       toast.success("Credentials sent successfully!");
       setSelectedUsers([]);
@@ -142,9 +140,10 @@ function RegisterdUser() {
       console.error("Error sending credentials:", err);
       toast.error("Failed to send credentials. Please try again.");
     } finally {
-      setSendingCredentials(false); // stop loader
+      setSendingCredentials(false);
     }
   };
+
 
   const handleUpdateUser = async () => {
     if (!eventId || !editingUser) return;
@@ -418,7 +417,7 @@ function RegisterdUser() {
             </p>
 
             <button
-              onClick={handleSendCredentials}
+              onClick={() => handleSendCredentials()}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               disabled={sendingCredentials} // disable while sending
             >
@@ -449,7 +448,7 @@ function RegisterdUser() {
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
 
           {loadingUsers ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500">
@@ -459,7 +458,7 @@ function RegisterdUser() {
           ) : (
             <>
 
-              <table className="w-full">
+              <table className="min-w-full">
 
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
@@ -572,9 +571,14 @@ function RegisterdUser() {
                           </button>
 
 
-                          <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <button
+                            onClick={() => handleSendCredentials([user.id])}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
                             <Mail className="w-4 h-4" />
+
                           </button>
+
 
                         </div>
                       </td>
