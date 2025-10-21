@@ -17,6 +17,9 @@ export interface ToggleStates {
 
 const ExpressEvent = () => {
   const location = useLocation();
+  console.log('location--------', location)
+  const planType = location?.state?.plan;
+console.log('planType------++++++=------------', planType)
   const { id: routeEventId } = useParams();
 
   const {
@@ -31,6 +34,7 @@ const ExpressEvent = () => {
     lastEdit,
     currentStep: initialStep,
   } = location.state || {};
+  console.log('plan0000000__00000000+++++++++', plan)
 
   // Use route event ID if available, otherwise fall back to location state eventId
   const [createdEventId, setCreatedEventId] = useState<string | undefined>(
@@ -265,7 +269,7 @@ const ExpressEvent = () => {
       default:
         return (
           <MainData
-            plan={plan}
+            plan={planType}
             eventData={eventData}
             isEditing={isEditing}
             eventAttributes={eventAttributes}
