@@ -101,7 +101,7 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
               className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
             >
               <Pencil size={14} />
-              Edit Template
+              {/* Edit Template */}
             </button>
             {/* DELETE BUTTON - ALWAYS SHOW FOR ALL TEMPLATES */}
             <button
@@ -109,7 +109,7 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
               className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
             >
               <Trash2 size={14} />
-              Delete Template
+              {/* Delete Template */}
             </button>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
               <X size={20} className="text-gray-500" />
@@ -136,7 +136,7 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
  */
 const TemplateThumbnail = ({ template }: any) => {
   return (
-    <div className="w-full aspect-square overflow-hidden rounded-xl flex items-center justify-center bg-gray-100 relative">
+    <div className="w-full rounded-xl flex items-center justify-center bg-gray-100 relative">
       {template.html ? (
         // For edited templates: Show scaled preview of the actual HTML
         <div 

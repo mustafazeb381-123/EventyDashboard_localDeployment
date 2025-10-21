@@ -1,6 +1,6 @@
 import React, { useRef, useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Upload, Info, XCircle } from "lucide-react";
+import { Upload, Info, XCircle, Loader2 } from "lucide-react";
 import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
 import {
@@ -32,6 +32,7 @@ function TemplateFormOne({
   const [formData, setFormData] = useState({ eventLogo: null });
   const [logoError, setLogoError] = useState("");
   const [toggleLoading, setToggleLoading] = useState({});
+  const [loading, setLoading] = useState(true); // New loading state
   const fileInputRef = useRef(null);
 
   // Fetch event and banner on mount and after upload
@@ -180,16 +181,23 @@ function TemplateFormOne({
     console.log("Form submitted:", formValues);
     alert("Registration submitted successfully!");
   };
-  const [eventData, setEventData] = useState("");
+  
+  const [eventData, setEventData] = useState(null);
+  
   const fetchEventData = async () => {
+    setLoading(true);
     try {
       const response = await getEventbyId(effectiveEventId);
       console.log("Event data fetched in useEffect :: ", response.data.data);
       setEventData(response.data.data);
     } catch (error) {
       console.error("Failed to fetch event data:", error);
+      setEventData(null);
+    } finally {
+      setLoading(false);
     }
   };
+  
   useEffect(() => {
     fetchEventData();
   }, []);
@@ -281,59 +289,91 @@ function TemplateFormOne({
 
       <div style={{ marginTop: 16 }} />
 
-      {/* Event Information Display */}
-      {/* ...rest of your component unchanged... */}
+      {/* Event Information Display with Loader */}
+      {loading ? (
+        // Loading state
+        <div className="gap-3 flex flex-row items-center animate-pulse">
+          <div style={{ padding: 32 }} className="bg-neutral-200 rounded-2xl">
+            <div className="h-[67.12px] w-[72px] bg-gray-300 rounded"></div>
+          </div>
+          
+          <div className="flex flex-col gap-3 flex-1">
+            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+            <div className="flex flex-row items-center gap-3">
+              <div className="h-5 w-5 bg-gray-300 rounded"></div>
+              <div className="h-3 bg-gray-300 rounded w-1/2"></div>
+            </div>
+            <div className="flex flex-row items-center gap-3">
+              <div className="h-5 w-5 bg-gray-300 rounded"></div>
+              <div className="h-3 bg-gray-300 rounded w-2/3"></div>
+            </div>
+          </div>
+        </div>
+        // <Loader2 className="w-4 h-4 animate-spin" />
+      ) : eventData ? (
+        // Loaded state - show actual event data
+        <div className="gap-3 flex flex-row items-center">
+          <div style={{ padding: 32 }} className="bg-neutral-50 rounded-2xl">
+            <img
+              src={eventData.attributes?.logo_url}
+              style={{ height: 67.12, width: 72 }}
+              alt="Event logo"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <p className="text-slate-800 text-md font-poppins font-medium">
+              {eventData.attributes?.name || "Event Name"}
+            </p>
+
+            <div className="flex flex-row items-center gap-3">
+              <img
+                src={Assets.icons.clock}
+                style={{ height: 20, width: 20 }}
+                alt="Time"
+              />
+              <p className="text-neutral-600 font-poppins font-normal text-xs">
+                {eventData.attributes?.event_date_from || "Date not set"} -{" "}
+                {eventData.attributes?.event_date_to || "Date not set"}
+              </p>
+            </div>
+
+            <div className="flex flex-row items-center gap-3">
+              <img
+                src={Assets.icons.location}
+                style={{ height: 20, width: 20 }}
+                alt="Location"
+              />
+              <p className="text-neutral-600 font-poppins font-normal text-xs">
+                {eventData.attributes?.location || "Location not specified"}
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // Error state
+        <div className="text-center py-4 text-red-500">
+          Failed to load event information
+        </div>
+      )}
 
       <div style={{ marginTop: 16 }} />
 
-      {/* Event Information Display */}
-      <div className="gap-3 flex flex-row items-center">
-        <div style={{ padding: 32 }} className=" bg-neutral-50 rounded-2xl">
-          <img
-            src={eventData.attributes?.logo_url}
-            style={{ height: 67.12, width: 72 }}
-          />
+      {/* About section with loading state */}
+      {loading ? (
+        <div className="animate-pulse">
+          <div className="h-4 bg-gray-300 rounded w-1/4 mb-2"></div>
+          <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
+          <div className="h-3 bg-gray-300 rounded w-3/4"></div>
         </div>
-
-        <div className="flex flex-col gap-3">
-          <p className="text-slate-800 text-md font-poppins font-medium">
-            {eventData.attributes?.name}
-          </p>
-
-          <div className="flex flex-row items-center gap-3 ">
-            <img
-              src={Assets.icons.clock}
-              style={{ height: 20, width: 20 }}
-              alt=""
-            />
-            <p className="text-neutral-600 font-poppins font-normal text-xs">
-              {" "}
-              {eventData.attributes?.event_date_from} -{" "}
-              {eventData.attributes?.event_date_to}
-            </p>
-          </div>
-
-          <div className="flex flex-row items-center gap-3 ">
-            <img
-              src={Assets.icons.location}
-              style={{ height: 20, width: 20 }}
-              alt=""
-            />
-            <p className=" text-neutral-600 font-poppins font-normal text-xs">
-              {eventData.attributes?.location}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginTop: 16 }} />
-
-      <p className="text-slate-800 text-xs font-poppins font-medium">
-        About{" "}
-        <span className="text-neutral-600 text-xs font-normal">
-          {eventData.attributes?.about}
-        </span>
-      </p>
+      ) : eventData ? (
+        <p className="text-slate-800 text-xs font-poppins font-medium">
+          About{" "}
+          <span className="text-neutral-600 text-xs font-normal">
+            {eventData.attributes?.about || "No description available"}
+          </span>
+        </p>
+      ) : null}
 
       <div style={{ marginTop: 24 }} />
 

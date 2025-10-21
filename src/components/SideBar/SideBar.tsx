@@ -348,7 +348,8 @@ const SideBar = ({
         )}
 
         {/* Scrollable Navigation Area with Thin Scrollbar */}
-        <div className="flex flex-col h-[calc(100vh-200px)] pb-8">
+        {isExpanded && (
+          <div className="flex flex-col h-[calc(100vh-200px)] pb-8">
           <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto thin-scrollbar">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
@@ -418,6 +419,7 @@ const SideBar = ({
             })}
           </nav>
         </div>
+        )}
 
         {/* Fixed Bottom Section */}
         <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">

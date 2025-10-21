@@ -89,12 +89,14 @@ const ReusableRegistrationForm = ({
       case "tel":
         return (
           <input
-            type={field.type}
-            placeholder={isVisible ? field.placeholder : "Field is disabled"}
-            value={formData[field.name] || ""}
-            onChange={(e) => handleInputChange(field.name, e.target.value)}
-            {...inputProps}
-          />
+          type={field.type}
+          placeholder={isVisible ? field.placeholder : "Field is disabled"}
+          value={formData[field.name] || ""}
+          onChange={(e) => handleInputChange(field.name, e.target.value)}
+          readOnly={isVisible}
+          {...inputProps}
+        />
+        
         );
 
       case "textarea":
@@ -320,6 +322,7 @@ const ReusableRegistrationForm = ({
               title={isFieldVisible(field) ? "Disable field" : "Enable field"}
               disabled={!!toggleLoading[field.id]} // <-- disable while loading
             >
+              {/* REVERSED THE LOGIC: Always show Eye when field is visible, EyeOff when disabled */}
               {isFieldVisible(field) ? (
                 <Eye size={24} className="text-red-500" />
               ) : (
@@ -339,10 +342,6 @@ const ReusableRegistrationForm = ({
           )}
         </div>
       ))}
-
-      <button type="submit" className={submitButtonClassName}>
-        {submitButtonText}
-      </button>
     </form>
   );
 };
