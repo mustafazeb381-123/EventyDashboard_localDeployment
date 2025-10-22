@@ -226,6 +226,7 @@ console.log('planType------++++++=------------', planType)
       case 1:
         return (
           <RegistrationForm
+            plan={plan}
             toggleStates={toggleStates}
             setToggleStates={setToggleStates}
             eventId={finalEventId}
@@ -238,6 +239,7 @@ console.log('planType------++++++=------------', planType)
       case 2:
         return (
           <Badges
+            
             toggleStates={toggleStates}
             eventId={finalEventId}
             onNext={handleNext}
@@ -249,6 +251,7 @@ console.log('planType------++++++=------------', planType)
       case 3:
         return (
           <EmailConfirmation
+          
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
