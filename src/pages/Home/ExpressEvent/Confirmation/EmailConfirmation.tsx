@@ -35,17 +35,21 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   const handleExport = () => {
     emailEditorRef.current?.editor?.exportHtml((data: any) => {
       const { design, html } = data;
-      
+
       console.log("=== SAVING TEMPLATE DATA ===");
       console.log("Design JSON:", JSON.stringify(design, null, 2));
       console.log("HTML Content:", html);
       console.log("Design object structure:", {
         counters: design?.counters,
-        body: design?.body ? `Present (${Object.keys(design.body).length} properties)` : 'Missing',
-        head: design?.head ? `Present (${Object.keys(design.head).length} properties)` : 'Missing'
+        body: design?.body
+          ? `Present (${Object.keys(design.body).length} properties)`
+          : "Missing",
+        head: design?.head
+          ? `Present (${Object.keys(design.head).length} properties)`
+          : "Missing",
       });
       console.log("============================");
-      
+
       onSave(design, html);
       onClose();
     });
@@ -55,14 +59,23 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
         <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800">Edit Email Template</h3>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Edit Email Template
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-200"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="flex-1">
-          <EmailEditor ref={emailEditorRef} minHeight="100%" appearance={{ theme: "dark" }} />
+          <EmailEditor
+            ref={emailEditorRef}
+            minHeight="100%"
+            appearance={{ theme: "dark" }}
+          />
         </div>
 
         <div className="p-3 border-t flex justify-end bg-gray-100">
@@ -78,7 +91,13 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   );
 };
 
-const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) => {
+const TemplateModal = ({
+  template,
+  onClose,
+  onSelect,
+  onEdit,
+  onDelete,
+}: any) => {
   if (!template) return null;
 
   const content = template.html ? (
@@ -111,7 +130,10 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
               <Trash2 size={14} />
               {/* Delete Template */}
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
               <X size={20} className="text-gray-500" />
             </button>
           </div>
@@ -139,9 +161,9 @@ const TemplateThumbnail = ({ template }: any) => {
     <div className="w-full rounded-xl flex items-center justify-center bg-gray-100 relative">
       {template.html ? (
         // For edited templates: Show scaled preview of the actual HTML
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: 'scale(0.3)', transformOrigin: 'top left' }}
+          style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
         >
           <div
             className="w-full h-full"
@@ -150,9 +172,9 @@ const TemplateThumbnail = ({ template }: any) => {
         </div>
       ) : (
         // For static templates: Show the React component properly scaled
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: 'scale(0.3)', transformOrigin: 'top left' }}
+          style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
         >
           {template.component}
         </div>
@@ -163,7 +185,7 @@ const TemplateThumbnail = ({ template }: any) => {
 
 const apiService = {
   getAuthToken() {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token");
     console.log("token-------+++++++++++000000000000000", token);
     return token;
   },
@@ -173,28 +195,31 @@ const apiService = {
     try {
       const endpoint = this.getEndpoint();
       const typeParam = this.getTypeParam(flowType);
-      
+
       const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}?type=${typeParam}`;
-      
+
       console.log(`=== FETCHING TEMPLATES ===`);
       console.log("URL:", url);
       console.log("Flow Type:", flowType);
       console.log("Type Param:", typeParam);
-      
+
       const response = await fetch(url, {
         headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
-        }
+          Authorization: `Bearer ${this.getAuthToken()}`,
+          "Content-Type": "application/json",
+        },
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to fetch templates: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      console.log(`=== GET ${flowType.toUpperCase()} TEMPLATES RESPONSE ===`, data);
-      
+      console.log(
+        `=== GET ${flowType.toUpperCase()} TEMPLATES RESPONSE ===`,
+        data
+      );
+
       return data.data || [];
     } catch (error) {
       console.error(`Error fetching ${flowType} templates:`, error);
@@ -203,34 +228,44 @@ const apiService = {
   },
 
   // Save NEW template to API (POST)
-  async saveTemplate(eventId: string | number, flowType: string, html: string, title: string = 'Custom Template') {
+  async saveTemplate(
+    eventId: string | number,
+    flowType: string,
+    html: string,
+    title: string = "Custom Template"
+  ) {
     try {
       const endpoint = this.getEndpoint();
       const payload = this.getPayload(flowType, html, title);
-      
+
       console.log(`=== SAVING NEW ${flowType.toUpperCase()} TEMPLATE ===`);
       console.log("Event ID:", eventId);
       console.log("Endpoint:", endpoint);
       console.log("Payload:", payload);
-      
-      const response = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      
+
+      const response = await fetch(
+        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${this.getAuthToken()}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API Error ${response.status}:`, errorText);
-        throw new Error(`Failed to save template: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Failed to save template: ${response.status} - ${errorText}`
+        );
       }
-      
+
       const data = await response.json();
       console.log(`=== ${flowType.toUpperCase()} TEMPLATE SAVED ===`, data);
-      
+
       return data;
     } catch (error) {
       console.error(`Error saving ${flowType} template:`, error);
@@ -239,37 +274,45 @@ const apiService = {
   },
 
   // UPDATE existing template via PATCH API
-  async updateTemplate(eventId: string | number, templateId: string | number, flowType: string, html: string, title: string = 'Updated Template') {
+  async updateTemplate(
+    eventId: string | number,
+    templateId: string | number,
+    flowType: string,
+    html: string,
+    title: string = "Updated Template"
+  ) {
     try {
       const endpoint = this.getEndpoint();
       const typeParam = this.getTypeParam(flowType);
       const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}/${templateId}?type=${typeParam}`;
-      
+
       const payload = this.getUpdatePayload(flowType, html, title);
-      
+
       console.log(`=== UPDATING ${flowType.toUpperCase()} TEMPLATE ===`);
       console.log("URL:", url);
       console.log("Template ID:", templateId);
       console.log("Payload:", payload);
-      
+
       const response = await fetch(url, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.getAuthToken()}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
       });
-      
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`API Error ${response.status}:`, errorText);
-        throw new Error(`Failed to update template: ${response.status} - ${errorText}`);
+        throw new Error(
+          `Failed to update template: ${response.status} - ${errorText}`
+        );
       }
-      
+
       const data = await response.json();
       console.log(`=== ${flowType.toUpperCase()} TEMPLATE UPDATED ===`, data);
-      
+
       return data;
     } catch (error) {
       console.error(`Error updating ${flowType} template:`, error);
@@ -278,28 +321,32 @@ const apiService = {
   },
 
   // Delete template from API
-  async deleteTemplate(eventId: string | number, templateId: string | number, flowType: string) {
+  async deleteTemplate(
+    eventId: string | number,
+    templateId: string | number,
+    flowType: string
+  ) {
     try {
       const endpoint = this.getEndpoint();
       const typeParam = this.getTypeParam(flowType);
       const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}/${templateId}?type=${typeParam}`;
-      
+
       console.log(`=== DELETING TEMPLATE ===`);
       console.log("URL:", url);
       console.log("Template ID:", templateId);
       console.log("Flow Type:", flowType);
-      
+
       const response = await fetch(url, {
-        method: 'DELETE',
+        method: "DELETE",
         headers: {
-          'Authorization': `Bearer ${this.getAuthToken()}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.getAuthToken()}`,
+          "Content-Type": "application/json",
         },
       });
-      
-      console.log('Delete response status:', response.status);
-      console.log('Delete response ok:', response.ok);
-      
+
+      console.log("Delete response status:", response.status);
+      console.log("Delete response ok:", response.ok);
+
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
         try {
@@ -312,30 +359,33 @@ const apiService = {
         }
         throw new Error(`Failed to delete template: ${errorMessage}`);
       }
-      
+
       // Check if response has content before trying to parse JSON
-      const contentLength = response.headers.get('content-length');
-      const contentType = response.headers.get('content-type');
-      
-      console.log('Response content-length:', contentLength);
-      console.log('Response content-type:', contentType);
-      
+      const contentLength = response.headers.get("content-length");
+      const contentType = response.headers.get("content-type");
+
+      console.log("Response content-length:", contentLength);
+      console.log("Response content-type:", contentType);
+
       // If no content or not JSON, return success
-      if (contentLength === '0' || !contentType || !contentType.includes('application/json')) {
-        console.log('=== TEMPLATE DELETED SUCCESSFULLY (empty response) ===');
-        return { success: true, message: 'Template deleted successfully' };
+      if (
+        contentLength === "0" ||
+        !contentType ||
+        !contentType.includes("application/json")
+      ) {
+        console.log("=== TEMPLATE DELETED SUCCESSFULLY (empty response) ===");
+        return { success: true, message: "Template deleted successfully" };
       }
-      
+
       // If there is JSON content, parse it
       try {
         const data = await response.json();
-        console.log('=== TEMPLATE DELETED SUCCESSFULLY ===', data);
+        console.log("=== TEMPLATE DELETED SUCCESSFULLY ===", data);
         return data;
       } catch (jsonError) {
-        console.log('JSON parse error, but considering deletion successful');
-        return { success: true, message: 'Template deleted successfully' };
+        console.log("JSON parse error, but considering deletion successful");
+        return { success: true, message: "Template deleted successfully" };
       }
-      
     } catch (error) {
       console.error(`Error in deleteTemplate:`, error);
       throw error;
@@ -344,44 +394,44 @@ const apiService = {
 
   // All templates use the same endpoint
   getEndpoint() {
-    return 'confirmation_templates';
+    return "confirmation_templates";
   },
 
   // Map flow types to API type parameters - BASED ON YOUR SCREENSHOT
   getTypeParam(flowType: string) {
     const typeMap: { [key: string]: string } = {
-      thanks: 'ConfirmationThanksTemplate',
-      confirmation: 'ConfirmationRegisterTemplate',
-      reminder: 'ConfirmationReminderTemplate',
-      rejection: 'ConfirmationRejectionTemplate'
+      thanks: "ConfirmationThanksTemplate",
+      confirmation: "ConfirmationRegisterTemplate",
+      reminder: "ConfirmationReminderTemplate",
+      rejection: "ConfirmationRejectionTemplate",
     };
-    
-    return typeMap[flowType] || 'ConfirmationThanksTemplate';
+
+    return typeMap[flowType] || "ConfirmationThanksTemplate";
   },
 
   // Create payload for NEW template (POST)
   getPayload(flowType: string, html: string, title: string) {
     const type = this.getTypeParam(flowType);
-    
+
     return {
       confirmation_template: {
         content: html,
         default: false,
-        type: type
-      }
+        type: type,
+      },
     };
   },
 
   // Create payload for UPDATING template (PATCH)
   getUpdatePayload(flowType: string, html: string, title: string) {
     const type = this.getTypeParam(flowType);
-    
+
     return {
       confirmation_template: {
         content: html,
-        type: type
+        type: type,
         // Note: We don't include 'default' field for updates as it might be controlled separately
-      }
+      },
     };
   },
 
@@ -389,15 +439,17 @@ const apiService = {
   convertApiTemplates(apiTemplates: any[], flowType: string) {
     return apiTemplates.map((template: any, index: number) => ({
       id: `api-${template.id}`,
-      title: `${flowType.charAt(0).toUpperCase() + flowType.slice(1)} Template ${index + 1}`,
+      title: `${
+        flowType.charAt(0).toUpperCase() + flowType.slice(1)
+      } Template ${index + 1}`,
       component: null,
       design: null,
-      html: template.attributes?.content || '',
+      html: template.attributes?.content || "",
       apiId: template.id,
       // REMOVED: isDefault property since we don't need it anymore
-      type: template.attributes?.type || flowType
+      type: template.attributes?.type || flowType,
     }));
-  }
+  },
 };
 
 // -------- Main Component --------
@@ -407,17 +459,21 @@ interface EmailConfirmationProps {
   eventId?: string | number;
 }
 
-const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPrevious, eventId }) => {
+const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
+  onNext,
+  onPrevious,
+  eventId,
+}) => {
   // Log the received eventId
-  console.log('EmailConfirmation - Received eventId:', eventId);
-  
+  console.log("EmailConfirmation - Received eventId:", eventId);
+
   // Also check localStorage as fallback
   const localStorageEventId = localStorage.getItem("create_eventId");
-  console.log('EmailConfirmation - localStorage eventId:', localStorageEventId);
-  
+  console.log("EmailConfirmation - localStorage eventId:", localStorageEventId);
+
   // Use the eventId from props first, then fall back to localStorage
   const effectiveEventId = eventId || localStorageEventId;
-  console.log('EmailConfirmation - Effective eventId:', effectiveEventId);
+  console.log("EmailConfirmation - Effective eventId:", effectiveEventId);
 
   // Initialize flows structure - no longer using localStorage for emailTemplates
   const [flows, setFlows] = useState<any[]>([
@@ -465,25 +521,34 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   // Load templates from API
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId) return;
-    
+
     setIsLoading(true);
     try {
-      const apiTemplates = await apiService.getTemplates(effectiveEventId, currentFlow.id);
-      const convertedTemplates = apiService.convertApiTemplates(apiTemplates, currentFlow.id);
-      
-      console.log(`=== LOADED ${currentFlow.id.toUpperCase()} TEMPLATES FROM API ===`, convertedTemplates);
-      
+      const apiTemplates = await apiService.getTemplates(
+        effectiveEventId,
+        currentFlow.id
+      );
+      const convertedTemplates = apiService.convertApiTemplates(
+        apiTemplates,
+        currentFlow.id
+      );
+
+      console.log(
+        `=== LOADED ${currentFlow.id.toUpperCase()} TEMPLATES FROM API ===`,
+        convertedTemplates
+      );
+
       // Update flows with API templates
-      setFlows(prevFlows =>
-        prevFlows.map(flow =>
+      setFlows((prevFlows) =>
+        prevFlows.map((flow) =>
           flow.id === currentFlow.id
             ? { ...flow, templates: [...convertedTemplates] }
             : flow
         )
       );
     } catch (error) {
-      console.error('Error loading templates from API:', error);
-      toast.error('Failed to load templates. Please try again.');
+      console.error("Error loading templates from API:", error);
+      toast.error("Failed to load templates. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -495,9 +560,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
 
   // Select a template for the flow
   const handleSelectTemplate = (templateId: string) => {
-    setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: templateId });
+    setSelectedTemplates({
+      ...selectedTemplates,
+      [currentFlow.id]: templateId,
+    });
     setModalTemplate(null);
-    toast.success('Template selected successfully!');
+    toast.success("Template selected successfully!");
   };
 
   // When user clicks edit in TemplateModal
@@ -517,8 +585,10 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   // Handle deleting a template
   const handleDeleteTemplate = async (template: any) => {
     if (!effectiveEventId || !template.apiId) {
-      console.error("Cannot delete template: Missing eventId or template API ID");
-      toast.error('Cannot delete template: Missing required data.');
+      console.error(
+        "Cannot delete template: Missing eventId or template API ID"
+      );
+      toast.error("Cannot delete template: Missing required data.");
       return;
     }
 
@@ -556,7 +626,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     setIsLoading(true);
     try {
       // Delete from API - PASS ALL THREE PARAMETERS
-      await apiService.deleteTemplate(effectiveEventId, template.apiId, currentFlow.id);
+      await apiService.deleteTemplate(
+        effectiveEventId,
+        template.apiId,
+        currentFlow.id
+      );
 
       console.log("=== DELETING TEMPLATE ===");
       console.log("Template ID:", template.id);
@@ -568,7 +642,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       setFlows((prevFlows) =>
         prevFlows.map((flow) => ({
           ...flow,
-          templates: flow.templates.filter((tpl: any) => tpl.id !== template.id),
+          templates: flow.templates.filter(
+            (tpl: any) => tpl.id !== template.id
+          ),
         }))
       );
 
@@ -585,10 +661,10 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       setModalTemplate(null);
 
       // Show success message
-      toast.success('Template deleted successfully!');
+      toast.success("Template deleted successfully!");
     } catch (error) {
-      console.error('Error deleting template from API:', error);
-      toast.error('Failed to delete template. Please try again.');
+      console.error("Error deleting template from API:", error);
+      toast.error("Failed to delete template. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -602,9 +678,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     try {
       // Save to API first using POST
       const apiResponse = await apiService.saveTemplate(
-        effectiveEventId, 
-        currentFlow.id, 
-        html, 
+        effectiveEventId,
+        currentFlow.id,
+        html,
         `Custom ${currentFlow.label} Template`
       );
 
@@ -616,7 +692,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         html,
         apiId: apiResponse.data?.id,
         // REMOVED: isDefault property
-        type: currentFlow.id
+        type: currentFlow.id,
       };
 
       console.log("=== CREATING NEW TEMPLATE ===");
@@ -635,15 +711,18 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       );
 
       // Auto-select the newly created template
-      setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });
+      setSelectedTemplates({
+        ...selectedTemplates,
+        [currentFlow.id]: newTemplate.id,
+      });
 
       setIsCreatingNew(false);
       setIsEditorOpen(false);
-      
-      toast.success('Template created successfully!');
+
+      toast.success("Template created successfully!");
     } catch (error) {
-      console.error('Error saving template to API:', error);
-      toast.error('Failed to save template. Please try again.');
+      console.error("Error saving template to API:", error);
+      toast.error("Failed to save template. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -654,8 +733,14 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     console.log("=== UPDATE TEMPLATE CALLBACK ===");
     console.log("Is Creating New:", isCreatingNew);
     console.log("Editing Template:", editingTemplate);
-    console.log("Design received:", design ? `Present (${Object.keys(design).length} properties)` : 'Missing');
-    console.log("HTML received:", html ? `Present (${html.length} characters)` : 'Missing');
+    console.log(
+      "Design received:",
+      design ? `Present (${Object.keys(design).length} properties)` : "Missing"
+    );
+    console.log(
+      "HTML received:",
+      html ? `Present (${html.length} characters)` : "Missing"
+    );
     console.log("Event ID:", effectiveEventId);
     console.log("=============================");
 
@@ -663,9 +748,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       console.warn("Missing required data for updating template:", {
         editingTemplate: !!editingTemplate,
         eventId: !!effectiveEventId,
-        apiId: editingTemplate?.apiId
+        apiId: editingTemplate?.apiId,
       });
-      toast.error('Missing required data for updating template.');
+      toast.error("Missing required data for updating template.");
       return;
     }
 
@@ -673,18 +758,21 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     try {
       // Update existing template in API using PATCH
       await apiService.updateTemplate(
-        effectiveEventId, 
+        effectiveEventId,
         editingTemplate.apiId,
-        currentFlow.id, 
-        html, 
+        currentFlow.id,
+        html,
         editingTemplate.title
       );
 
       console.log("=== UPDATING EXISTING TEMPLATE ===");
       console.log("Template ID:", editingTemplate.id);
       console.log("API ID:", editingTemplate.apiId);
-      console.log("Previous Design:", editingTemplate.design ? `Present` : 'Missing');
-      console.log("New Design:", design ? `Present` : 'Missing');
+      console.log(
+        "Previous Design:",
+        editingTemplate.design ? `Present` : "Missing"
+      );
+      console.log("New Design:", design ? `Present` : "Missing");
       console.log("================================");
 
       // Update flows state: find template by id and update design/html
@@ -700,12 +788,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       // Clear editing template
       setEditingTemplate(null);
       setIsEditorOpen(false);
-      
+
       // Show success message
-      toast.success('Template updated successfully!');
+      toast.success("Template updated successfully!");
     } catch (error) {
-      console.error('Error updating template in API:', error);
-      toast.error('Failed to update template. Please try again.');
+      console.error("Error updating template in API:", error);
+      toast.error("Failed to update template. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -728,9 +816,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       toast.warning("Please select a template before proceeding");
       return;
     }
-    
-    console.log('EmailConfirmation - Proceeding to next step with eventId:', effectiveEventId);
-    
+
+    console.log(
+      "EmailConfirmation - Proceeding to next step with eventId:",
+      effectiveEventId
+    );
+
     if (currentFlowIndex < flows.length - 1) {
       setCurrentFlowIndex(currentFlowIndex + 1);
       toast.success(`Moving to ${flows[currentFlowIndex + 1].label}`);
@@ -741,17 +832,22 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       console.log("All Selected Templates:", selectedTemplates);
       console.log("Event ID:", effectiveEventId);
       console.log("====================================");
-      
+
       // Pass the eventId to the next component
       if (effectiveEventId) {
-        console.log('EmailConfirmation - Sending eventId to next component:', effectiveEventId);
+        console.log(
+          "EmailConfirmation - Sending eventId to next component:",
+          effectiveEventId
+        );
         onNext(effectiveEventId);
       } else {
-        console.log('EmailConfirmation - No eventId available, calling onNext without parameter');
+        console.log(
+          "EmailConfirmation - No eventId available, calling onNext without parameter"
+        );
         onNext();
       }
-      
-      toast.success('All email templates configured successfully!');
+
+      toast.success("All email templates configured successfully!");
     }
   };
 
@@ -790,7 +886,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft className="text-gray-500" size={20} />
-          <h2 className="text-xl font-semibold text-gray-900">{currentFlow.label}</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {currentFlow.label}
+          </h2>
         </div>
         {/* Progress Stepper */}
         <div className="flex items-center gap-2">
@@ -814,14 +912,22 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
                   {isCompleted ? (
                     <Check size={16} className="text-white" />
                   ) : (
-                    <span className={`text-sm font-medium ${isActive ? "text-pink-500" : "text-gray-400"}`}>
+                    <span
+                      className={`text-sm font-medium ${
+                        isActive ? "text-pink-500" : "text-gray-400"
+                      }`}
+                    >
                       {index + 1}
                     </span>
                   )}
                 </button>
 
                 {index !== flows.length - 1 && (
-                  <div className={`w-8 h-0.5 mx-1 ${selectedTemplates[flow.id] ? "bg-pink-500" : "bg-gray-300"}`} />
+                  <div
+                    className={`w-8 h-0.5 mx-1 ${
+                      selectedTemplates[flow.id] ? "bg-pink-500" : "bg-gray-300"
+                    }`}
+                  />
                 )}
               </div>
             );
@@ -848,8 +954,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
             <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-3">
               <Plus className="text-pink-500" size={24} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">Create New Template</h3>
-            <p className="text-sm text-gray-500 text-center">Design a custom email template from scratch</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">
+              Create New Template
+            </h3>
+            <p className="text-sm text-gray-500 text-center">
+              Design a custom email template from scratch
+            </p>
           </div>
 
           {/* Existing Templates */}
@@ -858,8 +968,8 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
               key={tpl.id}
               onClick={() => handleOpenModal(tpl)}
               className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative ${
-                selectedTemplates[currentFlow.id] === tpl.id 
-                  ? "border-pink-500 bg-pink-50 shadow-md" 
+                selectedTemplates[currentFlow.id] === tpl.id
+                  ? "border-pink-500 bg-pink-50 shadow-md"
                   : "border-gray-200 hover:border-pink-300"
               }`}
             >
@@ -880,7 +990,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
                 <TemplateThumbnail template={tpl} />
               </div>
               <div className="mt-3">
-                <h3 className="font-medium text-gray-900 text-center">{tpl.title}</h3>
+                <h3 className="font-medium text-gray-900 text-center">
+                  {tpl.title}
+                </h3>
                 {/* REMOVED: Default badge since we don't have default templates anymore */}
               </div>
             </div>
@@ -918,7 +1030,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
           onClick={handleBack}
           disabled={currentFlowIndex === 0 && !onPrevious}
           className={`cursor-pointer px-6 py-2 border rounded-lg transition-colors ${
-            currentFlowIndex === 0 && !onPrevious ? "text-gray-400 border-gray-200 cursor-not-allowed" : "text-gray-700 border-gray-300 hover:bg-gray-100"
+            currentFlowIndex === 0 && !onPrevious
+              ? "text-gray-400 border-gray-200 cursor-not-allowed"
+              : "text-gray-700 border-gray-300 hover:bg-gray-100"
           }`}
         >
           ← Previous
@@ -932,7 +1046,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
           onClick={handleNext}
           disabled={!selectedTemplates[currentFlow.id] || isLoading}
           className={`cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium ${
-            selectedTemplates[currentFlow.id] && !isLoading ? "bg-pink-500 hover:bg-pink-600" : "bg-gray-300 cursor-not-allowed"
+            selectedTemplates[currentFlow.id] && !isLoading
+              ? "bg-slate-800 hover:bg-slate-800"
+              : "bg-gray-300 cursor-not-allowed"
           }`}
         >
           {currentFlowIndex === flows.length - 1 ? "Finish" : "Next →"}

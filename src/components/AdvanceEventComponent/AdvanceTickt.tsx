@@ -34,14 +34,23 @@ const TicketEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
         <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800">Edit Ticket Template</h3>
-          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Edit Ticket Template
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-full hover:bg-gray-200"
+          >
             <X size={20} />
           </button>
         </div>
 
         <div className="flex-1">
-          <EmailEditor ref={emailEditorRef} minHeight="100%" appearance={{ theme: "dark" }} />
+          <EmailEditor
+            ref={emailEditorRef}
+            minHeight="100%"
+            appearance={{ theme: "dark" }}
+          />
         </div>
 
         <div className="p-3 border-t flex justify-end bg-gray-100">
@@ -57,7 +66,13 @@ const TicketEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   );
 };
 
-const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) => {
+const TemplateModal = ({
+  template,
+  onClose,
+  onSelect,
+  onEdit,
+  onDelete,
+}: any) => {
   if (!template) return null;
 
   const content = template.html ? (
@@ -87,7 +102,10 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
             >
               <Trash2 size={14} />
             </button>
-            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
               <X size={20} className="text-gray-500" />
             </button>
           </div>
@@ -110,9 +128,9 @@ const TemplateThumbnail = ({ template }: any) => {
   return (
     <div className="w-full rounded-xl flex items-center justify-center bg-gray-100 relative">
       {template.html ? (
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: 'scale(0.3)', transformOrigin: 'top left' }}
+          style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
         >
           <div
             className="w-full h-full"
@@ -120,9 +138,9 @@ const TemplateThumbnail = ({ template }: any) => {
           />
         </div>
       ) : (
-        <div 
+        <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: 'scale(0.3)', transformOrigin: 'top left' }}
+          style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
         >
           {template.component}
         </div>
@@ -138,7 +156,7 @@ const storageService = {
       const templates = localStorage.getItem(key);
       return templates ? JSON.parse(templates) : [];
     } catch (error) {
-      console.error('Error getting templates from localStorage:', error);
+      console.error("Error getting templates from localStorage:", error);
       return [];
     }
   },
@@ -150,47 +168,60 @@ const storageService = {
       const newTemplate = {
         ...template,
         id: `template-${Date.now()}`,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-      
+
       const updatedTemplates = [...existingTemplates, newTemplate];
       localStorage.setItem(key, JSON.stringify(updatedTemplates));
-      
+
       return newTemplate;
     } catch (error) {
-      console.error('Error saving template to localStorage:', error);
+      console.error("Error saving template to localStorage:", error);
       throw error;
     }
   },
 
-  updateTemplate(eventId: string | number, flowType: string, templateId: string, updates: any) {
+  updateTemplate(
+    eventId: string | number,
+    flowType: string,
+    templateId: string,
+    updates: any
+  ) {
     try {
       const key = `ticketTemplates_${eventId}_${flowType}`;
       const existingTemplates = this.getTemplates(eventId, flowType);
-      
+
       const updatedTemplates = existingTemplates.map((tpl: any) =>
-        tpl.id === templateId ? { ...tpl, ...updates, updatedAt: new Date().toISOString() } : tpl
+        tpl.id === templateId
+          ? { ...tpl, ...updates, updatedAt: new Date().toISOString() }
+          : tpl
       );
-      
+
       localStorage.setItem(key, JSON.stringify(updatedTemplates));
       return updatedTemplates.find((tpl: any) => tpl.id === templateId);
     } catch (error) {
-      console.error('Error updating template in localStorage:', error);
+      console.error("Error updating template in localStorage:", error);
       throw error;
     }
   },
 
-  deleteTemplate(eventId: string | number, flowType: string, templateId: string) {
+  deleteTemplate(
+    eventId: string | number,
+    flowType: string,
+    templateId: string
+  ) {
     try {
       const key = `ticketTemplates_${eventId}_${flowType}`;
       const existingTemplates = this.getTemplates(eventId, flowType);
-      
-      const filteredTemplates = existingTemplates.filter((tpl: any) => tpl.id !== templateId);
+
+      const filteredTemplates = existingTemplates.filter(
+        (tpl: any) => tpl.id !== templateId
+      );
       localStorage.setItem(key, JSON.stringify(filteredTemplates));
-      
-      return { success: true, message: 'Template deleted successfully' };
+
+      return { success: true, message: "Template deleted successfully" };
     } catch (error) {
-      console.error('Error deleting template from localStorage:', error);
+      console.error("Error deleting template from localStorage:", error);
       throw error;
     }
   },
@@ -198,15 +229,19 @@ const storageService = {
   convertStoredTemplates(storedTemplates: any[], flowType: string) {
     return storedTemplates.map((template: any, index: number) => ({
       id: template.id,
-      title: template.title || `${flowType.charAt(0).toUpperCase() + flowType.slice(1)} Template ${index + 1}`,
+      title:
+        template.title ||
+        `${flowType.charAt(0).toUpperCase() + flowType.slice(1)} Template ${
+          index + 1
+        }`,
       component: null,
       design: template.design || null,
-      html: template.html || '',
+      html: template.html || "",
       type: flowType,
       createdAt: template.createdAt,
-      updatedAt: template.updatedAt
+      updatedAt: template.updatedAt,
     }));
-  }
+  },
 };
 
 interface AdvanceTicketProps {
@@ -217,16 +252,22 @@ interface AdvanceTicketProps {
   totalSteps: number;
 }
 
-const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, eventId, currentStep, totalSteps }) => {
+const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
+  onNext,
+  onPrevious,
+  eventId,
+  currentStep,
+  totalSteps,
+}) => {
   const effectiveEventId = eventId || localStorage.getItem("create_eventId");
-  
+
   // FIXED: Added setFlows to useState
   const [flows, setFlows] = useState<any[]>([
     {
       id: "thanks",
       label: "Ticket",
       templates: [],
-    }
+    },
   ]);
 
   const [currentFlowIndex] = useState(0);
@@ -247,22 +288,28 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
 
   const loadTemplatesFromStorage = () => {
     if (!effectiveEventId) return;
-    
+
     setIsLoading(true);
     try {
-      const storedTemplates = storageService.getTemplates(effectiveEventId, currentFlow.id);
-      const convertedTemplates = storageService.convertStoredTemplates(storedTemplates, currentFlow.id);
-      
+      const storedTemplates = storageService.getTemplates(
+        effectiveEventId,
+        currentFlow.id
+      );
+      const convertedTemplates = storageService.convertStoredTemplates(
+        storedTemplates,
+        currentFlow.id
+      );
+
       // FIXED: Now setFlows is properly defined
-      setFlows(prevFlows =>
-        prevFlows.map(flow =>
+      setFlows((prevFlows) =>
+        prevFlows.map((flow) =>
           flow.id === currentFlow.id
             ? { ...flow, templates: [...convertedTemplates] }
             : flow
         )
       );
     } catch (error) {
-      console.error('Error loading templates from localStorage:', error);
+      console.error("Error loading templates from localStorage:", error);
     } finally {
       setIsLoading(false);
     }
@@ -272,7 +319,10 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
   const handleCloseModal = () => setModalTemplate(null);
 
   const handleSelectTemplate = (templateId: string) => {
-    setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: templateId });
+    setSelectedTemplates({
+      ...selectedTemplates,
+      [currentFlow.id]: templateId,
+    });
     setModalTemplate(null);
   };
 
@@ -291,7 +341,9 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
   const handleDeleteTemplate = async (template: any) => {
     if (!effectiveEventId || !template.id) return;
 
-    if (window.confirm(`Are you sure you want to delete "${template.title}"?`)) {
+    if (
+      window.confirm(`Are you sure you want to delete "${template.title}"?`)
+    ) {
       proceedWithDelete(template);
     }
   };
@@ -299,12 +351,18 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
   const proceedWithDelete = async (template: any) => {
     setIsLoading(true);
     try {
-      await storageService.deleteTemplate(effectiveEventId, currentFlow.id, template.id);
+      await storageService.deleteTemplate(
+        effectiveEventId,
+        currentFlow.id,
+        template.id
+      );
 
       setFlows((prevFlows) =>
         prevFlows.map((flow) => ({
           ...flow,
-          templates: flow.templates.filter((tpl: any) => tpl.id !== template.id),
+          templates: flow.templates.filter(
+            (tpl: any) => tpl.id !== template.id
+          ),
         }))
       );
 
@@ -318,7 +376,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
 
       setModalTemplate(null);
     } catch (error) {
-      console.error('Error deleting template from localStorage:', error);
+      console.error("Error deleting template from localStorage:", error);
     } finally {
       setIsLoading(false);
     }
@@ -333,12 +391,12 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
         title: `Custom ${currentFlow.label} Template`,
         design,
         html,
-        type: currentFlow.id
+        type: currentFlow.id,
       };
 
       const savedTemplate = storageService.saveTemplate(
-        effectiveEventId, 
-        currentFlow.id, 
+        effectiveEventId,
+        currentFlow.id,
         newTemplateData
       );
 
@@ -349,7 +407,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
         design,
         html,
         type: currentFlow.id,
-        createdAt: savedTemplate.createdAt
+        createdAt: savedTemplate.createdAt,
       };
 
       setFlows((prevFlows) =>
@@ -360,12 +418,15 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
         )
       );
 
-      setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });
+      setSelectedTemplates({
+        ...selectedTemplates,
+        [currentFlow.id]: newTemplate.id,
+      });
 
       setIsCreatingNew(false);
       setIsEditorOpen(false);
     } catch (error) {
-      console.error('Error saving template to localStorage:', error);
+      console.error("Error saving template to localStorage:", error);
     } finally {
       setIsLoading(false);
     }
@@ -379,13 +440,13 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
       const updates = {
         design,
         html,
-        title: editingTemplate.title
+        title: editingTemplate.title,
       };
 
       await storageService.updateTemplate(
-        effectiveEventId, 
+        effectiveEventId,
         currentFlow.id,
-        editingTemplate.id, 
+        editingTemplate.id,
         updates
       );
 
@@ -401,7 +462,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
       setEditingTemplate(null);
       setIsEditorOpen(false);
     } catch (error) {
-      console.error('Error updating template in localStorage:', error);
+      console.error("Error updating template in localStorage:", error);
     } finally {
       setIsLoading(false);
     }
@@ -419,11 +480,14 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
 
   const handleNext = () => {
     if (!selectedTemplates[currentFlow.id]) return;
-    
+
     if (effectiveEventId) {
-      localStorage.setItem(`selectedTicketTemplates_${effectiveEventId}`, JSON.stringify(selectedTemplates));
+      localStorage.setItem(
+        `selectedTicketTemplates_${effectiveEventId}`,
+        JSON.stringify(selectedTemplates)
+      );
     }
-    
+
     onNext(effectiveEventId);
   };
 
@@ -439,20 +503,24 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft className="text-gray-500" size={20} />
-          <h2 className="text-xl font-semibold text-gray-900">Advance Ticket</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            Advance Ticket
+          </h2>
         </div>
-        
+
         {/* Progress Steps */}
         <div className="flex items-center gap-2">
           {[0, 1, 2, 3].map((step) => (
             <div key={step} className="flex items-center">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
-                step === currentStep 
-                  ? "border-pink-500 bg-white text-pink-500" 
-                  : step < currentStep 
-                  ? "bg-pink-500 border-pink-500 text-white"
-                  : "border-gray-300 bg-white text-gray-400"
-              }`}>
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  step === currentStep
+                    ? "border-pink-500 bg-white text-pink-500"
+                    : step < currentStep
+                    ? "bg-pink-500 border-pink-500 text-white"
+                    : "border-gray-300 bg-white text-gray-400"
+                }`}
+              >
                 {step < currentStep ? (
                   <Check size={16} />
                 ) : (
@@ -460,9 +528,11 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
                 )}
               </div>
               {step < 3 && (
-                <div className={`w-8 h-0.5 mx-1 ${
-                  step < currentStep ? "bg-pink-500" : "bg-gray-300"
-                }`} />
+                <div
+                  className={`w-8 h-0.5 mx-1 ${
+                    step < currentStep ? "bg-pink-500" : "bg-gray-300"
+                  }`}
+                />
               )}
             </div>
           ))}
@@ -485,8 +555,12 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
             <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-3">
               <Plus className="text-pink-500" size={24} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">Create New Template</h3>
-            <p className="text-sm text-gray-500 text-center">Design a custom ticket template from scratch</p>
+            <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">
+              Create New Template
+            </h3>
+            <p className="text-sm text-gray-500 text-center">
+              Design a custom ticket template from scratch
+            </p>
           </div>
 
           {currentFlow.templates.map((tpl: any) => (
@@ -494,8 +568,8 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
               key={tpl.id}
               onClick={() => handleOpenModal(tpl)}
               className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative ${
-                selectedTemplates[currentFlow.id] === tpl.id 
-                  ? "border-pink-500 bg-pink-50 shadow-md" 
+                selectedTemplates[currentFlow.id] === tpl.id
+                  ? "border-pink-500 bg-pink-50 shadow-md"
                   : "border-gray-200 hover:border-pink-300"
               }`}
             >
@@ -514,7 +588,9 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
                 <TemplateThumbnail template={tpl} />
               </div>
               <div className="mt-3">
-                <h3 className="font-medium text-gray-900 text-center">{tpl.title}</h3>
+                <h3 className="font-medium text-gray-900 text-center">
+                  {tpl.title}
+                </h3>
               </div>
             </div>
           ))}
@@ -560,7 +636,9 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({ onNext, onPrevious, event
           onClick={handleNext}
           disabled={!selectedTemplates[currentFlow.id] || isLoading}
           className={`cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium ${
-            selectedTemplates[currentFlow.id] && !isLoading ? "bg-pink-500 hover:bg-pink-600" : "bg-gray-300 cursor-not-allowed"
+            selectedTemplates[currentFlow.id] && !isLoading
+              ? "bg-slate-800 hover:bg-slate-800"
+              : "bg-gray-300 cursor-not-allowed"
           }`}
         >
           Next →

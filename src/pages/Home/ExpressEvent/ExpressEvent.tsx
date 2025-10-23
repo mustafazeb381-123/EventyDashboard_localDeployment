@@ -17,9 +17,9 @@ export interface ToggleStates {
 
 const ExpressEvent = () => {
   const location = useLocation();
-  console.log('location--------', location)
+  console.log("location--------", location);
   const planType = location?.state?.plan;
-console.log('planType------++++++=------------', planType)
+  console.log("planType------++++++=------------", planType);
   const { id: routeEventId } = useParams();
 
   const {
@@ -34,7 +34,7 @@ console.log('planType------++++++=------------', planType)
     lastEdit,
     currentStep: initialStep,
   } = location.state || {};
-  console.log('plan0000000__00000000+++++++++', plan)
+  console.log("plan0000000__00000000+++++++++", plan);
 
   // Use route event ID if available, otherwise fall back to location state eventId
   const [createdEventId, setCreatedEventId] = useState<string | undefined>(
@@ -88,7 +88,7 @@ console.log('planType------++++++=------------', planType)
 
   // Accept eventId from child and update for next steps
   const handleNext = (nextEventId?: string | number) => {
-    console.log('ExpressEvent - Received eventId from child:', nextEventId);
+    console.log("ExpressEvent - Received eventId from child:", nextEventId);
     if (nextEventId) {
       setCreatedEventId(String(nextEventId));
       // Also update localStorage to persist
@@ -239,7 +239,6 @@ console.log('planType------++++++=------------', planType)
       case 2:
         return (
           <Badges
-            
             toggleStates={toggleStates}
             eventId={finalEventId}
             onNext={handleNext}
@@ -251,7 +250,6 @@ console.log('planType------++++++=------------', planType)
       case 3:
         return (
           <EmailConfirmation
-          
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
