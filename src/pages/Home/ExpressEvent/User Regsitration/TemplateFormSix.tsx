@@ -25,8 +25,8 @@ const TemplateFormSix = ({
           {/* Show template banner content when no banner is uploaded */}
           {!eventData?.attributes?.registration_page_banner && (
             <div className="text-white text-center">
-              <h1 className="text-xl font-bold">Event Banner</h1>
-              <p className="mt-2 text-sm opacity-90">Template Six Design</p>
+              {/* <h1 className="text-xl font-bold">Event Banner</h1>
+              <p className="mt-2 text-sm opacity-90">Template Six Design</p> */}
             </div>
           )}
         </div>

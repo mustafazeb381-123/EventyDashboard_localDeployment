@@ -15,6 +15,7 @@ import {
   getShowEventData,
   updateEventById,
 } from "../../../../apis/apiHelpers";
+import CustomizeColorPicker from "@/components/CustomizeColor/CustomizeColor";
 
 type MainDataProps = {
   onNext: () => void;
@@ -73,7 +74,7 @@ const MainData = ({
   lastEdit,
   onEventCreated,
 }: MainDataProps) => {
-  console.log("selected plans in main data :", plan);
+  console.log("selected plans in main data ::::::::::::::::::::::", plan);
   console.log("event data for editing:", eventData);
   console.log("is editing mode:", isEditing);
   console.log("event attributes:", eventAttributes);
@@ -87,6 +88,7 @@ const MainData = ({
   const [showEventData, setShowEventData] = useState<boolean>(false);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
+  const [ticket, setTicket] = useState(true)
   const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
     description: "",
@@ -843,6 +845,10 @@ const MainData = ({
             </p>
           )}
 
+          {
+            plan==="advanced" ? <CustomizeColorPicker /> : null
+          }
+
           {/* Require Approval Toggle */}
           <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
             <div className="flex items-center gap-2 sm:gap-3">
@@ -881,7 +887,42 @@ const MainData = ({
               </div>
             </label>
           </div>
-        </div>
+          {/* Require Ticket */}
+      {plan === "advanced" ?  
+          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <label className="text-sm font-medium text-gray-700">
+                Ticket
+              </label>
+              <Info size={14} className="text-gray-400 flex-shrink-0" />
+            </div>
+
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={ticket}
+                onChange={(e) => {
+                  const isChecked = e.target.checked;
+                  console.log("Require ticket toggled:", isChecked);
+                  setTicket(isChecked);
+                  handleInputChange("requiredTicket", isChecked); 
+                }}
+                className="sr-only"
+              />
+              <div
+                className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                  ticket ? "bg-teal-500" : "bg-gray-200"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5 ${
+                    ticket ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
+              </div>
+            </label>
+          </div>:null}
+</div>
 
         {/* Event Details Section */}
         <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">

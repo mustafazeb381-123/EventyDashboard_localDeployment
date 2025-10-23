@@ -195,6 +195,22 @@ export const updateSessionAreaApi = (eventId: string, areaId: string, data: any)
 }
 
 
+export const createEmailTemplate = (eventId: string | number, confirmationData: any) => {
+  return axiosInstance.post(`events/${eventId}/confirmations`, confirmationData);
+};
+export const updatedEmailTemplate = (eventId: string | number, confirmationData: any) => {
+  return axiosInstance.patch(`events/${eventId}/confirmations`, confirmationData);
+};
+
+export const getEmailTemplate = (eventId: string | number) => {
+  return axiosInstance.get(`events/${eventId}/confirmations`);
+};
+
+export const deleteEmailTemplate = (eventId: string | number, confirmationId: string | number) => {
+  return axiosInstance.delete(`events/${eventId}/confirmations/${confirmationId}`);
+};
+
+
 
 
 

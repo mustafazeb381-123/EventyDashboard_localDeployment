@@ -7,7 +7,7 @@ import { downloadEventUserTemplate } from "@/apis/apiHelpers";
 import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
 import { Trash2, Mail, Plus, Edit, Search } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterdUser() {
@@ -37,6 +37,15 @@ function RegisterdUser() {
   const [sendingCredentials, setSendingCredentials] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
+
+  // Store event user length in localStorage whenever eventUsers changes
+  useEffect(() => {
+    if (eventId) {
+      const storageKey = `eventUsersLength_${eventId}`;
+      localStorage.setItem(storageKey, eventUsers.length?.toString());
+    }
+  }, [eventUsers, eventId]);
+
 
   const getPaginationNumbers = () => {
     let pages = [];
@@ -338,7 +347,18 @@ function RegisterdUser() {
   return (
 
     <div className="bg-white min-h-screen p-6">
-
+ <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
       <div className="max-w-8xl mx-auto">
 
         <h1 className="text-2xl font-bold mb-4">Registered Users</h1>

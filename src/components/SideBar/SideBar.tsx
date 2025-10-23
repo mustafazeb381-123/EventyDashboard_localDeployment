@@ -18,8 +18,6 @@ import {
   BarChart3,
   Ticket,
   IdCard,
-  
-
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -44,7 +42,8 @@ const SideBar = ({
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
     {}
   );
-  const naviagte = useNavigate();
+  const [registeredUsersCount, setRegisteredUsersCount] = useState<string>("0");
+  const navigate = useNavigate();
   const location = useLocation();
 
   // Debug log to track sidebar state
@@ -54,6 +53,25 @@ const SideBar = ({
     currentEventId,
     isRTL,
   });
+
+  // Get registered users count from localStorage
+  const getRegisteredUsersCount = () => {
+    if (!currentEventId) {
+      setRegisteredUsersCount("0");
+      return;
+    }
+
+    const storageKey = `eventUsersLength_${currentEventId}`;
+    const storedCount = localStorage.getItem(storageKey);
+    
+    if (storedCount) {
+      setRegisteredUsersCount(storedCount);
+      console.log(`Retrieved registered users count: ${storedCount} for event: ${currentEventId}`);
+    } else {
+      setRegisteredUsersCount("0");
+      console.log(`No stored count found for event: ${currentEventId}`);
+    }
+  };
 
   // Set active item based on current route
   useEffect(() => {
@@ -93,7 +111,30 @@ const SideBar = ({
     } else if (currentPath === "/committees") {
       setActiveItem("Committees");
     }
+
+    // Get registered users count when route or eventId changes
+    getRegisteredUsersCount();
   }, [currentEventId, location.pathname]);
+
+  // Listen for storage changes to update the count in real-time
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (currentEventId && e.key === `eventUsersLength_${currentEventId}`) {
+        console.log('Storage changed, updating registered users count:', e.newValue);
+        setRegisteredUsersCount(e.newValue || "0");
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also set up a periodic check for changes (in case same tab updates)
+    const interval = setInterval(getRegisteredUsersCount, 2000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [currentEventId]);
 
   const toggleSubmenu = (label: string) => {
     setExpandedMenus((prev) => ({
@@ -111,7 +152,7 @@ const SideBar = ({
     {
       icon: Users,
       label: "Registered Users",
-      badge: "20",
+      badge: registeredUsersCount, // Use the dynamic count from localStorage
       path: currentEventId
         ? `/regesterd_user?eventId=${currentEventId}`
         : "/regesterd_user",
@@ -188,7 +229,6 @@ const SideBar = ({
         },
       ],
     },
-    
     {
       icon: CheckCircle,
       label: "Attendees",
@@ -216,7 +256,6 @@ const SideBar = ({
         ? `/Onboarding?eventId=${currentEventId}`
         : "/Onboarding",
     },
-    
     {
       icon: Users,
       label: "Committees",
@@ -224,10 +263,6 @@ const SideBar = ({
         ? `/committees?eventId=${currentEventId}`
         : "/committees",
     },
-    // {
-    //   path: "TicketManagement",
-    //   element: <TicketManagement />,
-    // },
     {
       icon: Ticket,
       label: "Ticket Management",
@@ -235,19 +270,17 @@ const SideBar = ({
         ? `/TicketManagement?eventId=${currentEventId}`
         : "/TicketManagement",
     },
-    
   ];
 
   const handleLogout = async () => {
     try {
       await localStorage.removeItem("token");
-      toast.success("Logout Succssfuly");
+      toast.success("Logout Successful");
       setTimeout(() => {
-        naviagte("/login");
+        navigate("/login");
       }, 4000);
     } catch (error) {
       console.log("error", error);
-    } finally {
     }
   };
 
@@ -273,7 +306,7 @@ const SideBar = ({
               )}
               <div
                 onClick={() => {
-                  naviagte("/");
+                  navigate("/");
                   if (canToggle) {
                     setIsExpanded(!isExpanded);
                   }
@@ -314,8 +347,10 @@ const SideBar = ({
           </div>
         )}
 
+        {/* Scrollable Navigation Area with Thin Scrollbar */}
         {isExpanded && (
-          <nav className="flex-1 px-2 py-4 space-y-2">
+          <div className="flex flex-col h-[calc(100vh-200px)] pb-8">
+          <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto thin-scrollbar">
             {menuItems.map((item, index) => {
               const Icon = item.icon;
               const isActive = activeItem === item.label;
@@ -336,7 +371,7 @@ const SideBar = ({
                       } else {
                         setActiveItem(item.label);
                         if (item.path) {
-                          naviagte(item.path);
+                          navigate(item.path);
                         }
                       }
                     }}
@@ -368,7 +403,7 @@ const SideBar = ({
                             onClick={() => {
                               setActiveItem(subItem.label);
                               if (subItem.path) {
-                                naviagte(subItem.path);
+                                navigate(subItem.path);
                               }
                             }}
                           >
@@ -383,9 +418,11 @@ const SideBar = ({
               );
             })}
           </nav>
+        </div>
         )}
 
-        <div className="absolute bottom-0 left-0 right-0 p-2 border-t border-slate-700/50 space-y-2 bg-gradient-to-b from-slate-900 to-blue-900">
+        {/* Fixed Bottom Section */}
+        <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
           <Button
             variant="ghost"
             className={`w-full ${
@@ -420,6 +457,31 @@ const SideBar = ({
           onClick={() => setIsExpanded(false)}
         />
       )}
+
+      {/* Add CSS for thin scrollbar */}
+      <style jsx>{`
+        .thin-scrollbar {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar-thumb {
+          background-color: rgba(148, 163, 184, 0.3);
+          border-radius: 2px;
+        }
+        
+        .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(148, 163, 184, 0.5);
+        }
+      `}</style>
     </>
   );
 };
