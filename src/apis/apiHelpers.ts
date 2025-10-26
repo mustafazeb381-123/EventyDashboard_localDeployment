@@ -174,10 +174,6 @@ export const sendCredentials = (eventId: string, userIds: number[] | string[]) =
 };
 
 
-
-
-
-
 export const createSessionAreaApi = (data: any, id: string) => {
   return axiosInstance.post(`events/${id}/session_areas`, data);
 }
@@ -209,6 +205,87 @@ export const getEmailTemplate = (eventId: string | number) => {
 export const deleteEmailTemplate = (eventId: string | number, confirmationId: string | number) => {
   return axiosInstance.delete(`events/${eventId}/confirmations/${confirmationId}`);
 };
+
+// Post Gate
+export const createGate = (data: any) => {
+  return axiosInstance.post(`/check_in_and_out_gates/`, data);
+};
+
+// Get Gates
+export const getGates = (eventId: string) => {
+  return axiosInstance.get(`/check_in_and_out_gates`, {
+    params: { event_id: eventId },
+  });
+};
+
+export const deleteGate = (gateId: string | number, eventId: string | number) => {
+  return axiosInstance.delete(`/check_in_and_out_gates/${gateId}`,
+    { params: { event_id: eventId } }
+  );
+};
+
+// Get a specific gate by ID
+export const getGateById = (gateId: string | number) => {
+  return axiosInstance.get(`/check_in_and_out_gates/${gateId}`);
+};
+
+// ✅ Check in user for event
+export const checkInUser = (eventId: string | number, userId: string | number) => {
+  return axiosInstance.post(
+    `/events/${eventId}/check_user_event_statuses/check_in`,
+    {
+      check_user_event_status: {
+        event_user_id: userId,
+      },
+    }
+  );
+};
+
+export const getUsersNeedCheckIn = (eventId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/check_user_event_statuses/need_check_in`);
+};
+
+// Get checked-in users for an event
+export const getCheckedInUsers = (eventId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/check_user_event_statuses/checked_in_users`);
+};
+
+// ✅ Check-Out
+export const checkOutUser = (eventId: string | number, userId: string | number, statusId: string | number) => {
+  return axiosInstance.patch(`/events/${eventId}/check_user_event_statuses/${statusId}/check_out`,
+    {
+      event_user_id: userId,
+    }
+  );
+};
+
+
+export const getUsersNeedCheckOut = (eventId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/check_user_event_statuses/need_check_out`);
+};
+
+// ✅ Bulk Check-In
+export const bulkCheckInUsers = (eventId: string | number, userIds: number[] | string[]) => {
+  return axiosInstance.post(
+    `/events/${eventId}/check_user_event_statuses/check_in`,
+    {
+      event_user_ids: userIds
+    }
+  );
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

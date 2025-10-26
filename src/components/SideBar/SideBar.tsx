@@ -63,10 +63,10 @@ const SideBar = ({
 
     const storageKey = `eventUsersLength_${currentEventId}`;
     const storedCount = localStorage.getItem(storageKey);
-    
+
     if (storedCount) {
       setRegisteredUsersCount(storedCount);
-      console.log(`Retrieved registered users count: ${storedCount} for event: ${currentEventId}`);
+      // console.log(`Retrieved registered users count: ${storedCount} for event: ${currentEventId}`);
     } else {
       setRegisteredUsersCount("0");
       console.log(`No stored count found for event: ${currentEventId}`);
@@ -126,10 +126,10 @@ const SideBar = ({
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
+
     // Also set up a periodic check for changes (in case same tab updates)
     const interval = setInterval(getRegisteredUsersCount, 2000);
-    
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       clearInterval(interval);
@@ -205,7 +205,7 @@ const SideBar = ({
             : "/invitation/VipUsers",
         },
       ],
-    },  
+    },
     {
       icon: MessagesSquare,
       label: "Communications",
@@ -287,11 +287,9 @@ const SideBar = ({
   return (
     <>
       <aside
-        className={`fixed ${
-          isRTL ? "right-0" : "left-0"
-        } top-0 h-screen bg-gradient-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${
-          isExpanded ? "w-[280px]" : "w-20"
-        }`}
+        className={`fixed ${isRTL ? "right-0" : "left-0"
+          } top-0 h-screen bg-gradient-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${isExpanded ? "w-[280px]" : "w-20"
+          }`}
       >
         {isExpanded && (
           <div className="px-4 py-4 border-b">
@@ -360,11 +358,10 @@ const SideBar = ({
               return (
                 <div key={index}>
                   <div
-                    className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${
-                      isActive
+                    className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${isActive
                         ? "bg-blue-600/30 text-white border border-blue-500/30"
                         : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                    }`}
+                      }`}
                     onClick={() => {
                       if (hasSubmenu) {
                         toggleSubmenu(item.label);
@@ -395,11 +392,10 @@ const SideBar = ({
                         return (
                           <div
                             key={subIndex}
-                            className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                              isSubActive
+                            className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${isSubActive
                                 ? "bg-blue-500/20 text-white border border-blue-400/30"
                                 : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
-                            }`}
+                              }`}
                             onClick={() => {
                               setActiveItem(subItem.label);
                               if (subItem.path) {
@@ -425,9 +421,8 @@ const SideBar = ({
         <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
           <Button
             variant="ghost"
-            className={`w-full ${
-              isExpanded ? "justify-start px-3" : "justify-center px-3"
-            } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
+            className={`w-full ${isExpanded ? "justify-start px-3" : "justify-center px-3"
+              } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
           >
             <Settings className="h-4 w-4" />
             {isExpanded && (
@@ -439,9 +434,8 @@ const SideBar = ({
           <Button
             onClick={handleLogout}
             variant="ghost"
-            className={`w-full ${
-              isExpanded ? "justify-start px-3" : "justify-center px-3"
-            } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
+            className={`w-full ${isExpanded ? "justify-start px-3" : "justify-center px-3"
+              } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
           >
             <LogOut className="h-4 w-4" />
             {isExpanded && (
