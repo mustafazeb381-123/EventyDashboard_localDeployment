@@ -547,7 +547,6 @@ const RegistrationForm = ({
     setConfirmationToggleStates(toggleStates);
   };
 
-  // Updated to pass eventId to parent
   const handleConfirmationNext = async () => {
     try {
       setIsLoading(true);
@@ -559,7 +558,7 @@ const RegistrationForm = ({
           "RegistrationForm - Sending eventId to ExpressEvent:",
           effectiveEventId
         );
-        onNext(effectiveEventId);
+        onNext(effectiveEventId, plan); // ADD plan parameter here
       } else {
         toast.error("Cannot proceed without event ID");
       }
@@ -598,6 +597,8 @@ const RegistrationForm = ({
     }
   };
 
+  // In RegistrationForm.tsx - UPDATE the handleNextClick function:
+
   const handleNextClick = () => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
@@ -607,7 +608,7 @@ const RegistrationForm = ({
         setInternalStep(1);
       }
     } else {
-      if (onNext) onNext();
+      if (onNext) onNext(effectiveEventId, plan); // ADD parameters here
     }
   };
 
@@ -654,7 +655,19 @@ const RegistrationForm = ({
   return (
     <>
       {plan === "advanced" ? (
-        <AdvanceEvent />
+        <AdvanceEvent
+          onComplete={(eventId) => {
+            console.log(
+              "🔄 Advanced flow completed, moving to main Badge step"
+            );
+            // Call onNext to move to the next main step (Badge indicator)
+            if (onNext) {
+              onNext(eventId, plan);
+            }
+          }}
+          onPrevious={onPrevious}
+          eventId={effectiveEventId}
+        />
       ) : (
         <div className="w-full mx-5 bg-white p-5 rounded-2xl">
           {/* Header */}

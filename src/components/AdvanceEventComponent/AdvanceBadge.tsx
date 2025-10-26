@@ -63,6 +63,7 @@ interface AdvanceBadgeProps {
 const AdvanceBadge: React.FC<AdvanceBadgeProps> = ({
   onNext,
   onPrevious,
+  eventId,
   currentStep,
   totalSteps,
 }) => {
@@ -1716,13 +1717,23 @@ const AdvanceBadge: React.FC<AdvanceBadgeProps> = ({
         >
           ← Previous
         </button>
-
         <span className="text-sm text-gray-500">
           Step {currentStep + 1} of {totalSteps}
         </span>
-
+        {/* UPDATED: Finish button to pass eventId */}
+        // In AdvanceBadge.tsx - UPDATE the Finish button:
         <button
-          onClick={() => onNext()}
+          onClick={() => {
+            console.log(
+              "🎯 AdvanceBadge - Finish button clicked, moving to main Badge step"
+            );
+            // Pass the eventId when finishing to move to the next main step
+            if (eventId) {
+              onNext(eventId);
+            } else {
+              onNext();
+            }
+          }}
           className="cursor-pointer px-6 py-2 rounded-lg bg-slate-800 text-white hover:bg-slate-800 transition-colors font-medium"
         >
           Finish

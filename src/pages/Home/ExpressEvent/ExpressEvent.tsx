@@ -86,15 +86,27 @@ const ExpressEvent = () => {
     eventDetails: false,
   });
 
-  // Accept eventId from child and update for next steps
-  const handleNext = (nextEventId?: string | number) => {
-    console.log("ExpressEvent - Received eventId from child:", nextEventId);
+  // Accept eventId from child and update for next steps - UPDATED to accept plan parameter
+  // In ExpressEvent.tsx - REPLACE the existing handleNext function with this:
+
+  const handleNext = (nextEventId?: string | number, planType?: string) => {
+    console.log("ExpressEvent - handleNext called with:", {
+      nextEventId,
+      planType,
+      currentStep,
+    });
+
     if (nextEventId) {
       setCreatedEventId(String(nextEventId));
-      // Also update localStorage to persist
       localStorage.setItem("create_eventId", String(nextEventId));
     }
-    setCurrentStep((prev: number) => Math.min(prev + 1, steps.length - 1));
+
+    // Always move to next step, regardless of plan type
+    setCurrentStep((prev: number) => {
+      const nextStep = Math.min(prev + 1, steps.length - 1);
+      console.log("Moving from step", prev, "to step", nextStep);
+      return nextStep;
+    });
   };
 
   const handlePrevious = () => {
