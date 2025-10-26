@@ -16,8 +16,15 @@ import {
   Clock,
   AlertCircle,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
+import { getEventUsers } from "@/apis/apiHelpers";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 function PrintBadges() {
+  const location = useLocation();
+  const [eventId, setEventId] = useState<string | null>(null);
+  const [eventUsers, setUsers] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [activePopup, setActivePopup] = useState(null);
   const [selectedUsers, setSelectedUsers] = useState(new Set());
@@ -25,171 +32,62 @@ function PrintBadges() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-
-  const users = [
-    {
-      id: "001",
-      name: "Ethan Carter",
-      email: "ethan.carter@company.com",
-      phone: "+1 (555) 123-4567",
-      userType: "Speaker",
-      organization: "TechCorp Inc.",
-      token: "TC4dOZx9K2",
-      status: "Printed",
-      avatar: "EC",
-      printedAt: "2025-09-14 10:30 AM",
-      department: "Engineering",
-    },
-    {
-      id: "002",
-      name: "Luna Thompson",
-      email: "luna.thompson@startup.io",
-      phone: "+1 (555) 234-5678",
-      userType: "Attendee",
-      organization: "StartupHub",
-      token: "LT8xM3n5P1",
-      status: "Pending",
-      avatar: "LT",
-      department: "Marketing",
-    },
-    {
-      id: "003",
-      name: "Liam Anderson",
-      email: "liam.anderson@design.co",
-      phone: "+1 (555) 345-6789",
-      userType: "VIP",
-      organization: "Design Studio",
-      token: "LA2bQ7r4N8",
-      status: "Printed",
-      avatar: "LA",
-      printedAt: "2025-09-14 09:15 AM",
-      department: "Design",
-    },
-    {
-      id: "004",
-      name: "Samantha Rivers",
-      email: "samantha.rivers@media.com",
-      phone: "+1 (555) 456-7890",
-      userType: "Media",
-      organization: "Media Group",
-      token: "SR5kL9m2X6",
-      status: "Error",
-      avatar: "SR",
-      department: "Communications",
-    },
-    {
-      id: "005",
-      name: "Michael Chen",
-      email: "michael.chen@finance.org",
-      phone: "+1 (555) 567-8901",
-      userType: "Sponsor",
-      organization: "Finance Corp",
-      token: "MC3pW8q1Y7",
-      status: "Printed",
-      avatar: "MC",
-      printedAt: "2025-09-14 11:45 AM",
-      department: "Finance",
-    },
-    {
-      id: "006",
-      name: "Emma Wilson",
-      email: "emma.wilson@health.gov",
-      phone: "+1 (555) 678-9012",
-      userType: "Government",
-      organization: "Health Department",
-      token: "EW7tR2s9K4",
-      status: "Pending",
-      avatar: "EW",
-      department: "Public Health",
-    },
-    {
-      id: "007",
-      name: "James Rodriguez",
-      email: "james.rodriguez@edu.ac.uk",
-      phone: "+44 20 7946 0958",
-      userType: "Academic",
-      organization: "University of London",
-      token: "JR1nH6v3M8",
-      status: "Printed",
-      avatar: "JR",
-      printedAt: "2025-09-14 08:20 AM",
-      department: "Research",
-    },
-    {
-      id: "008",
-      name: "Sofia Martinez",
-      email: "sofia.martinez@nonprofit.org",
-      phone: "+1 (555) 789-0123",
-      userType: "NGO",
-      organization: "Global Aid Foundation",
-      token: "SM4jB5z7L2",
-      status: "Error",
-      avatar: "SM",
-      department: "Operations",
-    },
-    {
-      id: "009",
-      name: "Alexander Kim",
-      email: "alex.kim@venture.capital",
-      phone: "+1 (555) 890-1234",
-      userType: "Investor",
-      organization: "VentureMax",
-      token: "AK9eT1w6P3",
-      status: "Pending",
-      avatar: "AK",
-      department: "Investment",
-    },
-    {
-      id: "010",
-      name: "Isabella Foster",
-      email: "isabella.foster@consulting.biz",
-      phone: "+1 (555) 901-2345",
-      userType: "Consultant",
-      organization: "Strategic Solutions",
-      token: "IF2cY8u4R9",
-      status: "Printed",
-      avatar: "IF",
-      printedAt: "2025-09-13 04:30 PM",
-      department: "Strategy",
-    },
-    {
-      id: "011",
-      name: "David Park",
-      email: "david.park@retail.com",
-      phone: "+1 (555) 012-3456",
-      userType: "Partner",
-      organization: "Retail Giants",
-      token: "DP6fG3h5K8",
-      status: "Pending",
-      avatar: "DP",
-      department: "Partnerships",
-    },
-    {
-      id: "012",
-      name: "Rachel Green",
-      email: "rachel.green@analytics.io",
-      phone: "+1 (555) 123-4567",
-      userType: "Analyst",
-      organization: "Data Insights Co",
-      token: "RG7mN2j9L4",
-      status: "Error",
-      avatar: "RG",
-      department: "Analytics",
-    },
-  ];
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const rowsPerPage = 8;
 
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const idFromQuery = searchParams.get("eventId");
+    setEventId(idFromQuery);
+
+    if (idFromQuery) {
+      fetchUsers(idFromQuery);
+    }
+  }, [location.search]);
+
+  const fetchUsers = async (id: string) => {
+    setLoadingUsers(true);
+    try {
+      const response = await getEventUsers(id);
+      const users = response.data.data || response.data || [];
+      const usersWithPrintStatus = users.map((user: any) => ({
+        ...user,
+        printStatus:
+          Math.random() > 0.7
+            ? "Error"
+            : Math.random() > 0.4
+            ? "Pending"
+            : "Printed",
+        printedAt: Math.random() > 0.5 ? new Date().toISOString() : null,
+        token: `TK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        phone: "+1 (555) 123-4567",
+        department: "General",
+      }));
+
+      setUsers(usersWithPrintStatus);
+    } catch (error) {
+      console.error("Error fetching event users:", error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
   // Filter and search logic
-  const filteredUsers = users.filter((user) => {
+  const filteredUsers = eventUsers.filter((user) => {
     const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.organization.toLowerCase().includes(searchTerm.toLowerCase());
+      user.attributes?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.attributes?.email
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      user.attributes?.organization
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" ||
-      user.status.toLowerCase() === statusFilter.toLowerCase();
+      user.printStatus?.toLowerCase() === statusFilter.toLowerCase();
 
     return matchesSearch && matchesStatus;
   });
@@ -211,6 +109,15 @@ function PrintBadges() {
 
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    if (action === "print") {
+      toast.success("Badge printed successfully!");
+    } else if (action === "preview") {
+      toast.info("Preview opened in new window");
+    } else if (action === "delete") {
+      setUsers((prev) => prev.filter((user) => user.id !== userId));
+      toast.success("User removed successfully!");
+    }
 
     setActivePopup(null);
     setIsLoading(false);
@@ -279,8 +186,76 @@ function PrintBadges() {
   };
 
   const handlePrintSelected = () => {
-    if (selectedUsers.size === 0) return;
+    if (selectedUsers.size === 0) {
+      toast.warning("Please select at least one user to print");
+      return;
+    }
     setShowPrintModal(true);
+  };
+
+  const handlePrintConfirm = () => {
+    // Update print status for selected users
+    setUsers((prev) =>
+      prev.map((user) =>
+        selectedUsers.has(user.id)
+          ? {
+              ...user,
+              printStatus: "Printed",
+              printedAt: new Date().toISOString(),
+            }
+          : user
+      )
+    );
+
+    toast.success(
+      `Successfully printed ${selectedUsers.size} badge${
+        selectedUsers.size !== 1 ? "s" : ""
+      }`
+    );
+    setShowPrintModal(false);
+    setSelectedUsers(new Set());
+  };
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return "-";
+
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const UserAvatar = ({ user }: { user: any }) => {
+    const imageUrl = user?.attributes?.image;
+    const userName = user?.attributes?.name || "User";
+
+    if (imageUrl) {
+      return (
+        <img
+          src={imageUrl}
+          alt={userName}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+      );
+    }
+
+    const initials = userName
+      .split(" ")
+      .map((n: string) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+
+    return (
+      <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+        {initials}
+      </div>
+    );
   };
 
   // Reset to page 1 when search or filter changes
@@ -321,6 +296,18 @@ function PrintBadges() {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
         <div className="p-8">
           {/* Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
@@ -424,7 +411,7 @@ function PrintBadges() {
                       Organization
                     </th>
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Token
+                      Created
                     </th>
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Status
@@ -435,126 +422,148 @@ function PrintBadges() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200/60">
-                  {paginatedUsers.map((user, index) => (
-                    <tr
-                      key={user.id}
-                      className="hover:bg-gray-50/50 transition-colors group"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <td className="p-4">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                          checked={selectedUsers.has(user.id)}
-                          onChange={() => handleUserSelect(user.id)}
-                        />
-                      </td>
-                      <td className="p-4 text-sm font-mono text-gray-900">
-                        #{user.id}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
-                            {user.avatar}
-                          </div>
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              {user.name}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {user.department}
-                            </div>
-                          </div>
+                  {loadingUsers ? (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center">
+                        <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                          <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3"></div>
+                          <p className="text-sm">Loading users...</p>
                         </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm text-gray-900">
-                          {user.email}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {user.phone}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getUserTypeColor(
-                            user.userType
-                          )}`}
-                        >
-                          {user.userType}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className="text-sm text-gray-900">
-                          {user.organization}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <code className="text-sm bg-gray-100 px-2 py-1 rounded text-gray-700 font-mono">
-                          {user.token}
-                        </code>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex flex-col gap-1">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                              user.status
-                            )}`}
-                          >
-                            <span className="flex items-center gap-1.5">
-                              {getStatusIcon(user.status)}
-                              {user.status}
-                            </span>
-                          </span>
-                          {user.printedAt && (
-                            <div className="text-xs text-gray-500">
-                              {user.printedAt}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4 relative">
-                        <button
-                          onClick={() => handleActionClick(user.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                          disabled={isLoading}
-                        >
-                          <MoreVertical size={16} className="text-gray-600" />
-                        </button>
-
-                        {activePopup === user.id && (
-                          <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
-                            <div className="py-2">
-                              <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100">
-                                Badge Actions
-                              </div>
-                              <button
-                                onClick={() => handleAction("preview", user.id)}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                              >
-                                <Eye size={16} className="text-blue-600" />
-                                Preview Badge
-                              </button>
-                              <button
-                                onClick={() => handleAction("print", user.id)}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
-                              >
-                                <Printer size={16} />
-                                Print Badge
-                              </button>
-                              <button
-                                onClick={() => handleAction("delete", user.id)}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                              >
-                                <Trash2 size={16} />
-                                Remove User
-                              </button>
-                            </div>
-                          </div>
-                        )}
                       </td>
                     </tr>
-                  ))}
+                  ) : paginatedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="p-8 text-center">
+                        <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                          <Users className="w-12 h-12 text-gray-300 mb-3" />
+                          <p className="text-sm">No users found</p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedUsers.map((user, index) => (
+                      <tr
+                        key={user.id}
+                        className="hover:bg-gray-50/50 transition-colors group"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <td className="p-4">
+                          <input
+                            type="checkbox"
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            checked={selectedUsers.has(user.id)}
+                            onChange={() => handleUserSelect(user.id)}
+                          />
+                        </td>
+                        <td className="p-4 text-sm font-mono text-gray-900">
+                          #{user.id}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <UserAvatar user={user} />
+                            <div>
+                              <div className="font-medium text-gray-900">
+                                {user.attributes?.name || "Unknown"}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {user.department}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm text-gray-900">
+                            {user.attributes?.email || "No email"}
+                          </div>
+                          <div className="text-sm text-gray-500">
+                            {user.phone}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getUserTypeColor(
+                              user.attributes?.user_type || "Attendee"
+                            )}`}
+                          >
+                            {user.attributes?.user_type || "Attendee"}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm text-gray-900">
+                            {user.attributes?.organization || "No organization"}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="text-sm text-gray-900">
+                            {formatDate(user.attributes?.created_at)}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1">
+                            <span
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+                                user.printStatus
+                              )}`}
+                            >
+                              <span className="flex items-center gap-1.5">
+                                {getStatusIcon(user.printStatus)}
+                                {user.printStatus}
+                              </span>
+                            </span>
+                            {user.printedAt && (
+                              <div className="text-xs text-gray-500">
+                                {formatDate(user.printedAt)}
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 relative">
+                          <button
+                            onClick={() => handleActionClick(user.id)}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                            disabled={isLoading}
+                          >
+                            <MoreVertical size={16} className="text-gray-600" />
+                          </button>
+
+                          {activePopup === user.id && (
+                            <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
+                              <div className="py-2">
+                                <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100">
+                                  Badge Actions
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleAction("preview", user.id)
+                                  }
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                >
+                                  <Eye size={16} className="text-blue-600" />
+                                  Preview Badge
+                                </button>
+                                <button
+                                  onClick={() => handleAction("print", user.id)}
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
+                                >
+                                  <Printer size={16} />
+                                  Print Badge
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleAction("delete", user.id)
+                                  }
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={16} />
+                                  Remove User
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -650,11 +659,7 @@ function PrintBadges() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    setShowPrintModal(false);
-                    setSelectedUsers(new Set());
-                    // Simulate printing
-                  }}
+                  onClick={handlePrintConfirm}
                   className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors"
                 >
                   Print Now

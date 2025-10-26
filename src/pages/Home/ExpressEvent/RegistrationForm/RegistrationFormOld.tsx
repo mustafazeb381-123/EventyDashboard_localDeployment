@@ -660,7 +660,6 @@ const RegistrationForm = ({
             console.log(
               "🔄 Advanced flow completed, moving to main Badge step"
             );
-            // Call onNext to move to the next main step (Badge indicator)
             if (onNext) {
               onNext(eventId, plan);
             }

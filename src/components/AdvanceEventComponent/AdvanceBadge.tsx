@@ -1720,14 +1720,12 @@ const AdvanceBadge: React.FC<AdvanceBadgeProps> = ({
         <span className="text-sm text-gray-500">
           Step {currentStep + 1} of {totalSteps}
         </span>
-        {/* UPDATED: Finish button to pass eventId */}
-        // In AdvanceBadge.tsx - UPDATE the Finish button:
+
         <button
           onClick={() => {
             console.log(
               "🎯 AdvanceBadge - Finish button clicked, moving to main Badge step"
             );
-            // Pass the eventId when finishing to move to the next main step
             if (eventId) {
               onNext(eventId);
             } else {

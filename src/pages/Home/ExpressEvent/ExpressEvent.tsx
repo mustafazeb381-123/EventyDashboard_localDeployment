@@ -57,21 +57,39 @@ const ExpressEvent = () => {
       label: "Registration Form",
       description: "Please provide your event Registration details",
     },
-    {
-      id: "badge",
-      label: "Badge",
-      description: "Please provide your name and email",
-    },
-    {
-      id: "confirmation",
-      label: "Confirmation",
-      description: "Please provide your name and email",
-    },
-    {
-      id: "areas",
-      label: "Areas",
-      description: "Please provide your name and email",
-    },
+    plan === "advanced"
+      ? {
+          id: "event-content",
+          label: "Event Content",
+          description: "Please provide event content details",
+        }
+      : {
+          id: "badge",
+          label: "Badge",
+          description: "Please provide your name and email",
+        },
+    plan === "advanced"
+      ? {
+          id: "Invitation-Management",
+          label: "Invitation Management",
+          description: "Please provide your name and email",
+        }
+      : {
+          id: "confirmation",
+          label: "Confirmation",
+          description: "Please provide your name and email",
+        },
+    plan === "advanced"
+      ? {
+          id: "Mobile-App-Management",
+          label: "Mobile App Management",
+          description: "Please provide your name and email",
+        }
+      : {
+          id: "areas",
+          label: "Areas",
+          description: "Please provide your name and email",
+        },
   ];
 
   const [selectedModal, setSelectedModal] = useState<number | null>(null);

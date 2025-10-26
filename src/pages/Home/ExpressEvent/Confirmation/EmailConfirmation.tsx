@@ -1,8 +1,24 @@
 import React, { useState, useRef, useEffect } from "react";
-import { Check, ChevronLeft, X, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  X,
+  Pencil,
+  Plus,
+  Trash2,
+  Download,
+  Mail,
+  Settings,
+  Palette,
+  Image as ImageIcon,
+  Code,
+  Layout,
+  Type,
+} from "lucide-react";
 import EmailEditor from "react-email-editor";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import QRCode from "react-qr-code";
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
@@ -11,8 +27,144 @@ import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTempl
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
-const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
+// QR Code Modal Component
+const QRCodeModal = ({ open, onClose, onInsert, eventId }: any) => {
+  const [qrValue, setQrValue] = useState(
+    `https://yourevent.com/events/${eventId}/confirm`
+  );
+  const [qrSize, setQrSize] = useState(200);
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  const handleInsert = () => {
+    if (qrRef.current) {
+      // Get the SVG element and convert to data URL
+      const svgElement = qrRef.current.querySelector("svg");
+      if (svgElement) {
+        const svgString = new XMLSerializer().serializeToString(svgElement);
+        const dataUrl =
+          "data:image/svg+xml;base64," +
+          btoa(unescape(encodeURIComponent(svgString)));
+
+        onInsert(dataUrl, qrValue, qrSize);
+        onClose();
+      }
+    }
+  };
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black bg-opacity-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-xl max-w-md w-full border border-gray-200">
+        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-2xl">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Code className="text-blue-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Add QR Code
+              </h3>
+              <p className="text-sm text-gray-600">
+                Insert scannable code for your event
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white rounded-full transition-colors shadow-sm"
+          >
+            <X size={20} className="text-gray-500" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              QR Code Content
+            </label>
+            <input
+              type="text"
+              value={qrValue}
+              onChange={(e) => setQrValue(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              placeholder="Enter URL or text for QR code"
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Size
+              </label>
+              <span className="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                {qrSize}px
+              </span>
+            </div>
+            <input
+              type="range"
+              min="100"
+              max="300"
+              value={qrSize}
+              onChange={(e) => setQrSize(parseInt(e.target.value))}
+              className="w-full h-3 bg-gradient-to-r from-blue-200 to-blue-400 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-500 [&::-webkit-slider-thumb]:shadow-lg"
+            />
+          </div>
+
+          <div className="flex flex-col items-center p-6 bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl border border-gray-200">
+            <div className="text-sm font-medium text-gray-600 mb-3">
+              Preview
+            </div>
+            <div ref={qrRef} className="p-4 bg-white rounded-xl shadow-sm">
+              <QRCode
+                value={qrValue}
+                size={qrSize}
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                viewBox={`0 0 ${qrSize} ${qrSize}`}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-xl border border-yellow-200">
+            <div className="p-1 bg-yellow-100 rounded-lg">
+              <Settings size={16} className="text-yellow-600" />
+            </div>
+            <p className="text-sm text-yellow-700">
+              The QR code will be inserted as an image in your email template
+              and can be resized or moved.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex gap-3 px-6 py-4 border-t bg-gray-50 rounded-b-2xl">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-3 text-gray-700 border border-gray-300 rounded-xl hover:bg-white transition-all font-medium shadow-sm"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleInsert}
+            className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all font-medium shadow-lg shadow-blue-500/25"
+          >
+            Insert QR Code
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EmailEditorModal = ({
+  open,
+  initialDesign,
+  onClose,
+  onSave,
+  effectiveEventId,
+}: any) => {
   const emailEditorRef = useRef<any>(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [activeTool, setActiveTool] = useState("design");
 
   useEffect(() => {
     if (!open) return;
@@ -24,13 +176,40 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
           console.warn("Failed to load design into editor:", err);
         }
       } else if (emailEditorRef.current?.editor && !initialDesign) {
+        // Initialize empty editor
       }
     }, 300);
 
     return () => clearTimeout(t);
   }, [open, initialDesign]);
 
-  if (!open) return null;
+  // Function to insert QR code into email editor
+  const insertQRCode = (qrDataUrl: string, qrValue: string, qrSize: number) => {
+    if (!emailEditorRef.current?.editor) return;
+
+    const editor = emailEditorRef.current.editor;
+
+    const qrCodeBlock = {
+      type: "image",
+      src: qrDataUrl,
+      alt: `QR Code: ${qrValue}`,
+      width: `${qrSize}px`,
+      style: {
+        border: "none",
+        display: "block",
+        margin: "10px auto",
+        borderRadius: "8px",
+        backgroundColor: "#ffffff",
+      },
+      attributes: {
+        "data-qr-code": "true",
+        "data-qr-value": qrValue,
+      },
+    };
+
+    editor.blocks.add("image", qrCodeBlock);
+    toast.success("QR code inserted successfully!");
+  };
 
   const handleExport = () => {
     emailEditorRef.current?.editor?.exportHtml((data: any) => {
@@ -55,41 +234,152 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
     });
   };
 
+  if (!open) return null;
+
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
-        <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Edit Email Template
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200"
-          >
-            <X size={20} />
-          </button>
-        </div>
+    <>
+      <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="bg-white w-full max-w-7xl rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[95vh] border border-gray-200">
+          {/* Enhanced Header */}
+          <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-gray-900 to-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/10 rounded-lg">
+                <Mail className="text-white" size={20} />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">
+                  Email Template Designer
+                </h3>
+                <p className="text-sm text-gray-300">
+                  Drag and drop elements from the right panel
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Tool Selector */}
+              <div className="flex bg-white/10 rounded-lg p-1">
+                <button
+                  onClick={() => setActiveTool("design")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    activeTool === "design"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  Design
+                </button>
+                <button
+                  onClick={() => setActiveTool("code")}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                    activeTool === "code"
+                      ? "bg-white text-gray-900 shadow-sm"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  Code
+                </button>
+              </div>
 
-        <div className="flex-1">
-          <EmailEditor
-            ref={emailEditorRef}
-            minHeight="100%"
-            appearance={{ theme: "dark" }}
-          />
-        </div>
+              {/* QR Code Button */}
+              <button
+                onClick={() => setIsQRModalOpen(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-4 py-2 rounded-lg transition-all shadow-lg shadow-blue-500/25"
+              >
+                <Code size={16} />
+                Add QR Code
+              </button>
 
-        <div className="p-3 border-t flex justify-end bg-gray-100">
-          <button
-            onClick={handleExport}
-            className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            Save Template
-          </button>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-xl hover:bg-white/10 transition-colors"
+              >
+                <X size={20} className="text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Editor Content */}
+          <div className="flex-1 flex">
+            {/* Sidebar Tools */}
+            <div className="w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-4 space-y-4">
+              <ToolButton icon={<Layout size={20} />} tool="Layout" active />
+              <ToolButton icon={<Type size={20} />} tool="Text" />
+              <ToolButton icon={<ImageIcon size={20} />} tool="Images" />
+              <ToolButton icon={<Palette size={20} />} tool="Styles" />
+              <ToolButton icon={<Settings size={20} />} tool="Settings" />
+            </div>
+
+            {/* Main Editor */}
+            <div className="flex-1">
+              <EmailEditor
+                ref={emailEditorRef}
+                minHeight="100%"
+                appearance={{ theme: "dark" }}
+                options={{
+                  customCSS: [
+                    `
+                    .unlayer-toolbar-button[data-tool="qrCode"] {
+                      background: transparent;
+                      border: none;
+                      padding: 8px;
+                      cursor: pointer;
+                    }
+                    `,
+                  ],
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Enhanced Footer */}
+          <div className="p-4 border-t bg-gradient-to-r from-gray-50 to-slate-100 flex justify-between items-center">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              Auto-saved to drafts
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                className="px-6 py-2.5 text-gray-700 border border-gray-300 rounded-xl hover:bg-white transition-all font-medium shadow-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExport}
+                className="px-6 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white rounded-xl font-medium shadow-lg shadow-pink-500/25 transition-all flex items-center gap-2"
+              >
+                <Check size={18} />
+                Save Template
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* QR Code Modal */}
+      <QRCodeModal
+        open={isQRModalOpen}
+        onClose={() => setIsQRModalOpen(false)}
+        onInsert={insertQRCode}
+        eventId={effectiveEventId}
+      />
+    </>
   );
 };
+
+// Tool Button Component for Sidebar
+const ToolButton = ({ icon, tool, active = false }: any) => (
+  <button
+    className={`p-3 rounded-xl transition-all ${
+      active
+        ? "bg-white shadow-md border border-gray-200 text-blue-600"
+        : "text-gray-500 hover:bg-white hover:shadow-sm hover:text-gray-700"
+    }`}
+    title={tool}
+  >
+    {icon}
+  </button>
+);
 
 const TemplateModal = ({
   template,
@@ -97,6 +387,7 @@ const TemplateModal = ({
   onSelect,
   onEdit,
   onDelete,
+  onAddQRCode,
 }: any) => {
   if (!template) return null;
 
@@ -111,40 +402,60 @@ const TemplateModal = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-6 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white p-6 rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 shadow-2xl">
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Mail className="text-blue-600" size={20} />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-900">
+                {template.title}
+              </h3>
+              <p className="text-sm text-gray-500">
+                Preview your email template
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {/* QR Code Button */}
+            <button
+              onClick={() => onAddQRCode(template)}
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/25"
+            >
+              <Code size={16} />
+              Add QR Code
+            </button>
             <button
               onClick={() => onEdit(template)}
-              className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
+              className="flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white px-4 py-2 rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all shadow-lg shadow-pink-500/25"
             >
-              <Pencil size={14} />
-              {/* Edit Template */}
+              <Pencil size={16} />
+              Edit
             </button>
-            {/* DELETE BUTTON - ALWAYS SHOW FOR ALL TEMPLATES */}
             <button
               onClick={() => onDelete(template)}
-              className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
+              className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-orange-600 text-white px-4 py-2 rounded-xl hover:from-red-600 hover:to-orange-700 transition-all shadow-lg shadow-red-500/25"
             >
-              <Trash2 size={14} />
-              {/* Delete Template */}
+              <Trash2 size={16} />
             </button>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
               <X size={20} className="text-gray-500" />
             </button>
           </div>
         </div>
 
-        {/* Template content */}
-        <div className="mb-6">{content}</div>
+        {/* Template content with enhanced styling */}
+        <div className="mb-6 border-2 border-gray-200 rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+          {content}
+        </div>
 
         <button
           onClick={() => onSelect(template.id)}
-          className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors font-medium"
+          className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 px-4 rounded-xl hover:from-green-600 hover:to-emerald-700 transition-all font-medium shadow-lg shadow-green-500/25 text-lg"
         >
           Choose this template
         </button>
@@ -154,11 +465,17 @@ const TemplateModal = ({
 };
 
 /**
- * TemplateThumbnail - Component to display template preview in grid
+ * TemplateThumbnail - Enhanced component to display template preview in grid
  */
-const TemplateThumbnail = ({ template }: any) => {
+const TemplateThumbnail = ({ template, selected = false }: any) => {
   return (
-    <div className="w-full rounded-xl flex items-center justify-center bg-gray-100 relative">
+    <div
+      className={`w-full rounded-2xl flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 relative overflow-hidden border-2 ${
+        selected
+          ? "border-blue-500 shadow-lg shadow-blue-500/20"
+          : "border-gray-200"
+      } transition-all duration-300`}
+    >
       {template.html ? (
         // For edited templates: Show scaled preview of the actual HTML
         <div
@@ -166,7 +483,7 @@ const TemplateThumbnail = ({ template }: any) => {
           style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
         >
           <div
-            className="w-full h-full"
+            className="w-full h-full shadow-lg"
             dangerouslySetInnerHTML={{ __html: template.html }}
           />
         </div>
@@ -179,10 +496,114 @@ const TemplateThumbnail = ({ template }: any) => {
           {template.component}
         </div>
       )}
+
+      {/* Overlay effect */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300" />
     </div>
   );
 };
 
+// Template Card Component
+const TemplateCard = ({
+  template,
+  onPreview,
+  onEdit,
+  onDelete,
+  onAddQRCode,
+  selected = false,
+  onSelect,
+}: any) => {
+  return (
+    <div
+      className={`group relative bg-white rounded-2xl p-4 aspect-square flex flex-col transition-all duration-300 hover:shadow-xl border-2 ${
+        selected
+          ? "border-blue-500 shadow-lg shadow-blue-500/20"
+          : "border-gray-200 hover:border-gray-300"
+      }`}
+    >
+      {/* Selection Indicator */}
+      {selected && (
+        <div className="absolute -top-2 -right-2 z-20">
+          <div className="bg-blue-500 text-white p-1.5 rounded-full shadow-lg">
+            <Check size={14} />
+          </div>
+        </div>
+      )}
+
+      {/* Template Preview (click to open modal) */}
+      <div onClick={onPreview} className="flex-1 cursor-pointer mb-3">
+        <TemplateThumbnail template={template} selected={selected} />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold text-gray-900 text-sm truncate">
+            {template.title}
+          </h3>
+          <p className="text-xs text-gray-500 mt-1">
+            {template.html ? "Custom Template" : "Pre-built Template"}
+          </p>
+        </div>
+
+        {/* Select Button */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect(template.id);
+          }}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+            selected
+              ? "bg-blue-500 text-white shadow-sm"
+              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+          }`}
+        >
+          {selected ? "Selected" : "Select"}
+        </button>
+      </div>
+
+      {/* ACTION BUTTONS - Enhanced */}
+      <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+        {/* QR CODE BUTTON */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onAddQRCode(template);
+          }}
+          className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all shadow-lg shadow-blue-500/25 z-10"
+          title="Add QR Code to Template"
+        >
+          <Code size={14} />
+        </button>
+
+        {/* EDIT BUTTON */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(template);
+          }}
+          className="p-2 bg-gradient-to-r from-pink-500 to-rose-600 text-white rounded-xl hover:from-pink-600 hover:to-rose-700 transition-all shadow-lg shadow-pink-500/25 z-10"
+          title="Edit template"
+        >
+          <Pencil size={14} />
+        </button>
+
+        {/* DELETE BUTTON */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(template);
+          }}
+          className="p-2 bg-gradient-to-r from-red-500 to-orange-600 text-white rounded-xl hover:from-red-600 hover:to-orange-700 transition-all shadow-lg shadow-red-500/25 z-10"
+          title="Delete template"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// API Service (unchanged, included for completeness)
 const apiService = {
   getAuthToken() {
     const token = localStorage.getItem("token");
@@ -190,7 +611,6 @@ const apiService = {
     return token;
   },
 
-  // Get templates from API
   async getTemplates(eventId: string | number, flowType: string) {
     try {
       const endpoint = this.getEndpoint();
@@ -227,7 +647,6 @@ const apiService = {
     }
   },
 
-  // Save NEW template to API (POST)
   async saveTemplate(
     eventId: string | number,
     flowType: string,
@@ -273,7 +692,6 @@ const apiService = {
     }
   },
 
-  // UPDATE existing template via PATCH API
   async updateTemplate(
     eventId: string | number,
     templateId: string | number,
@@ -320,7 +738,6 @@ const apiService = {
     }
   },
 
-  // Delete template from API
   async deleteTemplate(
     eventId: string | number,
     templateId: string | number,
@@ -360,14 +777,12 @@ const apiService = {
         throw new Error(`Failed to delete template: ${errorMessage}`);
       }
 
-      // Check if response has content before trying to parse JSON
       const contentLength = response.headers.get("content-length");
       const contentType = response.headers.get("content-type");
 
       console.log("Response content-length:", contentLength);
       console.log("Response content-type:", contentType);
 
-      // If no content or not JSON, return success
       if (
         contentLength === "0" ||
         !contentType ||
@@ -377,7 +792,6 @@ const apiService = {
         return { success: true, message: "Template deleted successfully" };
       }
 
-      // If there is JSON content, parse it
       try {
         const data = await response.json();
         console.log("=== TEMPLATE DELETED SUCCESSFULLY ===", data);
@@ -392,12 +806,10 @@ const apiService = {
     }
   },
 
-  // All templates use the same endpoint
   getEndpoint() {
     return "confirmation_templates";
   },
 
-  // Map flow types to API type parameters - BASED ON YOUR SCREENSHOT
   getTypeParam(flowType: string) {
     const typeMap: { [key: string]: string } = {
       thanks: "ConfirmationThanksTemplate",
@@ -409,7 +821,6 @@ const apiService = {
     return typeMap[flowType] || "ConfirmationThanksTemplate";
   },
 
-  // Create payload for NEW template (POST)
   getPayload(flowType: string, html: string, title: string) {
     const type = this.getTypeParam(flowType);
 
@@ -422,7 +833,6 @@ const apiService = {
     };
   },
 
-  // Create payload for UPDATING template (PATCH)
   getUpdatePayload(flowType: string, html: string, title: string) {
     const type = this.getTypeParam(flowType);
 
@@ -430,12 +840,10 @@ const apiService = {
       confirmation_template: {
         content: html,
         type: type,
-        // Note: We don't include 'default' field for updates as it might be controlled separately
       },
     };
   },
 
-  // Convert API templates to our format - REMOVED isDefault CHECK
   convertApiTemplates(apiTemplates: any[], flowType: string) {
     return apiTemplates.map((template: any, index: number) => ({
       id: `api-${template.id}`,
@@ -446,7 +854,6 @@ const apiService = {
       design: null,
       html: template.attributes?.content || "",
       apiId: template.id,
-      // REMOVED: isDefault property since we don't need it anymore
       type: template.attributes?.type || flowType,
     }));
   },
@@ -464,38 +871,40 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   onPrevious,
   eventId,
 }) => {
-  // Log the received eventId
   console.log("EmailConfirmation - Received eventId:", eventId);
-
-  // Also check localStorage as fallback
   const localStorageEventId = localStorage.getItem("create_eventId");
   console.log("EmailConfirmation - localStorage eventId:", localStorageEventId);
-
-  // Use the eventId from props first, then fall back to localStorage
   const effectiveEventId = eventId || localStorageEventId;
   console.log("EmailConfirmation - Effective eventId:", effectiveEventId);
 
-  // Initialize flows structure - no longer using localStorage for emailTemplates
   const [flows, setFlows] = useState<any[]>([
     {
       id: "thanks",
       label: "Thanks Email",
       templates: [],
+      icon: "🙏",
+      description: "Thank attendees after registration",
     },
     {
       id: "confirmation",
       label: "Confirmation Email",
       templates: [],
+      icon: "✅",
+      description: "Confirm event registration",
     },
     {
       id: "reminder",
       label: "Reminder Email",
       templates: [],
+      icon: "⏰",
+      description: "Send event reminders",
     },
     {
       id: "rejection",
       label: "Rejection Email",
       templates: [],
+      icon: "❌",
+      description: "Notify if registration is declined",
     },
   ]);
 
@@ -509,16 +918,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   const currentFlow = flows[currentFlowIndex];
 
-  // Load templates from API when component mounts or flow changes
   useEffect(() => {
     if (effectiveEventId) {
       loadTemplatesFromAPI();
     }
   }, [effectiveEventId, currentFlowIndex]);
 
-  // Remove localStorage saving for emailTemplates since we're using API only
-
-  // Load templates from API
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId) return;
 
@@ -538,7 +943,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         convertedTemplates
       );
 
-      // Update flows with API templates
       setFlows((prevFlows) =>
         prevFlows.map((flow) =>
           flow.id === currentFlow.id
@@ -554,11 +958,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   };
 
-  // Open template preview modal
   const handleOpenModal = (template: any) => setModalTemplate(template);
   const handleCloseModal = () => setModalTemplate(null);
 
-  // Select a template for the flow
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplates({
       ...selectedTemplates,
@@ -568,21 +970,29 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     toast.success("Template selected successfully!");
   };
 
-  // When user clicks edit in TemplateModal
   const handleEditTemplate = (template: any) => {
     setEditingTemplate(template);
-    setModalTemplate(null); // close preview
-    setIsEditorOpen(true); // open editor
+    setModalTemplate(null);
+    setIsEditorOpen(true);
   };
 
-  // Handle creating a new template
   const handleCreateNewTemplate = () => {
     setIsCreatingNew(true);
     setEditingTemplate(null);
     setIsEditorOpen(true);
   };
 
-  // Handle deleting a template
+  const handleModalAddQRCode = (template: any) => {
+    setModalTemplate(null);
+    setEditingTemplate(template);
+    setIsEditorOpen(true);
+  };
+
+  const handleAddQRCodeToTemplate = (template: any) => {
+    setEditingTemplate(template);
+    setIsEditorOpen(true);
+  };
+
   const handleDeleteTemplate = async (template: any) => {
     if (!effectiveEventId || !template.apiId) {
       console.error(
@@ -592,7 +1002,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       return;
     }
 
-    // Use toast for confirmation instead of window.confirm
     toast.info(
       <div>
         <p>Are you sure you want to delete "{template.title}"?</p>
@@ -621,11 +1030,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     );
   };
 
-  // Proceed with deletion after confirmation
   const proceedWithDelete = async (template: any) => {
     setIsLoading(true);
     try {
-      // Delete from API - PASS ALL THREE PARAMETERS
       await apiService.deleteTemplate(
         effectiveEventId,
         template.apiId,
@@ -638,7 +1045,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       console.log("Current Flow:", currentFlow.label);
       console.log("=========================");
 
-      // Update flows state: remove the deleted template
       setFlows((prevFlows) =>
         prevFlows.map((flow) => ({
           ...flow,
@@ -648,7 +1054,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         }))
       );
 
-      // If the deleted template was selected, clear the selection
       if (selectedTemplates[currentFlow.id] === template.id) {
         setSelectedTemplates((prev: any) => {
           const newSelected = { ...prev };
@@ -657,10 +1062,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         });
       }
 
-      // Close modal if open
       setModalTemplate(null);
-
-      // Show success message
       toast.success("Template deleted successfully!");
     } catch (error) {
       console.error("Error deleting template from API:", error);
@@ -670,13 +1072,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   };
 
-  // Callback when editor saves design & html for a NEW template
   const handleSaveNewTemplate = async (design: any, html: string) => {
     if (!isCreatingNew || !effectiveEventId) return;
 
     setIsLoading(true);
     try {
-      // Save to API first using POST
       const apiResponse = await apiService.saveTemplate(
         effectiveEventId,
         currentFlow.id,
@@ -691,7 +1091,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         design,
         html,
         apiId: apiResponse.data?.id,
-        // REMOVED: isDefault property
         type: currentFlow.id,
       };
 
@@ -701,7 +1100,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       console.log("Current Flow:", currentFlow.label);
       console.log("============================");
 
-      // Update flows with the new template
       setFlows((prevFlows) =>
         prevFlows.map((flow, index) =>
           index === currentFlowIndex
@@ -710,7 +1108,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         )
       );
 
-      // Auto-select the newly created template
       setSelectedTemplates({
         ...selectedTemplates,
         [currentFlow.id]: newTemplate.id,
@@ -728,7 +1125,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   };
 
-  // Callback when editor saves design & html for an EXISTING template
   const handleUpdateTemplate = async (design: any, html: string) => {
     console.log("=== UPDATE TEMPLATE CALLBACK ===");
     console.log("Is Creating New:", isCreatingNew);
@@ -756,7 +1152,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
     setIsLoading(true);
     try {
-      // Update existing template in API using PATCH
       await apiService.updateTemplate(
         effectiveEventId,
         editingTemplate.apiId,
@@ -775,7 +1170,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       console.log("New Design:", design ? `Present` : "Missing");
       console.log("================================");
 
-      // Update flows state: find template by id and update design/html
       setFlows((prevFlows) =>
         prevFlows.map((flow) => ({
           ...flow,
@@ -785,11 +1179,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         }))
       );
 
-      // Clear editing template
       setEditingTemplate(null);
       setIsEditorOpen(false);
 
-      // Show success message
       toast.success("Template updated successfully!");
     } catch (error) {
       console.error("Error updating template in API:", error);
@@ -799,7 +1191,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   };
 
-  // Main save handler that routes to either create or update
   const handleSaveFromEditor = async (design: any, html: string) => {
     if (isCreatingNew) {
       await handleSaveNewTemplate(design, html);
@@ -808,7 +1199,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   };
 
-  // For EmailEditorModal: initialDesign should be the design of the editing template (if exists)
   const initialDesign = editingTemplate?.design ?? null;
 
   const handleNext = () => {
@@ -826,14 +1216,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       setCurrentFlowIndex(currentFlowIndex + 1);
       toast.success(`Moving to ${flows[currentFlowIndex + 1].label}`);
     } else if (onNext) {
-      // Log final state before proceeding
       console.log("=== FINAL STATE BEFORE PROCEEDING ===");
       console.log("All Flows:", flows);
       console.log("All Selected Templates:", selectedTemplates);
       console.log("Event ID:", effectiveEventId);
       console.log("====================================");
 
-      // Pass the eventId to the next component
       if (effectiveEventId) {
         console.log(
           "EmailConfirmation - Sending eventId to next component:",
@@ -867,7 +1255,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   };
 
   return (
-    <div className="w-full bg-white p-6 rounded-2xl shadow-sm relative">
+    <div className="w-full bg-gradient-to-br from-white to-gray-50/30 p-6 rounded-2xl shadow-sm relative border border-gray-200/50">
       {/* Toast Container */}
       <ToastContainer
         position="top-right"
@@ -882,50 +1270,60 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         theme="light"
       />
 
-      {/* Header Section */}
+      {/* Enhanced Header Section */}
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-2">
-          <ChevronLeft className="text-gray-500" size={20} />
-          <h2 className="text-xl font-semibold text-gray-900">
-            {currentFlow.label}
-          </h2>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
+          >
+            <ChevronLeft className="text-gray-500" size={24} />
+          </button>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {currentFlow.icon} {currentFlow.label}
+            </h2>
+            <p className="text-gray-500 mt-1">{currentFlow.description}</p>
+          </div>
         </div>
-        {/* Progress Stepper */}
-        <div className="flex items-center gap-2">
+
+        {/* Enhanced Progress Stepper */}
+        <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm p-2 rounded-2xl shadow-sm border border-gray-200/50">
           {flows.map((flow, index) => {
             const isCompleted = Boolean(selectedTemplates[flow.id]);
             const isActive = index === currentFlowIndex;
+            const canClick = index <= currentFlowIndex || isCompleted;
 
             return (
               <div key={flow.id} className="flex items-center">
                 <button
-                  onClick={() => handleStepClick(index)}
-                  disabled={index > currentFlowIndex && !isCompleted}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                    isCompleted
-                      ? "bg-pink-500 border-pink-500 cursor-pointer"
-                      : isActive
-                      ? "border-pink-500 bg-white cursor-pointer"
-                      : "border-gray-300 bg-white cursor-not-allowed"
+                  onClick={() => canClick && handleStepClick(index)}
+                  disabled={!canClick}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
+                    isActive
+                      ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg shadow-blue-500/25"
+                      : isCompleted
+                      ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  } ${
+                    canClick && !isActive && !isCompleted
+                      ? "hover:bg-gray-200 text-gray-700"
+                      : ""
                   }`}
                 >
-                  {isCompleted ? (
-                    <Check size={16} className="text-white" />
-                  ) : (
-                    <span
-                      className={`text-sm font-medium ${
-                        isActive ? "text-pink-500" : "text-gray-400"
-                      }`}
-                    >
-                      {index + 1}
-                    </span>
-                  )}
+                  <span className="text-sm font-medium">{flow.icon}</span>
+                  <span className="text-sm font-medium hidden sm:block">
+                    {flow.label}
+                  </span>
+                  {isCompleted && <Check size={16} className="text-white" />}
                 </button>
 
                 {index !== flows.length - 1 && (
                   <div
-                    className={`w-8 h-0.5 mx-1 ${
-                      selectedTemplates[flow.id] ? "bg-pink-500" : "bg-gray-300"
+                    className={`w-4 h-0.5 mx-2 ${
+                      isCompleted
+                        ? "bg-gradient-to-r from-green-500 to-emerald-600"
+                        : "bg-gray-300"
                     }`}
                   />
                 )}
@@ -937,65 +1335,50 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
       {/* Loading State */}
       {isLoading && (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
-          <span className="ml-2 text-gray-600">Loading templates...</span>
+        <div className="flex justify-center items-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <span className="text-gray-600 font-medium">
+              Loading templates...
+            </span>
+          </div>
         </div>
       )}
 
-      {/* Template Grid */}
+      {/* Enhanced Template Grid */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Create New Template Card - Always show first */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+          {/* Create New Template Card - Enhanced */}
           <div
             onClick={handleCreateNewTemplate}
-            className="border-2 border-dashed border-gray-300 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-400 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square"
+            className="border-2 border-dashed border-gray-300 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:border-blue-400 hover:bg-blue-50/50 flex flex-col items-center justify-center aspect-square group"
           >
-            <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-3">
-              <Plus className="text-pink-500" size={24} />
+            <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg shadow-blue-500/25">
+              <Plus className="text-white" size={28} />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">
               Create New Template
             </h3>
-            <p className="text-sm text-gray-500 text-center">
-              Design a custom email template from scratch
+            <p className="text-sm text-gray-500 text-center leading-relaxed">
+              Design a custom email template with drag & drop editor
             </p>
+            <div className="mt-4 px-4 py-1.5 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">
+              Recommended
+            </div>
           </div>
 
-          {/* Existing Templates */}
+          {/* Existing Templates with Enhanced Cards */}
           {currentFlow.templates.map((tpl: any) => (
-            <div
+            <TemplateCard
               key={tpl.id}
-              onClick={() => handleOpenModal(tpl)}
-              className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative ${
-                selectedTemplates[currentFlow.id] === tpl.id
-                  ? "border-pink-500 bg-pink-50 shadow-md"
-                  : "border-gray-200 hover:border-pink-300"
-              }`}
-            >
-              {/* DELETE BUTTON - ALWAYS SHOW FOR ALL TEMPLATES */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent opening modal
-                  handleDeleteTemplate(tpl);
-                }}
-                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
-                title="Delete template"
-              >
-                <Trash2 size={14} />
-              </button>
-
-              {/* Template Thumbnail */}
-              <div className="flex-1">
-                <TemplateThumbnail template={tpl} />
-              </div>
-              <div className="mt-3">
-                <h3 className="font-medium text-gray-900 text-center">
-                  {tpl.title}
-                </h3>
-                {/* REMOVED: Default badge since we don't have default templates anymore */}
-              </div>
-            </div>
+              template={tpl}
+              selected={selectedTemplates[currentFlow.id] === tpl.id}
+              onPreview={() => handleOpenModal(tpl)}
+              onEdit={handleEditTemplate}
+              onDelete={handleDeleteTemplate}
+              onAddQRCode={handleAddQRCodeToTemplate}
+              onSelect={handleSelectTemplate}
+            />
           ))}
         </div>
       )}
@@ -1008,6 +1391,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
           onSelect={handleSelectTemplate}
           onEdit={handleEditTemplate}
           onDelete={handleDeleteTemplate}
+          onAddQRCode={handleModalAddQRCode}
         />
       )}
 
@@ -1022,36 +1406,66 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         onSave={(design: any, html: string) => {
           handleSaveFromEditor(design, html);
         }}
+        effectiveEventId={effectiveEventId}
       />
 
-      {/* Navigation */}
-      <div className="flex justify-between items-center pt-6 border-t border-gray-100">
+      {/* Enhanced Navigation */}
+      <div className="flex justify-between items-center pt-8 border-t border-gray-200/50">
         <button
           onClick={handleBack}
           disabled={currentFlowIndex === 0 && !onPrevious}
-          className={`cursor-pointer px-6 py-2 border rounded-lg transition-colors ${
+          className={`px-8 py-3 border rounded-xl transition-all font-medium ${
             currentFlowIndex === 0 && !onPrevious
               ? "text-gray-400 border-gray-200 cursor-not-allowed"
-              : "text-gray-700 border-gray-300 hover:bg-gray-100"
+              : "text-gray-700 border-gray-300 hover:bg-white hover:shadow-sm hover:border-gray-400"
           }`}
         >
           ← Previous
         </button>
 
-        <span className="text-sm text-gray-500">
-          Step {currentFlowIndex + 1} of {flows.length}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500 font-medium">
+            Step {currentFlowIndex + 1} of {flows.length}
+          </span>
+          <div className="flex items-center gap-2 text-sm">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                selectedTemplates[currentFlow.id]
+                  ? "bg-green-500"
+                  : "bg-yellow-500"
+              }`}
+            ></div>
+            <span
+              className={
+                selectedTemplates[currentFlow.id]
+                  ? "text-green-600"
+                  : "text-yellow-600"
+              }
+            >
+              {selectedTemplates[currentFlow.id]
+                ? "Template selected"
+                : "Template required"}
+            </span>
+          </div>
+        </div>
 
         <button
           onClick={handleNext}
           disabled={!selectedTemplates[currentFlow.id] || isLoading}
-          className={`cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium ${
+          className={`px-8 py-3 rounded-xl text-white transition-all font-medium ${
             selectedTemplates[currentFlow.id] && !isLoading
-              ? "bg-slate-800 hover:bg-slate-800"
+              ? "bg-gradient-to-r from-slate-800 to-gray-900 hover:from-slate-700 hover:to-gray-800 shadow-lg hover:shadow-xl transition-all"
               : "bg-gray-300 cursor-not-allowed"
           }`}
         >
-          {currentFlowIndex === flows.length - 1 ? "Finish" : "Next →"}
+          {currentFlowIndex === flows.length - 1 ? (
+            <span className="flex items-center gap-2">
+              Finish Setup
+              <Check size={18} />
+            </span>
+          ) : (
+            `Next: ${flows[currentFlowIndex + 1]?.label} →`
+          )}
         </button>
       </div>
     </div>

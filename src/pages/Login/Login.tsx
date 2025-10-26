@@ -73,7 +73,9 @@ function Login() {
       const response = await loginApi(data);
 
       console.log("Login response", response);
-      const tenantUuid = response?.data?.data?.current_user?.data?.attributes?.tenant_uuid;
+      const tenantUuid =
+        response?.data?.data?.current_user?.data?.attributes?.tenant_uuid;
+      console.log("tenanUuiidddddddddddd", tenantUuid);
       if (tenantUuid) {
         localStorage.setItem("tenant_uuid", tenantUuid);
         console.log("✅ TENANT LOGIN:", tenantUuid);
