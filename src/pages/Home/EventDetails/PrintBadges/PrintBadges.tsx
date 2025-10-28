@@ -21,6 +21,8 @@ import { useLocation } from "react-router-dom";
 import { getEventUsers } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+// import QRCode from "qrcode.react";
+import QRCode from "react-qr-code";
 
 function PrintBadges() {
   const location = useLocation();
@@ -263,6 +265,20 @@ function PrintBadges() {
     );
   };
 
+  // Generate QR code data for user
+  const generateQRCodeData = (user) => {
+    return JSON.stringify({
+      id: user.id,
+      name: user.attributes?.name,
+      email: user.attributes?.email,
+      type: user.attributes?.user_type,
+      organization: user.attributes?.organization,
+      token: user.token,
+      eventId: eventId,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
   // Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
@@ -296,6 +312,12 @@ function PrintBadges() {
       }
     }
     return pages;
+  };
+
+  const handleDelete = () => {
+    // Handle delete logic here
+    toast.info("Delete functionality would be implemented here");
+    setShowDeleteModal(false);
   };
 
   return (
@@ -638,12 +660,12 @@ function PrintBadges() {
         </div>
       </div>
 
-      {/* Print Modal */}
+      {/* Print Modal - Updated with QR Code */}
       {showPrintModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform animate-in zoom-in-95 duration-200">
             <div className="p-6">
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-indigo-100 rounded-lg">
                   <Printer className="w-5 h-5 text-indigo-600" />
                 </div>
@@ -651,29 +673,96 @@ function PrintBadges() {
                   Print Badges
                 </h3>
               </div>
-              <p className="text-gray-600 mb-6">
-                You're about to print {selectedUsers.size} badge
-                {selectedUsers.size !== 1 ? "s" : ""}. This action will mark
-                them as printed.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowPrintModal(false)}
-                  className="flex-1 py-2 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handlePrintConfirm}
-                  className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg transition-colors"
-                >
-                  Print Now
-                </button>
+
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left Side - Print Information */}
+                <div className="flex-1">
+                  <p className="text-gray-600 mb-6">
+                    You're about to print <strong>{selectedUsers.size}</strong>{" "}
+                    badge
+                    {selectedUsers.size !== 1 ? "s" : ""}. This action will mark
+                    them as printed.
+                  </p>
+
+                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      Print Summary
+                    </h4>
+                    <div className="space-y-2 text-sm text-gray-600">
+                      <div className="flex justify-between">
+                        <span>Total Badges:</span>
+                        <span className="font-medium">
+                          {selectedUsers.size}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Paper Size:</span>
+                        <span className="font-medium">A4 (Standard)</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Print Quality:</span>
+                        <span className="font-medium">High</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Include QR Codes:</span>
+                        <span className="font-medium text-green-600">Yes</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setShowPrintModal(false)}
+                      className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handlePrintConfirm}
+                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
+                    >
+                      <Printer size={18} />
+                      Print Now
+                    </button>
+                  </div>
+                </div>
+
+                {/* Right Side - QR Code Preview */}
+                <div className="flex-1">
+                  <div className="bg-white border border-gray-200 rounded-xl p-6">
+                    <h4 className="font-semibold text-gray-800 mb-4 text-center">
+                      QR Code Preview
+                    </h4>
+                    <div className="flex flex-col items-center">
+                      <div className="bg-white p-4 rounded-lg border-2 border-gray-300 mb-4">
+                        <QRCode
+                          value={`Printing ${
+                            selectedUsers.size
+                          } badges for event ${eventId || "N/A"}`}
+                          size={180}
+                          level="H"
+                          fgColor="#1f2937"
+                          bgColor="#ffffff"
+                        />
+                      </div>
+                      <p className="text-sm text-gray-600 text-center mb-2">
+                        This QR code contains batch printing information
+                      </p>
+                      <div className="text-xs text-gray-500 text-center space-y-1">
+                        <div>Batch ID: {`BATCH_${Date.now()}`}</div>
+                        <div>Event: {eventId || "N/A"}</div>
+                        <div>Total: {selectedUsers.size} badges</div>
+                        <div>Date: {new Date().toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       )}
+
       {/* Click outside to close popup */}
       {activePopup && (
         <div
@@ -683,7 +772,7 @@ function PrintBadges() {
       )}
       {previewModal && selectedUserForPreview && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-[60%] mx-auto relative overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-5xl mx-auto relative overflow-hidden">
             {/* Close Button */}
             <button
               onClick={() => {
@@ -697,84 +786,130 @@ function PrintBadges() {
 
             {/* Modal Content */}
             <div className="p-8">
-              <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              <h2 className="text-2xl font-bold mb-8 text-center text-gray-800">
                 Badge Preview
               </h2>
 
-              {/* Badge Design */}
-              <div className="flex flex-col items-center gap-6">
-                <div className="relative w-64 h-[50vh] bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl shadow-xl overflow-hidden">
-                  {/* Decorative Wave Top */}
-                  <div className="absolute top-0 left-0 right-0 h-16">
-                    <svg viewBox="0 0 400 100" className="w-full h-full">
-                      <path
-                        d="M 0,50 Q 100,30 200,50 T 400,50 L 400,0 L 0,0 Z"
-                        fill="#4a4a4a"
-                        opacity="0.3"
-                      />
-                    </svg>
-                  </div>
+              {/* Two Column Layout: Badge Left, QR Code Right */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                {/* Left Side - Badge Design */}
+                <div className="flex justify-center items-start">
+                  <div className="relative w-full max-w-sm h-[500px] bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl shadow-2xl overflow-hidden">
+                    {/* Decorative Wave Top */}
+                    <div className="absolute top-0 left-0 right-0 h-16">
+                      <svg viewBox="0 0 400 100" className="w-full h-full">
+                        <path
+                          d="M 0,50 Q 100,30 200,50 T 400,50 L 400,0 L 0,0 Z"
+                          fill="#4a4a4a"
+                          opacity="0.3"
+                        />
+                      </svg>
+                    </div>
 
-                  {/* Profile Image Circle */}
-                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 p-1 shadow-lg">
-                      <div className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
-                        {selectedUserForPreview.attributes?.image ? (
-                          <img
-                            src={selectedUserForPreview.attributes.image}
-                            alt={
-                              selectedUserForPreview.attributes?.name || "User"
-                            }
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
-                            {selectedUserForPreview.attributes?.name
-                              ?.split(" ")
-                              .map((n) => n[0])
-                              .join("")
-                              .toUpperCase()
-                              .slice(0, 2) || "NA"}
-                          </div>
-                        )}
+                    {/* Profile Image Circle */}
+                    <div className="absolute top-16 left-1/2 transform -translate-x-1/2">
+                      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 p-1 shadow-lg">
+                        <div className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+                          {selectedUserForPreview.attributes?.image ? (
+                            <img
+                              src={selectedUserForPreview.attributes.image}
+                              alt={
+                                selectedUserForPreview.attributes?.name ||
+                                "User"
+                              }
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl">
+                              {selectedUserForPreview.attributes?.name
+                                ?.split(" ")
+                                .map((n) => n[0])
+                                .join("")
+                                .toUpperCase()
+                                .slice(0, 2) || "NA"}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Badge Content */}
-                  <div className="absolute top-40 left-0 right-0 px-6 text-center">
-                    <h3 className="text-white font-bold text-xl mb-1">
-                      {selectedUserForPreview.attributes?.name || "Name Here"}
-                    </h3>
-                    <p className="text-gray-300 text-sm mb-2">
-                      {selectedUserForPreview.attributes?.user_type ||
-                        "Title Here"}
-                    </p>
-                    <p className="text-gray-400 text-xs">
-                      {selectedUserForPreview.attributes?.organization || ""}
-                    </p>
-                  </div>
+                    {/* Badge Content */}
+                    <div className="absolute top-48 left-0 right-0 px-6 text-center">
+                      <h3 className="text-white font-bold text-2xl mb-2">
+                        {selectedUserForPreview.attributes?.name || "Name Here"}
+                      </h3>
+                      <p className="text-gray-300 text-base mb-2">
+                        {selectedUserForPreview.attributes?.user_type ||
+                          "Title Here"}
+                      </p>
+                      <p className="text-gray-400 text-sm mb-6">
+                        {selectedUserForPreview.attributes?.organization || ""}
+                      </p>
 
-                  {/* Decorative Wave Bottom */}
-                  <div className="absolute bottom-0 left-0 right-0 h-20">
-                    <svg viewBox="0 0 400 100" className="w-full h-full">
-                      <path
-                        d="M 0,50 Q 100,70 200,50 T 400,50 L 400,100 L 0,100 Z"
-                        fill="#4a4a4a"
-                        opacity="0.3"
-                      />
-                    </svg>
+                      {/* User Details */}
+                      {/* <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 mt-6">
+                        <div className="text-white text-sm text-left space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">ID:</span>
+                            <span className="font-mono">
+                              #{selectedUserForPreview.id}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Token:</span>
+                            <span className="font-mono text-xs">
+                              {selectedUserForPreview.token}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Department:</span>
+                            <span>{selectedUserForPreview.department}</span>
+                          </div>
+                          {selectedUserForPreview.attributes?.email && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Email:</span>
+                              <span className="text-xs truncate ml-2">
+                                {selectedUserForPreview.attributes.email}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div> */}
+                    </div>
+
+                    {/* Decorative Wave Bottom */}
+                    <div className="absolute bottom-0 left-0 right-0 h-20">
+                      <svg viewBox="0 0 400 100" className="w-full h-full">
+                        <path
+                          d="M 0,50 Q 100,70 200,50 T 400,50 L 400,100 L 0,100 Z"
+                          fill="#4a4a4a"
+                          opacity="0.3"
+                        />
+                      </svg>
+                    </div>
                   </div>
+                </div>
+
+                {/* Right Side - QR Code */}
+                {/* QR Code Container */}
+                <div className="bg-white p-6 rounded-xl justify-center items-center flex border-indigo-200 shadow-md mb-6">
+                  <QRCode
+                    value={generateQRCodeData(selectedUserForPreview)}
+                    size={220}
+                    level="H"
+                    fgColor="#1f2937"
+                    bgColor="#ffffff"
+                  />
                 </div>
               </div>
             </div>
 
             {/* Bottom Buttons - Full Width */}
-            <div className="flex mb-5 mx-5 border-gray-200">
+            <div className="flex border-t border-gray-200 mb-4 mx-4">
               <button
                 onClick={() => {
+                  setShowDeleteModal(true);
                   setPreviewModal(false);
-                  setSelectedUserForPreview(null);
                 }}
                 className="flex-1 py-4 px-6 bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center justify-center gap-2 font-medium"
               >
