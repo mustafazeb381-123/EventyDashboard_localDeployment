@@ -15,6 +15,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
 import { getEventUsers } from "@/apis/apiHelpers";
@@ -33,6 +34,10 @@ function PrintBadges() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [previewModal, setPreviewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedUserForPreview, setSelectedUserForPreview] =
+    useState<any>(null);
 
   const rowsPerPage = 8;
 
@@ -107,16 +112,16 @@ function PrintBadges() {
     setIsLoading(true);
     console.log(`${action} clicked for user ${userId}`);
 
-    // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
-    if (action === "print") {
-      toast.success("Badge printed successfully!");
-    } else if (action === "preview") {
-      toast.info("Preview opened in new window");
+    if (action === "preview") {
+      const user = eventUsers.find((u) => u.id === userId);
+      setSelectedUserForPreview(user);
+      setPreviewModal(true);
     } else if (action === "delete") {
-      setUsers((prev) => prev.filter((user) => user.id !== userId));
-      toast.success("User removed successfully!");
+      setShowDeleteModal(true);
+    } else if (action === "print") {
+      toast.info(`Printing badge for user #${userId}`);
     }
 
     setActivePopup(null);
@@ -520,7 +525,7 @@ function PrintBadges() {
                         <td className="p-4 relative">
                           <button
                             onClick={() => handleActionClick(user.id)}
-                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                            className="p-2 bg-gray-100 rounded-lg transition-colors group-hover:opacity-100"
                             disabled={isLoading}
                           >
                             <MoreVertical size={16} className="text-gray-600" />
@@ -669,13 +674,160 @@ function PrintBadges() {
           </div>
         </div>
       )}
-
       {/* Click outside to close popup */}
       {activePopup && (
         <div
           className="fixed inset-0 z-10"
           onClick={() => setActivePopup(null)}
         />
+      )}
+      {previewModal && selectedUserForPreview && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-[60%] mx-auto relative overflow-hidden">
+            {/* Close Button */}
+            <button
+              onClick={() => {
+                setPreviewModal(false);
+                setSelectedUserForPreview(null);
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Modal Content */}
+            <div className="p-8">
+              <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+                Badge Preview
+              </h2>
+
+              {/* Badge Design */}
+              <div className="flex flex-col items-center gap-6">
+                <div className="relative w-64 h-[50vh] bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl shadow-xl overflow-hidden">
+                  {/* Decorative Wave Top */}
+                  <div className="absolute top-0 left-0 right-0 h-16">
+                    <svg viewBox="0 0 400 100" className="w-full h-full">
+                      <path
+                        d="M 0,50 Q 100,30 200,50 T 400,50 L 400,0 L 0,0 Z"
+                        fill="#4a4a4a"
+                        opacity="0.3"
+                      />
+                    </svg>
+                  </div>
+
+                  {/* Profile Image Circle */}
+                  <div className="absolute top-12 left-1/2 transform -translate-x-1/2">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 p-1 shadow-lg">
+                      <div className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
+                        {selectedUserForPreview.attributes?.image ? (
+                          <img
+                            src={selectedUserForPreview.attributes.image}
+                            alt={
+                              selectedUserForPreview.attributes?.name || "User"
+                            }
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl">
+                            {selectedUserForPreview.attributes?.name
+                              ?.split(" ")
+                              .map((n) => n[0])
+                              .join("")
+                              .toUpperCase()
+                              .slice(0, 2) || "NA"}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Badge Content */}
+                  <div className="absolute top-40 left-0 right-0 px-6 text-center">
+                    <h3 className="text-white font-bold text-xl mb-1">
+                      {selectedUserForPreview.attributes?.name || "Name Here"}
+                    </h3>
+                    <p className="text-gray-300 text-sm mb-2">
+                      {selectedUserForPreview.attributes?.user_type ||
+                        "Title Here"}
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                      {selectedUserForPreview.attributes?.organization || ""}
+                    </p>
+                  </div>
+
+                  {/* Decorative Wave Bottom */}
+                  <div className="absolute bottom-0 left-0 right-0 h-20">
+                    <svg viewBox="0 0 400 100" className="w-full h-full">
+                      <path
+                        d="M 0,50 Q 100,70 200,50 T 400,50 L 400,100 L 0,100 Z"
+                        fill="#4a4a4a"
+                        opacity="0.3"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Buttons - Full Width */}
+            <div className="flex mb-5 mx-5 border-gray-200">
+              <button
+                onClick={() => {
+                  setPreviewModal(false);
+                  setSelectedUserForPreview(null);
+                }}
+                className="flex-1 py-4 px-6 bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                <Trash2 size={18} />
+                Delete
+              </button>
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium"
+              >
+                <Printer size={18} />
+                Print Badge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div
+          onClick={() => setShowDeleteModal(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
+            <div
+              onClick={() => setShowDeleteModal(false)}
+              className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4 cursor-pointer"
+            >
+              <X className="w-6 h-6 text-red-500" />
+            </div>
+
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-6">
+              Delete image ?
+            </h3>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
