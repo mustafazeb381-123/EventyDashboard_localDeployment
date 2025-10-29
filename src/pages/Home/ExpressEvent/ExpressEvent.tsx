@@ -17,9 +17,9 @@ export interface ToggleStates {
 
 const ExpressEvent = () => {
   const location = useLocation();
-  console.log('location--------', location)
+  console.log("location--------", location);
   const planType = location?.state?.plan;
-console.log('planType------++++++=------------', planType)
+  console.log("planType------++++++=------------", planType);
   const { id: routeEventId } = useParams();
 
   const {
@@ -34,7 +34,7 @@ console.log('planType------++++++=------------', planType)
     lastEdit,
     currentStep: initialStep,
   } = location.state || {};
-  console.log('plan0000000__00000000+++++++++', plan)
+  console.log("plan0000000__00000000+++++++++", plan);
 
   // Use route event ID if available, otherwise fall back to location state eventId
   const [createdEventId, setCreatedEventId] = useState<string | undefined>(
@@ -57,21 +57,39 @@ console.log('planType------++++++=------------', planType)
       label: "Registration Form",
       description: "Please provide your event Registration details",
     },
-    {
-      id: "badge",
-      label: "Badge",
-      description: "Please provide your name and email",
-    },
-    {
-      id: "confirmation",
-      label: "Confirmation",
-      description: "Please provide your name and email",
-    },
-    {
-      id: "areas",
-      label: "Areas",
-      description: "Please provide your name and email",
-    },
+    plan === "advanced"
+      ? {
+          id: "event-content",
+          label: "Event Content",
+          description: "Please provide event content details",
+        }
+      : {
+          id: "badge",
+          label: "Badge",
+          description: "Please provide your name and email",
+        },
+    plan === "advanced"
+      ? {
+          id: "Invitation-Management",
+          label: "Invitation Management",
+          description: "Please provide your name and email",
+        }
+      : {
+          id: "confirmation",
+          label: "Confirmation",
+          description: "Please provide your name and email",
+        },
+    plan === "advanced"
+      ? {
+          id: "Mobile-App-Management",
+          label: "Mobile App Management",
+          description: "Please provide your name and email",
+        }
+      : {
+          id: "areas",
+          label: "Areas",
+          description: "Please provide your name and email",
+        },
   ];
 
   const [selectedModal, setSelectedModal] = useState<number | null>(null);
@@ -86,15 +104,27 @@ console.log('planType------++++++=------------', planType)
     eventDetails: false,
   });
 
-  // Accept eventId from child and update for next steps
-  const handleNext = (nextEventId?: string | number) => {
-    console.log('ExpressEvent - Received eventId from child:', nextEventId);
+  // Accept eventId from child and update for next steps - UPDATED to accept plan parameter
+  // In ExpressEvent.tsx - REPLACE the existing handleNext function with this:
+
+  const handleNext = (nextEventId?: string | number, planType?: string) => {
+    console.log("ExpressEvent - handleNext called with:", {
+      nextEventId,
+      planType,
+      currentStep,
+    });
+
     if (nextEventId) {
       setCreatedEventId(String(nextEventId));
-      // Also update localStorage to persist
       localStorage.setItem("create_eventId", String(nextEventId));
     }
-    setCurrentStep((prev: number) => Math.min(prev + 1, steps.length - 1));
+
+    // Always move to next step, regardless of plan type
+    setCurrentStep((prev: number) => {
+      const nextStep = Math.min(prev + 1, steps.length - 1);
+      console.log("Moving from step", prev, "to step", nextStep);
+      return nextStep;
+    });
   };
 
   const handlePrevious = () => {
@@ -239,7 +269,6 @@ console.log('planType------++++++=------------', planType)
       case 2:
         return (
           <Badges
-            
             toggleStates={toggleStates}
             eventId={finalEventId}
             onNext={handleNext}
@@ -251,7 +280,6 @@ console.log('planType------++++++=------------', planType)
       case 3:
         return (
           <EmailConfirmation
-          
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}

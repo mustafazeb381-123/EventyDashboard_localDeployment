@@ -1,197 +1,169 @@
-import React, { useState } from "react";
-import {
-  Plus,
-  Eye,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  ChevronDown,
-  Mail,
-  MessageSquare,
-  Search,
-  Filter,
-  MoreVertical,
-  Users as UsersIcon,
-  Copy,
-  Check,
-  ArrowRight,
-  Trash2,
-  Calendar,
-  MapPin,
-  List,
-} from "lucide-react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import GateOnboarding from "./GateOnboarding";
+import { Plus, X, Copy, ArrowRight, Trash2 } from "lucide-react";
+import { getSessionAreaApi, createGate, getGates } from "@/apis/apiHelpers";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { deleteGate } from "@/apis/apiHelpers";
 
 function Onboarding() {
+
   const [showModal, setShowModal] = useState(false);
-  const [selectedType, setSelectedType] = useState("email");
   const [title, setTitle] = useState("");
-  const [sendTo, setSendTo] = useState("All users Registered");
-  const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState("event");
+  const [showGateOnboarding, setShowGateOnboarding] = useState(false);
+  const [selectedGate, setSelectedGate] = useState(null);
+  const [areas, setAreas] = useState<string[]>([]);
+  const [areasData, setAreasData] = useState<any[]>([]);
+  const [gatesData, setGatesData] = useState<any[]>([]);
 
-  const users = [
-    {
-      id: "01",
-      title: "Ethan Carter",
-      type: "email",
-      url: "https://site.eventmy.circular-for-news",
-      createdAt: "06/04/2025",
-      numberOfUsers: 3,
-      status: "Success",
-      avatar: "EC",
-    },
-    {
-      id: "02",
-      title: "Luca Thompson",
-      type: "SMS",
-      url: "https://site.eventmy.circular-for-news",
-      createdAt: "06/04/2025",
-      numberOfUsers: 3,
-      status: "pending",
-      avatar: "LT",
-    },
-    {
-      id: "03",
-      title: "Liam Anderson",
-      type: "email",
-      url: "https://site.eventmy.circular-for-news",
-      createdAt: "06/04/2025",
-      numberOfUsers: 3,
-      status: "Rejected",
-      avatar: "LA",
-    },
-    {
-      id: "04",
-      title: "Samantha Rivers",
-      type: "SMS",
-      url: "https://site.eventmy.circular-for-news",
-      createdAt: "06/04/2025",
-      numberOfUsers: 3,
-      status: "pending",
-      avatar: "SR",
-    },
-    {
-      id: "05",
-      title: "Liam Anderson",
-      type: "email",
-      url: "https://site.eventmy.circular-for-news",
-      createdAt: "06/04/2025",
-      numberOfUsers: 3,
-      status: "pending",
-      avatar: "LA",
-    },
-    {
-      id: "06",
-      title: "Samantha Rivers",
-      type: "email",
-      url: "https://site.eventmy.circular-for-news",
-      createdAt: "06/04/2025",
-      numberOfUsers: 3,
-      status: "pending",
-      avatar: "SR",
-    },
-  ];
+  const [loading, setLoading] = useState(false);
 
-  // 🔹 Pagination setup
-  const itemsPerPage = 3; // number of rows per page
-  const filteredUsers = users.filter((user) =>
-    user.title.toLowerCase().includes(searchTerm.toLowerCase())
+  const [eventId, setEventId] = useState<string | null>(null);
+  const location = useLocation();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const id = params.get("eventId");
+    if (id) setEventId(id);
+  }, [location]);
+
+  // Fetch Areas
+  useEffect(() => {
+    const fetchAreas = async () => {
+      if (!eventId) return;
+      try {
+        const response = await getSessionAreaApi(eventId);
+        setAreasData(response.data.data);
+        const areaNames = response.data.data.map((area: { attributes: { name: string } }) => area.attributes.name);
+        setAreas(areaNames);
+      } catch (err) {
+        console.error("Error fetching areas:", err);
+      }
+    };
+    fetchAreas();
+  }, [eventId]);
+
+
+  // Fetch Gates
+  const fetchGates = async () => {
+    if (!eventId) return;
+    setLoading(true);
+    try {
+      const response = await getGates(eventId);
+
+      // ✅ Log to see structure
+      console.log("Full response:", response);
+      console.log("Response data:", response.data);
+
+      // ✅ Safely handle nested structure
+      setGatesData(Array.isArray(response.data.data) ? response.data.data : []);
+    } catch (err) {
+      console.error("Error fetching gates:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchGates();
+  }, [eventId]);
+
+  const getAreaIdByName = (name: string) => {
+    const areaObj = areasData.find(a => a.attributes.name === name);
+    return areaObj ? areaObj.id : null;
+  };
+
+  const handleCreateGate = async () => {
+    if (!eventId) return alert("Event ID is required");
+    setIsLoading(true);
+
+    try {
+      const body: any = {
+        check_in_and_out_gate: {
+          event_id: Number(eventId),
+          session_area_id: activeTab === "area" ? getAreaIdByName(title) : null,
+          agenda_id: null,
+        },
+      };
+      console.log("Sending:", body);
+
+      await createGate(body);
+      toast.success("Gate created successfully!");
+      setShowModal(false);
+      setTitle("");
+      fetchGates(); // refresh after creation
+    } catch (err: any) {
+      console.error("Error creating gate:", err);
+      toast.error("Failed to create gate.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const itemsPerPage = 10;
+  const filteredgates = gatesData.filter((gate) =>
+    gate.id.toString().includes(searchTerm) ||
+    gate.title?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  const paginatedgates = filteredgates.slice(startIndex, endIndex);
 
-  const getPaginationNumbers = () => {
-    let pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
-    }
-    return pages;
+  const handleCopyGateLink = (gateId: number) => {
+    if (!eventId) return toast.error("Event ID missing");
+
+    // Construct the URL (adjust the path if your route is different)
+    const url = `${window.location.origin}/onboarding?eventId=${eventId}&gateId=${gateId}`;
+
+    navigator.clipboard.writeText(url)
+      .then(() => toast.success("Gate link copied!"))
+      .catch(() => toast.error("Failed to copy link"));
   };
 
-  const handlePageChange = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case "success":
-        return "bg-emerald-50 text-emerald-700 border-emerald-200";
-      case "pending":
-        return "bg-amber-50 text-amber-700 border-amber-200";
-      case "rejected":
-        return "bg-red-50 text-red-700 border-red-200";
-      default:
-        return "bg-gray-50 text-gray-700 border-gray-200";
-    }
-  };
+  const handleDelete = async (gateId: number) => {
+    if (!eventId) return;
 
-  const handleNewInvitation = async () => {
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("New invitation:", { title, sendTo, type: selectedType });
-    setIsLoading(false);
-    setShowModal(false);
-    setTitle("");
-  };
+    const confirmDelete = window.confirm("Are you sure you want to delete this gate?");
+    if (!confirmDelete) return; // ❌ user clicked "No"
 
-  const handleUserSelect = (userId) => {
-    const newSelected = new Set(selectedUsers);
-    if (newSelected.has(userId)) {
-      newSelected.delete(userId);
-    } else {
-      newSelected.add(userId);
-    }
-    setSelectedUsers(newSelected);
-  };
+    console.log(`Deleting gate: ${gateId}`);
 
-  const handleSelectAll = () => {
-    if (selectedUsers.size === users.length) {
-      setSelectedUsers(new Set());
-    } else {
-      setSelectedUsers(new Set(users.map((user) => user.id)));
+    try {
+      await deleteGate(gateId, eventId);
+      toast.success("Gate deleted successfully!");
+      fetchGates(); // refresh
+    } catch (err) {
+      console.error("Error deleting gate:", err);
+      console.log("Failed to delete gate:", (err as any)?.response?.data?.message || (err as any)?.message || "Unknown error");
+      toast.error("Failed to delete gate.");
     }
   };
 
-  const handleCopy = (url) => {
-    navigator.clipboard.writeText(url);
-    // You can add a toast notification here
-    console.log("URL copied:", url);
-  };
-
-  const handleDelete = (userId) => {
-    // Handle delete logic here
-    console.log("Delete user:", userId);
-  };
-
-  const gateTypes = [
-    {
-      id: "event",
-      label: "By Event",
-      icon: Calendar,
-      // description: "Select by event type"
-    },
-    {
-      id: "area",
-      label: "By Area",
-      icon: MapPin,
-      // description: "Select by area location"
-    },
-    {
-      id: "agenda",
-      label: "By Agenda",
-      icon: List,
-      // description: "Select by agenda items"
+  const handleOpenGateOnboarding = (gateId: number) => {
+    const gate = gatesData.find(g => g.id === gateId);
+    if (!gate) {
+      console.error("Gate not found for ID:", gateId);
+      toast.error("Gate not found");
+      return;
     }
-  ];
+
+    console.log("Selected gate details:", gate);
+
+    setSelectedGate(gate); // includes gate_token
+    setShowGateOnboarding(true);
+  };
+
+
+
+  if (showGateOnboarding) {
+    return selectedGate ? <GateOnboarding gate={selectedGate} onBack={() => setShowGateOnboarding(false)} /> : null;
+  }
 
   return (
     <>
@@ -199,18 +171,13 @@ function Onboarding() {
         <div className="p-8">
           {/* Header */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-600 rounded-xl shadow-lg">
-                <UsersIcon className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                  VIP Users
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {users.length} total users • {selectedUsers.size} selected
-                </p>
-              </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                On Boarding
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Gates {gatesData.length}
+              </p>
             </div>
             <button
               onClick={() => setShowModal(true)}
@@ -220,295 +187,136 @@ function Onboarding() {
                 duration-200 transform hover:-translate-y-0.5 cursor-pointer"
             >
               <Plus size={18} />
-              New Invitation
+              New Gate
             </button>
           </div>
 
           {/* Table */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50/80 border-b border-gray-200/60">
-                  <tr>
-                    <th className="px-6 py-4 text-left">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={selectedUsers.size === users.length}
-                        onChange={handleSelectAll}
-                      />
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Title
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      URL
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200/60">
-                  {paginatedUsers.map((user, index) => (
-                    <tr
-                      key={user.id}
-                      className="hover:bg-gray-50/50 transition-colors group"
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          checked={selectedUsers.has(user.id)}
-                          onChange={() => handleUserSelect(user.id)}
-                        />
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        #{user.id}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="font-medium text-gray-900">
-                          {user.title}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {user.type === "email" ? (
-                            <Mail size={16} className="text-blue-500" />
-                          ) : (
-                            <MessageSquare
-                              size={16}
-                              className="text-green-500"
-                            />
-                          )}
-                          <span className="text-sm text-gray-700 capitalize">
-                            {user.type}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
-                        {user.url}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 group-hover:opacity-100 transition-opacity">
-                          <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                            <ArrowRight size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleCopy(user.url)}
-                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                          >
-                            <Copy size={16} />
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(user.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
-              <div className="text-sm text-gray-600">
-                Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-                <span className="font-medium">
-                  {Math.min(endIndex, filteredUsers.length)}
-                </span>{" "}
-                of <span className="font-medium">{filteredUsers.length}</span>{" "}
-                users
-                {searchTerm && (
-                  <span className="ml-2 text-blue-600">• Filtered results</span>
-                )}
+            {loading ? (
+              <div className="text-center py-8 text-gray-500">Loading Gates...</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50/80 border-b border-gray-200/60">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Title</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">URL</th>
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200/60">
+                    {paginatedgates.map((gate) => (
+                      <tr key={gate.id} className="hover:bg-gray-50/50 transition-colors group">
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{gate.id}</td>
+                        <td className="px-6 py-4 font-medium text-gray-900">{gate.title}</td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-700 capitalize">{gate?.attributes?.type}</span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{gate?.attributes?.gate_token}</td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleOpenGateOnboarding(gate.id)}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                            >
+                              <ArrowRight size={16} />
+                            </button>
+
+                            <button onClick={() => handleCopyGateLink(gate.id)} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition">
+                              <Copy size={16} />
+                            </button>
+
+                            <button onClick={() => handleDelete(gate.id)} className="p-2  text-red-600 hover:bg-red-50 rounded-lg transition">
+                              <Trash2 size={16} />
+                            </button>
+
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors border ${
-                    currentPage === 1
-                      ? "text-gray-400 cursor-not-allowed border-transparent"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white border-transparent hover:border-gray-200"
-                  }`}
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                >
-                  <ChevronLeft size={16} />
-                  Previous
-                </button>
-                <div className="flex items-center gap-1">
-                  {getPaginationNumbers().map((page, index) => (
-                    <button
-                      key={index}
-                      onClick={() =>
-                        typeof page === "number" && handlePageChange(page)
-                      }
-                      className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                        page === currentPage
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors border ${
-                    currentPage === totalPages
-                      ? "text-gray-400 cursor-not-allowed border-transparent"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white border-transparent hover:border-gray-200"
-                  }`}
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                >
-                  Next
-                  <ChevronRight size={16} />
-                </button>
-              </div>
-            </div>
+
+            )}
+
           </div>
+
         </div>
       </div>
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div 
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform animate-in zoom-in-95 duration-200"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  New Gate
-                </h2>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
-              >
+              <h2 className="text-2xl font-bold text-gray-900">New Gate</h2>
+              <button onClick={() => setShowModal(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition">
                 <X size={20} />
               </button>
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Gate Type Tabs with Icons and Radio Buttons */}
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-4">
-                  Gate type
-                </label>
-                <div className="grid grid-cols-3 gap-4">
-                  {gateTypes.map((gateType) => {
-                    const IconComponent = gateType.icon;
-                    return (
-                      <label
-                        key={gateType.id}
-                        className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                          activeTab === gateType.id
-                            ? "border-blue-500 bg-blue-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 flex-1">
-                          <div className="relative">
-                            <input
-                              type="radio"
-                              name="gateType"
-                              value={gateType.id}
-                              checked={activeTab === gateType.id}
-                              onChange={(e) => setActiveTab(e.target.value)}
-                              className="sr-only"
-                            />
-                            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                              activeTab === gateType.id 
-                                ? "border-blue-500 bg-blue-500" 
-                                : "border-gray-300"
-                            }`}>
-                              {activeTab === gateType.id && (
-                                <Check className="w-3 h-3 text-white" />
-                              )}
-                            </div>
-                          </div>
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <IconComponent 
-                              className={`${
-                                activeTab === gateType.id ? "text-blue-600" : "text-gray-600"
-                              }`} 
-                              size={20} 
-                            />
-                          </div>
-                          <div>
-                            <div className={`font-medium ${
-                              activeTab === gateType.id ? "text-blue-700" : "text-gray-900"
-                            }`}>
-                              {gateType.label}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              {gateType.description}
-                            </div>
-                          </div>
-                        </div>
-                      </label>
-                    );
-                  })}
+                <label className="block text-sm font-semibold text-gray-700 mb-4">Gate type</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="gateType" value="event" checked={activeTab === "event"} onChange={(e) => setActiveTab(e.target.value)} className="form-radio text-blue-500" />
+                    <span className={activeTab === "event" ? "text-blue-700 font-medium" : "text-gray-900 font-medium"}>Event {eventId}</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="radio" name="gateType" value="area" checked={activeTab === "area"} onChange={(e) => setActiveTab(e.target.value)} className="form-radio text-blue-500" />
+                    <span className={activeTab === "area" ? "text-blue-700 font-medium" : "text-gray-900 font-medium"}>Area</span>
+                  </label>
                 </div>
               </div>
 
-              {/* Title Input */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Title
-                </label>
+              <div className="mt-4">
                 <input
                   type="text"
-                  placeholder="Enter title..."
+                  placeholder="Select area..."
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 ${activeTab === "area" ? "" : "bg-gray-100 cursor-not-allowed"}`}
+                  list="areas-list"
+                  disabled={activeTab !== "area"}
                 />
+                <datalist id="areas-list">
+                  {areas.map((area) => <option key={area} value={area} />)}
+                </datalist>
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200/60">
-  <button
-    onClick={handleNewInvitation}
-    disabled={isLoading}
-    className={`w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
-      isLoading ? "animate-pulse" : ""
-    }`}
-  >
-    {isLoading ? (
-      <>
-        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-        Creating...
-      </>
-    ) : (
-      <>
-        <Plus size={18} />
-        Add Gate
-      </>
-    )}
-  </button>
-</div>
-
-
+              <button
+                onClick={handleCreateGate}
+                disabled={isLoading}
+                className={`w-full flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg hover:bg-blue-700 transition-all duration-200 ${isLoading ? "animate-pulse" : ""}`}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <Plus size={18} /> Add Gate
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
+
     </>
+
   );
+
 }
 
 export default Onboarding;

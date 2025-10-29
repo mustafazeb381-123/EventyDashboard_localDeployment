@@ -44,7 +44,7 @@ type ModalProps = {
   isLoading: boolean;
   isLoadingFormData: boolean;
   eventId?: string;
-  plan?:string
+  plan?: string;
 };
 
 // Modal Component
@@ -56,7 +56,7 @@ const Modal = ({
   isLoading,
   isLoadingFormData,
   eventId,
-  plan
+  plan,
 }: ModalProps) => {
   if (!selectedTemplate) return null;
 
@@ -264,7 +264,7 @@ const RegistrationForm = ({
   currentStep,
   totalSteps,
   eventId,
-  plan
+  plan,
 }: RegistrationFormProps) => {
   const { id: routeId } = useParams();
   console.log("RegistrationForm - received plan:", plan);
@@ -278,24 +278,31 @@ const RegistrationForm = ({
       : undefined);
 
   console.log("RegistrationForm - effective event id:", effectiveEventId);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(null);
-  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(null);
+  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
+    null
+  );
+  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(
+    null
+  );
   const [internalStep, setInternalStep] = useState<number>(0);
   const [formData, setFormData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingFormData, setIsLoadingFormData] = useState(false);
-  const [confirmationToggleStates, setConfirmationToggleStates] = useState<ToggleStates>({
-    confirmationMsg: true,
-    userQRCode: false,
-    location: false,
-    eventDetails: false,
-  });
+  const [confirmationToggleStates, setConfirmationToggleStates] =
+    useState<ToggleStates>({
+      confirmationMsg: true,
+      userQRCode: false,
+      location: false,
+      eventDetails: false,
+    });
 
   const [getTemplatesData, setGetTemplatesData] = useState<any[]>([]);
-  const [selectedTemplateName, setSelectedTemplateName] = useState<string | null>(null);
+  const [selectedTemplateName, setSelectedTemplateName] = useState<
+    string | null
+  >(null);
 
   const getCreateTemplateApiData = async () => {
     try {
@@ -306,14 +313,15 @@ const RegistrationForm = ({
 
       const result = await getRegistrationTemplateData(effectiveEventId);
       const responseData = result?.data?.data;
-      
+
       if (!responseData) {
         console.warn("No data found in response");
         setGetTemplatesData([]);
         return;
       }
 
-      const registrationFields = responseData.attributes?.event_registration_fields?.data || [];
+      const registrationFields =
+        responseData.attributes?.event_registration_fields?.data || [];
       const templateData = registrationFields.map((item: any) => ({
         id: item.id,
         type: item.type,
@@ -475,7 +483,8 @@ const RegistrationForm = ({
         case "template-one":
           templateData = {
             name: "Event Registration Form",
-            description: "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
+            description:
+              "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
             fields: formData || [],
             templateComponent: "TemplateFormOne",
           };
@@ -525,7 +534,9 @@ const RegistrationForm = ({
       } else if (error.response?.status === 500) {
         toast.error("Server error. Please try again later.");
       } else {
-        toast.error(error.message || "Error adding template. Please try again.");
+        toast.error(
+          error.message || "Error adding template. Please try again."
+        );
       }
     } finally {
       setIsLoading(false);
@@ -536,18 +547,20 @@ const RegistrationForm = ({
     setConfirmationToggleStates(toggleStates);
   };
 
-  // Updated to pass eventId to parent
   const handleConfirmationNext = async () => {
     try {
       setIsLoading(true);
       await updateTheconfirmationDetails();
-      
+
       // Pass the eventId to parent
       if (effectiveEventId && onNext) {
-        console.log('RegistrationForm - Sending eventId to ExpressEvent:', effectiveEventId);
-        onNext(effectiveEventId);
+        console.log(
+          "RegistrationForm - Sending eventId to ExpressEvent:",
+          effectiveEventId
+        );
+        onNext(effectiveEventId, plan); // ADD plan parameter here
       } else {
-        toast.error('Cannot proceed without event ID');
+        toast.error("Cannot proceed without event ID");
       }
     } catch (error) {
       console.error("Failed to update confirmation details:", error);
@@ -584,6 +597,8 @@ const RegistrationForm = ({
     }
   };
 
+  // In RegistrationForm.tsx - UPDATE the handleNextClick function:
+
   const handleNextClick = () => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
@@ -593,7 +608,7 @@ const RegistrationForm = ({
         setInternalStep(1);
       }
     } else {
-      if (onNext) onNext();
+      if (onNext) onNext(effectiveEventId, plan); // ADD parameters here
     }
   };
 
@@ -610,10 +625,22 @@ const RegistrationForm = ({
       throw new Error("Event ID not found");
     }
 
-    formData.append(`event[print_qr]`, String(confirmationToggleStates.userQRCode));
-    formData.append(`event[display_confirmation]`, String(confirmationToggleStates.confirmationMsg));
-    formData.append(`event[display_event_details]`, String(confirmationToggleStates.eventDetails));
-    formData.append(`event[display_location]`, String(confirmationToggleStates.location));
+    formData.append(
+      `event[print_qr]`,
+      String(confirmationToggleStates.userQRCode)
+    );
+    formData.append(
+      `event[display_confirmation]`,
+      String(confirmationToggleStates.confirmationMsg)
+    );
+    formData.append(
+      `event[display_event_details]`,
+      String(confirmationToggleStates.eventDetails)
+    );
+    formData.append(
+      `event[display_location]`,
+      String(confirmationToggleStates.location)
+    );
 
     try {
       const response = await updateEventById(id, formData);
@@ -628,7 +655,18 @@ const RegistrationForm = ({
   return (
     <>
       {plan === "advanced" ? (
-        <AdvanceEvent />
+        <AdvanceEvent
+          onComplete={(eventId) => {
+            console.log(
+              "🔄 Advanced flow completed, moving to main Badge step"
+            );
+            if (onNext) {
+              onNext(eventId, plan);
+            }
+          }}
+          onPrevious={onPrevious}
+          eventId={effectiveEventId}
+        />
       ) : (
         <div className="w-full mx-5 bg-white p-5 rounded-2xl">
           {/* Header */}
@@ -639,7 +677,7 @@ const RegistrationForm = ({
                 Choose a registration form template
               </p>
             </div>
-  
+
             {/* Steps */}
             <div className="flex items-center gap-2">
               {/* Step 1 */}
@@ -667,14 +705,14 @@ const RegistrationForm = ({
                   )}
                 </div>
               </div>
-  
+
               {/* Connector */}
               <div
                 className={`flex-1 h-1 rounded-full ${
                   isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
                 }`}
               ></div>
-  
+
               {/* Step 2 */}
               <div className="flex items-center">
                 <div
@@ -693,7 +731,7 @@ const RegistrationForm = ({
               </div>
             </div>
           </div>
-  
+
           {/* Main Content Area */}
           {internalStep === 0 ? (
             <>
@@ -736,7 +774,7 @@ const RegistrationForm = ({
                           <div className="w-[1200px]">{tpl.component}</div>
                         </div>
                       </div>
-  
+
                       {confirmedTemplate === tpl.id && (
                         <div className="mt-2 flex items-center justify-center">
                           <Check size={16} className="text-pink-500 mr-1" />
@@ -762,7 +800,7 @@ const RegistrationForm = ({
               />
             </div>
           )}
-  
+
           {/* Modal - Only show when not in confirmation step */}
           {isModalOpen && internalStep === 0 && (
             <Modal
@@ -775,7 +813,7 @@ const RegistrationForm = ({
               eventId={effectiveEventId}
             />
           )}
-  
+
           {/* Navigation Buttons */}
           <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
             <button
@@ -789,7 +827,7 @@ const RegistrationForm = ({
             >
               ← Previous
             </button>
-  
+
             <button
               onClick={
                 internalStep === 1 ? handleConfirmationNext : handleNextClick
@@ -814,13 +852,12 @@ const RegistrationForm = ({
               )}
             </button>
           </div>
-  
+
           <ToastContainer />
         </div>
       )}
     </>
   );
-  
 };
 
 export default RegistrationForm;

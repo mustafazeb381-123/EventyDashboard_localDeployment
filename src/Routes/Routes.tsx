@@ -21,7 +21,7 @@ import PollDetails from "@/pages/Home/EventDetails/PollDetails/PollDetails";
 import Qa from "@/pages/Home/EventDetails/QA/QA";
 import TicketManagement from "@/pages/Home/EventDetails/TicketManagement/TicketManagement";
 import VipUsers from "@/pages/Home/EventDetails/Invitation/VipUsers";
-import Onboarding from "@/pages/Home/EventDetails/Onboarding/onboarding";
+import Onboarding from "@/pages/Home/EventDetails/Onboarding/Onboarding";
 
 const router = createBrowserRouter([
   {
@@ -87,12 +87,12 @@ const router = createBrowserRouter([
                 element: <Qa />,
               },
               {
-                path: "poll/:id", 
+                path: "poll/:id",
                 element: <PollDetails />,
               },
             ],
           },
-         
+
           {
             path: "express-event/:id?",
             element: <ExpressEvent />,

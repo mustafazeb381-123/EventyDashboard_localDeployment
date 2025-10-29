@@ -6,14 +6,16 @@ import { sendCredentials } from "@/apis/apiHelpers";
 import { downloadEventUserTemplate } from "@/apis/apiHelpers";
 import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
-import { Trash2, Mail, Plus, Edit, Search } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
+import { resetCheckInOutStatus } from "@/apis/apiHelpers";
+
+import { Trash2, Mail, Plus, Edit, Search, RotateCcw } from "lucide-react";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterdUser() {
-
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
+  console.log("event id-----++++++++-------", eventId);
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [editingUser, setEditingUser] = useState<any | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -45,7 +47,6 @@ function RegisterdUser() {
       localStorage.setItem(storageKey, eventUsers.length?.toString());
     }
   }, [eventUsers, eventId]);
-
 
   const getPaginationNumbers = () => {
     let pages = [];
@@ -124,7 +125,9 @@ function RegisterdUser() {
 
       if (err.response) {
         console.error("Server response data:", err.response.data);
-        toast.error(`Import failed: ${err.response.data?.message || "Validation error"}`);
+        toast.error(
+          `Import failed: ${err.response.data?.message || "Validation error"}`
+        );
       } else {
         toast.error("Failed to import users. Check the file and try again.");
       }
@@ -133,17 +136,15 @@ function RegisterdUser() {
     }
   };
 
-  const handleSendCredentials = async () => {
-    if (!eventId || selectedUsers.length === 0) return;
+  const handleSendCredentials = async (userIds?: string[]) => {
+    const idsToSend = userIds || selectedUsers;
 
-    const apiUrl = `/events/${eventId}/event_users/send_credentials`;
-    console.log("Sending credentials to:", apiUrl);
-    console.log("Selected user IDs:", selectedUsers);
+    if (!eventId || idsToSend.length === 0) return;
 
-    setSendingCredentials(true); // start loader
+    setSendingCredentials(true);
 
     try {
-      const response = await sendCredentials(eventId, selectedUsers);
+      const response = await sendCredentials(eventId, idsToSend);
       console.log("API response:", response.data);
       toast.success("Credentials sent successfully!");
       setSelectedUsers([]);
@@ -151,7 +152,7 @@ function RegisterdUser() {
       console.error("Error sending credentials:", err);
       toast.error("Failed to send credentials. Please try again.");
     } finally {
-      setSendingCredentials(false); // stop loader
+      setSendingCredentials(false);
     }
   };
 
@@ -165,13 +166,17 @@ function RegisterdUser() {
 
       // Append user fields
       if (editForm.name) formData.append("event_user[name]", editForm.name);
-      if (editForm.phone_number) formData.append("event_user[phone_number]", editForm.phone_number);
+      if (editForm.phone_number)
+        formData.append("event_user[phone_number]", editForm.phone_number);
       if (editForm.email) formData.append("event_user[email]", editForm.email);
-      if (editForm.position) formData.append("event_user[position]", editForm.position);
-      if (editForm.organization) formData.append("event_user[organization]", editForm.organization);
+      if (editForm.position)
+        formData.append("event_user[position]", editForm.position);
+      if (editForm.organization)
+        formData.append("event_user[organization]", editForm.organization);
 
       // Append image if provided
-      if (selectedImageFile) formData.append("event_user[image]", selectedImageFile);
+      if (selectedImageFile)
+        formData.append("event_user[image]", selectedImageFile);
 
       const response = await updateEventUser(eventId, editingUser.id, formData);
 
@@ -182,16 +187,16 @@ function RegisterdUser() {
         prev.map((u) =>
           u.id === editingUser.id
             ? {
-              ...u,
-              attributes: {
-                ...u.attributes,
-                ...editForm, // only text fields
-                image: updatedUser?.attributes?.image
-                  ? `${updatedUser.attributes.image}?t=${Date.now()}`
-                  : u.attributes.image, // only update for this user
-                updated_at: new Date().toISOString(),
-              },
-            }
+                ...u,
+                attributes: {
+                  ...u.attributes,
+                  ...editForm, // only text fields
+                  image: updatedUser?.attributes?.image
+                    ? `${updatedUser.attributes.image}?t=${Date.now()}`
+                    : u.attributes.image, // only update for this user
+                  updated_at: new Date().toISOString(),
+                },
+              }
             : u
         )
       );
@@ -213,16 +218,18 @@ function RegisterdUser() {
     setEventId(idFromQuery);
 
     if (idFromQuery) {
+      console.log("id from-------", idFromQuery);
       fetchUsers(idFromQuery);
     }
   }, [location.search]);
 
   const fetchUsers = async (id: string) => {
+    console.log("idddddddd", id);
     setLoadingUsers(true); // start loader
     try {
       setLoadingUsers(true);
       const response = await getEventUsers(id);
-      console.log("Fetched users:", response.data);
+      console.log("get event users:", response.data);
 
       // adjust depending on backend shape
       const users = response.data.data || response.data || [];
@@ -277,7 +284,7 @@ function RegisterdUser() {
       console.log("Deleting user with:", {
         eventId,
         userId: user.id,
-        apiCall: `/events/${eventId}/event_users/${user.id}`
+        apiCall: `/events/${eventId}/event_users/${user.id}`,
       });
 
       await deleteEventUser(eventId, user.id);
@@ -291,10 +298,12 @@ function RegisterdUser() {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        requestUrl: error.config?.url
+        requestUrl: error.config?.url,
       });
 
-      toast.error(`Failed to delete user: ${error.response?.data?.error || error.message}`);
+      toast.error(
+        `Failed to delete user: ${error.response?.data?.error || error.message}`
+      );
     }
   };
 
@@ -344,10 +353,30 @@ function RegisterdUser() {
     );
   };
 
-  return (
+  const handleResetCheckInOut = async (userId: string) => {
+    if (!eventId) return toast.error("Event ID is missing.");
 
+    if (
+      !window.confirm(
+        "Are you sure you want to reset this user's check-in/out status?"
+      )
+    )
+      return;
+
+    try {
+      const response = await resetCheckInOutStatus(eventId, userId);
+      console.log("Reset response:", response.data);
+
+      toast.success("Check-in/out status reset successfully!");
+    } catch (error: any) {
+      console.error("Error resetting status:", error);
+      toast.error("Failed to reset check-in/out status.");
+    }
+  };
+
+  return (
     <div className="bg-white min-h-screen p-6">
- <ToastContainer
+      <ToastContainer
         position="top-right"
         autoClose={5000}
         hideProgressBar={false}
@@ -360,7 +389,6 @@ function RegisterdUser() {
         theme="light"
       />
       <div className="max-w-8xl mx-auto">
-
         <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
 
         {/* Header */}
@@ -389,7 +417,9 @@ function RegisterdUser() {
                 className="bg-white p-6 rounded-lg w-96"
                 onClick={(e) => e.stopPropagation()} // Prevent modal content clicks from closing
               >
-                <h2 className="text-xl font-bold mb-4 text-center">Import Attendees</h2>
+                <h2 className="text-xl font-bold mb-4 text-center">
+                  Import Attendees
+                </h2>
 
                 {/* Download Template */}
                 <button
@@ -399,7 +429,6 @@ function RegisterdUser() {
                 >
                   {downloadingTemplate ? "...Downloading" : "Download Template"}
                 </button>
-
 
                 {/* File Upload */}
                 <input
@@ -418,41 +447,35 @@ function RegisterdUser() {
                 >
                   {uploadingTemplate ? "...Uploading" : "Submit"}
                 </button>
-
-
-
               </div>
-
             </div>
-
           )}
-
-
-
         </div>
 
         {selectedUsers.length > 0 && (
           <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-blue-700 font-medium">
-              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""} selected
+              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
+              selected
             </p>
 
             <button
-              onClick={handleSendCredentials}
+              onClick={() => handleSendCredentials()}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
               disabled={sendingCredentials} // disable while sending
             >
               <Mail className="w-4 h-4" />
               {sendingCredentials ? "...Sending" : "Send Credentials"}
             </button>
-
-
           </div>
         )}
 
         <div className="flex justify-between mb-4">
           <div className="relative w-1/3">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={20}
+            />
             <input
               type="text"
               placeholder="Search users..."
@@ -463,14 +486,15 @@ function RegisterdUser() {
           </div>
           <div>
             <span className="text-gray-600 text-sm">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+              Showing {startIndex + 1} to{" "}
+              {Math.min(endIndex, filteredUsers.length)} of{" "}
+              {filteredUsers.length} users
             </span>
           </div>
         </div>
 
         {/* Table */}
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           {loadingUsers ? (
             <div className="flex flex-col items-center justify-center py-16 text-gray-500">
               <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
@@ -478,9 +502,7 @@ function RegisterdUser() {
             </div>
           ) : (
             <>
-
-              <table className="w-full">
-
+              <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="w-12 px-6 py-3 text-left">
@@ -492,7 +514,6 @@ function RegisterdUser() {
                           eventUsers.length > 0 &&
                           selectedUsers.length === eventUsers.length
                         }
-
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -570,6 +591,12 @@ function RegisterdUser() {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleResetCheckInOut(user.id)}
+                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
 
                           <button
                             onClick={() => handleDeleteUser(user)}
@@ -578,24 +605,29 @@ function RegisterdUser() {
                             <Trash2 className="w-4 h-4" />
                           </button>
 
-                          <button onClick={() => {
-                            setEditingUser(user);
-                            setEditForm({
-                              name: user?.attributes?.name || "",
-                              email: user?.attributes?.email || "",
-                              organization: user?.attributes?.organization || "",
-                              image: user?.attributes?.image || "",
-                              user_type: user?.attributes?.user_type || "",
-                            });
-                          }} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer">
+                          <button
+                            onClick={() => {
+                              setEditingUser(user);
+                              setEditForm({
+                                name: user?.attributes?.name || "",
+                                email: user?.attributes?.email || "",
+                                organization:
+                                  user?.attributes?.organization || "",
+                                image: user?.attributes?.image || "",
+                                user_type: user?.attributes?.user_type || "",
+                              });
+                            }}
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer"
+                          >
                             <Edit className="w-4 h-4" />
                           </button>
 
-
-                          <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <button
+                            onClick={() => handleSendCredentials([user.id])}
+                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          >
                             <Mail className="w-4 h-4" />
                           </button>
-
                         </div>
                       </td>
                     </tr>
@@ -609,8 +641,11 @@ function RegisterdUser() {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded-lg text-sm ${currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      currentPage === 1
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
                   >
                     Previous
                   </button>
@@ -618,8 +653,11 @@ function RegisterdUser() {
                     <button
                       key={page}
                       onClick={() => handlePageChange(page)}
-                      className={`px-3 py-1 rounded-lg text-sm ${page === currentPage ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-gray-100"
-                        }`}
+                      className={`px-3 py-1 rounded-lg text-sm ${
+                        page === currentPage
+                          ? "bg-blue-600 text-white"
+                          : "text-gray-700 hover:bg-gray-100"
+                      }`}
                     >
                       {page}
                     </button>
@@ -627,14 +665,16 @@ function RegisterdUser() {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded-lg text-sm ${currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-100"
-                      }`}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      currentPage === totalPages
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-gray-700 hover:bg-gray-100"
+                    }`}
                   >
                     Next
                   </button>
                 </div>
               </div>
-
             </>
           )}
 
@@ -706,49 +746,56 @@ function RegisterdUser() {
                   type="text"
                   placeholder="Name"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
                   className="w-full mb-2 p-2 border rounded"
                 />
                 <input
                   type="email"
                   placeholder="Email"
                   value={editForm.email}
-                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, email: e.target.value })
+                  }
                   className="w-full mb-2 p-2 border rounded"
                 />
                 <input
                   type="text"
                   placeholder="Organization"
                   value={editForm.organization}
-                  onChange={(e) => setEditForm({ ...editForm, organization: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, organization: e.target.value })
+                  }
                   className="w-full mb-2 p-2 border rounded"
                 />
                 <input
                   type="text"
                   placeholder="User Type"
                   value={editForm.user_type}
-                  onChange={(e) => setEditForm({ ...editForm, user_type: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, user_type: e.target.value })
+                  }
                   className="w-full mb-4 p-2 border rounded"
                 />
 
                 <button
                   onClick={handleUpdateUser}
                   disabled={isUpdating}
-                  className={`w-full px-4 py-2 rounded text-white ${isUpdating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  className={`w-full px-4 py-2 rounded text-white ${
+                    isUpdating
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
-                  {isUpdating ? '...Updating' : 'Update'}
+                  {isUpdating ? "...Updating" : "Update"}
                 </button>
-
-
               </div>
             </div>
           )}
-
         </div>
       </div>
-
-    </div >
-
+    </div>
   );
 }
 

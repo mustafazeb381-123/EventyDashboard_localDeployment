@@ -12,7 +12,7 @@ interface AdvanceEventProps {
   eventId?: string | number;
 }
 
-const AdvanceEvent: React.FC<AdvanceEventProps> = ({
+const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
   onComplete,
   onPrevious,
   eventId,
@@ -86,4 +86,4 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
   );
 };
 
-export default AdvanceEvent;
+export default AdvanceEventContent;

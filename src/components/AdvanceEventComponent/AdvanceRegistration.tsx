@@ -1,5 +1,15 @@
 import React, { useState } from "react";
-import { ChevronLeft, Check, Plus, X, GripVertical, Trash2, Edit, Eye, MoreVertical } from "lucide-react";
+import {
+  ChevronLeft,
+  Check,
+  Plus,
+  X,
+  GripVertical,
+  Trash2,
+  Edit,
+  Eye,
+  MoreVertical,
+} from "lucide-react";
 
 interface AdvanceRegistrationProps {
   onNext: (eventId?: string | number, formData?: any) => void;
@@ -11,7 +21,18 @@ interface AdvanceRegistrationProps {
 
 interface FormField {
   id: string;
-  type: 'text' | 'email' | 'number' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'header' | 'paragraph' | 'date' | 'file';
+  type:
+    | "text"
+    | "email"
+    | "number"
+    | "select"
+    | "textarea"
+    | "checkbox"
+    | "radio"
+    | "header"
+    | "paragraph"
+    | "date"
+    | "file";
   label: string;
   placeholder?: string;
   required: boolean;
@@ -39,14 +60,17 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
+    null
+  );
   const [currentFormData, setCurrentFormData] = useState<FormField[]>([]);
   const [templateTitle, setTemplateTitle] = useState("My Form Template");
   const [editingField, setEditingField] = useState<FormField | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [showTemplateMenu, setShowTemplateMenu] = useState<string | null>(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewingTemplate, setReviewingTemplate] = useState<FormTemplate | null>(null);
+  const [reviewingTemplate, setReviewingTemplate] =
+    useState<FormTemplate | null>(null);
 
   const handleNext = () => {
     onNext(eventId, currentFormData);
@@ -84,13 +108,13 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
 
     if (isEditMode && editingTemplateId) {
       // Update existing template
-      updatedTemplates = templates.map(template =>
+      updatedTemplates = templates.map((template) =>
         template.id === editingTemplateId
           ? {
               ...template,
               title: templateTitle,
               data: currentFormData,
-              updatedAt: new Date().toISOString()
+              updatedAt: new Date().toISOString(),
             }
           : template
       );
@@ -107,12 +131,15 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
     }
 
     setTemplates(updatedTemplates);
-    
+
     // Save to localStorage
     if (eventId) {
-      localStorage.setItem(`formTemplates_${eventId}`, JSON.stringify(updatedTemplates));
+      localStorage.setItem(
+        `formTemplates_${eventId}`,
+        JSON.stringify(updatedTemplates)
+      );
     }
-    
+
     setIsModalOpen(false);
     setIsEditMode(false);
     setEditingTemplateId(null);
@@ -120,19 +147,24 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
 
   const handleDeleteTemplate = (templateId: string) => {
     if (confirm("Are you sure you want to delete this template?")) {
-      const updatedTemplates = templates.filter(template => template.id !== templateId);
+      const updatedTemplates = templates.filter(
+        (template) => template.id !== templateId
+      );
       setTemplates(updatedTemplates);
-      
+
       if (selectedTemplate === templateId) {
         setSelectedTemplate(null);
         setCurrentFormData([]);
       }
-      
+
       // Update localStorage
       if (eventId) {
-        localStorage.setItem(`formTemplates_${eventId}`, JSON.stringify(updatedTemplates));
+        localStorage.setItem(
+          `formTemplates_${eventId}`,
+          JSON.stringify(updatedTemplates)
+        );
       }
-      
+
       setShowTemplateMenu(null);
       setIsReviewModalOpen(false);
     }
@@ -140,7 +172,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
 
   const handleSelectTemplate = (templateId: string) => {
     setSelectedTemplate(templateId);
-    const template = templates.find(t => t.id === templateId);
+    const template = templates.find((t) => t.id === templateId);
     if (template) {
       setCurrentFormData(template.data);
     }
@@ -152,7 +184,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
     setIsReviewModalOpen(true);
   };
 
-  const addField = (type: FormField['type']) => {
+  const addField = (type: FormField["type"]) => {
     const defaultConfigs = {
       text: { label: "Text Field", placeholder: "Enter text" },
       email: { label: "Email Address", placeholder: "Enter email" },
@@ -164,7 +196,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
       header: { label: "Section Header" },
       paragraph: { label: "Paragraph Text" },
       date: { label: "Date Field", placeholder: "Select date" },
-      file: { label: "File Upload", placeholder: "Choose file" }
+      file: { label: "File Upload", placeholder: "Choose file" },
     };
 
     const newField: FormField = {
@@ -174,14 +206,14 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
       placeholder: defaultConfigs[type].placeholder,
       required: false,
       value: "",
-      description: ""
+      description: "",
     };
 
-    if (type === 'select' || type === 'radio' || type === 'checkbox') {
+    if (type === "select" || type === "radio" || type === "checkbox") {
       newField.options = ["Option 1", "Option 2", "Option 3"];
     }
 
-    if (type === 'header' || type === 'paragraph') {
+    if (type === "header" || type === "paragraph") {
       newField.value = defaultConfigs[type].label;
     }
 
@@ -189,20 +221,22 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
   };
 
   const removeField = (id: string) => {
-    setCurrentFormData(currentFormData.filter(field => field.id !== id));
+    setCurrentFormData(currentFormData.filter((field) => field.id !== id));
     if (editingField?.id === id) {
       setEditingField(null);
     }
   };
 
   const updateField = (id: string, updates: Partial<FormField>) => {
-    setCurrentFormData(currentFormData.map(field => 
-      field.id === id ? { ...field, ...updates } : field
-    ));
+    setCurrentFormData(
+      currentFormData.map((field) =>
+        field.id === id ? { ...field, ...updates } : field
+      )
+    );
   };
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
-    e.dataTransfer.setData('text/plain', index.toString());
+    e.dataTransfer.setData("text/plain", index.toString());
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
@@ -216,39 +250,94 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
-    
+    const sourceIndex = parseInt(e.dataTransfer.getData("text/plain"));
+
     if (sourceIndex !== targetIndex) {
       const newFields = [...currentFormData];
       const [movedField] = newFields.splice(sourceIndex, 1);
       newFields.splice(targetIndex, 0, movedField);
       setCurrentFormData(newFields);
     }
-    
+
     setDragOverIndex(null);
   };
 
   const fieldTypes = [
-    { type: 'text', label: 'Text Input', icon: 'T', description: 'Single line text input' },
-    { type: 'email', label: 'Email Input', icon: '✉', description: 'Email address field' },
-    { type: 'number', label: 'Number Input', icon: '🔢', description: 'Numeric input field' },
-    { type: 'select', label: 'Dropdown', icon: '▼', description: 'Select from options' },
-    { type: 'textarea', label: 'Text Area', icon: '📝', description: 'Multi-line text input' },
-    { type: 'checkbox', label: 'Checkbox', icon: '☑', description: 'Checkbox option' },
-    { type: 'radio', label: 'Radio Button', icon: '⚪', description: 'Radio button option' },
-    { type: 'header', label: 'Header', icon: '🏷️', description: 'Section header' },
-    { type: 'paragraph', label: 'Paragraph', icon: '📄', description: 'Text paragraph' },
-    { type: 'date', label: 'Date Picker', icon: '📅', description: 'Date selection' },
-    { type: 'file', label: 'File Upload', icon: '📎', description: 'File upload field' },
+    {
+      type: "text",
+      label: "Text Input",
+      icon: "T",
+      description: "Single line text input",
+    },
+    {
+      type: "email",
+      label: "Email Input",
+      icon: "✉",
+      description: "Email address field",
+    },
+    {
+      type: "number",
+      label: "Number Input",
+      icon: "🔢",
+      description: "Numeric input field",
+    },
+    {
+      type: "select",
+      label: "Dropdown",
+      icon: "▼",
+      description: "Select from options",
+    },
+    {
+      type: "textarea",
+      label: "Text Area",
+      icon: "📝",
+      description: "Multi-line text input",
+    },
+    {
+      type: "checkbox",
+      label: "Checkbox",
+      icon: "☑",
+      description: "Checkbox option",
+    },
+    {
+      type: "radio",
+      label: "Radio Button",
+      icon: "⚪",
+      description: "Radio button option",
+    },
+    {
+      type: "header",
+      label: "Header",
+      icon: "🏷️",
+      description: "Section header",
+    },
+    {
+      type: "paragraph",
+      label: "Paragraph",
+      icon: "📄",
+      description: "Text paragraph",
+    },
+    {
+      type: "date",
+      label: "Date Picker",
+      icon: "📅",
+      description: "Date selection",
+    },
+    {
+      type: "file",
+      label: "File Upload",
+      icon: "📎",
+      description: "File upload field",
+    },
   ];
 
   // Function to render field preview in the modal
   const renderFieldPreview = (field: FormField) => {
     switch (field.type) {
-      case 'text':
-      case 'email':
-      case 'number':
-      case 'date':
+      case "text":
+      case "email":
+      case "number":
+      case "date":
         return (
           <input
             type={field.type}
@@ -259,7 +348,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             disabled={isReviewModalOpen} // Disable in review mode
           />
         );
-      case 'textarea':
+      case "textarea":
         return (
           <textarea
             placeholder={field.placeholder}
@@ -270,9 +359,9 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             disabled={isReviewModalOpen} // Disable in review mode
           />
         );
-      case 'select':
+      case "select":
         return (
-          <select 
+          <select
             value={field.value || ""}
             onChange={(e) => updateField(field.id, { value: e.target.value })}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
@@ -280,11 +369,13 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
           >
             <option value="">{field.placeholder || "Select an option"}</option>
             {field.options?.map((option, index) => (
-              <option key={index} value={option}>{option}</option>
+              <option key={index} value={option}>
+                {option}
+              </option>
             ))}
           </select>
         );
-      case 'checkbox':
+      case "checkbox":
         return (
           <div className="space-y-2">
             {field.options?.map((option, index) => (
@@ -299,7 +390,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             ))}
           </div>
         );
-      case 'radio':
+      case "radio":
         return (
           <div className="space-y-2">
             {field.options?.map((option, index) => (
@@ -315,26 +406,26 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             ))}
           </div>
         );
-      case 'header':
+      case "header":
         return (
           <h3 className="text-xl font-semibold text-gray-800 border-b pb-2">
             {field.value || field.label}
           </h3>
         );
-      case 'paragraph':
+      case "paragraph":
         return (
           <p className="text-gray-600 leading-relaxed">
             {field.value || field.label}
           </p>
         );
-      case 'file':
+      case "file":
         return (
           <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
             <input
               type="file"
               className="hidden"
               id={`file-${field.id}`}
-              disabled={isReviewModalOpen} // Disable in review mode
+              disabled={isReviewModalOpen}
             />
             <label htmlFor={`file-${field.id}`} className="cursor-pointer">
               <div className="text-gray-500">📎 Click to upload file</div>
@@ -347,36 +438,168 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
     }
   };
 
-  // Function to render proper form preview for template cards
   const renderTemplatePreview = (template: FormTemplate) => {
     return (
-      <div className="bg-white rounded-lg border border-gray-200 p-2 h-full flex flex-col">
+      <div className="bg-white rounded-lg border border-gray-200 p-4 h-full flex flex-col">
+        {/* Template Header */}
+        <div className="flex justify-between items-start mb-3">
+          <h4 className="font-medium text-gray-900 text-sm truncate flex-1">
+            {template.title}
+          </h4>
+        </div>
 
         {/* Form Preview Content */}
-        <div className="flex-1 space-y-3 overflow-y-auto max-h-40">
-          {template.data.slice(0, 4).map((field, index) => (
-            <div key={field.id} className="text-sm">
-              {field.type === 'header' ? (
+        <div className="flex-1 space-y-3 overflow-y-auto max-h-48">
+          {template.data.slice(0, 5).map((field, index) => (
+            <div
+              key={field.id}
+              className="text-sm border-b border-gray-100 pb-2 last:border-b-0"
+            >
+              {field.type === "header" ? (
                 <div className="font-semibold text-gray-700 border-b pb-1 text-xs">
-                  {field.label}
+                  {field.value || field.label}
                 </div>
-              ) : field.type === 'paragraph' ? (
+              ) : field.type === "paragraph" ? (
                 <div className="text-gray-600 text-xs leading-tight">
-                  {field.value?.substring(0, 50)}{field.value && field.value.length > 50 ? '...' : ''}
+                  {field.value?.substring(0, 60)}
+                  {field.value && field.value.length > 60 ? "..." : ""}
                 </div>
               ) : (
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="text-gray-700 truncate text-xs">{field.label}</div>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700 text-xs font-medium truncate">
+                      {field.label}
+                    </span>
                     {field.required && (
                       <span className="text-red-500 text-xs">*</span>
                     )}
                   </div>
+
+                  {/* Field Previews */}
+                  {field.type === "text" && (
+                    <input
+                      type="text"
+                      placeholder={field.placeholder}
+                      className="w-full text-xs p-4 border border-gray-300 rounded-2xl cursor-not-allowed"
+                      disabled
+                    />
+                  )}
+
+                  {field.type === "email" && (
+                    <input
+                      type="email"
+                      placeholder={field.placeholder}
+                      className="w-full text-xs p-4 border border-gray-300 rounded-2xl cursor-not-allowed"
+                      disabled
+                    />
+                  )}
+
+                  {field.type === "number" && (
+                    <input
+                      type="number"
+                      placeholder={field.placeholder}
+                      className="w-full text-xs p-4 border border-gray-300 rounded-2xl cursor-not-allowed"
+                      disabled
+                    />
+                  )}
+
+                  {field.type === "textarea" && (
+                    <textarea
+                      placeholder={field.placeholder}
+                      rows={2}
+                      className="w-full text-xs p-4 border border-gray-300 rounded-2xl cursor-not-allowed resize-none"
+                      disabled
+                    />
+                  )}
+
+                  {field.type === "select" && (
+                    <select
+                      className="w-full text-xs p-4 border border-gray-300 rounded-2xl cursor-not-allowed"
+                      disabled
+                    >
+                      <option value="">
+                        {field.placeholder || "Select..."}
+                      </option>
+                      {field.options?.slice(0, 2).map((option, optIndex) => (
+                        <option key={optIndex} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                      {field.options && field.options.length > 2 && (
+                        <option disabled>
+                          ... and {field.options.length - 2} more
+                        </option>
+                      )}
+                    </select>
+                  )}
+
+                  {field.type === "checkbox" && (
+                    <div className="space-y-1">
+                      {field.options?.slice(0, 2).map((option, optIndex) => (
+                        <div key={optIndex} className="flex items-center gap-1">
+                          <input
+                            type="checkbox"
+                            className="w-3 h-3 text-pink-500 border-gray-300 rounded cursor-not-allowed"
+                            disabled
+                          />
+                          <span className="text-gray-600 text-xs">
+                            {option}
+                          </span>
+                        </div>
+                      ))}
+                      {field.options && field.options.length > 2 && (
+                        <div className="text-gray-400 text-xs">
+                          +{field.options.length - 2} more options
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {field.type === "radio" && (
+                    <div className="space-y-1">
+                      {field.options?.slice(0, 2).map((option, optIndex) => (
+                        <div key={optIndex} className="flex items-center gap-1">
+                          <input
+                            type="radio"
+                            className="w-3 h-3 text-pink-500 border-gray-300 cursor-not-allowed"
+                            disabled
+                          />
+                          <span className="text-gray-600 text-xs">
+                            {option}
+                          </span>
+                        </div>
+                      ))}
+                      {field.options && field.options.length > 2 && (
+                        <div className="text-gray-400 text-xs">
+                          +{field.options.length - 2} more options
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {field.type === "date" && (
+                    <input
+                      type="date"
+                      className="w-full text-xs p-4 border border-gray-300 rounded-2xl cursor-not-allowed"
+                      disabled
+                    />
+                  )}
+
+                  {field.type === "file" && (
+                    <div className="border border-dashed border-gray-300 rounded text-xs text-gray-5ed-2xl text-center">
+                      📎 {field.placeholder || "Choose file"}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           ))}
-          
+
+          {template.data.length > 5 && (
+            <div className="text-center text-xs text-gray-400 pt-2 border-t border-gray-100">
+              +{template.data.length - 5} more fields
+            </div>
+          )}
         </div>
       </div>
     );
@@ -389,23 +612,22 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
         {template.data.map((field, index) => (
           <div key={field.id} className="bg-white rounded-lg border-gray-200">
             <div className="flex items-center gap-2 mb-3">
-             
               {field.required && (
-                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                <span className="text-xs bg-red-100 text-red-600 rounded">
                   Required
                 </span>
               )}
             </div>
-            
-            {(field.type !== 'header' && field.type !== 'paragraph') && (
+
+            {field.type !== "header" && field.type !== "paragraph" && (
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {field.label}
                 {field.required && <span className="text-red-500 ml-1">*</span>}
               </label>
             )}
-            
+
             {renderFieldPreview(field)}
-            
+
             {field.description && (
               <p className="text-xs text-gray-500 mt-2">{field.description}</p>
             )}
@@ -417,19 +639,19 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
 
   const getFieldIcon = (type: string) => {
     const icons: { [key: string]: string } = {
-      text: 'T',
-      email: 'E',
-      number: 'N',
-      select: 'S',
-      textarea: 'A',
-      checkbox: 'C',
-      radio: 'R',
-      header: 'H',
-      paragraph: 'P',
-      date: 'D',
-      file: 'F'
+      text: "T",
+      email: "E",
+      number: "N",
+      select: "S",
+      textarea: "A",
+      checkbox: "C",
+      radio: "R",
+      header: "H",
+      paragraph: "P",
+      date: "D",
+      file: "F",
     };
-    return icons[type] || '?';
+    return icons[type] || "?";
   };
 
   React.useEffect(() => {
@@ -513,9 +735,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             onClick={() => handleReviewTemplate(template)}
           >
             {/* Template Content */}
-            <div className="flex-1">
-              {renderTemplatePreview(template)}
-            </div>
+            <div className="flex-1">{renderTemplatePreview(template)}</div>
           </div>
         ))}
       </div>
@@ -528,7 +748,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
               <div className="flex items-center gap-4">
                 <h3 className="text-lg font-semibold text-gray-800">
-                  {isEditMode ? 'Edit Template' : 'Create Form Template'}
+                  {isEditMode ? "Edit Template" : "Create Form Template"}
                 </h3>
                 <input
                   type="text"
@@ -550,12 +770,18 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             <div className="flex flex-1 overflow-hidden">
               {/* Left Side - Form Builder Canvas */}
               <div className="flex-1 overflow-auto p-6">
-                <h4 className="font-semibold text-gray-800 mb-4">Form Preview</h4>
-                
+                <h4 className="font-semibold text-gray-800 mb-4">
+                  Form Preview
+                </h4>
+
                 {currentFormData.length === 0 ? (
                   <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                    <div className="text-gray-400 mb-2">No fields added yet</div>
-                    <div className="text-sm text-gray-500">Add fields from the right panel to build your form</div>
+                    <div className="text-gray-400 mb-2">
+                      No fields added yet
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Add fields from the right panel to build your form
+                    </div>
                   </div>
                 ) : (
                   <div>
@@ -569,36 +795,44 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
                         onDrop={(e) => handleDrop(e, index)}
                         onDragEnd={handleDragLeave}
                         className={`bg-white p-4 rounded-lg transition-all ${
-                          dragOverIndex === index 
-                            ? "border-pink-400 bg-pink-50 border-dashed" 
+                          dragOverIndex === index
+                            ? "border-pink-400 bg-pink-50 border-dashed"
                             : "border-gray-200 hover:border-pink-300"
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <GripVertical className="text-gray-400 mt-3 cursor-move" size={16} />
+                          <GripVertical
+                            className="text-gray-400 mt-3 cursor-move"
+                            size={16}
+                          />
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-3">
                               {field.required && (
-                                <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+                                <span className="text-xs bg-red-100 text-red-600 rounded">
                                   Required
                                 </span>
                               )}
                             </div>
-                            
-                            {(field.type !== 'header' && field.type !== 'paragraph') && (
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                {field.label}
-                                {field.required && <span className="text-red-500 ml-1">*</span>}
-                              </label>
-                            )}
-                            
+
+                            {field.type !== "header" &&
+                              field.type !== "paragraph" && (
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  {field.label}
+                                  {field.required && (
+                                    <span className="text-red-500 ml-1">*</span>
+                                  )}
+                                </label>
+                              )}
+
                             {renderFieldPreview(field)}
-                            
+
                             {field.description && (
-                              <p className="text-xs text-gray-500 mt-2">{field.description}</p>
+                              <p className="text-xs text-gray-500 mt-2">
+                                {field.description}
+                              </p>
                             )}
                           </div>
-                          
+
                           <div className="flex gap-1">
                             <button
                               onClick={() => setEditingField(field)}
@@ -623,12 +857,14 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
               </div>
 
               {/* Right Side - Form Elements Toolbox */}
-              <div className="w-80 border-l bg-gray-50 p-4 overflow-auto">
-                <h4 className="font-semibold text-gray-800 mb-4">Form Elements</h4>
+              <div className="w-80 bordered-2xl p-4 overflow-auto">
+                <h4 className="font-semibold text-gray-800 mb-4">
+                  Form Elements
+                </h4>
                 <p className="text-sm text-gray-600 mb-4">
                   Click to add fields to your form
                 </p>
-                
+
                 <div className="space-y-2">
                   {fieldTypes.map((fieldType) => (
                     <button
@@ -641,8 +877,12 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
                           {fieldType.icon}
                         </div>
                         <div>
-                          <div className="font-medium text-gray-800">{fieldType.label}</div>
-                          <div className="text-xs text-gray-500">{fieldType.description}</div>
+                          <div className="font-medium text-gray-800">
+                            {fieldType.label}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {fieldType.description}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -657,88 +897,140 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
                 <div className="bg-white rounded-2xl shadow-lg w-full max-w-md">
                   <div className="flex justify-between items-center px-6 py-4 border-b">
                     <h3 className="text-lg font-semibold">Edit Field</h3>
-                    <button onClick={() => setEditingField(null)} className="p-1 hover:bg-gray-100 rounded">
+                    <button
+                      onClick={() => setEditingField(null)}
+                      className="p-1 hover:bg-gray-100 rounded"
+                    >
                       <X size={20} />
                     </button>
                   </div>
-                  
+
                   <div className="p-6 space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Label</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Label
+                      </label>
                       <input
                         type="text"
                         value={editingField.label}
-                        onChange={(e) => setEditingField({...editingField, label: e.target.value})}
+                        onChange={(e) =>
+                          setEditingField({
+                            ...editingField,
+                            label: e.target.value,
+                          })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                       />
                     </div>
-                    
-                    {(editingField.type === 'text' || editingField.type === 'email' || editingField.type === 'number' || editingField.type === 'textarea' || editingField.type === 'date' || editingField.type === 'file') && (
+
+                    {(editingField.type === "text" ||
+                      editingField.type === "email" ||
+                      editingField.type === "number" ||
+                      editingField.type === "textarea" ||
+                      editingField.type === "date" ||
+                      editingField.type === "file") && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Placeholder</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Placeholder
+                        </label>
                         <input
                           type="text"
                           value={editingField.placeholder || ""}
-                          onChange={(e) => setEditingField({...editingField, placeholder: e.target.value})}
+                          onChange={(e) =>
+                            setEditingField({
+                              ...editingField,
+                              placeholder: e.target.value,
+                            })
+                          }
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                         />
                       </div>
                     )}
-                    
-                    {(editingField.type === 'header' || editingField.type === 'paragraph') && (
+
+                    {(editingField.type === "header" ||
+                      editingField.type === "paragraph") && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Content
+                        </label>
                         <textarea
                           value={editingField.value || ""}
-                          onChange={(e) => setEditingField({...editingField, value: e.target.value})}
+                          onChange={(e) =>
+                            setEditingField({
+                              ...editingField,
+                              value: e.target.value,
+                            })
+                          }
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                         />
                       </div>
                     )}
-                    
-                    {(editingField.type === 'select' || editingField.type === 'radio' || editingField.type === 'checkbox') && (
+
+                    {(editingField.type === "select" ||
+                      editingField.type === "radio" ||
+                      editingField.type === "checkbox") && (
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Options (one per line)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Options (one per line)
+                        </label>
                         <textarea
-                          value={editingField.options?.join('\n') || ""}
-                          onChange={(e) => setEditingField({
-                            ...editingField, 
-                            options: e.target.value.split('\n').filter(opt => opt.trim())
-                          })}
+                          value={editingField.options?.join("\n") || ""}
+                          onChange={(e) =>
+                            setEditingField({
+                              ...editingField,
+                              options: e.target.value
+                                .split("\n")
+                                .filter((opt) => opt.trim()),
+                            })
+                          }
                           rows={4}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                           placeholder="Option 1&#10;Option 2&#10;Option 3"
                         />
                       </div>
                     )}
-                    
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
                       <input
                         type="text"
                         value={editingField.description || ""}
-                        onChange={(e) => setEditingField({...editingField, description: e.target.value})}
+                        onChange={(e) =>
+                          setEditingField({
+                            ...editingField,
+                            description: e.target.value,
+                          })
+                        }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
                         placeholder="Field description (optional)"
                       />
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={editingField.required}
-                        onChange={(e) => setEditingField({...editingField, required: e.target.checked})}
+                        onChange={(e) =>
+                          setEditingField({
+                            ...editingField,
+                            required: e.target.checked,
+                          })
+                        }
                         className="w-4 h-4 text-pink-500 border-gray-300 rounded focus:ring-pink-500"
                       />
-                      <label className="text-sm text-gray-700">Required field</label>
+                      <label className="text-sm text-gray-700">
+                        Required field
+                      </label>
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end gap-3 px-6 py-4 border-t">
                     <button
                       onClick={() => setEditingField(null)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                      className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hoved-2xl"
                     >
                       Cancel
                     </button>
@@ -760,7 +1052,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             <div className="p-4 border-t flex justify-end gap-3 bg-gray-100">
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hoved-2xl transition-colors"
               >
                 Cancel
               </button>
@@ -768,7 +1060,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
                 onClick={handleSaveTemplate}
                 className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
-                {isEditMode ? 'Update Template' : 'Save Template'}
+                {isEditMode ? "Update Template" : "Save Template"}
               </button>
             </div>
           </div>
@@ -786,7 +1078,8 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
                   Review Template: {reviewingTemplate.title}
                 </h3>
                 <span className="text-sm text-gray-500">
-                  {reviewingTemplate.data.length} fields • Created {new Date(reviewingTemplate.createdAt).toLocaleDateString()}
+                  {reviewingTemplate.data.length} fields • Created{" "}
+                  {new Date(reviewingTemplate.createdAt).toLocaleDateString()}
                 </span>
               </div>
               <button
@@ -805,7 +1098,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
             </div>
 
             {/* Modal Footer with Edit/Delete Actions */}
-            <div className="p-4 border-t flex justify-between items-center bg-gray-100">  
+            <div className="p-4 border-t flex justify-between items-center bg-gray-100">
               <div className="flex gap-3">
                 <button
                   onClick={() => handleDeleteTemplate(reviewingTemplate.id)}
@@ -854,7 +1147,7 @@ const AdvanceRegistration: React.FC<AdvanceRegistrationProps> = ({
           disabled={!selectedTemplate}
           className={`cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium ${
             selectedTemplate
-              ? "bg-pink-500 hover:bg-pink-600"
+              ? "bg-slate-800 hover:bg-slate-800"
               : "bg-gray-300 cursor-not-allowed"
           }`}
         >
