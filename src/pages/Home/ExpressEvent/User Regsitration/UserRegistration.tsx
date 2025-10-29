@@ -186,7 +186,7 @@ function UserRegistration() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
           <p className="text-gray-600 text-lg font-medium">
@@ -202,7 +202,7 @@ function UserRegistration() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
             <p className="font-medium">Error loading registration form</p>
@@ -215,7 +215,7 @@ function UserRegistration() {
 
   if (!templateData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <p className="text-gray-600">
             No registration template found for this event.
@@ -226,9 +226,9 @@ function UserRegistration() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
       {/* Registration Form Template - No extra banner, templates handle their own event info */}
-      {renderTemplate()}
+      <div className="w-full max-w-4xl mx-auto">{renderTemplate()}</div>
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { getEventUsers } from "@/apis/apiHelpers";
 import { resetCheckInOutStatus } from "@/apis/apiHelpers";
 
 import { Trash2, Mail, Plus, Edit, Search, RotateCcw } from "lucide-react";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterdUser() {
@@ -376,18 +376,6 @@ function RegisterdUser() {
 
   return (
     <div className="bg-white min-h-screen p-6">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
       <div className="max-w-8xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
 
@@ -795,6 +783,7 @@ function RegisterdUser() {
           )}
         </div>
       </div>
+      <ToastContainer />
     </div>
   );
 }
