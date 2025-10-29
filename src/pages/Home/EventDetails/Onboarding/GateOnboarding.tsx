@@ -1,7 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Search, Camera, X } from "lucide-react";
+import { ChevronLeft, Search } from "lucide-react";
 import { toast } from "react-toastify";
-import { getUsersNeedCheckIn, checkInUser, checkOutUser, getUsersNeedCheckOut, bulkCheckInUsers } from "@/apis/apiHelpers";
+import {
+    usersForCheckIn,
+    checkInUser,
+    checkOutUser,
+    usersForCheckOutEvent,
+    usersForCheckOutAreas,
+    bulkCheckInUsers,
+    tokenCheckIn,
+    tokenCheckOut,
+    checkInUserForArea
+} from "@/apis/apiHelpers";
 import { Html5Qrcode } from "html5-qrcode";
 
 interface GateOnboardingProps {
@@ -9,6 +19,7 @@ interface GateOnboardingProps {
         id: string | number;
         attributes?: {
             event_id?: string | number;
+            gate_token: string;
             [key: string]: any;
         };
     };
@@ -38,7 +49,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const eventId = gate?.attributes?.event_id;
 
-    // Fetch users based on active view
     useEffect(() => {
         const fetchUsers = async () => {
             if (!eventId) return;
@@ -46,14 +56,24 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
             try {
                 let response;
+                const gateType = gate?.attributes?.type;
+                const gateToken = gate?.attributes?.gate_token;
+
+                // 👇 Check-IN logic (same for event & area)
                 if (view === "registered_users") {
-                    response = await getUsersNeedCheckIn(eventId);
-                } else {
-                    response = await getUsersNeedCheckOut(eventId);
-                    console.log("📦 Checked-In Users (Need Checkout):", response.data);
+                    response = await usersForCheckIn(eventId);
+                }
+                // 👇 Check-OUT logic (depends on gate)
+                else {
+                    if (gateType === "Event" || !gateToken) {
+                        response = await usersForCheckOutEvent(eventId);
+                    } else {
+                        response = await usersForCheckOutAreas(eventId, gateToken);
+                    }
                 }
 
-                setEnrolledUsers(response.data.data || []);
+                setEnrolledUsers(response?.data?.data || []);
+                console.log("📦 Users fetched:", response?.data?.data);
             } catch (err) {
                 console.error("Error fetching users:", err);
                 toast.error("Failed to fetch users.");
@@ -64,6 +84,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
         fetchUsers();
     }, [gate, view, eventId]);
+
 
     // keep selectedUsers only for currently loaded users (remove stale ids)
     useEffect(() => {
@@ -87,17 +108,30 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     // Handle check-in
     const handleCheckinUser = async (userId: string | number, userName?: string) => {
         if (!eventId) return;
+
         try {
-            await checkInUser(String(eventId), userId);
-            toast.success(`${userName || "User"} checked in successfully!`);
-            setEnrolledUsers(prev =>
-                prev.filter(u => u.id !== userId)
-            );
+            const gateType = gate?.attributes?.type;
+            const gateToken = gate?.attributes?.gate_token;
+
+            if (gate && gateType !== "Event") {
+                // Area-level check-in
+                await checkInUserForArea(eventId, userId, gateToken);
+                toast.success(`${userName || "User"} checked in successfully to ${gateType}!`);
+            } else {
+                // Event-level check-in
+                await checkInUser(eventId, userId);
+                toast.success(`${userName || "User"} checked in successfully!`);
+            }
+
+            // Remove user from the current list (so the UI updates immediately)
+            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
+
         } catch (err) {
             console.error("Check-in failed:", err);
             toast.error("Failed to check in user.");
         }
     };
+
 
     // Handle check-out
     const handleCheckOutUser = async (
@@ -222,7 +256,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             );
 
             setIsCameraActive(true);
-            console.log("📷 Camera started successfully");
+            console.log("📷 Camera Open");
         } catch (err: any) {
             console.error("❌ Camera start failed:", err);
             toast.error("Failed to start camera.");
@@ -241,7 +275,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         if (scannerRef.current && isCameraActive) {
             try {
                 await scannerRef.current.stop();
-                console.log("📷 Camera stopped");
+                console.log("📷 Camera Closed");
                 setIsCameraActive(false);
             } catch (err) {
                 console.error("Error stopping camera:", err);
@@ -249,33 +283,123 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         }
     };
 
-    // Handle QR Code Scan - Auto Check-In/Check-Out
+    // Handle QR Code Scan - Auto Check-In/Check-Out using Token
     const handleQRCodeScan = async (qrData: string) => {
-        // Parse QR code data (assume it contains user ID)
-        // Adjust this based on your QR code format
-        const userId = qrData; // Or parse JSON if needed: JSON.parse(qrData).userId
-
-        const user = enrolledUsers.find(u => String(u.id) === String(userId));
-
-        if (!user) {
-            toast.error("User not found in the list.");
+        if (!eventId) {
+            toast.error("Event ID not found.");
             return;
         }
 
-        if (view === "registered_users") {
-            // Auto Check-In
-            await handleCheckinUser(user.id, user.attributes.name);
-        } else {
-            // Auto Check-Out
-            await handleCheckOutUser(
-                user.id,
-                user.attributes.name,
-                user.attributes.check_user_event_status
-            );
+        try {
+            if (view === "registered_users") {
+                // Token Check-In
+                await tokenCheckIn(eventId, qrData);
+                toast.success("User checked in successfully!");
+
+                // Refresh the registered users list
+                const updatedUsers = await usersForCheckIn(eventId);
+                setEnrolledUsers(updatedUsers.data.data || []);
+            } else {
+                // Token Check-Out
+                try {
+                    await tokenCheckOut(eventId, qrData);
+                    console.log('✅ Check-out request completed');
+                } catch (checkoutError: any) {
+                    // If it's a 500 error but the operation might have succeeded, 
+                    // we'll check by refreshing the list
+                    console.log('⚠️ Check-out response received, verifying...');
+                }
+
+                // Always refresh the list after checkout attempt
+                const updatedUsers = await usersForCheckOutEvent(eventId);
+                console.log("📋 Updated users after checkout:", updatedUsers.data);
+
+                // Check if the user was actually removed (checkout succeeded)
+                const userStillExists = updatedUsers.data.data?.some((u: any) =>
+                    u.attributes?.token === qrData || String(u.id) === String(qrData)
+                );
+
+                if (!userStillExists) {
+                    toast.success("User checked out successfully!");
+                } else {
+                    toast.error("Failed to check out user.");
+                }
+
+                setEnrolledUsers(updatedUsers.data.data || []);
+            }
+        } catch (error: any) {
+            console.error('❌ Token operation failed:', error);
+
+            const errorMessage = error?.response?.data?.error ||
+                error?.response?.data?.message ||
+                error?.message ||
+                `Failed to ${view === "registered_users" ? "check in" : "check out"} user.`;
+            toast.error(errorMessage);
         }
     };
 
+    const [showInput, setShowInput] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (showInput && inputRef.current) {
+            inputRef.current.focus(); // 👈 auto focus when shown
+        }
+    }, [showInput]);
+
     const notCheckedInUsers = enrolledUsers.filter(user => !user.attributes.check_in);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 5; // 👈 change if you want larger/smaller pages
+
+    // Filter users by search term
+    const filteredUsers = enrolledUsers.filter((user) => {
+        const search = (searchTerm || "").toLowerCase();
+        const { name, email, user_type } = user.attributes;
+
+        return (
+            (name?.toLowerCase() || "").includes(search) ||
+            (email?.toLowerCase() || "").includes(search) ||
+            (user_type?.toLowerCase() || "").includes(search)
+        );
+    });
+
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+    const startIndex = (currentPage - 1) * usersPerPage;
+    const currentUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
+
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setCurrentPage(1); // reset to first page when searching
+    };
+
+    const goToPage = (page: number) => {
+        if (page >= 1 && page <= totalPages) setCurrentPage(page);
+    };
+
+    const formatCheckIn = (checkIn?: string | null) => {
+        if (!checkIn) return "N/A";
+
+        const date = new Date(checkIn);
+
+        // Format as: day short-month year, 12-hour time
+        const day = date.getDate(); // 1-31
+        const month = date.toLocaleString("en-US", { month: "short" }); // Jan, Feb, etc.
+        const year = date.getFullYear();
+
+        let hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const ampm = hours >= 12 ? "PM" : "AM";
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+
+        return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
+    };
+
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
@@ -288,7 +412,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             <ChevronLeft className="w-5 h-5 text-gray-600" />
                         </button>
                         <h1 className="text-2xl font-semibold text-gray-800">
-                            Gate {gate?.id}
+                            {gate?.attributes?.type}
                         </h1>
                     </div>
                 </div>
@@ -316,18 +440,16 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     <div className="flex gap-2 mb-4">
                         {!isCameraActive ? (
                             <button
-                                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-2"
+                                className="px-4 py-2 bg-[#EAF1FF]  text-[#202242] rounded-lg flex items-center gap-2"
                                 onClick={() => setIsCameraActive(true)}
                             >
-                                <Camera className="w-5 h-5" />
-                                Open Camera
+                                Camera
                             </button>
                         ) : (
                             <button
                                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-2"
                                 onClick={stopCamera}
                             >
-                                <X className="w-5 h-5" />
                                 Close Camera
                             </button>
                         )}
@@ -355,16 +477,67 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                         </div>
                     )}
 
+
+                    {/* 🔍 Manual / Scanner Token Input */}
+                    <div className="flex flex-col mt-4">
+                        <div>
+                            <button
+                                onClick={() => setShowInput((prev) => !prev)}
+                                className="px-4 py-2 bg-[#EAF1FF] text-[#202242] rounded-lg transition"
+                            >
+                                {showInput ? "Close Scanner" : "Open Scanner Input"}
+                            </button>
+                        </div>
+
+                        {showInput && (
+                            <div className="my-2 flex items-center gap-2">
+                                <input
+                                    ref={inputRef}
+                                    type="text"
+                                    placeholder="Scanner Token"
+                                    className="flex p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EAF1FF] outline-none"
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            const token = (e.target as HTMLInputElement).value.trim();
+                                            if (token) {
+                                                handleQRCodeScan(token);
+                                                (e.target as HTMLInputElement).value = "";
+                                            }
+                                        }
+                                    }}
+                                />
+                                <button
+                                    className="px-4 py-2 bg-[#EAF1FF] text-[#202242] rounded-lg"
+                                    onClick={() => {
+                                        const token = inputRef.current?.value.trim();
+                                        if (token) {
+                                            handleQRCodeScan(token);
+                                            inputRef.current!.value = "";
+                                        } else {
+                                            toast.warn("Please enter a token first.");
+                                        }
+                                    }}
+                                >
+                                    Submit
+                                </button>
+                            </div>
+                        )}
+                    </div>
+
+
                     {/* Users Table */}
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-base font-semibold text-gray-800">
                                 {view === "registered_users" ? `Registered Users ${notCheckedInUsers.length}` : `Checked-In Users ${enrolledUsers.length}`}
                             </h3>
+                            {/* ✅ Search box */}
                             <div className="relative">
                                 <input
                                     type="text"
                                     placeholder="Search..."
+                                    value={searchTerm}
+                                    onChange={handleSearchChange}
                                     className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
                                 />
                                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -409,20 +582,20 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                             <th className="px-4 py-3 text-left">Name</th>
                                             <th className="px-4 py-3 text-left">Email</th>
                                             <th className="px-4 py-3 text-left">User type</th>
-                                            <th className="px-4 py-3 text-left">Check-in Status</th>
-                                            <th className="px-4 py-3 text-left">Actions</th>
+                                            <th className="px-4 py-3 text-left">Status</th>
+                                            <th className="px-4 py-3 text-left">Action</th>
                                         </tr>
                                     </thead>
 
                                     <tbody className="divide-y divide-gray-200">
-                                        {enrolledUsers.length === 0 ? (
+                                        {filteredUsers.length === 0 ? (
                                             <tr>
                                                 <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
                                                     No users found
                                                 </td>
                                             </tr>
                                         ) : (
-                                            enrolledUsers.map((user) => (
+                                            currentUsers.map((user) => (
                                                 <tr key={user.id} className="hover:bg-gray-50 transition">
                                                     <td className="px-4 py-3 text-center">
                                                         <input
@@ -442,21 +615,21 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                             </span>
                                                         ) : (
                                                             <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                                                                Checked In at {user.attributes.check_in}
+                                                                {formatCheckIn(user.attributes.check_in)}
                                                             </span>
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3">
                                                         {view === "registered_users" ? (
                                                             <button
-                                                                className="p-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+                                                                className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
                                                                 onClick={() => handleCheckinUser(user.id, user.attributes.name)}
                                                             >
-                                                                In
+                                                                Check-In
                                                             </button>
                                                         ) : (
                                                             <button
-                                                                className="p-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
+                                                                className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
                                                                 onClick={() =>
                                                                     handleCheckOutUser(
                                                                         user.id,
@@ -465,7 +638,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                                     )
                                                                 }
                                                             >
-                                                                Out
+                                                                Check-Out
                                                             </button>
                                                         )}
                                                     </td>
@@ -476,6 +649,41 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 </table>
                             </div>
                         )}
+
+                        {/* ✅ Pagination Controls */}
+                        {totalPages > 1 && (
+                            <div className="flex justify-end items-center gap-2 mt-4">
+                                <button
+                                    onClick={() => goToPage(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50"
+                                >
+                                    Prev
+                                </button>
+
+                                {[...Array(totalPages)].map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => goToPage(i + 1)}
+                                        className={`px-3 py-1 rounded-md text-sm ${currentPage === i + 1
+                                            ? "bg-blue-600 text-white"
+                                            : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+                                            }`}
+                                    >
+                                        {i + 1}
+                                    </button>
+                                ))}
+
+                                <button
+                                    onClick={() => goToPage(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50"
+                                >
+                                    Next
+                                </button>
+                            </div>
+                        )}
+
                     </div>
                 </div>
             </div>
