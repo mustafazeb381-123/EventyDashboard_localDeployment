@@ -368,6 +368,19 @@ export const tokenCheckOut = (eventId: string | number, token: string) => {
     }
   );
 };
+export const resetCheckInOutStatus = (
+  eventId: string | number,
+  eventUserId: string | number
+) => {
+  return axiosInstance.put(
+    `/events/${eventId}/check_user_event_statuses/reset_check_in_out`,
+    {
+      check_user_event_status: {
+        event_user_id: eventUserId,
+      },
+    }
+  );
+};
 
 export const getBadgeApi = (eventId: string | number) => {
   return axiosInstance.get(
