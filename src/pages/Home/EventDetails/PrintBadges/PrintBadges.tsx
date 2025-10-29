@@ -278,6 +278,9 @@ function PrintBadges() {
   console.log("select user preview-----+++--------", selectedUserForPreview);
   const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<number>(1);
   const [eventData, setEventData] = useState<any>(null);
+  const [currentAction, setCurrentAction] = useState(null);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
+  console.log("user to delete-------", userToDelete);
 
   // 🟢 New state for badge colors and QR image
   const [badgeColors, setBadgeColors] = useState({
@@ -332,7 +335,7 @@ function PrintBadges() {
         ...user,
         printStatus: "Pending",
         printedAt: null,
-        token: `TK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        // token: `TK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
         phone: "+1 (555) 123-4567",
         department: "General",
       }));
@@ -384,31 +387,38 @@ function PrintBadges() {
     startIndex + rowsPerPage
   );
 
-  const handleActionClick = (userId) => {
+  const handleActionClick = (userId: any) => {
     setActivePopup(activePopup === userId ? null : userId);
   };
 
-  const handleAction = async (action, userId) => {
+  const handleAction = async (action: any, userId: any) => {
     setIsLoading(true);
+    setCurrentAction(action);
+
     console.log(`${action} clicked for user ${userId}`);
+
+    // Find the user first - this was missing for the delete case
+    const user = eventUsers.find((u) => u.id === userId);
+    console.log("Found user for action:", user);
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     if (action === "preview") {
-      const user = eventUsers.find((u) => u.id === userId);
       setSelectedUserForPreview(user);
       setPreviewModal(true);
     } else if (action === "delete") {
+      setUserToDelete(user); // ✅ Now user is defined
       setShowDeleteModal(true);
     } else if (action === "print") {
-      toast.info(`Printing badge for user #${userId}`);
+      setSelectedUserForPreview(user);
+      setPreviewModal(true);
     }
 
     setActivePopup(null);
     setIsLoading(false);
   };
 
-  const handleUserSelect = (userId) => {
+  const handleUserSelect = (userId: any) => {
     const newSelected = new Set(selectedUsers);
     if (newSelected.has(userId)) {
       newSelected.delete(userId);
@@ -445,6 +455,7 @@ function PrintBadges() {
   };
 
   const getStatusIcon = (status) => {
+    console.log("statuesssssssssss", status);
     switch (status) {
       case "Printed":
         return <CheckCircle size={14} className="text-green-600" />;
@@ -581,17 +592,6 @@ function PrintBadges() {
     return pages;
   };
 
-  const handleDelete = async (user: any) => {
-    console.log("event iddddd------", eventId);
-    console.log("user id-------", user);
-    try {
-      // const response = await deleteEventUser(eventId);
-    } catch (error) {}
-
-    toast.info("Delete functionality would be implemented here");
-    setShowDeleteModal(false);
-  };
-
   const renderBadgeTemplate = (badgeType: number, user: any) => {
     console.log("🔹 renderBadgeTemplate called");
     console.log("➡️ badgeType:", badgeType);
@@ -652,6 +652,43 @@ function PrintBadges() {
           />
         );
     }
+  };
+
+  const handleDelete = async (user) => {
+    console.log("Delete button clicked");
+    console.log("User to delete:", user);
+    console.log("Event ID:", eventId);
+
+    if (!userToDelete || !eventId) {
+      console.error("Missing user or event ID for deletion");
+      toast.error("Cannot delete user: Missing information");
+      return;
+    }
+
+    try {
+      const response = await deleteEventUser(eventId, userToDelete?.id);
+      console.log("response-----------", response);
+      setUsers((prev) => prev.filter((user) => user.id !== userToDelete.id));
+      toast.success("User deleted successfully");
+      setSelectedUsers((prev) => {
+        const newSelected = new Set(prev);
+        newSelected.delete(userToDelete.id);
+        return newSelected;
+      });
+    } catch (error: any) {
+      console.error("Error deleting user:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        requestUrl: error.config?.url,
+      });
+
+      toast.error(
+        `Failed to delete user: ${error.response?.data?.error || error.message}`
+      );
+    }
+    setShowDeleteModal(false);
+    setUserToDelete(null);
   };
 
   return (
@@ -763,7 +800,7 @@ function PrintBadges() {
                       Participant
                     </th>
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Contact
+                      Email
                     </th>
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Type
@@ -835,9 +872,6 @@ function PrintBadges() {
                         <td className="p-4">
                           <div className="text-sm text-gray-900">
                             {user.attributes?.email || "No email"}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {user.phone}
                           </div>
                         </td>
                         <td className="p-4">
@@ -1171,27 +1205,29 @@ function PrintBadges() {
                 </div>
               </div>
             </div>
-            <div className="flex border-t border-gray-200 mb-4 mx-4">
-              <button
-                onClick={() => {
-                  setShowDeleteModal(true);
-                  setPreviewModal(false);
-                }}
-                className="flex-1 py-4 px-6 bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center justify-center gap-2 font-medium"
-              >
-                <Trash2 size={18} />
-                Delete
-              </button>
-              <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium"
-              >
-                <Printer size={18} />
-                Print Badge
-              </button>
-            </div>
+            {currentAction === "print" && (
+              <div className="flex border-t border-gray-200 mb-4 mx-4">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(true);
+                    setPreviewModal(false);
+                  }}
+                  className="flex-1 py-4 px-6 bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center justify-center gap-2 font-medium"
+                >
+                  <Trash2 size={18} />
+                  Delete
+                </button>
+                <button
+                  onClick={() => {
+                    window.print();
+                  }}
+                  className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium"
+                >
+                  <Printer size={18} />
+                  Print Badge
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1204,31 +1240,43 @@ function PrintBadges() {
       )}
 
       {showDeleteModal && (
-        <div
-          onClick={() => setShowDeleteModal(false)}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-        >
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl">
-            <div
-              onClick={() => setShowDeleteModal(false)}
-              className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4 cursor-pointer"
-            >
-              <X className="w-6 h-6 text-red-500" />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
             </div>
 
-            <h3 className="text-lg font-semibold text-center text-gray-900 mb-6">
-              Delete image ?
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+              Delete User?
             </h3>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Are you sure you want to delete{" "}
+              <strong>{userToDelete?.attributes?.name || "this user"}</strong>?
+              This action cannot be undone.
+            </p>
 
             <div className="flex space-x-3">
               <button
-                onClick={() => setShowDeleteModal(false)}
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setUserToDelete(null);
+                }}
                 className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
               >
                 Cancel
               </button>
               <button
-                onClick={() => handleDelete(user)}
+                onClick={() => {
+                  console.log(
+                    "Delete button clicked - userToDelete:",
+                    userToDelete
+                  );
+                  console.log("Event ID:", eventId);
+                  handleDelete(userToDelete);
+                }}
                 className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
               >
                 Delete
