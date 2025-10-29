@@ -6,8 +6,10 @@ import { sendCredentials } from "@/apis/apiHelpers";
 import { downloadEventUserTemplate } from "@/apis/apiHelpers";
 import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
-import { Trash2, Mail, Plus, Edit, Search } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
+import { resetCheckInOutStatus } from "@/apis/apiHelpers";
+
+import { Trash2, Mail, Plus, Edit, Search, RotateCcw } from "lucide-react";
+import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterdUser() {
