@@ -227,7 +227,7 @@ function RegisterdUser() {
     try {
       setLoadingUsers(true);
       const response = await getEventUsers(id);
-      console.log("Fetched users:", response.data);
+      console.log("get event users:", response.data);
 
       // adjust depending on backend shape
       const users = response.data.data || response.data || [];

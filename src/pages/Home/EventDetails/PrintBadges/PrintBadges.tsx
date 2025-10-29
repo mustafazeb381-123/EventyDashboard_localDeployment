@@ -18,12 +18,247 @@ import {
   X,
 } from "lucide-react";
 import { useLocation } from "react-router-dom";
-import { getEventUsers } from "@/apis/apiHelpers";
+import { deleteEventUser, getBadgeApi, getEventUsers } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-// import QRCode from "qrcode.react";
 import QRCode from "react-qr-code";
+import {
+  CardFooter,
+  CardFooter2,
+  CardHeader,
+  CardHeader2,
+} from "../../ExpressEvent/Badges/Badges";
 
+// Badge Template Components
+interface BadgeTemplateProps {
+  user: any;
+  event: any;
+  badgeType: number;
+  badgeColors: {
+    headerColor: string;
+    footerColor: string;
+    backgroundColor: string;
+  };
+  qrImage?: string;
+}
+
+const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
+  user,
+  event,
+  badgeType,
+  badgeColors,
+  qrImage,
+}) => (
+  <div
+    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    style={{
+      backgroundColor: badgeColors.backgroundColor,
+    }}
+  >
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+      style={{ height: "33%" }}
+    >
+      <div className="absolute inset-0">
+        <CardHeader color={badgeColors.headerColor} />
+      </div>
+      <div className="relative z-10 flex items-center gap-2">
+        {event?.attributes?.logo_url && (
+          <img
+            src={event.attributes.logo_url}
+            alt="Logo"
+            className="w-4 h-4 mb-3"
+          />
+        )}
+        <h6 className="font-semibold mb-3 text-white text-xs">
+          {event?.attributes?.name || "Company Name"}
+        </h6>
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col justify-center items-center">
+      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2">
+        {user?.attributes?.name
+          ?.split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) || "NA"}
+      </div>
+      <h2 className="text-xs font-bold text-gray-900 mt-1">
+        {user?.attributes?.name || "User Name"}
+      </h2>
+      <p className="text-gray-600 text-xs">
+        {user?.attributes?.user_type || "User Title"}
+      </p>
+    </div>
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      style={{ height: "15%" }}
+    >
+      <div className="absolute inset-0">
+        <CardFooter color={badgeColors.footerColor} />
+      </div>
+    </div>
+  </div>
+);
+
+const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
+  user,
+  event,
+  badgeType,
+  badgeColors,
+  qrImage,
+}) => (
+  <div
+    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    style={{
+      backgroundColor: badgeColors.backgroundColor,
+    }}
+  >
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+      style={{ height: "33%" }}
+    >
+      <div className="absolute inset-0">
+        <CardHeader color={badgeColors.headerColor} />
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col justify-evenly items-center">
+      <div className="text-center">
+        <h2 className="text-xs font-bold text-gray-900">
+          {user?.attributes?.name || "User Name"}
+        </h2>
+        <p className="text-gray-600 text-xs">
+          {user?.attributes?.user_type || "User Title"}
+        </p>
+      </div>
+      <div className="relative z-10 flex items-center gap-2">
+        {event?.attributes?.logo_url && (
+          <img
+            src={event.attributes.logo_url}
+            alt="Logo"
+            className="w-4 h-4 mb-3"
+          />
+        )}
+        <h6 className="font-semibold mb-3 text-black text-xs">
+          {event?.attributes?.name || "Company Name"}
+        </h6>
+      </div>
+    </div>
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      style={{ height: "15%" }}
+    >
+      <div className="absolute inset-0">
+        <CardFooter color={badgeColors.footerColor} />
+      </div>
+    </div>
+  </div>
+);
+
+const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
+  user,
+  event,
+  badgeType,
+  badgeColors,
+  qrImage,
+}) => (
+  <div
+    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    style={{
+      backgroundColor: badgeColors.backgroundColor,
+    }}
+  >
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+      style={{ height: "33%" }}
+    >
+      <div className="absolute inset-0">
+        <CardHeader2 color={badgeColors.headerColor} />
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col items-center">
+      <div className="rounded-full w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2">
+        {user?.attributes?.name
+          ?.split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase()
+          .slice(0, 2) || "NA"}
+      </div>
+      <h2 className="text-xs font-bold text-gray-900 mt-1">
+        {user?.attributes?.name || "User Name"}
+      </h2>
+      <p className="text-gray-600 text-xs">
+        {user?.attributes?.user_type || "User Title"}
+      </p>
+    </div>
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      style={{ height: "15%" }}
+    >
+      <div className="absolute inset-0">
+        <CardFooter2 color={badgeColors.footerColor} />
+      </div>
+    </div>
+  </div>
+);
+
+const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
+  user,
+  event,
+  badgeType,
+  badgeColors,
+  qrImage,
+}) => (
+  <div
+    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    style={{
+      backgroundColor: badgeColors.backgroundColor,
+    }}
+  >
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+      style={{ height: "33%" }}
+    >
+      <div className="absolute inset-0">
+        <CardHeader2 color={badgeColors.headerColor} />
+      </div>
+    </div>
+    <div className="flex flex-1 flex-col justify-evenly items-center">
+      <div className="text-center">
+        <h2 className="text-xs font-bold text-gray-900">
+          {user?.attributes?.name || "User Name"}
+        </h2>
+        <p className="text-gray-600 text-xs">
+          {user?.attributes?.user_type || "User Title"}
+        </p>
+      </div>
+      <div className="relative z-10 flex items-center gap-2">
+        {event?.attributes?.logo_url && (
+          <img
+            src={event.attributes.logo_url}
+            alt="Logo"
+            className="w-4 h-4 mb-3"
+          />
+        )}
+        <h6 className="font-semibold mb-3 text-black text-xs">
+          {event?.attributes?.name || "Company Name"}
+        </h6>
+      </div>
+    </div>
+    <div
+      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      style={{ height: "15%" }}
+    >
+      <div className="absolute inset-0">
+        <CardFooter2 color={badgeColors.footerColor} />
+      </div>
+    </div>
+  </div>
+);
+
+// Main Component
 function PrintBadges() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
@@ -40,6 +275,17 @@ function PrintBadges() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserForPreview, setSelectedUserForPreview] =
     useState<any>(null);
+  console.log("select user preview-----+++--------", selectedUserForPreview);
+  const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<number>(1);
+  const [eventData, setEventData] = useState<any>(null);
+
+  // 🟢 New state for badge colors and QR image
+  const [badgeColors, setBadgeColors] = useState({
+    headerColor: "#4D4D4D",
+    footerColor: "#4D4D4D",
+    backgroundColor: "white",
+  });
+  const [qrImage, setQrImage] = useState<string>("");
 
   const rowsPerPage = 8;
 
@@ -48,8 +294,31 @@ function PrintBadges() {
     const idFromQuery = searchParams.get("eventId");
     setEventId(idFromQuery);
 
+    // 🟢 Load badge data from localStorage
+    const savedBadgeId = localStorage.getItem("active_badge_id");
+    const savedQrImage = localStorage.getItem("badge_qr_image");
+    console.log("saved qr image", savedQrImage);
+    const savedHeaderColor = localStorage.getItem("badge_header_color");
+    const savedFooterColor = localStorage.getItem("badge_footer_color");
+    const savedBgColor = localStorage.getItem("badge_background_color");
+
+    if (savedBadgeId) {
+      setSelectedBadgeTemplate(parseInt(savedBadgeId, 10));
+    }
+    if (savedQrImage) {
+      setQrImage(savedQrImage);
+    }
+    if (savedHeaderColor || savedFooterColor || savedBgColor) {
+      setBadgeColors({
+        headerColor: savedHeaderColor || "#4D4D4D",
+        footerColor: savedFooterColor || "#4D4D4D",
+        backgroundColor: savedBgColor || "white",
+      });
+    }
+
     if (idFromQuery) {
       fetchUsers(idFromQuery);
+      fetchEventData(idFromQuery);
     }
   }, [location.search]);
 
@@ -58,15 +327,11 @@ function PrintBadges() {
     try {
       const response = await getEventUsers(id);
       const users = response.data.data || response.data || [];
+      console.log("get event user respose api", users);
       const usersWithPrintStatus = users.map((user: any) => ({
         ...user,
-        printStatus:
-          Math.random() > 0.7
-            ? "Error"
-            : Math.random() > 0.4
-            ? "Pending"
-            : "Printed",
-        printedAt: Math.random() > 0.5 ? new Date().toISOString() : null,
+        printStatus: "Pending",
+        printedAt: null,
         token: `TK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
         phone: "+1 (555) 123-4567",
         department: "General",
@@ -78,6 +343,19 @@ function PrintBadges() {
       toast.error("Failed to load users");
     } finally {
       setLoadingUsers(false);
+    }
+  };
+
+  const fetchEventData = async (id: string) => {
+    try {
+      const response = await getBadgeApi(id);
+      console.log(
+        "bage get api++++++++++++:::::::;;;;;",
+        response?.data?.data?.attributes?.name
+      );
+      setEventData(response?.data?.data);
+    } catch (error) {
+      console.error("Error fetching event data:", error);
     }
   };
 
@@ -201,7 +479,6 @@ function PrintBadges() {
   };
 
   const handlePrintConfirm = () => {
-    // Update print status for selected users
     setUsers((prev) =>
       prev.map((user) =>
         selectedUsers.has(user.id)
@@ -265,21 +542,11 @@ function PrintBadges() {
     );
   };
 
-  // Generate QR code data for user
   const generateQRCodeData = (user) => {
-    return JSON.stringify({
-      id: user.id,
-      name: user.attributes?.name,
-      email: user.attributes?.email,
-      type: user.attributes?.user_type,
-      organization: user.attributes?.organization,
-      token: user.token,
-      eventId: eventId,
-      timestamp: new Date().toISOString(),
-    });
+    console.log("token------", user);
+    return user?.attributes?.token;
   };
 
-  // Reset to page 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter]);
@@ -314,10 +581,77 @@ function PrintBadges() {
     return pages;
   };
 
-  const handleDelete = () => {
-    // Handle delete logic here
+  const handleDelete = async (user: any) => {
+    console.log("event iddddd------", eventId);
+    console.log("user id-------", user);
+    try {
+      // const response = await deleteEventUser(eventId);
+    } catch (error) {}
+
     toast.info("Delete functionality would be implemented here");
     setShowDeleteModal(false);
+  };
+
+  const renderBadgeTemplate = (badgeType: number, user: any) => {
+    console.log("🔹 renderBadgeTemplate called");
+    console.log("➡️ badgeType:", badgeType);
+    console.log("👤 user:", user);
+    console.log("📅 eventData:", eventData);
+    console.log("🎨 badgeColors:", badgeColors);
+    console.log("📱 qrImage:", qrImage);
+
+    switch (badgeType) {
+      case 1:
+        return (
+          <BadgeTemplate1
+            user={user}
+            event={eventData}
+            badgeType={badgeType}
+            badgeColors={badgeColors}
+            qrImage={qrImage}
+          />
+        );
+      case 2:
+        return (
+          <BadgeTemplate2
+            user={user}
+            event={eventData}
+            badgeType={badgeType}
+            badgeColors={badgeColors}
+            qrImage={qrImage}
+          />
+        );
+      case 3:
+        return (
+          <BadgeTemplate3
+            user={user}
+            event={eventData}
+            badgeType={badgeType}
+            badgeColors={badgeColors}
+            qrImage={qrImage}
+          />
+        );
+      case 4:
+        return (
+          <BadgeTemplate4
+            user={user}
+            event={eventData}
+            badgeType={badgeType}
+            badgeColors={badgeColors}
+            qrImage={qrImage}
+          />
+        );
+      default:
+        return (
+          <BadgeTemplate1
+            user={user}
+            event={eventData}
+            badgeType={badgeType}
+            badgeColors={badgeColors}
+            qrImage={qrImage}
+          />
+        );
+    }
   };
 
   return (
@@ -471,7 +805,7 @@ function PrintBadges() {
                     paginatedUsers.map((user, index) => (
                       <tr
                         key={user.id}
-                        className="hover:bg-gray-50/50 transition-colors group"
+                        className="hover:bg-gray-50/50 transition-colors group relative"
                         style={{ animationDelay: `${index * 50}ms` }}
                       >
                         <td className="p-4">
@@ -545,20 +879,23 @@ function PrintBadges() {
                           </div>
                         </td>
                         <td className="p-4 relative">
+                          {/* Three dots button - visible on row hover */}
                           <button
                             onClick={() => handleActionClick(user.id)}
-                            className="p-2 bg-gray-100 rounded-lg transition-colors group-hover:opacity-100"
+                            className="p-2 bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:bg-gray-200"
                             disabled={isLoading}
                           >
                             <MoreVertical size={16} className="text-gray-600" />
                           </button>
 
+                          {/* Popup appears when clicked */}
                           {activePopup === user.id && (
-                            <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px] animate-in fade-in zoom-in-95 duration-200">
+                            <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px]">
                               <div className="py-2">
                                 <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100">
                                   Badge Actions
                                 </div>
+
                                 <button
                                   onClick={() =>
                                     handleAction("preview", user.id)
@@ -568,6 +905,7 @@ function PrintBadges() {
                                   <Eye size={16} className="text-blue-600" />
                                   Preview Badge
                                 </button>
+
                                 <button
                                   onClick={() => handleAction("print", user.id)}
                                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
@@ -575,6 +913,7 @@ function PrintBadges() {
                                   <Printer size={16} />
                                   Print Badge
                                 </button>
+
                                 <button
                                   onClick={() =>
                                     handleAction("delete", user.id)
@@ -594,8 +933,6 @@ function PrintBadges() {
                 </tbody>
               </table>
             </div>
-
-            {/* Enhanced Pagination */}
             <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
               <div className="text-sm text-gray-600">
                 Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
@@ -660,22 +997,29 @@ function PrintBadges() {
         </div>
       </div>
 
-      {/* Print Modal - Updated with QR Code */}
+      {/* Print Modal */}
       {showPrintModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl transform animate-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl transform animate-in zoom-in-95 duration-200">
             <div className="p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Printer className="w-5 h-5 text-indigo-600" />
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-indigo-100 rounded-lg">
+                    <Printer className="w-5 h-5 text-indigo-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    Print Badges
+                  </h3>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  Print Badges
-                </h3>
+                <button
+                  onClick={() => setShowPrintModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
               </div>
 
               <div className="flex flex-col lg:flex-row gap-8">
-                {/* Left Side - Print Information */}
                 <div className="flex-1">
                   <p className="text-gray-600 mb-6">
                     You're about to print <strong>{selectedUsers.size}</strong>{" "}
@@ -683,6 +1027,33 @@ function PrintBadges() {
                     {selectedUsers.size !== 1 ? "s" : ""}. This action will mark
                     them as printed.
                   </p>
+
+                  {/* Badge Template Selection */}
+                  <div className="mb-6">
+                    <h4 className="font-semibold text-gray-800 mb-3">
+                      Select Badge Template
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {[1, 2, 3, 4].map((templateId) => (
+                        <div
+                          key={templateId}
+                          className={`border-2 rounded-xl p-2 cursor-pointer transition-all ${
+                            selectedBadgeTemplate === templateId
+                              ? "border-indigo-500 bg-indigo-50"
+                              : "border-gray-200 hover:border-gray-300"
+                          }`}
+                          onClick={() => setSelectedBadgeTemplate(templateId)}
+                        >
+                          <div className="h-32 bg-white rounded-lg overflow-hidden">
+                            {renderBadgeTemplate(templateId, eventUsers[0])}
+                          </div>
+                          <p className="text-xs text-center mt-2 font-medium">
+                            Template {templateId}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
                   <div className="bg-gray-50 rounded-lg p-4 mb-6">
                     <h4 className="font-semibold text-gray-800 mb-3">
@@ -704,8 +1075,10 @@ function PrintBadges() {
                         <span className="font-medium">High</span>
                       </div>
                       <div className="flex justify-between">
-                        <span>Include QR Codes:</span>
-                        <span className="font-medium text-green-600">Yes</span>
+                        <span>Template:</span>
+                        <span className="font-medium text-indigo-600">
+                          Template {selectedBadgeTemplate}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -726,34 +1099,32 @@ function PrintBadges() {
                     </button>
                   </div>
                 </div>
-
-                {/* Right Side - QR Code Preview */}
                 <div className="flex-1">
                   <div className="bg-white border border-gray-200 rounded-xl p-6">
                     <h4 className="font-semibold text-gray-800 mb-4 text-center">
-                      QR Code Preview
+                      Badge Preview
                     </h4>
                     <div className="flex flex-col items-center">
-                      <div className="bg-white p-4 rounded-lg border-2 border-gray-300 mb-4">
+                      <div className="w-64 h-80 mb-4">
+                        {renderBadgeTemplate(
+                          selectedBadgeTemplate,
+                          eventUsers[0]
+                        )}
+                      </div>
+                      <div className="bg-white p-4 rounded-lg border-2 border-gray-300">
                         <QRCode
                           value={`Printing ${
                             selectedUsers.size
                           } badges for event ${eventId || "N/A"}`}
-                          size={180}
+                          size={120}
                           level="H"
                           fgColor="#1f2937"
                           bgColor="#ffffff"
                         />
                       </div>
-                      <p className="text-sm text-gray-600 text-center mb-2">
-                        This QR code contains batch printing information
+                      <p className="text-sm text-gray-600 text-center mt-4">
+                        Preview shows Template {selectedBadgeTemplate}
                       </p>
-                      <div className="text-xs text-gray-500 text-center space-y-1">
-                        <div>Batch ID: {`BATCH_${Date.now()}`}</div>
-                        <div>Event: {eventId || "N/A"}</div>
-                        <div>Total: {selectedUsers.size} badges</div>
-                        <div>Date: {new Date().toLocaleDateString()}</div>
-                      </div>
                     </div>
                   </div>
                 </div>
@@ -763,17 +1134,10 @@ function PrintBadges() {
         </div>
       )}
 
-      {/* Click outside to close popup */}
-      {activePopup && (
-        <div
-          className="fixed inset-0 z-10"
-          onClick={() => setActivePopup(null)}
-        />
-      )}
+      {/* Preview Modal */}
       {previewModal && selectedUserForPreview && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-5xl mx-auto relative overflow-hidden">
-            {/* Close Button */}
             <button
               onClick={() => {
                 setPreviewModal(false);
@@ -783,115 +1147,19 @@ function PrintBadges() {
             >
               <X size={24} />
             </button>
-
-            {/* Modal Content */}
             <div className="p-8">
               <h2 className="text-2xl font-bold mb-8 text-center text-gray-800">
                 Badge Preview
               </h2>
-
-              {/* Two Column Layout: Badge Left, QR Code Right */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                {/* Left Side - Badge Design */}
                 <div className="flex justify-center items-start">
-                  <div className="relative w-full max-w-sm h-[500px] bg-gradient-to-b from-gray-800 to-gray-900 rounded-xl shadow-2xl overflow-hidden">
-                    {/* Decorative Wave Top */}
-                    <div className="absolute top-0 left-0 right-0 h-16">
-                      <svg viewBox="0 0 400 100" className="w-full h-full">
-                        <path
-                          d="M 0,50 Q 100,30 200,50 T 400,50 L 400,0 L 0,0 Z"
-                          fill="#4a4a4a"
-                          opacity="0.3"
-                        />
-                      </svg>
-                    </div>
-
-                    {/* Profile Image Circle */}
-                    <div className="absolute top-16 left-1/2 transform -translate-x-1/2">
-                      <div className="w-28 h-28 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 p-1 shadow-lg">
-                        <div className="w-full h-full rounded-full bg-gray-700 flex items-center justify-center overflow-hidden">
-                          {selectedUserForPreview.attributes?.image ? (
-                            <img
-                              src={selectedUserForPreview.attributes.image}
-                              alt={
-                                selectedUserForPreview.attributes?.name ||
-                                "User"
-                              }
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-3xl">
-                              {selectedUserForPreview.attributes?.name
-                                ?.split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()
-                                .slice(0, 2) || "NA"}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Badge Content */}
-                    <div className="absolute top-48 left-0 right-0 px-6 text-center">
-                      <h3 className="text-white font-bold text-2xl mb-2">
-                        {selectedUserForPreview.attributes?.name || "Name Here"}
-                      </h3>
-                      <p className="text-gray-300 text-base mb-2">
-                        {selectedUserForPreview.attributes?.user_type ||
-                          "Title Here"}
-                      </p>
-                      <p className="text-gray-400 text-sm mb-6">
-                        {selectedUserForPreview.attributes?.organization || ""}
-                      </p>
-
-                      {/* User Details */}
-                      {/* <div className="bg-black/30 backdrop-blur-sm rounded-lg p-4 mt-6">
-                        <div className="text-white text-sm text-left space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">ID:</span>
-                            <span className="font-mono">
-                              #{selectedUserForPreview.id}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Token:</span>
-                            <span className="font-mono text-xs">
-                              {selectedUserForPreview.token}
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400">Department:</span>
-                            <span>{selectedUserForPreview.department}</span>
-                          </div>
-                          {selectedUserForPreview.attributes?.email && (
-                            <div className="flex justify-between">
-                              <span className="text-gray-400">Email:</span>
-                              <span className="text-xs truncate ml-2">
-                                {selectedUserForPreview.attributes.email}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div> */}
-                    </div>
-
-                    {/* Decorative Wave Bottom */}
-                    <div className="absolute bottom-0 left-0 right-0 h-20">
-                      <svg viewBox="0 0 400 100" className="w-full h-full">
-                        <path
-                          d="M 0,50 Q 100,70 200,50 T 400,50 L 400,100 L 0,100 Z"
-                          fill="#4a4a4a"
-                          opacity="0.3"
-                        />
-                      </svg>
-                    </div>
+                  <div className="w-80">
+                    {renderBadgeTemplate(
+                      selectedBadgeTemplate,
+                      selectedUserForPreview
+                    )}
                   </div>
                 </div>
-
-                {/* Right Side - QR Code */}
-                {/* QR Code Container */}
                 <div className="bg-white p-6 rounded-xl justify-center items-center flex border-indigo-200 shadow-md mb-6">
                   <QRCode
                     value={generateQRCodeData(selectedUserForPreview)}
@@ -903,8 +1171,6 @@ function PrintBadges() {
                 </div>
               </div>
             </div>
-
-            {/* Bottom Buttons - Full Width */}
             <div className="flex border-t border-gray-200 mb-4 mx-4">
               <button
                 onClick={() => {
@@ -928,6 +1194,13 @@ function PrintBadges() {
             </div>
           </div>
         </div>
+      )}
+
+      {activePopup && (
+        <div
+          className="fixed inset-0 z-10"
+          onClick={() => setActivePopup(null)}
+        />
       )}
 
       {showDeleteModal && (
@@ -955,7 +1228,7 @@ function PrintBadges() {
                 Cancel
               </button>
               <button
-                onClick={handleDelete}
+                onClick={() => handleDelete(user)}
                 className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
               >
                 Delete

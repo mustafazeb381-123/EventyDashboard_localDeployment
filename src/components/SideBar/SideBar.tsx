@@ -69,7 +69,7 @@ const SideBar = ({
       // console.log(`Retrieved registered users count: ${storedCount} for event: ${currentEventId}`);
     } else {
       setRegisteredUsersCount("0");
-      console.log(`No stored count found for event: ${currentEventId}`);
+      // console.log(`No stored count found for event: ${currentEventId}`);
     }
   };
 
@@ -120,18 +120,21 @@ const SideBar = ({
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (currentEventId && e.key === `eventUsersLength_${currentEventId}`) {
-        console.log('Storage changed, updating registered users count:', e.newValue);
+        console.log(
+          "Storage changed, updating registered users count:",
+          e.newValue
+        );
         setRegisteredUsersCount(e.newValue || "0");
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     // Also set up a periodic check for changes (in case same tab updates)
     const interval = setInterval(getRegisteredUsersCount, 2000);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
       clearInterval(interval);
     };
   }, [currentEventId]);
@@ -287,9 +290,11 @@ const SideBar = ({
   return (
     <>
       <aside
-        className={`fixed ${isRTL ? "right-0" : "left-0"
-          } top-0 h-screen bg-gradient-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${isExpanded ? "w-[280px]" : "w-20"
-          }`}
+        className={`fixed ${
+          isRTL ? "right-0" : "left-0"
+        } top-0 h-screen bg-gradient-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${
+          isExpanded ? "w-[280px]" : "w-20"
+        }`}
       >
         {isExpanded && (
           <div className="px-4 py-4 border-b">
@@ -348,81 +353,86 @@ const SideBar = ({
         {/* Scrollable Navigation Area with Thin Scrollbar */}
         {isExpanded && (
           <div className="flex flex-col h-[calc(100vh-200px)] pb-8">
-          <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto thin-scrollbar">
-            {menuItems.map((item, index) => {
-              const Icon = item.icon;
-              const isActive = activeItem === item.label;
-              const hasSubmenu = item.submenu && item.submenu.length > 0;
-              const isSubmenuExpanded = expandedMenus[item.label];
+            <nav className="flex-1 px-2 py-4 space-y-2 overflow-y-auto thin-scrollbar">
+              {menuItems.map((item, index) => {
+                const Icon = item.icon;
+                const isActive = activeItem === item.label;
+                const hasSubmenu = item.submenu && item.submenu.length > 0;
+                const isSubmenuExpanded = expandedMenus[item.label];
 
-              return (
-                <div key={index}>
-                  <div
-                    className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${isActive
-                        ? "bg-blue-600/30 text-white border border-blue-500/30"
-                        : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                return (
+                  <div key={index}>
+                    <div
+                      className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${
+                        isActive
+                          ? "bg-blue-600/30 text-white border border-blue-500/30"
+                          : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                       }`}
-                    onClick={() => {
-                      if (hasSubmenu) {
-                        toggleSubmenu(item.label);
-                      } else {
-                        setActiveItem(item.label);
-                        if (item.path) {
-                          navigate(item.path);
+                      onClick={() => {
+                        if (hasSubmenu) {
+                          toggleSubmenu(item.label);
+                        } else {
+                          setActiveItem(item.label);
+                          if (item.path) {
+                            navigate(item.path);
+                          }
                         }
-                      }
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <Icon className="h-4 w-4 flex-shrink-0" />
-                      <span className="font-medium text-sm">{item.label}</span>
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-medium text-sm">
+                          {item.label}
+                        </span>
+                      </div>
+                      {item.badge && (
+                        <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                          {item.badge}
+                        </span>
+                      )}
                     </div>
-                    {item.badge && (
-                      <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
-                        {item.badge}
-                      </span>
+
+                    {item.submenu && isSubmenuExpanded && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {item.submenu.map((subItem, subIndex) => {
+                          const SubIcon = subItem.icon;
+                          const isSubActive = activeItem === subItem.label;
+                          return (
+                            <div
+                              key={subIndex}
+                              className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                                isSubActive
+                                  ? "bg-blue-500/20 text-white border border-blue-400/30"
+                                  : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
+                              }`}
+                              onClick={() => {
+                                setActiveItem(subItem.label);
+                                if (subItem.path) {
+                                  navigate(subItem.path);
+                                }
+                              }}
+                            >
+                              <SubIcon className="h-3.5 w-3.5" />
+                              <span className="text-sm">{subItem.label}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
-
-                  {item.submenu && isSubmenuExpanded && (
-                    <div className="ml-6 mt-1 space-y-1">
-                      {item.submenu.map((subItem, subIndex) => {
-                        const SubIcon = subItem.icon;
-                        const isSubActive = activeItem === subItem.label;
-                        return (
-                          <div
-                            key={subIndex}
-                            className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${isSubActive
-                                ? "bg-blue-500/20 text-white border border-blue-400/30"
-                                : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
-                              }`}
-                            onClick={() => {
-                              setActiveItem(subItem.label);
-                              if (subItem.path) {
-                                navigate(subItem.path);
-                              }
-                            }}
-                          >
-                            <SubIcon className="h-3.5 w-3.5" />
-                            <span className="text-sm">{subItem.label}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </nav>
-        </div>
+                );
+              })}
+            </nav>
+          </div>
         )}
 
         {/* Fixed Bottom Section */}
         <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
           <Button
             variant="ghost"
-            className={`w-full ${isExpanded ? "justify-start px-3" : "justify-center px-3"
-              } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
+            className={`w-full ${
+              isExpanded ? "justify-start px-3" : "justify-center px-3"
+            } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
           >
             <Settings className="h-4 w-4" />
             {isExpanded && (
@@ -434,8 +444,9 @@ const SideBar = ({
           <Button
             onClick={handleLogout}
             variant="ghost"
-            className={`w-full ${isExpanded ? "justify-start px-3" : "justify-center px-3"
-              } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
+            className={`w-full ${
+              isExpanded ? "justify-start px-3" : "justify-center px-3"
+            } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
           >
             <LogOut className="h-4 w-4" />
             {isExpanded && (
@@ -458,20 +469,20 @@ const SideBar = ({
           scrollbar-width: thin;
           scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
         }
-        
+
         .thin-scrollbar::-webkit-scrollbar {
           width: 4px;
         }
-        
+
         .thin-scrollbar::-webkit-scrollbar-track {
           background: transparent;
         }
-        
+
         .thin-scrollbar::-webkit-scrollbar-thumb {
           background-color: rgba(148, 163, 184, 0.3);
           border-radius: 2px;
         }
-        
+
         .thin-scrollbar::-webkit-scrollbar-thumb:hover {
           background-color: rgba(148, 163, 184, 0.5);
         }

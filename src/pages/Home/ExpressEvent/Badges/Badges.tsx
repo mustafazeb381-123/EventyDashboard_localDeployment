@@ -9,7 +9,9 @@ import Badge2 from "./components/Badge2";
 import Badge3 from "./components/Badge3";
 import Badge4 from "./components/Badge4";
 
-const CardHeader: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+export const CardHeader: React.FC<{ color?: string }> = ({
+  color = "#4D4D4D",
+}) => (
   <svg
     width="100%"
     height="100%"
@@ -42,7 +44,9 @@ const CardHeader: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   </svg>
 );
 
-const CardHeader2: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+export const CardHeader2: React.FC<{ color?: string }> = ({
+  color = "#4D4D4D",
+}) => (
   <svg
     width="100%"
     height="100%"
@@ -56,7 +60,9 @@ const CardHeader2: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   </svg>
 );
 
-const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+export const CardFooter: React.FC<{ color?: string }> = ({
+  color = "#4D4D4D",
+}) => (
   <svg
     width="100%"
     height="100%"
@@ -81,7 +87,9 @@ const CardFooter: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
   </svg>
 );
 
-const CardFooter2: React.FC<{ color?: string }> = ({ color = "#4D4D4D" }) => (
+export const CardFooter2: React.FC<{ color?: string }> = ({
+  color = "#4D4D4D",
+}) => (
   <svg
     width="100%"
     height="100%"
@@ -109,7 +117,7 @@ interface Badge {
 
 interface BadgesProps {
   toggleStates: ToggleStates;
-  onNext: (eventId?: string | number) => void; // Updated to match ExpressEvent signature
+  onNext: (eventId?: string | number) => void;
   onPrevious: () => void;
   currentStep: number;
   totalSteps?: number;
@@ -125,9 +133,9 @@ const Badges: React.FC<BadgesProps> = ({
   const [openModal, setOpenModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [activeBadgeId, setActiveBadgeId] = useState<number | null>(null);
+  console.log("active badge id", activeBadgeId);
   const [previewBadge, setPreviewBadge] = useState<Badge | null>(null);
 
-  // Use eventId from props first, then fall back to localStorage
   const effectiveEventId = eventId || localStorage.getItem("create_eventId");
 
   console.log("Badges - Received eventId:", eventId);
@@ -193,16 +201,18 @@ const Badges: React.FC<BadgesProps> = ({
     }
 
     const data = {
-      badge: {
+      badge_template: {
         name: badgeName,
         event_id: effectiveEventId,
         default: true,
-        badge_background: badgeId,
       },
     };
 
     const response = await postBadgesApi(data, parseInt(effectiveEventId, 10));
-    console.log("reponse------+++++++++++-----------", response.data);
+    console.log(
+      "reponse------+++++++++++----------- of post api =----------------",
+      response.data
+    );
     return response;
   };
 
@@ -217,20 +227,27 @@ const Badges: React.FC<BadgesProps> = ({
       toast.success("Badge template selected!");
       setActiveBadgeId(selectedBadge.id);
 
-      // Save active badge to localStorage so it persists between reloads
+      // 🟢 Save only required data for PrintBadges
       localStorage.setItem("active_badge_id", selectedBadge.id.toString());
+      localStorage.setItem("badge_qr_image", selectedBadge.qrImg);
+      localStorage.setItem(
+        "badge_header_color",
+        event?.attributes?.primary_color || "#4D4D4D"
+      );
+      localStorage.setItem(
+        "badge_footer_color",
+        event?.attributes?.primary_color || "#4D4D4D"
+      );
+      localStorage.setItem(
+        "badge_background_color",
+        event?.attributes?.secondary_color || "white"
+      );
 
       setTimeout(() => {
-        // FIX: Pass the eventId instead of badgeId to onNext
         if (effectiveEventId && onNext) {
-          console.log(
-            "Badges - Sending eventId to ExpressEvent:",
-            effectiveEventId
-          );
-          onNext(effectiveEventId); // Pass eventId instead of badgeId
+          onNext(effectiveEventId);
         } else {
-          console.error("Badges - No eventId available to send");
-          onNext(); // Fallback without eventId
+          onNext();
         }
       }, 1000);
     } catch (error) {
@@ -240,7 +257,6 @@ const Badges: React.FC<BadgesProps> = ({
     }
   };
 
-  // 🟢 Fetch event data + restore previously active badge
   useEffect(() => {
     (async () => {
       if (!effectiveEventId) {
@@ -255,7 +271,6 @@ const Badges: React.FC<BadgesProps> = ({
 
         setEvent(eventData);
 
-        // Try from API first, then from localStorage
         const activeBadge =
           eventData?.attributes?.active_badge_id ||
           parseInt(localStorage.getItem("active_badge_id") || "0", 10);
