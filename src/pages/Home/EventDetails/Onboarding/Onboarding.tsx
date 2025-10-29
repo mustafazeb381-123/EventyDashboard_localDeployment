@@ -114,7 +114,17 @@ function Onboarding() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedgates = filteredgates.slice(startIndex, endIndex);
 
-  const handleCopy = (url: string) => navigator.clipboard.writeText(url);
+  const handleCopyGateLink = (gateId: number) => {
+    if (!eventId) return toast.error("Event ID missing");
+
+    // Construct the URL (adjust the path if your route is different)
+    const url = `${window.location.origin}/onboarding?eventId=${eventId}&gateId=${gateId}`;
+
+    navigator.clipboard.writeText(url)
+      .then(() => toast.success("Gate link copied!"))
+      .catch(() => toast.error("Failed to copy link"));
+  };
+
 
   const handleDelete = async (gateId: number) => {
     if (!eventId) return;
@@ -143,11 +153,13 @@ function Onboarding() {
       return;
     }
 
-    console.log("Selected gate details:", gate); // ✅ log the full gate object here
+    console.log("Selected gate details:", gate);
 
-    setSelectedGate(gate);
+    setSelectedGate(gate); // includes gate_token
     setShowGateOnboarding(true);
   };
+
+
 
   if (showGateOnboarding) {
     return selectedGate ? <GateOnboarding gate={selectedGate} onBack={() => setShowGateOnboarding(false)} /> : null;
@@ -204,22 +216,24 @@ function Onboarding() {
                         <td className="px-6 py-4">
                           <span className="text-sm text-gray-700 capitalize">{gate?.attributes?.type}</span>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{gate.url}</td>
+                        <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{gate?.attributes?.gate_token}</td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleOpenGateOnboarding(gate.id)}
-                              className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
                             >
                               <ArrowRight size={16} />
                             </button>
 
-                            <button onClick={() => handleCopy(gate.url)} className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition">
+                            <button onClick={() => handleCopyGateLink(gate.id)} className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition">
                               <Copy size={16} />
                             </button>
-                            <button onClick={() => handleDelete(gate.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+
+                            <button onClick={() => handleDelete(gate.id)} className="p-2  text-red-600 hover:bg-red-50 rounded-lg transition">
                               <Trash2 size={16} />
                             </button>
+
                           </div>
                         </td>
                       </tr>
