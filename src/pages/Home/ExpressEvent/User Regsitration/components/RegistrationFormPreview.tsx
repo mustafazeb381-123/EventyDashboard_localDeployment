@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { createEventUser } from "@/apis/apiHelpers";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 interface FormField {
   id: number;
@@ -52,11 +52,17 @@ const RegistrationFormPreview = ({
       formDataToSend.append("event_user[name]", formData.name);
       formDataToSend.append("event_user[phone_number]", formData.phone_number);
       formDataToSend.append("event_user[email]", formData.email);
-      if (formData.position) formDataToSend.append("event_user[position]", formData.position);
-      if (formData.organization) formDataToSend.append("event_user[organization]", formData.organization);
+      if (formData.position)
+        formDataToSend.append("event_user[position]", formData.position);
+      if (formData.organization)
+        formDataToSend.append(
+          "event_user[organization]",
+          formData.organization
+        );
 
       // Append image if provided
-      if (formData.image) formDataToSend.append("event_user[image]", formData.image);
+      if (formData.image)
+        formDataToSend.append("event_user[image]", formData.image);
 
       const response = await createEventUser(eventId, formDataToSend);
 
@@ -164,7 +170,9 @@ const RegistrationFormPreview = ({
               onChange={(e) => handleInputChange(field.name, e.target.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label className="text-sm text-gray-700">{field.checkboxLabel}</label>
+            <label className="text-sm text-gray-700">
+              {field.checkboxLabel}
+            </label>
           </div>
         );
 
@@ -195,6 +203,7 @@ const RegistrationFormPreview = ({
       >
         {loading ? "Submitting..." : submitButtonText}
       </button>
+      <ToastContainer />
     </div>
   );
 };
