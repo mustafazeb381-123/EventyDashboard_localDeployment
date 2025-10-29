@@ -6,15 +6,10 @@ import { sendCredentials } from "@/apis/apiHelpers";
 import { downloadEventUserTemplate } from "@/apis/apiHelpers";
 import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
-<<<<<<< HEAD
-import { Trash2, Mail, Plus, Edit, Search } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-=======
 import { resetCheckInOutStatus } from "@/apis/apiHelpers";
 
 import { Trash2, Mail, Plus, Edit, Search, RotateCcw } from "lucide-react";
 import { toast } from "react-toastify";
->>>>>>> origin/badges
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterdUser() {
@@ -361,7 +356,11 @@ function RegisterdUser() {
   const handleResetCheckInOut = async (userId: string) => {
     if (!eventId) return toast.error("Event ID is missing.");
 
-    if (!window.confirm("Are you sure you want to reset this user's check-in/out status?"))
+    if (
+      !window.confirm(
+        "Are you sure you want to reset this user's check-in/out status?"
+      )
+    )
       return;
 
     try {
@@ -374,7 +373,6 @@ function RegisterdUser() {
       toast.error("Failed to reset check-in/out status.");
     }
   };
-
 
   return (
     <div className="bg-white min-h-screen p-6">
@@ -599,7 +597,6 @@ function RegisterdUser() {
                           >
                             <RotateCcw className="w-4 h-4" />
                           </button>
-
 
                           <button
                             onClick={() => handleDeleteUser(user)}
