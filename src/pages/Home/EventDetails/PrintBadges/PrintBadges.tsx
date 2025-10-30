@@ -74,15 +74,19 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
           {event?.attributes?.name || "Company Name"}
         </h6>
       </div>
+      <div className="relative z-10 flex justify-center">
+        <QRCode
+          value={user?.attributes?.token || "user-token"}
+          size={120}
+          level="H"
+          fgColor="#1f2937"
+          bgColor="#ffffff"
+        />
+      </div>
     </div>
     <div className="flex flex-1 flex-col justify-center items-center">
-      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2">
-        {user?.attributes?.name
-          ?.split(" ")
-          .map((n: string) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "NA"}
+      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 overflow-hidden">
+        <UserAvatar user={user} />
       </div>
       <h2 className="text-xs font-bold text-gray-900 mt-1">
         {user?.attributes?.name || "User Name"}
@@ -91,8 +95,9 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
         {user?.attributes?.user_type || "User Title"}
       </p>
     </div>
+
     <div
-      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
       style={{ height: "15%" }}
     >
       <div className="absolute inset-0">
@@ -125,6 +130,9 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
     </div>
     <div className="flex flex-1 flex-col justify-evenly items-center">
       <div className="text-center">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden">
+          <UserAvatar user={user} />
+        </div>
         <h2 className="text-xs font-bold text-gray-900">
           {user?.attributes?.name || "User Name"}
         </h2>
@@ -145,8 +153,17 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
         </h6>
       </div>
     </div>
+    <div className="relative z-10 flex justify-center">
+      <QRCode
+        value={user?.attributes?.token || "user-token"}
+        size={120}
+        level="H"
+        fgColor="#1f2937"
+        bgColor="#ffffff"
+      />
+    </div>
     <div
-      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
       style={{ height: "15%" }}
     >
       <div className="absolute inset-0">
@@ -162,47 +179,56 @@ const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
   badgeType,
   badgeColors,
   qrImage,
-}) => (
-  <div
-    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-    style={{
-      backgroundColor: badgeColors.backgroundColor,
-    }}
-  >
+}) => {
+  console.log("User in BadgeTemplate3:", user);
+
+  return (
     <div
-      className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ height: "33%" }}
+      className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+      style={{
+        backgroundColor: badgeColors.backgroundColor,
+      }}
     >
-      <div className="absolute inset-0">
-        <CardHeader2 color={badgeColors.headerColor} />
+      <div
+        className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+        style={{ height: "33%" }}
+      >
+        <div className="absolute inset-0">
+          <CardHeader2 color={badgeColors.headerColor} />
+        </div>
+      </div>
+      <div className="flex mb-2 flex-col items-center">
+        <div className="rounded-full w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 overflow-hidden">
+          <UserAvatar user={user} />
+        </div>
+
+        <h2 className="text-xs font-bold text-gray-900 mt-1">
+          {user?.attributes?.name || "User Name"}
+        </h2>
+        <p className="text-gray-600 text-xs">
+          {user?.attributes?.organization || "User Title"}
+        </p>
+      </div>
+      <div className="relative z-10 flex justify-center">
+        <QRCode
+          value={user?.attributes?.token || "user-token"}
+          size={120}
+          level="H"
+          fgColor="#1f2937"
+          bgColor="#ffffff"
+        />
+      </div>
+      <div
+        className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
+        style={{ height: "15%" }}
+      >
+        <div className="absolute inset-0">
+          <CardFooter2 color={badgeColors.footerColor} />
+        </div>
       </div>
     </div>
-    <div className="flex flex-1 flex-col items-center">
-      <div className="rounded-full w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2">
-        {user?.attributes?.name
-          ?.split(" ")
-          .map((n: string) => n[0])
-          .join("")
-          .toUpperCase()
-          .slice(0, 2) || "NA"}
-      </div>
-      <h2 className="text-xs font-bold text-gray-900 mt-1">
-        {user?.attributes?.name || "User Name"}
-      </h2>
-      <p className="text-gray-600 text-xs">
-        {user?.attributes?.user_type || "User Title"}
-      </p>
-    </div>
-    <div
-      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-      style={{ height: "15%" }}
-    >
-      <div className="absolute inset-0">
-        <CardFooter2 color={badgeColors.footerColor} />
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
   user,
@@ -227,6 +253,9 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
     </div>
     <div className="flex flex-1 flex-col justify-evenly items-center">
       <div className="text-center">
+        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden">
+          <UserAvatar user={user} />
+        </div>
         <h2 className="text-xs font-bold text-gray-900">
           {user?.attributes?.name || "User Name"}
         </h2>
@@ -246,9 +275,18 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
           {event?.attributes?.name || "Company Name"}
         </h6>
       </div>
+      <div className="relative z-10 flex justify-center">
+        <QRCode
+          value={user?.attributes?.token || "user-token"}
+          size={120}
+          level="H"
+          fgColor="#1f2937"
+          bgColor="#ffffff"
+        />
+      </div>
     </div>
     <div
-      className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
       style={{ height: "15%" }}
     >
       <div className="absolute inset-0">
@@ -257,6 +295,35 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
     </div>
   </div>
 );
+
+// UserAvatar Component
+const UserAvatar = ({ user }: { user: any }) => {
+  const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
+  const userName = user?.attributes?.name || "User";
+
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={userName}
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+
+  const initials = userName
+    .split(" ")
+    .map((n: string) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  return (
+    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
+      {initials}
+    </div>
+  );
+};
 
 // Main Component
 function PrintBadges() {
@@ -387,11 +454,17 @@ function PrintBadges() {
     startIndex + rowsPerPage
   );
 
+  // Get selected users data
+  const getSelectedUsersData = () => {
+    return eventUsers.filter((user) => selectedUsers.has(user.id));
+  };
+
   const handleActionClick = (userId: any) => {
     setActivePopup(activePopup === userId ? null : userId);
   };
 
   const handleAction = async (action: any, userId: any) => {
+    console.log("buton is clieckt --------");
     setIsLoading(true);
     setCurrentAction(action);
 
@@ -525,8 +598,8 @@ function PrintBadges() {
     });
   };
 
-  const UserAvatar = ({ user }: { user: any }) => {
-    const imageUrl = user?.attributes?.image;
+  const TableUserAvatar = ({ user }: { user: any }) => {
+    const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
     const userName = user?.attributes?.name || "User";
 
     if (imageUrl) {
@@ -727,12 +800,33 @@ function PrintBadges() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={handlePrintSelected}
+                onClick={() => {
+                  if (selectedUsers.size === 0) {
+                    toast.warning("Please select at least one user to print");
+                    return;
+                  }
+                  // Open preview modal for selected users
+                  setPreviewModal(true);
+                }}
                 disabled={selectedUsers.size === 0}
                 className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium shadow-lg shadow-indigo-600/25 hover:shadow-xl hover:shadow-indigo-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
               >
                 <Printer size={18} />
                 Print Selected ({selectedUsers.size})
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedUsers.size === 0) {
+                    toast.warning("Please select at least one user to preview");
+                    return;
+                  }
+                  setPreviewModal(true);
+                }}
+                disabled={selectedUsers.size === 0}
+                className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Eye size={16} />
+                Preview Selected ({selectedUsers.size})
               </button>
               <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
                 <Settings size={16} />
@@ -805,7 +899,7 @@ function PrintBadges() {
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="text-left p-4 text-xs font-semibold text-gray:600 uppercase tracking-wider">
                       Organization
                     </th>
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -858,7 +952,7 @@ function PrintBadges() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-3">
-                            <UserAvatar user={user} />
+                            <TableUserAvatar user={user} />
                             <div>
                               <div className="font-medium text-gray-900">
                                 {user.attributes?.name || "Unknown"}
@@ -1029,6 +1123,78 @@ function PrintBadges() {
             </div>
           </div>
         </div>
+
+        {/* Preview Modal */}
+        {previewModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Badge Preview{" "}
+                  {selectedUsers.size > 1 && `(${selectedUsers.size} badges)`}
+                </h3>
+                <button
+                  onClick={() => setPreviewModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[70vh]">
+                {/* Badge preview content goes here */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Array.from(selectedUsers).map((userId) => {
+                    const user = filteredUsers.find((u) => u.id === userId);
+                    return user ? (
+                      <div
+                        key={user.id}
+                        className="border border-gray-200 rounded-xl p-6"
+                      >
+                        <div className="text-center">
+                          <h4 className="text-lg font-bold mb-2">
+                            {user.attributes?.name}
+                          </h4>
+                          <p className="text-gray-600 mb-1">
+                            {user.attributes?.organization}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {user.attributes?.user_type}
+                          </p>
+                          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                            <p className="text-xs text-gray-500">
+                              Badge preview would appear here
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+                <button
+                  onClick={() => setPreviewModal(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    // Handle actual printing logic here
+                    toast.success(`Printing ${selectedUsers.size} badges...`);
+                    setPreviewModal(false);
+                  }}
+                  className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Printer size={16} />
+                  Print All
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Print Modal */}
@@ -1145,17 +1311,6 @@ function PrintBadges() {
                           eventUsers[0]
                         )}
                       </div>
-                      <div className="bg-white p-4 rounded-lg border-2 border-gray-300">
-                        <QRCode
-                          value={`Printing ${
-                            selectedUsers.size
-                          } badges for event ${eventId || "N/A"}`}
-                          size={120}
-                          level="H"
-                          fgColor="#1f2937"
-                          bgColor="#ffffff"
-                        />
-                      </div>
                       <p className="text-sm text-gray-600 text-center mt-4">
                         Preview shows Template {selectedBadgeTemplate}
                       </p>
@@ -1168,8 +1323,64 @@ function PrintBadges() {
         </div>
       )}
 
-      {/* Preview Modal */}
-      {previewModal && selectedUserForPreview && (
+      {/* Preview Modal - Updated to show multiple selected badges */}
+      {previewModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh]">
+            <button
+              onClick={() => {
+                setPreviewModal(false);
+                setSelectedUserForPreview(null);
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 bg-white rounded-full p-1"
+            >
+              <X size={24} />
+            </button>
+            <div className="p-8">
+              <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">
+                Badge Preview
+              </h2>
+              <p className="text-center text-gray-600 mb-8">
+                Showing {selectedUsers.size} selected badge
+                {selectedUsers.size !== 1 ? "s" : ""}
+              </p>
+
+              {/* Grid layout for multiple badges */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto max-h-[60vh] p-4">
+                {getSelectedUsersData().map((user, index) => (
+                  <div key={user.id} className="flex flex-col items-center">
+                    <div className="text-sm text-gray-500 mb-2 font-medium">
+                      Badge {index + 1}
+                    </div>
+                    <div className="w-64 h-80 transform hover:scale-105 transition-transform duration-200">
+                      {renderBadgeTemplate(selectedBadgeTemplate, user)}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-600 text-center">
+                      {user.attributes?.name || "Unknown User"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Print button for selected badges */}
+            <div className="flex border-t border-gray-200 p-4 bg-gray-50">
+              <button
+                onClick={() => {
+                  window.print();
+                }}
+                className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium rounded-lg"
+              >
+                <Printer size={18} />
+                Print All Selected Badges ({selectedUsers.size})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Single User Preview Modal */}
+      {previewModal && selectedUserForPreview && selectedUsers.size === 0 && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-5xl mx-auto relative overflow-hidden">
             <button
@@ -1185,7 +1396,7 @@ function PrintBadges() {
               <h2 className="text-2xl font-bold mb-8 text-center text-gray-800">
                 Badge Preview
               </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              <div className="grid grid-cols-1 gap-8 mb-8">
                 <div className="flex justify-center items-start">
                   <div className="w-80">
                     {renderBadgeTemplate(
@@ -1194,29 +1405,10 @@ function PrintBadges() {
                     )}
                   </div>
                 </div>
-                <div className="bg-white p-6 rounded-xl justify-center items-center flex border-indigo-200 shadow-md mb-6">
-                  <QRCode
-                    value={generateQRCodeData(selectedUserForPreview)}
-                    size={220}
-                    level="H"
-                    fgColor="#1f2937"
-                    bgColor="#ffffff"
-                  />
-                </div>
               </div>
             </div>
             {currentAction === "print" && (
               <div className="flex border-t border-gray-200 mb-4 mx-4">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(true);
-                    setPreviewModal(false);
-                  }}
-                  className="flex-1 py-4 px-6 bg-red-50 hover:bg-red-100 text-red-600 transition-colors flex items-center justify-center gap-2 font-medium"
-                >
-                  <Trash2 size={18} />
-                  Delete
-                </button>
                 <button
                   onClick={() => {
                     window.print();

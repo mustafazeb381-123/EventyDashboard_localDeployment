@@ -18,10 +18,12 @@ import {
   BarChart3,
   Ticket,
   IdCard,
+  Lock,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
+import { getEventbyId } from "@/apis/apiHelpers";
 
 interface SideBarProps {
   isExpanded: boolean;
@@ -43,6 +45,7 @@ const SideBar = ({
     {}
   );
   const [registeredUsersCount, setRegisteredUsersCount] = useState<string>("0");
+  const [eventType, setEventType] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -70,6 +73,26 @@ const SideBar = ({
     } else {
       setRegisteredUsersCount("0");
       // console.log(`No stored count found for event: ${currentEventId}`);
+    }
+  };
+
+  // Get event type from API
+  const getEventType = async () => {
+    if (!currentEventId) {
+      setEventType(null);
+      return;
+    }
+
+    try {
+      const response = await getEventbyId(currentEventId);
+      const eventTypeFromAPI = response.data.data.attributes.event_type;
+      setEventType(eventTypeFromAPI);
+      console.log(
+        `Retrieved event type: ${eventTypeFromAPI} for event: ${currentEventId}`
+      );
+    } catch (error) {
+      console.error("Error fetching event type:", error);
+      setEventType(null);
     }
   };
 
@@ -114,6 +137,7 @@ const SideBar = ({
 
     // Get registered users count when route or eventId changes
     getRegisteredUsersCount();
+    getEventType();
   }, [currentEventId, location.pathname]);
 
   // Listen for storage changes to update the count in real-time
@@ -131,7 +155,10 @@ const SideBar = ({
     window.addEventListener("storage", handleStorageChange);
 
     // Also set up a periodic check for changes (in case same tab updates)
-    const interval = setInterval(getRegisteredUsersCount, 2000);
+    const interval = setInterval(() => {
+      getRegisteredUsersCount();
+      getEventType();
+    }, 2000);
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
@@ -146,11 +173,12 @@ const SideBar = ({
     }));
   };
 
-  const menuItems = [
+  const allMenuItems = [
     {
       icon: HomeIcon,
       label: "Home summary",
       path: currentEventId ? `/home/${currentEventId}` : "/",
+      availableForExpress: true,
     },
     {
       icon: Users,
@@ -159,11 +187,13 @@ const SideBar = ({
       path: currentEventId
         ? `/regesterd_user?eventId=${currentEventId}`
         : "/regesterd_user",
+      availableForExpress: true,
     },
     {
       icon: NotepadText,
       label: "Agenda",
       path: currentEventId ? `/agenda?eventId=${currentEventId}` : "/agenda",
+      availableForExpress: false,
     },
     {
       icon: Image,
@@ -171,6 +201,7 @@ const SideBar = ({
       path: currentEventId
         ? `/galleries?eventId=${currentEventId}`
         : "/galleries",
+      availableForExpress: false,
     },
     {
       icon: UserCircle,
@@ -178,6 +209,7 @@ const SideBar = ({
       path: currentEventId
         ? `/user/registration?eventId=${currentEventId}`
         : "/user/registration",
+      availableForExpress: true,
     },
     {
       icon: Printer,
@@ -185,6 +217,7 @@ const SideBar = ({
       path: currentEventId
         ? `/print_badges?eventId=${currentEventId}`
         : "/print_badges",
+      availableForExpress: true,
     },
     {
       icon: UserCheck,
@@ -192,6 +225,7 @@ const SideBar = ({
       path: currentEventId
         ? `/invitation?eventId=${currentEventId}`
         : "/invitation",
+      availableForExpress: false,
       submenu: [
         {
           label: "Users",
@@ -199,6 +233,7 @@ const SideBar = ({
           path: currentEventId
             ? `/invitation/user?eventId=${currentEventId}`
             : "/invitation/user",
+          availableForExpress: false,
         },
         {
           label: "VIP Users",
@@ -206,6 +241,7 @@ const SideBar = ({
           path: currentEventId
             ? `/invitation/VipUsers?eventId=${currentEventId}`
             : "/invitation/VipUsers",
+          availableForExpress: false,
         },
       ],
     },
@@ -215,6 +251,7 @@ const SideBar = ({
       path: currentEventId
         ? `/communication?eventId=${currentEventId}`
         : "/communication",
+      availableForExpress: false,
       submenu: [
         {
           label: "Poll",
@@ -222,6 +259,7 @@ const SideBar = ({
           path: currentEventId
             ? `/communication/Poll?eventId=${currentEventId}`
             : "/communication/Poll",
+          availableForExpress: false,
         },
         {
           label: "Q & A",
@@ -229,12 +267,14 @@ const SideBar = ({
           path: currentEventId
             ? `/communication/QA?eventId=${currentEventId}`
             : "/communication/QA",
+          availableForExpress: false,
         },
       ],
     },
     {
       icon: CheckCircle,
       label: "Attendees",
+      availableForExpress: false,
       submenu: [
         {
           label: "Check In",
@@ -242,6 +282,7 @@ const SideBar = ({
           path: currentEventId
             ? `/attendees/check-in?eventId=${currentEventId}`
             : "/attendees/check-in",
+          availableForExpress: false,
         },
         {
           label: "Check Out",
@@ -249,6 +290,7 @@ const SideBar = ({
           path: currentEventId
             ? `/attendees/check-out?eventId=${currentEventId}`
             : "/attendees/check-out",
+          availableForExpress: false,
         },
       ],
     },
@@ -258,6 +300,7 @@ const SideBar = ({
       path: currentEventId
         ? `/Onboarding?eventId=${currentEventId}`
         : "/Onboarding",
+      availableForExpress: true,
     },
     {
       icon: Users,
@@ -265,6 +308,7 @@ const SideBar = ({
       path: currentEventId
         ? `/committees?eventId=${currentEventId}`
         : "/committees",
+      availableForExpress: false,
     },
     {
       icon: Ticket,
@@ -272,8 +316,12 @@ const SideBar = ({
       path: currentEventId
         ? `/TicketManagement?eventId=${currentEventId}`
         : "/TicketManagement",
+      availableForExpress: false,
     },
   ];
+
+  // Show all menu items, but mark unavailable ones for express events
+  const menuItems = allMenuItems;
 
   const handleLogout = async () => {
     try {
@@ -359,6 +407,9 @@ const SideBar = ({
                 const isActive = activeItem === item.label;
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
                 const isSubmenuExpanded = expandedMenus[item.label];
+                const isExpressEvent = eventType === "express";
+                const isAvailableForExpress = item.availableForExpress;
+                const isDisabled = isExpressEvent && !isAvailableForExpress;
 
                 return (
                   <div key={index}>
@@ -366,9 +417,14 @@ const SideBar = ({
                       className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${
                         isActive
                           ? "bg-blue-600/30 text-white border border-blue-500/30"
+                          : isDisabled
+                          ? "text-slate-500 cursor-not-allowed opacity-60"
                           : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                       }`}
                       onClick={() => {
+                        if (isDisabled) {
+                          return; // Prevent click for disabled items
+                        }
                         if (hasSubmenu) {
                           toggleSubmenu(item.label);
                         } else {
@@ -378,12 +434,22 @@ const SideBar = ({
                           }
                         }
                       }}
+                      title={
+                        isDisabled ? "Only available in advance events" : ""
+                      }
                     >
                       <div className="flex items-center space-x-3">
                         <Icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="font-medium text-sm">
+                        <span
+                          className={`font-medium text-sm ${
+                            isDisabled ? "line-through" : ""
+                          }`}
+                        >
                           {item.label}
                         </span>
+                        {isDisabled && (
+                          <Lock className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                        )}
                       </div>
                       {item.badge && (
                         <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
@@ -397,23 +463,44 @@ const SideBar = ({
                         {item.submenu.map((subItem, subIndex) => {
                           const SubIcon = subItem.icon;
                           const isSubActive = activeItem === subItem.label;
+                          const isSubDisabled =
+                            isExpressEvent && !subItem.availableForExpress;
                           return (
                             <div
                               key={subIndex}
                               className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                                 isSubActive
                                   ? "bg-blue-500/20 text-white border border-blue-400/30"
+                                  : isSubDisabled
+                                  ? "text-slate-500 cursor-not-allowed opacity-60"
                                   : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
                               }`}
                               onClick={() => {
+                                if (isSubDisabled) {
+                                  return; // Prevent click for disabled sub-items
+                                }
                                 setActiveItem(subItem.label);
                                 if (subItem.path) {
                                   navigate(subItem.path);
                                 }
                               }}
+                              title={
+                                isSubDisabled
+                                  ? "Only available in advance events"
+                                  : ""
+                              }
                             >
                               <SubIcon className="h-3.5 w-3.5" />
-                              <span className="text-sm">{subItem.label}</span>
+                              <span
+                                className={`text-sm ${
+                                  isSubDisabled ? "line-through" : ""
+                                }`}
+                              >
+                                {subItem.label}
+                              </span>
+                              {isSubDisabled && (
+                                <Lock className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                              )}
                             </div>
                           );
                         })}
@@ -439,7 +526,7 @@ const SideBar = ({
               <span className="ml-3 text-sm font-medium">Settings</span>
             )}
           </Button>
-          <ToastContainer />
+          {/* <ToastContainer /> */}
 
           <Button
             onClick={handleLogout}
@@ -464,7 +551,7 @@ const SideBar = ({
       )}
 
       {/* Add CSS for thin scrollbar */}
-      <style jsx>{`
+      <style>{`
         .thin-scrollbar {
           scrollbar-width: thin;
           scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
