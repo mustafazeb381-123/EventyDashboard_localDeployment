@@ -29,6 +29,107 @@ import {
   CardHeader2,
 } from "../../ExpressEvent/Badges/Badges";
 
+const printStyles = `
+  /* SCREEN STYLES - Position off-screen but keep rendered */
+  .print-container {
+    position: absolute;
+    left: -9999px;
+    top: -9999px;
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .screen-preview {
+    display: block;
+  }
+
+  /* PRINT STYLES */
+  @media print {
+    @page {
+      margin: 0.5in;
+      size: letter;
+    }
+    
+    body {
+      margin: 0;
+      padding: 0;
+      background: white !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    
+    /* Hide screen preview during print */
+    .screen-preview {
+      display: none !important;
+    }
+    
+    /* Hide ONLY the print button during print */
+    .print-button-container {
+      display: none !important;
+    }
+    
+    /* Show print container */
+    .print-container {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      opacity: 1 !important;
+      pointer-events: auto !important;
+      z-index: auto !important;
+      display: block !important;
+    }
+    
+    /* Badge grid - 2x2 layout */
+    .badge-grid-print {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 0.4in !important;
+      width: 100% !important;
+      padding: 0.25in;
+    }
+    
+    /* Badge container */
+    .badge-item-print {
+      width: 100% !important;
+      height: auto !important;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: flex-start !important;
+    }
+    
+    /* Badge sizing - FIXES OVERLAPPING */
+    .badge-item-print > div:first-child {
+      width: 2.5in !important;
+      height: 3.5in !important;
+      max-width: 2.5in !important;
+      max-height: 3.5in !important;
+      box-shadow: none !important;
+      border: 1px solid #ddd !important;
+    }
+    
+    .print-text {
+      font-size: 9px !important;
+      color: black !important;
+      margin-top: 6px !important;
+      text-align: center;
+    }
+    
+    /* Page breaks every 4 badges */
+    .badge-item-print:nth-child(4n) {
+      page-break-after: always;
+    }
+    
+    * {
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+  }
+`;
+
 // Badge Template Components
 interface BadgeTemplateProps {
   user: any;
@@ -766,6 +867,8 @@ function PrintBadges() {
 
   return (
     <>
+      <style>{printStyles}</style>
+
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <ToastContainer
           position="top-right"
@@ -1126,70 +1229,77 @@ function PrintBadges() {
 
         {/* Preview Modal */}
         {previewModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 className="text-xl font-bold text-gray-900">
-                  Badge Preview{" "}
-                  {selectedUsers.size > 1 && `(${selectedUsers.size} badges)`}
-                </h3>
-                <button
-                  onClick={() => setPreviewModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh]">
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  setPreviewModal(false);
+                  setSelectedUserForPreview(null);
+                }}
+                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 bg-white rounded-full p-1"
+              >
+                <X size={24} />
+              </button>
 
-              <div className="p-6 overflow-y-auto max-h-[70vh]">
-                {/* Badge preview content goes here */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Array.from(selectedUsers).map((userId) => {
-                    const user = filteredUsers.find((u) => u.id === userId);
-                    return user ? (
+              <div className="p-8">
+                <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">
+                  Badge Preview
+                </h2>
+                <p className="text-center text-gray-600 mb-8">
+                  Showing {selectedUsers.size} selected badge
+                  {selectedUsers.size !== 1 ? "s" : ""}
+                </p>
+
+                {/* 🎯 PRINT CONTAINER - Always rendered, positioned off-screen */}
+                <div className="print-container">
+                  <div className="badge-grid-print">
+                    {getSelectedUsersData().map((user) => (
                       <div
-                        key={user.id}
-                        className="border border-gray-200 rounded-xl p-6"
+                        key={`print-${user.id}`}
+                        className="badge-item-print"
                       >
-                        <div className="text-center">
-                          <h4 className="text-lg font-bold mb-2">
-                            {user.attributes?.name}
-                          </h4>
-                          <p className="text-gray-600 mb-1">
-                            {user.attributes?.organization}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {user.attributes?.user_type}
-                          </p>
-                          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                            <p className="text-xs text-gray-500">
-                              Badge preview would appear here
-                            </p>
-                          </div>
+                        <div>
+                          {renderBadgeTemplate(selectedBadgeTemplate, user)}
+                        </div>
+                        <div className="print-text">
+                          {user.attributes?.name || "Unknown User"}
                         </div>
                       </div>
-                    ) : null;
-                  })}
+                    ))}
+                  </div>
+                </div>
+
+                {/* 🖥️ SCREEN PREVIEW - Visible on screen only */}
+                <div className="screen-preview grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto max-h-[60vh] p-4">
+                  {getSelectedUsersData().map((user, index) => (
+                    <div
+                      style={{ marginBottom: 200 }}
+                      key={user.id}
+                      className="flex flex-col items-center"
+                    >
+                      <div className="text-sm text-gray-500 mb-2 font-medium">
+                        Badge {index + 1}
+                      </div>
+                      <div className="w-64 h-80 transform hover:scale-105 transition-transform duration-200">
+                        {renderBadgeTemplate(selectedBadgeTemplate, user)}
+                      </div>
+                      <div className="mt-2 text-xs text-gray-600 text-center">
+                        {user.attributes?.name || "Unknown User"}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+              {/* Print Button - Will be hidden during printing */}
+              <div className="print-button-container flex border-t border-gray-200 p-4 bg-gray-50">
                 <button
-                  onClick={() => setPreviewModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  onClick={() => window.print()}
+                  className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium rounded-lg"
                 >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => {
-                    // Handle actual printing logic here
-                    toast.success(`Printing ${selectedUsers.size} badges...`);
-                    setPreviewModal(false);
-                  }}
-                  className="flex items-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <Printer size={16} />
-                  Print All
+                  <Printer size={18} />
+                  Print All Selected Badges ({selectedUsers.size})
                 </button>
               </div>
             </div>
@@ -1319,107 +1429,6 @@ function PrintBadges() {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Modal - Updated to show multiple selected badges */}
-      {previewModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh]">
-            <button
-              onClick={() => {
-                setPreviewModal(false);
-                setSelectedUserForPreview(null);
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 bg-white rounded-full p-1"
-            >
-              <X size={24} />
-            </button>
-            <div className="p-8">
-              <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">
-                Badge Preview
-              </h2>
-              <p className="text-center text-gray-600 mb-8">
-                Showing {selectedUsers.size} selected badge
-                {selectedUsers.size !== 1 ? "s" : ""}
-              </p>
-
-              {/* Grid layout for multiple badges */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto max-h-[60vh] p-4">
-                {getSelectedUsersData().map((user, index) => (
-                  <div key={user.id} className="flex flex-col items-center">
-                    <div className="text-sm text-gray-500 mb-2 font-medium">
-                      Badge {index + 1}
-                    </div>
-                    <div className="w-64 h-80 transform hover:scale-105 transition-transform duration-200">
-                      {renderBadgeTemplate(selectedBadgeTemplate, user)}
-                    </div>
-                    <div className="mt-2 text-xs text-gray-600 text-center">
-                      {user.attributes?.name || "Unknown User"}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Print button for selected badges */}
-            <div className="flex border-t border-gray-200 p-4 bg-gray-50">
-              <button
-                onClick={() => {
-                  window.print();
-                }}
-                className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium rounded-lg"
-              >
-                <Printer size={18} />
-                Print All Selected Badges ({selectedUsers.size})
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Single User Preview Modal */}
-      {previewModal && selectedUserForPreview && selectedUsers.size === 0 && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-[90%] max-w-5xl mx-auto relative overflow-hidden">
-            <button
-              onClick={() => {
-                setPreviewModal(false);
-                setSelectedUserForPreview(null);
-              }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10"
-            >
-              <X size={24} />
-            </button>
-            <div className="p-8">
-              <h2 className="text-2xl font-bold mb-8 text-center text-gray-800">
-                Badge Preview
-              </h2>
-              <div className="grid grid-cols-1 gap-8 mb-8">
-                <div className="flex justify-center items-start">
-                  <div className="w-80">
-                    {renderBadgeTemplate(
-                      selectedBadgeTemplate,
-                      selectedUserForPreview
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-            {currentAction === "print" && (
-              <div className="flex border-t border-gray-200 mb-4 mx-4">
-                <button
-                  onClick={() => {
-                    window.print();
-                  }}
-                  className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium"
-                >
-                  <Printer size={18} />
-                  Print Badge
-                </button>
-              </div>
-            )}
           </div>
         </div>
       )}
