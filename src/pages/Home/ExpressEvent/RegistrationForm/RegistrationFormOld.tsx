@@ -26,6 +26,8 @@ import {
   updateEventById,
 } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
+// import AdvacedTicket from "@/components/AdvanceTicket/AdvanceTickt";
+import AdvanceEvent from "../component/AdvanceEvent";
 
 type ToggleStates = {
   confirmationMsg: boolean;
@@ -42,6 +44,7 @@ type ModalProps = {
   isLoading: boolean;
   isLoadingFormData: boolean;
   eventId?: string;
+  plan?: string;
 };
 
 // Modal Component
@@ -53,6 +56,7 @@ const Modal = ({
   isLoading,
   isLoadingFormData,
   eventId,
+  plan,
 }: ModalProps) => {
   if (!selectedTemplate) return null;
 
@@ -244,11 +248,12 @@ const Modal = ({
 };
 
 type RegistrationFormProps = {
-  onNext: (eventId?: string | number) => void; // Updated to accept eventId
+  onNext: (eventId?: string | number, plan: string) => void;
   onPrevious: () => void;
   currentStep: any;
   totalSteps: any;
   eventId?: string;
+  plan?: string;
   toggleStates?: ToggleStates;
   setToggleStates?: React.Dispatch<React.SetStateAction<ToggleStates>>;
 };
@@ -259,8 +264,12 @@ const RegistrationForm = ({
   currentStep,
   totalSteps,
   eventId,
+  plan,
 }: RegistrationFormProps) => {
   const { id: routeId } = useParams();
+  console.log("RegistrationForm - received plan:", plan);
+  console.log("RegistrationForm - plan type:", typeof plan);
+  console.log("RegistrationForm - plan value:", plan);
   const effectiveEventId =
     (routeId as string | undefined) ||
     (eventId as string | undefined) ||
@@ -269,24 +278,31 @@ const RegistrationForm = ({
       : undefined);
 
   console.log("RegistrationForm - effective event id:", effectiveEventId);
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
-  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(null);
-  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(null);
+  const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
+    null
+  );
+  const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(
+    null
+  );
   const [internalStep, setInternalStep] = useState<number>(0);
   const [formData, setFormData] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingFormData, setIsLoadingFormData] = useState(false);
-  const [confirmationToggleStates, setConfirmationToggleStates] = useState<ToggleStates>({
-    confirmationMsg: true,
-    userQRCode: false,
-    location: false,
-    eventDetails: false,
-  });
+  const [confirmationToggleStates, setConfirmationToggleStates] =
+    useState<ToggleStates>({
+      confirmationMsg: true,
+      userQRCode: false,
+      location: false,
+      eventDetails: false,
+    });
 
   const [getTemplatesData, setGetTemplatesData] = useState<any[]>([]);
-  const [selectedTemplateName, setSelectedTemplateName] = useState<string | null>(null);
+  const [selectedTemplateName, setSelectedTemplateName] = useState<
+    string | null
+  >(null);
 
   const getCreateTemplateApiData = async () => {
     try {
@@ -297,14 +313,15 @@ const RegistrationForm = ({
 
       const result = await getRegistrationTemplateData(effectiveEventId);
       const responseData = result?.data?.data;
-      
+
       if (!responseData) {
         console.warn("No data found in response");
         setGetTemplatesData([]);
         return;
       }
 
-      const registrationFields = responseData.attributes?.event_registration_fields?.data || [];
+      const registrationFields =
+        responseData.attributes?.event_registration_fields?.data || [];
       const templateData = registrationFields.map((item: any) => ({
         id: item.id,
         type: item.type,
@@ -466,7 +483,8 @@ const RegistrationForm = ({
         case "template-one":
           templateData = {
             name: "Event Registration Form",
-            description: "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
+            description:
+              "A new guest's registration form designed to streamline the process of collecting personal and contact information from new guests.",
             fields: formData || [],
             templateComponent: "TemplateFormOne",
           };
@@ -516,7 +534,9 @@ const RegistrationForm = ({
       } else if (error.response?.status === 500) {
         toast.error("Server error. Please try again later.");
       } else {
-        toast.error(error.message || "Error adding template. Please try again.");
+        toast.error(
+          error.message || "Error adding template. Please try again."
+        );
       }
     } finally {
       setIsLoading(false);
@@ -527,18 +547,20 @@ const RegistrationForm = ({
     setConfirmationToggleStates(toggleStates);
   };
 
-  // Updated to pass eventId to parent
   const handleConfirmationNext = async () => {
     try {
       setIsLoading(true);
       await updateTheconfirmationDetails();
-      
+
       // Pass the eventId to parent
       if (effectiveEventId && onNext) {
-        console.log('RegistrationForm - Sending eventId to ExpressEvent:', effectiveEventId);
-        onNext(effectiveEventId);
+        console.log(
+          "RegistrationForm - Sending eventId to ExpressEvent:",
+          effectiveEventId
+        );
+        onNext(effectiveEventId, plan); // ADD plan parameter here
       } else {
-        toast.error('Cannot proceed without event ID');
+        toast.error("Cannot proceed without event ID");
       }
     } catch (error) {
       console.error("Failed to update confirmation details:", error);
@@ -575,6 +597,8 @@ const RegistrationForm = ({
     }
   };
 
+  // In RegistrationForm.tsx - UPDATE the handleNextClick function:
+
   const handleNextClick = () => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
@@ -584,7 +608,7 @@ const RegistrationForm = ({
         setInternalStep(1);
       }
     } else {
-      if (onNext) onNext();
+      if (onNext) onNext(effectiveEventId, plan); // ADD parameters here
     }
   };
 
@@ -601,10 +625,22 @@ const RegistrationForm = ({
       throw new Error("Event ID not found");
     }
 
-    formData.append(`event[print_qr]`, String(confirmationToggleStates.userQRCode));
-    formData.append(`event[display_confirmation]`, String(confirmationToggleStates.confirmationMsg));
-    formData.append(`event[display_event_details]`, String(confirmationToggleStates.eventDetails));
-    formData.append(`event[display_location]`, String(confirmationToggleStates.location));
+    formData.append(
+      `event[print_qr]`,
+      String(confirmationToggleStates.userQRCode)
+    );
+    formData.append(
+      `event[display_confirmation]`,
+      String(confirmationToggleStates.confirmationMsg)
+    );
+    formData.append(
+      `event[display_event_details]`,
+      String(confirmationToggleStates.eventDetails)
+    );
+    formData.append(
+      `event[display_location]`,
+      String(confirmationToggleStates.location)
+    );
 
     try {
       const response = await updateEventById(id, formData);
@@ -617,187 +653,210 @@ const RegistrationForm = ({
   };
 
   return (
-    <div className="w-full mx-5 bg-white p-5 rounded-2xl">
-      {/* Header */}
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
-          <ChevronLeft />
-          <p className="text-neutral-900 text-md font-poppins font-normal">
-            Choose a registration form template
-          </p>
-        </div>
-
-        {/* Steps */}
-        <div className="flex items-center gap-2">
-          {/* Step 1 */}
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                ${
-                  isStep1Completed || isStep1Active
-                    ? "border-[#ff0080]"
-                    : "border-gray-200"
-                }
-                ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
-              `}
-            >
-              {isStep1Completed ? (
-                <Check size={18} color="white" />
-              ) : (
-                <p
-                  className={`text-sm font-poppins ${
-                    isStep1Active ? "text-[#ff0080]" : "text-gray-400"
-                  }`}
-                >
-                  01
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Connector */}
-          <div
-            className={`flex-1 h-1 rounded-full ${
-              isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
-            }`}
-          ></div>
-
-          {/* Step 2 */}
-          <div className="flex items-center">
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                ${isStep2Active ? "border-[#ff0080]" : "border-gray-200"}
-              `}
-            >
-              <p
-                className={`text-sm font-poppins ${
-                  isStep2Active ? "text-[#ff0080]" : "text-gray-400"
-                }`}
-              >
-                02
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      {internalStep === 0 ? (
-        <>
-          {/* Loading State for Form Data */}
-          {isLoadingFormData ? (
-            <div className="mt-16 flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
-              <p className="text-slate-600 text-lg font-medium">
-                Loading templates...
-              </p>
-              <p className="text-slate-500 text-sm mt-2">
-                Please wait while we prepare your registration forms
-              </p>
-            </div>
-          ) : (
-            /* Template Grid */
-            <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {templates.map((tpl) => (
-                <div
-                  key={tpl.id}
-                  onClick={() => !isLoadingFormData && handleOpenModal(tpl.id)}
-                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
-                    confirmedTemplate === tpl.id
-                      ? "border-pink-500 bg-pink-50"
-                      : "border-gray-200 hover:border-pink-500"
-                  } ${
-                    isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
-                  }`}
-                >
-                  {/* Render the template preview */}
-                  <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
-                    {isLoadingFormData && (
-                      <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
-                      </div>
-                    )}
-                    <div className="transform scale-[0.15] pointer-events-none">
-                      <div className="w-[1200px]">{tpl.component}</div>
-                    </div>
-                  </div>
-                  {confirmedTemplate === tpl.id && (
-                    <div className="mt-2 flex items-center justify-center">
-                      <Check size={16} className="text-pink-500 mr-1" />
-                      <span className="text-sm text-pink-500 font-medium">
-                        Selected
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        /* Confirmation Step */
-        <div className="mt-8">
-          <ConfirmationDetails
-            selectedTemplateData={selectedTemplateData}
-            onNext={handleConfirmationNext} // This now passes eventId
-            onPrevious={handleConfirmationPrevious}
-            onToggleStatesChange={handleToggleStatesChange}
-            eventId={effectiveEventId}
-          />
-        </div>
-      )}
-
-      {/* Modal - Only show when not in confirmation step */}
-      {isModalOpen && internalStep === 0 && (
-        <Modal
-          formData={formData}
-          selectedTemplate={selectedTemplate}
-          onClose={handleCloseModal}
-          onUseTemplate={handleUseTemplate}
-          isLoading={isLoading}
-          isLoadingFormData={isLoadingFormData}
+    <>
+      {plan === "advanced" ? (
+        <AdvanceEvent
+          onComplete={(eventId) => {
+            console.log(
+              "🔄 Advanced flow completed, moving to main Badge step"
+            );
+            if (onNext) {
+              onNext(eventId, plan);
+            }
+          }}
+          onPrevious={onPrevious}
           eventId={effectiveEventId}
         />
-      )}
+      ) : (
+        <div className="w-full mx-5 bg-white p-5 rounded-2xl">
+          {/* Header */}
+          <div className="flex flex-row justify-between items-center">
+            <div className="flex flex-row gap-2 items-center">
+              <ChevronLeft />
+              <p className="text-neutral-900 text-md font-poppins font-normal">
+                Choose a registration form template
+              </p>
+            </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
-        <button
-          onClick={onPrevious}
-          disabled={isLoading || isLoadingFormData}
-          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50 ${
-            isLoading || isLoadingFormData
-              ? "cursor-not-allowed opacity-50"
-              : ""
-          }`}
-        >
-          ← Previous
-        </button>
+            {/* Steps */}
+            <div className="flex items-center gap-2">
+              {/* Step 1 */}
+              <div className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
+                    ${
+                      isStep1Completed || isStep1Active
+                        ? "border-[#ff0080]"
+                        : "border-gray-200"
+                    }
+                    ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
+                  `}
+                >
+                  {isStep1Completed ? (
+                    <Check size={18} color="white" />
+                  ) : (
+                    <p
+                      className={`text-sm font-poppins ${
+                        isStep1Active ? "text-[#ff0080]" : "text-gray-400"
+                      }`}
+                    >
+                      01
+                    </p>
+                  )}
+                </div>
+              </div>
 
-        <button
-          onClick={internalStep === 1 ? handleConfirmationNext : handleNextClick}
-          disabled={!confirmedTemplate || isLoading || isLoadingFormData}
-          className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center
-            ${
-              !confirmedTemplate || isLoading || isLoadingFormData
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "bg-slate-800 hover:bg-slate-900 text-white"
-            }`}
-        >
-          {isLoading || isLoadingFormData ? (
+              {/* Connector */}
+              <div
+                className={`flex-1 h-1 rounded-full ${
+                  isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
+                }`}
+              ></div>
+
+              {/* Step 2 */}
+              <div className="flex items-center">
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
+                    ${isStep2Active ? "border-[#ff0080]" : "border-gray-200"}
+                  `}
+                >
+                  <p
+                    className={`text-sm font-poppins ${
+                      isStep2Active ? "text-[#ff0080]" : "text-gray-400"
+                    }`}
+                  >
+                    02
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Area */}
+          {internalStep === 0 ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Loading...
+              {/* Loading State for Form Data */}
+              {isLoadingFormData ? (
+                <div className="mt-16 flex flex-col items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
+                  <p className="text-slate-600 text-lg font-medium">
+                    Loading templates...
+                  </p>
+                  <p className="text-slate-500 text-sm mt-2">
+                    Please wait while we prepare your registration forms
+                  </p>
+                </div>
+              ) : (
+                /* Template Grid */
+                <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {templates.map((tpl) => (
+                    <div
+                      key={tpl.id}
+                      onClick={() =>
+                        !isLoadingFormData && handleOpenModal(tpl.id)
+                      }
+                      className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
+                        confirmedTemplate === tpl.id
+                          ? "border-pink-500 bg-pink-50"
+                          : "border-gray-200 hover:border-pink-500"
+                      } ${
+                        isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
+                      }`}
+                    >
+                      {/* Render the template preview */}
+                      <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
+                        {isLoadingFormData && (
+                          <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
+                            <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
+                          </div>
+                        )}
+                        <div className="transform scale-[0.15] pointer-events-none">
+                          <div className="w-[1200px]">{tpl.component}</div>
+                        </div>
+                      </div>
+
+                      {confirmedTemplate === tpl.id && (
+                        <div className="mt-2 flex items-center justify-center">
+                          <Check size={16} className="text-pink-500 mr-1" />
+                          <span className="text-sm text-pink-500 font-medium">
+                            Selected
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
-          ) : confirmedTemplate ? (
-            "Next →"
           ) : (
-            "Configure Template"
+            /* Confirmation Step */
+            <div className="mt-8">
+              <ConfirmationDetails
+                selectedTemplateData={selectedTemplateData}
+                onNext={handleConfirmationNext}
+                onPrevious={handleConfirmationPrevious}
+                onToggleStatesChange={handleToggleStatesChange}
+                eventId={effectiveEventId}
+              />
+            </div>
           )}
-        </button>
-      </div>
-      <ToastContainer />
-    </div>
+
+          {/* Modal - Only show when not in confirmation step */}
+          {isModalOpen && internalStep === 0 && (
+            <Modal
+              formData={formData}
+              selectedTemplate={selectedTemplate}
+              onClose={handleCloseModal}
+              onUseTemplate={handleUseTemplate}
+              isLoading={isLoading}
+              isLoadingFormData={isLoadingFormData}
+              eventId={effectiveEventId}
+            />
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
+            <button
+              onClick={onPrevious}
+              disabled={isLoading || isLoadingFormData}
+              className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50 ${
+                isLoading || isLoadingFormData
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
+            >
+              ← Previous
+            </button>
+
+            <button
+              onClick={
+                internalStep === 1 ? handleConfirmationNext : handleNextClick
+              }
+              disabled={!confirmedTemplate || isLoading || isLoadingFormData}
+              className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center
+                ${
+                  !confirmedTemplate || isLoading || isLoadingFormData
+                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                    : "bg-slate-800 hover:bg-slate-900 text-white"
+                }`}
+            >
+              {isLoading || isLoadingFormData ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Loading...
+                </>
+              ) : confirmedTemplate ? (
+                "Next →"
+              ) : (
+                "Configure Template"
+              )}
+            </button>
+          </div>
+
+          <ToastContainer />
+        </div>
+      )}
+    </>
   );
 };
 

@@ -91,17 +91,17 @@ const PricingModal: React.FC<PricingModalProps> = ({
 
   const handleGetStarted = (plan: any) => {
     console.log(`Get started with plan: ${plan.name}`);
+  
     if (selectedPlan === "express") {
-      console.log("navigating to express-event");
+      console.log("navigating to express-event express");
       navigate("/express-event", { state: { plan: selectedPlan } });
     } else {
-      console.log("navigating to home");
-      navigate("/");
+      console.log("navigating to express event advance");
+      navigate("/express-event", { state: { plan: selectedPlan } });
     }
-
-    // Add your logic here for handling plan selection
     onClose();
   };
+  
 
   return (
     <div className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>

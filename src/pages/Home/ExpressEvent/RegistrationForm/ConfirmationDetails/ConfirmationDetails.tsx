@@ -32,8 +32,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
     (routeId as string | undefined) ||
     localStorage.getItem("create_eventId") ||
     undefined;
-    
-  console.log('ConfirmationDetails - event id:', effectiveEventId);
+
+  console.log("ConfirmationDetails - event id:", effectiveEventId);
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
     confirmationMsg: false,
@@ -91,10 +91,13 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   const handleNextClick = () => {
     if (effectiveEventId && onNext) {
-      console.log('ConfirmationDetails - Sending eventId to parent:', effectiveEventId);
+      console.log(
+        "ConfirmationDetails - Sending eventId to parent:",
+        effectiveEventId
+      );
       onNext(effectiveEventId);
     } else {
-      console.error('ConfirmationDetails - No eventId available to send');
+      console.error("ConfirmationDetails - No eventId available to send");
     }
   };
 

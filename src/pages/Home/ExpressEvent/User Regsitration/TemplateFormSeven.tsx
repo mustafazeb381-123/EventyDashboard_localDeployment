@@ -24,8 +24,8 @@ const TemplateFormSeven = ({
         >
           {!eventData?.attributes?.registration_page_banner && (
             <div className="text-white text-center">
-              <h1 className="text-3xl font-bold">Event Banner</h1>
-              <p className="mt-2 text-lg opacity-90">Template Seven Design</p>
+              {/* <h1 className="text-3xl font-bold">Event Banner</h1>
+              <p className="mt-2 text-lg opacity-90">Template Seven Design</p> */}
             </div>
           )}
         </div>
