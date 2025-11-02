@@ -1,18 +1,22 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import {
     usersForCheckIn,
-    checkInUser,
+    postcheckInEvent,
+    postcheckInArea,
     checkOutUser,
     usersForCheckOutEvent,
     usersForCheckOutAreas,
     bulkCheckInUsers,
     tokenCheckIn,
     tokenCheckOut,
-    checkInUserForArea
+
 } from "@/apis/apiHelpers";
 import { Html5Qrcode } from "html5-qrcode";
+
+import Search from "@/components/Search";
+import Pagination from "@/components/Pagination";
 
 interface GateOnboardingProps {
     gate: {
@@ -56,15 +60,15 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
             try {
                 let response;
-                const gateType = gate?.attributes?.type;
-                const gateToken = gate?.attributes?.gate_token;
 
-                // 👇 Check-IN logic (same for event & area)
                 if (view === "registered_users") {
+                    // ✅ Always fetch check-in users from the same endpoint (event-level)
                     response = await usersForCheckIn(eventId);
-                }
-                // 👇 Check-OUT logic (depends on gate)
-                else {
+                } else {
+                    // ✅ Check-out users depend on gate type
+                    const gateType = gate?.attributes?.type;
+                    const gateToken = gate?.attributes?.gate_token;
+
                     if (gateType === "Event" || !gateToken) {
                         response = await usersForCheckOutEvent(eventId);
                     } else {
@@ -85,6 +89,43 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         fetchUsers();
     }, [gate, view, eventId]);
 
+    const handleCheckinUser = async (userId: string | number, userName?: string) => {
+        if (!eventId) return;
+
+        try {
+            const gateType = gate?.attributes?.type;
+            const gateToken = gate?.attributes?.gate_token;
+
+            if (gate && gateType !== "Event") {
+                if (!gateToken) {
+                    toast.error("Gate token is missing.");
+                    return;
+                }
+
+                // ✅ Area check-in
+                console.log("🚀 Area Check-In Payload:", { eventId, userId, gateToken });
+                const response = await postcheckInArea(eventId, userId, gateToken);
+                console.log("✅ Area Check-In Response:", response);
+
+                toast.success(`${userName || "User"} checked in successfully to ${gateType}!`);
+            } else {
+                // ✅ Event-level check-in
+                console.log("🚀 Event Check-In Payload:", { eventId, userId });
+                const response = await postcheckInEvent(eventId, userId);
+                console.log("✅ Event Check-In Response:", response);
+
+                toast.success(`${userName || "User"} checked in successfully!`);
+            }
+
+            // ✅ Remove user from the UI immediately
+            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
+
+        } catch (err) {
+            console.error("Check-in failed:", err);
+            toast.error("Failed to check in user.");
+        }
+    };
+
 
     // keep selectedUsers only for currently loaded users (remove stale ids)
     useEffect(() => {
@@ -104,34 +145,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             stopCamera();
         };
     }, []);
-
-    // Handle check-in
-    const handleCheckinUser = async (userId: string | number, userName?: string) => {
-        if (!eventId) return;
-
-        try {
-            const gateType = gate?.attributes?.type;
-            const gateToken = gate?.attributes?.gate_token;
-
-            if (gate && gateType !== "Event") {
-                // Area-level check-in
-                await checkInUserForArea(eventId, userId, gateToken);
-                toast.success(`${userName || "User"} checked in successfully to ${gateType}!`);
-            } else {
-                // Event-level check-in
-                await checkInUser(eventId, userId);
-                toast.success(`${userName || "User"} checked in successfully!`);
-            }
-
-            // Remove user from the current list (so the UI updates immediately)
-            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
-
-        } catch (err) {
-            console.error("Check-in failed:", err);
-            toast.error("Failed to check in user.");
-        }
-    };
-
 
     // Handle check-out
     const handleCheckOutUser = async (
@@ -365,20 +378,10 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         );
     });
 
-
     // Pagination logic
     const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
     const startIndex = (currentPage - 1) * usersPerPage;
     const currentUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
-
-    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setSearchTerm(e.target.value);
-        setCurrentPage(1); // reset to first page when searching
-    };
-
-    const goToPage = (page: number) => {
-        if (page >= 1 && page <= totalPages) setCurrentPage(page);
-    };
 
     const formatCheckIn = (checkIn?: string | null) => {
         if (!checkIn) return "N/A";
@@ -398,7 +401,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
         return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
     };
-
 
 
     return (
@@ -531,17 +533,14 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             <h3 className="text-base font-semibold text-gray-800">
                                 {view === "registered_users" ? `Registered Users ${notCheckedInUsers.length}` : `Checked-In Users ${enrolledUsers.length}`}
                             </h3>
-                            {/* ✅ Search box */}
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    placeholder="Search..."
-                                    value={searchTerm}
-                                    onChange={handleSearchChange}
-                                    className="pl-4 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500"
-                                />
-                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                            </div>
+                            <Search
+                                value={searchTerm}
+                                onChange={(val) => {
+                                    setSearchTerm(val);
+                                    setCurrentPage(1); // reset to first page when searching
+                                }}
+                                placeholder="Search users..."
+                            />
                         </div>
 
                         {selectedUsers.length > 0 && (
@@ -650,39 +649,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             </div>
                         )}
 
-                        {/* ✅ Pagination Controls */}
-                        {totalPages > 1 && (
-                            <div className="flex justify-end items-center gap-2 mt-4">
-                                <button
-                                    onClick={() => goToPage(currentPage - 1)}
-                                    disabled={currentPage === 1}
-                                    className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50"
-                                >
-                                    Prev
-                                </button>
-
-                                {[...Array(totalPages)].map((_, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => goToPage(i + 1)}
-                                        className={`px-3 py-1 rounded-md text-sm ${currentPage === i + 1
-                                            ? "bg-blue-600 text-white"
-                                            : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-                                            }`}
-                                    >
-                                        {i + 1}
-                                    </button>
-                                ))}
-
-                                <button
-                                    onClick={() => goToPage(currentPage + 1)}
-                                    disabled={currentPage === totalPages}
-                                    className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50"
-                                >
-                                    Next
-                                </button>
-                            </div>
-                        )}
+                        <Pagination
+                            currentPage={currentPage}
+                            totalPages={totalPages}
+                            onPageChange={setCurrentPage}
+                        />
 
                     </div>
                 </div>

@@ -8,7 +8,10 @@ import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
 import { resetCheckInOutStatus } from "@/apis/apiHelpers";
 
-import { Trash2, Mail, Plus, Edit, Search, RotateCcw } from "lucide-react";
+import Pagination from "@/components/Pagination";
+import Search from "@/components/Search";
+
+import { Trash2, Mail, Plus, Edit, RotateCcw } from "lucide-react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -48,20 +51,6 @@ function RegisterdUser() {
     }
   }, [eventUsers, eventId]);
 
-
-  const getPaginationNumbers = () => {
-    let pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
-
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
-  };
 
   const [editForm, setEditForm] = useState({
     image: "",
@@ -155,11 +144,10 @@ function RegisterdUser() {
     }
   };
 
-
   const handleUpdateUser = async () => {
     if (!eventId || !editingUser) return;
 
-    setIsUpdating(true); // start loading
+    setIsUpdating(true);
 
     try {
       const formData = new FormData();
@@ -170,6 +158,9 @@ function RegisterdUser() {
       if (editForm.email) formData.append("event_user[email]", editForm.email);
       if (editForm.position) formData.append("event_user[position]", editForm.position);
       if (editForm.organization) formData.append("event_user[organization]", editForm.organization);
+
+      // ✅ Add user_type
+      if (editForm.user_type) formData.append("event_user[user_type]", editForm.user_type);
 
       // Append image if provided
       if (selectedImageFile) formData.append("event_user[image]", selectedImageFile);
@@ -186,10 +177,10 @@ function RegisterdUser() {
               ...u,
               attributes: {
                 ...u.attributes,
-                ...editForm, // only text fields
+                ...editForm, // includes user_type now
                 image: updatedUser?.attributes?.image
                   ? `${updatedUser.attributes.image}?t=${Date.now()}`
-                  : u.attributes.image, // only update for this user
+                  : u.attributes.image,
                 updated_at: new Date().toISOString(),
               },
             }
@@ -199,12 +190,12 @@ function RegisterdUser() {
 
       toast.success("User updated successfully!");
       setEditingUser(null);
-      setSelectedImageFile(null); // reset file input
+      setSelectedImageFile(null);
     } catch (error) {
       console.error("Error updating user:", error);
       toast.error("Failed to update user. Please try again.");
     } finally {
-      setIsUpdating(false); // stop loading
+      setIsUpdating(false);
     }
   };
 
@@ -460,13 +451,13 @@ function RegisterdUser() {
 
         <div className="flex justify-between mb-4">
           <div className="relative w-1/3">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Search users..."
+            <Search
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(val) => {
+                setSearchTerm(val);
+                setCurrentPage(1); // reset to first page when searching
+              }}
+              placeholder="Search users..."
             />
           </div>
           <div>
@@ -624,37 +615,12 @@ function RegisterdUser() {
                 </tbody>
               </table>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-end px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded-lg text-sm ${currentPage === 1 ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                  >
-                    Previous
-                  </button>
-                  {getPaginationNumbers().map((page) => (
-                    <button
-                      key={page}
-                      onClick={() => handlePageChange(page)}
-                      className={`px-3 py-1 rounded-lg text-sm ${page === currentPage ? "bg-blue-600 text-white" : "text-gray-700 hover:bg-gray-100"
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded-lg text-sm ${currentPage === totalPages ? "text-gray-400 cursor-not-allowed" : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="m-2"
+              />
 
             </>
           )}
