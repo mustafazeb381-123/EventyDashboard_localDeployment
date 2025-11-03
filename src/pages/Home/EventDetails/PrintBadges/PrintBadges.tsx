@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Printer,
+  Printer, // Printer icon is kept but print functionality removed
   Eye,
   Trash2,
   MoreVertical,
@@ -22,115 +22,18 @@ import { deleteEventUser, getBadgeApi, getEventUsers } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import QRCode from "react-qr-code";
+// CardHeader and CardHeader2 are retained for the header SVG pattern as seen in screenshot
 import {
   CardFooter,
   CardFooter2,
   CardHeader,
   CardHeader2,
 } from "../../ExpressEvent/Badges/Badges";
+import { Button } from "@/components/ui/button";
 
-const printStyles = `
-  /* SCREEN STYLES - Position off-screen but keep rendered */
-  .print-container {
-    position: absolute;
-    left: -9999px;
-    top: -9999px;
-    opacity: 0;
-    pointer-events: none;
-    z-index: -1;
-  }
+import domtoimage from "dom-to-image-more";
+import jsPDF from "jspdf";
 
-  .screen-preview {
-    display: block;
-  }
-
-  /* PRINT STYLES */
-  @media print {
-    @page {
-      margin: 0.5in;
-      size: letter;
-    }
-    
-    body {
-      margin: 0;
-      padding: 0;
-      background: white !important;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    
-    /* Hide screen preview during print */
-    .screen-preview {
-      display: none !important;
-    }
-    
-    /* Hide ONLY the print button during print */
-    .print-button-container {
-      display: none !important;
-    }
-    
-    /* Show print container */
-    .print-container {
-      position: static !important;
-      left: auto !important;
-      top: auto !important;
-      opacity: 1 !important;
-      pointer-events: auto !important;
-      z-index: auto !important;
-      display: block !important;
-    }
-    
-    /* Badge grid - 2x2 layout */
-    .badge-grid-print {
-      display: grid !important;
-      grid-template-columns: repeat(2, 1fr) !important;
-      gap: 0.4in !important;
-      width: 100% !important;
-      padding: 0.25in;
-    }
-    
-    /* Badge container */
-    .badge-item-print {
-      width: 100% !important;
-      height: auto !important;
-      page-break-inside: avoid;
-      break-inside: avoid;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: flex-start !important;
-    }
-    
-    /* Badge sizing - FIXES OVERLAPPING */
-    .badge-item-print > div:first-child {
-      width: 2.5in !important;
-      height: 3.5in !important;
-      max-width: 2.5in !important;
-      max-height: 3.5in !important;
-      box-shadow: none !important;
-      border: 1px solid #ddd !important;
-    }
-    
-    .print-text {
-      font-size: 9px !important;
-      color: black !important;
-      margin-top: 6px !important;
-      text-align: center;
-    }
-    
-    /* Page breaks every 4 badges */
-    .badge-item-print:nth-child(4n) {
-      page-break-after: always;
-    }
-    
-    * {
-      -webkit-print-color-adjust: exact !important;
-      print-color-adjust: exact !important;
-    }
-  }
-`;
-
-// Badge Template Components
 interface BadgeTemplateProps {
   user: any;
   event: any;
@@ -151,14 +54,18 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
   qrImage,
 }) => (
   <div
-    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    className="flex flex-col w-full rounded-xl overflow-hidden"
     style={{
       backgroundColor: badgeColors.backgroundColor,
+      border: "none", // Corrected syntax: Removed !important from inline style
+      outline: "none", // Corrected syntax
+      boxShadow: "none", // Corrected syntax
+      // 'stroke' is an SVG attribute, not a CSS property for a div. Removed if present.
     }}
   >
     <div
       className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ height: "33%" }}
+      style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
     >
       <div className="absolute inset-0">
         <CardHeader color={badgeColors.headerColor} />
@@ -169,24 +76,31 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
             src={event.attributes.logo_url}
             alt="Logo"
             className="w-4 h-4 mb-3"
+            style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
           />
         )}
         <h6 className="font-semibold mb-3 text-white text-xs">
           {event?.attributes?.name || "Company Name"}
         </h6>
       </div>
-      <div className="relative z-10 flex justify-center">
+    </div>
+    <div className="flex flex-1 flex-col justify-center items-center">
+      <div className="relative z-10 flex justify-center mt-2">
         <QRCode
           value={user?.attributes?.token || "user-token"}
-          size={120}
+          size={80}
           level="H"
           fgColor="#1f2937"
           bgColor="#ffffff"
+          margin={0} // Ensure no quiet zone margin
         />
       </div>
-    </div>
-    <div className="flex flex-1 flex-col justify-center items-center">
-      <div className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 overflow-hidden">
+      <div
+        className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 mt-4 overflow-hidden"
+        style={{ border: "none", outline: "none", boxShadow: "none" }}
+      >
+        {" "}
+        {/* Ensure avatar container has no border */}
         <UserAvatar user={user} />
       </div>
       <h2 className="text-xs font-bold text-gray-900 mt-1">
@@ -197,9 +111,10 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
       </p>
     </div>
 
+    {/* Footer section: Now a plain div with background color, no SVG */}
     <div
-      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
-      style={{ height: "15%" }}
+      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
+      style={{ minHeight: "75px" }}
     >
       <div className="absolute inset-0">
         <CardFooter color={badgeColors.footerColor} />
@@ -216,14 +131,17 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
   qrImage,
 }) => (
   <div
-    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    className="flex flex-col w-full rounded-xl overflow-hidden"
     style={{
       backgroundColor: badgeColors.backgroundColor,
+      border: "none", // Corrected syntax
+      outline: "none", // Corrected syntax
+      boxShadow: "none", // Corrected syntax
     }}
   >
     <div
       className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ height: "33%" }}
+      style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
     >
       <div className="absolute inset-0">
         <CardHeader color={badgeColors.headerColor} />
@@ -231,7 +149,12 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
     </div>
     <div className="flex flex-1 flex-col justify-evenly items-center">
       <div className="text-center">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden">
+        <div
+          className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden"
+          style={{ border: "none", outline: "none", boxShadow: "none" }}
+        >
+          {" "}
+          {/* Ensure avatar container has no border */}
           <UserAvatar user={user} />
         </div>
         <h2 className="text-xs font-bold text-gray-900">
@@ -247,6 +170,7 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
             src={event.attributes.logo_url}
             alt="Logo"
             className="w-4 h-4 mb-3"
+            style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
           />
         )}
         <h6 className="font-semibold mb-3 text-black text-xs">
@@ -254,18 +178,20 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
         </h6>
       </div>
     </div>
-    <div className="relative z-10 flex justify-center">
+    <div className="relative z-10 flex justify-center mb-2">
       <QRCode
         value={user?.attributes?.token || "user-token"}
-        size={120}
+        size={80}
         level="H"
         fgColor="#1f2937"
         bgColor="#ffffff"
+        margin={0} // Ensure no quiet zone margin
       />
     </div>
+    {/* Footer section: Now a plain div with background color, no SVG */}
     <div
-      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
-      style={{ height: "15%" }}
+      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
+      style={{ minHeight: "75px" }}
     >
       <div className="absolute inset-0">
         <CardFooter color={badgeColors.footerColor} />
@@ -281,25 +207,41 @@ const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
   badgeColors,
   qrImage,
 }) => {
-  console.log("User in BadgeTemplate3:", user);
-
   return (
     <div
-      className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+      className="flex flex-col w-full rounded-xl overflow-hidden"
       style={{
         backgroundColor: badgeColors.backgroundColor,
+        border: "none", // Corrected syntax
+        outline: "none", // Corrected syntax
+        boxShadow: "none", // Corrected syntax
       }}
     >
       <div
         className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-        style={{ height: "33%" }}
+        style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
       >
         <div className="absolute inset-0">
           <CardHeader2 color={badgeColors.headerColor} />
         </div>
       </div>
       <div className="flex mb-2 flex-col items-center">
-        <div className="rounded-full w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 overflow-hidden">
+        <div className="relative z-10 flex justify-center mt-2">
+          <QRCode
+            value={user?.attributes?.token || "user-token"}
+            size={80}
+            level="H"
+            fgColor="#1f2937"
+            bgColor="#ffffff"
+            margin={0} // Ensure no quiet zone margin
+          />
+        </div>
+        <div
+          className="rounded-full w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 mt-4 overflow-hidden"
+          style={{ border: "none", outline: "none", boxShadow: "none" }}
+        >
+          {" "}
+          {/* Ensure avatar container has no border */}
           <UserAvatar user={user} />
         </div>
 
@@ -310,21 +252,14 @@ const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
           {user?.attributes?.organization || "User Title"}
         </p>
       </div>
-      <div className="relative z-10 flex justify-center">
-        <QRCode
-          value={user?.attributes?.token || "user-token"}
-          size={120}
-          level="H"
-          fgColor="#1f2937"
-          bgColor="#ffffff"
-        />
-      </div>
+
+      {/* Footer section: Now a plain div with background color, no SVG */}
       <div
-        className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
-        style={{ height: "15%" }}
+        className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
+        style={{ minHeight: "75px" }}
       >
         <div className="absolute inset-0">
-          <CardFooter2 color={badgeColors.footerColor} />
+          <CardHeader2 color={badgeColors.footerColor} />
         </div>
       </div>
     </div>
@@ -339,14 +274,17 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
   qrImage,
 }) => (
   <div
-    className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
+    className="flex flex-col w-full rounded-xl overflow-hidden"
     style={{
       backgroundColor: badgeColors.backgroundColor,
+      border: "none", // Corrected syntax
+      outline: "none", // Corrected syntax
+      boxShadow: "none", // Corrected syntax
     }}
   >
     <div
       className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ height: "33%" }}
+      style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
     >
       <div className="absolute inset-0">
         <CardHeader2 color={badgeColors.headerColor} />
@@ -354,7 +292,12 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
     </div>
     <div className="flex flex-1 flex-col justify-evenly items-center">
       <div className="text-center">
-        <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden">
+        <div
+          className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden"
+          style={{ border: "none", outline: "none", boxShadow: "none" }}
+        >
+          {" "}
+          {/* Ensure avatar container has no border */}
           <UserAvatar user={user} />
         </div>
         <h2 className="text-xs font-bold text-gray-900">
@@ -370,25 +313,28 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
             src={event.attributes.logo_url}
             alt="Logo"
             className="w-4 h-4 mb-3"
+            style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
           />
         )}
         <h6 className="font-semibold mb-3 text-black text-xs">
           {event?.attributes?.name || "Company Name"}
         </h6>
       </div>
-      <div className="relative z-10 flex justify-center">
+      <div className="relative z-10 flex justify-center mb-2">
         <QRCode
           value={user?.attributes?.token || "user-token"}
-          size={120}
+          size={80}
           level="H"
           fgColor="#1f2937"
           bgColor="#ffffff"
+          margin={0} // Ensure no quiet zone margin
         />
       </div>
     </div>
+    {/* Footer section: Now a plain div with background color, no SVG */}
     <div
-      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl overflow-hidden py-2"
-      style={{ height: "15%" }}
+      className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
+      style={{ minHeight: "75px" }}
     >
       <div className="absolute inset-0">
         <CardFooter2 color={badgeColors.footerColor} />
@@ -397,7 +343,10 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
   </div>
 );
 
-// UserAvatar Component
+/* ---------------------------
+   User Avatar & helper components
+   --------------------------- */
+
 const UserAvatar = ({ user }: { user: any }) => {
   const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
   const userName = user?.attributes?.name || "User";
@@ -408,6 +357,7 @@ const UserAvatar = ({ user }: { user: any }) => {
         src={imageUrl}
         alt={userName}
         className="w-full h-full object-cover"
+        style={{ border: "none", outline: "none", boxShadow: "none" }} // Add for avatar images
       />
     );
   }
@@ -420,37 +370,40 @@ const UserAvatar = ({ user }: { user: any }) => {
     .slice(0, 2);
 
   return (
-    <div className="w-full h-full flex items-center justify-center text-white font-semibold text-sm">
+    <div
+      className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
+      style={{ border: "none", outline: "none", boxShadow: "none" }}
+    >
+      {" "}
+      {/* Add for avatar initials div */}
       {initials}
     </div>
   );
 };
 
-// Main Component
+/* ---------------------------
+   Main Component
+   --------------------------- */
+
 function PrintBadges() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activePopup, setActivePopup] = useState(null);
-  const [selectedUsers, setSelectedUsers] = useState(new Set());
+  const [activePopup, setActivePopup] = useState<any>(null);
+  const [selectedUsers, setSelectedUsers] = useState(new Set<any>());
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
-  const [showPrintModal, setShowPrintModal] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [previewModal, setPreviewModal] = useState(false);
+  const [showBadgePreviewModal, setShowBadgePreviewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserForPreview, setSelectedUserForPreview] =
     useState<any>(null);
-  console.log("select user preview-----+++--------", selectedUserForPreview);
   const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<number>(1);
   const [eventData, setEventData] = useState<any>(null);
-  const [currentAction, setCurrentAction] = useState(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
-  console.log("user to delete-------", userToDelete);
 
-  // 🟢 New state for badge colors and QR image
   const [badgeColors, setBadgeColors] = useState({
     headerColor: "#4D4D4D",
     footerColor: "#4D4D4D",
@@ -460,15 +413,15 @@ function PrintBadges() {
 
   const rowsPerPage = 8;
 
+  const badgeRefs = useRef({});
+
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const idFromQuery = searchParams.get("eventId");
     setEventId(idFromQuery);
 
-    // 🟢 Load badge data from localStorage
     const savedBadgeId = localStorage.getItem("active_badge_id");
     const savedQrImage = localStorage.getItem("badge_qr_image");
-    console.log("saved qr image", savedQrImage);
     const savedHeaderColor = localStorage.getItem("badge_header_color");
     const savedFooterColor = localStorage.getItem("badge_footer_color");
     const savedBgColor = localStorage.getItem("badge_background_color");
@@ -498,14 +451,10 @@ function PrintBadges() {
     try {
       const response = await getEventUsers(id);
       const users = response.data.data || response.data || [];
-      console.log("get event user respose api", users);
       const usersWithPrintStatus = users.map((user: any) => ({
         ...user,
         printStatus: "Pending",
         printedAt: null,
-        // token: `TK${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
-        phone: "+1 (555) 123-4567",
-        department: "General",
       }));
 
       setUsers(usersWithPrintStatus);
@@ -520,17 +469,12 @@ function PrintBadges() {
   const fetchEventData = async (id: string) => {
     try {
       const response = await getBadgeApi(id);
-      console.log(
-        "bage get api++++++++++++:::::::;;;;;",
-        response?.data?.data?.attributes?.name
-      );
       setEventData(response?.data?.data);
     } catch (error) {
       console.error("Error fetching event data:", error);
     }
   };
 
-  // Filter and search logic
   const filteredUsers = eventUsers.filter((user) => {
     const matchesSearch =
       user.attributes?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -555,7 +499,6 @@ function PrintBadges() {
     startIndex + rowsPerPage
   );
 
-  // Get selected users data
   const getSelectedUsersData = () => {
     return eventUsers.filter((user) => selectedUsers.has(user.id));
   };
@@ -565,27 +508,18 @@ function PrintBadges() {
   };
 
   const handleAction = async (action: any, userId: any) => {
-    console.log("buton is clieckt --------");
     setIsLoading(true);
-    setCurrentAction(action);
 
-    console.log(`${action} clicked for user ${userId}`);
-
-    // Find the user first - this was missing for the delete case
     const user = eventUsers.find((u) => u.id === userId);
-    console.log("Found user for action:", user);
 
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     if (action === "preview") {
       setSelectedUserForPreview(user);
-      setPreviewModal(true);
+      setShowBadgePreviewModal(true);
     } else if (action === "delete") {
-      setUserToDelete(user); // ✅ Now user is defined
+      setUserToDelete(user);
       setShowDeleteModal(true);
-    } else if (action === "print") {
-      setSelectedUserForPreview(user);
-      setPreviewModal(true);
     }
 
     setActivePopup(null);
@@ -610,26 +544,7 @@ function PrintBadges() {
     }
   };
 
-  const getUserTypeColor = (type) => {
-    const colors = {
-      Speaker: "bg-purple-100 text-purple-800 border-purple-200",
-      Attendee: "bg-blue-100 text-blue-800 border-blue-200",
-      VIP: "bg-yellow-100 text-yellow-800 border-yellow-200",
-      Media: "bg-pink-100 text-pink-800 border-pink-200",
-      Sponsor: "bg-green-100 text-green-800 border-green-200",
-      Government: "bg-indigo-100 text-indigo-800 border-indigo-200",
-      Academic: "bg-teal-100 text-teal-800 border-teal-200",
-      NGO: "bg-orange-100 text-orange-800 border-orange-200",
-      Investor: "bg-emerald-100 text-emerald-800 border-emerald-200",
-      Consultant: "bg-cyan-100 text-cyan-800 border-cyan-200",
-      Partner: "bg-violet-100 text-violet-800 border-violet-200",
-      Analyst: "bg-rose-100 text-rose-800 border-rose-200",
-    };
-    return colors[type] || "bg-gray-100 text-gray-800 border-gray-200";
-  };
-
   const getStatusIcon = (status) => {
-    console.log("statuesssssssssss", status);
     switch (status) {
       case "Printed":
         return <CheckCircle size={14} className="text-green-600" />;
@@ -653,36 +568,6 @@ function PrintBadges() {
       default:
         return "bg-gray-50 text-gray-700 border-gray-200";
     }
-  };
-
-  const handlePrintSelected = () => {
-    if (selectedUsers.size === 0) {
-      toast.warning("Please select at least one user to print");
-      return;
-    }
-    setShowPrintModal(true);
-  };
-
-  const handlePrintConfirm = () => {
-    setUsers((prev) =>
-      prev.map((user) =>
-        selectedUsers.has(user.id)
-          ? {
-              ...user,
-              printStatus: "Printed",
-              printedAt: new Date().toISOString(),
-            }
-          : user
-      )
-    );
-
-    toast.success(
-      `Successfully printed ${selectedUsers.size} badge${
-        selectedUsers.size !== 1 ? "s" : ""
-      }`
-    );
-    setShowPrintModal(false);
-    setSelectedUsers(new Set());
   };
 
   const formatDate = (dateString: string) => {
@@ -709,6 +594,7 @@ function PrintBadges() {
           src={imageUrl}
           alt={userName}
           className="w-10 h-10 rounded-full object-cover"
+          style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
         />
       );
     }
@@ -721,15 +607,15 @@ function PrintBadges() {
       .slice(0, 2);
 
     return (
-      <div className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+      <div
+        className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+        style={{ border: "none", outline: "none", boxShadow: "none" }}
+      >
+        {" "}
+        {/* Ensure avatar initials div has no border */}
         {initials}
       </div>
     );
-  };
-
-  const generateQRCodeData = (user) => {
-    console.log("token------", user);
-    return user?.attributes?.token;
   };
 
   useEffect(() => {
@@ -767,13 +653,6 @@ function PrintBadges() {
   };
 
   const renderBadgeTemplate = (badgeType: number, user: any) => {
-    console.log("🔹 renderBadgeTemplate called");
-    console.log("➡️ badgeType:", badgeType);
-    console.log("👤 user:", user);
-    console.log("📅 eventData:", eventData);
-    console.log("🎨 badgeColors:", badgeColors);
-    console.log("📱 qrImage:", qrImage);
-
     switch (badgeType) {
       case 1:
         return (
@@ -829,10 +708,6 @@ function PrintBadges() {
   };
 
   const handleDelete = async (user) => {
-    console.log("Delete button clicked");
-    console.log("User to delete:", user);
-    console.log("Event ID:", eventId);
-
     if (!userToDelete || !eventId) {
       console.error("Missing user or event ID for deletion");
       toast.error("Cannot delete user: Missing information");
@@ -840,9 +715,8 @@ function PrintBadges() {
     }
 
     try {
-      const response = await deleteEventUser(eventId, userToDelete?.id);
-      console.log("response-----------", response);
-      setUsers((prev) => prev.filter((user) => user.id !== userToDelete.id));
+      await deleteEventUser(eventId, userToDelete?.id);
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
       toast.success("User deleted successfully");
       setSelectedUsers((prev) => {
         const newSelected = new Set(prev);
@@ -865,10 +739,159 @@ function PrintBadges() {
     setUserToDelete(null);
   };
 
+  const usersInPreviewModal = selectedUserForPreview
+    ? [selectedUserForPreview]
+    : getSelectedUsersData();
+
+  /* ---------------------------
+     PDF Export Functionality: Each badge on a new page
+     --------------------------- */
+  const downloadPdf = async () => {
+    if (usersInPreviewModal.length === 0) {
+      toast.warning("No badges to generate for PDF.");
+      return;
+    }
+
+    try {
+      toast.info("Preparing PDF...");
+      const pdf = new jsPDF({
+        orientation: "p",
+        unit: "pt",
+        format: "a4",
+      });
+
+      // Use a higher scale for better resolution, but keep it within reasonable limits.
+      // A scale of 3-4 is often good for PDF conversion.
+      const scale = Math.max(3, window.devicePixelRatio || 1);
+
+      for (let i = 0; i < usersInPreviewModal.length; i++) {
+        const user = usersInPreviewModal[i];
+        const badgeNode = badgeRefs.current[user.id];
+
+        if (!badgeNode) {
+          console.warn(`Badge node for user ${user.id} not found. Skipping.`);
+          continue;
+        }
+
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        const dataUrl = await domtoimage.toPng(badgeNode, {
+          width: badgeNode.offsetWidth * scale,
+          height: badgeNode.offsetHeight * scale,
+          style: {
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            width: `${badgeNode.offsetWidth}px`,
+            height: `${badgeNode.offsetHeight}px`,
+            border: "none",
+            outline: "none",
+            boxShadow: "none",
+            margin: "0",
+            padding: "0",
+          },
+          cacheBust: true,
+          filter: (node) => {
+            // Filter function to clean up nodes before cloning
+            return true;
+          },
+          // Aggressively remove all potential borders/lines from the cloned DOM
+          onclone: (clonedBadgeElement) => {
+            // Access the document object via ownerDocument
+            const doc = clonedBadgeElement.ownerDocument;
+
+            // Remove any existing injected styles to start fresh
+            const existingStyles = doc.head.querySelectorAll(
+              "style[data-badge-style]"
+            );
+            existingStyles.forEach((s) => s.remove());
+
+            const style = doc.createElement("style");
+            style.setAttribute("data-badge-style", "true"); // Mark our injected styles
+            style.textContent = `
+              /* General aggressive reset for all elements */
+              * { 
+                background-clip: padding-box !important;
+              }
+              body, html, div {
+                margin: 0 !important; 
+                padding: 0 !important;
+              }
+              svg, svg * { 
+                stroke: none !important; 
+                vector-effect: non-scaling-stroke !important;
+                shape-rendering: crispEdges !important;
+                fill-opacity: 1 !important;
+                stroke-opacity: 1 !important;
+                stroke-width: 0 !important;
+              }
+              img { 
+              }
+              h1, h2, h3, h4, h5, h6, p, span, div {
+                 border: none !important; 
+                 outline: none !important; 
+                 box-shadow: none !important;
+              }
+              svg[role="img"], svg[viewBox] {
+                border: none !important;
+                outline: none !important;
+              }
+            `;
+            doc.head.appendChild(style);
+
+            // Also directly modify the cloned element's style
+            clonedBadgeElement.style.border = "none";
+            clonedBadgeElement.style.outline = "none";
+            clonedBadgeElement.style.boxShadow = "none";
+
+            // Target all child elements and force remove borders
+            const allElements = clonedBadgeElement.querySelectorAll("*");
+            allElements.forEach((el) => {
+              el.style.border = "none";
+              el.style.outline = "none";
+              el.style.boxShadow = "none";
+            });
+          },
+        });
+
+        const img = new Image();
+        img.src = dataUrl;
+        await new Promise((res) => (img.onload = res));
+
+        const imgWidthPx = img.width;
+        const imgHeightPx = img.height;
+
+        const pdfPageWidth = pdf.internal.pageSize.getWidth();
+        const pdfPageHeight = pdf.internal.pageSize.getHeight();
+
+        const margin = 36;
+        const targetWidth = pdfPageWidth - 2 * margin;
+        const targetHeight = pdfPageHeight - 2 * margin;
+
+        const widthScale = targetWidth / imgWidthPx;
+        const heightScale = targetHeight / imgHeightPx;
+        const scaleFactor = Math.min(widthScale, heightScale);
+
+        const finalImgWidthPt = imgWidthPx * scaleFactor;
+        const finalImgHeightPt = imgHeightPx * scaleFactor;
+
+        const x = (pdfPageWidth - finalImgWidthPt) / 2;
+        const y = (pdfPageHeight - finalImgHeightPt) / 2;
+
+        pdf.addImage(dataUrl, "PNG", x, y, finalImgWidthPt, finalImgHeightPt);
+      }
+
+      pdf.save(`badges-${new Date().toISOString().slice(0, 19)}.pdf`);
+      toast.success("PDF ready - download started");
+    } catch (err) {
+      console.error("PDF generation failed", err);
+      toast.error("Failed to create PDF. Check console for details.");
+    }
+  };
+
   return (
     <>
-      <style>{printStyles}</style>
-
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
         <ToastContainer
           position="top-right"
@@ -891,7 +914,7 @@ function PrintBadges() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                  Print Badges
+                  Manage Badges
                 </h1>
                 <p className="text-gray-600 mt-1">
                   {filteredUsers.length} users • {selectedUsers.size} selected
@@ -905,30 +928,16 @@ function PrintBadges() {
               <button
                 onClick={() => {
                   if (selectedUsers.size === 0) {
-                    toast.warning("Please select at least one user to print");
+                    toast.warning("Please select at least one user to preview");
                     return;
                   }
-                  // Open preview modal for selected users
-                  setPreviewModal(true);
+                  setSelectedUserForPreview(null);
+                  setShowBadgePreviewModal(true);
                 }}
                 disabled={selectedUsers.size === 0}
                 className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium shadow-lg shadow-indigo-600/25 hover:shadow-xl hover:shadow-indigo-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
               >
-                <Printer size={18} />
-                Print Selected ({selectedUsers.size})
-              </button>
-              <button
-                onClick={() => {
-                  if (selectedUsers.size === 0) {
-                    toast.warning("Please select at least one user to preview");
-                    return;
-                  }
-                  setPreviewModal(true);
-                }}
-                disabled={selectedUsers.size === 0}
-                className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Eye size={16} />
+                <Eye size={18} />
                 Preview Selected ({selectedUsers.size})
               </button>
               <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
@@ -937,8 +946,6 @@ function PrintBadges() {
               </button>
             </div>
           </div>
-
-          {/* Filters and Search */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 mb-6 p-6">
             <div className="flex flex-col lg:flex-row gap-4">
               <div className="relative flex-1">
@@ -999,10 +1006,10 @@ function PrintBadges() {
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    <th className="text-left p-4 text-xs font-semibold text-gray:600 uppercase tracking-wider">
                       Type
                     </th>
-                    <th className="text-left p-4 text-xs font-semibold text-gray:600 uppercase tracking-wider">
+                    <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Organization
                     </th>
                     <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -1072,11 +1079,8 @@ function PrintBadges() {
                           </div>
                         </td>
                         <td className="p-4">
-                          <span
-                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getUserTypeColor(
-                              user.attributes?.user_type || "Attendee"
-                            )}`}
-                          >
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
+                            {user.attributes?.user_type || "Attendee"}
                             {user.attributes?.user_type || "Attendee"}
                           </span>
                         </td>
@@ -1110,7 +1114,6 @@ function PrintBadges() {
                           </div>
                         </td>
                         <td className="p-4 relative">
-                          {/* Three dots button - visible on row hover */}
                           <button
                             onClick={() => handleActionClick(user.id)}
                             className="p-2 bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:bg-gray-200"
@@ -1119,7 +1122,6 @@ function PrintBadges() {
                             <MoreVertical size={16} className="text-gray-600" />
                           </button>
 
-                          {/* Popup appears when clicked */}
                           {activePopup === user.id && (
                             <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px]">
                               <div className="py-2">
@@ -1131,18 +1133,10 @@ function PrintBadges() {
                                   onClick={() =>
                                     handleAction("preview", user.id)
                                   }
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
                                 >
-                                  <Eye size={16} className="text-blue-600" />
+                                  <Eye size={16} />
                                   Preview Badge
-                                </button>
-
-                                <button
-                                  onClick={() => handleAction("print", user.id)}
-                                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-indigo-600 hover:bg-indigo-50 transition-colors"
-                                >
-                                  <Printer size={16} />
-                                  Print Badge
                                 </button>
 
                                 <button
@@ -1180,7 +1174,7 @@ function PrintBadges() {
                   className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
                     currentPage === 1
                       ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-200"
                   }`}
                 >
                   <ChevronLeft size={16} />
@@ -1199,7 +1193,7 @@ function PrintBadges() {
                           ? "bg-indigo-600 text-white shadow-sm"
                           : page === "..."
                           ? "text-gray-400 cursor-default"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-200"
                       }`}
                       disabled={page === "..."}
                     >
@@ -1216,7 +1210,7 @@ function PrintBadges() {
                   className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
                     currentPage === totalPages
                       ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-200"
                   }`}
                 >
                   Next
@@ -1227,211 +1221,75 @@ function PrintBadges() {
           </div>
         </div>
 
-        {/* Preview Modal */}
-        {previewModal && (
+        {showBadgePreviewModal && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh]">
-              {/* Close Button */}
+            <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh] flex flex-col">
               <button
                 onClick={() => {
-                  setPreviewModal(false);
+                  setShowBadgePreviewModal(false);
                   setSelectedUserForPreview(null);
+                  badgeRefs.current = {};
                 }}
                 className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors z-10 bg-white rounded-full p-1"
               >
                 <X size={24} />
               </button>
 
-              <div className="p-8">
+              <div className="absolute left-6 top-4 z-20">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={downloadPdf}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow"
+                  >
+                    <Download size={16} />
+                    Download PDF
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 flex-1 overflow-y-auto">
                 <h2 className="text-2xl font-bold mb-2 text-center text-gray-800">
                   Badge Preview
                 </h2>
                 <p className="text-center text-gray-600 mb-8">
-                  Showing {selectedUsers.size} selected badge
-                  {selectedUsers.size !== 1 ? "s" : ""}
+                  {selectedUserForPreview
+                    ? `Showing badge for ${
+                        selectedUserForPreview.attributes?.name ||
+                        "selected user"
+                      }`
+                    : `Showing ${usersInPreviewModal.length} selected badge${
+                        usersInPreviewModal.length !== 1 ? "s" : ""
+                      }`}
                 </p>
 
-                {/* 🎯 PRINT CONTAINER - Always rendered, positioned off-screen */}
-                <div className="print-container">
-                  <div className="badge-grid-print">
-                    {getSelectedUsersData().map((user) => (
-                      <div
-                        key={`print-${user.id}`}
-                        className="badge-item-print"
-                      >
-                        <div>
+                {usersInPreviewModal.length === 0 ? (
+                  <div className="text-center text-gray-500 py-8">
+                    No badges to display.
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center gap-6 p-4">
+                    {usersInPreviewModal.map((user) => (
+                      <div key={user.id} className="flex flex-col items-center">
+                        <div
+                          ref={(el) => (badgeRefs.current[user.id] = el)}
+                          className="w-64 transform hover:scale-105 transition-transform duration-200"
+                          style={{
+                            border: "none",
+                            outline: "none",
+                            boxShadow: "none",
+                          }}
+                        >
                           {renderBadgeTemplate(selectedBadgeTemplate, user)}
-                        </div>
-                        <div className="print-text">
-                          {user.attributes?.name || "Unknown User"}
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* 🖥️ SCREEN PREVIEW - Visible on screen only */}
-                <div className="screen-preview grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 overflow-y-auto max-h-[60vh] p-4">
-                  {getSelectedUsersData().map((user, index) => (
-                    <div
-                      style={{ marginBottom: 200 }}
-                      key={user.id}
-                      className="flex flex-col items-center"
-                    >
-                      <div className="text-sm text-gray-500 mb-2 font-medium">
-                        Badge {index + 1}
-                      </div>
-                      <div className="w-64 h-80 transform hover:scale-105 transition-transform duration-200">
-                        {renderBadgeTemplate(selectedBadgeTemplate, user)}
-                      </div>
-                      <div className="mt-2 text-xs text-gray-600 text-center">
-                        {user.attributes?.name || "Unknown User"}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Print Button - Will be hidden during printing */}
-              <div className="print-button-container flex border-t border-gray-200 p-4 bg-gray-50">
-                <button
-                  onClick={() => window.print()}
-                  className="flex-1 py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white transition-colors flex items-center justify-center gap-2 font-medium rounded-lg"
-                >
-                  <Printer size={18} />
-                  Print All Selected Badges ({selectedUsers.size})
-                </button>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Print Modal */}
-      {showPrintModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl transform animate-in zoom-in-95 duration-200">
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-indigo-100 rounded-lg">
-                    <Printer className="w-5 h-5 text-indigo-600" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Print Badges
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setShowPrintModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="flex flex-col lg:flex-row gap-8">
-                <div className="flex-1">
-                  <p className="text-gray-600 mb-6">
-                    You're about to print <strong>{selectedUsers.size}</strong>{" "}
-                    badge
-                    {selectedUsers.size !== 1 ? "s" : ""}. This action will mark
-                    them as printed.
-                  </p>
-
-                  {/* Badge Template Selection */}
-                  <div className="mb-6">
-                    <h4 className="font-semibold text-gray-800 mb-3">
-                      Select Badge Template
-                    </h4>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[1, 2, 3, 4].map((templateId) => (
-                        <div
-                          key={templateId}
-                          className={`border-2 rounded-xl p-2 cursor-pointer transition-all ${
-                            selectedBadgeTemplate === templateId
-                              ? "border-indigo-500 bg-indigo-50"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                          onClick={() => setSelectedBadgeTemplate(templateId)}
-                        >
-                          <div className="h-32 bg-white rounded-lg overflow-hidden">
-                            {renderBadgeTemplate(templateId, eventUsers[0])}
-                          </div>
-                          <p className="text-xs text-center mt-2 font-medium">
-                            Template {templateId}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-lg p-4 mb-6">
-                    <h4 className="font-semibold text-gray-800 mb-3">
-                      Print Summary
-                    </h4>
-                    <div className="space-y-2 text-sm text-gray-600">
-                      <div className="flex justify-between">
-                        <span>Total Badges:</span>
-                        <span className="font-medium">
-                          {selectedUsers.size}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Paper Size:</span>
-                        <span className="font-medium">A4 (Standard)</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Print Quality:</span>
-                        <span className="font-medium">High</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span>Template:</span>
-                        <span className="font-medium text-indigo-600">
-                          Template {selectedBadgeTemplate}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setShowPrintModal(false)}
-                      className="flex-1 py-3 px-4 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handlePrintConfirm}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg transition-colors font-medium flex items-center justify-center gap-2"
-                    >
-                      <Printer size={18} />
-                      Print Now
-                    </button>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <div className="bg-white border border-gray-200 rounded-xl p-6">
-                    <h4 className="font-semibold text-gray-800 mb-4 text-center">
-                      Badge Preview
-                    </h4>
-                    <div className="flex flex-col items-center">
-                      <div className="w-64 h-80 mb-4">
-                        {renderBadgeTemplate(
-                          selectedBadgeTemplate,
-                          eventUsers[0]
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 text-center mt-4">
-                        Preview shows Template {selectedBadgeTemplate}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {activePopup && (
         <div
@@ -1470,14 +1328,7 @@ function PrintBadges() {
                 Cancel
               </button>
               <button
-                onClick={() => {
-                  console.log(
-                    "Delete button clicked - userToDelete:",
-                    userToDelete
-                  );
-                  console.log("Event ID:", eventId);
-                  handleDelete(userToDelete);
-                }}
+                onClick={() => handleDelete(userToDelete)}
                 className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
               >
                 Delete
@@ -1489,5 +1340,4 @@ function PrintBadges() {
     </>
   );
 }
-
 export default PrintBadges;
