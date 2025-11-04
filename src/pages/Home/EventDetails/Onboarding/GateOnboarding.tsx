@@ -2,12 +2,12 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
 import {
-    usersForCheckIn,
-    postcheckInEvent,
-    postcheckInArea,
-    checkOutUser,
+    usersForCheckInArea,
+    usersForCheckOutArea,
+    postCheckInArea,
+    postCheckOutArea,
+
     usersForCheckOutEvent,
-    usersForCheckOutAreas,
     bulkCheckInUsers,
     tokenCheckIn,
     tokenCheckOut,
@@ -52,32 +52,26 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
     const scannerRef = useRef<Html5Qrcode | null>(null);
     const eventId = gate?.attributes?.event_id;
+    const sessionAreaId = gate?.id;
 
     useEffect(() => {
         const fetchUsers = async () => {
-            if (!eventId) return;
+            if (!eventId || !sessionAreaId) return;
             setLoading(true);
 
             try {
                 let response;
 
                 if (view === "registered_users") {
-                    // ✅ Always fetch check-in users from the same endpoint (event-level)
-                    response = await usersForCheckIn(eventId);
+                    // ✅ Get users who need check-in for this session area
+                    response = await usersForCheckInArea(eventId, sessionAreaId);
                 } else {
-                    // ✅ Check-out users depend on gate type
-                    const gateType = gate?.attributes?.type;
-                    const gateToken = gate?.attributes?.gate_token;
-
-                    if (gateType === "Event" || !gateToken) {
-                        response = await usersForCheckOutEvent(eventId);
-                    } else {
-                        response = await usersForCheckOutAreas(eventId, gateToken);
-                    }
+                    // ✅ Get users who need check-out for this session area
+                    response = await usersForCheckOutArea(eventId, sessionAreaId);
                 }
 
                 setEnrolledUsers(response?.data?.data || []);
-                console.log("📦 Users fetched:", response?.data?.data);
+                console.log("📦 Users fetched:", response?.data);
             } catch (err) {
                 console.error("Error fetching users:", err);
                 toast.error("Failed to fetch users.");
@@ -87,42 +81,51 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         };
 
         fetchUsers();
-    }, [gate, view, eventId]);
+    }, [view, eventId, sessionAreaId]);
+
 
     const handleCheckinUser = async (userId: string | number, userName?: string) => {
-        if (!eventId) return;
+        if (!eventId || !sessionAreaId) {
+            toast.error("Missing event or session area ID.");
+            return;
+        }
 
         try {
-            const gateType = gate?.attributes?.type;
-            const gateToken = gate?.attributes?.gate_token;
+            console.log("🚀 Area Check-In Payload:", { eventId, sessionAreaId, userId });
 
-            if (gate && gateType !== "Event") {
-                if (!gateToken) {
-                    toast.error("Gate token is missing.");
-                    return;
-                }
+            const response = await postCheckInArea(eventId, sessionAreaId, userId);
+            console.log("✅ Area Check-In Response:", response);
 
-                // ✅ Area check-in
-                console.log("🚀 Area Check-In Payload:", { eventId, userId, gateToken });
-                const response = await postcheckInArea(eventId, userId, gateToken);
-                console.log("✅ Area Check-In Response:", response);
+            toast.success(`${userName || "User"} checked in successfully!`);
 
-                toast.success(`${userName || "User"} checked in successfully to ${gateType}!`);
-            } else {
-                // ✅ Event-level check-in
-                console.log("🚀 Event Check-In Payload:", { eventId, userId });
-                const response = await postcheckInEvent(eventId, userId);
-                console.log("✅ Event Check-In Response:", response);
-
-                toast.success(`${userName || "User"} checked in successfully!`);
-            }
-
-            // ✅ Remove user from the UI immediately
+            // ✅ Remove the user from the list after successful check-in
             setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
-
         } catch (err) {
-            console.error("Check-in failed:", err);
+            console.error("❌ Check-in failed:", err);
             toast.error("Failed to check in user.");
+        }
+    };
+
+    // Handle check-out
+    const handleCheckOutUser = async (userId: string | number, userName?: string) => {
+        if (!eventId || !sessionAreaId) {
+            toast.error("Missing event or session area ID.");
+            return;
+        }
+
+        try {
+            console.log("🚀 Area Check-Out Payload:", { eventId, sessionAreaId, userId });
+
+            const response = await postCheckOutArea(eventId, sessionAreaId, userId);
+            console.log("✅ Area Check-Out Response:", response);
+
+            toast.success(`${userName || "User"} checked out successfully!`);
+
+            // ✅ Remove the user from the list after successful check-out
+            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
+        } catch (err) {
+            console.error("❌ Check-out failed:", err);
+            toast.error("Failed to check out user.");
         }
     };
 
@@ -146,30 +149,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         };
     }, []);
 
-    // Handle check-out
-    const handleCheckOutUser = async (
-        userId: string | number,
-        userName?: string,
-        statusId?: string | number
-    ) => {
-        if (!eventId || !statusId) return;
 
-        try {
-            const payload = {
-                event_user_ids: [userId]
-            };
-            console.log("Check-Out Payload:", payload);
-
-            const response = await checkOutUser(String(eventId), userId, statusId);
-            console.log("Check-out response:", response.data);
-
-            toast.success(`${userName || "User"} checked out successfully!`);
-            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
-        } catch (err) {
-            console.error("Check-out failed:", err);
-            toast.error("Failed to check out user.");
-        }
-    };
 
     const toggleUserSelection = (userId: string | number) => {
         setSelectedUsers(prev =>
@@ -404,7 +384,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 animate-fade-in">
+        <div className="min-h-screen  from-gray-50 to-gray-100 animate-fade-in">
             <div className="mx-auto p-6">
 
                 {/* Header */}
@@ -614,7 +594,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                             </span>
                                                         ) : (
                                                             <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                                                                {formatCheckIn(user.attributes.check_in)}
+                                                                {formatCheckIn(user.attributes?.check_user_area_statuses?.[0]?.check_in)}
                                                             </span>
                                                         )}
                                                     </td>

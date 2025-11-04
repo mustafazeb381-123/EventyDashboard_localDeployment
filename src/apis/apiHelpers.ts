@@ -246,9 +246,21 @@ export const deleteGate = (
   });
 };
 
+// ----------------------------------------------------------------------------
+
 // Get a specific gate by ID
 export const getGateById = (gateId: string | number) => {
   return axiosInstance.get(`/check_in_and_out_gates/${gateId}`);
+};
+
+// ✅ Get users who need check-in for a specific session area
+export const usersForCheckInArea = (eventId: string | number, sessionAreaId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/session_areas/${sessionAreaId}/need_check_in`);
+};
+
+// ✅ Get users who need check-out for a specific session area
+export const usersForCheckOutArea = (eventId: string | number, sessionAreaId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/session_areas/${sessionAreaId}/need_check_out`);
 };
 
 // ✅ Check in user 
@@ -263,25 +275,39 @@ export const postcheckInEvent = (eventId: string | number, userId: string | numb
   );
 };
 
-// ✅ Check in user for area
-export const postcheckInArea = (eventId: string | number, userId: string | number, gateToken: string) => {
+// ✅ Check in user to a specific session area
+export const postCheckInArea = (
+  eventId: string | number,
+  sessionAreaId: string | number,
+  eventUserId: string | number
+) => {
   return axiosInstance.post(
-    `/events/${eventId}/check_user_area_statuses/check_in`,
+    `/events/${eventId}/session_areas/${sessionAreaId}/check_in`,
     {
       check_user_area_status: {
-        event_user_id: userId,
-        gate_token: gateToken,
+        event_user_id: eventUserId,
       },
     }
   );
 };
 
-// ✅ Get users for check-in Event
-export const usersForCheckIn = (eventId: string | number) => {
-  return axiosInstance.get(
-    `/events/${eventId}/check_user_event_statuses/need_check_in`
+// ✅ Check out user from a specific session area
+export const postCheckOutArea = (
+  eventId: string | number,
+  sessionAreaId: string | number,
+  eventUserId: string | number
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/session_areas/${sessionAreaId}/check_out`,
+    {
+      check_user_area_status: {
+        event_user_id: eventUserId,
+      },
+    }
   );
 };
+
+
 
 // ✅ Get users for check-out Event
 export const usersForCheckOutEvent = (eventId: string | number) => {
@@ -299,19 +325,7 @@ export const usersForCheckOutAreas = (eventId: string | number, gateToken: strin
   );
 };
 
-// ✅ Check-Out
-export const checkOutUser = (
-  eventId: string | number,
-  userId: string | number,
-  statusId: string | number
-) => {
-  return axiosInstance.patch(
-    `/events/${eventId}/check_user_event_statuses/${statusId}/check_out`,
-    {
-      event_user_id: userId,
-    }
-  );
-};
+
 
 // ✅ Bulk Check-In
 export const bulkCheckInUsers = (
@@ -344,6 +358,7 @@ export const tokenCheckOut = (eventId: string | number, token: string) => {
     }
   );
 };
+
 export const resetCheckInOutStatus = (
   eventId: string | number,
   eventUserId: string | number

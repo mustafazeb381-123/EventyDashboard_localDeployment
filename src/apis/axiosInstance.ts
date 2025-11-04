@@ -21,7 +21,7 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   config => {
     const token = localStorage.getItem(TOKEN_KEY);
-    console.log("token in instance", token)
+    // console.log("token in instance", token)
     //
     // Retrieve token from localStorage
     if (token) {
