@@ -22,7 +22,6 @@ import { deleteEventUser, getBadgeApi, getEventUsers } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import QRCode from "react-qr-code";
-// CardHeader and CardHeader2 are retained for the header SVG pattern as seen in screenshot
 import {
   CardFooter,
   CardFooter2,
@@ -57,15 +56,14 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
     className="flex flex-col w-full rounded-xl overflow-hidden"
     style={{
       backgroundColor: badgeColors.backgroundColor,
-      border: "none", // Corrected syntax: Removed !important from inline style
-      outline: "none", // Corrected syntax
-      boxShadow: "none", // Corrected syntax
-      // 'stroke' is an SVG attribute, not a CSS property for a div. Removed if present.
+      border: "none",
+      outline: "none",
+      boxShadow: "none",
     }}
   >
     <div
       className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
+      style={{ minHeight: "165px" }}
     >
       <div className="absolute inset-0">
         <CardHeader color={badgeColors.headerColor} />
@@ -76,7 +74,7 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
             src={event.attributes.logo_url}
             alt="Logo"
             className="w-4 h-4 mb-3"
-            style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
+            style={{ border: "none", outline: "none", boxShadow: "none" }}
           />
         )}
         <h6 className="font-semibold mb-3 text-white text-xs">
@@ -92,15 +90,13 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
           level="H"
           fgColor="#1f2937"
           bgColor="#ffffff"
-          margin={0} // Ensure no quiet zone margin
+          margin={0}
         />
       </div>
       <div
         className="w-16 h-16 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 mt-4 overflow-hidden"
         style={{ border: "none", outline: "none", boxShadow: "none" }}
       >
-        {" "}
-        {/* Ensure avatar container has no border */}
         <UserAvatar user={user} />
       </div>
       <h2 className="text-xs font-bold text-gray-900 mt-1">
@@ -110,8 +106,6 @@ const BadgeTemplate1: React.FC<BadgeTemplateProps> = ({
         {user?.attributes?.user_type || "User Title"}
       </p>
     </div>
-
-    {/* Footer section: Now a plain div with background color, no SVG */}
     <div
       className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
       style={{ minHeight: "75px" }}
@@ -134,14 +128,14 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
     className="flex flex-col w-full rounded-xl overflow-hidden"
     style={{
       backgroundColor: badgeColors.backgroundColor,
-      border: "none", // Corrected syntax
-      outline: "none", // Corrected syntax
-      boxShadow: "none", // Corrected syntax
+      border: "none",
+      outline: "none",
+      boxShadow: "none",
     }}
   >
     <div
       className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
+      style={{ minHeight: "165px" }}
     >
       <div className="absolute inset-0">
         <CardHeader color={badgeColors.headerColor} />
@@ -153,8 +147,6 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
           className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden"
           style={{ border: "none", outline: "none", boxShadow: "none" }}
         >
-          {" "}
-          {/* Ensure avatar container has no border */}
           <UserAvatar user={user} />
         </div>
         <h2 className="text-xs font-bold text-gray-900">
@@ -185,10 +177,9 @@ const BadgeTemplate2: React.FC<BadgeTemplateProps> = ({
         level="H"
         fgColor="#1f2937"
         bgColor="#ffffff"
-        margin={0} // Ensure no quiet zone margin
+        margin={0}
       />
     </div>
-    {/* Footer section: Now a plain div with background color, no SVG */}
     <div
       className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
       style={{ minHeight: "75px" }}
@@ -212,20 +203,23 @@ const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
       className="flex flex-col w-full rounded-xl overflow-hidden"
       style={{
         backgroundColor: badgeColors.backgroundColor,
-        border: "none", // Corrected syntax
-        outline: "none", // Corrected syntax
-        boxShadow: "none", // Corrected syntax
+        border: "none",
+        outline: "none",
+        boxShadow: "none",
       }}
     >
       <div
         className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-        style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
+        style={{ minHeight: "165px" }}
       >
         <div className="absolute inset-0">
           <CardHeader2 color={badgeColors.headerColor} />
         </div>
       </div>
-      <div className="flex mb-2 flex-col items-center">
+      <div
+        style={{ marginBottom: 30, marginTop: -10 }}
+        className="flex flex-col items-center"
+      >
         <div className="relative z-10 flex justify-center mt-2">
           <QRCode
             value={user?.attributes?.token || "user-token"}
@@ -233,15 +227,13 @@ const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
             level="H"
             fgColor="#1f2937"
             bgColor="#ffffff"
-            margin={0} // Ensure no quiet zone margin
+            margin={0}
           />
         </div>
         <div
           className="rounded-full w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-lg mb-2 mt-4 overflow-hidden"
           style={{ border: "none", outline: "none", boxShadow: "none" }}
         >
-          {" "}
-          {/* Ensure avatar container has no border */}
           <UserAvatar user={user} />
         </div>
 
@@ -252,8 +244,6 @@ const BadgeTemplate3: React.FC<BadgeTemplateProps> = ({
           {user?.attributes?.organization || "User Title"}
         </p>
       </div>
-
-      {/* Footer section: Now a plain div with background color, no SVG */}
       <div
         className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
         style={{ minHeight: "75px" }}
@@ -277,14 +267,14 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
     className="flex flex-col w-full rounded-xl overflow-hidden"
     style={{
       backgroundColor: badgeColors.backgroundColor,
-      border: "none", // Corrected syntax
-      outline: "none", // Corrected syntax
-      boxShadow: "none", // Corrected syntax
+      border: "none",
+      outline: "none",
+      boxShadow: "none",
     }}
   >
     <div
       className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-      style={{ minHeight: "165px" }} // Approx 33% of original h-125 (500px)
+      style={{ minHeight: "165px" }}
     >
       <div className="absolute inset-0">
         <CardHeader2 color={badgeColors.headerColor} />
@@ -296,8 +286,6 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
           className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm mb-2 mx-auto overflow-hidden"
           style={{ border: "none", outline: "none", boxShadow: "none" }}
         >
-          {" "}
-          {/* Ensure avatar container has no border */}
           <UserAvatar user={user} />
         </div>
         <h2 className="text-xs font-bold text-gray-900">
@@ -313,7 +301,7 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
             src={event.attributes.logo_url}
             alt="Logo"
             className="w-4 h-4 mb-3"
-            style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
+            style={{ border: "none", outline: "none", boxShadow: "none" }}
           />
         )}
         <h6 className="font-semibold mb-3 text-black text-xs">
@@ -327,11 +315,10 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
           level="H"
           fgColor="#1f2937"
           bgColor="#ffffff"
-          margin={0} // Ensure no quiet zone margin
+          margin={0}
         />
       </div>
     </div>
-    {/* Footer section: Now a plain div with background color, no SVG */}
     <div
       className="relative flex flex-col justify-center items-center gap-1 w-full rounded-b-xl py-2 overflow-hidden"
       style={{ minHeight: "75px" }}
@@ -343,10 +330,6 @@ const BadgeTemplate4: React.FC<BadgeTemplateProps> = ({
   </div>
 );
 
-/* ---------------------------
-   User Avatar & helper components
-   --------------------------- */
-
 const UserAvatar = ({ user }: { user: any }) => {
   const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
   const userName = user?.attributes?.name || "User";
@@ -357,7 +340,7 @@ const UserAvatar = ({ user }: { user: any }) => {
         src={imageUrl}
         alt={userName}
         className="w-full h-full object-cover"
-        style={{ border: "none", outline: "none", boxShadow: "none" }} // Add for avatar images
+        style={{ border: "none", outline: "none", boxShadow: "none" }}
       />
     );
   }
@@ -374,8 +357,6 @@ const UserAvatar = ({ user }: { user: any }) => {
       className="w-full h-full flex items-center justify-center text-white font-semibold text-sm"
       style={{ border: "none", outline: "none", boxShadow: "none" }}
     >
-      {" "}
-      {/* Add for avatar initials div */}
       {initials}
     </div>
   );
@@ -594,7 +575,7 @@ function PrintBadges() {
           src={imageUrl}
           alt={userName}
           className="w-10 h-10 rounded-full object-cover"
-          style={{ border: "none", outline: "none", boxShadow: "none" }} // Ensure image itself has no border
+          style={{ border: "none", outline: "none", boxShadow: "none" }}
         />
       );
     }
@@ -611,8 +592,6 @@ function PrintBadges() {
         className="w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-sm"
         style={{ border: "none", outline: "none", boxShadow: "none" }}
       >
-        {" "}
-        {/* Ensure avatar initials div has no border */}
         {initials}
       </div>
     );
@@ -760,8 +739,6 @@ function PrintBadges() {
         format: "a4",
       });
 
-      // Use a higher scale for better resolution, but keep it within reasonable limits.
-      // A scale of 3-4 is often good for PDF conversion.
       const scale = Math.max(3, window.devicePixelRatio || 1);
 
       for (let i = 0; i < usersInPreviewModal.length; i++) {
@@ -793,22 +770,18 @@ function PrintBadges() {
           },
           cacheBust: true,
           filter: (node) => {
-            // Filter function to clean up nodes before cloning
             return true;
           },
-          // Aggressively remove all potential borders/lines from the cloned DOM
           onclone: (clonedBadgeElement) => {
-            // Access the document object via ownerDocument
             const doc = clonedBadgeElement.ownerDocument;
 
-            // Remove any existing injected styles to start fresh
             const existingStyles = doc.head.querySelectorAll(
               "style[data-badge-style]"
             );
             existingStyles.forEach((s) => s.remove());
 
             const style = doc.createElement("style");
-            style.setAttribute("data-badge-style", "true"); // Mark our injected styles
+            style.setAttribute("data-badge-style", "true");
             style.textContent = `
               /* General aggressive reset for all elements */
               * { 
