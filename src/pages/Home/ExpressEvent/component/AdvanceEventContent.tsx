@@ -2,6 +2,10 @@ import AdvanceBadge from "@/components/AdvanceEventComponent/AdvanceBadge";
 import AdvanceConfirmation from "@/components/AdvanceEventComponent/AdvanceConfirmation";
 import AdvanceRegistration from "@/components/AdvanceEventComponent/AdvanceRegistration";
 import AdvanceTicket from "@/components/AdvanceEventComponent/AdvanceTickt";
+import AdvanceAgenda from "@/components/AdvanceEventContent/AdvanceAgenda";
+import AdvanceExhibitors from "@/components/AdvanceEventContent/AdvanceExhibitors";
+import AdvancePartners from "@/components/AdvanceEventContent/AdvancePartners";
+import AdvanceSpeaker from "@/components/AdvanceEventContent/AdvanceSpeaker";
 import React, { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -20,10 +24,10 @@ const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { component: AdvanceTicket, name: "Advance Ticket" },
-    { component: AdvanceRegistration, name: "Advance Registration" },
-    { component: AdvanceConfirmation, name: "Advance Confirmation" },
-    { component: AdvanceBadge, name: "Advance Badge" },
+    { component: AdvanceSpeaker, name: "Advance Speaker" },
+    { component: AdvanceExhibitors, name: "Advance Exhibitor" },
+    { component: AdvancePartners, name: "Advance Partner" },
+    { component: AdvanceAgenda, name: "Advance Agenda" },
   ];
 
   // UPDATED: Handle next with eventId parameter

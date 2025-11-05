@@ -1,19 +1,19 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
 
-interface AdvanceSpeakerProps {
+interface AdvancePartnersProps {
   onNext?: () => void;
   onPrevious?: () => void;
   currentStep?: number;
   totalSteps?: number;
 }
 
-function AdvanceExhibitors({
+function AdvancePartners({
   onNext,
   onPrevious,
   currentStep = 1,
   totalSteps = 4,
-}: AdvanceSpeakerProps) {
+}: AdvancePartnersProps) {
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -21,10 +21,8 @@ function AdvanceExhibitors({
     message: string;
     type: "success" | "error";
   } | null>(null);
-  const [newSpeaker, setNewSpeaker] = useState({
+  const [newPartner, setNewPartner] = useState({
     name: "",
-    description: "",
-    organization: "",
     image: "",
   });
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
@@ -34,8 +32,6 @@ function AdvanceExhibitors({
       id: "1",
       attributes: {
         name: "Ethan Carter",
-        description: "Discover a hidden gem in this lively city...",
-        organization: "Scc",
         image: "https://i.pravatar.cc/100?img=1",
       },
     },
@@ -43,9 +39,6 @@ function AdvanceExhibitors({
       id: "2",
       attributes: {
         name: "Luca Thompson",
-        description:
-          "Nestled in the heart of the city, this place is perfect...",
-        organization: "Mothmerat",
         image: "https://i.pravatar.cc/100?img=2",
       },
     },
@@ -53,9 +46,6 @@ function AdvanceExhibitors({
       id: "3",
       attributes: {
         name: "Liam Anderson",
-        description:
-          "This charming location offers a perfect blend of comfort...",
-        organization: "Sodic",
         image: "https://i.pravatar.cc/100?img=3",
       },
     },
@@ -67,9 +57,7 @@ function AdvanceExhibitors({
 
   useEffect(() => {
     if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 3000);
+      const timer = setTimeout(() => setNotification(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [notification]);
@@ -93,43 +81,35 @@ function AdvanceExhibitors({
   };
 
   const handleDeleteUser = (user: any) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    if (!window.confirm("Are you sure you want to delete this partner?"))
+      return;
     setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    showNotification("User deleted successfully!", "success");
+    showNotification("Partner deleted successfully!", "success");
   };
 
-  const handleAddSpeaker = () => {
-    if (!newSpeaker.name || !newSpeaker.organization) {
-      showNotification("Please fill all required fields!", "error");
+  const handleAddPartner = () => {
+    if (!newPartner.name) {
+      showNotification("Please fill the partner name!", "error");
       return;
     }
     const newUser = {
       id: Date.now().toString(),
       attributes: {
-        ...newSpeaker,
+        ...newPartner,
         image: selectedImageFile
           ? URL.createObjectURL(selectedImageFile)
           : "https://i.pravatar.cc/100?img=10",
       },
     };
     setUsers((prev) => [...prev, newUser]);
-    showNotification("Speaker added successfully!", "success");
-    setNewSpeaker({ name: "", description: "", organization: "", image: "" });
+    showNotification("Partner added successfully!", "success");
+    setNewPartner({ name: "", image: "" });
     setSelectedImageFile(null);
     setAddModalOpen(false);
   };
 
-  const handleNext = () => {
-    if (onNext) {
-      onNext();
-    }
-  };
-
-  const handleBack = () => {
-    if (onPrevious) {
-      onPrevious();
-    }
-  };
+  const handleNext = () => onNext && onNext();
+  const handleBack = () => onPrevious && onPrevious();
 
   const UserAvatar = ({ user }: { user: any }) => (
     <img
@@ -156,16 +136,15 @@ function AdvanceExhibitors({
         </div>
       )}
 
-      {/* Progress Stepper */}
+      {/* Header & Steps */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft className="text-gray-500" size={20} />
           <h2 className="text-xl font-semibold text-gray-900">
-            Advance Exhibitors
+            Advance Partners
           </h2>
         </div>
 
-        {/* Progress Steps */}
         <div className="flex items-center gap-2">
           {Array.from({ length: totalSteps }).map((_, step) => (
             <div key={step} className="flex items-center">
@@ -196,12 +175,13 @@ function AdvanceExhibitors({
         </div>
       </div>
 
+      {/* Partner List */}
       <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Exhibitors</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">Partners</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {eventUsers.length} Exhibitors
+              {eventUsers.length} Partners
             </span>
           </div>
 
@@ -210,11 +190,10 @@ function AdvanceExhibitors({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add Speaker
+            Add Partner
           </button>
         </div>
 
-        {/* Table */}
         <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -231,12 +210,6 @@ function AdvanceExhibitors({
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Organization
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Actions
@@ -266,29 +239,19 @@ function AdvanceExhibitors({
                     </div>
                   </td>
 
-                  <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
-                    {user.attributes.description}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.attributes.organization}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-yellow-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
+                  <td className="px-6 py-4 flex">
+                    <button
+                      onClick={() => handleDeleteUser(user)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteUser(user)}
+                      className="p-2 text-yellow-600 hover:bg-red-50 rounded-lg"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}
@@ -296,7 +259,7 @@ function AdvanceExhibitors({
           </table>
         </div>
 
-        {/* Add Speaker Modal */}
+        {/* Add Partner Modal */}
         {addModalOpen && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
@@ -307,7 +270,7 @@ function AdvanceExhibitors({
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">
-                Add Exhibitor
+                Add Partner
               </h2>
 
               <div className="space-y-4">
@@ -317,12 +280,12 @@ function AdvanceExhibitors({
                   </label>
                   <input
                     type="text"
-                    placeholder="Text here"
-                    value={newSpeaker.name}
+                    placeholder="Enter name"
+                    value={newPartner.name}
                     onChange={(e) =>
-                      setNewSpeaker({ ...newSpeaker, name: e.target.value })
+                      setNewPartner({ ...newPartner, name: e.target.value })
                     }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
 
@@ -330,64 +293,22 @@ function AdvanceExhibitors({
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
                     Upload Pic
                   </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        e.target.files &&
-                        setSelectedImageFile(e.target.files[0])
-                      }
-                      className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">
-                      PNG / JPEG / JPG (max 800 kb 500 x 500 px)
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Text here"
-                    value={newSpeaker.description}
-                    onChange={(e) =>
-                      setNewSpeaker({
-                        ...newSpeaker,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Organization
-                  </label>
                   <input
-                    type="text"
-                    placeholder="Text here"
-                    value={newSpeaker.organization}
+                    type="file"
+                    accept="image/*"
                     onChange={(e) =>
-                      setNewSpeaker({
-                        ...newSpeaker,
-                        organization: e.target.value,
-                      })
+                      e.target.files && setSelectedImageFile(e.target.files[0])
                     }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               </div>
 
               <button
-                onClick={handleAddSpeaker}
+                onClick={handleAddPartner}
                 className="mt-5 w-full bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2"
               >
-                <Plus className="w-4 h-4" /> Add Speaker
+                <Plus className="w-4 h-4" /> Add Partner
               </button>
             </div>
           </div>
@@ -417,14 +338,8 @@ function AdvanceExhibitors({
 
       <style>{`
         @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
@@ -434,4 +349,4 @@ function AdvanceExhibitors({
   );
 }
 
-export default AdvanceExhibitors;
+export default AdvancePartners;

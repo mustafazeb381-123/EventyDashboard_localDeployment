@@ -8,6 +8,7 @@ import Badge1 from "./components/Badge1";
 import Badge2 from "./components/Badge2";
 import Badge3 from "./components/Badge3";
 import Badge4 from "./components/Badge4";
+import AdvanceEventContent from "../component/AdvanceEventContent";
 
 export const CardHeader: React.FC<{ color?: string }> = ({
   color = "#4D4D4D",
@@ -129,6 +130,7 @@ const Badges: React.FC<BadgesProps> = ({
   onPrevious,
   currentStep,
   eventId,
+  plan,
 }) => {
   const [openModal, setOpenModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
@@ -287,340 +289,374 @@ const Badges: React.FC<BadgesProps> = ({
   }, [effectiveEventId]);
 
   return (
-    <div className="w-full mx-5 bg-white p-5 rounded-2xl">
-      {/* Header */}
-      <div className="flex flex-row justify-between items-center">
-        <div className="flex flex-row gap-2 items-center">
-          <ChevronLeft />
-          <p className="text-neutral-900 text-md font-poppins font-normal">
-            Choose a Badge
-          </p>
-        </div>
-      </div>
-
-      {/* Badge Grid */}
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-        {badges.map((badge) => {
-          const isActive =
-            selectedBadge?.id === badge.id || activeBadgeId === badge.id;
-          return (
-            <div
-              key={badge.id}
-              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
-                isActive
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 hover:border-blue-500"
-              }`}
-              onClick={() =>
-                setSelectedBadge(selectedBadge?.id === badge.id ? null : badge)
-              }
-            >
-              {/* Badge Preview */}
-              {badge.id === 1 && (
-                <div
-                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{
-                    backgroundColor:
-                      event?.attributes?.secondary_color || "white",
-                  }}
-                >
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                    style={{ height: "33%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardHeader
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                    <div className="relative z-10 flex items-center gap-2">
-                      {event?.attributes?.logo_url && (
-                        <img
-                          src={event.attributes.logo_url}
-                          alt="Logo"
-                          className="w-4 h-4 mb-3"
-                        />
-                      )}
-                      <h6 className="font-semibold mb-3 text-white text-xs">
-                        Company Name
-                      </h6>
-                    </div>
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center items-center">
-                    <img
-                      src={badge.userImg}
-                      className="w-16 h-16 rounded-full object-cover"
-                    />
-                    <h2 className="text-xs font-bold text-gray-900 mt-1">
-                      User Name
-                    </h2>
-                    <p className="text-gray-600 text-xs">User Title</p>
-                  </div>
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                    style={{ height: "15%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardFooter
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {badge.id === 2 && (
-                <div
-                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{
-                    backgroundColor:
-                      event?.attributes?.secondary_color || "white",
-                  }}
-                >
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                    style={{ height: "33%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardHeader
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-1 flex-col justify-evenly items-center">
-                    <div className="text-center">
-                      <h2 className="text-xs font-bold text-gray-900">
-                        User Name
-                      </h2>
-                      <p className="text-gray-600 text-xs">User Title</p>
-                    </div>
-                    <div className="relative z-10 flex items-center gap-2">
-                      {event?.attributes?.logo_url && (
-                        <img
-                          src={event.attributes.logo_url}
-                          alt="Logo"
-                          className="w-4 h-4 mb-3"
-                        />
-                      )}
-                      <h6 className="font-semibold mb-3 text-black text-xs">
-                        Company Name
-                      </h6>
-                    </div>
-                  </div>
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                    style={{ height: "15%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardFooter
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {badge.id === 3 && (
-                <div
-                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{
-                    backgroundColor:
-                      event?.attributes?.secondary_color || "white",
-                  }}
-                >
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                    style={{ height: "33%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardHeader2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-1 flex-col justify-center items-center">
-                    <img
-                      src={badge.squareUserImg}
-                      className="w-16 object-cover"
-                    />
-                    <h2 className="text-xs font-bold text-gray-900 mt-1">
-                      User Name
-                    </h2>
-                    <p className="text-gray-600 text-xs">User Title</p>
-                  </div>
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                    style={{ height: "15%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardFooter2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {badge.id === 4 && (
-                <div
-                  className="flex flex-col h-125 w-full rounded-xl border-1 overflow-hidden"
-                  style={{
-                    backgroundColor:
-                      event?.attributes?.secondary_color || "white",
-                  }}
-                >
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                    style={{ height: "33%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardHeader2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex flex-1 flex-col justify-evenly items-center">
-                    <div className="text-center">
-                      <h2 className="text-xs font-bold text-gray-900">
-                        User Name
-                      </h2>
-                      <p className="text-gray-600 text-xs">User Title</p>
-                    </div>
-                    <div className="relative z-10 flex items-center gap-2">
-                      {event?.attributes?.logo_url && (
-                        <img
-                          src={event.attributes.logo_url}
-                          alt="Logo"
-                          className="w-4 h-4 mb-3"
-                        />
-                      )}
-                      <h6 className="font-semibold mb-3 text-black text-xs">
-                        Company Name
-                      </h6>
-                    </div>
-                  </div>
-                  <div
-                    className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                    style={{ height: "15%" }}
-                  >
-                    <div className="absolute inset-0">
-                      <CardFooter2
-                        color={event?.attributes?.primary_color || "#4D4D4D"}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openBadgeModal(badge);
-                  }}
-                  className="flex items-center gap-2 bg-[#2E3166E5] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-colors"
-                >
-                  <Eye size={16} />
-                  Preview
-                </button>
-              </div>
+    <>
+      {plan === "advanced" ? (
+        <AdvanceEventContent />
+      ) : (
+        <div className="w-full mx-5 bg-white p-5 rounded-2xl">
+          {/* Header */}
+          <div className="flex flex-row justify-between items-center">
+            <div className="flex flex-row gap-2 items-center">
+              <ChevronLeft />
+              <p className="text-neutral-900 text-md font-poppins font-normal">
+                Choose a Badge
+              </p>
             </div>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* Modal */}
-      {openModal && previewBadge && (
-        <>
-          {previewBadge.id === 1 && (
-            <Badge1
-              badge={previewBadge}
-              event={event}
-              onClose={closeModal}
-              CardHeader={CardHeader}
-              CardFooter={CardFooter}
-            />
+          {/* Badge Grid */}
+          <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {badges.map((badge) => {
+              const isActive =
+                selectedBadge?.id === badge.id || activeBadgeId === badge.id;
+              return (
+                <div
+                  key={badge.id}
+                  className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
+                    isActive
+                      ? "border-green-500 bg-green-50"
+                      : "border-gray-200 hover:border-blue-500"
+                  }`}
+                  onClick={() =>
+                    setSelectedBadge(
+                      selectedBadge?.id === badge.id ? null : badge
+                    )
+                  }
+                >
+                  {/* Badge Preview */}
+                  {badge.id === 1 && (
+                    <div
+                      className="flex flex-col h-125 w-full rounded-xl border overflow-hidden"
+                      style={{
+                        backgroundColor:
+                          event?.attributes?.secondary_color || "white",
+                      }}
+                    >
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                        style={{ height: "33%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardHeader
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                        <div className="relative z-10 flex items-center gap-2">
+                          {event?.attributes?.logo_url && (
+                            <img
+                              src={event.attributes.logo_url}
+                              alt="Logo"
+                              className="w-4 h-4 mb-3"
+                            />
+                          )}
+                          <h6 className="font-semibold mb-3 text-white text-xs">
+                            Company Name
+                          </h6>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-1 flex-col justify-center items-center">
+                        <img
+                          src={badge.userImg}
+                          className="w-16 h-16 rounded-full object-cover"
+                        />
+                        <h2 className="text-xs font-bold text-gray-900 mt-1">
+                          User Name
+                        </h2>
+                        <p className="text-gray-600 text-xs">User Title</p>
+                      </div>
+
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                        style={{ height: "15%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardFooter
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {badge.id === 2 && (
+                    <div
+                      className="flex flex-col h-125 w-full rounded-xl border overflow-hidden"
+                      style={{
+                        backgroundColor:
+                          event?.attributes?.secondary_color || "white",
+                      }}
+                    >
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                        style={{ height: "33%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardHeader
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-1 flex-col justify-evenly items-center">
+                        <div className="text-center">
+                          <h2 className="text-xs font-bold text-gray-900">
+                            User Name
+                          </h2>
+                          <p className="text-gray-600 text-xs">User Title</p>
+                        </div>
+                        <div className="relative z-10 flex items-center gap-2">
+                          {event?.attributes?.logo_url && (
+                            <img
+                              src={event.attributes.logo_url}
+                              alt="Logo"
+                              className="w-4 h-4 mb-3"
+                            />
+                          )}
+                          <h6 className="font-semibold mb-3 text-black text-xs">
+                            Company Name
+                          </h6>
+                        </div>
+                      </div>
+
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                        style={{ height: "15%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardFooter
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {badge.id === 3 && (
+                    <div
+                      className="flex flex-col h-125 w-full rounded-xl border overflow-hidden"
+                      style={{
+                        backgroundColor:
+                          event?.attributes?.secondary_color || "white",
+                      }}
+                    >
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                        style={{ height: "33%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardHeader2
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-1 flex-col justify-center items-center">
+                        <img
+                          src={badge.squareUserImg}
+                          className="w-16 object-cover"
+                        />
+                        <h2 className="text-xs font-bold text-gray-900 mt-1">
+                          User Name
+                        </h2>
+                        <p className="text-gray-600 text-xs">User Title</p>
+                      </div>
+
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                        style={{ height: "15%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardFooter2
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {badge.id === 4 && (
+                    <div
+                      className="flex flex-col h-125 w-full rounded-xl border overflow-hidden"
+                      style={{
+                        backgroundColor:
+                          event?.attributes?.secondary_color || "white",
+                      }}
+                    >
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
+                        style={{ height: "33%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardHeader2
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-1 flex-col justify-evenly items-center">
+                        <div className="text-center">
+                          <h2 className="text-xs font-bold text-gray-900">
+                            User Name
+                          </h2>
+                          <p className="text-gray-600 text-xs">User Title</p>
+                        </div>
+                        <div className="relative z-10 flex items-center gap-2">
+                          {event?.attributes?.logo_url && (
+                            <img
+                              src={event.attributes.logo_url}
+                              alt="Logo"
+                              className="w-4 h-4 mb-3"
+                            />
+                          )}
+                          <h6 className="font-semibold mb-3 text-black text-xs">
+                            Company Name
+                          </h6>
+                        </div>
+                      </div>
+
+                      <div
+                        className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
+                        style={{ height: "15%" }}
+                      >
+                        <div className="absolute inset-0">
+                          <CardFooter2
+                            color={
+                              event?.attributes?.primary_color || "#4D4D4D"
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Preview Button */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openBadgeModal(badge);
+                      }}
+                      className="flex items-center gap-2 bg-[#2E3166E5] text-white px-4 py-2 rounded-lg text-sm hover:opacity-90 transition-colors"
+                    >
+                      <Eye size={16} />
+                      Preview
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Modal */}
+          {openModal && previewBadge && (
+            <>
+              {previewBadge.id === 1 && (
+                <Badge1
+                  badge={previewBadge}
+                  event={event}
+                  onClose={closeModal}
+                  CardHeader={CardHeader}
+                  CardFooter={CardFooter}
+                />
+              )}
+              {previewBadge.id === 2 && (
+                <Badge2
+                  badge={previewBadge}
+                  event={event}
+                  onClose={closeModal}
+                  CardHeader={CardHeader}
+                  CardFooter={CardFooter}
+                />
+              )}
+              {previewBadge.id === 3 && (
+                <Badge3
+                  badge={previewBadge}
+                  event={event}
+                  onClose={closeModal}
+                  CardHeader={CardHeader2}
+                  CardFooter={CardFooter2}
+                />
+              )}
+              {previewBadge.id === 4 && (
+                <Badge4
+                  badge={previewBadge}
+                  event={event}
+                  onClose={closeModal}
+                  CardHeader={CardHeader2}
+                  CardFooter={CardFooter2}
+                />
+              )}
+            </>
           )}
-          {previewBadge.id === 2 && (
-            <Badge2
-              badge={previewBadge}
-              event={event}
-              onClose={closeModal}
-              CardHeader={CardHeader}
-              CardFooter={CardFooter}
-            />
-          )}
-          {previewBadge.id === 3 && (
-            <Badge3
-              badge={previewBadge}
-              event={event}
-              onClose={closeModal}
-              CardHeader={CardHeader2}
-              CardFooter={CardFooter2}
-            />
-          )}
-          {previewBadge.id === 4 && (
-            <Badge4
-              badge={previewBadge}
-              event={event}
-              onClose={closeModal}
-              CardHeader={CardHeader2}
-              CardFooter={CardFooter2}
-            />
-          )}
-        </>
+
+          {/* Bottom Controls */}
+          <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
+            <button
+              onClick={onPrevious}
+              disabled={currentStep === 0}
+              className="cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg border text-slate-800 hover:bg-gray-50"
+            >
+              ← Previous
+            </button>
+
+            <button
+              onClick={selectBadgeAndContinue}
+              disabled={!selectedBadge || loading}
+              className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center ${
+                selectedBadge && !loading
+                  ? "bg-slate-800 hover:bg-slate-900"
+                  : "bg-gray-400 cursor-not-allowed"
+              }`}
+            >
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <svg
+                    className="animate-spin h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8z"
+                    ></path>
+                  </svg>
+                  Loading...
+                </span>
+              ) : (
+                "Use Template →"
+              )}
+            </button>
+          </div>
+
+          <ToastContainer />
+        </div>
       )}
-
-      {/* Bottom Controls */}
-      <div className="flex flex-col sm:flex-row justify-between gap-4 mt-6 sm:mt-8">
-        <button
-          onClick={onPrevious}
-          disabled={currentStep === 0}
-          className="cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg border text-slate-800 hover:bg-gray-50"
-        >
-          ← Previous
-        </button>
-
-        <button
-          onClick={selectBadgeAndContinue}
-          disabled={!selectedBadge || loading}
-          className={`cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg text-white flex items-center justify-center ${
-            selectedBadge && !loading
-              ? "bg-slate-800 hover:bg-slate-900"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
-        >
-          {loading ? (
-            <span className="flex items-center gap-2">
-              <svg
-                className="animate-spin h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8v8z"
-                ></path>
-              </svg>
-              Loading...
-            </span>
-          ) : (
-            "Use Template →"
-          )}
-        </button>
-      </div>
-      <ToastContainer />
-    </div>
+    </>
   );
 };
 

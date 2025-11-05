@@ -269,6 +269,7 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
+            plan={plan}
             toggleStates={toggleStates}
             eventId={finalEventId}
             onNext={handleNext}

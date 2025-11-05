@@ -1,0 +1,175 @@
+import React from "react";
+import {
+  MoreVertical,
+  Eye,
+  Trash2,
+  CheckCircle,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import UserAvatar from "./useAvatar";
+
+// Helper functions for status display, extracted for reusability
+const getStatusIcon = (status: string) => {
+  switch (status) {
+    case "Printed":
+      return <CheckCircle size={14} className="text-green-600" />;
+    case "Pending":
+      return <Clock size={14} className="text-amber-600" />;
+    case "Error":
+      return <AlertCircle size={14} className="text-red-600" />;
+    default:
+      return null;
+  }
+};
+
+const getStatusColor = (status: string) => {
+  switch (status) {
+    case "Printed":
+      return "bg-green-50 text-green-700 border-green-200";
+    case "Pending":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    case "Error":
+      return "bg-red-50 text-red-700 border-red-200";
+    default:
+      return "bg-gray-50 text-gray-700 border-gray-200";
+  }
+};
+
+interface PrintBadgesTableRowProps {
+  user: any; // Consider more specific user type
+  isSelected: boolean;
+  onSelect: (userId: string) => void;
+  onActionClick: (userId: string) => void; // Toggles the action popup
+  activePopup: string | null; // ID of the user whose popup is active
+  onPerformAction: (action: string, userId: string) => void; // Handles preview/delete actions
+  isLoadingActions: boolean; // Indicates if an action is in progress
+  formatDate: (dateString: string) => string;
+}
+
+const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
+  user,
+  isSelected,
+  onSelect,
+  onActionClick,
+  activePopup,
+  onPerformAction,
+  isLoadingActions,
+  formatDate,
+}) => {
+  return (
+    <tr
+      key={user.id}
+      className="hover:bg-gray-50/50 transition-colors group relative"
+    >
+      <td className="p-4">
+        <input
+          type="checkbox"
+          className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          checked={isSelected}
+          onChange={() => onSelect(user.id)}
+        />
+      </td>
+      <td className="p-4 text-sm font-mono text-gray-900">#{user.id}</td>
+      <td className="p-4">
+        <div className="flex items-center gap-3">
+          <UserAvatar user={user} size="table" />
+          {/* <img
+            src={user?.attributes?.image || user?.attributes?.avatar}
+            alt={user?.attributes?.name || "User"}
+            style={{
+              width: 80,
+              height: 80,
+              borderRadius: "50%",
+              display: "none",
+            }}
+          /> */}
+
+          {/* Use flexible UserAvatar */}
+          <div>
+            <div className="font-medium text-gray-900">
+              {user.attributes?.name || "Unknown"}
+            </div>
+            <div className="text-sm text-gray-500">{user.department}</div>
+          </div>
+        </div>
+      </td>
+      <td className="p-4">
+        <div className="text-sm text-gray-900">
+          {user.attributes?.email || "No email"}
+        </div>
+      </td>
+      <td className="p-4">
+        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
+          {user.attributes?.user_type || "Attendee"}
+        </span>
+      </td>
+      <td className="p-4">
+        <div className="text-sm text-gray-900">
+          {user.attributes?.organization || "No organization"}
+        </div>
+      </td>
+      <td className="p-4">
+        <div className="text-sm text-gray-900">
+          {formatDate(user.attributes?.created_at)}
+        </div>
+      </td>
+      <td className="p-4">
+        <div className="flex flex-col gap-1">
+          <span
+            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+              user.printStatus
+            )}`}
+          >
+            <span className="flex items-center gap-1.5">
+              {getStatusIcon(user.printStatus)}
+              {user.printStatus}
+            </span>
+          </span>
+          {user.printedAt && (
+            <div className="text-xs text-gray-500">
+              {formatDate(user.printedAt)}
+            </div>
+          )}
+        </div>
+      </td>
+      <td className="p-4 relative">
+        <button
+          onClick={() => onActionClick(user.id)}
+          className="p-2 bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:bg-gray-200"
+          disabled={isLoadingActions}
+        >
+          <MoreVertical size={16} className="text-gray-600" />
+        </button>
+
+        {activePopup === user.id && (
+          <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px]">
+            <div className="py-2">
+              <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100">
+                Badge Actions
+              </div>
+
+              <button
+                onClick={() => onPerformAction("preview", user.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                <Eye size={16} />
+                Preview Badge
+              </button>
+
+              <button
+                onClick={() => onPerformAction("delete", user.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <Trash2 size={16} />
+                Remove User
+              </button>
+            </div>
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+};
+
+export default PrintBadgesTableRow;
