@@ -1,22 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { toast } from "react-toastify";
-import {
-    usersForCheckInArea,
-    usersForCheckOutArea,
-    postCheckInArea,
-    postCheckOutArea,
-
-    usersForCheckOutEvent,
-    bulkCheckInUsers,
-    tokenCheckIn,
-    tokenCheckOut,
-
-} from "@/apis/apiHelpers";
 import { Html5Qrcode } from "html5-qrcode";
-
 import Search from "@/components/Search";
 import Pagination from "@/components/Pagination";
+import {
+    getCheckIns,
+    getCheckOuts,
+    postCheckIns,
+    postCheckOuts,
+    QRCheckIn,
+    QRCheckOut,
+
+} from "@/apis/apiHelpers";
+
 
 interface GateOnboardingProps {
     gate: {
@@ -37,7 +34,10 @@ interface EnrolledUser {
         email: string;
         user_type: string;
         check_in?: string | null;
-        check_user_event_status?: string | number;
+        check_user_area_statuses?: {
+            check_in?: string | null;
+            check_out?: string | null;
+        }[];
     };
 }
 
@@ -54,6 +54,32 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     const eventId = gate?.attributes?.event_id;
     const sessionAreaId = gate?.id;
 
+    const [showInput, setShowInput] = useState(false);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    const notCheckedInUsers = enrolledUsers.filter(user => !user.attributes.check_in);
+
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 5; // 👈 change if you want larger/smaller pages
+
+    // Filter users by search term
+    const filteredUsers = enrolledUsers.filter((user) => {
+        const search = (searchTerm || "").toLowerCase();
+        const { name, email, user_type } = user.attributes;
+
+        return (
+            (name?.toLowerCase() || "").includes(search) ||
+            (email?.toLowerCase() || "").includes(search) ||
+            (user_type?.toLowerCase() || "").includes(search)
+        );
+    });
+
+    // Pagination logic
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+    const startIndex = (currentPage - 1) * usersPerPage;
+    const currentUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
+
     useEffect(() => {
         const fetchUsers = async () => {
             if (!eventId || !sessionAreaId) return;
@@ -64,10 +90,10 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
                 if (view === "registered_users") {
                     // ✅ Get users who need check-in for this session area
-                    response = await usersForCheckInArea(eventId, sessionAreaId);
+                    response = await getCheckIns(eventId, sessionAreaId);
                 } else {
                     // ✅ Get users who need check-out for this session area
-                    response = await usersForCheckOutArea(eventId, sessionAreaId);
+                    response = await getCheckOuts(eventId, sessionAreaId);
                 }
 
                 setEnrolledUsers(response?.data?.data || []);
@@ -83,52 +109,135 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         fetchUsers();
     }, [view, eventId, sessionAreaId]);
 
+    const handleAreaCheckIn = async (userIds: (string | number)[], userName?: string) => {
+        if (!eventId || !sessionAreaId) {
+            toast.error("Missing event or session area ID.");
+            return;
+        }
 
-    const handleCheckinUser = async (userId: string | number, userName?: string) => {
+        if (userIds.length === 0) {
+            toast.warn("No users selected.");
+            return;
+        }
+
+        console.log("🚀 Area check-in payload:", userIds);
+
+        try {
+            toast.info(`Checking in ${userIds.length} user${userIds.length > 1 ? "s" : ""}...`);
+
+            // Run all check-ins concurrently
+            await Promise.all(
+                userIds.map((userId) =>
+                    postCheckIns(eventId, sessionAreaId, userId)
+                )
+            );
+
+            toast.success(
+                userIds.length > 1
+                    ? `✅ Checked in ${userIds.length} users successfully!`
+                    : `✅ ${userName || "User"} checked in successfully!`
+            );
+
+            // ✅ Remove checked-in users
+            setEnrolledUsers((prev) => prev.filter((u) => !userIds.includes(u.id)));
+            setSelectedUsers([]);
+        } catch (err) {
+            console.error("❌ Area check-in failed:", err);
+            toast.error("Failed to check in some users.");
+        }
+    };
+
+    const handleQRCodeScan = async (qrData: string) => {
         if (!eventId || !sessionAreaId) {
             toast.error("Missing event or session area ID.");
             return;
         }
 
         try {
-            console.log("🚀 Area Check-In Payload:", { eventId, sessionAreaId, userId });
+            if (view === "registered_users") {
+                // ✅ Area Token Check-In
+                await QRCheckIn(eventId, sessionAreaId, qrData);
+                toast.success("User checked in to area successfully!");
 
-            const response = await postCheckInArea(eventId, sessionAreaId, userId);
-            console.log("✅ Area Check-In Response:", response);
+                // 🔄 Refresh users after check-in
+                const updatedUsers = await getCheckIns(eventId, sessionAreaId);
+                setEnrolledUsers(updatedUsers.data.data || []);
+            } else {
+                // ✅ Area Token Check-Out
+                try {
+                    await QRCheckOut(eventId, sessionAreaId, qrData);
+                    console.log("✅ Area check-out completed");
+                } catch (checkoutError: any) {
+                    console.warn("⚠️ Area check-out error, verifying...");
+                }
 
-            toast.success(`${userName || "User"} checked in successfully!`);
+                // 🔄 Refresh users after check-out
+                const updatedUsers = await getCheckOuts(eventId, sessionAreaId);
+                console.log("📋 Updated users after area checkout:", updatedUsers.data);
 
-            // ✅ Remove the user from the list after successful check-in
-            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
-        } catch (err) {
-            console.error("❌ Check-in failed:", err);
-            toast.error("Failed to check in user.");
+                // Check if user was actually removed
+                const userStillExists = updatedUsers.data.data?.some(
+                    (u: any) =>
+                        u.attributes?.token === qrData || String(u.id) === String(qrData)
+                );
+
+                if (!userStillExists) {
+                    toast.success("User checked out from area successfully!");
+                } else {
+                    toast.error("Failed to check out user from area.");
+                }
+
+                setEnrolledUsers(updatedUsers.data.data || []);
+            }
+        } catch (error: any) {
+            console.error("❌ Token operation failed:", error);
+
+            const errorMessage =
+                error?.response?.data?.error ||
+                error?.response?.data?.message ||
+                error?.message ||
+                `Failed to ${view === "registered_users" ? "check in" : "check out"} user.`;
+            toast.error(errorMessage);
         }
     };
 
-    // Handle check-out
-    const handleCheckOutUser = async (userId: string | number, userName?: string) => {
+    const handleAreaCheckOut = async (userIds: (string | number)[], userName?: string) => {
         if (!eventId || !sessionAreaId) {
             toast.error("Missing event or session area ID.");
             return;
         }
 
+        if (userIds.length === 0) {
+            toast.warn("No users selected.");
+            return;
+        }
+
+        console.log("🚀 Area check-out payload:", userIds);
+
         try {
-            console.log("🚀 Area Check-Out Payload:", { eventId, sessionAreaId, userId });
+            toast.info(`Checking out ${userIds.length} user${userIds.length > 1 ? "s" : ""}...`);
 
-            const response = await postCheckOutArea(eventId, sessionAreaId, userId);
-            console.log("✅ Area Check-Out Response:", response);
+            // Run all check-outs concurrently
+            await Promise.all(
+                userIds.map((userId) =>
+                    postCheckOuts(eventId, sessionAreaId, userId)
+                )
+            );
 
-            toast.success(`${userName || "User"} checked out successfully!`);
+            toast.success(
+                userIds.length > 1
+                    ? `✅ Checked out ${userIds.length} users successfully!`
+                    : `✅ ${userName || "User"} checked out successfully!`
+            );
 
-            // ✅ Remove the user from the list after successful check-out
-            setEnrolledUsers(prev => prev.filter(u => u.id !== userId));
+            // ✅ Remove checked-out users from the list
+            setEnrolledUsers((prev) => prev.filter((u) => !userIds.includes(u.id)));
+            setSelectedUsers([]);
         } catch (err) {
-            console.error("❌ Check-out failed:", err);
-            toast.error("Failed to check out user.");
+            console.error("❌ Area check-out failed:", err);
+            toast.error("Failed to check out some users.");
         }
     };
-
 
     // keep selectedUsers only for currently loaded users (remove stale ids)
     useEffect(() => {
@@ -149,8 +258,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         };
     }, []);
 
-
-
     const toggleUserSelection = (userId: string | number) => {
         setSelectedUsers(prev =>
             prev.includes(userId)
@@ -164,48 +271,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             setSelectedUsers([]);
         } else {
             setSelectedUsers(enrolledUsers.map(u => u.id));
-        }
-    };
-
-    const handleBulkCheckIn = async () => {
-        if (!eventId || selectedUsers.length === 0) return toast.warn("No users selected.");
-
-        console.log("Bulk check-in payload:", selectedUsers.map(id => ({ event_user_id: id })));
-
-        try {
-            await bulkCheckInUsers(eventId, selectedUsers.map(String));
-            toast.success(`Checked in ${selectedUsers.length} users successfully!`);
-            setEnrolledUsers(prev => prev.filter(u => !selectedUsers.includes(u.id)));
-            setSelectedUsers([]);
-        } catch (err) {
-            console.error("Bulk check-in failed:", err);
-            toast.error("Failed to check in some users.");
-        }
-    };
-
-    const handleBulkCheckOut = async () => {
-        if (!eventId || selectedUsers.length === 0) return toast.warn("No users selected.");
-
-        try {
-            for (const user of enrolledUsers.filter(u => selectedUsers.includes(u.id))) {
-                if (!user.attributes.check_user_event_status) {
-                    console.warn(`Skipping user ${user.id}: no statusId`);
-                    continue;
-                }
-
-                const payload = { event_user_id: user.id };
-                console.log("Check-Out Payload for user:", payload);
-
-                const response = await checkOutUser(String(eventId), user.id, user.attributes.check_user_event_status);
-                console.log(`Check-out response for user ${user.id}:`, response.data);
-            }
-
-            toast.success(`Checked out ${selectedUsers.length} users successfully!`);
-            setEnrolledUsers(prev => prev.filter(u => !selectedUsers.includes(u.id)));
-            setSelectedUsers([]);
-        } catch (err) {
-            console.error("Bulk check-out failed:", err);
-            toast.error("Failed to check out some users.");
         }
     };
 
@@ -276,92 +341,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         }
     };
 
-    // Handle QR Code Scan - Auto Check-In/Check-Out using Token
-    const handleQRCodeScan = async (qrData: string) => {
-        if (!eventId) {
-            toast.error("Event ID not found.");
-            return;
-        }
-
-        try {
-            if (view === "registered_users") {
-                // Token Check-In
-                await tokenCheckIn(eventId, qrData);
-                toast.success("User checked in successfully!");
-
-                // Refresh the registered users list
-                const updatedUsers = await usersForCheckIn(eventId);
-                setEnrolledUsers(updatedUsers.data.data || []);
-            } else {
-                // Token Check-Out
-                try {
-                    await tokenCheckOut(eventId, qrData);
-                    console.log('✅ Check-out request completed');
-                } catch (checkoutError: any) {
-                    // If it's a 500 error but the operation might have succeeded, 
-                    // we'll check by refreshing the list
-                    console.log('⚠️ Check-out response received, verifying...');
-                }
-
-                // Always refresh the list after checkout attempt
-                const updatedUsers = await usersForCheckOutEvent(eventId);
-                console.log("📋 Updated users after checkout:", updatedUsers.data);
-
-                // Check if the user was actually removed (checkout succeeded)
-                const userStillExists = updatedUsers.data.data?.some((u: any) =>
-                    u.attributes?.token === qrData || String(u.id) === String(qrData)
-                );
-
-                if (!userStillExists) {
-                    toast.success("User checked out successfully!");
-                } else {
-                    toast.error("Failed to check out user.");
-                }
-
-                setEnrolledUsers(updatedUsers.data.data || []);
-            }
-        } catch (error: any) {
-            console.error('❌ Token operation failed:', error);
-
-            const errorMessage = error?.response?.data?.error ||
-                error?.response?.data?.message ||
-                error?.message ||
-                `Failed to ${view === "registered_users" ? "check in" : "check out"} user.`;
-            toast.error(errorMessage);
-        }
-    };
-
-    const [showInput, setShowInput] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-
     useEffect(() => {
         if (showInput && inputRef.current) {
             inputRef.current.focus(); // 👈 auto focus when shown
         }
     }, [showInput]);
-
-    const notCheckedInUsers = enrolledUsers.filter(user => !user.attributes.check_in);
-
-    const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const usersPerPage = 5; // 👈 change if you want larger/smaller pages
-
-    // Filter users by search term
-    const filteredUsers = enrolledUsers.filter((user) => {
-        const search = (searchTerm || "").toLowerCase();
-        const { name, email, user_type } = user.attributes;
-
-        return (
-            (name?.toLowerCase() || "").includes(search) ||
-            (email?.toLowerCase() || "").includes(search) ||
-            (user_type?.toLowerCase() || "").includes(search)
-        );
-    });
-
-    // Pagination logic
-    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-    const startIndex = (currentPage - 1) * usersPerPage;
-    const currentUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
 
     const formatCheckIn = (checkIn?: string | null) => {
         if (!checkIn) return "N/A";
@@ -381,7 +365,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
         return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
     };
-
 
     return (
         <div className="min-h-screen  from-gray-50 to-gray-100 animate-fade-in">
@@ -527,14 +510,14 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             <div className="flex mb-4">
                                 {view === "registered_users" ? (
                                     <button
-                                        onClick={handleBulkCheckIn}
+                                        onClick={() => handleAreaCheckIn(selectedUsers)}
                                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
                                     >
                                         {selectedUsers.length} Bulk Check-In
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={handleBulkCheckOut}
+                                        onClick={() => handleAreaCheckOut(selectedUsers)}
                                         className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                                     >
                                         {selectedUsers.length} Bulk Check-Out
@@ -602,7 +585,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                         {view === "registered_users" ? (
                                                             <button
                                                                 className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-                                                                onClick={() => handleCheckinUser(user.id, user.attributes.name)}
+                                                                onClick={() => handleAreaCheckIn([user.id], user.attributes.name)}
                                                             >
                                                                 Check-In
                                                             </button>
@@ -610,10 +593,9 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                             <button
                                                                 className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
                                                                 onClick={() =>
-                                                                    handleCheckOutUser(
-                                                                        user.id,
-                                                                        user.attributes.name,
-                                                                        user.attributes.check_user_event_status
+                                                                    handleAreaCheckOut(
+                                                                        [user.id],
+                                                                        user.attributes.name
                                                                     )
                                                                 }
                                                             >
