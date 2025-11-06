@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Edit, Trash2, Plus } from "lucide-react";
-import { createSessionAreaApi, getSessionAreaApi, deleteSessionAreaApi, updateSessionAreaApi } from "@/apis/apiHelpers";
+import {
+  createSessionAreaApi,
+  getSessionAreaApi,
+  deleteSessionAreaApi,
+  updateSessionAreaApi,
+} from "@/apis/apiHelpers";
 import { Area } from "recharts";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -48,12 +53,12 @@ export default function Areas({}) {
   const [badgeLoading, setBadgeLoading] = useState(false);
 
   const eventId = localStorage.getItem("create_eventId");
-  console.log('event id----------+++++-----------------', eventId)
+  console.log("event id----------+++++-----------------", eventId);
 
   const fetchBadgeApi = async () => {
     if (!eventId) return;
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
       return;
@@ -98,11 +103,11 @@ export default function Areas({}) {
       fetchBadgeApi();
     }
   }, [eventId]);
-  
+
   // Fetch session areas on component mount
   useEffect(() => {
     if (eventId) {
-      console.log('event id---', eventId)
+      console.log("event id---", eventId);
       fetchSessionAreas();
     }
   }, [eventId]);
@@ -115,7 +120,7 @@ export default function Areas({}) {
 
     setLoading(true);
     setError(null);
-    
+
     try {
       const response = await getSessionAreaApi(eventId);
       console.log("GET API Response:", response);
@@ -127,9 +132,9 @@ export default function Areas({}) {
           name: item.attributes.name,
           location: item.attributes.location,
           type: item.attributes.user_type,
-          guestNumbers: item.attributes.guest_number
+          guestNumbers: item.attributes.guest_number,
         }));
-        
+
         setData(areas);
       } else {
         setData([]);
@@ -191,18 +196,18 @@ export default function Areas({}) {
             name: response.data.data.attributes.name,
             location: response.data.data.attributes.location,
             type: response.data.data.attributes.user_type,
-            guestNumbers: response.data.data.attributes.guest_number
+            guestNumbers: response.data.data.attributes.guest_number,
           };
 
           // Update local state immediately instead of refetching
-          setData(prevData => [...prevData, newAreaData]);
+          setData((prevData) => [...prevData, newAreaData]);
           setNewArea({
             name: "",
             location: "",
             type: "",
             guestNumbers: "",
           });
-          
+
           toast.success("Area added successfully!");
         }
       } else {
@@ -224,23 +229,23 @@ export default function Areas({}) {
       toast.error("Event ID not found");
       return;
     }
-  
+
     if (window.confirm("Are you sure you want to delete this area?")) {
       try {
         setDeleteLoading(id);
-        
+
         console.log(`Deleting area ${id} for event ${eventId}`);
-        
+
         // Call the DELETE API
         const response = await deleteSessionAreaApi(eventId, id);
         console.log("DELETE API Response:", response);
         console.log("DELETE API Status:", response.status);
         console.log("DELETE API Data:", response.data);
-  
+
         // Check for success
         if (response.status === 200 || response.status === 204) {
           console.log(`Successfully deleted area with id: ${id}`);
-          
+
           // Refresh data to ensure UI matches server state
           await fetchSessionAreas();
           toast.success("Area deleted successfully!");
@@ -251,7 +256,7 @@ export default function Areas({}) {
         console.error("Error deleting area:", error);
         setError("Failed to delete session area");
         toast.error("Failed to delete session area");
-        
+
         // Refresh to get current state
         await fetchSessionAreas();
       } finally {
@@ -271,18 +276,18 @@ export default function Areas({}) {
       toast.error("Edit data or Event ID not found");
       return;
     }
-  
+
     try {
       setSaveLoading(editData.id);
-  
+
       // Store previous data for rollback
       const previousData = data;
-  
+
       // Optimistically update UI
-      setData(prevData => 
+      setData((prevData) =>
         prevData.map((area) => (area.id === editData.id ? editData : area))
       );
-  
+
       // Prepare data for UPDATE API - REMOVE THE ID FROM THE PAYLOAD
       const updateData = {
         session_area: {
@@ -290,16 +295,20 @@ export default function Areas({}) {
           location: editData.location,
           user_type: editData.type,
           guest_number: editData.guestNumbers,
-          event_id: eventId
-        }
+          event_id: eventId,
+        },
       };
-  
+
       console.log("UPDATE API Data:", updateData);
-      
+
       // Call the UPDATE API
-      const response = await updateSessionAreaApi(eventId, editData.id, updateData);
+      const response = await updateSessionAreaApi(
+        eventId,
+        editData.id,
+        updateData
+      );
       console.log("UPDATE API Response:", response);
-  
+
       if (response?.data?.data) {
         // Use the response data to ensure consistency
         const updatedArea: Area = {
@@ -307,14 +316,16 @@ export default function Areas({}) {
           name: response.data.data.attributes.name,
           location: response.data.data.attributes.location,
           type: response.data.data.attributes.user_type,
-          guestNumbers: response.data.data.attributes.guest_number
+          guestNumbers: response.data.data.attributes.guest_number,
         };
-  
+
         // Update with server response
-        setData(prevData => 
-          prevData.map((area) => (area.id === updatedArea.id ? updatedArea : area))
+        setData((prevData) =>
+          prevData.map((area) =>
+            area.id === updatedArea.id ? updatedArea : area
+          )
         );
-        
+
         setEditingRow(null);
         setEditData(null);
         console.log(`Successfully updated area with id: ${editData.id}`);
@@ -326,7 +337,7 @@ export default function Areas({}) {
       console.error("Error updating area:", error);
       setError("Failed to update session area");
       toast.error("Failed to update session area");
-      
+
       // Rollback on error
       await fetchSessionAreas();
     } finally {
@@ -421,22 +432,31 @@ export default function Areas({}) {
 
       {/* Header with Add Form */}
       <div style={{ marginBottom: "32px" }}>
-        <h1 style={{ fontSize: "24px", fontWeight: "bold", color: "#111827", marginBottom: "16px" }}>
+        <h1
+          style={{
+            fontSize: "24px",
+            fontWeight: "bold",
+            color: "#111827",
+            marginBottom: "16px",
+          }}
+        >
           Session Areas
         </h1>
 
         {/* Error Message */}
         {error && (
-          <div style={{
-            padding: "12px",
-            backgroundColor: "#fef2f2",
-            border: "1px solid #fecaca",
-            borderRadius: "6px",
-            color: "#dc2626",
-            marginBottom: "16px"
-          }}>
+          <div
+            style={{
+              padding: "12px",
+              backgroundColor: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: "6px",
+              color: "#dc2626",
+              marginBottom: "16px",
+            }}
+          >
             {error}
-            <button 
+            <button
               onClick={() => setError(null)}
               style={{
                 marginLeft: "10px",
@@ -444,7 +464,7 @@ export default function Areas({}) {
                 border: "none",
                 color: "#dc2626",
                 cursor: "pointer",
-                fontSize: "16px"
+                fontSize: "16px",
               }}
             >
               ×
@@ -454,12 +474,14 @@ export default function Areas({}) {
 
         {/* Loading State */}
         {loading && (
-          <div style={{
-            padding: "12px",
-            textAlign: "center",
-            color: "#6b7280",
-            marginBottom: "16px"
-          }}>
+          <div
+            style={{
+              padding: "12px",
+              textAlign: "center",
+              color: "#6b7280",
+              marginBottom: "16px",
+            }}
+          >
             Loading session areas...
           </div>
         )}
@@ -573,7 +595,9 @@ export default function Areas({}) {
                 Select User Type
               </option>
               {badgeLoading ? (
-                <option value="" disabled>Loading badges...</option>
+                <option value="" disabled>
+                  Loading badges...
+                </option>
               ) : (
                 badges.map((badge) => (
                   <option key={badge.id} value={badge.attributes.badge_type}>
@@ -925,7 +949,10 @@ export default function Areas({}) {
                       }}
                     >
                       {badges.map((badge) => (
-                        <option key={badge.id} value={badge.attributes.badge_type}>
+                        <option
+                          key={badge.id}
+                          value={badge.attributes.badge_type}
+                        >
                           {badge.attributes.name}
                         </option>
                       ))}
@@ -993,12 +1020,16 @@ export default function Areas({}) {
                           disabled={saveLoading === area.id}
                           style={{
                             padding: "6px 12px",
-                            backgroundColor: saveLoading === area.id ? "#9ca3af" : "#10b981",
+                            backgroundColor:
+                              saveLoading === area.id ? "#9ca3af" : "#10b981",
                             color: "white",
                             border: "none",
                             borderRadius: "4px",
                             fontSize: "12px",
-                            cursor: saveLoading === area.id ? "not-allowed" : "pointer",
+                            cursor:
+                              saveLoading === area.id
+                                ? "not-allowed"
+                                : "pointer",
                             display: "flex",
                             alignItems: "center",
                             gap: "4px",
@@ -1006,14 +1037,16 @@ export default function Areas({}) {
                         >
                           {saveLoading === area.id ? (
                             <>
-                              <div style={{
-                                width: "12px",
-                                height: "12px",
-                                border: "2px solid #f3f4f6",
-                                borderTop: "2px solid #ffffff",
-                                borderRadius: "50%",
-                                animation: "spin 1s linear infinite"
-                              }} />
+                              <div
+                                style={{
+                                  width: "12px",
+                                  height: "12px",
+                                  border: "2px solid #f3f4f6",
+                                  borderTop: "2px solid #ffffff",
+                                  borderRadius: "50%",
+                                  animation: "spin 1s linear infinite",
+                                }}
+                              />
                               Saving...
                             </>
                           ) : (
@@ -1030,7 +1063,10 @@ export default function Areas({}) {
                             border: "none",
                             borderRadius: "4px",
                             fontSize: "12px",
-                            cursor: saveLoading === area.id ? "not-allowed" : "pointer",
+                            cursor:
+                              saveLoading === area.id
+                                ? "not-allowed"
+                                : "pointer",
                           }}
                         >
                           Cancel
@@ -1069,8 +1105,12 @@ export default function Areas({}) {
                             backgroundColor: "transparent",
                             border: "none",
                             borderRadius: "4px",
-                            cursor: deleteLoading === area.id ? "not-allowed" : "pointer",
-                            color: deleteLoading === area.id ? "#9ca3af" : "#ef4444",
+                            cursor:
+                              deleteLoading === area.id
+                                ? "not-allowed"
+                                : "pointer",
+                            color:
+                              deleteLoading === area.id ? "#9ca3af" : "#ef4444",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1087,14 +1127,16 @@ export default function Areas({}) {
                           }
                         >
                           {deleteLoading === area.id ? (
-                            <div style={{
-                              width: "16px",
-                              height: "16px",
-                              border: "2px solid #f3f4f6",
-                              borderTop: "2px solid #ef4444",
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite"
-                            }} />
+                            <div
+                              style={{
+                                width: "16px",
+                                height: "16px",
+                                border: "2px solid #f3f4f6",
+                                borderTop: "2px solid #ef4444",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
+                              }}
+                            />
                           ) : (
                             <Trash2 size={16} />
                           )}

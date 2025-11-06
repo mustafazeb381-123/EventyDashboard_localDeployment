@@ -7,6 +7,7 @@ import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
+import AdvanceAppManagement from "./component/AdvanceAppManagement";
 
 export interface ToggleStates {
   confirmationMsg: boolean;
@@ -290,14 +291,27 @@ const ExpressEvent = () => {
         );
       case 4:
         return (
-          <Areas
-            eventId={finalEventId}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
-          />
+          <>
+            {plan === "advanced" ? (
+              <AdvanceAppManagement
+                eventId={finalEventId}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                currentStep={currentStep}
+                totalSteps={steps.length}
+              />
+            ) : (
+              <Areas
+                eventId={finalEventId}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                currentStep={currentStep}
+                totalSteps={steps.length}
+              />
+            )}
+          </>
         );
+
       default:
         return (
           <MainData

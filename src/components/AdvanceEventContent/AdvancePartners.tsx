@@ -2,17 +2,19 @@ import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
 
 interface AdvancePartnersProps {
-  onNext?: () => void;
+  onNext?: (eventId?: string | number) => void;
   onPrevious?: () => void;
   currentStep?: number;
   totalSteps?: number;
+  eventId?: string | number;
 }
 
 function AdvancePartners({
   onNext,
   onPrevious,
   currentStep = 1,
-  totalSteps = 4,
+  totalSteps = 5,
+  eventId,
 }: AdvancePartnersProps) {
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -108,7 +110,11 @@ function AdvancePartners({
     setAddModalOpen(false);
   };
 
-  const handleNext = () => onNext && onNext();
+  const handleNext = () => {
+    if (onNext) {
+      onNext(eventId);
+    }
+  };
   const handleBack = () => onPrevious && onPrevious();
 
   const UserAvatar = ({ user }: { user: any }) => (

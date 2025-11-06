@@ -132,6 +132,7 @@ const Badges: React.FC<BadgesProps> = ({
   eventId,
   plan,
 }) => {
+  console.log(plan, currentStep, eventId);
   const [openModal, setOpenModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [activeBadgeId, setActiveBadgeId] = useState<number | null>(null);
@@ -291,7 +292,18 @@ const Badges: React.FC<BadgesProps> = ({
   return (
     <>
       {plan === "advanced" ? (
-        <AdvanceEventContent />
+        <AdvanceEventContent
+          onComplete={(eventId) => {
+            console.log(
+              "🔄 Advanced flow completed, moving to main Badge step"
+            );
+            if (onNext) {
+              onNext(eventId, plan);
+            }
+          }}
+          onPrevious={onPrevious}
+          eventId={effectiveEventId}
+        />
       ) : (
         <div className="w-full mx-5 bg-white p-5 rounded-2xl">
           {/* Header */}

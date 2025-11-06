@@ -2,18 +2,26 @@ import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
 
 interface AdvanceSpeakerProps {
-  onNext?: () => void;
+  onNext?: (eventId?: string | number) => void;
   onPrevious?: () => void;
   currentStep?: number;
   totalSteps?: number;
+  eventId?: string | number;
 }
 
 function AdvanceSpeaker({
   onNext,
   onPrevious,
   currentStep = 1,
-  totalSteps = 4,
+  totalSteps = 5,
+  eventId,
 }: AdvanceSpeakerProps) {
+  // useEffect(() => {
+  //   const eventId = localStorage.getItem("create_eventId");
+  //   console.log("event id-- in speaker----------", eventId);
+  // }, [eventId]);
+
+  // console.log("RegistrationForm - effective event id:", effectiveEventId);
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -121,7 +129,7 @@ function AdvanceSpeaker({
 
   const handleNext = () => {
     if (onNext) {
-      onNext();
+      onNext(eventId);
     }
   };
 

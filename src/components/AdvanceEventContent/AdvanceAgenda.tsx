@@ -1,19 +1,21 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
 
-interface AdvanceSpeakerProps {
-  onNext?: () => void;
+interface AdvanceAgendaProps {
+  onNext?: (eventId?: string | number) => void;
   onPrevious?: () => void;
   currentStep?: number;
   totalSteps?: number;
+  eventId?: string | number;
 }
 
 function AdvanceAgenda({
   onNext,
   onPrevious,
   currentStep = 1,
-  totalSteps = 4,
-}: AdvanceSpeakerProps) {
+  totalSteps = 5,
+  eventId,
+}: AdvanceAgendaProps) {
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -194,7 +196,7 @@ function AdvanceAgenda({
 
   const handleNext = () => {
     if (onNext) {
-      onNext();
+      onNext(eventId);
     }
   };
 
@@ -353,7 +355,7 @@ function AdvanceAgenda({
 
                   <td className="px-6 py-4">
                     <div className="flex -space-x-2">
-                      {session.sponsors.slice(0, 4).map((sponsorId: string) => {
+                      {session.sponsors.slice(0, 5).map((sponsorId: string) => {
                         const sponsor = eventUsers.find(
                           (u) => u.id === sponsorId
                         );
