@@ -121,10 +121,10 @@ function TemplateFormSeven({
       name: "profilePic",
       type: "file",
       label: "Upload Profile Picture",
-      accept: ".png,.jpg,.jpeg",
+      accept: "image/jpeg,image/png,image/jpg",
       maxSize: 2 * 1024 * 1024, // 2MB
-      allowedTypes: ["image/png", "image/jpeg"],
-      hint: "PNG or JPG (max. 2MB)",
+      allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+      hint: "Upload JPG, PNG (Max 2MB)",
       required: false,
       active: true,
     },
@@ -132,22 +132,23 @@ function TemplateFormSeven({
 
   // Fetch API form data when no data prop is provided
   useEffect(() => {
-    if (!effectiveEventId) return;
+    if (!effectiveEventId) {
+      setIsLoadingApiData(false);
+      return;
+    }
 
     const fetchApiFormData = async () => {
+      if (data && Array.isArray(data) && data.length > 0) {
+        setIsLoadingApiData(false); // Important!
+        return;
+      }
+
       setIsLoadingApiData(true);
       try {
         const response = await getRegistrationFieldApi(effectiveEventId);
-        console.log(
-          "TemplateSeven - getRegistrationFieldApi response:",
-          response.data
-        );
         setApiFormData(response.data.data || []);
       } catch (error) {
-        console.error(
-          "TemplateSeven - Failed to get registration field:",
-          error
-        );
+        console.error(error);
         setApiFormData([]);
       } finally {
         setIsLoadingApiData(false);
@@ -156,6 +157,7 @@ function TemplateFormSeven({
 
     fetchApiFormData();
   }, [effectiveEventId, data]);
+
 
   const formFields = useMemo((): any[] => {
     // Priority: 1. data prop, 2. apiFormData, 3. defaultFormFields
@@ -173,16 +175,25 @@ function TemplateFormSeven({
         id: field.id,
         name: attr.field || attr.name || "field_" + field.id,
         type:
-          attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+          attr.field === "image"
+            ? "file"
+            : attr.validation_type === "email"
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
-        placeholder: `Enter ${attr.name || "value"}`,
+        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
         active: attr.active,
+        // Add file-specific properties for image fields
+        ...(attr.field === "image" && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)"
+        }),
       };
     });
   }, [data, apiFormData]);
@@ -194,6 +205,7 @@ function TemplateFormSeven({
   // Update field active states when formFields change
   useEffect(() => {
     const newActiveStates = formFields.reduce((acc: any, field: any) => {
+      // Default to active (true) if not specified, especially for default fields
       acc[field.id] = field.active !== false;
       return acc;
     }, {});
@@ -242,6 +254,9 @@ function TemplateFormSeven({
         setFormData((prev) => ({ ...prev, eventLogo: file }));
         setLogoError("");
       };
+      img.onerror = () => {
+        setLogoError("Error loading image. Please try another file.");
+      };
       img.src = URL.createObjectURL(file);
     }
   };
@@ -261,15 +276,16 @@ function TemplateFormSeven({
 
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append("registration_page_banner", formData.eventLogo);
+      uploadFormData.append("event[registration_page_banner]", formData.eventLogo);
 
-      await updateEventById(effectiveEventId, uploadFormData);
+      const response = await updateEventById(effectiveEventId, uploadFormData);
+      console.log("Event banner updated:", response);
 
       // Fetch updated event/banner
       const eventResponse = await getEventbyId(effectiveEventId);
       console.log("Fetched event after banner update:", eventResponse);
       fetchEventData();
-      setBannerUrl(eventResponse.data.data.eventLogo || null);
+      setBannerUrl(eventResponse.data.data.registration_page_banner || null);
       setFormData({ eventLogo: null });
 
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -309,24 +325,26 @@ function TemplateFormSeven({
         <div
           style={{
             width: "48%",
-            backgroundImage: `url(${
-              formData.eventLogo
-                ? URL.createObjectURL(formData.eventLogo)
-                : eventData?.attributes?.registration_page_banner
+            backgroundImage: `url(${formData.eventLogo
+              ? URL.createObjectURL(formData.eventLogo)
+              : eventData?.attributes?.registration_page_banner
                 ? eventData.attributes.registration_page_banner
                 : bannerUrl
-                ? bannerUrl
-                : Assets.images.uploadBackground3
-            })`,
+                  ? bannerUrl
+                  : Assets.images.uploadBackground3
+              })`,
           }}
-          className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+          className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
         >
           {/* Show upload button only if NO image exists */}
           {!formData.eventLogo &&
             !eventData?.attributes?.registration_page_banner &&
             !bannerUrl && (
-              <button className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer">
+              <button
+                className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 <img
                   src={Assets.icons.upload}
                   style={{ height: 20, width: 20 }}
@@ -347,17 +365,6 @@ function TemplateFormSeven({
               </button>
             )}
 
-          {/* Show upload button when new image is selected */}
-          {formData.eventLogo && (
-            <button
-              className="absolute bottom-3 right-3 px-4 py-2 bg-green-600 text-white rounded-lg"
-              type="button"
-              onClick={handleUploadBanner}
-            >
-              Upload Banner
-            </button>
-          )}
-
           <input
             type="file"
             ref={fileInputRef}
@@ -366,6 +373,7 @@ function TemplateFormSeven({
             accept=".svg,.png,.jpg,.jpeg"
           />
 
+          {/* Remove button (only when a new image is selected before upload) */}
           {formData.eventLogo && (
             <button
               type="button"
@@ -377,19 +385,30 @@ function TemplateFormSeven({
           )}
         </div>
 
+        {/* Upload button (only when a new image is selected) */}
+        {formData.eventLogo && (
+          <button
+            type="button"
+            onClick={handleUploadBanner}
+            className="absolute bottom-3 left-3 px-4 py-2 bg-pink-600 text-white rounded-lg"
+          >
+            Upload Banner
+          </button>
+        )}
+
         {logoError && (
           <p className="mt-2 flex items-center text-xs text-red-600">
-            <Info size={14} className="mr-1 flex-shrink-0" />
+            <Info size={14} className="mr-1" />
             {logoError}
           </p>
         )}
 
         <div style={{ marginTop: 16 }} />
 
-        <div className="w-full " style={{ width: "48%" }}>
+        <div className="w-full" style={{ width: "48%" }}>
           {/* Event Information Display with Dynamic Data */}
-          <div className="  gap-3 flex flex-row items-center">
-            <div style={{ padding: 32 }} className=" bg-neutral-50 rounded-2xl">
+          <div className="gap-3 flex flex-row items-center">
+            <div style={{ padding: 32 }} className="bg-neutral-50 rounded-2xl">
               <img
                 src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
                 style={{ height: 67.12, width: 72 }}
@@ -401,7 +420,7 @@ function TemplateFormSeven({
                 {eventData?.attributes?.name || "Event Name"}
               </p>
 
-              <div className="flex flex-row items-center gap-3 ">
+              <div className="flex flex-row items-center gap-3">
                 <img
                   src={Assets.icons.clock}
                   style={{ height: 20, width: 20 }}
@@ -413,13 +432,13 @@ function TemplateFormSeven({
                 </p>
               </div>
 
-              <div className="flex flex-row items-center gap-3 ">
+              <div className="flex flex-row items-center gap-3">
                 <img
                   src={Assets.icons.location}
                   style={{ height: 20, width: 20 }}
                   alt=""
                 />
-                <p className=" text-neutral-600 font-poppins font-normal text-xs">
+                <p className="text-neutral-600 font-poppins font-normal text-xs">
                   {eventData?.attributes?.location || "Location"}
                 </p>
               </div>
@@ -438,6 +457,7 @@ function TemplateFormSeven({
       </div>
 
       <div style={{ marginTop: 24 }} />
+
       {/* Registration Form with Dynamic Fields and Toggle Functionality */}
       <div className="bg-white rounded-lg p-6 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
@@ -456,7 +476,7 @@ function TemplateFormSeven({
             // @ts-ignore - Temporary ignore for form fields typing issue
             formFields={formFields.map((field) => ({
               ...field,
-              active: fieldActiveStates[field.id] !== false,
+              active: fieldActiveStates[field.id] !== false, // Show as active by default, disable only if explicitly set to false
             }))}
             onToggleField={(fieldId: any) =>
               handleToggleField(fieldId, setToggleLoading)

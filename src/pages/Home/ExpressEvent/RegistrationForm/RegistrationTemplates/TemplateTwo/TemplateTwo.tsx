@@ -1,8 +1,6 @@
-import React from "react";
+
 import { Loader2 } from "lucide-react";
-import Assets from "@/utils/Assets";
 import TemplateForm from "./TemplateForm";
-import { useNavigate } from "react-router-dom";
 
 const TemplateTwo = ({
   onUseTemplate,
@@ -21,7 +19,7 @@ const TemplateTwo = ({
     eventId,
     data
   );
-  const navigation = useNavigate();
+
 
   console.log("form data in template two ::::", data);
 
@@ -76,11 +74,10 @@ const TemplateTwo = ({
         <button
           onClick={handleUseTemplate}
           disabled={isLoading}
-          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
-            isLoading
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-slate-800 text-white hover:bg-slate-900"
-          }`}
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${isLoading
+            ? "bg-gray-400 text-white cursor-not-allowed"
+            : "bg-slate-800 text-white hover:bg-slate-900"
+            }`}
         >
           {isLoading ? (
             <>

@@ -1,7 +1,7 @@
+import { useMemo } from "react";
 import Assets from "@/utils/Assets";
 import RegistrationFormPreview from "./components/RegistrationFormPreview";
 
-// Template Four - Matches the registration template structure
 const TemplateFormFour = ({
   eventData,
   formFields,
@@ -9,8 +9,43 @@ const TemplateFormFour = ({
   eventData: any;
   formFields: any[];
 }) => {
-  console.log("Event Data in TemplateFormFour:", eventData);
-  console.log("Form Fields in TemplateFormFour:", formFields);
+  console.log("Event Attributes (Template 4):", eventData?.attributes);
+  console.log("Event Form Data Attributes (RAW Template 4):", formFields);
+
+  // ✅ Get tenant_uuid from localStorage
+  const tenantUuid = localStorage.getItem("tenant_uuid");
+  console.log("TENANT TEMP:", tenantUuid);
+
+  // ✅ Fix the type for image fields and move them to the end (same as Template 3)
+  const mappedFormFields = useMemo(() => {
+    if (!Array.isArray(formFields) || formFields.length === 0) return [];
+
+    const mapped = formFields.map((field: any) => {
+      const isCompanyField = field.name === "company";
+      const fieldName = isCompanyField ? "organization" : field.name;
+      const isImageField = fieldName === "image";
+
+      return {
+        ...field,
+        name: fieldName,
+        type: isImageField ? "file" : field.type,
+        placeholder: isImageField ? "" : field.placeholder,
+        ...(isImageField && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)",
+        }),
+      };
+    });
+
+    const nonImageFields = mapped.filter((f) => f.name !== "image");
+    const imageFields = mapped.filter((f) => f.name === "image");
+
+    return [...nonImageFields, ...imageFields];
+  }, [formFields]);
+
+  console.log("Mapped Form Fields (Template 4):", mappedFormFields);
 
   return (
     <div
@@ -25,20 +60,13 @@ const TemplateFormFour = ({
     >
       {/* Content Container */}
       <div className="w-full mx-auto">
-        <div style={{ marginTop: 16 }} />
-
-        {/* Event Information Display - Horizontal Layout */}
+        {/* Event Information Display */}
         <div className="gap-3 flex flex-row items-center">
           <div style={{ padding: 32 }} className="bg-neutral-100 rounded-2xl">
             <img
-              src={eventData?.attributes?.logo_url || "/api/placeholder/72/67"}
-              alt="Event Logo"
+              src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
               style={{ height: 67.12, width: 72 }}
-              className="object-cover rounded-lg"
-              onError={(e) => {
-                // Fallback to default on error
-                e.currentTarget.src = "/api/placeholder/72/67";
-              }}
+              alt="Event Logo"
             />
           </div>
 
@@ -84,21 +112,17 @@ const TemplateFormFour = ({
         <div style={{ marginTop: 24 }} />
 
         {/* Registration Form */}
-        <div className="bg-white/20 backdrop-blur-md rounded-lg p-6 border border-white/30">
-          <h3 className="text-lg font-semibold text-white mb-6 drop-shadow-lg">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">
             Please fill name and contact information of attendees.
           </h3>
 
-          {formFields && formFields.length > 0 ? (
-            <RegistrationFormPreview
-              formFields={formFields || []}
-              submitButtonText="Register"
-            />
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-white">No form fields available</p>
-            </div>
-          )}
+          <RegistrationFormPreview
+            formFields={mappedFormFields}
+            eventId={eventData?.attributes?.uuid}
+            tenantUuid={tenantUuid || undefined}
+            submitButtonText="Register Now"
+          />
         </div>
       </div>
     </div>

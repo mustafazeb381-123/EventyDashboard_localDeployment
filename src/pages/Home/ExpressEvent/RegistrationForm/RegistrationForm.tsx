@@ -256,11 +256,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           {templates.map((temp) => (
             <div
               key={temp.id}
-              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${
-                selectedTemplate?.id === temp.id
-                  ? "border-green-500 bg-green-50"
-                  : "border-gray-200 hover:border-[#2E3166E5]"
-              }`}
+              className={`relative group border-2 rounded-3xl p-4 transition-colors cursor-pointer ${selectedTemplate?.id === temp.id
+                ? "border-green-500 bg-green-50"
+                : "border-gray-200 hover:border-[#2E3166E5]"
+                }`}
               onClick={() =>
                 setSelectedTemplate(
                   selectedTemplate?.id === temp.id ? null : temp
@@ -360,11 +359,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
           <button
             onClick={handleStepNext}
             disabled={!selectedTemplate}
-            className={`w-full sm:w-auto p-2 text-sm rounded-lg text-white ${
-              !selectedTemplate
-                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                : "bg-slate-800 hover:bg-slate-900"
-            }`}
+            className={`w-full sm:w-auto p-2 text-sm rounded-lg text-white ${!selectedTemplate
+              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+              : "bg-slate-800 hover:bg-slate-900"
+              }`}
           >
             Step 2 →
           </button>
@@ -392,11 +390,10 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
         <button
           onClick={onNext}
           disabled={internalStep < 1}
-          className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-white ${
-            internalStep < 1
-              ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-              : "bg-slate-800 hover:bg-slate-900"
-          }`}
+          className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-white ${internalStep < 1
+            ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+            : "bg-slate-800 hover:bg-slate-900"
+            }`}
         >
           Badges →
         </button>

@@ -1,4 +1,3 @@
-// Updated TemplateForm.jsx with full background
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Assets from "@/utils/Assets";
@@ -18,20 +17,20 @@ function TemplateFormFour({
   eventId?: string;
   isUserRegistration?: boolean;
 } = {}) {
-  // Log all field attributes for debugging
+  // Log field attributes
   useMemo(() => {
     if (Array.isArray(data)) {
       console.log(`Template Four received ${data.length} fields:`, data);
     }
   }, [data]);
 
-  // State management
+  // States
   const [toggleLoading, setToggleLoading] = useState({});
   const [eventData, setEventData] = useState<any>(null);
   const [apiFormData, setApiFormData] = useState<any[]>([]);
   const [isLoadingApiData, setIsLoadingApiData] = useState(false);
 
-  // Get effective event ID
+  // Get event ID
   const { id: routeId } = useParams();
   const effectiveEventId =
     (propEventId as string | undefined) ||
@@ -39,7 +38,7 @@ function TemplateFormFour({
     localStorage.getItem("create_eventId") ||
     undefined;
 
-  // Default form fields when no data is provided (for preview)
+  // Default form fields
   const defaultFormFields = [
     {
       id: 1,
@@ -58,10 +57,6 @@ function TemplateFormFour({
       placeholder: "Enter your email",
       required: true,
       active: true,
-      validation: (value: any) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(value) || "Please enter a valid email address";
-      },
     },
     {
       id: 3,
@@ -74,24 +69,6 @@ function TemplateFormFour({
     },
     {
       id: 4,
-      name: "idNumber",
-      type: "text",
-      label: "ID Number",
-      placeholder: "Enter your ID number",
-      required: true,
-      active: true,
-    },
-    {
-      id: 5,
-      name: "position",
-      type: "text",
-      label: "Position (Title)",
-      placeholder: "Enter your position/title",
-      required: true,
-      active: true,
-    },
-    {
-      id: 6,
       name: "company",
       type: "text",
       label: "Company",
@@ -99,50 +76,30 @@ function TemplateFormFour({
       required: false,
       active: true,
     },
-    {
-      id: 7,
-      name: "profilePic",
-      type: "file",
-      label: "Upload Profile Picture",
-      accept: ".png,.jpg,.jpeg",
-      maxSize: 2 * 1024 * 1024, // 2MB
-      allowedTypes: ["image/png", "image/jpeg"],
-      hint: "PNG or JPG (max. 2MB)",
-      required: false,
-      active: true,
-    },
   ];
 
-  // Fetch form fields from API when no data is provided
+  // Fetch form fields
   useEffect(() => {
     const fetchApiFormData = async () => {
       if (!effectiveEventId) return;
-      if (data && Array.isArray(data) && data.length > 0) return; // Don't fetch if data is already provided
+      if (data && Array.isArray(data) && data.length > 0) return;
 
       setIsLoadingApiData(true);
       try {
         const response = await getRegistrationFieldApi(effectiveEventId);
-        console.log(
-          "TemplateFour - getRegistrationFieldApi response:",
-          response.data
-        );
+        console.log("TemplateFour - getRegistrationFieldApi response:", response.data);
         setApiFormData(response.data.data || []);
       } catch (error) {
-        console.error(
-          "TemplateFour - Failed to get registration field:",
-          error
-        );
+        console.error("TemplateFour - Failed to get registration field:", error);
         setApiFormData([]);
       } finally {
         setIsLoadingApiData(false);
       }
     };
-
     fetchApiFormData();
   }, [effectiveEventId, data]);
 
   const formFields = useMemo((): any[] => {
-    // Priority: 1. data prop, 2. apiFormData, 3. defaultFormFields
     let sourceData = data;
     if (!Array.isArray(sourceData) || sourceData.length === 0) {
       sourceData = apiFormData;
@@ -157,28 +114,33 @@ function TemplateFormFour({
         id: field.id,
         name: attr.field || attr.name || "field_" + field.id,
         type:
-          attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+          attr.field === "image"
+            ? "file"
+            : attr.validation_type === "email"
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
-        placeholder: `Enter ${attr.name || "value"}`,
+        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
         active: attr.active,
+        ...(attr.field === "image" && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024,
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)",
+        }),
       };
     });
   }, [data, apiFormData]);
 
-  const [fieldActiveStates, setFieldActiveStates] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [fieldActiveStates, setFieldActiveStates] = useState<{ [key: string]: boolean }>({});
 
-  // Update field active states when formFields change
+  // Sync field active states
   useEffect(() => {
     const newActiveStates = formFields.reduce((acc: any, field: any) => {
-      // Default to active (true) if not specified, especially for default fields
       acc[field.id] = field.active !== false;
       return acc;
     }, {});
@@ -209,7 +171,7 @@ function TemplateFormFour({
     if (!effectiveEventId) return;
     try {
       const response = await getEventbyId(effectiveEventId);
-      console.log("Event data fetched in useEffect :: ", response.data.data);
+      console.log("Event data fetched:", response.data.data);
       setEventData(response.data.data);
     } catch (error) {
       console.error("Failed to fetch event data:", error);
@@ -236,18 +198,15 @@ function TemplateFormFour({
       }}
       className="min-h-screen w-full p-4"
     >
-      {/* Content Container with semi-transparent overlay if needed */}
+      {/* Content */}
       <div className="w-full mx-auto">
-        {/* Event Cover Image Upload */}
-
-        <div style={{ marginTop: 16 }} />
-
-        {/* Event Information Display */}
+        {/* Event Info */}
         <div className="gap-3 flex flex-row items-center">
-          <div style={{ padding: 32 }} className=" bg-neutral-50 rounded-2xl">
+          <div style={{ padding: 32 }} className="bg-neutral-50 rounded-2xl">
             <img
               src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
               style={{ height: 67.12, width: 72 }}
+              alt="Event Logo"
             />
           </div>
 
@@ -256,7 +215,7 @@ function TemplateFormFour({
               {eventData?.attributes?.name || "Event Name"}
             </p>
 
-            <div className="flex flex-row items-center gap-3 ">
+            <div className="flex flex-row items-center gap-3">
               <img
                 src={Assets.icons.clock}
                 style={{ height: 20, width: 20 }}
@@ -268,13 +227,13 @@ function TemplateFormFour({
               </p>
             </div>
 
-            <div className="flex flex-row items-center gap-3 ">
+            <div className="flex flex-row items-center gap-3">
               <img
                 src={Assets.icons.location}
                 style={{ height: 20, width: 20 }}
                 alt=""
               />
-              <p className=" text-neutral-600 font-poppins font-normal text-xs">
+              <p className="text-neutral-600 font-poppins font-normal text-xs">
                 {eventData?.attributes?.location || "Location"}
               </p>
             </div>
@@ -293,24 +252,24 @@ function TemplateFormFour({
         <div style={{ marginTop: 24 }} />
 
         {/* Registration Form */}
-        <div className="bg-white/20 backdrop-blur-md rounded-lg p-6 border border-white/30">
-          <h3 className="text-lg font-semibold text-white mb-6 drop-shadow-lg">
+        <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">
             Please fill name and contact information of attendees.
           </h3>
 
           {isLoadingApiData ? (
             <div className="text-center py-8">
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4"></div>
-                <p className="text-white">Loading form fields...</p>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+                <p className="text-gray-500">Loading form fields...</p>
               </div>
             </div>
           ) : formFields.length > 0 ? (
             <ReusableRegistrationForm
-              // @ts-ignore - Temporary ignore for form fields typing issue
+              // @ts-ignore
               formFields={formFields.map((field) => ({
                 ...field,
-                active: fieldActiveStates[field.id] !== false, // Show as active by default, disable only if explicitly set to false
+                active: fieldActiveStates[field.id] !== false,
               }))}
               onToggleField={(fieldId: any) =>
                 handleToggleField(fieldId, setToggleLoading)
@@ -322,7 +281,7 @@ function TemplateFormFour({
             />
           ) : (
             <div className="text-center py-8">
-              <p className="text-white">No form fields available</p>
+              <p className="text-gray-500">No form fields available</p>
             </div>
           )}
         </div>

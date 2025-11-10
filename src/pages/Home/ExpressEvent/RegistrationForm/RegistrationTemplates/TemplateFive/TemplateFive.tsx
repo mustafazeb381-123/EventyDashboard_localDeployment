@@ -1,7 +1,5 @@
-import React from "react";
+
 import { Loader2 } from "lucide-react";
-import Assets from "@/utils/Assets";
-import { useNavigate, Navigate } from "react-router-dom";
 import TemplateForm from "./TemplateForm";
 
 const TemplateFive = ({
@@ -21,7 +19,6 @@ const TemplateFive = ({
     eventId,
     data
   );
-  const navigation = useNavigate();
 
   console.log("form data in template five ::::", data);
 
@@ -63,7 +60,7 @@ const TemplateFive = ({
         {/* Top section */}
         <div>
           <h2 className="text-xl font-poppins font-semibold mb-2">
-            Event Registration Form
+            Temp 5
           </h2>
           <p className="text-sm text-gray-500 mb-6">
             A new guest's registration form is a form designed to streamline the
@@ -76,11 +73,10 @@ const TemplateFive = ({
         <button
           onClick={handleUseTemplate}
           disabled={isLoading}
-          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
-            isLoading
-              ? "bg-gray-400 text-white cursor-not-allowed"
-              : "bg-slate-800 text-white hover:bg-slate-900"
-          }`}
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${isLoading
+            ? "bg-gray-400 text-white cursor-not-allowed"
+            : "bg-slate-800 text-white hover:bg-slate-900"
+            }`}
         >
           {isLoading ? (
             <>
