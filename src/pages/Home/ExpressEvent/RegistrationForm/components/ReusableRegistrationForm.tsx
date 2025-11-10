@@ -72,11 +72,9 @@ const ReusableRegistrationForm = ({
   const renderField = (field) => {
     const isVisible = isFieldVisible(field);
 
-    const commonInputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${
-      errors[field.name] ? "border-red-300" : "border-gray-300"
-    } ${
-      !isVisible ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white"
-    }`;
+    const commonInputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors ${errors[field.name] ? "border-red-300" : "border-gray-300"
+      } ${!isVisible ? "bg-gray-100 text-gray-400 cursor-not-allowed" : "bg-white"
+      }`;
 
     const inputProps = {
       disabled: !isVisible,
@@ -89,14 +87,14 @@ const ReusableRegistrationForm = ({
       case "tel":
         return (
           <input
-          type={field.type}
-          placeholder={isVisible ? field.placeholder : "Field is disabled"}
-          value={formData[field.name] || ""}
-          onChange={(e) => handleInputChange(field.name, e.target.value)}
-          readOnly={isVisible}
-          {...inputProps}
-        />
-        
+            type={field.type}
+            placeholder={isVisible ? field.placeholder : "Field is disabled"}
+            value={formData[field.name] || ""}
+            onChange={(e) => handleInputChange(field.name, e.target.value)}
+            readOnly={isVisible}
+            {...inputProps}
+          />
+
         );
 
       case "textarea":
@@ -205,13 +203,11 @@ const ReusableRegistrationForm = ({
                     }
                   }
                 }}
-                className={`w-full text-sm border rounded-lg py-2 px-3 pr-20 transition-colors ${
-                  errors[field.name] ? "border-red-300" : "border-gray-300"
-                } ${
-                  isVisible
+                className={`w-full text-sm border rounded-lg py-2 px-3 pr-20 transition-colors ${errors[field.name] ? "border-red-300" : "border-gray-300"
+                  } ${isVisible
                     ? "text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
                     : "text-gray-400 bg-gray-100 file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-gray-200 file:text-gray-400 cursor-not-allowed"
-                }`}
+                  }`}
               />
               {field.accept && (
                 <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
@@ -257,9 +253,8 @@ const ReusableRegistrationForm = ({
 
             {field.hint && (
               <p
-                className={`mt-2 text-xs ${
-                  isVisible ? "text-gray-500" : "text-gray-400"
-                }`}
+                className={`mt-2 text-xs ${isVisible ? "text-gray-500" : "text-gray-400"
+                  }`}
               >
                 {isVisible ? field.hint : "Field is disabled"}
               </p>
@@ -275,16 +270,14 @@ const ReusableRegistrationForm = ({
               disabled={!isVisible}
               checked={formData[field.name] || false}
               onChange={(e) => handleInputChange(field.name, e.target.checked)}
-              className={`rounded border-gray-300 ${
-                isVisible
+              className={`rounded border-gray-300 ${isVisible
                   ? "text-blue-600 focus:ring-blue-500"
                   : "text-gray-400 bg-gray-100 cursor-not-allowed"
-              }`}
+                }`}
             />
             <label
-              className={`text-sm ${
-                isVisible ? "text-gray-700" : "text-gray-400"
-              }`}
+              className={`text-sm ${isVisible ? "text-gray-700" : "text-gray-400"
+                }`}
             >
               {field.checkboxLabel}
             </label>

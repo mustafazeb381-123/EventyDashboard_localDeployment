@@ -1,7 +1,7 @@
+import { useMemo } from "react";
 import Assets from "@/utils/Assets";
 import RegistrationFormPreview from "./components/RegistrationFormPreview";
 
-// Template Three - Matches registration template 3 structure exactly
 const TemplateFormThree = ({
   eventData,
   formFields,
@@ -9,13 +9,52 @@ const TemplateFormThree = ({
   eventData: any;
   formFields: any[];
 }) => {
+
+  console.log("Event Attributes:", eventData?.attributes);
+  console.log("Event Form Data Attributes (RAW):", formFields);
+
+  // ✅ Get tenant_uuid from localStorage
+  const tenantUuid = localStorage.getItem("tenant_uuid");
+  console.log("TENANT TEMP:", tenantUuid);
+
+  // ✅ Fix the type for image fields and move them to the end
+  const mappedFormFields = useMemo(() => {
+    if (!Array.isArray(formFields) || formFields.length === 0) return [];
+
+    const mapped = formFields.map((field: any) => {
+      const isCompanyField = field.name === "company";
+      const fieldName = isCompanyField ? "organization" : field.name;
+      const isImageField = fieldName === "image";
+
+      return {
+        ...field,
+        name: fieldName,
+        type: isImageField ? "file" : field.type,
+        placeholder: isImageField ? "" : field.placeholder,
+        ...(isImageField && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)",
+        }),
+      };
+    });
+
+    const nonImageFields = mapped.filter((f) => f.name !== "image");
+    const imageFields = mapped.filter((f) => f.name === "image");
+
+    return [...nonImageFields, ...imageFields];
+  }, [formFields]);
+
+  console.log("Mapped Form Fields:", mappedFormFields);
+
   return (
-    <div className="w-full p-4">
-      {/* No Banner Upload - Removed as requested */}
+    <div className="w-full p-2">
+      {/* No Banner Section for Template 3 */}
 
       {/* Event Information Display */}
       <div className="gap-3 flex flex-row items-center">
-        <div style={{ padding: 32 }} className=" bg-neutral-100 rounded-2xl">
+        <div style={{ padding: 32 }} className="bg-neutral-100 rounded-2xl">
           <img
             src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
             style={{ height: 67.12, width: 72 }}
@@ -28,7 +67,7 @@ const TemplateFormThree = ({
             {eventData?.attributes?.name || "Event Name"}
           </p>
 
-          <div className="flex flex-row items-center gap-3 ">
+          <div className="flex flex-row items-center gap-3">
             <img
               src={Assets.icons.clock}
               style={{ height: 20, width: 20 }}
@@ -40,13 +79,13 @@ const TemplateFormThree = ({
             </p>
           </div>
 
-          <div className="flex flex-row items-center gap-3 ">
+          <div className="flex flex-row items-center gap-3">
             <img
               src={Assets.icons.location}
               style={{ height: 20, width: 20 }}
               alt=""
             />
-            <p className=" text-neutral-600 font-poppins font-normal text-xs">
+            <p className="text-neutral-600 font-poppins font-normal text-xs">
               {eventData?.attributes?.location || "Location"}
             </p>
           </div>
@@ -69,9 +108,12 @@ const TemplateFormThree = ({
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill name and contact information of attendees.
         </h3>
+
         <RegistrationFormPreview
-          formFields={formFields}
-          submitButtonText="Register"
+          formFields={mappedFormFields}
+          eventId={eventData?.attributes?.uuid}
+          tenantUuid={tenantUuid || undefined}
+          submitButtonText="Register Now"
         />
       </div>
     </div>

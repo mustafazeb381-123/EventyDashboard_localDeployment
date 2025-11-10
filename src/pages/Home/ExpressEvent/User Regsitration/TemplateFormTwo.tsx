@@ -63,7 +63,7 @@ const TemplateFormTwo = ({
             ? `url(${eventData.attributes.registration_page_banner})`
             : `url(${Assets.images.uploadBackground2})`,
         }}
-        className="w-full h-[400px] flex items-center justify-center border rounded-3xl bg-gradient-to-t from-white/50 to-transparent border-gray-200 sm:p-5 bg-cover bg-center bg-no-repeat relative"
+        className="w-full h-[400px] flex items-center justify-center border rounded-3xl from-white/50 to-transparent border-gray-200 sm:p-5 bg-cover bg-center bg-no-repeat relative"
       >
         {!eventData?.attributes?.registration_page_banner && (
           <div className="text-white text-center">

@@ -1,12 +1,13 @@
-import React, { useRef, useState, useMemo, useEffect } from "react";
+import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Upload, Info, XCircle, Loader2 } from "lucide-react";
+import { Info, XCircle } from "lucide-react";
 import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
 import {
   getEventbyId,
   updateEventById,
   updateRegistrationFieldToggleApi,
+  getRegistrationFieldApi,
 } from "@/apis/apiHelpers";
 
 function TemplateFormOne({
@@ -14,16 +15,14 @@ function TemplateFormOne({
   eventId: propEventId,
   isUserRegistration = false,
 }: {
-  data: any;
+  data?: any;
   eventId?: string;
   isUserRegistration?: boolean;
-}) {
-  // Log all field attributes
+} = {}) {
+  // Log all field attributes for debugging
   useMemo(() => {
     if (Array.isArray(data)) {
-      data.forEach((field, idx) => {
-        // console.log(`Field in template form one ${idx}:`, field.attributes);
-      });
+      console.log(`Template One received ${data.length} fields:`, data);
     }
   }, [data]);
 
@@ -32,8 +31,10 @@ function TemplateFormOne({
   const [formData, setFormData] = useState({ eventLogo: null });
   const [logoError, setLogoError] = useState("");
   const [toggleLoading, setToggleLoading] = useState({});
-  const [loading, setLoading] = useState(true); // New loading state
-  const fileInputRef = useRef(null);
+  const [eventData, setEventData] = useState<any>(null);
+  const [apiFormData, setApiFormData] = useState<any[]>([]);
+  const [isLoadingApiData, setIsLoadingApiData] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch event and banner on mount and after upload
   const { id: routeId } = useParams();
@@ -45,9 +46,9 @@ function TemplateFormOne({
 
   useEffect(() => {
     const fetchBanner = async () => {
+      if (!effectiveEventId) return;
       try {
         const response = await getEventbyId(effectiveEventId);
-        // Adjust this path based on your API response structure
         setBannerUrl(response.data.data.registration_page_banner || null);
       } catch (error) {
         setBannerUrl(null);
@@ -56,37 +57,127 @@ function TemplateFormOne({
     fetchBanner();
   }, [effectiveEventId]);
 
-  const formFields = useMemo(() => {
-    if (!Array.isArray(data)) return [];
-    return data.map((field) => {
+  // Default form fields when no data is provided (for preview)
+  const defaultFormFields = [
+    {
+      id: 1,
+      name: "fullName",
+      type: "text",
+      label: "Full Name",
+      placeholder: "Enter your full name",
+      required: true,
+      active: true,
+    },
+    {
+      id: 2,
+      name: "email",
+      type: "email",
+      label: "Email",
+      placeholder: "Enter your email",
+      required: true,
+      active: true,
+    },
+    {
+      id: 3,
+      name: "phoneNumber",
+      type: "tel",
+      label: "Phone Number",
+      placeholder: "Enter your phone number",
+      required: true,
+      active: true,
+    },
+    {
+      id: 4,
+      name: "company",
+      type: "text",
+      label: "Company",
+      placeholder: "Enter your company name",
+      required: false,
+      active: true,
+    },
+  ];
+
+  // Fetch form fields from API when no data is provided
+  useEffect(() => {
+    const fetchApiFormData = async () => {
+      if (!effectiveEventId) return;
+      if (data && Array.isArray(data) && data.length > 0) return; // Don't fetch if data is already provided
+
+      setIsLoadingApiData(true);
+      try {
+        const response = await getRegistrationFieldApi(effectiveEventId);
+        console.log(
+          "TemplateOne - getRegistrationFieldApi response:",
+          response.data
+        );
+        setApiFormData(response.data.data || []);
+      } catch (error) {
+        console.error("TemplateOne - Failed to get registration field:", error);
+        setApiFormData([]);
+      } finally {
+        setIsLoadingApiData(false);
+      }
+    };
+
+    fetchApiFormData();
+  }, [effectiveEventId, data]);
+
+  const formFields = useMemo((): any[] => {
+    // Priority: 1. data prop, 2. apiFormData, 3. defaultFormFields
+    let sourceData = data;
+    if (!Array.isArray(sourceData) || sourceData.length === 0) {
+      sourceData = apiFormData;
+    }
+    if (!Array.isArray(sourceData) || sourceData.length === 0) {
+      return defaultFormFields;
+    }
+
+    return sourceData.map((field: any) => {
       const attr = field.attributes || {};
       return {
         id: field.id,
         name: attr.field || attr.name || "field_" + field.id,
         type:
-          attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+          attr.field === "image"
+            ? "file"
+            : attr.validation_type === "email"
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
-        placeholder: `Enter ${attr.name || "value"}`,
+        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
-        active: attr.active, // 👈 use directly
+        active: attr.active,
+        // Add file-specific properties for image fields
+        ...(attr.field === "image" && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)"
+        }),
       };
     });
-  }, [data]);
+  }, [data, apiFormData]);
 
-  const [fieldActiveStates, setFieldActiveStates] = useState(() =>
-    formFields.reduce((acc, field) => {
-      acc[field.id] = field.active;
+  const [fieldActiveStates, setFieldActiveStates] = useState<{
+    [key: string]: boolean;
+  }>({});
+
+  // Update field active states when formFields change
+  useEffect(() => {
+    const newActiveStates = formFields.reduce((acc: any, field: any) => {
+      // Default to active (true) if not specified, especially for default fields
+      acc[field.id] = field.active !== false;
       return acc;
-    }, {})
-  );
+    }, {});
+    setFieldActiveStates(newActiveStates);
+  }, [formFields]);
 
-  const handleToggleField = async (fieldId, setLoading) => {
-    setLoading((prev) => ({ ...prev, [fieldId]: true }));
+  const handleToggleField = async (fieldId: any, setLoading: any) => {
+    if (!effectiveEventId) return;
+    setLoading((prev: any) => ({ ...prev, [fieldId]: true }));
     const newActive = !fieldActiveStates[fieldId];
     try {
       await updateRegistrationFieldToggleApi(
@@ -94,17 +185,17 @@ function TemplateFormOne({
         effectiveEventId,
         fieldId
       );
-      setFieldActiveStates((prev) => ({
+      setFieldActiveStates((prev: any) => ({
         ...prev,
         [fieldId]: newActive,
       }));
     } catch (error) {
       console.error("Failed to toggle field:", error);
     }
-    setLoading((prev) => ({ ...prev, [fieldId]: false }));
+    setLoading((prev: any) => ({ ...prev, [fieldId]: false }));
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: any) => {
     const file = e.target.files[0];
     if (file) {
       setLogoError("");
@@ -114,9 +205,7 @@ function TemplateFormOne({
       }
       const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
       if (!allowedTypes.includes(file.type)) {
-        setLogoError(
-          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
-        );
+        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
         return;
       }
 
@@ -139,7 +228,7 @@ function TemplateFormOne({
     }
   };
 
-  const removeImage = (e) => {
+  const removeImage = (e: any) => {
     e.stopPropagation();
     setFormData((prev) => ({
       ...prev,
@@ -153,9 +242,8 @@ function TemplateFormOne({
 
   // Upload banner and refresh from API
   const updateBanner = async () => {
-    if (!formData.eventLogo) return;
+    if (!formData.eventLogo || !effectiveEventId) return;
     try {
-      // You may need to send FormData if your API expects file upload
       const payload = new FormData();
       payload.append("event[registration_page_banner]", formData.eventLogo);
 
@@ -169,7 +257,6 @@ function TemplateFormOne({
       setBannerUrl(eventResponse.data.data.eventLogo || null);
       setFormData({ eventLogo: null });
 
-      setFormData({ eventLogo: null });
       if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (error) {
       setLogoError("Failed to update banner.");
@@ -177,47 +264,40 @@ function TemplateFormOne({
     }
   };
 
-  const handleFormSubmit = (formValues) => {
+  const handleFormSubmit = (formValues: any) => {
     console.log("Form submitted:", formValues);
     alert("Registration submitted successfully!");
   };
-  
-  const [eventData, setEventData] = useState(null);
-  
+
   const fetchEventData = async () => {
-    setLoading(true);
+    if (!effectiveEventId) return;
     try {
       const response = await getEventbyId(effectiveEventId);
       console.log("Event data fetched in useEffect :: ", response.data.data);
       setEventData(response.data.data);
     } catch (error) {
       console.error("Failed to fetch event data:", error);
-      setEventData(null);
-    } finally {
-      setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchEventData();
-  }, []);
+  }, [effectiveEventId]);
 
   return (
     <div className="w-full p-4">
       {/* Event Cover Image Upload */}
-      {/* Banner Upload Area */}
       <div
         style={{
           width: "100%",
-          backgroundImage: `url(${
-            formData.eventLogo
-              ? URL.createObjectURL(formData.eventLogo)
-              : eventData?.attributes?.registration_page_banner
+          backgroundImage: `url(${formData.eventLogo
+            ? URL.createObjectURL(formData.eventLogo)
+            : eventData?.attributes?.registration_page_banner
               ? eventData.attributes.registration_page_banner
               : bannerUrl
-              ? bannerUrl
-              : Assets.images.uploadBackground
-          })`,
+                ? bannerUrl
+                : Assets.images.uploadBackground
+            })`,
         }}
         className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
       >
@@ -280,120 +360,99 @@ function TemplateFormOne({
           Upload Banner
         </button>
       )}
+
       {logoError && (
         <p className="mt-2 flex items-center text-xs text-red-600">
-          <Info size={14} className="mr-1 flex-shrink-0" />
+          <Info size={14} className="mr-1 " />
           {logoError}
         </p>
       )}
 
       <div style={{ marginTop: 16 }} />
 
-      {/* Event Information Display with Loader */}
-      {loading ? (
-        // Loading state
-        <div className="gap-3 flex flex-row items-center animate-pulse">
-          <div style={{ padding: 32 }} className="bg-neutral-200 rounded-2xl">
-            <div className="h-[67.12px] w-[72px] bg-gray-300 rounded"></div>
-          </div>
-          
-          <div className="flex flex-col gap-3 flex-1">
-            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-            <div className="flex flex-row items-center gap-3">
-              <div className="h-5 w-5 bg-gray-300 rounded"></div>
-              <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-            </div>
-            <div className="flex flex-row items-center gap-3">
-              <div className="h-5 w-5 bg-gray-300 rounded"></div>
-              <div className="h-3 bg-gray-300 rounded w-2/3"></div>
-            </div>
-          </div>
+      {/* Event Information Display */}
+      <div className="gap-3 flex flex-row items-center">
+        <div style={{ padding: 32 }} className=" bg-neutral-50 rounded-2xl">
+          <img
+            src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
+            style={{ height: 67.12, width: 72 }}
+          />
         </div>
-        // <Loader2 className="w-4 h-4 animate-spin" />
-      ) : eventData ? (
-        // Loaded state - show actual event data
-        <div className="gap-3 flex flex-row items-center">
-          <div style={{ padding: 32 }} className="bg-neutral-50 rounded-2xl">
+
+        <div className="flex flex-col gap-3">
+          <p className="text-slate-800 text-md font-poppins font-medium">
+            {eventData?.attributes?.name || "Event Name"}
+          </p>
+
+          <div className="flex flex-row items-center gap-3 ">
             <img
-              src={eventData.attributes?.logo_url}
-              style={{ height: 67.12, width: 72 }}
-              alt="Event logo"
+              src={Assets.icons.clock}
+              style={{ height: 20, width: 20 }}
+              alt=""
             />
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <p className="text-slate-800 text-md font-poppins font-medium">
-              {eventData.attributes?.name || "Event Name"}
+            <p className="text-neutral-600 font-poppins font-normal text-xs">
+              {eventData?.attributes?.event_date_from} -{" "}
+              {eventData?.attributes?.event_date_to}
             </p>
+          </div>
 
-            <div className="flex flex-row items-center gap-3">
-              <img
-                src={Assets.icons.clock}
-                style={{ height: 20, width: 20 }}
-                alt="Time"
-              />
-              <p className="text-neutral-600 font-poppins font-normal text-xs">
-                {eventData.attributes?.event_date_from || "Date not set"} -{" "}
-                {eventData.attributes?.event_date_to || "Date not set"}
-              </p>
-            </div>
-
-            <div className="flex flex-row items-center gap-3">
-              <img
-                src={Assets.icons.location}
-                style={{ height: 20, width: 20 }}
-                alt="Location"
-              />
-              <p className="text-neutral-600 font-poppins font-normal text-xs">
-                {eventData.attributes?.location || "Location not specified"}
-              </p>
-            </div>
+          <div className="flex flex-row items-center gap-3 ">
+            <img
+              src={Assets.icons.location}
+              style={{ height: 20, width: 20 }}
+              alt=""
+            />
+            <p className=" text-neutral-600 font-poppins font-normal text-xs">
+              {eventData?.attributes?.location || "Location"}
+            </p>
           </div>
         </div>
-      ) : (
-        // Error state
-        <div className="text-center py-4 text-red-500">
-          Failed to load event information
-        </div>
-      )}
+      </div>
 
       <div style={{ marginTop: 16 }} />
 
-      {/* About section with loading state */}
-      {loading ? (
-        <div className="animate-pulse">
-          <div className="h-4 bg-gray-300 rounded w-1/4 mb-2"></div>
-          <div className="h-3 bg-gray-300 rounded w-full mb-1"></div>
-          <div className="h-3 bg-gray-300 rounded w-3/4"></div>
-        </div>
-      ) : eventData ? (
-        <p className="text-slate-800 text-xs font-poppins font-medium">
-          About{" "}
-          <span className="text-neutral-600 text-xs font-normal">
-            {eventData.attributes?.about || "No description available"}
-          </span>
-        </p>
-      ) : null}
+      <p className="text-slate-800 text-xs font-poppins font-medium">
+        About{" "}
+        <span className="text-neutral-600 text-xs font-normal">
+          {eventData?.attributes?.about || "Event description"}
+        </span>
+      </p>
 
       <div style={{ marginTop: 24 }} />
 
+      {/* Registration Form */}
       <div className="bg-white rounded-lg p-6 border border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill name and contact information of attendees.
         </h3>
-        <ReusableRegistrationForm
-          formFields={formFields.map((field) => ({
-            ...field,
-            active: fieldActiveStates[field.id],
-          }))}
-          onToggleField={(fieldId) =>
-            handleToggleField(fieldId, setToggleLoading)
-          }
-          toggleLoading={toggleLoading}
-          onSubmit={handleFormSubmit}
-          submitButtonText="Register"
-          isUserRegistration={isUserRegistration}
-        />
+
+        {isLoadingApiData ? (
+          <div className="text-center py-8">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+              <p className="text-gray-500">Loading form fields...</p>
+            </div>
+          </div>
+        ) : formFields.length > 0 ? (
+          <ReusableRegistrationForm
+            // @ts-ignore - Temporary ignore for form fields typing issue
+            formFields={formFields.map((field) => ({
+              ...field,
+              active: fieldActiveStates[field.id] !== false, // Show as active by default, disable only if explicitly set to false
+            }))}
+            onToggleField={(fieldId: any) =>
+              handleToggleField(fieldId, setToggleLoading)
+            }
+            toggleLoading={toggleLoading}
+            onSubmit={handleFormSubmit}
+            submitButtonText="Register"
+            isUserRegistration={isUserRegistration}
+          />
+        ) : (
+          <div className="text-center py-8">
+            <p className="text-gray-500">No form fields available</p>
+          </div>
+        )}
       </div>
     </div>
   );
