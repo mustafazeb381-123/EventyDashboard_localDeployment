@@ -83,7 +83,7 @@ export default function AdminManagement({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Step Indicator */}
-      <div className="bg-white border-b px-6 py-4">
+      <div className="bg-white px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ChevronLeft

@@ -11,6 +11,7 @@ import {
   Home,
   ChevronLeft,
   Check,
+  UserPlus,
 } from "lucide-react";
 
 // ADD PROPS INTERFACE
@@ -72,7 +73,7 @@ export default function AdvanceAppVisulization({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Step Indicator */}
-      <div className="bg-white border-b px-6 py-4">
+      <div className="bg-white px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ChevronLeft 
@@ -120,33 +121,7 @@ export default function AdvanceAppVisulization({
           <span className="text-gray-700">Advanced Event</span>
         </div>
       </div>
-
-      {/* Tabs */}
-      <div className="bg-white border-b">
-        <div className="px-6 flex gap-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`px-6 py-3 text-sm font-medium transition-colors relative group ${
-                activeTab === tab.id
-                  ? "text-red-500"
-                  : "text-gray-600 hover:text-gray-800"
-              }`}
-            >
-              {tab.label}
-              {tab.removable && (
-                <X className="inline-block ml-2 w-3.5 h-3.5 text-red-400" />
-              )}
-              {activeTab === tab.id && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-red-500"></div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content */}
+  {/* Main Content */}
       <div className="px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl">
           {/* Left Panel */}
@@ -408,26 +383,37 @@ export default function AdvanceAppVisulization({
                     </div>
 
                     {/* Bottom Navigation with Icons and Labels */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-white border-t px-2 py-2 safe-area-bottom">
-                      <div className="flex justify-around items-center">
-                        <div className="flex flex-col items-center gap-1 text-blue-600">
-                          <Home className="w-5 h-5" />
-                          <span className="text-xs font-medium">Home</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1 text-gray-400">
-                          <Users className="w-5 h-5" />
-                          <span className="text-xs">Exhibitors</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1 text-gray-400">
-                          <Calendar className="w-5 h-5" />
-                          <span className="text-xs">Agenda</span>
-                        </div>
-                        <div className="flex flex-col items-center gap-1 text-gray-400">
-                          <Map className="w-5 h-5" />
-                          <span className="text-xs">Floor Plan</span>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-white border-t px-2 py-2 safe-area-bottom">
+  <div className="flex justify-around items-center">
+    {/* Home */}
+    <div className="flex flex-col items-center gap-1 text-blue-600">
+      <Home className="w-5 h-5" />
+      <span className="text-xs font-medium">Home</span>
+    </div>
+
+    {/* Message */}
+    <div className="flex flex-col items-center gap-1 text-gray-400">
+      <Users className="w-5 h-5" />
+      <span className="text-xs">Message</span>
+    </div>
+
+    {/* Network with two profile icons */}
+    <div className="flex flex-col items-center gap-1 text-gray-400 relative">
+      <div className="relative w-6 h-6">
+        <Users className="w-5 h-5 absolute left-0 top-0" />
+        <UserPlus className="w-4 h-4 absolute right-0 bottom-0 text-gray-500" />
+      </div>
+      <span className="text-xs">Network</span>
+    </div>
+
+    {/* Profile */}
+    <div className="flex flex-col items-center gap-1 text-gray-400">
+      <Map className="w-5 h-5" />
+      <span className="text-xs">Profile</span>
+    </div>
+  </div>
+</div>
+
                   </div>
                 </div>
               </div>

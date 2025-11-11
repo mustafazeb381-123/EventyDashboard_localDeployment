@@ -17,6 +17,7 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
   onPrevious,
   eventId,
 }) => {
+  console.log('event id__________', eventId)
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [

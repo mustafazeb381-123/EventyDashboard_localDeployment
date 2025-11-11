@@ -71,7 +71,7 @@ export default function AdvanceUserPermission({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header with Step Indicator */}
-      <div className="bg-white border-b px-6 py-4">
+      <div className="bg-white px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ChevronLeft 
@@ -121,7 +121,7 @@ export default function AdvanceUserPermission({
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b">
+      {/* <div className="bg-white border-b">
         <div className="px-6 flex gap-1">
           {tabs.map((tab) => (
             <button
@@ -143,7 +143,7 @@ export default function AdvanceUserPermission({
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {/* Main Content */}
       <div className="px-6 py-6">
