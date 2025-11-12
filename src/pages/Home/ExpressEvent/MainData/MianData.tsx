@@ -14,6 +14,9 @@ import {
   eventPostAPi,
   getShowEventData,
   updateEventById,
+
+  deleteBadgeType,
+  addGuestType,
 } from "../../../../apis/apiHelpers";
 import CustomizeColorPicker from "@/components/CustomizeColor/CustomizeColor";
 
@@ -76,14 +79,14 @@ const MainData = ({
   lastEdit,
   onEventCreated,
 }: MainDataProps) => {
-  console.log("selected plans in main data ::::::::::::::::::::::", plan);
-  console.log("event data for editing:", eventData);
-  console.log("is editing mode:", isEditing);
-  console.log("event attributes:", eventAttributes);
-  console.log("event ID  1:", eventId);
-  console.log("stats:", stats);
-  console.log("chart data:", chartData);
-  console.log("last edit:", lastEdit);
+  // console.log("selected plans in main data ::::::::::::::::::::::", plan);
+  // console.log("event data for editing:", eventData);
+  // console.log("is editing mode:", isEditing);
+  // console.log("event attributes:", eventAttributes);
+  // console.log("event ID  1:", eventId);
+  // console.log("stats:", stats);
+  // console.log("chart data:", chartData);
+  // console.log("last edit:", lastEdit);
 
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -313,7 +316,7 @@ const MainData = ({
     }
   };
 
-  const addGuestType = () => {
+  const addGuestTypeLun = () => {
     if (!newGuestType.trim()) return;
 
     // Check if the guest type already exists (in both local and API badges)
@@ -691,22 +694,90 @@ const MainData = ({
     onPrevious();
   };
 
-  // Handle Add Guest Type button click
-  const handleAddGuestTypeClick = () => {
-    console.log("Add Guest Type button clicked. Current Event ID:", eventId);
-    addGuestType();
+  const handleAddUserType = async () => {
+    if (!eventId) {
+      toast.error("Event ID is missing");
+      return;
+    }
+
+    if (!newGuestType) {
+      toast.error("Guest type name required");
+      return;
+    }
+
+    // Normalize spaces and lowercase for comparison
+    const normalize = (str: string) =>
+      str.trim().replace(/\s+/g, " ").toLowerCase();
+
+    const normalizedNewType = normalize(newGuestType);
+
+    const allGuestTypes = [
+      ...formData.guestTypes,
+      ...badges.map((badge) => badge.attributes.name),
+    ];
+
+    const isDuplicate = allGuestTypes.some(
+      (type) => normalize(type) === normalizedNewType
+    );
+
+    if (isDuplicate) {
+      toast.error("This guest type already exists!");
+      return;
+    }
+
+    try {
+      const response = await addGuestType(eventId, newGuestType.trim());
+      console.log("Guest type added:", response);
+      toast.success("Guest type added successfully!");
+      setNewGuestType("");
+      await fetchBadgeApi();
+    } catch (error: any) {
+      console.error("=== ADD ERROR ===", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to add guest type.";
+      toast.error(errorMessage);
+    }
   };
 
-  // Handle Remove Guest Type button click
-  const handleRemoveGuestTypeClick = (index: number) => {
-    console.log(
-      "Remove Guest Type button clicked. Event ID:",
-      eventId,
-      "Index:",
-      index
-    );
-    removeGuestType(index);
+
+  const removeBadgeType = (index: number) => {
+    setBadges(prev => prev.filter((_, i) => i !== index));
   };
+
+  // Handler for API badges only
+  const handleDeleteBadgeType = async (badgeId: number | string, index: number) => {
+    console.log("=== DELETE BADGE DEBUG ===");
+    console.log("Badge ID:", badgeId, "Type:", typeof badgeId);
+    console.log("Event ID:", eventId, "Type:", typeof eventId);
+    console.log("Index:", index);
+    console.log("URL will be: /events/" + eventId + "/badges/" + badgeId);
+
+    try {
+      // Make sure we have a valid eventId
+      if (!eventId) {
+        toast.error("Event ID is missing");
+        return;
+      }
+
+      // ✅ Pass badgeId FIRST, then eventId (matching your API helper signature)
+      const response = await deleteBadgeType(badgeId, eventId);
+      console.log("Delete response:", response);
+
+      toast.success("Badge type deleted successfully!");
+      removeBadgeType(index); // remove from UI
+    } catch (error: any) {
+      console.error("=== DELETE ERROR ===");
+      console.error("Full error:", error);
+      console.error("Error response:", error?.response);
+      console.error("Error data:", error?.response?.data);
+      console.error("Error status:", error?.response?.status);
+      toast.error(error?.response?.data?.message || "Failed to delete badge type. Please try again.");
+    }
+  };
+
 
   // Handle Show Event Data button click
   const handleShowEventDataClick = () => {
@@ -721,6 +792,7 @@ const MainData = ({
   };
 
   return (
+
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
 
@@ -1126,6 +1198,7 @@ const MainData = ({
               </label>
               <Info size={14} className="text-gray-400" />
             </div>
+
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <input
                 type="text"
@@ -1136,13 +1209,14 @@ const MainData = ({
                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
               />
               <button
-                onClick={handleAddGuestTypeClick}
+                onClick={handleAddUserType}
                 className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
               >
                 <Plus size={16} />
                 Add
               </button>
             </div>
+
             {validationErrors.guestTypes && (
               <p className="mb-2 text-xs text-red-600">
                 {validationErrors.guestTypes}
@@ -1164,51 +1238,28 @@ const MainData = ({
             )}
 
             <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-              {/* Show API Badges with different styling */}
+              {/* Show API Badges */}
               {badges.length > 0 && (
                 <div className="mb-4">
                   {badges.map((badge, index) => (
                     <div
                       key={`api-${badge.id}`}
-                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
+                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
                     >
                       <span className="text-sm text-gray-700 truncate pr-2">
                         {badge.attributes.name}
-                        {/* {badge.attributes.default && (
-                          <span className="ml-2 text-xs text-blue-600 font-medium">
-                            (default)
-                          </span>
-                        )} */}
                       </span>
+                      {badge.attributes.name !== "Guest" && (
+                        <button
+                          onClick={() => handleDeleteBadgeType(badge.id, index)}
+                          className="text-red-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
-                </div>
-              )}
 
-              {/* Show Local Guest Types */}
-              {formData.guestTypes.length > 0 && (
-                <div className='mb-4'>
-                  {formData.guestTypes.map((type, index) => (
-                    <div
-                      key={index}
-                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
-                    >
-                      <span className="text-sm text-gray-700 truncate pr-2">
-                        {type}
-                        {index === 0 && formData.guestTypes.length > 0 && (
-                          <span className="ml-2 text-xs text-blue-600 font-medium">
-                            (default)
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        onClick={() => handleRemoveGuestTypeClick(index)}
-                        className="text-red-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
                 </div>
               )}
 

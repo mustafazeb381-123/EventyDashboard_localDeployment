@@ -338,3 +338,40 @@ export const getBadgeApi = (eventId: string | number) => {
     `/events/${eventId}/badge_templates/default_template`
   );
 };
+
+export const deleteBadgeType = (
+  badgeId: string | number,
+  eventId: string | number
+) => {
+  console.log("API Helper - Deleting badge:", badgeId, "from event:", eventId);
+
+  return axiosInstance.delete(`/events/${eventId}/badges/${badgeId}`, {
+    data: {
+
+    }
+
+  });
+};
+
+export const addGuestType = (eventId: number | string, name: string) => {
+
+  return axiosInstance.post(
+    `/events/${eventId}/badges`,
+    {
+      badge: {
+        name: name,
+        event_id: eventId,
+        default: false
+      }
+    },
+  );
+
+};
+
+
+
+
+
+
+
+
