@@ -43,12 +43,37 @@ const TemplateFormTwo = ({
       };
     });
 
+    // ✅ Create user_type field from event data
+    const userTypeField = {
+      id: 999, // Unique ID
+      name: "user_type",
+      type: "select",
+      label: "User Type",
+      placeholder: "Select User Type",
+      required: true,
+      active: true,
+      fullWidth: true,
+      options: eventData?.attributes?.user_types?.map((type: string) => ({
+        value: type,
+        label: type,
+      })) || [],
+    };
+
+    // ✅ Find the index of the name field
+    const nameFieldIndex = mapped.findIndex((f: any) => f.name === "name");
+
+    // ✅ Insert user_type right after name field
+    const fieldsWithUserType = [...mapped];
+    if (nameFieldIndex !== -1 && userTypeField.options.length > 0) {
+      fieldsWithUserType.splice(nameFieldIndex + 1, 0, userTypeField);
+    }
+
     // ✅ Move image fields to the end
-    const nonImageFields = mapped.filter(f => f.name !== "image");
-    const imageFields = mapped.filter(f => f.name === "image");
+    const nonImageFields = fieldsWithUserType.filter(f => f.name !== "image");
+    const imageFields = fieldsWithUserType.filter(f => f.name === "image");
 
     return [...nonImageFields, ...imageFields];
-  }, [formFields]);
+  }, [formFields, eventData?.attributes?.user_types]);
 
 
   console.log('Mapped Form Fields:', mappedFormFields);
