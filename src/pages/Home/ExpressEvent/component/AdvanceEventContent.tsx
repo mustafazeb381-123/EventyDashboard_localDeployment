@@ -2,6 +2,11 @@ import AdvanceBadge from "@/components/AdvanceEventComponent/AdvanceBadge";
 import AdvanceConfirmation from "@/components/AdvanceEventComponent/AdvanceConfirmation";
 import AdvanceRegistration from "@/components/AdvanceEventComponent/AdvanceRegistration";
 import AdvanceTicket from "@/components/AdvanceEventComponent/AdvanceTickt";
+import AdvanceAgenda from "@/components/AdvanceEventContent/AdvanceAgenda";
+import AdvanceArea from "@/components/AdvanceEventContent/AdvanceArea";
+import AdvanceExhibitors from "@/components/AdvanceEventContent/AdvanceExhibitors";
+import AdvancePartners from "@/components/AdvanceEventContent/AdvancePartners";
+import AdvanceSpeaker from "@/components/AdvanceEventContent/AdvanceSpeaker";
 import React, { useState } from "react";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -10,6 +15,7 @@ interface AdvanceEventProps {
   onComplete?: (eventId?: string | number) => void;
   onPrevious?: () => void;
   eventId?: string | number;
+  plan?: string;
 }
 
 const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
@@ -20,30 +26,34 @@ const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { component: AdvanceTicket, name: "Advance Ticket" },
-    { component: AdvanceRegistration, name: "Advance Registration" },
-    { component: AdvanceConfirmation, name: "Advance Confirmation" },
-    { component: AdvanceBadge, name: "Advance Badge" },
+    { component: AdvanceSpeaker, name: "Advance Speaker" },
+    { component: AdvanceExhibitors, name: "Advance Exhibitor" },
+    { component: AdvancePartners, name: "Advance Partner" },
+    { component: AdvanceAgenda, name: "Advance Agenda" },
+    { component: AdvanceArea, name: "Advance Area" },
   ];
 
-  // UPDATED: Handle next with eventId parameter
-  // In AdvanceEvent.tsx - UPDATE the handleNext function:
-
   const handleNext = (nextEventId?: string | number) => {
-    console.log("AdvanceEvent - handleNext called", {
+    // Use nextEventId if provided, otherwise fall back to eventId from props
+    const effectiveEventId = nextEventId || eventId;
+
+    console.log("AdvanceEventContent - handleNext called", {
       currentStep,
       totalSteps: steps.length,
       nextEventId,
       eventId,
+      effectiveEventId,
     });
 
     if (currentStep < steps.length - 1) {
+      // Move to next step within AdvanceEventContent
       setCurrentStep(currentStep + 1);
     } else {
-      // When we're on the last step (AdvanceBadge), call onComplete
+      // Last step completed - return to main ExpressEvent stepper
       console.log("🎯 AdvanceEvent - Last step completed, calling onComplete");
       if (onComplete) {
-        onComplete(nextEventId || eventId);
+        // Pass eventId back to ExpressEvent to continue to next main step
+        onComplete(effectiveEventId);
       }
     }
   };
@@ -52,6 +62,7 @@ const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     } else {
+      // First step - go back to main ExpressEvent stepper
       if (onPrevious) {
         onPrevious();
       }
@@ -76,7 +87,7 @@ const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
       />
 
       <CurrentComponent
-        onNext={handleNext} // UPDATED: Pass the updated handleNext
+        onNext={handleNext}
         onPrevious={handlePrevious}
         eventId={eventId}
         currentStep={currentStep}

@@ -1,3 +1,7 @@
+
+import AdvanceAdmin from "@/components/AdvanceAppManagement/AdvanceAdmin";
+import AdvanceAppVisulization from "@/components/AdvanceAppManagement/AdvanceAppVisualization";
+import AdvanceUserPermission from "@/components/AdvanceAppManagement/AdvanceUserPermission";
 import AdvanceBadge from "@/components/AdvanceEventComponent/AdvanceBadge";
 import AdvanceConfirmation from "@/components/AdvanceEventComponent/AdvanceConfirmation";
 import AdvanceRegistration from "@/components/AdvanceEventComponent/AdvanceRegistration";
@@ -12,19 +16,17 @@ interface AdvanceEventProps {
   eventId?: string | number;
 }
 
-const AdvanceEvent: React.FC<AdvanceEventProps> = ({
+const AdvanceAppManagement: React.FC<AdvanceEventProps> = ({
   onComplete,
   onPrevious,
   eventId,
 }) => {
-  console.log('event id__________', eventId)
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { component: AdvanceTicket, name: "Advance Ticket" },
-    { component: AdvanceRegistration, name: "Advance Registration" },
-    { component: AdvanceConfirmation, name: "Advance Confirmation" },
-    { component: AdvanceBadge, name: "Advance Badge" },
+    { component: AdvanceAppVisulization, name: "Advance Visulization" },
+    { component: AdvanceUserPermission, name: "Advance User permission" },
+    { component: AdvanceAdmin, name: "Advance Admin" },
   ];
 
   // UPDATED: Handle next with eventId parameter
@@ -87,4 +89,5 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
   );
 };
 
-export default AdvanceEvent;
+export default AdvanceAppManagement;
+

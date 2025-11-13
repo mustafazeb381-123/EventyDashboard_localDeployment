@@ -259,7 +259,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
   currentStep,
   totalSteps,
 }) => {
-  const effectiveEventId = eventId || localStorage.getItem("create_eventId");
+  const effectiveEventId = eventId || localStorage.getItem("create_eventId") || 100;
 
   // FIXED: Added setFlows to useState
   const [flows, setFlows] = useState<any[]>([
