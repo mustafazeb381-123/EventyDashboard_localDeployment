@@ -193,7 +193,7 @@ const SideBar = ({
       icon: NotepadText,
       label: "Agenda",
       path: currentEventId ? `/agenda?eventId=${currentEventId}` : "/agenda",
-      availableForExpress: false,
+      availableForExpress: true,
     },
     {
       icon: Image,
