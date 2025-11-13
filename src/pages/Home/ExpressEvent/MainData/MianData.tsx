@@ -14,6 +14,9 @@ import {
   eventPostAPi,
   getShowEventData,
   updateEventById,
+
+  deleteBadgeType,
+  addGuestType,
 } from "../../../../apis/apiHelpers";
 import CustomizeColorPicker from "@/components/CustomizeColor/CustomizeColor";
 
@@ -46,6 +49,8 @@ type MainFormData = {
   guestTypes: string[];
   eventLogo: File | null;
   existingLogoUrl: string | null;
+  primaryColor: string;
+  secondaryColor: string;
 };
 
 type Badge = {
@@ -74,14 +79,14 @@ const MainData = ({
   lastEdit,
   onEventCreated,
 }: MainDataProps) => {
-  console.log("selected plans in main data ::::::::::::::::::::::", plan);
-  console.log("event data for editing:", eventData);
-  console.log("is editing mode:", isEditing);
-  console.log("event attributes:", eventAttributes);
-  console.log("event ID  1:", eventId);
-  console.log("stats:", stats);
-  console.log("chart data:", chartData);
-  console.log("last edit:", lastEdit);
+  // console.log("selected plans in main data ::::::::::::::::::::::", plan);
+  // console.log("event data for editing:", eventData);
+  // console.log("is editing mode:", isEditing);
+  // console.log("event attributes:", eventAttributes);
+  // console.log("event ID  1:", eventId);
+  // console.log("stats:", stats);
+  // console.log("chart data:", chartData);
+  // console.log("last edit:", lastEdit);
 
   const [newGuestType, setNewGuestType] = useState<string>("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -101,6 +106,8 @@ const MainData = ({
     guestTypes: ["Guest"], // Default guest type
     eventLogo: null,
     existingLogoUrl: null,
+    primaryColor: "#00A7B5", // default teal
+    secondaryColor: "#202242", // default dark blue
   });
   const [logoError, setLogoError] = useState<string>("");
   const [validationErrors, setValidationErrors] = useState<
@@ -309,7 +316,7 @@ const MainData = ({
     }
   };
 
-  const addGuestType = () => {
+  const addGuestTypeLun = () => {
     if (!newGuestType.trim()) return;
 
     // Check if the guest type already exists (in both local and API badges)
@@ -318,7 +325,7 @@ const MainData = ({
       ...formData.guestTypes,
       ...badges.map(badge => badge.attributes.name)
     ];
-    
+
     if (
       allGuestTypes.some(
         (type) => type.toLowerCase() === trimmedType.toLowerCase()
@@ -386,11 +393,14 @@ const MainData = ({
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
-                .map((badge: any) => badge.name || badge.attributes?.name)
-                .filter(Boolean)
+              .map((badge: any) => badge.name || badge.attributes?.name)
+              .filter(Boolean)
             : ["Guest"], // Default to Guest if no badges exist
         eventLogo: null, // You might need to handle existing logo
         existingLogoUrl: attributes.logo_url || null,
+        primaryColor: attributes.primary_color || "#00A7B5",
+        secondaryColor: attributes.secondary_color || "#202242",
+
       });
 
       setShowEventData(true);
@@ -439,8 +449,8 @@ const MainData = ({
     fd.append("event[about]", formData.description);
     fd.append("event[location]", formData.location);
     fd.append("event[require_approval]", String(formData.requireApproval));
-    fd.append("event[primary_color]", "#ff0000");
-    fd.append("event[secondary_color]", "#00ff00");
+    fd.append("event[primary_color]", formData.primaryColor);
+    fd.append("event[secondary_color]", formData.secondaryColor);
     fd.append("event[event_type]", plan);
     if (formData.dateFrom)
       fd.append(
@@ -587,11 +597,14 @@ const MainData = ({
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
-                .map((badge: any) => badge.name || badge.attributes?.name)
-                .filter(Boolean)
+              .map((badge: any) => badge.name || badge.attributes?.name)
+              .filter(Boolean)
             : ["Guest"], // Default to Guest if no badges exist
         eventLogo: null,
         existingLogoUrl: attributes.logo_url || null,
+        primaryColor: attributes.primary_color || "#00A7B5",
+        secondaryColor: attributes.secondary_color || "#202242",
+
       });
 
       console.log("Form populated with event data. Event ID:", eventId);
@@ -640,11 +653,14 @@ const MainData = ({
               guestTypes:
                 attributes.badges && attributes.badges.length > 0
                   ? attributes.badges
-                      .map((badge: any) => badge.name || badge.attributes?.name)
-                      .filter(Boolean)
+                    .map((badge: any) => badge.name || badge.attributes?.name)
+                    .filter(Boolean)
                   : ["Guest"], // Default to Guest if no badges exist
               eventLogo: null, // You might need to handle existing logo
               existingLogoUrl: attributes.logo_url || null,
+              primaryColor: attributes.primary_color || "#00A7B5",
+              secondaryColor: attributes.secondary_color || "#202242",
+
             });
 
             setShowEventData(true);
@@ -678,22 +694,90 @@ const MainData = ({
     onPrevious();
   };
 
-  // Handle Add Guest Type button click
-  const handleAddGuestTypeClick = () => {
-    console.log("Add Guest Type button clicked. Current Event ID:", eventId);
-    addGuestType();
+  const handleAddUserType = async () => {
+    if (!eventId) {
+      toast.error("Event ID is missing");
+      return;
+    }
+
+    if (!newGuestType) {
+      toast.error("Guest type name required");
+      return;
+    }
+
+    // Normalize spaces and lowercase for comparison
+    const normalize = (str: string) =>
+      str.trim().replace(/\s+/g, " ").toLowerCase();
+
+    const normalizedNewType = normalize(newGuestType);
+
+    const allGuestTypes = [
+      ...formData.guestTypes,
+      ...badges.map((badge) => badge.attributes.name),
+    ];
+
+    const isDuplicate = allGuestTypes.some(
+      (type) => normalize(type) === normalizedNewType
+    );
+
+    if (isDuplicate) {
+      toast.error("This guest type already exists!");
+      return;
+    }
+
+    try {
+      const response = await addGuestType(eventId, newGuestType.trim());
+      console.log("Guest type added:", response);
+      toast.success("Guest type added successfully!");
+      setNewGuestType("");
+      await fetchBadgeApi();
+    } catch (error: any) {
+      console.error("=== ADD ERROR ===", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Failed to add guest type.";
+      toast.error(errorMessage);
+    }
   };
 
-  // Handle Remove Guest Type button click
-  const handleRemoveGuestTypeClick = (index: number) => {
-    console.log(
-      "Remove Guest Type button clicked. Event ID:",
-      eventId,
-      "Index:",
-      index
-    );
-    removeGuestType(index);
+
+  const removeBadgeType = (index: number) => {
+    setBadges(prev => prev.filter((_, i) => i !== index));
   };
+
+  // Handler for API badges only
+  const handleDeleteBadgeType = async (badgeId: number | string, index: number) => {
+    console.log("=== DELETE BADGE DEBUG ===");
+    console.log("Badge ID:", badgeId, "Type:", typeof badgeId);
+    console.log("Event ID:", eventId, "Type:", typeof eventId);
+    console.log("Index:", index);
+    console.log("URL will be: /events/" + eventId + "/badges/" + badgeId);
+
+    try {
+      // Make sure we have a valid eventId
+      if (!eventId) {
+        toast.error("Event ID is missing");
+        return;
+      }
+
+      // ✅ Pass badgeId FIRST, then eventId (matching your API helper signature)
+      const response = await deleteBadgeType(badgeId, eventId);
+      console.log("Delete response:", response);
+
+      toast.success("Badge type deleted successfully!");
+      removeBadgeType(index); // remove from UI
+    } catch (error: any) {
+      console.error("=== DELETE ERROR ===");
+      console.error("Full error:", error);
+      console.error("Error response:", error?.response);
+      console.error("Error data:", error?.response?.data);
+      console.error("Error status:", error?.response?.status);
+      toast.error(error?.response?.data?.message || "Failed to delete badge type. Please try again.");
+    }
+  };
+
 
   // Handle Show Event Data button click
   const handleShowEventDataClick = () => {
@@ -708,6 +792,7 @@ const MainData = ({
   };
 
   return (
+
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
 
@@ -775,11 +860,10 @@ const MainData = ({
           </label>
           <div
             className={`
-              border-2 border-dashed rounded-lg p-4 sm:p-6 lg:p-8 text-center transition-colors cursor-pointer min-h-[200px] sm:min-h-[240px] flex flex-col justify-center
-              ${
-                logoError
-                  ? "border-red-500"
-                  : "border-gray-300 hover:border-gray-400"
+              border-2 border-dashed rounded-lg p-4 sm:p-6 lg:p-8 text-center transition-colors cursor-pointer min-h-[200px] flex flex-col justify-center
+              ${logoError
+                ? "border-red-500"
+                : "border-gray-300 hover:border-gray-400"
               }
             `}
             onDrop={handleDrop}
@@ -840,13 +924,13 @@ const MainData = ({
           </div>
           {logoError && (
             <p className="mt-2 flex items-center text-xs text-red-600">
-              <Info size={14} className="mr-1 flex-shrink-0" />
+              <Info size={14} className="mr-1" />
               {logoError}
             </p>
           )}
 
           {
-            plan==="advanced" ? <CustomizeColorPicker /> : null
+            plan === "advanced" ? <CustomizeColorPicker /> : null
           }
 
           {/* Require Approval Toggle */}
@@ -855,7 +939,7 @@ const MainData = ({
               <label className="text-sm font-medium text-gray-700">
                 Require approval
               </label>
-              <Info size={14} className="text-gray-400 flex-shrink-0" />
+              <Info size={14} className="text-gray-400" />
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -873,56 +957,52 @@ const MainData = ({
                 className="sr-only"
               />
               <div
-                className={`w-11 h-6 rounded-full transition-colors ${
-                  formData.requireApproval ? "bg-teal-500" : "bg-gray-200"
-                }`}
+                className={`w-11 h-6 rounded-full transition-colors ${formData.requireApproval ? "bg-teal-500" : "bg-gray-200"
+                  }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                    formData.requireApproval
-                      ? "translate-x-5"
-                      : "translate-x-0.5"
-                  } mt-0.5`}
+                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${formData.requireApproval
+                    ? "translate-x-5"
+                    : "translate-x-0.5"
+                    } mt-0.5`}
                 />
               </div>
             </label>
           </div>
           {/* Require Ticket */}
-      {plan === "advanced" ?  
-          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <label className="text-sm font-medium text-gray-700">
-                Ticket
-              </label>
-              <Info size={14} className="text-gray-400 flex-shrink-0" />
-            </div>
-
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={ticket}
-                onChange={(e) => {
-                  const isChecked = e.target.checked;
-                  console.log("Require ticket toggled:", isChecked);
-                  setTicket(isChecked);
-                  handleInputChange("requiredTicket", isChecked); 
-                }}
-                className="sr-only"
-              />
-              <div
-                className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                  ticket ? "bg-teal-500" : "bg-gray-200"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5 ${
-                    ticket ? "translate-x-5" : "translate-x-0.5"
-                  }`}
-                />
+          {plan === "advanced" ?
+            <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <label className="text-sm font-medium text-gray-700">
+                  Ticket
+                </label>
+                <Info size={14} className="text-gray-400" />
               </div>
-            </label>
-          </div>:null}
-</div>
+
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={ticket}
+                  onChange={(e) => {
+                    const isChecked = e.target.checked;
+                    console.log("Require ticket toggled:", isChecked);
+                    setTicket(isChecked);
+                    handleInputChange("requiredTicket", isChecked);
+                  }}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-11 h-6 rounded-full transition-colors duration-200 ${ticket ? "bg-teal-500" : "bg-gray-200"
+                    }`}
+                >
+                  <div
+                    className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5 ${ticket ? "translate-x-5" : "translate-x-0.5"
+                      }`}
+                  />
+                </div>
+              </label>
+            </div> : null}
+        </div>
 
         {/* Event Details Section */}
         <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">
@@ -935,11 +1015,10 @@ const MainData = ({
               placeholder="Event name"
               value={formData.eventName}
               onChange={(e) => handleInputChange("eventName", e.target.value)}
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors ${
-                validationErrors.eventName
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors ${validationErrors.eventName
+                ? "border-red-500"
+                : "border-gray-300"
+                }`}
             />
             {validationErrors.eventName && (
               <p className="mt-1 text-xs text-red-600">
@@ -957,11 +1036,10 @@ const MainData = ({
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
               rows={3}
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm resize-none transition-colors ${
-                validationErrors.description
-                  ? "border-red-500"
-                  : "border-gray-300"
-              }`}
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm resize-none transition-colors ${validationErrors.description
+                ? "border-red-500"
+                : "border-gray-300"
+                }`}
             />
             {validationErrors.description && (
               <p className="mt-1 text-xs text-red-600">
@@ -988,11 +1066,10 @@ const MainData = ({
                     e.target.value ? new Date(e.target.value) : undefined
                   )
                 }
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
-                  validationErrors.dateFrom
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${validationErrors.dateFrom
+                  ? "border-red-500"
+                  : "border-gray-300"
+                  }`}
               />
               {validationErrors.dateFrom && (
                 <p className="mt-1 text-xs text-red-600">
@@ -1017,9 +1094,8 @@ const MainData = ({
                     e.target.value ? new Date(e.target.value) : undefined
                   )
                 }
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
-                  validationErrors.dateTo ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${validationErrors.dateTo ? "border-red-500" : "border-gray-300"
+                  }`}
               />
               {validationErrors.dateTo && (
                 <p className="mt-1 text-xs text-red-600">
@@ -1064,11 +1140,10 @@ const MainData = ({
                 placeholder="Event location"
                 value={formData.location}
                 onChange={(e) => handleInputChange("location", e.target.value)}
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
-                  validationErrors.location
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${validationErrors.location
+                  ? "border-red-500"
+                  : "border-gray-300"
+                  }`}
               />
               <MapPin className="absolute right-3 top-2.5 sm:top-3.5 h-4 w-4 text-gray-400" />
             </div>
@@ -1078,7 +1153,41 @@ const MainData = ({
               </p>
             )}
           </div>
+
+          {/* Primary Color */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Primary Color <span className="text-red-500">*</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={formData.primaryColor}
+                onChange={(e) => handleInputChange("primaryColor", e.target.value)}
+                className="flex-1 h-10 cursor-pointer"
+              />
+            </div>
+          </div>
+
+          {/* Secondary Color */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Secondary Color <span className="text-red-500">*</span>
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={formData.secondaryColor}
+                onChange={(e) => handleInputChange("secondaryColor", e.target.value)}
+                className="flex-1 h-10 cursor-pointer"
+              />
+            </div>
+          </div>
+
+
         </div>
+
+
 
         {/* Guest Types Section */}
         <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">
@@ -1087,8 +1196,9 @@ const MainData = ({
               <label className="block text-sm font-medium text-gray-700">
                 Add Guest Types <span className="text-red-500">*</span>
               </label>
-              <Info size={14} className="text-gray-400 flex-shrink-0" />
+              <Info size={14} className="text-gray-400" />
             </div>
+
             <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <input
                 type="text"
@@ -1099,13 +1209,14 @@ const MainData = ({
                 className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
               />
               <button
-                onClick={handleAddGuestTypeClick}
-                className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 flex-shrink-0 transition-colors"
+                onClick={handleAddUserType}
+                className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
               >
                 <Plus size={16} />
                 Add
               </button>
             </div>
+
             {validationErrors.guestTypes && (
               <p className="mb-2 text-xs text-red-600">
                 {validationErrors.guestTypes}
@@ -1117,7 +1228,7 @@ const MainData = ({
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Guest Types
             </label>
-            
+
             {/* Loading state for badges */}
             {isLoadingBadges && (
               <div className="flex items-center justify-center py-4">
@@ -1127,51 +1238,28 @@ const MainData = ({
             )}
 
             <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-              {/* Show API Badges with different styling */}
+              {/* Show API Badges */}
               {badges.length > 0 && (
                 <div className="mb-4">
                   {badges.map((badge, index) => (
                     <div
                       key={`api-${badge.id}`}
-                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
+                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
                     >
                       <span className="text-sm text-gray-700 truncate pr-2">
                         {badge.attributes.name}
-                        {/* {badge.attributes.default && (
-                          <span className="ml-2 text-xs text-blue-600 font-medium">
-                            (default)
-                          </span>
-                        )} */}
                       </span>
+                      {badge.attributes.name !== "Guest" && (
+                        <button
+                          onClick={() => handleDeleteBadgeType(badge.id, index)}
+                          className="text-red-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      )}
                     </div>
                   ))}
-                </div>
-              )}
 
-              {/* Show Local Guest Types */}
-              {formData.guestTypes.length > 0 && (
-                <div className='mb-4'>
-                  {formData.guestTypes.map((type, index) => (
-                    <div
-                      key={index}
-                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border"
-                    >
-                      <span className="text-sm text-gray-700 truncate pr-2">
-                        {type}
-                        {index === 0 && formData.guestTypes.length > 0 && (
-                          <span className="ml-2 text-xs text-blue-600 font-medium">
-                            (default)
-                          </span>
-                        )}
-                      </span>
-                      <button
-                        onClick={() => handleRemoveGuestTypeClick(index)}
-                        className="text-red-400 hover:text-red-500 flex-shrink-0 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ))}
                 </div>
               )}
 
@@ -1192,10 +1280,9 @@ const MainData = ({
           onClick={handlePreviousClick}
           disabled={currentStep === 0 || isLoading}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
-            ${
-              currentStep === 0 || isLoading
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
-                : "text-slate-800 border-gray-300 hover:bg-gray-50"
+            ${currentStep === 0 || isLoading
+              ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
+              : "text-slate-800 border-gray-300 hover:bg-gray-50"
             }`}
         >
           ← Previous
@@ -1204,10 +1291,9 @@ const MainData = ({
           onClick={handleNext}
           disabled={isLoading}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
-            ${
-              isLoading
-                ? "bg-slate-600 cursor-not-allowed text-white"
-                : "bg-slate-800 hover:bg-slate-900 text-white"
+            ${isLoading
+              ? "bg-slate-600 cursor-not-allowed text-white"
+              : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
           {isLoading ? (
@@ -1232,7 +1318,7 @@ const MainData = ({
           <span className="text-center sm:text-left">
             Can't find what you're looking for?
           </span>
-          <ChevronLeft className="rotate-90 flex-shrink-0" size={14} />
+          <ChevronLeft className="rotate-90" size={14} />
         </button>
       </div>
       <ToastContainer />

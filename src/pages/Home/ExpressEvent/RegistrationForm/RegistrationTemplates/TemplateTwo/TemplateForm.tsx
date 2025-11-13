@@ -213,7 +213,7 @@ function TemplateFormTwo({
       // Validate image dimensions for banner (900x300px)
       const img = new Image();
       img.onload = () => {
-        if (img.naturalWidth !== 900 || img.naturalHeight !== 300) {
+        if (img.naturalWidth > 900 || img.naturalHeight > 300) {
           setLogoError("Image must be exactly 900x300 pixels.");
           return;
         }
@@ -301,7 +301,7 @@ function TemplateFormTwo({
             })`,
         }}
         className="w-full  h-[400px] flex items-center justify-center border rounded-3xl
-        bg-gradient-to-t from-white/50 to-transparent
+         from-white/50 to-transparent
         border-gray-200  sm:p-5 bg-cover bg-center bg-no-repeat relative"
       >
         {/* Show upload button only if NO image exists */}
@@ -366,7 +366,7 @@ function TemplateFormTwo({
 
       {logoError && (
         <p className="mt-2 flex items-center text-xs text-red-600">
-          <Info size={14} className="mr-1 flex-shrink-0" />
+          <Info size={14} className="mr-1 " />
           {logoError}
         </p>
       )}

@@ -1,4 +1,3 @@
-// Updated TemplateForm.jsx
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import Assets from "@/utils/Assets";
@@ -18,20 +17,20 @@ function TemplateFormThree({
   eventId?: string;
   isUserRegistration?: boolean;
 } = {}) {
-  // Log all field attributes for debugging
+  // Log field attributes
   useMemo(() => {
     if (Array.isArray(data)) {
       console.log(`Template Three received ${data.length} fields:`, data);
     }
   }, [data]);
 
-  // State management
+  // States
   const [toggleLoading, setToggleLoading] = useState({});
   const [eventData, setEventData] = useState<any>(null);
   const [apiFormData, setApiFormData] = useState<any[]>([]);
   const [isLoadingApiData, setIsLoadingApiData] = useState(false);
 
-  // Get effective event ID
+  // Get event ID
   const { id: routeId } = useParams();
   const effectiveEventId =
     (propEventId as string | undefined) ||
@@ -39,7 +38,7 @@ function TemplateFormThree({
     localStorage.getItem("create_eventId") ||
     undefined;
 
-  // Default form fields when no data is provided (for preview)
+  // Default form fields
   const defaultFormFields = [
     {
       id: 1,
@@ -58,10 +57,6 @@ function TemplateFormThree({
       placeholder: "Enter your email",
       required: true,
       active: true,
-      validation: (value: any) => {
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return emailRegex.test(value) || "Please enter a valid email address";
-      },
     },
     {
       id: 3,
@@ -74,24 +69,6 @@ function TemplateFormThree({
     },
     {
       id: 4,
-      name: "idNumber",
-      type: "text",
-      label: "ID Number",
-      placeholder: "Enter your ID number",
-      required: true,
-      active: true,
-    },
-    {
-      id: 5,
-      name: "position",
-      type: "text",
-      label: "Position (Title)",
-      placeholder: "Enter your position/title",
-      required: true,
-      active: true,
-    },
-    {
-      id: 6,
       name: "company",
       type: "text",
       label: "Company",
@@ -99,25 +76,13 @@ function TemplateFormThree({
       required: false,
       active: true,
     },
-    {
-      id: 7,
-      name: "profilePic",
-      type: "file",
-      label: "Upload Profile Picture",
-      accept: ".png,.jpg,.jpeg",
-      maxSize: 2 * 1024 * 1024, // 2MB
-      allowedTypes: ["image/png", "image/jpeg"],
-      hint: "PNG or JPG (max. 2MB)",
-      required: false,
-      active: true,
-    },
   ];
 
-  // Fetch form fields from API when no data is provided
+  // Fetch form fields
   useEffect(() => {
     const fetchApiFormData = async () => {
       if (!effectiveEventId) return;
-      if (data && Array.isArray(data) && data.length > 0) return; // Don't fetch if data is already provided
+      if (data && Array.isArray(data) && data.length > 0) return;
 
       setIsLoadingApiData(true);
       try {
@@ -128,21 +93,16 @@ function TemplateFormThree({
         );
         setApiFormData(response.data.data || []);
       } catch (error) {
-        console.error(
-          "TemplateThree - Failed to get registration field:",
-          error
-        );
+        console.error("TemplateThree - Failed to get registration field:", error);
         setApiFormData([]);
       } finally {
         setIsLoadingApiData(false);
       }
     };
-
     fetchApiFormData();
   }, [effectiveEventId, data]);
 
   const formFields = useMemo((): any[] => {
-    // Priority: 1. data prop, 2. apiFormData, 3. defaultFormFields
     let sourceData = data;
     if (!Array.isArray(sourceData) || sourceData.length === 0) {
       sourceData = apiFormData;
@@ -157,28 +117,33 @@ function TemplateFormThree({
         id: field.id,
         name: attr.field || attr.name || "field_" + field.id,
         type:
-          attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+          attr.field === "image"
+            ? "file"
+            : attr.validation_type === "email"
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
-        placeholder: `Enter ${attr.name || "value"}`,
+        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
         active: attr.active,
+        ...(attr.field === "image" && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024,
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)",
+        }),
       };
     });
   }, [data, apiFormData]);
 
-  const [fieldActiveStates, setFieldActiveStates] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [fieldActiveStates, setFieldActiveStates] = useState<{ [key: string]: boolean }>({});
 
-  // Update field active states when formFields change
+  // Sync field active states
   useEffect(() => {
     const newActiveStates = formFields.reduce((acc: any, field: any) => {
-      // Default to active (true) if not specified, especially for default fields
       acc[field.id] = field.active !== false;
       return acc;
     }, {});
@@ -209,7 +174,7 @@ function TemplateFormThree({
     if (!effectiveEventId) return;
     try {
       const response = await getEventbyId(effectiveEventId);
-      console.log("Event data fetched in useEffect :: ", response.data.data);
+      console.log("Event data fetched:", response.data.data);
       setEventData(response.data.data);
     } catch (error) {
       console.error("Failed to fetch event data:", error);
@@ -227,11 +192,9 @@ function TemplateFormThree({
 
   return (
     <div className="w-full p-4">
-      {/* No Banner Upload - Removed as requested */}
-
-      {/* Event Information Display */}
+      {/* Event Info */}
       <div className="gap-3 flex flex-row items-center">
-        <div style={{ padding: 32 }} className=" bg-neutral-50 rounded-2xl">
+        <div style={{ padding: 32 }} className="bg-neutral-50 rounded-2xl">
           <img
             src={eventData?.attributes?.logo_url || Assets.images.sccLogo}
             style={{ height: 67.12, width: 72 }}
@@ -261,7 +224,7 @@ function TemplateFormThree({
               style={{ height: 20, width: 20 }}
               alt=""
             />
-            <p className=" text-neutral-600 font-poppins font-normal text-xs">
+            <p className="text-neutral-600 font-poppins font-normal text-xs">
               {eventData?.attributes?.location || "Location"}
             </p>
           </div>
@@ -294,10 +257,10 @@ function TemplateFormThree({
           </div>
         ) : formFields.length > 0 ? (
           <ReusableRegistrationForm
-            // @ts-ignore - Temporary ignore for form fields typing issue
+            // @ts-ignore
             formFields={formFields.map((field) => ({
               ...field,
-              active: fieldActiveStates[field.id] !== false, // Show as active by default, disable only if explicitly set to false
+              active: fieldActiveStates[field.id] !== false,
             }))}
             onToggleField={(fieldId: any) =>
               handleToggleField(fieldId, setToggleLoading)

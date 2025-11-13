@@ -1,7 +1,8 @@
+import { useMemo } from "react";
 import Assets from "@/utils/Assets";
 import RegistrationFormPreview from "./components/RegistrationFormPreview";
 
-// Template One - Matches registration template structure
+// Template Two - Matches registration template structure
 const TemplateFormOne = ({
   eventData,
   formFields,
@@ -11,27 +12,63 @@ const TemplateFormOne = ({
 }) => {
 
   console.log('Event Attributes:', eventData?.attributes);
+  console.log('Event Form Data Attributes (RAW):', formFields);
 
   // ✅ Get tenant_uuid from localStorage
   const tenantUuid = localStorage.getItem("tenant_uuid");
   console.log("TENANT TEMP:", tenantUuid);
 
+  // ✅ Fix the type for image fields and move them to the end
+  const mappedFormFields = useMemo(() => {
+    if (!Array.isArray(formFields) || formFields.length === 0) return [];
+
+    const mapped = formFields.map((field: any) => {
+      // ✅ Only rename if it's specifically the "company" field
+      const isCompanyField = field.name === "company";
+      const fieldName = isCompanyField ? "organization" : field.name;
+
+      const isImageField = fieldName === "image";
+
+      return {
+        ...field,
+        name: fieldName, // only changed for company → organization
+        type: isImageField ? "file" : field.type,
+        placeholder: isImageField ? "" : field.placeholder,
+        ...(isImageField && {
+          accept: "image/jpeg,image/png,image/jpg",
+          maxSize: 2 * 1024 * 1024, // 2MB
+          allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
+          hint: "Upload JPG, PNG (Max 2MB)",
+        }),
+      };
+    });
+
+    // ✅ Move image fields to the end
+    const nonImageFields = mapped.filter(f => f.name !== "image");
+    const imageFields = mapped.filter(f => f.name === "image");
+
+    return [...nonImageFields, ...imageFields];
+  }, [formFields]);
+
+
+  console.log('Mapped Form Fields:', mappedFormFields);
+
   return (
-    <div className="w-full p-4">
-      {/* Banner Section */}
+    <div className="w-full p-2">
+      {/* Event Cover Image - Full width banner */}
       <div
         style={{
           width: "100%",
           backgroundImage: eventData?.attributes?.registration_page_banner
             ? `url(${eventData.attributes.registration_page_banner})`
-            : `url(${Assets.images.uploadBackground})`,
+            : `url(${Assets.images.uploadBackground2})`,
         }}
-        className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
+        className="w-full h-[400px] flex items-center justify-center border rounded-3xl from-white/50 to-transparent border-gray-200 sm:p-5 bg-cover bg-center bg-no-repeat relative"
       >
         {!eventData?.attributes?.registration_page_banner && (
           <div className="text-white text-center">
             {/* <h1 className="text-3xl font-bold">Event Banner</h1>
-            <p className="mt-2 text-lg opacity-90">Template One Design</p> */}
+            <p className="mt-2 text-lg opacity-90">Template Two Design</p> */}
           </div>
         )}
       </div>
@@ -96,12 +133,11 @@ const TemplateFormOne = ({
         </h3>
 
         <RegistrationFormPreview
-          formFields={formFields || []}
+          formFields={mappedFormFields}
           eventId={eventData?.attributes?.uuid}
           tenantUuid={tenantUuid || undefined}
           submitButtonText="Register Now"
         />
-
       </div>
     </div>
   );

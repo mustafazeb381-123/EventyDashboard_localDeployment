@@ -7,6 +7,7 @@ import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
+import AdvanceAppManagement from "./component/AdvanceAppManagement";
 
 export interface ToggleStates {
   confirmationMsg: boolean;
@@ -34,7 +35,7 @@ const ExpressEvent = () => {
     lastEdit,
     currentStep: initialStep,
   } = location.state || {};
-  console.log("plan0000000__00000000+++++++++", plan);
+  console.log("plan0000000__00000000+++++++++", plan, eventId);
 
   // Use route event ID if available, otherwise fall back to location state eventId
   const [createdEventId, setCreatedEventId] = useState<string | undefined>(
@@ -269,6 +270,7 @@ const ExpressEvent = () => {
       case 2:
         return (
           <Badges
+            plan={plan}
             toggleStates={toggleStates}
             eventId={finalEventId}
             onNext={handleNext}
@@ -289,14 +291,27 @@ const ExpressEvent = () => {
         );
       case 4:
         return (
-          <Areas
-            eventId={finalEventId}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
-          />
+          <>
+            {plan === "advanced" ? (
+              <AdvanceAppManagement
+                eventId={finalEventId}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                currentStep={currentStep}
+                totalSteps={steps.length}
+              />
+            ) : (
+              <Areas
+                eventId={finalEventId}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                currentStep={currentStep}
+                totalSteps={steps.length}
+              />
+            )}
+          </>
         );
+
       default:
         return (
           <MainData

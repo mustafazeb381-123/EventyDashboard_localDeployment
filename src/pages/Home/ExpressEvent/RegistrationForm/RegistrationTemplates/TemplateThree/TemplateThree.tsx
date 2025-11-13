@@ -1,6 +1,4 @@
-import React from "react";
 import { Loader2 } from "lucide-react";
-import Assets from "@/utils/Assets";
 import TemplateForm from "./TemplateForm";
 
 const TemplateThree = ({
@@ -74,11 +72,10 @@ const TemplateThree = ({
         <button
           onClick={handleUseTemplate}
           disabled={isLoading}
-          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
-            isLoading
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${isLoading
               ? "bg-gray-400 text-white cursor-not-allowed"
               : "bg-slate-800 text-white hover:bg-slate-900"
-          }`}
+            }`}
         >
           {isLoading ? (
             <>

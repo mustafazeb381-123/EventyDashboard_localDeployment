@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import Assets from "../../../../utils/Assets";
-import { Clock, Edit, MapPin, Loader2, Share2 } from "lucide-react";
+import { Clock, Edit, MapPin, Loader2 } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
@@ -331,76 +331,55 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             </div>
           </div>
 
-          {/* edit button and share button */}
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <div
-              onClick={() => {
-                const registrationUrl = `${window.location.origin}/register/${eventId}`;
-                navigator.clipboard
-                  .writeText(registrationUrl)
-                  .then(() => {
-                    toast.success("Registration link copied to clipboard!");
-                  })
-                  .catch(() => {
-                    toast.error("Failed to copy link");
-                  });
-              }}
-              className="rounded-2xl bg-green-50 py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center flex-shrink-0"
-            >
-              <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600" />
-              <p className="text-green-700 text-xs sm:text-sm font-normal">
-                Share Registration
-              </p>
-            </div>
-            <div
-              onClick={() =>
-                navigate("/express-event", {
-                  state: {
-                    // Event type and basic info
-                    plan: event_type,
-                    eventData: eventData,
-                    isEditing: true,
+          {/* edit button  */}
+          <div
+            onClick={() =>
+              navigate("/express-event", {
+                state: {
+                  // Event type and basic info
+                  plan: event_type,
+                  eventData: eventData,
+                  isEditing: true,
 
-                    // All event attributes
-                    eventAttributes: {
-                      name,
-                      event_type,
-                      event_date_from,
-                      event_date_to,
-                      event_time_from,
-                      event_time_to,
-                      about,
-                      location: eventLocation,
-                      logo_url,
-                      primary_color,
-                      secondary_color,
-                      registration_page_banner,
-                      require_approval,
-                    },
-
-                    // Component props
-                    chartData,
-                    onTimeRangeChange,
-
-                    // Event ID for reference
-                    eventId,
-
-                    // Stats data
-                    stats,
-
-                    // Additional metadata
-                    lastEdit: "Before 3hr",
-                    currentStep: 0, // Start from first step when editing
+                  // All event attributes
+                  eventAttributes: {
+                    name,
+                    event_type,
+                    event_date_from,
+                    event_date_to,
+                    event_time_from,
+                    event_time_to,
+                    about,
+                    location: eventLocation,
+                    logo_url,
+                    primary_color,
+                    secondary_color,
+                    registration_page_banner,
+                    require_approval,
                   },
-                })
-              }
-              className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors justify-center flex-shrink-0"
-            >
-              <Edit size={16} className="lg:w-5 lg:h-5" />
-              <p className="text-[#202242] text-xs sm:text-sm font-normal">
-                Edit Event
-              </p>
-            </div>
+
+                  // Component props
+                  chartData,
+                  onTimeRangeChange,
+
+                  // Event ID for reference
+                  eventId,
+
+                  // Stats data
+                  stats,
+
+                  // Additional metadata
+                  lastEdit: "Before 3hr",
+                  currentStep: 0, // Start from first step when editing
+                },
+              })
+            }
+            className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors w-full sm:w-auto justify-center lg:justify-start flex-shrink-0"
+          >
+            <Edit size={16} className="lg:w-5 lg:h-5" />
+            <p className="text-[#202242] text-xs sm:text-sm font-normal">
+              Edit Event
+            </p>
           </div>
         </div>
 
