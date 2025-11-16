@@ -489,6 +489,45 @@ function AdvanceAgenda({
                       className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
+                  {/* Speaker Selection */}
+<div>
+  <label className="block text-base font-medium text-gray-700 mb-3">
+    Speakers
+  </label>
+  <div className="flex gap-3">
+    {eventUsers.map((user) => (
+      <div
+        key={user.id}
+        onClick={() => toggleSpeakerSelection(user.id)}
+        className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${
+          selectedSpeakers.includes(user.id)
+            ? "border-blue-500 bg-blue-50"
+            : "border-gray-200 hover:border-gray-300"
+        }`}
+      >
+        {/* Checkbox */}
+        <input
+          type="checkbox"
+          checked={selectedSpeakers.includes(user.id)}
+          onChange={() => toggleSpeakerSelection(user.id)}
+          className="w-4 h-4"
+          onClick={(e) => e.stopPropagation()} // Prevent div click
+        />
+
+        {/* Profile + Name */}
+        <img
+          src={user.attributes.image}
+          alt={user.attributes.name}
+          className="w-10 h-10 rounded-full object-cover"
+        />
+        <span className="text-sm font-medium text-gray-700">
+          {user.attributes.name}
+        </span>
+      </div>
+    ))}
+  </div>
+</div>
+
                 </div>
 
                 {/* Right Side - Toggle Buttons and Speaker Selection */}
@@ -604,35 +643,6 @@ function AdvanceAgenda({
                           Cash payment
                         </span>
                       </label>
-                    </div>
-                  </div>
-
-                  {/* Speaker Selection */}
-                  <div>
-                    <label className="block text-base font-medium text-gray-700 mb-3">
-                      Speakers
-                    </label>
-                    <div className="flex gap-3 flex-wrap">
-                      {eventUsers.map((user) => (
-                        <div
-                          key={user.id}
-                          onClick={() => toggleSpeakerSelection(user.id)}
-                          className={`flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all ${
-                            selectedSpeakers.includes(user.id)
-                              ? "border-blue-500 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                        >
-                          <img
-                            src={user.attributes.image}
-                            alt={user.attributes.name}
-                            className="w-12 h-12 rounded-full object-cover"
-                          />
-                          <span className="text-xs font-medium text-gray-700 text-center">
-                            {user.attributes.name}
-                          </span>
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </div>

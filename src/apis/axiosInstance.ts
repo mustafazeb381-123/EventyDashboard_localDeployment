@@ -25,6 +25,7 @@ axiosInstance.interceptors.request.use(
     //
     // Retrieve token from localStorage
     if (token) {
+      console.log('token------', token)
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       console.log('No token found, redirecting to login...');
