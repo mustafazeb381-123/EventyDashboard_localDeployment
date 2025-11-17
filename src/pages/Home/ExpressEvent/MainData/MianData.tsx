@@ -690,6 +690,71 @@ const MainData = ({
   }, [eventId]);
 
 
+const handleClick = async () => {
+  console.log("Testing static event creation…");
+
+  const TOKEN =
+    "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjozNiwiZXhwIjoxNzYzNDQ5MDQ5LCJpYXQiOjE3NjMzNjI2NDl9.Nifc4zfjwbp09Md-d4pRNFTlWHFS-nkOCDY1cccDXUQ";
+
+  const BASE_URL = "https://scceventy.dev/en/api_dashboard/v1/events";
+
+  // Working static image
+  const imageResponse = await fetch("https://picsum.photos/200");
+  const imageBlob = await imageResponse.blob();
+  const imageFile = new File([imageBlob], "logo.png", { type: "image/png" });
+
+  const fd = new FormData();
+
+  // ------------------------
+  // 📌 EVENT STATIC DATA
+  // ------------------------
+  fd.append("event[name]", "New Event");
+  fd.append("event[event_date_from]", "2024-01-01");
+  fd.append("event[event_date_to]", "2024-01-03");
+  fd.append("event[event_time_from]", "09:00:00");
+  fd.append("event[event_time_to]", "17:00:00");
+  fd.append("event[event_type]", "express");
+  fd.append("event[require_approval]", "true");
+  fd.append("event[about]", "Event description");
+  fd.append("event[location]", "Event location");
+  fd.append("event[primary_color]", "#ff0000");
+  fd.append("event[secondary_color]", "#00ff00");
+
+  // ------------------------
+  // 📌 FILE ATTACHMENT
+  // ------------------------
+  fd.append("event[logo]", imageFile);
+
+  // ------------------------
+  // 📌 BADGES ATTRIBUTES STATIC
+  // ------------------------
+  // fd.append("event[badges_attributes][0][name]", "VIP Badge");
+  // fd.append("event[badges_attributes][0][default]", "true");
+
+  // fd.append("event[badges_attributes][1][name]", "Regular Badge");
+  // fd.append("event[badges_attributes][1][default]", "false");
+
+  // ------------------------
+  // 📌 SEND REQUEST
+  // ------------------------
+  try {
+    const res = await fetch(BASE_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${TOKEN}`,
+      },
+      body: fd,
+    });
+
+    const result = await res;
+
+    console.log("STATIC API RESPONSE:", result);
+    alert("✔ Static event successfully created!");
+  } catch (error) {
+    console.error("STATIC API ERROR:", error);
+    alert("❌ Error in static event creation. Check console.");
+  }
+};
 
 
 
@@ -936,9 +1001,9 @@ const MainData = ({
             </p>
           )}
 
-          {
+          {/* {
             plan === "advanced" ? <CustomizeColorPicker /> : null
-          }
+          } */}
 
           {/* Require Approval Toggle */}
           <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
@@ -1338,7 +1403,7 @@ const MainData = ({
       {/* Help Section */}
       <div className="mt-6 sm:mt-8 lg:mt-12 flex justify-center sm:justify-end">
         <button
-          // onClick={handleClick}
+          onClick={handleClick}
           className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors"
         >
           <span className="text-center sm:text-left">

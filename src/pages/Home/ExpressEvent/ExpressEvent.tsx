@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,7 @@ export interface ToggleStates {
 
 const ExpressEvent = () => {
   const location = useLocation();
-  console.log("location--------", location);
   const planType = location?.state?.plan;
-  console.log("planType------++++++=------------", planType);
   const { id: routeEventId } = useParams();
 
   const {
@@ -35,9 +33,8 @@ const ExpressEvent = () => {
     lastEdit,
     currentStep: initialStep,
   } = location.state || {};
-  console.log("plan0000000__00000000+++++++++", plan, eventId);
 
-  // Use route event ID if available, otherwise fall back to location state eventId
+  // Use route event ID if available, otherwise fallback to location state eventId
   const [createdEventId, setCreatedEventId] = useState<string | undefined>(
     (routeEventId as string) || (eventId as string)
   );
@@ -73,23 +70,23 @@ const ExpressEvent = () => {
       ? {
           id: "Invitation-Management",
           label: "Invitation Management",
-          description: "Please provide your name and email",
+          description: "Manage invitations for the event",
         }
       : {
           id: "confirmation",
           label: "Confirmation",
-          description: "Please provide your name and email",
+          description: "Confirm event details",
         },
     plan === "advanced"
       ? {
           id: "Mobile-App-Management",
           label: "Mobile App Management",
-          description: "Please provide your name and email",
+          description: "Manage mobile app settings for event",
         }
       : {
           id: "areas",
           label: "Areas",
-          description: "Please provide your name and email",
+          description: "Define event areas",
         },
   ];
 
@@ -105,46 +102,74 @@ const ExpressEvent = () => {
     eventDetails: false,
   });
 
-  // Accept eventId from child and update for next steps - UPDATED to accept plan parameter
-  // In ExpressEvent.tsx - REPLACE the existing handleNext function with this:
+  // --- Step-based API fetchers ---
+  const stepEventFetchers: Record<string, (eventId: string) => void> = {
+    "main-data": (eventId) => {
+      console.log("Fetching main data for event:", eventId);
+      // fetchMainData(eventId);
+    },
+    "registration-form": (eventId) => {
+      console.log("Fetching registration form for event:", eventId);
+      // fetchRegistrationForm(eventId);
+    },
+    "badge": (eventId) => {
+      console.log("Fetching badge data for event:", eventId);
+      // fetchBadgeData(eventId);
+    },
+    "confirmation": (eventId) => {
+      console.log("Fetching confirmation data for event:", eventId);
+      // fetchConfirmation(eventId);
+    },
+    "event-content": (eventId) => {
+      console.log("Fetching event content for event:", eventId);
+      // fetchEventContent(eventId);
+    },
+    "Invitation-Management": (eventId) => {
+      console.log("Fetching invitation management for event:", eventId);
+      // fetchInvitation(eventId);
+    },
+    "Mobile-App-Management": (eventId) => {
+      console.log("Fetching mobile app management for event:", eventId);
+      // fetchMobileAppManagement(eventId);
+    },
+    "areas": (eventId) => {
+      console.log("Fetching areas for event:", eventId);
+      // fetchAreas(eventId);
+    },
+  };
 
-  const handleNext = (nextEventId?: string | number, planType?: string) => {
-    console.log("ExpressEvent - handleNext called with:", {
-      nextEventId,
-      planType,
-      currentStep,
-    });
+  // --- Fetch data whenever step or eventId changes ---
+  useEffect(() => {
+    if (!finalEventId) return;
+    const step = steps[currentStep];
+    console.log('steps---++----', step)
+    if (step && stepEventFetchers[step.id]) {
+      stepEventFetchers[step.id](finalEventId);
+    }
+  }, [currentStep, finalEventId]);
 
+  // --- Navigation functions ---
+  const handleNext = (nextEventId?: string | number) => {
     if (nextEventId) {
       setCreatedEventId(String(nextEventId));
       localStorage.setItem("create_eventId", String(nextEventId));
     }
-
-    // Always move to next step, regardless of plan type
-    setCurrentStep((prev: number) => {
-      const nextStep = Math.min(prev + 1, steps.length - 1);
-      console.log("Moving from step", prev, "to step", nextStep);
-      return nextStep;
-    });
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev: number) => Math.max(prev - 1, 0));
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  // Handle back navigation based on context
   const handleBackNavigation = () => {
     if (isEditing && finalEventId) {
-      // If editing an existing event, go back to the event details page
-      navigation(`/home/${finalEventId}`, {
-        state: { eventId: finalEventId },
-      });
+      navigation(`/home/${finalEventId}`, { state: { eventId: finalEventId } });
     } else {
-      // If creating a new event, go back to home
       navigation("/");
     }
   };
 
+  // --- Steps navigation UI ---
   const StepsNavigation = () => (
     <div className="bg-[#F7FAFF]">
       <div className="flex items-center justify-between px-6 py-4">
@@ -233,6 +258,7 @@ const ExpressEvent = () => {
     </div>
   );
 
+  // --- Render step content ---
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -268,7 +294,17 @@ const ExpressEvent = () => {
           />
         );
       case 2:
-        return (
+        return plan === "advanced" ? (
+          <Badges
+            plan={plan}
+            toggleStates={toggleStates}
+            eventId={finalEventId}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
+        ) : (
           <Badges
             plan={plan}
             toggleStates={toggleStates}
@@ -280,7 +316,15 @@ const ExpressEvent = () => {
           />
         );
       case 3:
-        return (
+        return plan === "advanced" ? (
+          <EmailConfirmation
+            eventId={finalEventId}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
+        ) : (
           <EmailConfirmation
             eventId={finalEventId}
             onNext={handleNext}
@@ -290,28 +334,23 @@ const ExpressEvent = () => {
           />
         );
       case 4:
-        return (
-          <>
-            {plan === "advanced" ? (
-              <AdvanceAppManagement
-                eventId={finalEventId}
-                onNext={handleNext}
-                onPrevious={handlePrevious}
-                currentStep={currentStep}
-                totalSteps={steps.length}
-              />
-            ) : (
-              <Areas
-                eventId={finalEventId}
-                onNext={handleNext}
-                onPrevious={handlePrevious}
-                currentStep={currentStep}
-                totalSteps={steps.length}
-              />
-            )}
-          </>
+        return plan === "advanced" ? (
+          <AdvanceAppManagement
+            eventId={finalEventId}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
+        ) : (
+          <Areas
+            eventId={finalEventId}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
         );
-
       default:
         return (
           <MainData
