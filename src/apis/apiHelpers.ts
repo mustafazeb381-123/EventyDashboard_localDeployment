@@ -368,6 +368,23 @@ export const addGuestType = (eventId: number | string, name: string) => {
 
 };
 
+//---------------------- speaker partner agenda -------------------------
+
+
+export const createSpeakerApi = (eventId: string | number, data: FormData) => {
+  return axiosInstance.post(`events/${eventId}/speakers`, data, {
+    // headers: {
+    //   "Content-Type": "multipart/form-data",
+    // },
+  });
+};
+
+export const getSpeakersApi = (eventId: string | number) => {
+  return axiosInstance.get(`events/${eventId}/speakers`);
+};
+
+
+
 
 
 

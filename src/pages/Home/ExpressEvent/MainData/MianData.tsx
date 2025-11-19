@@ -694,7 +694,7 @@ const handleClick = async () => {
   console.log("Testing static event creation…");
 
   const TOKEN =
-    "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjozNiwiZXhwIjoxNzYzNDQ5MDQ5LCJpYXQiOjE3NjMzNjI2NDl9.Nifc4zfjwbp09Md-d4pRNFTlWHFS-nkOCDY1cccDXUQ";
+    "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjozNiwiZXhwIjoxNzYzNTQyNDk0LCJpYXQiOjE3NjM0NTYwOTR9.zn0LTnoJSikmEPk-9ydHHGVrnJ2YrF813zT2vkbGpSY";
 
   const BASE_URL = "https://scceventy.dev/en/api_dashboard/v1/events";
 
@@ -728,11 +728,11 @@ const handleClick = async () => {
   // ------------------------
   // 📌 BADGES ATTRIBUTES STATIC
   // ------------------------
-  // fd.append("event[badges_attributes][0][name]", "VIP Badge");
-  // fd.append("event[badges_attributes][0][default]", "true");
+  fd.append("event[badges_attributes][][name]", "VIP Badge");
+  fd.append("event[badges_attributes][][default]", "true");
 
-  // fd.append("event[badges_attributes][1][name]", "Regular Badge");
-  // fd.append("event[badges_attributes][1][default]", "false");
+  fd.append("event[badges_attributes][][name]", "Regular Badge");
+  fd.append("event[badges_attributes][][default]", "false");
 
   // ------------------------
   // 📌 SEND REQUEST
@@ -755,10 +755,6 @@ const handleClick = async () => {
     alert("❌ Error in static event creation. Check console.");
   }
 };
-
-
-
-
 
   // Handle Previous button click
   const handlePreviousClick = () => {
