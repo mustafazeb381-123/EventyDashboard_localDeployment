@@ -383,6 +383,16 @@ export const getSpeakersApi = (eventId: string | number) => {
   return axiosInstance.get(`events/${eventId}/speakers`);
 };
 
+export const deleteSpeakerApi = (eventId: string | number, speakerId: string | number) => {
+  return axiosInstance.delete(`events/${eventId}/speakers/${speakerId}`);
+};
+
+export const updateSpeakerApi = (eventId: string | number, speakerId: string | number, data: FormData) => {
+  return axiosInstance.put(`events/${eventId}/speakers/${speakerId}`, data);
+};
+
+
+
 
 
 
