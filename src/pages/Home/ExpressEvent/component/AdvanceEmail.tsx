@@ -1374,7 +1374,7 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
 
               <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
                 {tpl.html ? (
-                  <div className="w-full h-full transform scale-[0.2] origin-top-left">
+                  <div className="w-full h-full transform origin-top-left">
                     <div dangerouslySetInnerHTML={{ __html: tpl.html }} />
                   </div>
                 ) : (

@@ -55,7 +55,7 @@ const ExpressEvent = () => {
       label: "Registration Form",
       description: "Please provide your event Registration details",
     },
-    plan === "advanced"
+    plan === "advance"
       ? {
           id: "event-content",
           label: "Event Content",
@@ -66,7 +66,7 @@ const ExpressEvent = () => {
           label: "Badge",
           description: "Please provide your name and email",
         },
-    plan === "advanced"
+    plan === "advance"
       ? {
           id: "Invitation-Management",
           label: "Invitation Management",
@@ -77,7 +77,7 @@ const ExpressEvent = () => {
           label: "Confirmation",
           description: "Confirm event details",
         },
-    plan === "advanced"
+    plan === "advance"
       ? {
           id: "Mobile-App-Management",
           label: "Mobile App Management",
@@ -294,7 +294,7 @@ const ExpressEvent = () => {
           />
         );
       case 2:
-        return plan === "advanced" ? (
+        return plan === "advance" ? (
           <Badges
             plan={plan}
             toggleStates={toggleStates}
@@ -316,7 +316,7 @@ const ExpressEvent = () => {
           />
         );
       case 3:
-        return plan === "advanced" ? (
+        return plan === "advance" ? (
           <EmailConfirmation
             eventId={finalEventId}
             onNext={handleNext}
@@ -334,7 +334,7 @@ const ExpressEvent = () => {
           />
         );
       case 4:
-        return plan === "advanced" ? (
+        return plan === "advance" ? (
           <AdvanceAppManagement
             eventId={finalEventId}
             onNext={handleNext}

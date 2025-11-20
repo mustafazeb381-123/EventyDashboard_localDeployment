@@ -17,7 +17,7 @@ const Home = () => {
   };
 
   const handleCreateEventClick = () => {
-    setSelectedPlan("advanced");
+    setSelectedPlan("advance");
     console.log("create event");
     setIsModalOpen(true);
   };

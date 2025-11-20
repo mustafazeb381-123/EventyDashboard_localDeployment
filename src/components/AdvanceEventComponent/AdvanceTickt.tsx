@@ -130,7 +130,7 @@ const TemplateThumbnail = ({ template }: any) => {
       {template.html ? (
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
+          style={{transformOrigin: "top left" }}
         >
           <div
             className="w-full h-full"
@@ -140,7 +140,7 @@ const TemplateThumbnail = ({ template }: any) => {
       ) : (
         <div
           className="absolute inset-0 flex items-center justify-center"
-          style={{ transform: "scale(0.3)", transformOrigin: "top left" }}
+          style={{transformOrigin: "top left" }}
         >
           {template.component}
         </div>

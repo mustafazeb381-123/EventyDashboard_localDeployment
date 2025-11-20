@@ -199,7 +199,7 @@ const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
 
   const generateHTML = () => {
     let html =
-      '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <style>\n    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }\n    .email-container { max-width: 600px; margin: 0 auto; padding: 20px; }\n  </style>\n</head>\n<body>\n  <div class="email-container">\n';
+      '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <style>\n    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }\n    .email-container { max-width: 600px; margin: 0 auto; paddingHorizontal: 20px; }\n  </style>\n</head>\n<body>\n  <div class="email-container">\n';
 
     blocks.forEach((block) => {
       switch (block.type) {
@@ -1374,7 +1374,7 @@ const EmailConfirmation = ({ onNext, onPrevious, eventId }) => {
 
               <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
                 {tpl.html ? (
-                  <div className="w-full h-full transform scale-[0.2] origin-top-left">
+                  <div className="w-full h-full transform origin-top-left">
                     <div dangerouslySetInnerHTML={{ __html: tpl.html }} />
                   </div>
                 ) : (

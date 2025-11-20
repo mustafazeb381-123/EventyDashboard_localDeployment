@@ -80,7 +80,7 @@ const MainData = ({
   lastEdit,
   onEventCreated,
 }: MainDataProps) => {
-    // const plan = "advanced";
+    // const plan = "advance";
 
   // console.log("select
   // ed plans in main data ::::::::::::::::::::::", plan);
@@ -1086,7 +1086,7 @@ const handleEventType = () => {
             </label>
           </div>
           {/* Require Ticket */}
-          {plan === "advanced" ?
+          {plan === "advance" ?
             <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2 sm:gap-3">
                 <label className="text-sm font-medium text-gray-700">
@@ -1271,7 +1271,7 @@ const handleEventType = () => {
           </div>
 
         {
-  plan === "advanced" ? (
+  plan === "advance" ? (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">
         Registration Limits <span className="text-red-500">*</span>
