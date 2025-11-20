@@ -70,11 +70,7 @@ const currentSpeakers = eventUsers.slice(
   currentPage * itemsPerPage
 );
 
-
-
-  
   // const EVENT_ID = 100;
-
 
  useEffect(() => {
   const fetchSpeakers = async () => {

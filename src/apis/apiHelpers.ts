@@ -373,9 +373,6 @@ export const addGuestType = (eventId: number | string, name: string) => {
 
 export const createSpeakerApi = (eventId: string | number, data: FormData) => {
   return axiosInstance.post(`events/${eventId}/speakers`, data, {
-    // headers: {
-    //   "Content-Type": "multipart/form-data",
-    // },
   });
 };
 
@@ -389,6 +386,23 @@ export const deleteSpeakerApi = (eventId: string | number, speakerId: string | n
 
 export const updateSpeakerApi = (eventId: string | number, speakerId: string | number, data: FormData) => {
   return axiosInstance.put(`events/${eventId}/speakers/${speakerId}`, data);
+};
+
+export const createPartnerApi = (eventId: string | number, data: FormData) => {
+  return axiosInstance.post(`events/${eventId}/partners`, data, {
+  });
+};
+
+export const getPartnerApi = (eventId: string | number) => {
+  return axiosInstance.get(`events/${eventId}/partners`);
+};
+
+export const deletePartnerApi = (eventId: string | number, speakerId: string | number) => {
+  return axiosInstance.delete(`events/${eventId}/partners/${speakerId}`);
+};
+
+export const updatePartnerApi = (eventId: string | number, speakerId: string | number, data: FormData) => {
+  return axiosInstance.put(`events/${eventId}/partners/${speakerId}`, data);
 };
 
 

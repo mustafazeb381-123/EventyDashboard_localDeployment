@@ -80,7 +80,10 @@ const MainData = ({
   lastEdit,
   onEventCreated,
 }: MainDataProps) => {
-  // console.log("selected plans in main data ::::::::::::::::::::::", plan);
+    // const plan = "advanced";
+
+  // console.log("select
+  // ed plans in main data ::::::::::::::::::::::", plan);
   // console.log("event data for editing:", eventData);
   // console.log("is editing mode:", isEditing);
   // console.log("event attributes:", eventAttributes);
@@ -90,11 +93,13 @@ const MainData = ({
   // console.log("last edit:", lastEdit);
 
   const [newGuestType, setNewGuestType] = useState<string>("");
+  console.log('new guest type----', newGuestType)
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showEventData, setShowEventData] = useState<boolean>(false);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
   const [ticket, setTicket] = useState(true)
+  const [eventguesttype, setEventguesttype] = useState<string>("");
   const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
     description: "",
@@ -453,6 +458,9 @@ const MainData = ({
     fd.append("event[primary_color]", formData.primaryColor);
     fd.append("event[secondary_color]", formData.secondaryColor);
     fd.append("event[event_type]", plan);
+    fd.append("event[badges_attributes][][name]", eventguesttype)
+
+
     if (formData.dateFrom)
       fd.append(
         "event[event_date_from]",
@@ -473,7 +481,8 @@ const MainData = ({
     }
 
     // Guest types - combine local guest types and API badges
-    const allGuestTypes = [
+   if(eventId){
+     const allGuestTypes = [
       ...formData.guestTypes,
       ...badges.map(badge => badge.attributes.name)
     ];
@@ -482,6 +491,7 @@ const MainData = ({
       fd.append(`event[badges_attributes][][name]`, type);
       fd.append(`event[badges_attributes][][default]`, String(index === 0));
     });
+   }
 
     fd.append("event[registration_template]", "form");
     fd.append("locale", "en");
@@ -558,6 +568,7 @@ const MainData = ({
       const result = await response.json();
       console.log("✅ Badges fetched successfully:", result);
       setBadges(result?.data || []);
+      
     } catch (error) {
       console.error("❌ Fetch error:", error);
     } finally {
@@ -761,6 +772,43 @@ const handleClick = async () => {
     console.log("Previous button clicked. Current Event ID:", eventId);
     onPrevious();
   };
+
+
+const handleEventType = () => {
+  if (!eventguesttype.trim()) {
+    toast.error("Guest type name required");
+    return;
+  }
+
+  // Check if the guest type already exists (case-insensitive)
+  const trimmedType = eventguesttype.trim();
+  const isDuplicate = formData.guestTypes.some(
+    (type) => type.toLowerCase() === trimmedType.toLowerCase()
+  );
+
+  if (isDuplicate) {
+    toast.error("This guest type already exists!");
+    return;
+  }
+
+  // Add to local guest types for new event creation
+  setFormData((prev) => ({
+    ...prev,
+    guestTypes: [...prev.guestTypes, trimmedType],
+  }));
+  
+  setEventguesttype("");
+
+  // Clear validation error when guest type is added
+  if (validationErrors.guestTypes) {
+    setValidationErrors((prev) => ({
+      ...prev,
+      guestTypes: "",
+    }));
+  }
+
+  toast.success("Guest type added!");
+};
 
   const handleAddUserType = async () => {
     if (!eventId) {
@@ -1286,7 +1334,8 @@ const handleClick = async () => {
               <Info size={14} className="text-gray-400" />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-2 mb-4">
+           {
+            eventId ?  <div className="flex flex-col sm:flex-row gap-2 mb-4">
               <input
                 type="text"
                 value={newGuestType}
@@ -1302,7 +1351,24 @@ const handleClick = async () => {
                 <Plus size={16} />
                 Add
               </button>
+            </div> :  <div className="flex flex-col sm:flex-row gap-2 mb-4">
+              <input
+                type="text"
+                value={eventguesttype}
+                onChange={(e) => setEventguesttype(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="e.g. Speaker, VIP"
+                className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+              />
+              <button
+                onClick={handleEventType}
+                className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
+              >
+                <Plus size={16} />
+                Add
+              </button>
             </div>
+           }
 
             {validationErrors.guestTypes && (
               <p className="mb-2 text-xs text-red-600">
@@ -1324,39 +1390,96 @@ const handleClick = async () => {
               </div>
             )}
 
-            <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-              {/* Show API Badges */}
-              {badges.length > 0 && (
-                <div className="mb-4">
-                  {badges.map((badge, index) => (
-                    <div
-                      key={`api-${badge.id}`}
-                      className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
-                    >
-                      <span className="text-sm text-gray-700 truncate pr-2">
-                        {badge.attributes.name}
-                      </span>
-                      {badge.attributes.name !== "Guest" && (
-                        <button
-                          onClick={() => handleDeleteBadgeType(badge.id, index)}
-                          className="text-red-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+         {
+  eventId ? (
+   <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
+  {/* Show ALL guest types - both from API badges and local formData */}
+  {(badges.length > 0 || formData.guestTypes.length > 0) && (
+    <div className="mb-4">
+      {/* Show API Badges first */}
+      {badges.map((badge, index) => (
+        <div
+          key={`api-${badge.id}`}
+          className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+        >
+          <span className="text-sm text-gray-700 truncate pr-2">
+            {badge.attributes.name}
+          </span>
+          {badge.attributes.name !== "Guest" && (
+            <button
+              onClick={() => handleDeleteBadgeType(badge.id, index)}
+              className="text-red-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      ))}
+      
+      {/* Show Local Guest Types (for editing existing events) */}
+      {formData.guestTypes.map((type, index) => (
+        <div
+          key={`local-${index}`}
+          className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+        >
+          <span className="text-sm text-gray-700 truncate pr-2">
+            {type}
+          </span>
+          {type !== "Guest" && (
+            <button
+              onClick={() => removeGuestType(index)}
+              className="text-red-400 hover:text-red-500 transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  )}
 
-                </div>
-              )}
-
-              {/* Show message when no guest types exist */}
-              {formData.guestTypes.length === 0 && badges.length === 0 && (
-                <p className="text-gray-500 text-sm text-center py-4">
-                  No guest types added yet
-                </p>
+  {/* Show message when no guest types exist */}
+  {formData.guestTypes.length === 0 && badges.length === 0 && (
+    <p className="text-gray-500 text-sm text-center py-4">
+      No guest types added yet
+    </p>
+  )}
+</div>
+  ) : (
+    <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
+      {/* Show Local Guest Types for new event creation */}
+      {formData.guestTypes.length > 0 && (
+        <div className="mb-4">
+          {formData.guestTypes.map((type, index) => (
+            <div
+              key={`local-${index}`}
+              className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+            >
+              <span className="text-sm text-gray-700 truncate pr-2">
+                {type}
+              </span>
+              {type !== "Guest" && (
+                <button
+                  onClick={() => removeGuestType(index)}
+                  className="text-red-400 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 size={16} />
+                </button>
               )}
             </div>
+          ))}
+        </div>
+      )}
+
+      {/* Show message when no guest types exist */}
+      {formData.guestTypes.length === 0 && (
+        <p className="text-gray-500 text-sm text-center py-4">
+          No guest types added yet
+        </p>
+      )}
+    </div>
+  )
+}
           </div>
         </div>
       </div>
