@@ -160,6 +160,7 @@ function RegisterdUser() {
       if (editForm.email) formData.append("event_user[email]", editForm.email);
       if (editForm.position) formData.append("event_user[position]", editForm.position);
       if (editForm.organization) formData.append("event_user[organization]", editForm.organization);
+      if (editForm.printed !== undefined) formData.append("event_user[printed]", editForm.printed);
 
       // ✅ Add user_type
       if (editForm.user_type) formData.append("event_user[user_type]", editForm.user_type);
@@ -596,7 +597,7 @@ function RegisterdUser() {
                               organization: user?.attributes?.organization || "",
                               image: user?.attributes?.image || "",
                               user_type: user?.attributes?.user_type || "",
-                              printed: user?.attributes?.printed || false
+                              printed: user?.attributes?.printed|| false
 
                             });
                           }} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer">
@@ -723,24 +724,24 @@ function RegisterdUser() {
                   className="w-full mb-4 p-2 border rounded"
                 />
 
-                <div className="mb-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={editForm.printed || false}
-                      onChange={(e) => {
-                        const newValue = e.target.checked;
-                        console.log("Printed checkbox value:", newValue);
-                        setEditForm({
-                          ...editForm,
-                          printed: newValue,
-                        });
-                      }}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    Printed
-                  </label>
-                </div>
+{/* <div className="mb-4">
+  <label className="flex items-center gap-2">
+    <input
+      type="checkbox"
+      checked={editForm.printed || false}
+      onChange={(e) => {
+        const newValue = e.target.checked;
+        console.log("Printed checkbox value:", newValue); 
+        setEditForm({
+          ...editForm,
+          printed: newValue,
+        });
+      }}
+      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+    />
+    Printed
+  </label>
+</div> */}
 
 
 
