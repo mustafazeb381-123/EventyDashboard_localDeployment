@@ -388,6 +388,9 @@ export const updateSpeakerApi = (eventId: string | number, speakerId: string | n
   return axiosInstance.put(`events/${eventId}/speakers/${speakerId}`, data);
 };
 
+
+
+
 export const createPartnerApi = (eventId: string | number, data: FormData) => {
   return axiosInstance.post(`events/${eventId}/partners`, data, {
   });
@@ -403,6 +406,26 @@ export const deletePartnerApi = (eventId: string | number, speakerId: string | n
 
 export const updatePartnerApi = (eventId: string | number, speakerId: string | number, data: FormData) => {
   return axiosInstance.put(`events/${eventId}/partners/${speakerId}`, data);
+};
+
+
+
+
+export const createAgendaApi = (eventId: string | number, data: any) => {
+  return axiosInstance.post(`events/${eventId}/agendas`, data);
+};
+
+
+export const getAgendaApi = (eventId: string | number) => {
+  return axiosInstance.get(`events/${eventId}/agendas`);
+};
+
+export const deleteAgendaApi = (eventId: string | number, agendaId: string | number) => {
+  return axiosInstance.delete(`events/${eventId}/agendas/${agendaId}`);
+};
+
+export const updateAgendaApi = (eventId: string | number, agendaId: string | number, data: any) => {
+  return axiosInstance.put(`events/${eventId}/agendas/${agendaId}`, data);
 };
 
 

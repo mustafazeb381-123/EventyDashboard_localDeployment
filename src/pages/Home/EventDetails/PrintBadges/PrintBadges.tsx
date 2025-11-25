@@ -82,6 +82,7 @@ function PrintBadges() {
     setLoadingUsers(true);
     try {
       const response = await getEventUsers(id);
+      console.log('response from getEventUsers:', response);
       const users = response.data.data || response.data || [];
       // Augment users with print-specific status fields
       const usersWithPrintStatus = users.map((user: any) => ({

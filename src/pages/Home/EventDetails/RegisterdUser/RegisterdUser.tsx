@@ -58,6 +58,8 @@ function RegisterdUser() {
     email: "",
     organization: "",
     user_type: "",
+    printed: false,
+
   });
 
   const handleDownloadTemplate = async () => {
@@ -166,6 +168,7 @@ function RegisterdUser() {
       if (selectedImageFile) formData.append("event_user[image]", selectedImageFile);
 
       const response = await updateEventUser(eventId, editingUser.id, formData);
+      console.log("Update response:", response.data);
 
       // Get updated user from API if returned
       const updatedUser = response?.data?.data;
@@ -214,7 +217,7 @@ function RegisterdUser() {
     try {
       setLoadingUsers(true);
       const response = await getEventUsers(id);
-      console.log("Fetched users:", response.data);
+      console.log("get event users api:", response.data);
 
       // adjust depending on backend shape
       const users = response.data.data || response.data || [];
@@ -593,6 +596,8 @@ function RegisterdUser() {
                               organization: user?.attributes?.organization || "",
                               image: user?.attributes?.image || "",
                               user_type: user?.attributes?.user_type || "",
+                              printed: user?.attributes?.printed || false
+
                             });
                           }} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer">
                             <Edit className="w-4 h-4" />
@@ -717,6 +722,27 @@ function RegisterdUser() {
                   onChange={(e) => setEditForm({ ...editForm, user_type: e.target.value })}
                   className="w-full mb-4 p-2 border rounded"
                 />
+
+                <div className="mb-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editForm.printed || false}
+                      onChange={(e) => {
+                        const newValue = e.target.checked;
+                        console.log("Printed checkbox value:", newValue);
+                        setEditForm({
+                          ...editForm,
+                          printed: newValue,
+                        });
+                      }}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    Printed
+                  </label>
+                </div>
+
+
 
                 <button
                   onClick={handleUpdateUser}
