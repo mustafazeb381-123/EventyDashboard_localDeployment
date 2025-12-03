@@ -291,7 +291,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   return (
     <>
-      {plan === "advanced" ? (
+      {plan === "advance" ? (
         <AdvanceEventContent
           onComplete={(eventId) => {
             console.log(

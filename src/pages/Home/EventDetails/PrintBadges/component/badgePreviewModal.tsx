@@ -20,6 +20,7 @@ interface BadgePreviewModalProps {
   qrImage: string;
   onPrint: () => void;
   setIsPrinting: (printing: boolean) => void;
+  updatingPrintStatus?: boolean;
 }
 
 const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
@@ -31,6 +32,9 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   selectedBadgeTemplate,
   badgeColors,
   qrImage,
+  onPrint,
+  setIsPrinting,
+  updatingPrintStatus = false,
 }) => {
   const badgeRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
@@ -42,6 +46,10 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
       return;
     }
 
+    // Call the onPrint function to update print status
+    onPrint();
+    
+    // Then open the print tab
     const badgesHtml = usersToPreview
       .map((user) => {
         const badgeContent = badgeRefs.current[user.id]?.innerHTML || "";
@@ -330,11 +338,11 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
 
             <button
               onClick={handleOpenPrintTab}
-              disabled={usersToPreview.length === 0}
+              disabled={usersToPreview.length === 0 || updatingPrintStatus}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg shadow"
             >
               <Printer size={16} />
-              Open Print Page
+              {updatingPrintStatus ? "Updating Status..." : "Open Print Page"}
             </button>
           </div>
         </div>

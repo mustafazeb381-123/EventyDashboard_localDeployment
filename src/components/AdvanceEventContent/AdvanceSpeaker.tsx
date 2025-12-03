@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
+import { createSpeakerApi, deleteSpeakerApi, getSpeakersApi, updateSpeakerApi } from "@/apis/apiHelpers";
+import Pagination from "../Pagination";
 
 interface AdvanceSpeakerProps {
   onNext?: (eventId?: string | number) => void;
@@ -9,6 +11,21 @@ interface AdvanceSpeakerProps {
   eventId?: string | number;
 }
 
+interface Speaker {
+  id: string;
+  attributes: {
+    name: string;
+    description: string;
+    organization: string;
+    image: string;
+    image_url?: string;
+    created_at?: string;
+    updated_at?: string;
+    event_id?: number;
+    agenda_ids?: any[];
+  };
+}
+
 function AdvanceSpeaker({
   onNext,
   onPrevious,
@@ -16,13 +33,9 @@ function AdvanceSpeaker({
   totalSteps = 5,
   eventId,
 }: AdvanceSpeakerProps) {
-  // useEffect(() => {
-  //   const eventId = localStorage.getItem("create_eventId");
-  //   console.log("event id-- in speaker----------", eventId);
-  // }, [eventId]);
-
-  // console.log("RegistrationForm - effective event id:", effectiveEventId);
-  const [eventUsers, setUsers] = useState<any[]>([]);
+  console.log('-------evnt id---------------', eventId)
+  const [eventUsers, setEventUsers] = useState<Speaker[]>([]);
+  console.log('event users-------', eventUsers)
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<{
@@ -36,42 +49,69 @@ function AdvanceSpeaker({
     image: "",
   });
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const staticUsers = [
-    {
-      id: "1",
-      attributes: {
-        name: "Ethan Carter",
-        description: "Discover a hidden gem in this lively city...",
-        organization: "Scc",
-        image: "https://i.pravatar.cc/100?img=1",
-      },
-    },
-    {
-      id: "2",
-      attributes: {
-        name: "Luca Thompson",
-        description:
-          "Nestled in the heart of the city, this place is perfect...",
-        organization: "Mothmerat",
-        image: "https://i.pravatar.cc/100?img=2",
-      },
-    },
-    {
-      id: "3",
-      attributes: {
-        name: "Liam Anderson",
-        description:
-          "This charming location offers a perfect blend of comfort...",
-        organization: "Sodic",
-        image: "https://i.pravatar.cc/100?img=3",
-      },
-    },
-  ];
+  const [editModalOpen, setEditModalOpen] = useState(false);
+const [editingSpeaker, setEditingSpeaker] = useState<Speaker | null>(null);
+const [editSpeakerData, setEditSpeakerData] = useState({
+  name: "",
+  description: "",
+  organization: "",
+  image: "",
+});
+const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+const [currentPage, setCurrentPage] = useState(1);
+const itemsPerPage = 5; // You can adjust this
+const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
 
-  useEffect(() => {
-    setUsers(staticUsers);
-  }, []);
+// Compute speakers for current page
+const currentSpeakers = eventUsers.slice(
+  (currentPage - 1) * itemsPerPage,
+  currentPage * itemsPerPage
+);
+
+  // const EVENT_ID = 100;
+
+ useEffect(() => {
+  const fetchSpeakers = async () => {
+    if (!eventId) return;
+
+    try {
+      setIsLoading(true);
+      const response = await getSpeakersApi(eventId);
+
+      if (response.status === 200) {
+        const speakersData = response.data.data.map((item: any) => ({
+          id: item.id,
+          attributes: {
+            name: item.attributes.name,
+            description: item.attributes.description,
+            organization: item.attributes.organization,
+            image: item.attributes.image_url, 
+            image_url: item.attributes.image_url,
+            created_at: item.attributes.created_at,
+            updated_at: item.attributes.updated_at,
+            event_id: item.attributes.event_id,
+            agenda_ids: item.attributes.agenda_ids,
+          },
+        }));
+        console.log('speaker data-------', speakersData)
+
+        setEventUsers(speakersData);
+      } else {
+        showNotification("Failed to fetch speakers", "error");
+      }
+    } catch (error: any) {
+      console.log("💥 GET speakers error:", error);
+      showNotification("Network error: Cannot fetch speakers", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchSpeakers();
+}, [eventId]);
+
 
   useEffect(() => {
     if (notification) {
@@ -86,7 +126,7 @@ function AdvanceSpeaker({
     setNotification({ message, type });
   };
 
-  const handleSelectAll = (e: any) => {
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       setSelectedUsers(eventUsers.map((u) => u.id));
     } else {
@@ -100,32 +140,188 @@ function AdvanceSpeaker({
     );
   };
 
-  const handleDeleteUser = (user: any) => {
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
-    setUsers((prev) => prev.filter((u) => u.id !== user.id));
-    showNotification("User deleted successfully!", "success");
-  };
+  const handleDeleteUser = async (user: Speaker) => {
+  if (!window.confirm("Are you sure you want to delete this user?")) return;
 
-  const handleAddSpeaker = () => {
-    if (!newSpeaker.name || !newSpeaker.organization) {
-      showNotification("Please fill all required fields!", "error");
-      return;
+  try {
+    setIsLoading(true);
+
+    const response = await deleteSpeakerApi(eventId!, user.id);
+
+    // Backend returns 200 or 204 on successful deletion
+    if (response.status === 200 || response.status === 204) {
+      // Remove the speaker from local state
+      setEventUsers(prev => prev.filter(u => u.id !== user.id));
+      showNotification("Speaker deleted successfully!", "success");
+    } else {
+      showNotification("Failed to delete speaker", "error");
     }
-    const newUser = {
-      id: Date.now().toString(),
-      attributes: {
-        ...newSpeaker,
-        image: selectedImageFile
-          ? URL.createObjectURL(selectedImageFile)
-          : "https://i.pravatar.cc/100?img=10",
-      },
-    };
-    setUsers((prev) => [...prev, newUser]);
-    showNotification("Speaker added successfully!", "success");
-    setNewSpeaker({ name: "", description: "", organization: "", image: "" });
-    setSelectedImageFile(null);
-    setAddModalOpen(false);
-  };
+  } catch (error: any) {
+    console.error("Delete speaker error:", error);
+    showNotification(
+      error.response?.data?.message || "Network error: Cannot delete speaker",
+      "error"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+ const handleEditUser = (user: Speaker) => {
+  setEditingSpeaker(user);
+  setEditSpeakerData({
+    name: user.attributes.name,
+    description: user.attributes.description,
+    organization: user.attributes.organization,
+    image: user.attributes.image_url || "",
+  });
+  setEditSelectedImageFile(null);
+  setEditModalOpen(true);
+};
+
+
+  // ONLY CREATE API IS CALLED - FIXED VERSION
+const handleAddSpeaker = async () => {
+  console.log("🚀 START: handleAddSpeaker");
+
+  if (!newSpeaker.name || !newSpeaker.organization) {
+    showNotification("Please fill all required fields!", "error");
+    return;
+  }
+
+  console.log("✅ Validation passed");
+
+  try {
+    setIsLoading(true);
+
+    // ✅ CREATE FORM DATA HERE (this was missing)
+    const formData = new FormData();
+    formData.append("speaker[name]", newSpeaker.name);
+    formData.append("speaker[description]", newSpeaker.description);
+    formData.append("speaker[organization]", newSpeaker.organization);
+
+    if (selectedImageFile) {
+      formData.append("speaker[image]", selectedImageFile);
+    }
+
+    console.log("📤 Sending formData:", {
+      name: newSpeaker.name,
+      description: newSpeaker.description,
+      organization: newSpeaker.organization,
+      image: selectedImageFile?.name,
+    });
+
+    // ✅ CALL API HELPER (correct usage)
+    const response = await createSpeakerApi(eventId, formData);
+
+    console.log("📨 Axios response:", response);
+
+    if (response.status === 201 || response.status === 200) {
+      const result = response.data;
+
+      const newSpeakerData: Speaker = {
+        id: result.data.id.toString(),
+        attributes: {
+          name: result.data.attributes.name,
+          description: result.data.attributes.description,
+          organization: result.data.attributes.organization,
+          image: result.data.attributes.image_url,
+          image_url: result.data.attributes.image_url,
+          created_at: result.data.attributes.created_at,
+          updated_at: result.data.attributes.updated_at,
+          event_id: result.data.attributes.event_id,
+          agenda_ids: result.data.attributes.agenda_ids,
+        },
+      };
+
+      setEventUsers((prev) => [...prev, newSpeakerData]);
+      showNotification("Speaker added successfully!", "success");
+
+      // Reset UI
+      setNewSpeaker({
+        name: "",
+        description: "",
+        organization: "",
+        image: "",
+      });
+      setSelectedImageFile(null);
+      setAddModalOpen(false);
+    }
+  } catch (error: any) {
+    console.log("💥 Axios error", error);
+
+    if (error.response) {
+      showNotification(
+        error.response.data?.message || "Failed to add speaker",
+        "error"
+      );
+    } else {
+      showNotification("Network error: Cannot connect to server.", "error");
+    }
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const handleUpdateSpeaker = async () => {
+  if (!editingSpeaker) return;
+
+  if (!editSpeakerData.name || !editSpeakerData.organization) {
+    showNotification("Please fill all required fields!", "error");
+    return;
+  }
+
+  try {
+    setIsLoading(true);
+
+    const formData = new FormData();
+    formData.append("speaker[name]", editSpeakerData.name);
+    formData.append("speaker[description]", editSpeakerData.description);
+    formData.append("speaker[organization]", editSpeakerData.organization);
+
+    if (editSelectedImageFile) {
+      formData.append("speaker[image]", editSelectedImageFile);
+    }
+
+    const response = await updateSpeakerApi(eventId!, editingSpeaker.id, formData);
+
+    if (response.status === 200) {
+      const updated = response.data.data;
+      setEventUsers(prev =>
+        prev.map(u =>
+          u.id === editingSpeaker.id
+            ? {
+                ...u,
+                attributes: {
+                  ...u.attributes,
+                  name: updated.attributes.name,
+                  description: updated.attributes.description,
+                  organization: updated.attributes.organization,
+                  image: updated.attributes.image_url,
+                  image_url: updated.attributes.image_url,
+                },
+              }
+            : u
+        )
+      );
+
+      showNotification("Speaker updated successfully!", "success");
+      setEditModalOpen(false);
+      setEditingSpeaker(null);
+    }
+  } catch (error: any) {
+    console.error("Update speaker error:", error);
+    showNotification(
+      error.response?.data?.message || "Network error: Cannot update speaker",
+      "error"
+    );
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
 
   const handleNext = () => {
     if (onNext) {
@@ -139,9 +335,9 @@ function AdvanceSpeaker({
     }
   };
 
-  const UserAvatar = ({ user }: { user: any }) => (
+  const UserAvatar = ({ user }: { user: Speaker }) => (
     <img
-      src={user.attributes.image}
+      src={user.attributes.image || user.attributes.image_url || "https://i.pravatar.cc/100?img=10"}
       alt={user.attributes.name}
       className="w-10 h-10 rounded-full object-cover"
     />
@@ -215,10 +411,11 @@ function AdvanceSpeaker({
 
           <button
             onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            disabled={isLoading}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            Add Speaker
+            {isLoading ? "Loading..." : "Add Speaker"}
           </button>
         </div>
 
@@ -251,56 +448,50 @@ function AdvanceSpeaker({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {eventUsers.map((user, index) => (
-                <tr
-                  key={user.id}
-                  className={index % 2 ? "bg-gray-50" : "bg-white"}
-                >
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => handleSelectUser(user.id)}
-                    />
-                  </td>
+          <tbody className="divide-y divide-gray-200">
+  {currentSpeakers.map((user, index) => (
+    <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
+      <td className="px-6 py-4">
+        <input
+          type="checkbox"
+          checked={selectedUsers.includes(user.id)}
+          onChange={() => handleSelectUser(user.id)}
+        />
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <UserAvatar user={user} />
+          <span className="text-sm font-medium text-gray-900">
+            {user.attributes.name}
+          </span>
+        </div>
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
+        {user.attributes.description}
+      </td>
+      <td className="px-6 py-4 text-sm text-gray-600">
+        {user.attributes.organization}
+      </td>
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handleDeleteUser(user)}
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => handleEditUser(user)}
+            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg"
+          >
+            <Edit2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  ))}
+</tbody>
 
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <UserAvatar user={user} />
-                      <span className="text-sm font-medium text-gray-900">
-                        {user.attributes.name}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
-                    {user.attributes.description}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.attributes.organization}
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-yellow-600 hover:bg-red-50 rounded-lg"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
           </table>
         </div>
 
@@ -308,10 +499,10 @@ function AdvanceSpeaker({
         {addModalOpen && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => setAddModalOpen(false)}
+            onClick={() => !isLoading && setAddModalOpen(false)}
           >
             <div
-              className="bg-white p-6 rounded-xl w-[80%] max-w-7xl"
+              className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">
@@ -321,11 +512,11 @@ function AdvanceSpeaker({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Name
+                    Name *
                   </label>
                   <input
                     type="text"
-                    placeholder="Text here"
+                    placeholder="Enter speaker name"
                     value={newSpeaker.name}
                     onChange={(e) =>
                       setNewSpeaker({ ...newSpeaker, name: e.target.value })
@@ -336,22 +527,30 @@ function AdvanceSpeaker({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Upload Pic
+                    Upload Pic (max 800KB)
                   </label>
                   <div className="relative">
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) =>
-                        e.target.files &&
-                        setSelectedImageFile(e.target.files[0])
-                      }
+                      onChange={(e) => {
+                        if (e.target.files && e.target.files[0]) {
+                          const file = e.target.files[0];
+                          if (file.size > 800 * 1024) {
+                            showNotification("Image must be less than 800KB", "error");
+                            return;
+                          }
+                          setSelectedImageFile(file);
+                        }
+                      }}
                       className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">
-                      PNG / JPEG / JPG (max 800 kb 500 x 500 px)
-                    </span>
                   </div>
+                  {selectedImageFile && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -359,7 +558,7 @@ function AdvanceSpeaker({
                     Description
                   </label>
                   <textarea
-                    placeholder="Text here"
+                    placeholder="Enter speaker description"
                     value={newSpeaker.description}
                     onChange={(e) =>
                       setNewSpeaker({
@@ -374,11 +573,11 @@ function AdvanceSpeaker({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Organization
+                    Organization *
                   </label>
                   <input
                     type="text"
-                    placeholder="Text here"
+                    placeholder="Enter organization name"
                     value={newSpeaker.organization}
                     onChange={(e) =>
                       setNewSpeaker({
@@ -391,15 +590,97 @@ function AdvanceSpeaker({
                 </div>
               </div>
 
-              <button
-                onClick={handleAddSpeaker}
-                className="mt-5 w-full bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Add Speaker
-              </button>
+              <div className="flex gap-3 mt-6">
+                <button
+                  onClick={() => setAddModalOpen(false)}
+                  disabled={isLoading}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddSpeaker}
+                  disabled={isLoading}
+                  className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus className="w-4 h-4" />
+                  {isLoading ? "Adding Speaker..." : "Add Speaker"}
+                </button>
+              </div>
             </div>
           </div>
         )}
+        {editModalOpen && editingSpeaker && (
+  <div
+    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+    onClick={() => !isLoading && setEditModalOpen(false)}
+  >
+    <div
+      className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h2 className="text-xl font-bold mb-4 text-gray-900">
+        Edit Speaker
+      </h2>
+
+      <div className="space-y-4">
+        <input
+          type="text"
+          placeholder="Enter speaker name"
+          value={editSpeakerData.name}
+          onChange={(e) => setEditSpeakerData({ ...editSpeakerData, name: e.target.value })}
+          className="w-full p-2.5 border border-gray-300 rounded-md"
+        />
+
+        <input
+          type="text"
+          placeholder="Organization"
+          value={editSpeakerData.organization}
+          onChange={(e) => setEditSpeakerData({ ...editSpeakerData, organization: e.target.value })}
+          className="w-full p-2.5 border border-gray-300 rounded-md"
+        />
+
+        <textarea
+          placeholder="Description"
+          value={editSpeakerData.description}
+          onChange={(e) => setEditSpeakerData({ ...editSpeakerData, description: e.target.value })}
+          rows={3}
+          className="w-full p-2.5 border border-gray-300 rounded-md"
+        />
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              const file = e.target.files[0];
+              if (file.size > 800 * 1024) {
+                showNotification("Image must be less than 800KB", "error");
+                return;
+              }
+              setEditSelectedImageFile(file);
+            }
+          }}
+          className="w-full p-2.5 border border-gray-300 rounded-md"
+        />
+        {editSelectedImageFile && <p>Selected: {editSelectedImageFile.name}</p>}
+      </div>
+
+      <div className="flex gap-3 mt-6">
+        <button onClick={() => setEditModalOpen(false)} className="flex-1 px-4 py-2 border rounded-lg">
+          Cancel
+        </button>
+        <button
+          onClick={handleUpdateSpeaker}
+          className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg"
+        >
+          {isLoading ? "Updating..." : "Update Speaker"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
       </div>
 
       {/* Navigation Footer */}
@@ -411,9 +692,13 @@ function AdvanceSpeaker({
           ← Previous
         </button>
 
-        <span className="text-sm text-gray-500">
-          Step {currentStep + 1} of {totalSteps}
-        </span>
+       <Pagination
+  currentPage={currentPage}
+  totalPages={totalPages}
+  onPageChange={(page) => setCurrentPage(page)}
+  className="mt-4"
+/>
+
 
         <button
           onClick={handleNext}

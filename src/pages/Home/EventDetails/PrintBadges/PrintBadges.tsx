@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { deleteEventUser, getBadgeApi, getEventUsers } from "@/apis/apiHelpers";
+import { deleteEventUser, getBadgeApi, getEventUsers, updateEventUser } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -15,34 +15,33 @@ import { usePrintStyles } from "./hook/usePrintStyle";
 function PrintBadges() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
-  const [eventUsers, setUsers] = useState<any[]>([]); // TODO: Consider a more specific type for eventUser
+  const [eventUsers, setUsers] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activePopup, setActivePopup] = useState<any>(null); // For MoreVertical dropdown in table
-  const [selectedUsers, setSelectedUsers] = useState(new Set<any>()); // Stores user IDs for bulk actions
+  const [activePopup, setActivePopup] = useState<any>(null);
+  const [selectedUsers, setSelectedUsers] = useState(new Set<any>());
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [isLoadingActions, setIsLoadingActions] = useState(false); // For individual row actions (preview/delete)
-  const [loadingUsers, setLoadingUsers] = useState(false); // For main table user data
+  const [isLoadingActions, setIsLoadingActions] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [showBadgePreviewModal, setShowBadgePreviewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedUserForPreview, setSelectedUserForPreview] =
-    useState<any>(null); // For single user badge preview (from row action)
+  const [selectedUserForPreview, setSelectedUserForPreview] = useState<any>(null);
   const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<number>(1);
   const [eventData, setEventData] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [updatingPrintStatus, setUpdatingPrintStatus] = useState(false);
 
   const [badgeColors, setBadgeColors] = useState({
     headerColor: "#4D4D4D",
     footerColor: "#4D4D4D",
     backgroundColor: "white",
   });
-  const [qrImage, setQrImage] = useState<string>(""); // Saved QR image data URL, if any
+  const [qrImage, setQrImage] = useState<string>("");
 
   const rowsPerPage = 8;
 
   // Integrate the custom print styles hook
-  const [isPrinting, setIsPrinting] = useState(false); // State to control print styles activation
-  // 'badges-print-container' matches the ID of the div in BadgePreviewModal that serves as the print area.
   usePrintStyles("badges-print-container", isPrinting);
 
   // --- Data Fetching ---
@@ -76,18 +75,19 @@ function PrintBadges() {
       fetchUsers(idFromQuery);
       fetchEventData(idFromQuery);
     }
-  }, [location.search]); // Depend on location.search to refetch if eventId changes in URL
+  }, [location.search]);
 
   const fetchUsers = async (id: string) => {
     setLoadingUsers(true);
     try {
       const response = await getEventUsers(id);
+      console.log('response from getEventUsers:', response);
       const users = response.data.data || response.data || [];
       // Augment users with print-specific status fields
       const usersWithPrintStatus = users.map((user: any) => ({
         ...user,
-        printStatus: "Pending", // Default status for new users
-        printedAt: null, // Default printed date
+        printStatus: user.attributes?.printed ? "Printed" : "Pending",
+        printedAt: user.attributes?.printed_at || null,
       }));
       setUsers(usersWithPrintStatus);
     } catch (error) {
@@ -107,16 +107,61 @@ function PrintBadges() {
     }
   };
 
+  // --- Update Print Status API Call ---
+  const updatePrintStatus = async (userIds: string[]) => {
+    if (!eventId) {
+      toast.error("Event ID is missing");
+      return false;
+    }
+
+    setUpdatingPrintStatus(true);
+    try {
+      // Update each user's print status
+      const updatePromises = userIds.map(async (userId) => {
+        const formData = new FormData();
+        formData.append("event_user[printed]", "true");
+        
+        const response = await updateEventUser(eventId, userId, formData);
+        return response.data;
+      });
+
+      await Promise.all(updatePromises);
+      
+      // Update local state to reflect the changes immediately
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          userIds.includes(user.id) 
+            ? {
+                ...user,
+                attributes: {
+                  ...user.attributes,
+                  printed: true,
+                  printed_at: new Date().toISOString()
+                },
+                printStatus: "Printed",
+                printedAt: new Date().toISOString()
+              }
+            : user
+        )
+      );
+
+      toast.success(`Print status updated for ${userIds.length} user(s)`);
+      return true;
+    } catch (error) {
+      console.error("Error updating print status:", error);
+      toast.error("Failed to update print status");
+      return false;
+    } finally {
+      setUpdatingPrintStatus(false);
+    }
+  };
+
   // --- Filtering and Pagination Logic ---
   const filteredUsers = eventUsers.filter((user) => {
     const matchesSearch =
       user.attributes?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.attributes?.email
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      user.attributes?.organization
-        ?.toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      user.attributes?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.attributes?.organization?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -127,12 +172,8 @@ function PrintBadges() {
 
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
-  const paginatedUsers = filteredUsers.slice(
-    startIndex,
-    startIndex + rowsPerPage
-  );
+  const paginatedUsers = filteredUsers.slice(startIndex, startIndex + rowsPerPage);
 
-  // Reset page to 1 when search or filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchTerm, statusFilter]);
@@ -150,21 +191,21 @@ function PrintBadges() {
   );
 
   const handleAction = async (action: string, userId: string) => {
-    setIsLoadingActions(true); // Indicate an action is in progress
+    setIsLoadingActions(true);
 
     const user = eventUsers.find((u) => u.id === userId);
 
-    await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate API call/processing time
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     if (action === "preview") {
-      setSelectedUserForPreview(user); // Set this user for single preview
+      setSelectedUserForPreview(user);
       setShowBadgePreviewModal(true);
     } else if (action === "delete") {
       setUserToDelete(user);
       setShowDeleteModal(true);
     }
 
-    setActivePopup(null); // Close action popup
+    setActivePopup(null);
     setIsLoadingActions(false);
   };
 
@@ -181,13 +222,10 @@ function PrintBadges() {
   }, []);
 
   const handleSelectAll = useCallback(() => {
-    if (
-      selectedUsers.size === paginatedUsers.length &&
-      paginatedUsers.length > 0
-    ) {
-      setSelectedUsers(new Set()); // Deselect all
+    if (selectedUsers.size === paginatedUsers.length && paginatedUsers.length > 0) {
+      setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(paginatedUsers.map((user) => user.id))); // Select all on current page
+      setSelectedUsers(new Set(paginatedUsers.map((user) => user.id)));
     }
   }, [selectedUsers, paginatedUsers]);
 
@@ -200,10 +238,9 @@ function PrintBadges() {
 
     try {
       await deleteEventUser(eventId, userToDelete?.id);
-      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id)); // Remove user from state
+      setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
       toast.success("User deleted successfully");
       setSelectedUsers((prev) => {
-        // Also remove from selected if present
         const newSelected = new Set(prev);
         newSelected.delete(userToDelete.id);
         return newSelected;
@@ -220,7 +257,7 @@ function PrintBadges() {
       );
     }
     setShowDeleteModal(false);
-    setUserToDelete(null); // Clear user to delete
+    setUserToDelete(null);
   };
 
   // Helper for formatting dates
@@ -239,27 +276,30 @@ function PrintBadges() {
 
   // Determine which users to show in the preview modal
   const usersInPreviewModal = selectedUserForPreview
-    ? [selectedUserForPreview] // If a single user was selected for preview
-    : getSelectedUsersData(); // Otherwise, show all selected users
+    ? [selectedUserForPreview]
+    : getSelectedUsersData();
 
-  // Direct Browser Print Functionality for the modal, triggered by the modal component
-  const handlePrint = useCallback(async () => {
-    if (usersInPreviewModal.length === 0) {
-      toast.warning("No badges to print.");
-      setIsPrinting(false); // Ensure print state is off if nothing to print
-      return;
-    }
+  // Direct Browser Print Functionality
+const handlePrint = useCallback(async () => {
+  if (usersInPreviewModal.length === 0) {
+    toast.warning("No badges to print.");
+    return;
+  }
 
-    // `setIsPrinting(true)` has already been called by BadgePreviewModal
-    // The `usePrintStyles` hook will now apply the print-specific CSS.
-    // Give a small delay for DOM and styles to render before triggering print dialog.
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    window.print();
-    // The cleanup (`setIsPrinting(false)`) is handled by the `usePrintStyles` hook
-    // via its `afterprint` event listener.
-    toast.dismiss(); // Dismiss the initial "Preparing for print" toast
-    toast.success("Print job sent to printer!"); // Show success toast after print dialog
-  }, [usersInPreviewModal, setIsPrinting]);
+  // Get user IDs to update print status
+  const userIdsToUpdate = usersInPreviewModal.map(user => user.id);
+
+  // Update print status immediately when print is clicked
+  const updateSuccess = await updatePrintStatus(userIdsToUpdate);
+  
+  if (!updateSuccess) {
+    toast.error("Failed to update print status. Printing cancelled.");
+    return;
+  }
+
+  toast.success("Print status updated to 'Printed'!");
+}, [usersInPreviewModal]);
+
 
   return (
     <>
@@ -289,10 +329,11 @@ function PrintBadges() {
                 toast.warning("Please select at least one user to preview");
                 return;
               }
-              setSelectedUserForPreview(null); // Ensure no single user preview if bulk selected
+              setSelectedUserForPreview(null);
               setShowBadgePreviewModal(true);
             }}
             disablePreview={selectedUsers.size === 0}
+            updatingPrintStatus={updatingPrintStatus}
           />
 
           {/* Search and Filter Section */}
@@ -324,6 +365,7 @@ function PrintBadges() {
             filteredUsersCount={filteredUsers.length}
             rowsPerPage={rowsPerPage}
             startIndex={startIndex}
+            updatingPrintStatus={updatingPrintStatus}
           />
         </div>
 
@@ -340,8 +382,7 @@ function PrintBadges() {
           show={showBadgePreviewModal}
           onClose={() => {
             setShowBadgePreviewModal(false);
-            setSelectedUserForPreview(null); // Clear single user preview when modal closes
-            // Note: Clearing badgeRefs is handled internally by the modal
+            setSelectedUserForPreview(null);
           }}
           usersToPreview={usersInPreviewModal}
           selectedUserForPreview={selectedUserForPreview}
@@ -349,8 +390,9 @@ function PrintBadges() {
           selectedBadgeTemplate={selectedBadgeTemplate}
           badgeColors={badgeColors}
           qrImage={qrImage}
-          onPrint={handlePrint} // Pass the print handler
-          setIsPrinting={setIsPrinting} // Pass the setter for the print state
+          onPrint={handlePrint}
+          setIsPrinting={setIsPrinting}
+          updatingPrintStatus={updatingPrintStatus}
         />
 
         {/* Delete Confirmation Modal */}
@@ -358,7 +400,7 @@ function PrintBadges() {
           show={showDeleteModal}
           onClose={() => {
             setShowDeleteModal(false);
-            setUserToDelete(null); // Clear user to delete
+            setUserToDelete(null);
           }}
           onConfirm={handleDelete}
           userName={userToDelete?.attributes?.name || "this user"}

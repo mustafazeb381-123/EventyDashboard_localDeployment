@@ -165,7 +165,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
             className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
               currentPage === 1
                 ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-200"
+                : "text-gray-600 hover:text-gray-900 border border-transparent"
             }`}
           >
             <ChevronLeft size={16} />
@@ -182,7 +182,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                     ? "bg-indigo-600 text-white shadow-sm"
                     : page === "..."
                     ? "text-gray-400 cursor-default"
-                    : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-200"
+                    : "text-gray-600 hover:text-gray-900 border border-transparent"
                 }`}
                 disabled={page === "..."}
               >
@@ -197,7 +197,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
             className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
               currentPage === totalPages
                 ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-200"
+                : "text-gray-600 hover:text-gray-900 border border-transparent"
             }`}
           >
             Next

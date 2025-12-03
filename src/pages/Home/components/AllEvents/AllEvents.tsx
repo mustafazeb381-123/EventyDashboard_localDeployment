@@ -26,6 +26,62 @@ interface ApiEventItem {
 
 type ViewMode = "grid" | "list";
 
+// Pagination Component
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  className?: string;
+}
+
+function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+  className = ""
+}: PaginationProps) {
+  if (totalPages <= 1) return null;
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      onPageChange(page);
+    }
+  };
+
+  return (
+    <div className={`flex justify-end items-center gap-2 mt-4 ${className}`}>
+      <button
+        onClick={() => goToPage(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+      >
+        Prev
+      </button>
+
+      {[...Array(totalPages)].map((_, i) => (
+        <button
+          key={i}
+          onClick={() => goToPage(i + 1)}
+          className={`px-3 py-1 rounded-md text-sm transition ${currentPage === i + 1
+            ? "bg-blue-600 text-white"
+            : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+            }`}
+        >
+          {i + 1}
+        </button>
+      ))}
+
+      <button
+        onClick={() => goToPage(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+      >
+        Next
+      </button>
+    </div>
+  );
+}
+
 function AllEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +89,10 @@ function AllEvents() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const navigate = useNavigate();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15; // Adjust as needed
 
   const getEventStyle = (type: string) => {
     switch (type) {
@@ -111,9 +171,9 @@ function AllEvents() {
       setDeletingId(null);
     }
   };
+
   const handleEventClick = (eventId: string) => {
     // Navigate
-
     setTimeout(() => {
       navigate(`/home/${eventId}`, {
         state: { eventId: eventId },
@@ -131,6 +191,17 @@ function AllEvents() {
   const filteredEvents = events.filter((event) =>
     event.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
+
+  // Reset to first page when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   if (loading) {
     return (
@@ -206,7 +277,13 @@ function AllEvents() {
             </p>
             {searchQuery && !loading && (
               <p className="text-sm text-gray-500 mt-1">
-                {filteredEvents.length} of {events.length} events
+                Showing {Math.min(endIndex, filteredEvents.length)} of {filteredEvents.length} events
+                {filteredEvents.length !== events.length && ` (filtered from ${events.length} total)`}
+              </p>
+            )}
+            {!searchQuery && !loading && (
+              <p className="text-sm text-gray-500 mt-1">
+                {events.length} event{events.length !== 1 ? 's' : ''} total
               </p>
             )}
           </div>
@@ -247,26 +324,27 @@ function AllEvents() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex justify-end">
+        <div className="flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Page {currentPage} of {totalPages}
+          </div>
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === "grid"
-                  ? "bg-white shadow-sm text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`p-2 rounded-md transition-all duration-200 ${viewMode === "grid"
+                ? "bg-white shadow-sm text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
               title="Grid view"
             >
               <Grid3X3 className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === "list"
-                  ? "bg-white shadow-sm text-blue-600"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
+              className={`p-2 rounded-md transition-all duration-200 ${viewMode === "list"
+                ? "bg-white shadow-sm text-blue-600"
+                : "text-gray-500 hover:text-gray-700"
+                }`}
               title="List view"
             >
               <List className="h-4 w-4" />
@@ -277,105 +355,62 @@ function AllEvents() {
 
       {/* Events Display - Grid or List View */}
       {viewMode === "grid" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-          {filteredEvents.map((event) => {
-            const { icon, color, bg, backgroundImage } = getEventStyle(
-              event.type
-            );
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {paginatedEvents.map((event) => {
+              const { icon, color, bg, backgroundImage } = getEventStyle(
+                event.type
+              );
 
-            return (
-              <div
-                onClick={() => handleEventClick(event.id)}
-                key={event.id}
-                style={{
-                  padding: 24,
-                  backgroundImage,
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right center",
-                  backgroundSize: "auto 100%",
-                  cursor: "pointer",
-                }}
-                className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
-              >
-                <div className="flex flex-row items-center justify-between">
-                  <div
-                    className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
-                  >
-                    <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
-                    <p
-                      style={{
-                        color,
-                        fontSize: 12,
-                        fontFamily: "Poppins",
-                        fontWeight: "400",
-                        margin: 0,
-                      }}
+              return (
+                <div
+                  onClick={() => handleEventClick(event.id)}
+                  key={event.id}
+                  style={{
+                    padding: 24,
+                    backgroundImage,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right center",
+                    backgroundSize: "auto 100%",
+                    cursor: "pointer",
+                  }}
+                  className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
+                >
+                  <div className="flex flex-row items-center justify-between">
+                    <div
+                      className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
                     >
-                      {event.type}
-                    </p>
-                  </div>
+                      <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                      <p
+                        style={{
+                          color,
+                          fontSize: 12,
+                          fontFamily: "Poppins",
+                          fontWeight: "400",
+                          margin: 0,
+                        }}
+                      >
+                        {event.type}
+                      </p>
+                    </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent parent click
-                      handleDelete(event.id);
-                    }}
-                    disabled={deletingId === event.id}
-                    className={`p-1 rounded-full cursor-pointer ${
-                      deletingId === event.id
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent parent click
+                        handleDelete(event.id);
+                      }}
+                      disabled={deletingId === event.id}
+                      className={`p-1 rounded-full cursor-pointer ${deletingId === event.id
                         ? "bg-red-300"
                         : "bg-red-500 hover:bg-red-600"
-                    }`}
-                  >
-                    <Trash2 className="w-4 h-4 text-white" />
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-2 mt-10">
-                  <p className="text-slate-800 font-poppins font-medium text-md">
-                    {event.name}
-                  </p>
-                  <p className="text-neutral-500 font-poppins font-normal text-xs">
-                    {event.date}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="space-y-3 mt-6">
-          {filteredEvents.map((event) => {
-            const { icon, color, bg } = getEventStyle(event.type);
-
-            return (
-              <div
-                onClick={() => handleEventClick(event.id)}
-                key={event.id}
-                className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl hover:bg-white transition-all duration-300 ease-in-out hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  {/* Event Type Badge */}
-                  <div
-                    className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
-                  >
-                    <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
-                    <p
-                      style={{
-                        color,
-                        fontSize: 12,
-                        fontFamily: "Poppins",
-                        fontWeight: "400",
-                        margin: 0,
-                      }}
+                        }`}
                     >
-                      {event.type}
-                    </p>
+                      <Trash2 className="w-4 h-4 text-white" />
+                    </button>
                   </div>
 
-                  {/* Event Info */}
-                  <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <p className="text-slate-800 font-poppins font-medium text-md truncate">
+                  <div className="flex flex-col gap-2 mt-10">
+                    <p className="text-slate-800 font-poppins font-medium text-md">
                       {event.name}
                     </p>
                     <p className="text-neutral-500 font-poppins font-normal text-xs">
@@ -383,26 +418,87 @@ function AllEvents() {
                     </p>
                   </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Delete Button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevent parent click
-                    handleDelete(event.id);
-                  }}
-                  disabled={deletingId === event.id}
-                  className={`p-2 rounded-full cursor-pointer shrink-0 ${
-                    deletingId === event.id
+          {/* Pagination for Grid View */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            className="mt-6"
+          />
+        </>
+      ) : (
+        <>
+          <div className="space-y-3 mt-6">
+            {paginatedEvents.map((event) => {
+              const { icon, color, bg } = getEventStyle(event.type);
+
+              return (
+                <div
+                  onClick={() => handleEventClick(event.id)}
+                  key={event.id}
+                  className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl hover:bg-white transition-all duration-300 ease-in-out hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200"
+                >
+                  <div className="flex items-center gap-4 flex-1">
+                    {/* Event Type Badge */}
+                    <div
+                      className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
+                    >
+                      <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                      <p
+                        style={{
+                          color,
+                          fontSize: 12,
+                          fontFamily: "Poppins",
+                          fontWeight: "400",
+                          margin: 0,
+                        }}
+                      >
+                        {event.type}
+                      </p>
+                    </div>
+
+                    {/* Event Info */}
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <p className="text-slate-800 font-poppins font-medium text-md truncate">
+                        {event.name}
+                      </p>
+                      <p className="text-neutral-500 font-poppins font-normal text-xs">
+                        {event.date}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Delete Button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent parent click
+                      handleDelete(event.id);
+                    }}
+                    disabled={deletingId === event.id}
+                    className={`p-2 rounded-full cursor-pointer shrink-0 ${deletingId === event.id
                       ? "bg-red-300"
                       : "bg-red-500 hover:bg-red-600"
-                  }`}
-                >
-                  <Trash2 className="w-4 h-4 text-white" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
+                      }`}
+                  >
+                    <Trash2 className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Pagination for List View */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+            className="mt-6"
+          />
+        </>
       )}
 
       {/* Empty States */}

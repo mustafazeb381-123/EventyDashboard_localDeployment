@@ -132,11 +132,15 @@ function TemplateFormOne({
       return defaultFormFields;
     }
 
-    return sourceData.map((field: any) => {
+    const mapped = sourceData.map((field: any) => {
       const attr = field.attributes || {};
+      // ✅ Only rename if it's specifically the "company" field
+      const isCompanyField = attr.field === "company";
+      const fieldName = isCompanyField ? "organization" : (attr.field || attr.name || "field_" + field.id);
+
       return {
         id: field.id,
-        name: attr.field || attr.name || "field_" + field.id,
+        name: fieldName, // only changed for company → organization
         type:
           attr.field === "image"
             ? "file"
@@ -159,7 +163,38 @@ function TemplateFormOne({
         }),
       };
     });
-  }, [data, apiFormData]);
+
+    // ✅ Create user_type field from event data
+    const userTypeField = {
+      id: 999, // Unique ID
+      name: "user_type",
+      type: "select",
+      label: "User Type",
+      placeholder: "Select User Type",
+      required: true,
+      active: true,
+      fullWidth: true,
+      options: eventData?.attributes?.user_types?.map((type: string) => ({
+        value: type,
+        label: type,
+      })) || [],
+    };
+
+    // ✅ Find the index of the name field
+    const nameFieldIndex = mapped.findIndex((f: any) => f.name === "name");
+
+    // ✅ Insert user_type right after name field
+    const fieldsWithUserType = [...mapped];
+    if (nameFieldIndex !== -1 && userTypeField.options.length > 0) {
+      fieldsWithUserType.splice(nameFieldIndex + 1, 0, userTypeField);
+    }
+
+    // ✅ Move image fields to the end
+    const nonImageFields = fieldsWithUserType.filter(f => f.name !== "image");
+    const imageFields = fieldsWithUserType.filter(f => f.name === "image");
+
+    return [...nonImageFields, ...imageFields];
+  }, [data, apiFormData, eventData?.attributes?.user_types]);
 
   const [fieldActiveStates, setFieldActiveStates] = useState<{
     [key: string]: boolean;

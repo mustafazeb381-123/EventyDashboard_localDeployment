@@ -653,7 +653,7 @@ const RegistrationForm = ({
 
   return (
     <>
-      {plan === "advanced" ? (
+      {plan === "advance" ? (
         <AdvanceEvent
           onComplete={(eventId) => {
             console.log(
