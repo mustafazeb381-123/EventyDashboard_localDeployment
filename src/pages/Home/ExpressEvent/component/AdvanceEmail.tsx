@@ -6,15 +6,7 @@ import {
   Pencil,
   Plus,
   Trash2,
-  Type,
-  AlignLeft,
-  Square,
-  Layout,
-  Code,
-  Image,
-  QrCode,
 } from "lucide-react";
-import QRCode from "react-qr-code";
 
 const Toast = ({ message, type, onClose }) => {
   useEffect(() => {
@@ -79,767 +71,170 @@ const useToast = () => {
 };
 
 const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
-  const [blocks, setBlocks] = useState(initialContent || []);
-  const [selectedBlock, setSelectedBlock] = useState(null);
-  const [draggedBlock, setDraggedBlock] = useState(null);
-  const [showCodeView, setShowCodeView] = useState(false);
+  const [subject, setSubject] = useState("");
+  const [body, setBody] = useState("");
+  const [selectedSuggestion, setSelectedSuggestion] = useState(null);
 
-  const blockTypes = [
-    { type: "text", icon: Type, label: "Text" },
-    { type: "heading", icon: AlignLeft, label: "Heading" },
-    { type: "image", icon: Image, label: "Image" },
-    { type: "button", icon: Square, label: "Button" },
-    { type: "divider", icon: Layout, label: "Divider" },
-    { type: "spacer", icon: Layout, label: "Spacer" },
-    { type: "qrCode", icon: QrCode, label: "QR Code" },
+  const suggestions = [
+    {
+      id: 1,
+      text: "We hope you're doing well! 😊\n\nThank you for registering for our upcoming event from 2025-05-10 to 2025-05-30 at 14:13:00 - 17:11:00. We are thrilled to have you join us and look forward to seeing you there.\n\nYou will receive a confirmation email shortly with all the details you need.\n\nSee you soon!",
+    },
+    {
+      id: 2,
+      text: "We hope this message finds you well! 😊\n\nThank you for signing up for our upcoming event scheduled from May 10 to May 30, 2025, between 2:13 PM and 5:11 PM. We're excited to have you with us and can't wait to see you there.",
+    },
+    {
+      id: 3,
+      text: "We hope this message finds you well! 😊\n\nThank you for signing up for our upcoming event scheduled from May 10 to May 30, 2025, between 2:13 PM and 5:11 PM. We're excited to have you with us and can't wait to see you there.\n\nA confirmation email will be sent to you soon, containing all the necessary information.\n\nLooking forward to your participation!",
+    },
+    {
+      id: 4,
+      text: "We hope you're doing great! 😊\n\nThanks for signing up for our exciting event happening from May 10 to May 30, 2025, between 2:13 PM and 5:11 PM. We can't wait to see you there!",
+    },
   ];
 
-  const createBlock = (type) => {
-    const baseBlock = {
-      id: Date.now().toString(),
-      type,
-    };
-
-    switch (type) {
-      case "text":
-        return {
-          ...baseBlock,
-          content: "Enter your text here...",
-          fontSize: 16,
-          color: "#000000",
-          align: "left",
-        };
-      case "heading":
-        return {
-          ...baseBlock,
-          content: "Heading Text",
-          fontSize: 24,
-          color: "#000000",
-          align: "left",
-          fontWeight: "bold",
-        };
-      case "image":
-        return {
-          ...baseBlock,
-          src: "",
-          alt: "Image",
-          width: "100%",
-          align: "center",
-        };
-      case "button":
-        return {
-          ...baseBlock,
-          text: "Click Here",
-          link: "#",
-          bgColor: "#ec4899",
-          textColor: "#ffffff",
-          align: "center",
-          borderRadius: 8,
-        };
-      case "divider":
-        return { ...baseBlock, color: "#e5e7eb", height: 1 };
-      case "spacer":
-        return { ...baseBlock, height: 20 };
-      case "qrCode":
-        return {
-          ...baseBlock,
-          qrValue: "https://example.com",
-          size: 128,
-          align: "center",
-          bgColor: "#FFFFFF",
-          fgColor: "#000000",
-          includeMargin: false,
-        };
-      default:
-        return baseBlock;
-    }
-  };
-
-  const addBlock = (type) => {
-    const newBlock = createBlock(type);
-    setBlocks([...blocks, newBlock]);
-    setSelectedBlock(newBlock.id);
-  };
-
-  const updateBlock = (id, updates) => {
-    setBlocks(
-      blocks.map((block) =>
-        block.id === id ? { ...block, ...updates } : block
-      )
-    );
-  };
-
-  const deleteBlock = (id) => {
-    setBlocks(blocks.filter((block) => block.id !== id));
-    if (selectedBlock === id) setSelectedBlock(null);
-  };
-
-  const moveBlock = (fromIndex, toIndex) => {
-    const newBlocks = [...blocks];
-    const [movedBlock] = newBlocks.splice(fromIndex, 1);
-    newBlocks.splice(toIndex, 0, movedBlock);
-    setBlocks(newBlocks);
-  };
-
-  const handleDragStart = (e, index) => {
-    setDraggedBlock(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    if (draggedBlock === null || draggedBlock === index) return;
-    moveBlock(draggedBlock, index);
-    setDraggedBlock(index);
-  };
-
-  const handleDragEnd = () => {
-    setDraggedBlock(null);
-  };
-
-  const generateHTML = () => {
-    let html =
-      '<!DOCTYPE html>\n<html>\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <style>\n    body { margin: 0; padding: 0; font-family: Arial, sans-serif; }\n    .email-container { max-width: 600px; margin: 0 auto; padding: 20px; }\n  </style>\n</head>\n<body>\n  <div class="email-container">\n';
-
-    blocks.forEach((block) => {
-      switch (block.type) {
-        case "text":
-          html += `    <p style="font-size: ${block.fontSize}px; color: ${block.color}; text-align: ${block.align}; margin: 10px 0;">${block.content}</p>\n`;
-          break;
-        case "heading":
-          html += `    <h2 style="font-size: ${block.fontSize}px; color: ${block.color}; text-align: ${block.align}; font-weight: ${block.fontWeight}; margin: 15px 0;">${block.content}</h2>\n`;
-          break;
-        case "image":
-          if (block.src) {
-            html += `    <div style="text-align: ${block.align}; margin: 15px 0;"><img src="${block.src}" alt="${block.alt}" style="max-width: ${block.width}; height: auto;" /></div>\n`;
-          }
-          break;
-        case "button":
-          html += `    <div style="text-align: ${block.align}; margin: 20px 0;"><a href="${block.link}" style="display: inline-block; padding: 12px 24px; background-color: ${block.bgColor}; color: ${block.textColor}; text-decoration: none; border-radius: ${block.borderRadius}px;">${block.text}</a></div>\n`;
-          break;
-        case "divider":
-          html += `    <hr style="border: none; border-top: ${block.height}px solid ${block.color}; margin: 20px 0;" />\n`;
-          break;
-        case "spacer":
-          html += `    <div style="height: ${block.height}px;"></div>\n`;
-          break;
-        case "qrCode":
-          // Generate QR code as SVG and embed directly in HTML
-          const qrSvg = `
-            <svg width="${block.size}" height="${block.size}" viewBox="0 0 256 256" fill="${block.fgColor}">
-              <!-- QR Code would be generated here - this is a placeholder -->
-              <rect width="256" height="256" fill="${block.bgColor}"/>
-              <text x="128" y="128" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="12" fill="${block.fgColor}">QR Code</text>
-              <text x="128" y="150" text-anchor="middle" dominant-baseline="middle" font-family="Arial" font-size="8" fill="${block.fgColor}">${block.qrValue}</text>
-            </svg>
-          `.replace(/\n\s*/g, " "); // Remove extra whitespace
-
-          html += `    <div style="text-align: ${block.align}; margin: 20px 0;">${qrSvg}</div>\n`;
-          break;
-      }
-    });
-
-    html += "  </div>\n</body>\n</html>";
-    return html;
+  const handleSuggestionClick = (suggestion) => {
+    setBody(suggestion.text);
+    setSelectedSuggestion(suggestion.id);
   };
 
   const handleSave = () => {
-    const html = generateHTML();
-    const design = { blocks };
+    const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+    .email-container { max-width: 600px; margin: 0 auto; }
+    h2 { color: #333; }
+    p { color: #666; line-height: 1.6; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="email-container">
+    <h2>${subject}</h2>
+    <p>${body}</p>
+  </div>
+</body>
+</html>
+    `.trim();
+
+    const design = { subject, body };
     onSave(design, html);
   };
 
-  const renderBlock = (block, index) => {
-    const isSelected = selectedBlock === block.id;
-
-    return (
-      <div
-        key={block.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, index)}
-        onDragOver={(e) => handleDragOver(e, index)}
-        onDragEnd={handleDragEnd}
-        onClick={() => setSelectedBlock(block.id)}
-        className={`relative p-4 mb-2 rounded-lg cursor-move transition-all ${
-          isSelected ? "bg-pink-50" : "border-gray-20"
-        }`}
-      >
-        <div className="absolute top-2 right-2 flex gap-1">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              deleteBlock(block.id);
-            }}
-            className="p-1 bg-red-500 text-white rounded hover:bg-red-600"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-
-        {block.type === "text" && (
-          <div>
-            <textarea
-              value={block.content}
-              onChange={(e) =>
-                updateBlock(block.id, { content: e.target.value })
-              }
-              className="w-full p-2 rounded resize-none"
-              rows={3}
-              style={{
-                fontSize: `${block.fontSize}px`,
-                color: block.color,
-                textAlign: block.align,
-              }}
-            />
-          </div>
-        )}
-
-        {block.type === "heading" && (
-          <div>
-            <input
-              type="text"
-              value={block.content}
-              onChange={(e) =>
-                updateBlock(block.id, { content: e.target.value })
-              }
-              className="w-full p-2 rounded"
-              style={{
-                fontSize: `${block.fontSize}px`,
-                color: block.color,
-                textAlign: block.align,
-                fontWeight: block.fontWeight,
-              }}
-            />
-          </div>
-        )}
-
-        {block.type === "image" && (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={block.src}
-              onChange={(e) => updateBlock(block.id, { src: e.target.value })}
-              placeholder="Image URL"
-              className="w-full p-2 rounded text-sm"
-            />
-            {block.src && (
-              <div style={{ textAlign: block.align }}>
-                <img
-                  src={block.src}
-                  alt={block.alt}
-                  style={{ maxWidth: block.width, height: "auto" }}
-                />
-              </div>
-            )}
-          </div>
-        )}
-
-        {block.type === "button" && (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={block.text}
-              onChange={(e) => updateBlock(block.id, { text: e.target.value })}
-              placeholder="Button Text"
-              className="w-full p-2 rounded text-sm"
-            />
-            <input
-              type="text"
-              value={block.link}
-              onChange={(e) => updateBlock(block.id, { link: e.target.value })}
-              placeholder="Button Link"
-              className="w-full p-2 rounded text-sm"
-            />
-            <div style={{ textAlign: block.align }}>
-              <a
-                href={block.link}
-                style={{
-                  display: "inline-block",
-                  padding: "12px 24px",
-                  backgroundColor: block.bgColor,
-                  color: block.textColor,
-                  textDecoration: "none",
-                  borderRadius: `${block.borderRadius}px`,
-                }}
-              >
-                {block.text}
-              </a>
-            </div>
-          </div>
-        )}
-
-        {block.type === "divider" && (
-          <hr
-            style={{
-              border: "none",
-              borderTop: `${block.height}px solid ${block.color}`,
-              margin: "10px 0",
-            }}
-          />
-        )}
-
-        {block.type === "spacer" && (
-          <div
-            style={{ height: `${block.height}px`, backgroundColor: "#f3f4f6" }}
-          />
-        )}
-
-        {block.type === "qrCode" && (
-          <div className="space-y-2">
-            <input
-              type="text"
-              value={block.qrValue}
-              onChange={(e) =>
-                updateBlock(block.id, { qrValue: e.target.value })
-              }
-              placeholder="QR Code Content (URL, text, etc.)"
-              className="w-full p-2 rounded text-sm"
-            />
-            <div style={{ textAlign: block.align }}>
-              <div
-                style={{
-                  display: "inline-block",
-                  padding: "10px",
-                  backgroundColor: block.bgColor,
-                  borderRadius: "8px",
-                }}
-              >
-                <QRCode
-                  value={block.qrValue}
-                  size={block.size}
-                  bgColor={block.bgColor}
-                  fgColor={block.fgColor}
-                  level="Q"
-                  includeMargin={block.includeMargin}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderPropertyPanel = () => {
-    const block = blocks.find((b) => b.id === selectedBlock);
-    if (!block) return null;
-
-    return (
-      <div className="bg-white p-4 border-l h-full overflow-y-auto">
-        <h3 className="font-semibold mb-4 text-gray-800">Properties</h3>
-
-        {(block.type === "text" || block.type === "heading") && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Font Size
-              </label>
-              <input
-                type="number"
-                value={block.fontSize}
-                onChange={(e) =>
-                  updateBlock(block.id, { fontSize: parseInt(e.target.value) })
-                }
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Color</label>
-              <input
-                type="color"
-                value={block.color}
-                onChange={(e) =>
-                  updateBlock(block.id, { color: e.target.value })
-                }
-                className="w-full h-10 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Alignment
-              </label>
-              <select
-                value={block.align}
-                onChange={(e) =>
-                  updateBlock(block.id, { align: e.target.value })
-                }
-                className="w-full p-2 border rounded"
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {block.type === "image" && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Width</label>
-              <input
-                type="text"
-                value={block.width}
-                onChange={(e) =>
-                  updateBlock(block.id, { width: e.target.value })
-                }
-                className="w-full p-2 border rounded"
-                placeholder="e.g., 100%, 300px"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Alt Text</label>
-              <input
-                type="text"
-                value={block.alt}
-                onChange={(e) => updateBlock(block.id, { alt: e.target.value })}
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Alignment
-              </label>
-              <select
-                value={block.align}
-                onChange={(e) =>
-                  updateBlock(block.id, { align: e.target.value })
-                }
-                className="w-full p-2 border rounded"
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {block.type === "button" && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Background Color
-              </label>
-              <input
-                type="color"
-                value={block.bgColor}
-                onChange={(e) =>
-                  updateBlock(block.id, { bgColor: e.target.value })
-                }
-                className="w-full h-10 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Text Color
-              </label>
-              <input
-                type="color"
-                value={block.textColor}
-                onChange={(e) =>
-                  updateBlock(block.id, { textColor: e.target.value })
-                }
-                className="w-full h-10 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Border Radius
-              </label>
-              <input
-                type="number"
-                value={block.borderRadius}
-                onChange={(e) =>
-                  updateBlock(block.id, {
-                    borderRadius: parseInt(e.target.value),
-                  })
-                }
-                className="w-full p-2 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Alignment
-              </label>
-              <select
-                value={block.align}
-                onChange={(e) =>
-                  updateBlock(block.id, { align: e.target.value })
-                }
-                className="w-full p-2 border rounded"
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {block.type === "divider" && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Color</label>
-              <input
-                type="color"
-                value={block.color}
-                onChange={(e) =>
-                  updateBlock(block.id, { color: e.target.value })
-                }
-                className="w-full h-10 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Height</label>
-              <input
-                type="number"
-                value={block.height}
-                onChange={(e) =>
-                  updateBlock(block.id, { height: parseInt(e.target.value) })
-                }
-                className="w-full p-2 border rounded"
-              />
-            </div>
-          </div>
-        )}
-
-        {block.type === "spacer" && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Height</label>
-              <input
-                type="number"
-                value={block.height}
-                onChange={(e) =>
-                  updateBlock(block.id, { height: parseInt(e.target.value) })
-                }
-                className="w-full p-2 border rounded"
-              />
-            </div>
-          </div>
-        )}
-
-        {block.type === "qrCode" && (
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                QR Code Content
-              </label>
-              <input
-                type="text"
-                value={block.qrValue}
-                onChange={(e) =>
-                  updateBlock(block.id, { qrValue: e.target.value })
-                }
-                className="w-full p-2 border rounded text-sm"
-                placeholder="Enter URL, text, or data for QR code"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">Size</label>
-              <input
-                type="number"
-                value={block.size}
-                onChange={(e) =>
-                  updateBlock(block.id, { size: parseInt(e.target.value) })
-                }
-                className="w-full p-2 border rounded"
-                min="64"
-                max="256"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Background Color
-              </label>
-              <input
-                type="color"
-                value={block.bgColor}
-                onChange={(e) =>
-                  updateBlock(block.id, { bgColor: e.target.value })
-                }
-                className="w-full h-10 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Foreground Color
-              </label>
-              <input
-                type="color"
-                value={block.fgColor}
-                onChange={(e) =>
-                  updateBlock(block.id, { fgColor: e.target.value })
-                }
-                className="w-full h-10 border rounded"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Alignment
-              </label>
-              <select
-                value={block.align}
-                onChange={(e) =>
-                  updateBlock(block.id, { align: e.target.value })
-                }
-                className="w-full p-2 border rounded"
-              >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-              </select>
-            </div>
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="includeMargin"
-                checked={block.includeMargin}
-                onChange={(e) =>
-                  updateBlock(block.id, { includeMargin: e.target.checked })
-                }
-                className="mr-2"
-              />
-              <label htmlFor="includeMargin" className="text-sm font-medium">
-                Include Margin
-              </label>
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-7xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
-        <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Edit Email Template
-          </h3>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowCodeView(!showCodeView)}
-              className={`p-2 rounded-lg flex items-center gap-2 ${
-                showCodeView ? "bg-pink-100 text-pink-600" : "hover:bg-gray-200"
-              }`}
-            >
-              <Code size={20} />
-              <span className="text-sm">
-                {showCodeView ? "Editor" : "Code"}
-              </span>
-            </button>
+    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+      {/* Header */}
+      <div className="px-8 py-6 border-b bg-white">
+        <h1 className="text-3xl font-bold text-gray-900">Create thanks email</h1>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Side - Editor */}
+        <div className="flex-1 p-8 overflow-y-auto">
+          <div className="max-w-4xl">
+            {/* Email Subject */}
+            <div className="mb-6">
+              <label className="block text-base font-normal text-gray-900 mb-3">
+                Email Subject
+              </label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="text here"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Email Body */}
+            <div>
+              <label className="block text-base font-normal text-gray-900 mb-3">
+                Email Body
+              </label>
+              <textarea
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Write your thoughts here"
+                className="w-full h-96 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none text-sm"
+                style={{ whiteSpace: 'pre-wrap' }}
+              />
+            </div>
+          </div>
+
+          {/* Bottom Buttons */}
+          <div className="max-w-4xl mt-8 flex gap-4">
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-gray-200"
+              className="flex items-center gap-2 px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              <X size={20} />
+              <Plus size={20} />
+              Add Email
+            </button>
+            <button
+              onClick={handleSave}
+              className="flex items-center gap-2 px-8 py-3 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors font-medium"
+            >
+              Add & Use Email
+              <span className="ml-2">→</span>
             </button>
           </div>
         </div>
 
-        <div className="flex-1 flex overflow-hidden">
-          {!showCodeView ? (
-            <>
-              <div className="w-48 bg-gray-50 p-4 overflow-y-auto border-r">
-                <h3 className="font-semibold mb-4 text-gray-800">Blocks</h3>
-                <div className="space-y-2">
-                  {blockTypes.map(({ type, icon: Icon, label }) => (
-                    <button
-                      key={type}
-                      onClick={() => addBlock(type)}
-                      className="w-full flex items-center gap-2 p-3 bg-white border rounded-lg hover:bg-pink-50 hover:border-pink-300 transition-colors"
-                    >
-                      <Icon size={18} className="text-gray-600" />
-                      <span className="text-sm font-medium">{label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+        {/* Right Side - Suggestions */}
+        <div className="w-96 bg-gray-50 border-l overflow-y-auto p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="text-purple-500">✨</div>
+            <h2 className="text-base font-medium text-gray-900">
+              Suggestion Body text
+            </h2>
+          </div>
 
-              <div className="flex-1 p-6 overflow-y-auto bg-gray-100">
-                <div className="max-w-2xl mx-auto bg-white p-6 rounded-lg shadow-sm">
-                  {blocks.length === 0 ? (
-                    <div className="text-center py-12 text-gray-400">
-                      <Layout size={48} className="mx-auto mb-4 opacity-50" />
-                      <p>Add blocks from the left panel</p>
-                    </div>
-                  ) : (
-                    blocks.map((block, index) => renderBlock(block, index))
-                  )}
-                </div>
+          <div className="space-y-4">
+            {suggestions.map((suggestion) => (
+              <div
+                key={suggestion.id}
+                onClick={() => handleSuggestionClick(suggestion)}
+                className={`p-4 rounded-lg cursor-pointer transition-all ${
+                  selectedSuggestion === suggestion.id
+                    ? "bg-white border-2 border-pink-500"
+                    : "bg-white border border-gray-200 hover:border-pink-300"
+                }`}
+              >
+                <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {suggestion.text}
+                </p>
               </div>
-
-              <div className="w-64">
-                {selectedBlock ? (
-                  renderPropertyPanel()
-                ) : (
-                  <div className="p-4 text-gray-400 text-sm">
-                    Select a block to edit properties
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 p-4 overflow-auto">
-              <pre className="bg-gray-900 text-green-400 p-4 rounded-lg text-sm overflow-auto h-full">
-                <code>{generateHTML()}</code>
-              </pre>
-            </div>
-          )}
-        </div>
-
-        <div className="p-3 border-t flex justify-end gap-2 bg-gray-100">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            Save Template
-          </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-// Updated apiService without static templates
 const apiService = {
-  getAuthToken() {
-    return "mock-token-for-development";
-  },
+  templates: {},
 
   async getTemplates(eventId, flowType) {
     console.log("Mock API: Fetching templates for", flowType);
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Get templates from localStorage for this specific flow type
-    const storageKey = `templates_${eventId}_${flowType}`;
-    const storedTemplates = localStorage.getItem(storageKey);
-
-    if (storedTemplates) {
-      return JSON.parse(storedTemplates);
-    }
-
-    // Return empty array - no static templates
-    return [];
+    const storageKey = `${eventId}_${flowType}`;
+    return this.templates[storageKey] || [];
   },
 
   async saveTemplate(eventId, flowType, html, design) {
     console.log("Mock API: Saving template for", flowType);
     await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    // Get existing templates for this specific flow type
-    const storageKey = `templates_${eventId}_${flowType}`;
-    const existingTemplates = JSON.parse(
-      localStorage.getItem(storageKey) || "[]"
-    );
+    const storageKey = `${eventId}_${flowType}`;
+    const existingTemplates = this.templates[storageKey] || [];
 
     const newTemplate = {
       id: Date.now(),
@@ -852,9 +247,7 @@ const apiService = {
       },
     };
 
-    // Save back to localStorage for this specific flow type
-    const updatedTemplates = [...existingTemplates, newTemplate];
-    localStorage.setItem(storageKey, JSON.stringify(updatedTemplates));
+    this.templates[storageKey] = [...existingTemplates, newTemplate];
 
     return {
       data: newTemplate,
@@ -866,11 +259,8 @@ const apiService = {
     console.log("Mock API: Updating template for", flowType);
     await new Promise((resolve) => setTimeout(resolve, 1200));
 
-    // Get templates for this specific flow type
-    const storageKey = `templates_${eventId}_${flowType}`;
-    const existingTemplates = JSON.parse(
-      localStorage.getItem(storageKey) || "[]"
-    );
+    const storageKey = `${eventId}_${flowType}`;
+    const existingTemplates = this.templates[storageKey] || [];
 
     const updatedTemplates = existingTemplates.map((template) =>
       template.id.toString() === templateId.toString()
@@ -886,7 +276,7 @@ const apiService = {
         : template
     );
 
-    localStorage.setItem(storageKey, JSON.stringify(updatedTemplates));
+    this.templates[storageKey] = updatedTemplates;
 
     const updatedTemplate = updatedTemplates.find(
       (t) => t.id.toString() === templateId.toString()
@@ -901,17 +291,12 @@ const apiService = {
     console.log("Mock API: Deleting template from", flowType);
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    // Get templates for this specific flow type
-    const storageKey = `templates_${eventId}_${flowType}`;
-    const existingTemplates = JSON.parse(
-      localStorage.getItem(storageKey) || "[]"
-    );
+    const storageKey = `${eventId}_${flowType}`;
+    const existingTemplates = this.templates[storageKey] || [];
 
-    const filteredTemplates = existingTemplates.filter(
+    this.templates[storageKey] = existingTemplates.filter(
       (template) => template.id.toString() !== templateId.toString()
     );
-
-    localStorage.setItem(storageKey, JSON.stringify(filteredTemplates));
 
     return {
       success: true,
@@ -1008,8 +393,7 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }) => {
 };
 
 const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
-  const localStorageEventId = localStorage.getItem("create_eventId");
-  const effectiveEventId = eventId || localStorageEventId;
+  const effectiveEventId = eventId || "demo-event-123";
   const toast = useToast();
 
   const [flows, setFlows] = useState([
@@ -1073,7 +457,6 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
       [currentFlow.id]: templateId,
     });
     setModalTemplate(null);
-    // toast.success("Template selected successfully!");
   };
 
   const handleEditTemplate = (template) => {
@@ -1228,8 +611,6 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
     }
   };
 
-  const initialDesign = editingTemplate?.design?.blocks || null;
-
   const handleNext = () => {
     if (!selectedTemplates[currentFlow.id]) {
       toast.warning("Please select a template before proceeding");
@@ -1238,7 +619,6 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
 
     if (currentFlowIndex < flows.length - 1) {
       setCurrentFlowIndex(currentFlowIndex + 1);
-      // toast.success(`Moving to ${flows[currentFlowIndex + 1].label}`);
     } else if (onNext) {
       if (effectiveEventId) {
         onNext(effectiveEventId);
@@ -1252,14 +632,12 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
   const handleBack = () => {
     if (currentFlowIndex > 0) {
       setCurrentFlowIndex(currentFlowIndex - 1);
-      // toast.info(`Returning to ${flows[currentFlowIndex - 1].label}`);
     } else if (onPrevious) {
       onPrevious();
     }
   };
 
   const handleStepClick = (index) => {
-    // Allow clicking on any step that has been completed or is the current one
     const isCompleted = selectedTemplates[flows[index].id];
     const isCurrentOrPrevious = index <= currentFlowIndex;
 
@@ -1268,7 +646,6 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
     }
   };
 
-  // Check if all steps are completed
   const allStepsCompleted = flows.every((flow) => selectedTemplates[flow.id]);
 
   return (
@@ -1374,7 +751,7 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
 
               <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
                 {tpl.html ? (
-                  <div className="w-full h-full transform origin-top-left">
+                  <div className="w-full h-full transform origin-top-left scale-50">
                     <div dangerouslySetInnerHTML={{ __html: tpl.html }} />
                   </div>
                 ) : (
@@ -1403,7 +780,7 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
 
       {isEditorOpen && (
         <CustomEmailEditor
-          initialContent={initialDesign}
+          initialContent={null}
           onClose={() => {
             setIsEditorOpen(false);
             setEditingTemplate(null);
