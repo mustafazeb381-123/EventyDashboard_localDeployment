@@ -20,6 +20,9 @@ import {
 import CustomizeColorPicker from "@/components/CustomizeColor/CustomizeColor";
 import axios from "axios";
 
+// Try using a simpler approach without react-cropper
+// Since we have issues with dependencies, let's implement basic cropping manually
+
 type MainDataProps = {
   onNext: () => void;
   onPrevious: () => void;
@@ -87,6 +90,24 @@ const MainData = ({
   const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
   const [ticket, setTicket] = useState(true);
   const [eventguesttype, setEventguesttype] = useState<string>("");
+
+  // Image cropping states
+  const [isCropping, setIsCropping] = useState<boolean>(false);
+  const [originalImageSrc, setOriginalImageSrc] = useState<string>("");
+  const [cropArea, setCropArea] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
@@ -159,13 +180,143 @@ const MainData = ({
       errors.location = "Location is required";
     }
 
-    // ✅ REMOVED: No need to validate guestTypes since we always have at least "Guest" as default
-    // if (formData.guestTypes.length === 0 && badges.length === 0) {
-    //   errors.guestTypes = "At least one guest type is required";
-    // }
-
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  // Handle crop completion
+  const handleCropComplete = async () => {
+    if (imgRef.current && canvasRef.current) {
+      try {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        const img = imgRef.current;
+
+        if (!ctx || !img) {
+          throw new Error("Failed to get canvas context or image");
+        }
+
+        // Calculate scale between displayed image and original
+        const scaleX = img.naturalWidth / img.width;
+        const scaleY = img.naturalHeight / img.height;
+
+        // Set canvas size to crop area
+        canvas.width = 400;
+        canvas.height = 400;
+
+        // Draw cropped image
+        ctx.drawImage(
+          img,
+          cropArea.x * scaleX,
+          cropArea.y * scaleY,
+          cropArea.width * scaleX,
+          cropArea.height * scaleY,
+          0,
+          0,
+          400,
+          400
+        );
+
+        // Convert canvas to blob
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              toast.error("Failed to crop image. Please try again.");
+              return;
+            }
+
+            // Convert blob to File
+            const croppedFile = new File([blob], "cropped-logo.jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+
+            // Update form data with cropped image
+            setFormData((prev) => ({
+              ...prev,
+              eventLogo: croppedFile,
+              existingLogoUrl: null,
+            }));
+
+            // Close cropping mode
+            setIsCropping(false);
+            setOriginalImageSrc("");
+
+            toast.success("Image cropped and uploaded successfully!");
+          },
+          "image/jpeg",
+          0.95 // Quality
+        );
+      } catch (error) {
+        console.error("Error cropping image:", error);
+        toast.error("Failed to crop image. Please try again.");
+      }
+    }
+  };
+
+  // Cancel cropping
+  const cancelCrop = () => {
+    setIsCropping(false);
+    setOriginalImageSrc("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Handle image load for cropping
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setImageDimensions({
+      width: img.width,
+      height: img.height,
+    });
+
+    // Initialize crop area to center square
+    const size = Math.min(img.width, img.height) * 0.8;
+    setCropArea({
+      x: (img.width - size) / 2,
+      y: (img.height - size) / 2,
+      width: size,
+      height: size,
+    });
+  };
+
+  // Handle mouse/touch events for cropping
+  const handleCropStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    setDragStart({
+      x: clientX - rect.left - cropArea.x,
+      y: clientY - rect.top - cropArea.y,
+    });
+  };
+
+  const handleCropMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging || !imageDimensions.width || !imageDimensions.height)
+      return;
+    e.preventDefault();
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    const newX = clientX - rect.left - dragStart.x;
+    const newY = clientY - rect.top - dragStart.y;
+
+    // Constrain crop area within image bounds
+    setCropArea((prev) => ({
+      ...prev,
+      x: Math.max(0, Math.min(newX, imageDimensions.width - prev.width)),
+      y: Math.max(0, Math.min(newY, imageDimensions.height - prev.height)),
+    }));
+  };
+
+  const handleCropEnd = () => {
+    setIsDragging(false);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,60 +325,10 @@ const MainData = ({
     if (file) {
       setLogoError("");
 
-      // Check file size (2MB limit)
-      const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-      if (file.size > 2 * 1024 * 1024) {
-        setLogoError(
-          `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
-        );
-        return;
-      }
-
-      // Check file type
-      const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
-      if (!allowedTypes.includes(file.type)) {
-        setLogoError(
-          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
-        );
-        return;
-      }
-
-      // Check image dimensions for non-SVG files
-      if (file.type !== "image/svg+xml") {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-
-        img.onload = function () {
-          URL.revokeObjectURL(objectUrl);
-          if (img.width > 400 || img.height > 400) {
-            setLogoError(
-              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
-            );
-            return;
-          }
-
-          // If all validations pass, set the file
-          setFormData((prev) => ({
-            ...prev,
-            eventLogo: file,
-            existingLogoUrl: null,
-          }));
-        };
-
-        img.onerror = function () {
-          URL.revokeObjectURL(objectUrl);
-          setLogoError("Failed to load image. Please try a different file.");
-        };
-
-        img.src = objectUrl;
-      } else {
-        // For SVG files, skip dimension check
-        setFormData((prev) => ({
-          ...prev,
-          eventLogo: file,
-          existingLogoUrl: null,
-        }));
-      }
+      // For all image types, open crop interface
+      const objectUrl = URL.createObjectURL(file);
+      setOriginalImageSrc(objectUrl);
+      setIsCropping(true);
     }
   };
 
@@ -238,60 +339,10 @@ const MainData = ({
     if (file) {
       setLogoError("");
 
-      // Check file size (2MB limit)
-      const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-      if (file.size > 2 * 1024 * 1024) {
-        setLogoError(
-          `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
-        );
-        return;
-      }
-
-      // Check file type
-      const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
-      if (!allowedTypes.includes(file.type)) {
-        setLogoError(
-          "Invalid file type. Please upload SVG, PNG, JPG, or JPEG."
-        );
-        return;
-      }
-
-      // Check image dimensions for non-SVG files
-      if (file.type !== "image/svg+xml") {
-        const img = new Image();
-        const objectUrl = URL.createObjectURL(file);
-
-        img.onload = function () {
-          URL.revokeObjectURL(objectUrl);
-          if (img.width > 400 || img.height > 400) {
-            setLogoError(
-              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
-            );
-            return;
-          }
-
-          // If all validations pass, set the file
-          setFormData((prev) => ({
-            ...prev,
-            eventLogo: file,
-            existingLogoUrl: null,
-          }));
-        };
-
-        img.onerror = function () {
-          URL.revokeObjectURL(objectUrl);
-          setLogoError("Failed to load image. Please try a different file.");
-        };
-
-        img.src = objectUrl;
-      } else {
-        // For SVG files, skip dimension check
-        setFormData((prev) => ({
-          ...prev,
-          eventLogo: file,
-          existingLogoUrl: null,
-        }));
-      }
+      // For all image types, open crop interface
+      const objectUrl = URL.createObjectURL(file);
+      setOriginalImageSrc(objectUrl);
+      setIsCropping(true);
     }
   };
 
@@ -888,6 +939,112 @@ const MainData = ({
         </div>
       )}
 
+      {/* Image Cropping Modal - Simple Implementation */}
+      {isCropping && originalImageSrc && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Crop Image (Drag to adjust)
+              </h3>
+              <button
+                onClick={cancelCrop}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div
+                className="relative mx-auto border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
+                style={{ maxWidth: "600px", maxHeight: "400px" }}
+                onMouseDown={handleCropStart}
+                onMouseMove={handleCropMove}
+                onMouseUp={handleCropEnd}
+                onMouseLeave={handleCropEnd}
+                onTouchStart={handleCropStart}
+                onTouchMove={handleCropMove}
+                onTouchEnd={handleCropEnd}
+              >
+                <img
+                  ref={imgRef}
+                  src={originalImageSrc}
+                  alt="Crop preview"
+                  className="max-w-full max-h-[300px] object-contain cursor-move"
+                  onLoad={handleImageLoad}
+                  draggable={false}
+                />
+                {imageDimensions.width > 0 && (
+                  <>
+                    {/* Crop overlay - darken outside area */}
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-40"
+                      style={{
+                        clipPath: `polygon(
+                          0% 0%, 
+                          0% 100%, 
+                          ${cropArea.x}px 100%, 
+                          ${cropArea.x}px ${cropArea.y}px, 
+                          ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
+                          ${cropArea.x + cropArea.width}px ${
+                          cropArea.y + cropArea.height
+                        }px, 
+                          ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
+                          ${cropArea.x}px 100%, 
+                          100% 100%, 
+                          100% 0%
+                        )`,
+                      }}
+                    />
+
+                    {/* Crop area border */}
+                    <div
+                      className="absolute border-2 border-white border-dashed"
+                      style={{
+                        left: `${cropArea.x}px`,
+                        top: `${cropArea.y}px`,
+                        width: `${cropArea.width}px`,
+                        height: `${cropArea.height}px`,
+                        boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
+                      }}
+                    >
+                      {/* Resize handles */}
+                      <div className="absolute -top-1 -left-1 w-3 h-3 bg-white rounded-full border border-gray-400" />
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full border border-gray-400" />
+                      <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-full border border-gray-400" />
+                      <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-white rounded-full border border-gray-400" />
+                    </div>
+                  </>
+                )}
+              </div>
+              <p className="text-sm text-gray-500 mt-2 text-center">
+                Drag the square to adjust cropping. The image will be cropped to
+                a square.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelCrop}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCropComplete}
+                className="px-4 py-2 bg-teal-500 hover:bg-teal-600 rounded-lg text-white transition-colors"
+              >
+                Apply Crop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden canvas for cropping */}
+      <canvas ref={canvasRef} className="hidden" />
+
       {/* Event Data Flag Indicator */}
       {showEventData && (
         <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -963,7 +1120,7 @@ const MainData = ({
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
-              accept=".svg,.png,.jpg,.jpeg"
+              accept="image/*" // Accept all image types
             />
             {formData.eventLogo || formData.existingLogoUrl ? (
               <div className="flex flex-col items-center justify-center h-full">
@@ -1002,7 +1159,7 @@ const MainData = ({
                   or drag and drop
                 </p>
                 <p className="text-xs text-neutral-500">
-                  SVG, PNG, JPG, or JPEG (max. 400x400px, 2MB)
+                  Any image format (will be cropped to square)
                 </p>
               </>
             )}
