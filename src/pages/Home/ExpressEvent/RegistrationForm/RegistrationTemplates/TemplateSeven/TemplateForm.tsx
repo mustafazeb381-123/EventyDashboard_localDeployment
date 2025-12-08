@@ -1,7 +1,7 @@
 // Updated TemplateForm.jsx with dynamic functionality and banner validation
 import { useRef, useState, useMemo, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Info, XCircle } from "lucide-react";
+import { Info, XCircle, Upload, Crop } from "lucide-react";
 import Assets from "@/utils/Assets";
 import ReusableRegistrationForm from "../../components/ReusableRegistrationForm";
 import {
@@ -10,15 +10,18 @@ import {
   updateRegistrationFieldToggleApi,
   getRegistrationFieldApi,
 } from "@/apis/apiHelpers";
+import { Skeleton } from "@/components/ui/skeleton";
 
 function TemplateFormSeven({
   data,
   eventId: propEventId,
   isUserRegistration = false,
+  eventData: propEventData,
 }: {
   data?: any;
   eventId?: string;
   isUserRegistration?: boolean;
+  eventData?: any;
 } = {}) {
   // Banner and form data states
   const [bannerUrl, setBannerUrl] = useState(null);
@@ -28,6 +31,27 @@ function TemplateFormSeven({
     [key: string]: boolean;
   }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image cropping states
+  const [isCropping, setIsCropping] = useState<boolean>(false);
+  const [originalImageSrc, setOriginalImageSrc] = useState<string>("");
+  const [cropArea, setCropArea] = useState({
+    x: 0,
+    y: 0,
+    width: 200,
+    height: 150,
+  });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeCorner, setResizeCorner] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // API and form data states
   const [apiFormData, setApiFormData] = useState<any[]>([]);
@@ -46,15 +70,50 @@ function TemplateFormSeven({
   useEffect(() => {
     const fetchBanner = async () => {
       if (!effectiveEventId) return;
+
+      // Use event data from prop if available - skip API call
+      if (propEventData) {
+        setBannerUrl(
+          propEventData?.attributes?.registration_page_banner ||
+            propEventData?.registration_page_banner ||
+            null
+        );
+        setEventData(propEventData);
+        return;
+      }
+
+      const cacheKey = `event_meta_${effectiveEventId}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setEventData(parsed);
+          setBannerUrl(
+            parsed?.attributes?.registration_page_banner ||
+              parsed?.registration_page_banner ||
+              null
+          );
+          return;
+        } catch (err) {
+          console.warn("TemplateSeven - failed to parse cached event", err);
+        }
+      }
+
       try {
         const response = await getEventbyId(effectiveEventId);
-        setBannerUrl(response.data.data.registration_page_banner || null);
+        setBannerUrl(
+          response.data.data?.attributes?.registration_page_banner ||
+            response.data.data?.registration_page_banner ||
+            null
+        );
+        setEventData(response.data.data);
+        sessionStorage.setItem(cacheKey, JSON.stringify(response.data.data));
       } catch (error) {
         setBannerUrl(null);
       }
     };
     fetchBanner();
-  }, [effectiveEventId]);
+  }, [effectiveEventId, propEventData]);
 
   // Default form fields configuration
   const defaultFormFields = [
@@ -130,6 +189,21 @@ function TemplateFormSeven({
     },
   ];
 
+  const renderSkeleton = () => (
+    <div className="space-y-4" aria-label="Template seven loading">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+      <Skeleton className="h-32 w-full" />
+      <div className="grid grid-cols-3 gap-4">
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+        <Skeleton className="h-10 w-full" />
+      </div>
+    </div>
+  );
+
   // Fetch API form data when no data prop is provided
   useEffect(() => {
     if (!effectiveEventId) {
@@ -143,10 +217,25 @@ function TemplateFormSeven({
         return;
       }
 
-      setIsLoadingApiData(true);
+      const cacheKey = `registration_fields_${effectiveEventId}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setApiFormData(parsed);
+          setIsLoadingApiData(false);
+        } catch (err) {
+          console.warn("TemplateSeven - failed to parse cached fields", err);
+        }
+      } else {
+        setIsLoadingApiData(true);
+      }
+
       try {
         const response = await getRegistrationFieldApi(effectiveEventId);
-        setApiFormData(response.data.data || []);
+        const fields = response.data.data || [];
+        setApiFormData(fields);
+        sessionStorage.setItem(cacheKey, JSON.stringify(fields));
       } catch (error) {
         console.error(error);
         setApiFormData([]);
@@ -157,7 +246,6 @@ function TemplateFormSeven({
 
     fetchApiFormData();
   }, [effectiveEventId, data]);
-
 
   const formFields = useMemo((): any[] => {
     // Priority: 1. data prop, 2. apiFormData, 3. defaultFormFields
@@ -178,12 +266,13 @@ function TemplateFormSeven({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-              ? "email"
-              : attr.validation_type === "alphabetic"
-                ? "text"
-                : "text",
+            ? "email"
+            : attr.validation_type === "alphabetic"
+            ? "text"
+            : "text",
         label: attr.name || "Field",
-        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
+        placeholder:
+          attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
         active: attr.active,
@@ -192,7 +281,7 @@ function TemplateFormSeven({
           accept: "image/jpeg,image/png,image/jpg",
           maxSize: 2 * 1024 * 1024, // 2MB
           allowedTypes: ["image/jpeg", "image/png", "image/jpg"],
-          hint: "Upload JPG, PNG (Max 2MB)"
+          hint: "Upload JPG, PNG (Max 2MB)",
         }),
       };
     });
@@ -230,40 +319,263 @@ function TemplateFormSeven({
   };
 
   // Banner upload with 900x300 validation
+  // Handle crop completion
+  const handleCropComplete = async () => {
+    if (imgRef.current && canvasRef.current) {
+      try {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext("2d");
+        const img = imgRef.current;
+
+        if (!ctx || !img) {
+          throw new Error("Failed to get canvas context or image");
+        }
+
+        // Calculate scale between displayed image and original
+        const scaleX = img.naturalWidth / img.width;
+        const scaleY = img.naturalHeight / img.height;
+
+        // Set canvas size to the crop area dimensions
+        canvas.width = cropArea.width * scaleX;
+        canvas.height = cropArea.height * scaleY;
+
+        // Draw cropped image
+        ctx.drawImage(
+          img,
+          cropArea.x * scaleX,
+          cropArea.y * scaleY,
+          cropArea.width * scaleX,
+          cropArea.height * scaleY,
+          0,
+          0,
+          cropArea.width * scaleX,
+          cropArea.height * scaleY
+        );
+
+        // Convert canvas to blob
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              setLogoError("Failed to crop image. Please try again.");
+              return;
+            }
+
+            // Convert blob to File
+            const croppedFile = new File([blob], "cropped-banner.jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+
+            // Set the cropped file
+            setFormData((prev) => ({
+              ...prev,
+              eventLogo: croppedFile,
+            }));
+
+            // Close cropping mode
+            setIsCropping(false);
+            setOriginalImageSrc("");
+
+            // Auto-upload after cropping
+            handleUploadBanner(croppedFile);
+          },
+          "image/jpeg",
+          0.95 // Quality
+        );
+      } catch (error) {
+        console.error("Error cropping image:", error);
+        setLogoError("Failed to crop image. Please try again.");
+      }
+    }
+  };
+
+  // Cancel cropping
+  const cancelCrop = () => {
+    setIsCropping(false);
+    setOriginalImageSrc("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    setLogoError("");
+  };
+
+  // Handle image load for cropping
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setImageDimensions({
+      width: img.width,
+      height: img.height,
+    });
+
+    // Initialize crop area to cover entire image
+    setCropArea({
+      x: 0,
+      y: 0,
+      width: img.width,
+      height: img.height,
+    });
+  };
+
+  // Handle mouse/touch events for moving the crop area
+  const handleCropStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isResizing) return;
+
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    // Check if click is on a resize handle
+    const clickX = clientX - rect.left;
+    const clickY = clientY - rect.top;
+
+    // Define resize handle areas
+    const handles = {
+      topLeft: { x: cropArea.x - 5, y: cropArea.y - 5, width: 20, height: 20 },
+      topRight: {
+        x: cropArea.x + cropArea.width - 15,
+        y: cropArea.y - 5,
+        width: 20,
+        height: 20,
+      },
+      bottomLeft: {
+        x: cropArea.x - 5,
+        y: cropArea.y + cropArea.height - 15,
+        width: 20,
+        height: 20,
+      },
+      bottomRight: {
+        x: cropArea.x + cropArea.width - 15,
+        y: cropArea.y + cropArea.height - 15,
+        width: 20,
+        height: 20,
+      },
+    };
+
+    // Check which handle was clicked
+    for (const [corner, area] of Object.entries(handles)) {
+      if (
+        clickX >= area.x &&
+        clickX <= area.x + area.width &&
+        clickY >= area.y &&
+        clickY <= area.y + area.height
+      ) {
+        setIsResizing(true);
+        setResizeCorner(corner);
+        setDragStart({ x: clickX, y: clickY });
+        return;
+      }
+    }
+
+    // If not on a resize handle, start dragging
+    setIsDragging(true);
+    setDragStart({
+      x: clientX - rect.left - cropArea.x,
+      y: clientY - rect.top - cropArea.y,
+    });
+  };
+
+  const handleCropMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDragging && !isResizing) return;
+    e.preventDefault();
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    const currentX = clientX - rect.left;
+    const currentY = clientY - rect.top;
+
+    if (isDragging) {
+      // Move the entire crop area
+      const newX = currentX - dragStart.x;
+      const newY = currentY - dragStart.y;
+
+      // Constrain crop area within image bounds
+      setCropArea((prev) => ({
+        ...prev,
+        x: Math.max(0, Math.min(newX, imageDimensions.width - prev.width)),
+        y: Math.max(0, Math.min(newY, imageDimensions.height - prev.height)),
+      }));
+    } else if (isResizing && resizeCorner) {
+      // Resize from a corner
+      const deltaX = currentX - dragStart.x;
+      const deltaY = currentY - dragStart.y;
+
+      setCropArea((prev) => {
+        let newCrop = { ...prev };
+
+        switch (resizeCorner) {
+          case "topLeft":
+            newCrop.x = Math.max(0, prev.x + deltaX);
+            newCrop.y = Math.max(0, prev.y + deltaY);
+            newCrop.width = Math.max(50, prev.width - deltaX);
+            newCrop.height = Math.max(50, prev.height - deltaY);
+            break;
+          case "topRight":
+            newCrop.y = Math.max(0, prev.y + deltaY);
+            newCrop.width = Math.max(50, prev.width + deltaX);
+            newCrop.height = Math.max(50, prev.height - deltaY);
+            break;
+          case "bottomLeft":
+            newCrop.x = Math.max(0, prev.x + deltaX);
+            newCrop.width = Math.max(50, prev.width - deltaX);
+            newCrop.height = Math.max(50, prev.height + deltaY);
+            break;
+          case "bottomRight":
+            newCrop.width = Math.max(50, prev.width + deltaX);
+            newCrop.height = Math.max(50, prev.height + deltaY);
+            break;
+        }
+
+        // Ensure crop area stays within image bounds
+        if (newCrop.x + newCrop.width > imageDimensions.width) {
+          newCrop.width = imageDimensions.width - newCrop.x;
+        }
+        if (newCrop.y + newCrop.height > imageDimensions.height) {
+          newCrop.height = imageDimensions.height - newCrop.y;
+        }
+
+        return newCrop;
+      });
+
+      setDragStart({ x: currentX, y: currentY });
+    }
+  };
+
+  const handleCropEnd = () => {
+    setIsDragging(false);
+    setIsResizing(false);
+    setResizeCorner(null);
+  };
+
   const handleFileChange = (e: any) => {
     const file = e.target.files[0];
     if (file) {
       setLogoError("");
-      if (file.size > 2 * 1024 * 1024) {
-        setLogoError("File size exceeds the 2MB limit.");
-        return;
-      }
-      const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
-      if (!allowedTypes.includes(file.type)) {
-        setLogoError("Invalid file type. Please upload SVG, PNG, or JPG.");
+
+      // Validate it's an image file
+      if (!file.type.startsWith("image/")) {
+        setLogoError("Please select an image file");
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
         return;
       }
 
-      // Validate 900x300 dimensions
-      const img = new Image();
-      img.onload = () => {
-        if (img.naturalWidth !== 900 || img.naturalHeight !== 300) {
-          setLogoError("Image must be exactly 900x300 pixels.");
-          return;
-        }
-        setFormData((prev) => ({ ...prev, eventLogo: file }));
-        setLogoError("");
-      };
-      img.onerror = () => {
-        setLogoError("Error loading image. Please try another file.");
-      };
-      img.src = URL.createObjectURL(file);
+      // For all image types, open crop interface
+      const objectUrl = URL.createObjectURL(file);
+      setOriginalImageSrc(objectUrl);
+      setIsCropping(true);
     }
   };
 
   const removeImage = (e: any) => {
     e.stopPropagation();
-    setFormData((prev) => ({ ...prev, eventLogo: null }));
+    setFormData((prev) => ({
+      ...prev,
+      eventLogo: null,
+    }));
     setLogoError("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -271,21 +583,43 @@ function TemplateFormSeven({
   };
 
   // Upload banner to server
-  const handleUploadBanner = async () => {
-    if (!formData.eventLogo || !effectiveEventId) return;
+  const handleUploadBanner = async (file?: any) => {
+    const bannerFile = file || formData.eventLogo;
+    if (!bannerFile || !effectiveEventId) return;
 
     try {
       const uploadFormData = new FormData();
-      uploadFormData.append("event[registration_page_banner]", formData.eventLogo);
+      uploadFormData.append("event[registration_page_banner]", bannerFile);
 
       const response = await updateEventById(effectiveEventId, uploadFormData);
       console.log("Event banner updated:", response);
 
-      // Fetch updated event/banner
-      const eventResponse = await getEventbyId(effectiveEventId);
-      console.log("Fetched event after banner update:", eventResponse);
-      fetchEventData();
-      setBannerUrl(eventResponse.data.data.registration_page_banner || null);
+      // Fetch updated event/banner - only if not using prop data
+      if (!propEventData) {
+        const eventResponse = await getEventbyId(effectiveEventId);
+        console.log("Fetched event after banner update:", eventResponse);
+        setEventData(eventResponse.data.data);
+        setBannerUrl(
+          eventResponse.data.data?.attributes?.registration_page_banner ||
+            eventResponse.data.data?.registration_page_banner ||
+            null
+        );
+        const cacheKey = `event_meta_${effectiveEventId}`;
+        sessionStorage.setItem(
+          cacheKey,
+          JSON.stringify(eventResponse.data.data)
+        );
+      } else {
+        // Update from response if available
+        if (response?.data?.data) {
+          setEventData(response.data.data);
+          setBannerUrl(
+            response.data.data?.attributes?.registration_page_banner ||
+              response.data.data?.registration_page_banner ||
+              null
+          );
+        }
+      }
       setFormData({ eventLogo: null });
 
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -295,23 +629,7 @@ function TemplateFormSeven({
     }
   };
 
-  const fetchEventData = async () => {
-    if (!effectiveEventId) return;
-    try {
-      const response = await getEventbyId(effectiveEventId);
-      console.log(
-        "Event data fetched in TemplateSeven :: ",
-        response.data.data
-      );
-      setEventData(response.data.data);
-    } catch (error) {
-      console.error("Failed to fetch event data:", error);
-    }
-  };
-
-  useEffect(() => {
-    fetchEventData();
-  }, [effectiveEventId]);
+  // Removed duplicate fetchEventData - using the useEffect above instead
 
   const handleFormSubmit = (formValues: any) => {
     console.log("Form submitted:", formValues);
@@ -320,19 +638,150 @@ function TemplateFormSeven({
 
   return (
     <div className="w-full p-4">
+      {/* Image Cropping Modal */}
+      {isCropping && originalImageSrc && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Crop Banner Image
+              </h3>
+              <button
+                onClick={cancelCrop}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div
+                ref={containerRef}
+                className="relative mx-auto border border-gray-300 rounded-lg overflow-hidden bg-transparent"
+                style={{
+                  maxWidth: "600px",
+                  maxHeight: "400px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseDown={handleCropStart}
+                onMouseMove={handleCropMove}
+                onMouseUp={handleCropEnd}
+                onMouseLeave={handleCropEnd}
+                onTouchStart={handleCropStart}
+                onTouchMove={handleCropMove}
+                onTouchEnd={handleCropEnd}
+              >
+                <img
+                  ref={imgRef}
+                  src={originalImageSrc}
+                  alt="Crop preview"
+                  className="max-w-full max-h-full"
+                  onLoad={handleImageLoad}
+                  draggable={false}
+                  style={{
+                    objectFit: "contain",
+                  }}
+                />
+                {imageDimensions.width > 0 && (
+                  <>
+                    {/* Crop overlay - darken outside area */}
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-40"
+                      style={{
+                        clipPath: `polygon(
+                          0% 0%, 
+                          0% 100%, 
+                          ${cropArea.x}px 100%, 
+                          ${cropArea.x}px ${cropArea.y}px, 
+                          ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
+                          ${cropArea.x + cropArea.width}px ${
+                          cropArea.y + cropArea.height
+                        }px, 
+                          ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
+                          ${cropArea.x}px 100%, 
+                          100% 100%, 
+                          100% 0%
+                        )`,
+                      }}
+                    />
+
+                    {/* Crop area border */}
+                    <div
+                      className="absolute border-2 border-white border-dashed"
+                      style={{
+                        left: `${cropArea.x}px`,
+                        top: `${cropArea.y}px`,
+                        width: `${cropArea.width}px`,
+                        height: `${cropArea.height}px`,
+                        cursor: isDragging ? "grabbing" : "grab",
+                      }}
+                    >
+                      {/* Resize handles */}
+                      <div
+                        className="absolute -top-2 -left-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nwse-resize"
+                        title="Drag to resize from top-left"
+                      />
+                      <div
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nesw-resize"
+                        title="Drag to resize from top-right"
+                      />
+                      <div
+                        className="absolute -bottom-2 -left-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nesw-resize"
+                        title="Drag to resize from bottom-left"
+                      />
+                      <div
+                        className="absolute -bottom-2 -right-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nwse-resize"
+                        title="Drag to resize from bottom-right"
+                      />
+
+                      {/* Center drag area */}
+                      <div
+                        className="absolute inset-0 cursor-move"
+                        title="Drag to move crop area"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelCrop}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCropComplete}
+                className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-white transition-colors"
+              >
+                Crop & Upload
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden canvas for cropping */}
+      <canvas ref={canvasRef} className="hidden" />
+
       <div className="w-full flex flex-row justify-between items-center">
         {/* Banner Upload Area with 900x300 validation */}
         <div
           style={{
             width: "48%",
-            backgroundImage: `url(${formData.eventLogo
-              ? URL.createObjectURL(formData.eventLogo)
-              : eventData?.attributes?.registration_page_banner
+            backgroundImage: `url(${
+              formData.eventLogo
+                ? URL.createObjectURL(formData.eventLogo)
+                : eventData?.attributes?.registration_page_banner
                 ? eventData.attributes.registration_page_banner
                 : bannerUrl
-                  ? bannerUrl
-                  : Assets.images.uploadBackground3
-              })`,
+                ? bannerUrl
+                : Assets.images.uploadBackground3
+            })`,
           }}
           className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
         >
@@ -341,15 +790,12 @@ function TemplateFormSeven({
             !eventData?.attributes?.registration_page_banner &&
             !bannerUrl && (
               <button
-                className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer"
+                className="btn flex flex-row items-center gap-2 bg-indigo-950 py-3 px-5 rounded-xl cursor-pointer hover:bg-indigo-900 transition-colors"
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
               >
-                <img
-                  src={Assets.icons.upload}
-                  style={{ height: 20, width: 20 }}
-                />
-                <span className="text-white">Choose Image (900x300px)</span>
+                <Upload className="h-5 w-5 text-white" />
+                <span className="text-white">Upload Banner Image</span>
               </button>
             )}
 
@@ -357,11 +803,12 @@ function TemplateFormSeven({
           {!formData.eventLogo &&
             (eventData?.attributes?.registration_page_banner || bannerUrl) && (
               <button
-                className="absolute top-3 right-3 px-4 py-2 bg-pink-600 text-white rounded-lg"
+                className="absolute top-3 right-3 px-4 py-2 bg-white/90 backdrop-blur-sm text-gray-800 rounded-lg hover:bg-white transition-colors flex items-center gap-2 border border-gray-200"
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
               >
-                Edit Banner
+                <Crop size={16} />
+                Edit/Crop Banner
               </button>
             )}
 
@@ -385,12 +832,12 @@ function TemplateFormSeven({
           )}
         </div>
 
-        {/* Upload button (only when a new image is selected) */}
-        {formData.eventLogo && (
+        {/* Upload button (only when a new image is selected but not cropping) */}
+        {formData.eventLogo && !isCropping && (
           <button
             type="button"
-            onClick={handleUploadBanner}
-            className="absolute bottom-3 left-3 px-4 py-2 bg-pink-600 text-white rounded-lg"
+            onClick={() => handleUploadBanner()}
+            className="absolute bottom-3 left-3 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg transition-colors"
           >
             Upload Banner
           </button>
@@ -465,12 +912,7 @@ function TemplateFormSeven({
         </h3>
 
         {isLoadingApiData ? (
-          <div className="text-center py-8">
-            <div className="flex flex-col items-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
-              <p className="text-gray-500">Loading form fields...</p>
-            </div>
-          </div>
+          renderSkeleton()
         ) : formFields.length > 0 ? (
           <ReusableRegistrationForm
             // @ts-ignore - Temporary ignore for form fields typing issue

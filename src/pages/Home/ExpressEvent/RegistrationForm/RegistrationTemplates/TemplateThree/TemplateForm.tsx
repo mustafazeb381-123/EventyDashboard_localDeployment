@@ -12,10 +12,12 @@ function TemplateFormThree({
   data,
   eventId: propEventId,
   isUserRegistration = false,
+  eventData: propEventData,
 }: {
   data?: any;
   eventId?: string;
   isUserRegistration?: boolean;
+  eventData?: any;
 } = {}) {
   // Log field attributes
   useMemo(() => {
@@ -93,7 +95,10 @@ function TemplateFormThree({
         );
         setApiFormData(response.data.data || []);
       } catch (error) {
-        console.error("TemplateThree - Failed to get registration field:", error);
+        console.error(
+          "TemplateThree - Failed to get registration field:",
+          error
+        );
         setApiFormData([]);
       } finally {
         setIsLoadingApiData(false);
@@ -120,12 +125,13 @@ function TemplateFormThree({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-              ? "email"
-              : attr.validation_type === "alphabetic"
-                ? "text"
-                : "text",
+            ? "email"
+            : attr.validation_type === "alphabetic"
+            ? "text"
+            : "text",
         label: attr.name || "Field",
-        placeholder: attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
+        placeholder:
+          attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
         required: !!attr.required,
         fullWidth: !!attr.full_width,
         active: attr.active,
@@ -139,7 +145,9 @@ function TemplateFormThree({
     });
   }, [data, apiFormData]);
 
-  const [fieldActiveStates, setFieldActiveStates] = useState<{ [key: string]: boolean }>({});
+  const [fieldActiveStates, setFieldActiveStates] = useState<{
+    [key: string]: boolean;
+  }>({});
 
   // Sync field active states
   useEffect(() => {
@@ -170,20 +178,39 @@ function TemplateFormThree({
     setLoading((prev: any) => ({ ...prev, [fieldId]: false }));
   };
 
-  const fetchEventData = async () => {
-    if (!effectiveEventId) return;
-    try {
-      const response = await getEventbyId(effectiveEventId);
-      console.log("Event data fetched:", response.data.data);
-      setEventData(response.data.data);
-    } catch (error) {
-      console.error("Failed to fetch event data:", error);
-    }
-  };
-
   useEffect(() => {
+    const fetchEventData = async () => {
+      if (!effectiveEventId) return;
+
+      // Use event data from prop if available - skip API call
+      if (propEventData) {
+        setEventData(propEventData);
+        return;
+      }
+
+      const cacheKey = `event_meta_${effectiveEventId}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          setEventData(parsed);
+          return;
+        } catch (err) {
+          console.warn("TemplateThree - failed to parse cached event", err);
+        }
+      }
+
+      try {
+        const response = await getEventbyId(effectiveEventId);
+        console.log("Event data fetched:", response.data.data);
+        setEventData(response.data.data);
+        sessionStorage.setItem(cacheKey, JSON.stringify(response.data.data));
+      } catch (error) {
+        console.error("Failed to fetch event data:", error);
+      }
+    };
     fetchEventData();
-  }, [effectiveEventId]);
+  }, [effectiveEventId, propEventData]);
 
   const handleFormSubmit = (formValues: any) => {
     console.log("Form submitted:", formValues);

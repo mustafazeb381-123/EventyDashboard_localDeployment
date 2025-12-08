@@ -83,24 +83,32 @@ const MainData = ({
   onEventCreated,
 }: MainDataProps) => {
   const [newGuestType, setNewGuestType] = useState<string>("");
-  console.log('new guest type----', newGuestType)
+  console.log("new guest type----", newGuestType);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showEventData, setShowEventData] = useState<boolean>(false);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
-  const [ticket, setTicket] = useState(true)
+  const [ticket, setTicket] = useState(true);
   const [eventguesttype, setEventguesttype] = useState<string>("");
-  
+
   // Image cropping states
   const [isCropping, setIsCropping] = useState<boolean>(false);
   const [originalImageSrc, setOriginalImageSrc] = useState<string>("");
-  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 100, height: 100 });
-  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [cropArea, setCropArea] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
-  
+
   const [formData, setFormData] = useState<MainFormData>({
     eventName: "",
     description: "",
@@ -181,11 +189,11 @@ const MainData = ({
     if (imgRef.current && canvasRef.current) {
       try {
         const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext("2d");
         const img = imgRef.current;
 
         if (!ctx || !img) {
-          throw new Error('Failed to get canvas context or image');
+          throw new Error("Failed to get canvas context or image");
         }
 
         // Calculate scale between displayed image and original
@@ -218,8 +226,8 @@ const MainData = ({
             }
 
             // Convert blob to File
-            const croppedFile = new File([blob], 'cropped-logo.jpg', {
-              type: 'image/jpeg',
+            const croppedFile = new File([blob], "cropped-logo.jpg", {
+              type: "image/jpeg",
               lastModified: Date.now(),
             });
 
@@ -233,10 +241,10 @@ const MainData = ({
             // Close cropping mode
             setIsCropping(false);
             setOriginalImageSrc("");
-            
+
             toast.success("Image cropped and uploaded successfully!");
           },
-          'image/jpeg',
+          "image/jpeg",
           0.95 // Quality
         );
       } catch (error) {
@@ -260,7 +268,7 @@ const MainData = ({
     const img = e.currentTarget;
     setImageDimensions({
       width: img.width,
-      height: img.height
+      height: img.height,
     });
 
     // Initialize crop area to center square
@@ -269,7 +277,7 @@ const MainData = ({
       x: (img.width - size) / 2,
       y: (img.height - size) / 2,
       width: size,
-      height: size
+      height: size,
     });
   };
 
@@ -278,31 +286,32 @@ const MainData = ({
     e.preventDefault();
     setIsDragging(true);
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
     setDragStart({
       x: clientX - rect.left - cropArea.x,
-      y: clientY - rect.top - cropArea.y
+      y: clientY - rect.top - cropArea.y,
     });
   };
 
   const handleCropMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || !imageDimensions.width || !imageDimensions.height) return;
+    if (!isDragging || !imageDimensions.width || !imageDimensions.height)
+      return;
     e.preventDefault();
-    
+
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
     const newX = clientX - rect.left - dragStart.x;
     const newY = clientY - rect.top - dragStart.y;
-    
+
     // Constrain crop area within image bounds
-    setCropArea(prev => ({
+    setCropArea((prev) => ({
       ...prev,
       x: Math.max(0, Math.min(newX, imageDimensions.width - prev.width)),
-      y: Math.max(0, Math.min(newY, imageDimensions.height - prev.height))
+      y: Math.max(0, Math.min(newY, imageDimensions.height - prev.height)),
     }));
   };
 
@@ -361,7 +370,7 @@ const MainData = ({
     const trimmedType = newGuestType.trim();
     const allGuestTypes = [
       ...formData.guestTypes,
-      ...badges.map(badge => badge.attributes.name)
+      ...badges.map((badge) => badge.attributes.name),
     ];
 
     if (
@@ -431,8 +440,8 @@ const MainData = ({
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
-              .map((badge: any) => badge.name || badge.attributes?.name)
-              .filter(Boolean)
+                .map((badge: any) => badge.name || badge.attributes?.name)
+                .filter(Boolean)
             : [], // ✅ Empty array instead of ["Guest"]
         eventLogo: null, // You might need to handle existing logo
         existingLogoUrl: attributes.logo_url || null,
@@ -496,10 +505,12 @@ const MainData = ({
 
     if (eventId) {
       // Editing existing event: use badges from API
-      guestTypesToUse = badges.map(badge => badge.attributes.name);
+      guestTypesToUse = badges.map((badge) => badge.attributes.name);
     } else {
       // Creating new event: use formData.guestTypes
-      guestTypesToUse = formData.guestTypes.filter(type => type.trim() !== '');
+      guestTypesToUse = formData.guestTypes.filter(
+        (type) => type.trim() !== ""
+      );
     }
 
     // ✅ If no guest types exist, use "Guest" as default
@@ -513,18 +524,33 @@ const MainData = ({
     // ✅ Append badges - always include at least one type
     uniqueGuestTypes.forEach((type, index) => {
       fd.append("event[badges_attributes][][name]", type.trim());
-      fd.append("event[badges_attributes][][default]", index === 0 ? "true" : "false");
+      fd.append(
+        "event[badges_attributes][][default]",
+        index === 0 ? "true" : "false"
+      );
     });
 
     // Rest of your code remains the same...
     if (formData.dateFrom) {
-      fd.append("event[event_date_from]", formData.dateFrom.toISOString().split("T")[0]);
+      fd.append(
+        "event[event_date_from]",
+        formData.dateFrom.toISOString().split("T")[0]
+      );
     }
     if (formData.dateTo) {
-      fd.append("event[event_date_to]", formData.dateTo.toISOString().split("T")[0]);
+      fd.append(
+        "event[event_date_to]",
+        formData.dateTo.toISOString().split("T")[0]
+      );
     }
-    fd.append("event[event_time_from]", formData.timeFrom ? `${formData.timeFrom}:00` : "09:00:00");
-    fd.append("event[event_time_to]", formData.timeTo ? `${formData.timeTo}:00` : "17:00:00");
+    fd.append(
+      "event[event_time_from]",
+      formData.timeFrom ? `${formData.timeFrom}:00` : "09:00:00"
+    );
+    fd.append(
+      "event[event_time_to]",
+      formData.timeTo ? `${formData.timeTo}:00` : "17:00:00"
+    );
     fd.append("event[registration_page_banner]", "");
 
     if (formData.eventLogo) {
@@ -553,7 +579,7 @@ const MainData = ({
         console.log("Creating new event");
         response = await eventPostAPi(fd);
         console.log("API Response:", response.data);
-        
+
         if (response?.data?.data?.id) {
           localStorage.setItem("create_eventId", response.data.data.id);
           if (onEventCreated) {
@@ -574,7 +600,7 @@ const MainData = ({
   const fetchBadgeApi = async () => {
     if (!eventId) return;
 
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     if (!token) {
       console.error("No token found");
       return;
@@ -606,7 +632,7 @@ const MainData = ({
 
       const result = await response.json();
       console.log("✅ Raw badges fetched:", result?.data);
-      
+
       // 👇 REMOVE DUPLICATES FROM API RESPONSE
       if (result?.data && Array.isArray(result.data)) {
         const uniqueBadges = removeDuplicateBadges(result.data);
@@ -615,7 +641,6 @@ const MainData = ({
       } else {
         setBadges([]);
       }
-      
     } catch (error) {
       console.error("❌ Fetch error:", error);
     } finally {
@@ -626,7 +651,7 @@ const MainData = ({
   // 👇 NEW FUNCTION: Remove duplicate badges by name
   const removeDuplicateBadges = (badges: Badge[]) => {
     const seen = new Set();
-    return badges.filter(badge => {
+    return badges.filter((badge) => {
       const name = badge.attributes.name;
       if (seen.has(name)) {
         console.log(`Removing duplicate badge: ${name}`);
@@ -733,8 +758,8 @@ const MainData = ({
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
-              .map((badge: any) => badge.name || badge.attributes?.name)
-              .filter(Boolean)
+                .map((badge: any) => badge.name || badge.attributes?.name)
+                .filter(Boolean)
             : [], // ✅ Empty array instead of ["Guest"]
         eventLogo: null,
         existingLogoUrl: attributes.logo_url || null,
@@ -788,8 +813,8 @@ const MainData = ({
               guestTypes:
                 attributes.badges && attributes.badges.length > 0
                   ? attributes.badges
-                    .map((badge: any) => badge.name || badge.attributes?.name)
-                    .filter(Boolean)
+                      .map((badge: any) => badge.name || badge.attributes?.name)
+                      .filter(Boolean)
                   : [], // ✅ Empty array instead of ["Guest"]
               eventLogo: null, // You might need to handle existing logo
               existingLogoUrl: attributes.logo_url || null,
@@ -822,7 +847,6 @@ const MainData = ({
     }
   }, [eventId]);
 
-
   // Handle Previous button click
   const handlePreviousClick = () => {
     console.log("Previous button clicked. Current Event ID:", eventId);
@@ -851,7 +875,7 @@ const MainData = ({
       ...prev,
       guestTypes: [...prev.guestTypes, trimmedType],
     }));
-    
+
     setEventguesttype("");
 
     // Clear validation error when guest type is added
@@ -914,7 +938,7 @@ const MainData = ({
   };
 
   const removeBadgeType = (index: number) => {
-    setBadges(prev => prev.filter((_, i) => i !== index));
+    setBadges((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Handler for API badges only - NOW USING DIRECT API CALL
@@ -956,7 +980,9 @@ const MainData = ({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Crop Image (Drag to adjust)</h3>
+              <h3 className="text-lg font-medium text-gray-900">
+                Crop Image (Drag to adjust)
+              </h3>
               <button
                 onClick={cancelCrop}
                 className="text-gray-400 hover:text-gray-600"
@@ -964,11 +990,11 @@ const MainData = ({
                 <XCircle size={24} />
               </button>
             </div>
-            
+
             <div className="mb-6">
-              <div 
+              <div
                 className="relative mx-auto border-2 border-dashed border-gray-300 rounded-lg overflow-hidden"
-                style={{ maxWidth: '600px', maxHeight: '400px' }}
+                style={{ maxWidth: "600px", maxHeight: "400px" }}
                 onMouseDown={handleCropStart}
                 onMouseMove={handleCropMove}
                 onMouseUp={handleCropEnd}
@@ -988,7 +1014,7 @@ const MainData = ({
                 {imageDimensions.width > 0 && (
                   <>
                     {/* Crop overlay - darken outside area */}
-                    <div 
+                    <div
                       className="absolute inset-0 bg-black bg-opacity-40"
                       style={{
                         clipPath: `polygon(
@@ -997,24 +1023,26 @@ const MainData = ({
                           ${cropArea.x}px 100%, 
                           ${cropArea.x}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
-                          ${cropArea.x + cropArea.width}px ${cropArea.y + cropArea.height}px, 
+                          ${cropArea.x + cropArea.width}px ${
+                          cropArea.y + cropArea.height
+                        }px, 
                           ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
                           ${cropArea.x}px 100%, 
                           100% 100%, 
                           100% 0%
-                        )`
+                        )`,
                       }}
                     />
-                    
+
                     {/* Crop area border */}
-                    <div 
+                    <div
                       className="absolute border-2 border-white border-dashed"
                       style={{
                         left: `${cropArea.x}px`,
                         top: `${cropArea.y}px`,
                         width: `${cropArea.width}px`,
                         height: `${cropArea.height}px`,
-                        boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5)'
+                        boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.5)",
                       }}
                     >
                       {/* Resize handles */}
@@ -1027,7 +1055,8 @@ const MainData = ({
                 )}
               </div>
               <p className="text-sm text-gray-500 mt-2 text-center">
-                Drag the square to adjust cropping. The image will be cropped to a square.
+                Drag the square to adjust cropping. The image will be cropped to
+                a square.
               </p>
             </div>
 
@@ -1109,9 +1138,10 @@ const MainData = ({
           <div
             className={`
               border-2 border-dashed rounded-lg p-4 sm:p-6 lg:p-8 text-center transition-colors cursor-pointer min-h-[200px] flex flex-col justify-center
-              ${logoError
-                ? "border-red-500"
-                : "border-gray-300 hover:border-gray-400"
+              ${
+                logoError
+                  ? "border-red-500"
+                  : "border-gray-300 hover:border-gray-400"
               }
             `}
             onDrop={handleDrop}
@@ -1201,20 +1231,22 @@ const MainData = ({
                 className="sr-only"
               />
               <div
-                className={`w-11 h-6 rounded-full transition-colors ${formData.requireApproval ? "bg-teal-500" : "bg-gray-200"
-                  }`}
+                className={`w-11 h-6 rounded-full transition-colors ${
+                  formData.requireApproval ? "bg-teal-500" : "bg-gray-200"
+                }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${formData.requireApproval
-                    ? "translate-x-5"
-                    : "translate-x-0.5"
-                    } mt-0.5`}
+                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    formData.requireApproval
+                      ? "translate-x-5"
+                      : "translate-x-0.5"
+                  } mt-0.5`}
                 />
               </div>
             </label>
           </div>
           {/* Require Ticket */}
-          {plan === "advance" ?
+          {plan === "advance" ? (
             <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
               <div className="flex items-center gap-2 sm:gap-3">
                 <label className="text-sm font-medium text-gray-700">
@@ -1236,16 +1268,19 @@ const MainData = ({
                   className="sr-only"
                 />
                 <div
-                  className={`w-11 h-6 rounded-full transition-colors duration-200 ${ticket ? "bg-teal-500" : "bg-gray-200"
-                    }`}
+                  className={`w-11 h-6 rounded-full transition-colors duration-200 ${
+                    ticket ? "bg-teal-500" : "bg-gray-200"
+                  }`}
                 >
                   <div
-                    className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5 ${ticket ? "translate-x-5" : "translate-x-0.5"
-                      }`}
+                    className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5 ${
+                      ticket ? "translate-x-5" : "translate-x-0.5"
+                    }`}
                   />
                 </div>
               </label>
-            </div> : null}
+            </div>
+          ) : null}
         </div>
 
         {/* Event Details Section */}
@@ -1259,10 +1294,11 @@ const MainData = ({
               placeholder="Event name"
               value={formData.eventName}
               onChange={(e) => handleInputChange("eventName", e.target.value)}
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors ${validationErrors.eventName
-                ? "border-red-500"
-                : "border-gray-300"
-                }`}
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors ${
+                validationErrors.eventName
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
             {validationErrors.eventName && (
               <p className="mt-1 text-xs text-red-600">
@@ -1280,10 +1316,11 @@ const MainData = ({
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
               rows={3}
-              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm resize-none transition-colors ${validationErrors.description
-                ? "border-red-500"
-                : "border-gray-300"
-                }`}
+              className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm resize-none transition-colors ${
+                validationErrors.description
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
             />
             {validationErrors.description && (
               <p className="mt-1 text-xs text-red-600">
@@ -1310,10 +1347,11 @@ const MainData = ({
                     e.target.value ? new Date(e.target.value) : undefined
                   )
                 }
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${validationErrors.dateFrom
-                  ? "border-red-500"
-                  : "border-gray-300"
-                  }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.dateFrom
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
               {validationErrors.dateFrom && (
                 <p className="mt-1 text-xs text-red-600">
@@ -1338,8 +1376,9 @@ const MainData = ({
                     e.target.value ? new Date(e.target.value) : undefined
                   )
                 }
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${validationErrors.dateTo ? "border-red-500" : "border-gray-300"
-                  }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.dateTo ? "border-red-500" : "border-gray-300"
+                }`}
               />
               {validationErrors.dateTo && (
                 <p className="mt-1 text-xs text-red-600">
@@ -1384,10 +1423,11 @@ const MainData = ({
                 placeholder="Event location"
                 value={formData.location}
                 onChange={(e) => handleInputChange("location", e.target.value)}
-                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${validationErrors.location
-                  ? "border-red-500"
-                  : "border-gray-300"
-                  }`}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.location
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
               />
               <MapPin className="absolute right-3 top-2.5 sm:top-3.5 h-4 w-4 text-gray-400" />
             </div>
@@ -1398,23 +1438,21 @@ const MainData = ({
             )}
           </div>
 
-          {
-            plan === "advance" ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Registration Limits <span className="text-red-500">*</span>
-                </label>
+          {plan === "advance" ? (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Registration Limits <span className="text-red-500">*</span>
+              </label>
 
-                <div className="relative">
-                  <input
-                    type="number"
-                    placeholder="Registration Limits"
-                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors border-gray-300"
-                  />
-                </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  placeholder="Registration Limits"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors border-gray-300"
+                />
               </div>
-            ) : null
-          }
+            </div>
+          ) : null}
 
           {/* Primary Color */}
           <div>
@@ -1425,7 +1463,9 @@ const MainData = ({
               <input
                 type="color"
                 value={formData.primaryColor}
-                onChange={(e) => handleInputChange("primaryColor", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("primaryColor", e.target.value)
+                }
                 className="flex-1 h-10 cursor-pointer"
               />
             </div>
@@ -1440,7 +1480,9 @@ const MainData = ({
               <input
                 type="color"
                 value={formData.secondaryColor}
-                onChange={(e) => handleInputChange("secondaryColor", e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("secondaryColor", e.target.value)
+                }
                 className="flex-1 h-10 cursor-pointer"
               />
             </div>
@@ -1457,45 +1499,43 @@ const MainData = ({
               <Info size={14} className="text-gray-400" />
             </div>
 
-            {
-              eventId ? (
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={newGuestType}
-                    onChange={(e) => setNewGuestType(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="e.g. Speaker, VIP"
-                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
-                  />
-                  <button
-                    onClick={handleAddUserType}
-                    className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
-                  >
-                    <Plus size={16} />
-                    Add
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                  <input
-                    type="text"
-                    value={eventguesttype}
-                    onChange={(e) => setEventguesttype(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="e.g. Speaker, VIP"
-                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
-                  />
-                  <button
-                    onClick={handleEventType}
-                    className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
-                  >
-                    <Plus size={16} />
-                    Add
-                  </button>
-                </div>
-              )
-            }
+            {eventId ? (
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <input
+                  type="text"
+                  value={newGuestType}
+                  onChange={(e) => setNewGuestType(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="e.g. Speaker, VIP"
+                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                />
+                <button
+                  onClick={handleAddUserType}
+                  className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
+                >
+                  <Plus size={16} />
+                  Add
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2 mb-4">
+                <input
+                  type="text"
+                  value={eventguesttype}
+                  onChange={(e) => setEventguesttype(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="e.g. Speaker, VIP"
+                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                />
+                <button
+                  onClick={handleEventType}
+                  className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
+                >
+                  <Plus size={16} />
+                  Add
+                </button>
+              </div>
+            )}
 
             {validationErrors.guestTypes && (
               <p className="mb-2 text-xs text-red-600">
@@ -1512,73 +1552,42 @@ const MainData = ({
             {/* Loading state for badges */}
             {isLoadingBadges && (
               <div className="flex items-center justify-center py-4">
-                <Loader2 size={16} className="animate-spin text-teal-500 mr-2" />
+                <Loader2
+                  size={16}
+                  className="animate-spin text-teal-500 mr-2"
+                />
                 <span className="text-sm text-gray-600">Loading badges...</span>
               </div>
             )}
 
-            {
-              eventId ? (
-                <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-                  {/* Show guest types - display "Guest" only when completely empty */}
-                  {(badges.length > 0 || formData.guestTypes.length > 0) ? (
-                    <div className="mb-4">
-                      {/* Show API Badges */}
-                      {badges.map((badge, index) => (
-                        <div
-                          key={`api-${badge.id}`}
-                          className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
-                        >
-                          <span className="text-sm text-gray-700 truncate pr-2">
-                            {badge.attributes.name}
-                          </span>
-                          <button
-                            onClick={() => handleDeleteBadgeType(badge.id, index)}
-                            className="text-red-400 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
-                      
-                      {/* Show Local Guest Types */}
-                      {formData.guestTypes.map((type, index) => (
-                        <div
-                          key={`local-${index}`}
-                          className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
-                        >
-                          <span className="text-sm text-gray-700 truncate pr-2">
-                            {type}
-                          </span>
-                          <button
-                            onClick={() => removeGuestType(index)}
-                            className="text-red-400 hover:text-red-500 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    /* Show "Guest" only when no guest types exist */
-                    <div className="mb-4">
-                      <div className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
-                        <span className="text-sm text-gray-700 truncate pr-2">
-                          Guest
-                        </span>
-                        {/* Guest type cannot be deleted since it's default */}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-                  {/* For new events - show "Guest" only when empty */}
-                  {formData.guestTypes.length > 0 ? (
-                    formData.guestTypes.map((type, index) => (
+            {eventId ? (
+              <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
+                {/* Show guest types - display "Guest" only when completely empty */}
+                {badges.length > 0 || formData.guestTypes.length > 0 ? (
+                  <div className="mb-4">
+                    {/* Show API Badges */}
+                    {badges.map((badge, index) => (
                       <div
-                        key={index}
-                        className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+                        key={`api-${badge.id}`}
+                        className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+                      >
+                        <span className="text-sm text-gray-700 truncate pr-2">
+                          {badge.attributes.name}
+                        </span>
+                        <button
+                          onClick={() => handleDeleteBadgeType(badge.id, index)}
+                          className="text-red-400 hover:text-red-500 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Show Local Guest Types */}
+                    {formData.guestTypes.map((type, index) => (
+                      <div
+                        key={`local-${index}`}
+                        className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
                       >
                         <span className="text-sm text-gray-700 truncate pr-2">
                           {type}
@@ -1590,19 +1599,51 @@ const MainData = ({
                           <Trash2 size={16} />
                         </button>
                       </div>
-                    ))
-                  ) : (
-                    /* Show "Guest" only when no guest types exist */
-                    <div className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
+                    ))}
+                  </div>
+                ) : (
+                  /* Show "Guest" only when no guest types exist */
+                  <div className="mb-4">
+                    <div className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
                       <span className="text-sm text-gray-700 truncate pr-2">
                         Guest
                       </span>
                       {/* Guest type cannot be deleted since it's default */}
                     </div>
-                  )}
-                </div>
-              )
-            }
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
+                {/* For new events - show "Guest" only when empty */}
+                {formData.guestTypes.length > 0 ? (
+                  formData.guestTypes.map((type, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+                    >
+                      <span className="text-sm text-gray-700 truncate pr-2">
+                        {type}
+                      </span>
+                      <button
+                        onClick={() => removeGuestType(index)}
+                        className="text-red-400 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))
+                ) : (
+                  /* Show "Guest" only when no guest types exist */
+                  <div className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
+                    <span className="text-sm text-gray-700 truncate pr-2">
+                      Guest
+                    </span>
+                    {/* Guest type cannot be deleted since it's default */}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1613,9 +1654,10 @@ const MainData = ({
           onClick={handlePreviousClick}
           disabled={currentStep === 0 || isLoading}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border
-            ${currentStep === 0 || isLoading
-              ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
-              : "text-slate-800 border-gray-300 hover:bg-gray-50"
+            ${
+              currentStep === 0 || isLoading
+                ? "text-gray-400 bg-gray-100 cursor-not-allowed border-gray-200"
+                : "text-slate-800 border-gray-300 hover:bg-gray-50"
             }`}
         >
           ← Previous
@@ -1624,9 +1666,10 @@ const MainData = ({
           onClick={handleNext}
           disabled={isLoading}
           className={`w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2
-            ${isLoading
-              ? "bg-slate-600 cursor-not-allowed text-white"
-              : "bg-slate-800 hover:bg-slate-900 text-white"
+            ${
+              isLoading
+                ? "bg-slate-600 cursor-not-allowed text-white"
+                : "bg-slate-800 hover:bg-slate-900 text-white"
             }`}
         >
           {isLoading ? (
@@ -1644,9 +1687,7 @@ const MainData = ({
 
       {/* Help Section */}
       <div className="mt-6 sm:mt-8 lg:mt-12 flex justify-center sm:justify-end">
-        <button
-          className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors"
-        >
+        <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors">
           <span className="text-center sm:text-left">
             Can't find what you're looking for?
           </span>

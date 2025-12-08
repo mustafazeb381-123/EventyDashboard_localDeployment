@@ -1,8 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, Check, MapPin, Info, QrCode } from "lucide-react";
+import {
+  ChevronLeft,
+  Check,
+  MapPin,
+  Info,
+  QrCode,
+  Calendar,
+  Clock,
+  Users,
+} from "lucide-react";
 import { ToastContainer } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { getEventbyId } from "@/apis/apiHelpers";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -114,68 +124,74 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
     onChange: (value: boolean) => void;
     showQR?: boolean;
   }) => {
-    const styles = enabled
-      ? {
-          border: "border-blue-200",
-          bg: "bg-white",
-          iconBg: "bg-blue-500",
-          iconColor: "text-white",
-          titleColor: "text-blue-600",
-          switchBg: "bg-blue-600",
-        }
-      : {
-          border: "border-gray-200",
-          bg: "bg-gray-50",
-          iconBg: "bg-gray-200",
-          iconColor: "text-gray-500",
-          titleColor: "text-gray-500",
-          switchBg: "bg-gray-300",
-        };
-
     return (
       <div
-        className={`p-6 rounded-2xl ${styles.border} ${styles.bg} border-2 h-64`}
+        className={`group relative p-6 rounded-2xl border-2 transition-all duration-300 h-64 cursor-pointer ${
+          enabled
+            ? "border-blue-500 bg-gradient-to-br from-blue-50 to-white shadow-lg shadow-blue-100/50"
+            : "border-gray-200 bg-white hover:border-gray-300 hover:shadow-md"
+        }`}
+        onClick={() => onChange(!enabled)}
       >
         <div className="flex items-center justify-between mb-6">
-          <span className={`text-sm font-medium ${styles.titleColor}`}>
+          <span
+            className={`text-sm font-semibold font-poppins transition-colors ${
+              enabled ? "text-blue-700" : "text-gray-600"
+            }`}
+          >
             {title}
           </span>
           <button
-            onClick={() => onChange(!enabled)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 ${styles.switchBg}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              onChange(!enabled);
+            }}
+            className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+              enabled
+                ? "bg-blue-600 focus:ring-blue-500"
+                : "bg-gray-300 focus:ring-gray-400"
+            }`}
           >
             <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 shadow-sm ${
+              className={`inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-300 shadow-lg ${
                 enabled ? "translate-x-6" : "translate-x-1"
               }`}
             />
           </button>
         </div>
 
-        <div className="flex flex-col items-center justify-center flex-1">
+        <div className="flex flex-col items-center justify-center flex-1 -mt-2">
           <div
-            className={`w-20 h-20 rounded-full ${styles.iconBg} flex items-center justify-center mb-4`}
+            className={`w-24 h-24 rounded-2xl flex items-center justify-center mb-4 transition-all duration-300 ${
+              enabled
+                ? "bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-200 scale-110"
+                : "bg-gray-100 group-hover:bg-gray-200"
+            }`}
           >
             {showQR && enabled ? (
-              <div className={`${styles.iconColor}`}></div>
+              <div className="w-20 h-20 bg-white rounded-xl p-2 shadow-inner">
+                <div className="w-full h-full bg-gray-900 rounded-lg grid grid-cols-4 gap-0.5 p-1">
+                  {[...Array(16)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-sm transition-all ${
+                        Math.random() > 0.5 ? "bg-white" : "bg-gray-900"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
             ) : (
-              <Icon size={32} className={styles.iconColor} />
+              <Icon
+                size={40}
+                className={enabled ? "text-white" : "text-gray-400"}
+              />
             )}
           </div>
-
-          {showQR && enabled && (
-            <div className="mt-4">
-              <div className="w-16 h-16 bg-gray-800 rounded-lg grid grid-cols-3 gap-1 p-1">
-                {[...Array(9)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`rounded-sm ${
-                      [0, 2, 4, 6, 8].includes(i) ? "bg-white" : "bg-gray-600"
-                    }`}
-                  />
-                ))}
-              </div>
-            </div>
+          {enabled && (
+            <span className="text-xs font-medium text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
+              Active
+            </span>
           )}
         </div>
       </div>
@@ -191,14 +207,15 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
               {[...Array(4)].map((_, i) => (
                 <div
                   key={i}
-                  className="p-6 rounded-2xl bg-gray-100 border-2 h-64 animate-pulse"
+                  className="p-6 rounded-2xl bg-white border-2 border-gray-200 h-64"
                 >
                   <div className="flex items-center justify-between mb-6">
-                    <div className="h-4 bg-gray-200 rounded w-24"></div>
-                    <div className="w-11 h-6 bg-gray-200 rounded-full"></div>
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-7 w-12 rounded-full" />
                   </div>
                   <div className="flex flex-col items-center justify-center flex-1">
-                    <div className="w-20 h-20 bg-gray-200 rounded-full mb-4"></div>
+                    <Skeleton className="w-24 h-24 rounded-2xl mb-4" />
+                    <Skeleton className="h-6 w-16 rounded-full" />
                   </div>
                 </div>
               ))}
@@ -234,96 +251,183 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
           )}
         </div>
 
-        <div className="bg-gray-50 rounded-lg p-4">
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="flex justify-between items-center p-4 border-b border-gray-100">
-              <span className="text-sm text-gray-500">Preview</span>
-              <div className="flex gap-2">
-                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-inner">
+          <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
+            {/* Browser Header */}
+            <div className="flex justify-between items-center px-4 py-3 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 bg-red-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                  <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+                </div>
+                <span className="text-xs text-gray-500 font-medium ml-2">
+                  Preview
+                </span>
+              </div>
+              <div className="w-8 h-6 bg-white border border-gray-300 rounded text-xs text-gray-400 flex items-center justify-center">
+                🔒
               </div>
             </div>
 
-            <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
-              <div className="bg-white rounded px-3 py-1 text-xs text-gray-500 border">
-                https://www.eventy.com/registration/
-                {eventName}
+            {/* URL Bar */}
+            <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+              <div className="bg-white rounded-lg px-3 py-1.5 text-xs text-gray-500 border border-gray-200 font-mono flex items-center gap-2">
+                <span className="text-blue-500">https://</span>
+                <span>
+                  eventy.com/registration/
+                  {eventName?.toLowerCase().replace(/\s+/g, "-") || "event"}
+                </span>
               </div>
             </div>
 
-            <div className="p-6">
+            {/* Preview Content */}
+            <div className="p-8 bg-white">
               <div className="text-center mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                <div className="inline-block p-3 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-lg">
+                  <Calendar className="text-white" size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3 font-poppins">
                   {eventName || "Event Name"}
                 </h2>
-                <p className="text-sm text-gray-500 mb-1">
-                  📅 June 23, 2024 - June 05, 2025
-                </p>
-                <p className="text-sm text-gray-500">🎫 2 Guest</p>
+                <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar size={16} className="text-gray-400" />
+                    <span>June 23, 2024 - June 05, 2025</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Users size={16} className="text-gray-400" />
+                    <span>2 Guests</span>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-medium text-gray-900 mb-2">
-                    About (Description)
+              <div className="space-y-5">
+                {/* About Section */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                  <h3 className="font-semibold text-gray-900 mb-2 font-poppins">
+                    About Event
                   </h3>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    Lorem Ipsum has been the industry standard dummy text ever
-                    since the 1500s...
+                    Join us for an exciting event featuring industry leaders,
+                    networking opportunities, and insightful sessions...
                   </p>
                 </div>
 
-                <div className="flex items-center justify-center py-8">
+                {/* Success Badge */}
+                <div className="flex items-center justify-center py-6">
                   <div className="text-center">
-                    <div className="w-16 h-16 mx-auto mb-3 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Check size={24} className="text-blue-600" />
+                    <div className="w-20 h-20 mx-auto mb-3 bg-gradient-to-br from-green-400 to-green-500 rounded-full flex items-center justify-center shadow-lg">
+                      <Check size={32} className="text-white" strokeWidth={3} />
                     </div>
-                    <p className="text-blue-600 font-medium">
-                      Registration Done
+                    <p className="text-green-600 font-semibold text-lg font-poppins">
+                      Registration Complete!
+                    </p>
+                    <p className="text-gray-500 text-xs mt-1">
+                      Your registration has been confirmed
                     </p>
                   </div>
                 </div>
 
+                {/* Confirmation Message */}
                 {toggleStates.confirmationMsg && (
-                  <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex justify-center items-center gap-2">
-                    <Check size={16} className="text-green-600" />
-                    <span className="text-sm text-green-800 font-medium">
-                      Registration Confirmed Successfully!
-                    </span>
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <Check size={20} className="text-white" strokeWidth={3} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-green-800 font-poppins">
+                        Registration Confirmed Successfully!
+                      </p>
+                      <p className="text-xs text-green-600 mt-0.5">
+                        You will receive a confirmation email shortly
+                      </p>
+                    </div>
                   </div>
                 )}
 
+                {/* QR Code */}
                 {toggleStates.userQRCode && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg text-center flex justify-center items-center gap-3">
-                    <QrCode />
-                    <span className="text-sm text-blue-800 font-medium">
-                      Your Event QR Code
-                    </span>
+                  <div className="mt-4 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl text-center shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <QrCode size={20} className="text-blue-600" />
+                      <span className="text-sm font-semibold text-blue-800 font-poppins">
+                        Your Event QR Code
+                      </span>
+                    </div>
+                    <div className="w-32 h-32 mx-auto bg-white rounded-xl p-3 shadow-inner border-2 border-blue-200">
+                      <div className="w-full h-full bg-gray-900 rounded-lg grid grid-cols-4 gap-0.5 p-1">
+                        {[...Array(16)].map((_, i) => (
+                          <div
+                            key={i}
+                            className={`rounded-sm ${
+                              Math.random() > 0.5 ? "bg-white" : "bg-gray-900"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-blue-600 mt-3">
+                      Present this QR code at the event entrance
+                    </p>
                   </div>
                 )}
 
+                {/* Location */}
                 {toggleStates.location && (
-                  <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg flex justify-center items-center gap-2">
-                    <MapPin size={16} className="text-orange-600" />
-                    <span className="text-sm text-orange-800 font-medium">
-                      Event Location: Main Conference Hall
-                    </span>
+                  <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                      <MapPin
+                        size={20}
+                        className="text-white"
+                        strokeWidth={2.5}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-orange-800 font-poppins">
+                        Event Location
+                      </p>
+                      <p className="text-xs text-orange-600 mt-0.5">
+                        Main Conference Hall, 123 Event Street
+                      </p>
+                    </div>
                   </div>
                 )}
 
+                {/* Event Details */}
                 {toggleStates.eventDetails && (
-                  <div className="mt-4 p-4 bg-purple-50 border border-purple-200 rounded-lg text-center">
-                    <div className="flex justify-center items-center mb-2 gap-2">
-                      <Info size={16} className="text-purple-600" />
-                      <span className="text-sm text-purple-800 font-medium">
+                  <div className="mt-4 p-5 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <Info size={18} className="text-purple-600" />
+                      <span className="text-sm font-semibold text-purple-800 font-poppins">
                         Event Schedule
                       </span>
                     </div>
-                    <div className="text-xs text-purple-600 space-y-1">
-                      <p>9:00 AM - Registration & Welcome</p>
-                      <p>10:00 AM - Opening Keynote</p>
-                      <p>12:00 PM - Networking Lunch</p>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                        <Clock size={16} className="text-purple-500" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-purple-900">
+                            9:00 AM - Registration & Welcome
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                        <Clock size={16} className="text-purple-500" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-purple-900">
+                            10:00 AM - Opening Keynote
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                        <Clock size={16} className="text-purple-500" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-purple-900">
+                            12:00 PM - Networking Lunch
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 )}

@@ -173,12 +173,14 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   };
 
   const renderCustomBadgePreview = (template: BadgeTemplate) => {
+    const previewWidth = template.width * 40;
+    
     return (
       <div className="flex flex-col items-center justify-center p-4">
         <div
           className="relative rounded-lg shadow-md overflow-hidden border-2 border-gray-200"
           style={{
-            width: `${template.width * 40}px`,
+            width: `${previewWidth}px`,
             height: `${template.height * 40}px`,
             backgroundColor: template.hasBackground ? template.bgColor : "transparent",
             backgroundImage:
@@ -197,11 +199,11 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 height: `${(template.photoSize.height || 200) * 0.2}px`,
                 left:
                   template.photoAlignment === "left"
-                    ? "10px"
+                    ? `${(template.photoPosition?.x || 200) * 0.2}px`
                     : template.photoAlignment === "right"
-                    ? "auto"
+                    ? `auto`
                     : "50%",
-                right: template.photoAlignment === "right" ? "10px" : "auto",
+                right: template.photoAlignment === "right" ? `${(template.photoPosition?.x || 200) * 0.2}px` : "auto",
                 transform:
                   template.photoAlignment === "center" ? "translateX(-50%)" : "none",
                 top: `${(template.photoPosition?.y || 60) * 0.2}px`,
@@ -213,14 +215,25 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
           {template.hasName && template.nameText && (
             <div
-              className="absolute left-0 right-0"
+              className="absolute"
               style={{
                 top: `${(template.nameText.position?.y || 280) * 0.2}px`,
+                left: template.nameText.alignment === "left" ? 
+                  `${(template.nameText.position?.x || 200) * 0.2}px` : 
+                  template.nameText.alignment === "right" ? 
+                  "auto" : 
+                  "50%",
+                right: template.nameText.alignment === "right" ? 
+                  `${(template.nameText.position?.x || 200) * 0.2}px` : 
+                  "auto",
+                transform: template.nameText.alignment === "center" ? 
+                  `translateX(-${(template.nameText.position?.x || 200) * 0.2}px)` : 
+                  "none",
                 textAlign: template.nameText.alignment || "center",
               }}
             >
               <div
-                className="font-bold px-2"
+                className="font-bold px-2 whitespace-nowrap"
                 style={{
                   fontSize: `${(template.nameText.size || 24) * 0.2}px`,
                   color: template.nameText.color || "#ffffff",
@@ -233,14 +246,25 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
           {template.hasCompany && template.companyText && (
             <div
-              className="absolute left-0 right-0"
+              className="absolute"
               style={{
                 top: `${(template.companyText.position?.y || 315) * 0.2}px`,
+                left: template.companyText.alignment === "left" ? 
+                  `${(template.companyText.position?.x || 200) * 0.2}px` : 
+                  template.companyText.alignment === "right" ? 
+                  "auto" : 
+                  "50%",
+                right: template.companyText.alignment === "right" ? 
+                  `${(template.companyText.position?.x || 200) * 0.2}px` : 
+                  "auto",
+                transform: template.companyText.alignment === "center" ? 
+                  `translateX(-${(template.companyText.position?.x || 200) * 0.2}px)` : 
+                  "none",
                 textAlign: template.companyText.alignment || "center",
               }}
             >
               <div
-                className="px-2"
+                className="px-2 whitespace-nowrap"
                 style={{
                   fontSize: `${(template.companyText.size || 18) * 0.2}px`,
                   color: template.companyText.color || "#cccccc",
@@ -253,14 +277,25 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
           {template.hasTitle && template.titleText && (
             <div
-              className="absolute left-0 right-0"
+              className="absolute"
               style={{
                 top: `${(template.titleText.position?.y || 350) * 0.2}px`,
+                left: template.titleText.alignment === "left" ? 
+                  `${(template.titleText.position?.x || 200) * 0.2}px` : 
+                  template.titleText.alignment === "right" ? 
+                  "auto" : 
+                  "50%",
+                right: template.titleText.alignment === "right" ? 
+                  `${(template.titleText.position?.x || 200) * 0.2}px` : 
+                  "auto",
+                transform: template.titleText.alignment === "center" ? 
+                  `translateX(-${(template.titleText.position?.x || 200) * 0.2}px)` : 
+                  "none",
                 textAlign: template.titleText.alignment || "center",
               }}
             >
               <div
-                className="px-2"
+                className="px-2 whitespace-nowrap"
                 style={{
                   fontSize: `${(template.titleText.size || 16) * 0.2}px`,
                   color: template.titleText.color || "#999999",
@@ -308,6 +343,64 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
         />
         <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
       </label>
+    </div>
+  );
+
+  // Position input component
+  const PositionInput = ({ 
+    label, 
+    value, 
+    onChange,
+    type = "y"
+  }: { 
+    label: string; 
+    value: number; 
+    onChange: (value: number) => void;
+    type?: "x" | "y";
+  }) => (
+    <div>
+      <label className="block text-sm text-gray-600 mb-1">
+        {type === "x" ? "X Position (px)" : "Y Position (px)"}
+      </label>
+      <input
+        type="number"
+        value={value}
+        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
+        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+      />
+    </div>
+  );
+
+  // Alignment buttons component
+  const AlignmentButtons = ({ 
+    value, 
+    onChange 
+  }: { 
+    value: "left" | "center" | "right"; 
+    onChange: (value: "left" | "center" | "right") => void;
+  }) => (
+    <div>
+      <label className="block text-sm text-gray-600 mb-2">
+        Alignment
+      </label>
+      <div className="flex gap-2">
+        {["left", "center", "right"].map((align) => (
+          <button
+            key={align}
+            type="button"
+            onClick={() => onChange(align as "left" | "center" | "right")}
+            className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
+              value === align
+                ? "border-pink-500 bg-pink-50"
+                : "border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            {align === "left" && <AlignLeft size={16} className="mx-auto" />}
+            {align === "center" && <AlignCenter size={16} className="mx-auto" />}
+            {align === "right" && <AlignRight size={16} className="mx-auto" />}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
@@ -516,51 +609,43 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">
-                      Alignment
-                    </label>
-                    <div className="flex gap-2">
-                      {["left", "center", "right"].map((align) => (
-                        <button
-                          key={align}
-                          onClick={() =>
-                            setEditingTemplate({
-                              ...editingTemplate,
-                              photoAlignment: align as "left" | "center" | "right",
-                            })
-                          }
-                          className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
-                            editingTemplate.photoAlignment === align
-                              ? "border-pink-500 bg-pink-50"
-                              : "border-gray-300 hover:border-gray-400"
-                          }`}
-                        >
-                          {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-                          {align === "center" && <AlignCenter size={16} className="mx-auto" />}
-                          {align === "right" && <AlignRight size={16} className="mx-auto" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <AlignmentButtons
+                    value={editingTemplate.photoAlignment}
+                    onChange={(alignment) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        photoAlignment: alignment,
+                      })
+                    }
+                  />
 
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">
-                      Y Position (px)
-                    </label>
-                    <input
-                      type="number"
-                      value={editingTemplate.photoPosition?.y || 60}
-                      onChange={(e) =>
+                  <div className="grid grid-cols-2 gap-4">
+                    <PositionInput
+                      label="X Position"
+                      type="x"
+                      value={editingTemplate.photoPosition?.x || 200}
+                      onChange={(value) =>
                         setEditingTemplate({
                           ...editingTemplate,
                           photoPosition: {
                             ...editingTemplate.photoPosition,
-                            y: parseInt(e.target.value) || 60,
+                            x: value,
                           },
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                    <PositionInput
+                      label="Y Position"
+                      value={editingTemplate.photoPosition?.y || 60}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          photoPosition: {
+                            ...editingTemplate.photoPosition,
+                            y: value,
+                          },
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -578,7 +663,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasName && (
-                <div className="space-y-3 ml-4">
+                <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
@@ -616,53 +701,52 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-2">Alignment</label>
-                    <div className="flex gap-2">
-                      {["left", "center", "right"].map((align) => (
-                        <button
-                          key={align}
-                          onClick={() =>
-                            setEditingTemplate({
-                              ...editingTemplate,
-                              nameText: {
-                                ...editingTemplate.nameText,
-                                alignment: align as "left" | "center" | "right",
-                              },
-                            })
-                          }
-                          className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
-                            editingTemplate.nameText?.alignment === align
-                              ? "border-pink-500 bg-pink-50"
-                              : "border-gray-300 hover:border-gray-400"
-                          }`}
-                        >
-                          {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-                          {align === "center" && <AlignCenter size={16} className="mx-auto" />}
-                          {align === "right" && <AlignRight size={16} className="mx-auto" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  <AlignmentButtons
+                    value={editingTemplate.nameText?.alignment || "center"}
+                    onChange={(alignment) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        nameText: {
+                          ...editingTemplate.nameText,
+                          alignment: alignment,
+                        },
+                      })
+                    }
+                  />
 
-                  <div>
-                    <label className="block text-sm text-gray-600 mb-1">Y Position (px)</label>
-                    <input
-                      type="number"
-                      value={editingTemplate.nameText?.position?.y || 280}
-                      onChange={(e) =>
+                  <div className="grid grid-cols-2 gap-4">
+                    <PositionInput
+                      label="X Position"
+                      type="x"
+                      value={editingTemplate.nameText?.position?.x || 200}
+                      onChange={(value) =>
                         setEditingTemplate({
                           ...editingTemplate,
                           nameText: {
                             ...editingTemplate.nameText,
                             position: {
                               ...editingTemplate.nameText?.position,
-                              y: parseInt(e.target.value) || 280,
+                              x: value,
                             },
                           },
                         })
                       }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                    />
+                    <PositionInput
+                      label="Y Position"
+                      value={editingTemplate.nameText?.position?.y || 280}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          nameText: {
+                            ...editingTemplate.nameText,
+                            position: {
+                              ...editingTemplate.nameText?.position,
+                              y: value,
+                            },
+                          },
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -680,7 +764,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasCompany && (
-                <div className="space-y-3 ml-4">
+                <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
@@ -717,6 +801,55 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                     </div>
                   </div>
+
+                  <AlignmentButtons
+                    value={editingTemplate.companyText?.alignment || "center"}
+                    onChange={(alignment) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        companyText: {
+                          ...editingTemplate.companyText,
+                          alignment: alignment,
+                        },
+                      })
+                    }
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <PositionInput
+                      label="X Position"
+                      type="x"
+                      value={editingTemplate.companyText?.position?.x || 200}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          companyText: {
+                            ...editingTemplate.companyText,
+                            position: {
+                              ...editingTemplate.companyText?.position,
+                              x: value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <PositionInput
+                      label="Y Position"
+                      value={editingTemplate.companyText?.position?.y || 315}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          companyText: {
+                            ...editingTemplate.companyText,
+                            position: {
+                              ...editingTemplate.companyText?.position,
+                              y: value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               )}
 
@@ -731,6 +864,96 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 label="Title Text"
               />
 
+              {editingTemplate.hasTitle && (
+                <div className="space-y-4 ml-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
+                      <input
+                        type="number"
+                        value={editingTemplate.titleText?.size || 16}
+                        onChange={(e) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            titleText: {
+                              ...editingTemplate.titleText,
+                              size: parseInt(e.target.value) || 16,
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Color</label>
+                      <input
+                        type="color"
+                        value={editingTemplate.titleText?.color || "#999999"}
+                        onChange={(e) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            titleText: {
+                              ...editingTemplate.titleText,
+                              color: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
+                      />
+                    </div>
+                  </div>
+
+                  <AlignmentButtons
+                    value={editingTemplate.titleText?.alignment || "center"}
+                    onChange={(alignment) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        titleText: {
+                          ...editingTemplate.titleText,
+                          alignment: alignment,
+                        },
+                      })
+                    }
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <PositionInput
+                      label="X Position"
+                      type="x"
+                      value={editingTemplate.titleText?.position?.x || 200}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          titleText: {
+                            ...editingTemplate.titleText,
+                            position: {
+                              ...editingTemplate.titleText?.position,
+                              x: value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                    <PositionInput
+                      label="Y Position"
+                      value={editingTemplate.titleText?.position?.y || 350}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          titleText: {
+                            ...editingTemplate.titleText,
+                            position: {
+                              ...editingTemplate.titleText?.position,
+                              y: value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+
               <ToggleSwitch
                 checked={editingTemplate.hasQrCode}
                 onChange={(checked) =>
@@ -741,6 +964,81 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 }
                 label="QR Code"
               />
+
+              {editingTemplate.hasQrCode && (
+                <div className="space-y-4 ml-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Width (px)
+                      </label>
+                      <input
+                        type="number"
+                        value={editingTemplate.qrCodeSize?.width || 120}
+                        onChange={(e) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            qrCodeSize: {
+                              ...editingTemplate.qrCodeSize,
+                              width: parseInt(e.target.value) || 120,
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Height (px)
+                      </label>
+                      <input
+                        type="number"
+                        value={editingTemplate.qrCodeSize?.height || 120}
+                        onChange={(e) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            qrCodeSize: {
+                              ...editingTemplate.qrCodeSize,
+                              height: parseInt(e.target.value) || 120,
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <PositionInput
+                      label="X Position"
+                      type="x"
+                      value={editingTemplate.qrCodePosition?.x || 200}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          qrCodePosition: {
+                            ...editingTemplate.qrCodePosition,
+                            x: value,
+                          },
+                        })
+                      }
+                    />
+                    <PositionInput
+                      label="Y Position"
+                      value={editingTemplate.qrCodePosition?.y || 400}
+                      onChange={(value) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          qrCodePosition: {
+                            ...editingTemplate.qrCodePosition,
+                            y: value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -867,7 +1165,6 @@ export const CardFooter2: React.FC<{ color?: string }> = ({
 );
 
 // -------------------- PREVIEW MODAL COMPONENTS --------------------
-// Recreating the original Badge preview components exactly as they were
 interface BadgePreviewProps {
   badge: Badge;
   event: any;
@@ -1385,6 +1682,8 @@ interface CustomBadgePreviewProps {
 }
 
 const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClose }) => {
+  const previewWidth = template.width * 80;
+  
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
@@ -1407,7 +1706,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                 <div
                   className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300"
                   style={{
-                    width: `${template.width * 80}px`,
+                    width: `${previewWidth}px`,
                     height: `${template.height * 80}px`,
                     backgroundColor: template.hasBackground ? template.bgColor : "transparent",
                     backgroundImage:
@@ -1426,11 +1725,11 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                         height: `${(template.photoSize.height || 200) * 0.4}px`,
                         left:
                           template.photoAlignment === "left"
-                            ? "40px"
+                            ? `${(template.photoPosition?.x || 200) * 0.4}px`
                             : template.photoAlignment === "right"
                             ? "auto"
                             : "50%",
-                        right: template.photoAlignment === "right" ? "40px" : "auto",
+                        right: template.photoAlignment === "right" ? `${(template.photoPosition?.x || 200) * 0.4}px` : "auto",
                         transform:
                           template.photoAlignment === "center" ? "translateX(-50%)" : "none",
                         top: `${(template.photoPosition?.y || 60) * 0.4}px`,
@@ -1444,14 +1743,25 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
 
                   {template.hasName && template.nameText && (
                     <div
-                      className="absolute left-0 right-0"
+                      className="absolute"
                       style={{
                         top: `${(template.nameText.position?.y || 280) * 0.4}px`,
+                        left: template.nameText.alignment === "left" ? 
+                          `${(template.nameText.position?.x || 200) * 0.4}px` : 
+                          template.nameText.alignment === "right" ? 
+                          "auto" : 
+                          "50%",
+                        right: template.nameText.alignment === "right" ? 
+                          `${(template.nameText.position?.x || 200) * 0.4}px` : 
+                          "auto",
+                        transform: template.nameText.alignment === "center" ? 
+                          `translateX(-${(template.nameText.position?.x || 200) * 0.4}px)` : 
+                          "none",
                         textAlign: template.nameText.alignment || "center",
                       }}
                     >
                       <div
-                        className="font-bold px-4"
+                        className="font-bold px-4 whitespace-nowrap"
                         style={{
                           fontSize: `${(template.nameText.size || 24) * 0.4}px`,
                           color: template.nameText.color || "#ffffff",
@@ -1464,14 +1774,25 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
 
                   {template.hasCompany && template.companyText && (
                     <div
-                      className="absolute left-0 right-0"
+                      className="absolute"
                       style={{
                         top: `${(template.companyText.position?.y || 315) * 0.4}px`,
+                        left: template.companyText.alignment === "left" ? 
+                          `${(template.companyText.position?.x || 200) * 0.4}px` : 
+                          template.companyText.alignment === "right" ? 
+                          "auto" : 
+                          "50%",
+                        right: template.companyText.alignment === "right" ? 
+                          `${(template.companyText.position?.x || 200) * 0.4}px` : 
+                          "auto",
+                        transform: template.companyText.alignment === "center" ? 
+                          `translateX(-${(template.companyText.position?.x || 200) * 0.4}px)` : 
+                          "none",
                         textAlign: template.companyText.alignment || "center",
                       }}
                     >
                       <div
-                        className="px-4"
+                        className="px-4 whitespace-nowrap"
                         style={{
                           fontSize: `${(template.companyText.size || 18) * 0.4}px`,
                           color: template.companyText.color || "#cccccc",
@@ -1484,14 +1805,25 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
 
                   {template.hasTitle && template.titleText && (
                     <div
-                      className="absolute left-0 right-0"
+                      className="absolute"
                       style={{
                         top: `${(template.titleText.position?.y || 350) * 0.4}px`,
+                        left: template.titleText.alignment === "left" ? 
+                          `${(template.titleText.position?.x || 200) * 0.4}px` : 
+                          template.titleText.alignment === "right" ? 
+                          "auto" : 
+                          "50%",
+                        right: template.titleText.alignment === "right" ? 
+                          `${(template.titleText.position?.x || 200) * 0.4}px` : 
+                          "auto",
+                        transform: template.titleText.alignment === "center" ? 
+                          `translateX(-${(template.titleText.position?.x || 200) * 0.4}px)` : 
+                          "none",
                         textAlign: template.titleText.alignment || "center",
                       }}
                     >
                       <div
-                        className="px-4"
+                        className="px-4 whitespace-nowrap"
                         style={{
                           fontSize: `${(template.titleText.size || 16) * 0.4}px`,
                           color: template.titleText.color || "#999999",
@@ -1529,7 +1861,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                 <div
                   className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300 bg-gray-100"
                   style={{
-                    width: `${template.width * 80}px`,
+                    width: `${previewWidth}px`,
                     height: `${template.height * 80}px`,
                   }}
                 >
@@ -2034,12 +2366,14 @@ const Badges: React.FC<BadgesProps> = ({
   };
 
   const renderCustomBadgePreview = (template: BadgeTemplate) => {
+    const previewWidth = template.width * 40;
+    
     return (
       <div className="flex flex-col items-center justify-center p-4">
         <div
           className="relative rounded-lg shadow-md overflow-hidden border-2 border-gray-200"
           style={{
-            width: `${template.width * 40}px`,
+            width: `${previewWidth}px`,
             height: `${template.height * 40}px`,
             backgroundColor: template.hasBackground ? template.bgColor : "transparent",
             backgroundImage:
@@ -2058,11 +2392,11 @@ const Badges: React.FC<BadgesProps> = ({
                 height: `${(template.photoSize.height || 200) * 0.2}px`,
                 left:
                   template.photoAlignment === "left"
-                    ? "10px"
+                    ? `${(template.photoPosition?.x || 200) * 0.2}px`
                     : template.photoAlignment === "right"
                     ? "auto"
                     : "50%",
-                right: template.photoAlignment === "right" ? "10px" : "auto",
+                right: template.photoAlignment === "right" ? `${(template.photoPosition?.x || 200) * 0.2}px` : "auto",
                 transform:
                   template.photoAlignment === "center" ? "translateX(-50%)" : "none",
                 top: `${(template.photoPosition?.y || 60) * 0.2}px`,
@@ -2074,14 +2408,25 @@ const Badges: React.FC<BadgesProps> = ({
 
           {template.hasName && template.nameText && (
             <div
-              className="absolute left-0 right-0"
+              className="absolute"
               style={{
                 top: `${(template.nameText.position?.y || 280) * 0.2}px`,
+                left: template.nameText.alignment === "left" ? 
+                  `${(template.nameText.position?.x || 200) * 0.2}px` : 
+                  template.nameText.alignment === "right" ? 
+                  "auto" : 
+                  "50%",
+                right: template.nameText.alignment === "right" ? 
+                  `${(template.nameText.position?.x || 200) * 0.2}px` : 
+                  "auto",
+                transform: template.nameText.alignment === "center" ? 
+                  `translateX(-${(template.nameText.position?.x || 200) * 0.2}px)` : 
+                  "none",
                 textAlign: template.nameText.alignment || "center",
               }}
             >
               <div
-                className="font-bold px-2"
+                className="font-bold px-2 whitespace-nowrap"
                 style={{
                   fontSize: `${(template.nameText.size || 24) * 0.2}px`,
                   color: template.nameText.color || "#ffffff",
@@ -2094,14 +2439,25 @@ const Badges: React.FC<BadgesProps> = ({
 
           {template.hasCompany && template.companyText && (
             <div
-              className="absolute left-0 right-0"
+              className="absolute"
               style={{
                 top: `${(template.companyText.position?.y || 315) * 0.2}px`,
+                left: template.companyText.alignment === "left" ? 
+                  `${(template.companyText.position?.x || 200) * 0.2}px` : 
+                  template.companyText.alignment === "right" ? 
+                  "auto" : 
+                  "50%",
+                right: template.companyText.alignment === "right" ? 
+                  `${(template.companyText.position?.x || 200) * 0.2}px` : 
+                  "auto",
+                transform: template.companyText.alignment === "center" ? 
+                  `translateX(-${(template.companyText.position?.x || 200) * 0.2}px)` : 
+                  "none",
                 textAlign: template.companyText.alignment || "center",
               }}
             >
               <div
-                className="px-2"
+                className="px-2 whitespace-nowrap"
                 style={{
                   fontSize: `${(template.companyText.size || 18) * 0.2}px`,
                   color: template.companyText.color || "#cccccc",
@@ -2114,14 +2470,25 @@ const Badges: React.FC<BadgesProps> = ({
 
           {template.hasTitle && template.titleText && (
             <div
-              className="absolute left-0 right-0"
+              className="absolute"
               style={{
                 top: `${(template.titleText.position?.y || 350) * 0.2}px`,
+                left: template.titleText.alignment === "left" ? 
+                  `${(template.titleText.position?.x || 200) * 0.2}px` : 
+                  template.titleText.alignment === "right" ? 
+                  "auto" : 
+                  "50%",
+                right: template.titleText.alignment === "right" ? 
+                  `${(template.titleText.position?.x || 200) * 0.2}px` : 
+                  "auto",
+                transform: template.titleText.alignment === "center" ? 
+                  `translateX(-${(template.titleText.position?.x || 200) * 0.2}px)` : 
+                  "none",
                 textAlign: template.titleText.alignment || "center",
               }}
             >
               <div
-                className="px-2"
+                className="px-2 whitespace-nowrap"
                 style={{
                   fontSize: `${(template.titleText.size || 16) * 0.2}px`,
                   color: template.titleText.color || "#999999",

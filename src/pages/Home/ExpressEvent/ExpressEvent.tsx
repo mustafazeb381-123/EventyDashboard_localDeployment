@@ -3,7 +3,7 @@ import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import RegistrationForm from "./RegistrationForm/RegistrationFormOld";
+import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
 import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
@@ -113,11 +113,11 @@ const ExpressEvent = () => {
       console.log("Fetching registration form for event:", eventId);
       // fetchRegistrationForm(eventId);
     },
-    "badge": (eventId) => {
+    badge: (eventId) => {
       console.log("Fetching badge data for event:", eventId);
       // fetchBadgeData(eventId);
     },
-    "confirmation": (eventId) => {
+    confirmation: (eventId) => {
       console.log("Fetching confirmation data for event:", eventId);
       // fetchConfirmation(eventId);
     },
@@ -133,7 +133,7 @@ const ExpressEvent = () => {
       console.log("Fetching mobile app management for event:", eventId);
       // fetchMobileAppManagement(eventId);
     },
-    "areas": (eventId) => {
+    areas: (eventId) => {
       console.log("Fetching areas for event:", eventId);
       // fetchAreas(eventId);
     },
@@ -143,7 +143,7 @@ const ExpressEvent = () => {
   useEffect(() => {
     if (!finalEventId) return;
     const step = steps[currentStep];
-    console.log('steps---++----', step)
+    console.log("steps---++----", step);
     if (step && stepEventFetchers[step.id]) {
       stepEventFetchers[step.id](finalEventId);
     }

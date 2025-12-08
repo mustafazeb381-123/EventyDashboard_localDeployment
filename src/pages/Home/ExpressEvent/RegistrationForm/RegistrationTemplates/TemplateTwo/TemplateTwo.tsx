@@ -1,5 +1,4 @@
-
-import { Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import TemplateForm from "./TemplateForm";
 
 const TemplateTwo = ({
@@ -19,7 +18,6 @@ const TemplateTwo = ({
     eventId,
     data
   );
-
 
   console.log("form data in template two ::::", data);
 
@@ -42,14 +40,20 @@ const TemplateTwo = ({
       {/* Left side (scrollable TemplateForm) */}
       <div className="w-full md:w-[70%] overflow-y-auto pr-2">
         {isLoading || !data || data.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg bg-gray-50">
-            <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
-            <p className="text-slate-600 text-lg font-medium mb-2">
-              Loading Template
-            </p>
-            <p className="text-slate-500 text-sm">
-              Please wait while we prepare the form fields...
-            </p>
+          <div className="space-y-6 py-8 border border-gray-200 rounded-lg bg-gray-50 p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-3/4" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-32 w-full" />
+              <div className="grid grid-cols-2 gap-4">
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+              <Skeleton className="h-12 w-1/3" />
+            </div>
           </div>
         ) : (
           <TemplateForm />
@@ -74,16 +78,17 @@ const TemplateTwo = ({
         <button
           onClick={handleUseTemplate}
           disabled={isLoading}
-          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${isLoading
-            ? "bg-gray-400 text-white cursor-not-allowed"
-            : "bg-slate-800 text-white hover:bg-slate-900"
-            }`}
+          className={`cursor-pointer p-3 rounded-lg text-sm font-poppins font-medium transition-colors flex items-center justify-center ${
+            isLoading
+              ? "bg-gray-400 text-white cursor-not-allowed"
+              : "bg-slate-800 text-white hover:bg-slate-900"
+          }`}
         >
           {isLoading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Loading...
-            </>
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded-full" />
+              <Skeleton className="h-4 w-16" />
+            </div>
           ) : (
             "Use Template →"
           )}
