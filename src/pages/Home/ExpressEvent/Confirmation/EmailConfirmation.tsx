@@ -1,9 +1,10 @@
-// email editor
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Check, ChevronLeft, X, Pencil, Plus, Trash2 } from "lucide-react";
 import EmailEditor from "react-email-editor";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+// ---------- Static Templates ----------
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
@@ -12,609 +13,173 @@ import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTempl
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
-// Define static templates for each flow type
 const STATIC_TEMPLATES = {
   thanks: [
-    {
-      id: "thanks-template-1",
-      title: "Thanks Template 1",
-      component: <ThanksTemplateOne />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "thanks"
-    },
-    {
-      id: "thanks-template-2",
-      title: "Thanks Template 2",
-      component: <ThanksTemplateTwo />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "thanks"
-    }
+    { id: "thanks-template-1", title: "Thanks Template 1", component: <ThanksTemplateOne />, html: null, design: null, isStatic: true, type: "thanks" },
+    { id: "thanks-template-2", title: "Thanks Template 2", component: <ThanksTemplateTwo />, html: null, design: null, isStatic: true, type: "thanks" },
   ],
   confirmation: [
-    {
-      id: "confirmation-template-1",
-      title: "Confirmation Template 1",
-      component: <ConfirmationTemplateOne />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "confirmation"
-    }
+    { id: "confirmation-template-1", title: "Confirmation Template 1", component: <ConfirmationTemplateOne />, html: null, design: null, isStatic: true, type: "confirmation" },
   ],
   reminder: [
-    {
-      id: "reminder-template-1",
-      title: "Reminder Template 1",
-      component: <ReminderTemplateOne />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "reminder"
-    },
-    {
-      id: "reminder-template-2",
-      title: "Reminder Template 2",
-      component: <ReminderTemplateTwo />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "reminder"
-    }
+    { id: "reminder-template-1", title: "Reminder Template 1", component: <ReminderTemplateOne />, html: null, design: null, isStatic: true, type: "reminder" },
+    { id: "reminder-template-2", title: "Reminder Template 2", component: <ReminderTemplateTwo />, html: null, design: null, isStatic: true, type: "reminder" },
   ],
   rejection: [
-    {
-      id: "rejection-template-1",
-      title: "Rejection Template 1",
-      component: <RejectionTemplateOne />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "rejection"
-    },
-    {
-      id: "rejection-template-2",
-      title: "Rejection Template 2",
-      component: <RejectionTemplateTwo />,
-      html: null,
-      design: null,
-      isStatic: true,
-      type: "rejection"
-    }
+    { id: "rejection-template-1", title: "Rejection Template 1", component: <RejectionTemplateOne />, html: null, design: null, isStatic: true, type: "rejection" },
+    { id: "rejection-template-2", title: "Rejection Template 2", component: <RejectionTemplateTwo />, html: null, design: null, isStatic: true, type: "rejection" },
   ]
 };
 
+// ---------- API Service ----------
+const apiService = {
+  getAuthToken() { return localStorage.getItem("token"); },
+
+  getEndpoint() { return "confirmation_templates"; },
+  getTypeParam(flowType: string) {
+    const map: Record<string, string> = {
+      thanks: "ConfirmationThanksTemplate",
+      confirmation: "ConfirmationRegisterTemplate",
+      reminder: "ConfirmationReminderTemplate",
+      rejection: "ConfirmationRejectionTemplate",
+    };
+    return map[flowType] || "ConfirmationThanksTemplate";
+  },
+
+  async getTemplates(eventId: string | number, flowType: string) {
+    const typeParam = this.getTypeParam(flowType);
+    const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}?type=${typeParam}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${this.getAuthToken()}`, "Content-Type": "application/json" } });
+    if (!res.ok) throw new Error(`Failed to fetch templates: ${res.status}`);
+    const data = await res.json();
+    return data.data || [];
+  },
+
+  async saveTemplate(eventId: string | number, flowType: string, html: string, title: string = "Custom Template") {
+    const payload = { confirmation_template: { content: html, default: false, type: this.getTypeParam(flowType) } };
+    const res = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${this.getAuthToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Failed to save template: ${res.status}`);
+    return res.json();
+  },
+
+  async updateTemplate(eventId: string | number, templateId: string | number, flowType: string, html: string) {
+    const payload = { confirmation_template: { content: html, type: this.getTypeParam(flowType) } };
+    const res = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}/${templateId}?type=${this.getTypeParam(flowType)}`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${this.getAuthToken()}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Failed to update template: ${res.status}`);
+    return res.json();
+  },
+
+  async deleteTemplate(eventId: string | number, templateId: string | number) {
+    const res = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}/${templateId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${this.getAuthToken()}` },
+    });
+    if (!res.ok) throw new Error(`Failed to delete template: ${res.status}`);
+    return res.status === 204 ? { success: true } : res.json();
+  },
+
+  convertApiTemplates(apiTemplates: any[], flowType: string) {
+    return apiTemplates.map((tpl, idx) => ({
+      id: `api-${tpl.id}`,
+      title: `${flowType.charAt(0).toUpperCase() + flowType.slice(1)} Template ${idx + 1}`,
+      component: null,
+      design: tpl.attributes?.design ? JSON.parse(tpl.attributes.design) : null,
+      html: tpl.attributes?.content || "",
+      apiId: tpl.id,
+      isStatic: false,
+      type: tpl.attributes?.type || flowType,
+    }));
+  }
+};
+
+// ---------- Modals ----------
 const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   const emailEditorRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const t = setTimeout(() => {
-      if (emailEditorRef.current?.editor && initialDesign) {
-        try {
-          emailEditorRef.current.editor.loadDesign(initialDesign);
-        } catch (err) {
-          console.warn("Failed to load design into editor:", err);
-        }
-      }
-    }, 300);
-
-    return () => clearTimeout(t);
-  }, [open, initialDesign]);
-
+  useEffect(() => { if (!open) return; setTimeout(() => initialDesign && emailEditorRef.current?.editor?.loadDesign(initialDesign), 300); }, [open, initialDesign]);
   if (!open) return null;
-
-  const handleExport = () => {
-    emailEditorRef.current?.editor?.exportHtml((data: any) => {
-      const { design, html } = data;
-
-      console.log("=== SAVING TEMPLATE DATA ===");
-      console.log("Design JSON:", JSON.stringify(design, null, 2));
-      console.log("HTML Content:", html);
-      console.log("Design object structure:", {
-        counters: design?.counters,
-        body: design?.body
-          ? `Present (${Object.keys(design.body).length} properties)`
-          : "Missing",
-        head: design?.head
-          ? `Present (${Object.keys(design.head).length} properties)`
-          : "Missing",
-      });
-      console.log("============================");
-
-      onSave(design, html);
-      onClose();
-    });
-  };
-
+  const handleExport = () => emailEditorRef.current?.editor?.exportHtml((data: any) => { onSave(data.design, data.html); onClose(); });
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
         <div className="flex justify-between items-center px-4 py-3 border-b bg-gray-100">
-          <h3 className="text-lg font-semibold text-gray-800">
-            Edit Email Template
-          </h3>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200"
-          >
-            <X size={20} />
-          </button>
+          <h3 className="text-lg font-semibold text-gray-800">Edit Email Template</h3>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200"><X size={20} /></button>
         </div>
-
         <div className="flex-1">
-          <EmailEditor
-            ref={emailEditorRef}
-            minHeight="100%"
-            appearance={{ theme: "dark" }}
-          />
+          <EmailEditor ref={emailEditorRef} minHeight="100%" appearance={{ theme: "dark" }} />
         </div>
-
         <div className="p-3 border-t flex justify-end bg-gray-100">
-          <button
-            onClick={handleExport}
-            className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium"
-          >
-            Save Template
-          </button>
+          <button onClick={handleExport} className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium">Save Template</button>
         </div>
       </div>
     </div>
   );
 };
 
-const TemplateModal = ({
-  template,
-  onClose,
-  onSelect,
-  onEdit,
-  onDelete,
-}: any) => {
+const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) => {
   if (!template) return null;
-
-  // Check if it's a static template (no html, only component)
-  const isStaticTemplate = template.isStatic;
-
+  const isStatic = template.isStatic;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white p-6 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <div className="flex items-center gap-3">
-            {/* Edit button - only show for non-static templates */}
-            {!isStaticTemplate && template.apiId && (
-              <button
-                onClick={() => onEdit(template)}
-                className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
-              >
-                <Pencil size={14} />
-              </button>
-            )}
-            {/* Delete button - only show for non-static templates */}
-            {!isStaticTemplate && template.apiId && (
-              <button
-                onClick={() => onDelete(template)}
-                className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X size={20} className="text-gray-500" />
-            </button>
+            {!isStatic && template.apiId && <button onClick={() => onEdit(template)} className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"><Pencil size={14} /></button>}
+            {!isStatic && template.apiId && <button onClick={() => onDelete(template)} className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"><Trash2 size={14} /></button>}
+            <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} className="text-gray-500" /></button>
           </div>
         </div>
-
-        {/* Template content */}
         <div className="mb-6 border rounded-lg p-4 bg-gray-50 min-h-[400px]">
-          {template.html ? (
-            <div className="w-full h-full overflow-auto">
-              <div dangerouslySetInnerHTML={{ __html: template.html }} />
-            </div>
-          ) : template.component ? (
-            <div className="w-full h-full flex items-center justify-center overflow-auto">
-              {template.component}
-            </div>
-          ) : (
-            <div className="flex items-center justify-center w-full h-full text-gray-400">
-              No preview available
-            </div>
-          )}
+          {template.html ? <div dangerouslySetInnerHTML={{ __html: template.html }} /> : template.component ? template.component : <div className="flex items-center justify-center w-full h-full text-gray-400">No preview available</div>}
         </div>
-
-        <button
-          onClick={() => onSelect(template.id)}
-          className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors font-medium"
-        >
-          Choose this template
-        </button>
+        <button onClick={() => onSelect(template.id)} className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors font-medium">Choose this template</button>
       </div>
     </div>
   );
 };
 
-/**
- * TemplateThumbnail - Component to display template preview in grid
- */
 const TemplateThumbnail = ({ template }: any) => {
-  const isStaticTemplate = template.isStatic;
-  
-  // Determine scale factor based on template type or content
-  const getScaleFactor = () => {
-    if (template.type === 'thanks') return 0.5;
-    if (template.type === 'confirmation') return 0.45;
-    if (template.type === 'reminder') return 0.5;
-    if (template.type === 'rejection') return 0.5;
-    return 0.5;
-  };
-
-  const scale = getScaleFactor();
-  const scaledWidth = `${100 / scale}%`;
-  const scaledHeight = `${100 / scale}%`;
-
+  const scale = 0.5;
+  const scaledWidth = `${100 / scale}%`, scaledHeight = `${100 / scale}%`;
   return (
     <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-100 relative">
       {template.html ? (
         <div className="absolute inset-0">
-          <div
-            className="w-full h-full overflow-hidden"
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              width: scaledWidth,
-              height: scaledHeight
-            }}
-          >
-            <div
-              className="w-full h-full"
-              dangerouslySetInnerHTML={{ __html: template.html }}
-            />
+          <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: scaledWidth, height: scaledHeight }}>
+            <div dangerouslySetInnerHTML={{ __html: template.html }} />
           </div>
         </div>
       ) : template.component ? (
         <div className="absolute inset-0">
-          <div
-            className="w-full h-full overflow-hidden"
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: 'top left',
-              width: scaledWidth,
-              height: scaledHeight
-            }}
-          >
-            {template.component}
-          </div>
+          <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: scaledWidth, height: scaledHeight }}>{template.component}</div>
         </div>
-      ) : (
-        <div className="flex items-center justify-center w-full h-full text-gray-400">
-          No preview available
-        </div>
-      )}
-      
-      {/* Show static template badge */}
-      {isStaticTemplate && (
-        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-          Static
-        </div>
-      )}
+      ) : <div className="flex items-center justify-center w-full h-full text-gray-400">No preview available</div>}
+      {/* {template.isStatic && <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Static</div>} */}
     </div>
   );
 };
 
-const apiService = {
-  getAuthToken() {
-    const token = localStorage.getItem("token");
-    return token;
-  },
-
-  // Get templates from API
-  async getTemplates(eventId: string | number, flowType: string) {
-    try {
-      const endpoint = this.getEndpoint();
-      const typeParam = this.getTypeParam(flowType);
-
-      const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}?type=${typeParam}`;
-
-      console.log(`=== FETCHING TEMPLATES ===`);
-      console.log("URL:", url);
-      console.log("Flow Type:", flowType);
-      console.log("Type Param:", typeParam);
-
-      const response = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${this.getAuthToken()}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch templates: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log(
-        `=== GET ${flowType.toUpperCase()} TEMPLATES RESPONSE ===`,
-        data
-      );
-
-      return data.data || [];
-    } catch (error) {
-      console.error(`Error fetching ${flowType} templates:`, error);
-      throw error;
-    }
-  },
-
-  // Save NEW template to API (POST)
-  async saveTemplate(
-    eventId: string | number,
-    flowType: string,
-    html: string,
-    title: string = "Custom Template"
-  ) {
-    try {
-      const endpoint = this.getEndpoint();
-      const payload = this.getPayload(flowType, html, title);
-
-      console.log(`=== SAVING NEW ${flowType.toUpperCase()} TEMPLATE ===`);
-      console.log("Event ID:", eventId);
-      console.log("Endpoint:", endpoint);
-      console.log("Payload:", payload);
-
-      const response = await fetch(
-        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${this.getAuthToken()}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`API Error ${response.status}:`, errorText);
-        throw new Error(
-          `Failed to save template: ${response.status} - ${errorText}`
-        );
-      }
-
-      const data = await response.json();
-      console.log(`=== ${flowType.toUpperCase()} TEMPLATE SAVED ===`, data);
-
-      return data;
-    } catch (error) {
-      console.error(`Error saving ${flowType} template:`, error);
-      throw error;
-    }
-  },
-
-  // UPDATE existing template via PATCH API
-  async updateTemplate(
-    eventId: string | number,
-    templateId: string | number,
-    flowType: string,
-    html: string,
-    title: string = "Updated Template"
-  ) {
-    try {
-      const endpoint = this.getEndpoint();
-      const typeParam = this.getTypeParam(flowType);
-      const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}/${templateId}?type=${typeParam}`;
-
-      const payload = this.getUpdatePayload(flowType, html, title);
-
-      console.log(`=== UPDATING ${flowType.toUpperCase()} TEMPLATE ===`);
-      console.log("URL:", url);
-      console.log("Template ID:", templateId);
-      console.log("Payload:", payload);
-
-      const response = await fetch(url, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${this.getAuthToken()}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`API Error ${response.status}:`, errorText);
-        throw new Error(
-          `Failed to update template: ${response.status} - ${errorText}`
-        );
-      }
-
-      const data = await response.json();
-      console.log(`=== ${flowType.toUpperCase()} TEMPLATE UPDATED ===`, data);
-
-      return data;
-    } catch (error) {
-      console.error(`Error updating ${flowType} template:`, error);
-      throw error;
-    }
-  },
-
-  // Delete template from API
-  async deleteTemplate(
-    eventId: string | number,
-    templateId: string | number,
-    flowType: string
-  ) {
-    try {
-      const endpoint = this.getEndpoint();
-      const typeParam = this.getTypeParam(flowType);
-      const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${endpoint}/${templateId}?type=${typeParam}`;
-
-      console.log(`=== DELETING TEMPLATE ===`);
-      console.log("URL:", url);
-      console.log("Template ID:", templateId);
-      console.log("Flow Type:", flowType);
-
-      const response = await fetch(url, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${this.getAuthToken()}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      console.log("Delete response status:", response.status);
-      console.log("Delete response ok:", response.ok);
-
-      if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}`;
-        try {
-          const errorText = await response.text();
-          if (errorText) {
-            errorMessage = errorText;
-          }
-        } catch (e) {
-          // Ignore text parsing errors
-        }
-        throw new Error(`Failed to delete template: ${errorMessage}`);
-      }
-
-      // Check if response has content before trying to parse JSON
-      const contentLength = response.headers.get("content-length");
-      const contentType = response.headers.get("content-type");
-
-      console.log("Response content-length:", contentLength);
-      console.log("Response content-type:", contentType);
-
-      // If no content or not JSON, return success
-      if (
-        contentLength === "0" ||
-        !contentType ||
-        !contentType.includes("application/json")
-      ) {
-        console.log("=== TEMPLATE DELETED SUCCESSFULLY (empty response) ===");
-        return { success: true, message: "Template deleted successfully" };
-      }
-
-      // If there is JSON content, parse it
-      try {
-        const data = await response.json();
-        console.log("=== TEMPLATE DELETED SUCCESSFULLY ===", data);
-        return data;
-      } catch (jsonError) {
-        console.log("JSON parse error, but considering deletion successful");
-        return { success: true, message: "Template deleted successfully" };
-      }
-    } catch (error) {
-      console.error(`Error in deleteTemplate:`, error);
-      throw error;
-    }
-  },
-
-  // All templates use the same endpoint
-  getEndpoint() {
-    return "confirmation_templates";
-  },
-
-  // Map flow types to API type parameters
-  getTypeParam(flowType: string) {
-    const typeMap: { [key: string]: string } = {
-      thanks: "ConfirmationThanksTemplate",
-      confirmation: "ConfirmationRegisterTemplate",
-      reminder: "ConfirmationReminderTemplate",
-      rejection: "ConfirmationRejectionTemplate",
-    };
-
-    return typeMap[flowType] || "ConfirmationThanksTemplate";
-  },
-
-  // Create payload for NEW template (POST)
-  getPayload(flowType: string, html: string, title: string) {
-    const type = this.getTypeParam(flowType);
-
-    return {
-      confirmation_template: {
-        content: html,
-        default: false,
-        type: type,
-      },
-    };
-  },
-
-  // Create payload for UPDATING template (PATCH)
-  getUpdatePayload(flowType: string, html: string, title: string) {
-    const type = this.getTypeParam(flowType);
-
-    return {
-      confirmation_template: {
-        content: html,
-        type: type,
-      },
-    };
-  },
-
-  // Convert API templates to our format
-  convertApiTemplates(apiTemplates: any[], flowType: string) {
-    return apiTemplates.map((template: any, index: number) => ({
-      id: `api-${template.id}`,
-      title: `${flowType.charAt(0).toUpperCase() + flowType.slice(1)
-        } Template ${index + 1}`,
-      component: null,
-      design: template.attributes?.design ? JSON.parse(template.attributes.design) : null,
-      html: template.attributes?.content || "",
-      apiId: template.id,
-      isStatic: false,
-      type: template.attributes?.type || flowType,
-    }));
-  },
-};
-
-// -------- Main Component --------
-interface EmailConfirmationProps {
-  onNext: (eventId?: string | number) => void;
-  onPrevious?: () => void;
-  eventId?: string | number;
-}
-
-const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
-  onNext,
-  onPrevious,
-  eventId,
-}) => {
-  console.log("EmailConfirmation - Received eventId:", eventId);
+// ---------- Main Component ----------
+interface EmailConfirmationProps { onNext: (eventId?: string | number) => void; onPrevious?: () => void; eventId?: string | number; }
+const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPrevious, eventId }) => {
   const localStorageEventId = localStorage.getItem("create_eventId");
-  console.log("EmailConfirmation - localStorage eventId:", localStorageEventId);
   const effectiveEventId = eventId || localStorageEventId;
-  console.log("EmailConfirmation - Effective eventId:", effectiveEventId);
 
-  // Initialize flows structure - no longer using localStorage for emailTemplates
   const [flows, setFlows] = useState<any[]>([
-    {
-      id: "thanks",
-      label: "Thanks Email",
-      templates: [],
-    },
-    {
-      id: "confirmation",
-      label: "Confirmation Email",
-      templates: [],
-    },
-    {
-      id: "reminder",
-      label: "Reminder Email",
-      templates: [],
-    },
-    {
-      id: "rejection",
-      label: "Rejection Email",
-      templates: [],
-    },
+    { id: "thanks", label: "Thanks Email", templates: [] },
+    { id: "confirmation", label: "Confirmation Email", templates: [] },
+    { id: "reminder", label: "Reminder Email", templates: [] },
+    { id: "rejection", label: "Rejection Email", templates: [] },
   ]);
-
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
   const [modalTemplate, setModalTemplate] = useState<any | null>(null);
@@ -625,599 +190,84 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   const currentFlow = flows[currentFlowIndex];
 
-  // Load templates from API when component mounts or flow changes
-  useEffect(() => {
-    if (effectiveEventId) {
-      loadTemplatesFromAPI();
-    }
-  }, [effectiveEventId, currentFlowIndex]);
+  useEffect(() => { if (effectiveEventId) loadTemplatesFromAPI(); }, [effectiveEventId, currentFlowIndex]);
 
-  // Load templates from API
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId) return;
-
     setIsLoading(true);
     try {
-      const apiTemplates = await apiService.getTemplates(
-        effectiveEventId,
-        currentFlow.id
-      );
-      const convertedTemplates = apiService.convertApiTemplates(
-        apiTemplates,
-        currentFlow.id
-      );
-
-      console.log(
-        `=== LOADED ${currentFlow.id.toUpperCase()} TEMPLATES FROM API ===`,
-        convertedTemplates
-      );
-
-      // Update flows with API templates
-      setFlows((prevFlows) =>
-        prevFlows.map((flow) =>
-          flow.id === currentFlow.id
-            ? { 
-                ...flow, 
-                templates: [
-                  ...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES] || [],
-                  ...convertedTemplates
-                ]
-              }
-            : flow
-        )
-      );
-    } catch (error) {
-      console.error("Error loading templates from API:", error);
-      toast.error("Failed to load templates. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+      const apiTemplates = await apiService.getTemplates(effectiveEventId, currentFlow.id);
+      const convertedTemplates = apiService.convertApiTemplates(apiTemplates, currentFlow.id);
+      setFlows(prev => prev.map(f => f.id === currentFlow.id ? { ...f, templates: [...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES], ...convertedTemplates] } : f));
+    } catch (e) { toast.error("Failed to load templates"); }
+    finally { setIsLoading(false); }
   };
 
-  // Open template preview modal
   const handleOpenModal = (template: any) => setModalTemplate(template);
   const handleCloseModal = () => setModalTemplate(null);
+  const handleSelectTemplate = (templateId: string) => { setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: templateId }); setModalTemplate(null); toast.success("Template selected!"); };
+  const handleCreateNewTemplate = () => { setIsCreatingNew(true); setEditingTemplate(null); setIsEditorOpen(true); };
+  const handleEditTemplate = (template: any) => { if (template.isStatic) { setIsCreatingNew(true); setEditingTemplate(null); setIsEditorOpen(true); } else { setEditingTemplate(template); setModalTemplate(null); setIsEditorOpen(true); }; };
+  
+  const handleBack = () => { if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1); else onPrevious?.(); };
+  const handleNext = () => { if (!selectedTemplates[currentFlow.id]) { toast.warning("Please select template"); return; } if (currentFlowIndex < flows.length - 1) setCurrentFlowIndex(currentFlowIndex + 1); else onNext?.(effectiveEventId); };
 
-  // Select a template for the flow
-  const handleSelectTemplate = (templateId: string) => {
-    setSelectedTemplates({
-      ...selectedTemplates,
-      [currentFlow.id]: templateId,
-    });
-    setModalTemplate(null);
-    toast.success("Template selected successfully!");
-  };
-
-  // When user clicks edit in TemplateModal
-  const handleEditTemplate = (template: any) => {
-    // For static templates, we create a new custom template
-    if (template.isStatic) {
-      setIsCreatingNew(true);
-      setEditingTemplate(null);
-      setIsEditorOpen(true);
-    } else {
-      // For API templates, edit the existing one
-      setEditingTemplate(template);
-      setModalTemplate(null);
-      setIsEditorOpen(true);
-    }
-  };
-
-  // Handle creating a new template
-  const handleCreateNewTemplate = () => {
-    setIsCreatingNew(true);
-    setEditingTemplate(null);
-    setIsEditorOpen(true);
-  };
-
-  // Handle deleting a template
-  const handleDeleteTemplate = async (template: any) => {
-    // Don't allow deletion of static templates
-    if (template.isStatic) {
-      toast.warning("Static templates cannot be deleted.");
-      return;
-    }
-
-    if (!effectiveEventId || !template.apiId) {
-      console.error(
-        "Cannot delete template: Missing eventId or template API ID"
-      );
-      toast.error("Cannot delete template: Missing required data.");
-      return;
-    }
-
-    // Use toast for confirmation instead of window.confirm
-    toast.info(
-      <div>
-        <p>Are you sure you want to delete "{template.title}"?</p>
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={() => {
-              toast.dismiss();
-              proceedWithDelete(template);
-            }}
-            className="px-3 py-1 bg-red-500 text-white rounded text-sm"
-          >
-            Yes, Delete
-          </button>
-          <button
-            onClick={() => toast.dismiss()}
-            className="px-3 py-1 bg-gray-500 text-white rounded text-sm"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>,
-      {
-        autoClose: false,
-        closeButton: false,
-      }
-    );
-  };
-
-  // Proceed with deletion after confirmation
-  const proceedWithDelete = async (template: any) => {
-    setIsLoading(true);
-    try {
-      // Delete from API - PASS ALL THREE PARAMETERS
-      await apiService.deleteTemplate(
-        effectiveEventId,
-        template.apiId,
-        currentFlow.id
-      );
-
-      console.log("=== DELETING TEMPLATE ===");
-      console.log("Template ID:", template.id);
-      console.log("API ID:", template.apiId);
-      console.log("Current Flow:", currentFlow.label);
-      console.log("=========================");
-
-      // Update flows state: remove the deleted template
-      setFlows((prevFlows) =>
-        prevFlows.map((flow) => ({
-          ...flow,
-          templates: flow.templates.filter(
-            (tpl: any) => tpl.id !== template.id
-          ),
-        }))
-      );
-
-      // If the deleted template was selected, clear the selection
-      if (selectedTemplates[currentFlow.id] === template.id) {
-        setSelectedTemplates((prev: any) => {
-          const newSelected = { ...prev };
-          delete newSelected[currentFlow.id];
-          return newSelected;
-        });
-      }
-
-      // Close modal if open
-      setModalTemplate(null);
-
-      // Show success message
-      toast.success("Template deleted successfully!");
-    } catch (error) {
-      console.error("Error deleting template from API:", error);
-      toast.error("Failed to delete template. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Callback when editor saves design & html for a NEW template
-  const handleSaveNewTemplate = async (design: any, html: string) => {
-    if (!isCreatingNew || !effectiveEventId) return;
-
-    setIsLoading(true);
-    try {
-      // Save to API first using POST
-      const apiResponse = await apiService.saveTemplate(
-        effectiveEventId,
-        currentFlow.id,
-        html,
-        `Custom ${currentFlow.label} Template`
-      );
-
-      const newTemplate = {
-        id: `custom-${Date.now()}`,
-        title: `Custom ${currentFlow.label} Template`,
-        component: null,
-        design,
-        html,
-        apiId: apiResponse.data?.id,
-        isStatic: false,
-        type: currentFlow.id,
-      };
-
-      console.log("=== CREATING NEW TEMPLATE ===");
-      console.log("New Template Data:", newTemplate);
-      console.log("API Response:", apiResponse);
-      console.log("Current Flow:", currentFlow.label);
-      console.log("============================");
-
-      // Update flows with the new template
-      setFlows((prevFlows) =>
-        prevFlows.map((flow, index) =>
-          index === currentFlowIndex
-            ? { 
-                ...flow, 
-                templates: [
-                  ...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES] || [],
-                  ...flow.templates.filter((t: any) => !t.isStatic),
-                  newTemplate
-                ]
-              }
-            : flow
-        )
-      );
-
-      // Auto-select the newly created template
-      setSelectedTemplates({
-        ...selectedTemplates,
-        [currentFlow.id]: newTemplate.id,
-      });
-
-      setIsCreatingNew(false);
-      setIsEditorOpen(false);
-
-      toast.success("Template created successfully!");
-    } catch (error) {
-      console.error("Error saving template to API:", error);
-      toast.error("Failed to save template. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Callback when editor saves design & html for an EXISTING template
-  const handleUpdateTemplate = async (design: any, html: string) => {
-    console.log("=== UPDATE TEMPLATE CALLBACK ===");
-    console.log("Is Creating New:", isCreatingNew);
-    console.log("Editing Template:", editingTemplate);
-    console.log(
-      "Design received:",
-      design ? `Present (${Object.keys(design).length} properties)` : "Missing"
-    );
-    console.log(
-      "HTML received:",
-      html ? `Present (${html.length} characters)` : "Missing"
-    );
-    console.log("Event ID:", effectiveEventId);
-    console.log("=============================");
-
-    if (!editingTemplate || !effectiveEventId || !editingTemplate.apiId) {
-      console.warn("Missing required data for updating template:", {
-        editingTemplate: !!editingTemplate,
-        eventId: !!effectiveEventId,
-        apiId: editingTemplate?.apiId,
-      });
-      toast.error("Missing required data for updating template.");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      // Update existing template in API using PATCH
-      await apiService.updateTemplate(
-        effectiveEventId,
-        editingTemplate.apiId,
-        currentFlow.id,
-        html,
-        editingTemplate.title
-      );
-
-      console.log("=== UPDATING EXISTING TEMPLATE ===");
-      console.log("Template ID:", editingTemplate.id);
-      console.log("API ID:", editingTemplate.apiId);
-      console.log(
-        "Previous Design:",
-        editingTemplate.design ? `Present` : "Missing"
-      );
-      console.log("New Design:", design ? `Present` : "Missing");
-      console.log("================================");
-
-      // Update flows state: find template by id and update design/html
-      setFlows((prevFlows) =>
-        prevFlows.map((flow) => ({
-          ...flow,
-          templates: flow.templates.map((tpl: any) =>
-            tpl.id === editingTemplate.id ? { ...tpl, design, html } : tpl
-          ),
-        }))
-      );
-
-      // Clear editing template
-      setEditingTemplate(null);
-      setIsEditorOpen(false);
-
-      // Show success message
-      toast.success("Template updated successfully!");
-    } catch (error) {
-      console.error("Error updating template in API:", error);
-      toast.error("Failed to update template. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Main save handler that routes to either create or update
   const handleSaveFromEditor = async (design: any, html: string) => {
     if (isCreatingNew) {
-      await handleSaveNewTemplate(design, html);
-    } else {
-      await handleUpdateTemplate(design, html);
+      if (!effectiveEventId) return;
+      setIsLoading(true);
+      try {
+        const apiResp = await apiService.saveTemplate(effectiveEventId, currentFlow.id, html, `Custom ${currentFlow.label} Template`);
+        const newTemplate = { id: `custom-${Date.now()}`, title: `Custom ${currentFlow.label} Template`, component: null, design, html, apiId: apiResp.data?.id, isStatic: false, type: currentFlow.id };
+        setFlows(prev => prev.map((f, idx) => idx === currentFlowIndex ? { ...f, templates: [...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES], ...f.templates.filter(t => !t.isStatic), newTemplate] } : f));
+        setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });
+        setIsCreatingNew(false); setIsEditorOpen(false); toast.success("Template created!");
+      } catch (e) { toast.error("Failed to create template"); } finally { setIsLoading(false); }
+    } else if (editingTemplate) {
+      setIsLoading(true);
+      try { await apiService.updateTemplate(effectiveEventId, editingTemplate.apiId, currentFlow.id, html); setFlows(prev => prev.map(f => ({ ...f, templates: f.templates.map(t => t.id === editingTemplate.id ? { ...t, html, design } : t) }))); setEditingTemplate(null); setIsEditorOpen(false); toast.success("Template updated!"); }
+      catch { toast.error("Failed to update template"); } finally { setIsLoading(false); }
     }
   };
-
-  // For EmailEditorModal: initialDesign should be the design of the editing template (if exists)
-  const initialDesign = editingTemplate?.design ?? null;
-
-  const handleNext = () => {
-    if (!selectedTemplates[currentFlow.id]) {
-      toast.warning("Please select a template before proceeding");
-      return;
-    }
-
-    console.log(
-      "EmailConfirmation - Proceeding to next step with eventId:",
-      effectiveEventId
-    );
-
-    if (currentFlowIndex < flows.length - 1) {
-      setCurrentFlowIndex(currentFlowIndex + 1);
-      toast.success(`Moving to ${flows[currentFlowIndex + 1].label}`);
-    } else if (onNext) {
-      // Log final state before proceeding
-      console.log("=== FINAL STATE BEFORE PROCEEDING ===");
-      console.log("All Flows:", flows);
-      console.log("All Selected Templates:", selectedTemplates);
-      console.log("Event ID:", effectiveEventId);
-      console.log("====================================");
-
-      // Pass the eventId to the next component
-      if (effectiveEventId) {
-        console.log(
-          "EmailConfirmation - Sending eventId to next component:",
-          effectiveEventId
-        );
-        onNext(effectiveEventId);
-      } else {
-        console.log(
-          "EmailConfirmation - No eventId available, calling onNext without parameter"
-        );
-        onNext();
-      }
-
-      toast.success("All email templates configured successfully!");
-    }
-  };
-
-  const handleBack = () => {
-    if (currentFlowIndex > 0) {
-      setCurrentFlowIndex(currentFlowIndex - 1);
-      toast.info(`Returning to ${flows[currentFlowIndex - 1].label}`);
-    } else if (onPrevious) {
-      onPrevious();
-    }
-  };
-
-  const handleStepClick = (index: number) => {
-    if (index <= currentFlowIndex || selectedTemplates[flows[index].id]) {
-      setCurrentFlowIndex(index);
-    }
-  };
-
-  // Check if all steps are completed
-  const allStepsCompleted = flows.every((flow) => selectedTemplates[flow.id]);
 
   return (
-    <div className="w-full bg-white p-6 rounded-2xl shadow-sm relative">
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
-      {/* Header Section */}
+    <div className="w-full max-w-full mx-auto p-4 bg-white rounded-2xl shadow-sm">
+      <ToastContainer position="top-right" autoClose={5000} />
       <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-2"><ChevronLeft size={20} /> <h2 className="text-xl font-semibold">{currentFlow.label}</h2></div>
         <div className="flex items-center gap-2">
-          <ChevronLeft className="text-gray-500" size={20} />
-          <h2 className="text-xl font-semibold text-gray-900">
-            {currentFlow.label}
-          </h2>
-        </div>
-        {/* Progress Stepper */}
-        <div className="flex items-center gap-2">
-          {flows.map((flow, index) => {
-            const isCompleted = Boolean(selectedTemplates[flow.id]);
-            const isActive = index === currentFlowIndex;
-
+          {flows.map((f, idx) => {
+            const active = idx === currentFlowIndex, done = Boolean(selectedTemplates[f.id]);
             return (
-              <div key={flow.id} className="flex items-center">
-                <button
-                  onClick={() => handleStepClick(index)}
-                  disabled={index > currentFlowIndex && !isCompleted}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${isCompleted
-                      ? "bg-pink-500 border-pink-500 cursor-pointer"
-                      : isActive
-                        ? "border-pink-500 bg-white cursor-pointer"
-                        : "border-gray-300 bg-white cursor-not-allowed"
-                    }`}
-                >
-                  {isCompleted ? (
-                    <Check size={16} className="text-white" />
-                  ) : (
-                    <span
-                      className={`text-sm font-medium ${isActive ? "text-pink-500" : "text-gray-400"
-                        }`}
-                    >
-                      {index + 1}
-                    </span>
-                  )}
-                </button>
-
-                {index !== flows.length - 1 && (
-                  <div
-                    className={`w-8 h-0.5 mx-1 ${selectedTemplates[flow.id] ? "bg-pink-500" : "bg-gray-300"
-                      }`}
-                  />
-                )}
+              <div key={f.id} className="flex items-center">
+                <button disabled={idx > currentFlowIndex && !done} className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${done ? "bg-pink-500 border-pink-500" : active ? "border-pink-500" : "border-gray-300"}`}>{done ? <Check size={16} className="text-white" /> : <span className="text-sm">{idx + 1}</span>}</button>
+                {idx !== flows.length - 1 && <div className={`w-8 h-0.5 mx-1 ${selectedTemplates[f.id] ? "bg-pink-500" : "bg-gray-300"}`} />}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Loading State */}
-      {isLoading && (
-        <div className="flex justify-center items-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500"></div>
-          <span className="ml-2 text-gray-600">Loading templates...</span>
-        </div>
-      )}
+      {isLoading && <div className="flex justify-center py-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500" /></div>}
 
-      {/* Template Grid - CHANGED ORDER: Create New FIRST (left), Templates after (right) */}
-      {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Create New Template Card - FIRST/LEFT SIDE */}
-          <div
-            onClick={handleCreateNewTemplate}
-            className="border-2 border-dashed border-gray-300 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-400 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square"
-          >
-            <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-3">
-              <Plus className="text-pink-500" size={24} />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-1 text-center text-pink-500">
-              Create New Template
-            </h3>
-            <p className="text-sm text-gray-500 text-center">
-              Design a custom email template from scratch
-            </p>
+      {!isLoading && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div onClick={handleCreateNewTemplate} className="border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 transition">+ New Template</div>
+        {currentFlow.templates.map(template => (
+          <div key={template.id} onClick={() => handleOpenModal(template)} className={`cursor-pointer rounded-2xl border ${selectedTemplates[currentFlow.id] === template.id ? "border-pink-500" : "border-gray-200"} overflow-hidden`}>
+            <TemplateThumbnail template={template} />
+            <div className="p-2 text-center font-medium">{template.title}</div>
           </div>
+        ))}
+      </div>}
 
-          {/* Static Templates - MIDDLE */}
-          {currentFlow.templates
-            .filter((tpl: any) => tpl.isStatic)
-            .map((tpl: any) => (
-              <div
-                key={tpl.id}
-                onClick={() => handleOpenModal(tpl)}
-                className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative ${selectedTemplates[currentFlow.id] === tpl.id
-                    ? "border-pink-500 bg-pink-50 shadow-md"
-                    : "border-gray-200 hover:border-pink-300"
-                  }`}
-              >
-                {/* Template Thumbnail */}
-                <div className="flex-1">
-                  <TemplateThumbnail template={tpl} />
-                </div>
-                <div className="mt-3">
-                  <h3 className="font-medium text-gray-900 text-center">
-                    {tpl.title}
-                  </h3>
-                </div>
-              </div>
-            ))}
-
-          {/* API Templates - RIGHT SIDE */}
-          {currentFlow.templates
-            .filter((tpl: any) => !tpl.isStatic)
-            .map((tpl: any) => (
-              <div
-                key={tpl.id}
-                onClick={() => handleOpenModal(tpl)}
-                className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative group ${selectedTemplates[currentFlow.id] === tpl.id
-                    ? "border-pink-500 bg-pink-50 shadow-md"
-                    : "border-gray-200 hover:border-pink-300"
-                  }`}
-              >
-                {/* DELETE BUTTON - only for API templates */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteTemplate(tpl);
-                  }}
-                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
-                  title="Delete template"
-                >
-                  <Trash2 size={14} />
-                </button>
-
-                {/* Template Thumbnail */}
-                <div className="flex-1">
-                  <TemplateThumbnail template={tpl} />
-                </div>
-                <div className="mt-3">
-                  <h3 className="font-medium text-gray-900 text-center">
-                    {tpl.title}
-                  </h3>
-                </div>
-              </div>
-            ))}
-        </div>
-      )}
-
-      {/* Modals */}
-      {modalTemplate && (
-        <TemplateModal
-          template={modalTemplate}
-          onClose={handleCloseModal}
-          onSelect={handleSelectTemplate}
-          onEdit={handleEditTemplate}
-          onDelete={handleDeleteTemplate}
-        />
-      )}
-
-      <EmailEditorModal
-        open={isEditorOpen}
-        initialDesign={initialDesign}
-        onClose={() => {
-          setIsEditorOpen(false);
-          setEditingTemplate(null);
-          setIsCreatingNew(false);
-        }}
-        onSave={(design: any, html: string) => {
-          handleSaveFromEditor(design, html);
-        }}
-      />
-
-      {/* Navigation */}
-      <div className="flex justify-between items-center pt-6 border-t border-gray-100">
-        <button
-          onClick={handleBack}
-          disabled={currentFlowIndex === 0 && !onPrevious}
-          className={`cursor-pointer px-6 py-2 border rounded-lg transition-colors ${currentFlowIndex === 0 && !onPrevious
-              ? "text-gray-400 border-gray-200 cursor-not-allowed"
-              : "text-gray-700 border-gray-300 hover:bg-gray-100"
-            }`}
-        >
-          ← Previous
-        </button>
-
-        <span className="text-sm text-gray-500">
-          Step {currentFlowIndex + 1} of {flows.length}
-          {allStepsCompleted && " - All steps completed!"}
-        </span>
-
-        <button
-          onClick={handleNext}
-          disabled={!selectedTemplates[currentFlow.id] || isLoading}
-          className={`cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium ${selectedTemplates[currentFlow.id] && !isLoading
-              ? "bg-slate-800 hover:bg-slate-800"
-              : "bg-gray-300 cursor-not-allowed"
-            }`}
-        >
-          {currentFlowIndex === flows.length - 1 ? "Finish" : "Next →"}
-        </button>
+      <div className="flex justify-between gap-4">
+        <button onClick={handleBack} className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100">Back</button>
+        <button onClick={handleNext} className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white">Next</button>
       </div>
+
+      <TemplateModal template={modalTemplate} onClose={handleCloseModal} onSelect={handleSelectTemplate} onEdit={handleEditTemplate} onDelete={async (tpl: any) => { if (!effectiveEventId || !tpl.apiId) return; setIsLoading(true); try { await apiService.deleteTemplate(effectiveEventId, tpl.apiId); setFlows(prev => prev.map(f => ({ ...f, templates: f.templates.filter(t => t.id !== tpl.id) }))); toast.success("Template deleted"); handleCloseModal(); } catch { toast.error("Failed to delete template"); } finally { setIsLoading(false); } }} />
+
+      <EmailEditorModal open={isEditorOpen} initialDesign={editingTemplate?.design} onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} onSave={handleSaveFromEditor} />
     </div>
   );
 };

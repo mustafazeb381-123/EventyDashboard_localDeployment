@@ -108,7 +108,7 @@ const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-    .email-container { max-width: 600px; margin: 0 auto; }
+    .email-container { max-width: 10px; margin: 0 auto; }
     h2 { color: #333; }
     p { color: #666; line-height: 1.6; white-space: pre-wrap; }
   </style>
