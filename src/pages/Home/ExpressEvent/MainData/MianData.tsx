@@ -662,6 +662,72 @@ const MainData = ({
     });
   };
 
+  // 👇 DIRECT DELETE API CALL FUNCTION
+  const handleDeleteBadgeTypeDirect = async (
+    badgeId: string | number,
+    index: number
+  ) => {
+    console.log("=== DIRECT DELETE BADGE ===");
+    console.log("Badge ID to delete:", badgeId);
+    console.log("Event ID:", eventId);
+
+    if (!eventId) {
+      toast.error("Event ID is missing");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Authentication token not found");
+      return;
+    }
+
+    try {
+      // Direct DELETE API call based on your screenshot
+      const response = await fetch(
+        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/badges/${badgeId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("DELETE Response status:", response.status);
+
+      if (response.status === 204) {
+        toast.success("Badge type deleted successfully!");
+
+        // Remove from local state
+        setBadges((prev) => prev.filter((_, i) => i !== index));
+
+        // Also remove from formData.guestTypes if it exists there
+        const badgeToDelete = badges[index];
+        if (badgeToDelete) {
+          const badgeName = badgeToDelete.attributes.name;
+          setFormData((prev) => ({
+            ...prev,
+            guestTypes: prev.guestTypes.filter((type) => type !== badgeName),
+          }));
+        }
+      } else if (response.status === 401) {
+        toast.error("Unauthorized - Please check your token");
+      } else if (response.status === 404) {
+        toast.error("Badge not found");
+      } else {
+        const errorText = await response.text();
+        console.error("DELETE Error:", errorText);
+        toast.error(`Failed to delete badge: ${response.statusText}`);
+      }
+    } catch (error) {
+      console.error("DELETE Network Error:", error);
+      toast.error("Network error while deleting badge");
+    }
+  };
+
   // Populate form with existing event data when editing
   useEffect(() => {
     if (isEditing && (eventData || eventAttributes)) {
@@ -878,41 +944,13 @@ const MainData = ({
     setBadges((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Handler for API badges only
+  // Handler for API badges only - NOW USING DIRECT API CALL
   const handleDeleteBadgeType = async (
     badgeId: number | string,
     index: number
   ) => {
-    console.log("=== DELETE BADGE DEBUG ===");
-    console.log("Badge ID:", badgeId, "Type:", typeof badgeId);
-    console.log("Event ID:", eventId, "Type:", typeof eventId);
-    console.log("Index:", index);
-    console.log("URL will be: /events/" + eventId + "/badges/" + badgeId);
-
-    try {
-      // Make sure we have a valid eventId
-      if (!eventId) {
-        toast.error("Event ID is missing");
-        return;
-      }
-
-      // ✅ Pass badgeId FIRST, then eventId (matching your API helper signature)
-      const response = await deleteBadgeType(badgeId, eventId);
-      console.log("Delete response:", response);
-
-      toast.success("Badge type deleted successfully!");
-      removeBadgeType(index); // remove from UI
-    } catch (error: any) {
-      console.error("=== DELETE ERROR ===");
-      console.error("Full error:", error);
-      console.error("Error response:", error?.response);
-      console.error("Error data:", error?.response?.data);
-      console.error("Error status:", error?.response?.status);
-      toast.error(
-        error?.response?.data?.message ||
-          "Failed to delete badge type. Please try again."
-      );
-    }
+    // Call the direct DELETE function
+    await handleDeleteBadgeTypeDirect(badgeId, index);
   };
 
   // Handle Show Event Data button click

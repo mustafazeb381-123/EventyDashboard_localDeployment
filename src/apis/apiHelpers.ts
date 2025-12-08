@@ -340,17 +340,14 @@ export const getBadgeApi = (eventId: string | number) => {
 };
 
 export const deleteBadgeType = (
-  badgeId: string | number,
-  eventId: string | number
+    eventId: string | number,
+  badgeId: string | number
 ) => {
   console.log("API Helper - Deleting badge:", badgeId, "from event:", eventId);
 
-  return axiosInstance.delete(`/events/${eventId}/badges/${badgeId}`, {
-    data: {
-
-    }
-
-  });
+  // REMOVE the data: {} object - DELETE requests usually don't need a body
+  return axiosInstance.delete(`/events/${eventId}/badges/${badgeId}`);
+  // No need for: , { data: {} }
 };
 
 export const addGuestType = (eventId: number | string, name: string) => {
