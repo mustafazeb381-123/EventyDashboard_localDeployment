@@ -17,6 +17,11 @@ import Assets from "@/utils/Assets";
 import { toast, ToastContainer } from "react-toastify";
 import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
 import type { ToggleStates } from "../ExpressEvent";
+import Badge5 from "./components/Badge5";
+import Badge6 from "./components/Badge6";
+import Badge7 from "./components/Badge7";
+import Badge8 from "./components/Badge8";
+import Badge9 from "./components/Badge9";
 
 // -------------------- TYPES --------------------
 interface BadgeTemplate {
@@ -96,7 +101,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   template,
   isEditMode = false,
 }) => {
-  const [editingTemplate, setEditingTemplate] = useState<BadgeTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<BadgeTemplate | null>(
+    null
+  );
 
   const defaultTemplate: BadgeTemplate = {
     id: "",
@@ -142,7 +149,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     if (template) {
       setEditingTemplate({ ...template });
     } else {
-      setEditingTemplate({ ...defaultTemplate, id: `custom-badge-${Date.now()}` });
+      setEditingTemplate({
+        ...defaultTemplate,
+        id: `custom-badge-${Date.now()}`,
+      });
     }
   }, [template]);
 
@@ -180,7 +190,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           style={{
             width: `${template.width * 40}px`,
             height: `${template.height * 40}px`,
-            backgroundColor: template.hasBackground ? template.bgColor : "transparent",
+            backgroundColor: template.hasBackground
+              ? template.bgColor
+              : "transparent",
             backgroundImage:
               template.hasBackground && template.bgImage
                 ? `url(${template.bgImage})`
@@ -203,7 +215,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     : "50%",
                 right: template.photoAlignment === "right" ? "10px" : "auto",
                 transform:
-                  template.photoAlignment === "center" ? "translateX(-50%)" : "none",
+                  template.photoAlignment === "center"
+                    ? "translateX(-50%)"
+                    : "none",
                 top: `${(template.photoPosition?.y || 60) * 0.2}px`,
               }}
             >
@@ -292,9 +306,13 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     );
   };
 
-  const ToggleSwitch = ({ checked, onChange, label }: { 
-    checked: boolean; 
-    onChange: (checked: boolean) => void; 
+  const ToggleSwitch = ({
+    checked,
+    onChange,
+    label,
+  }: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
     label: string;
   }) => (
     <div className="flex items-center justify-between mb-3">
@@ -319,7 +337,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
         <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold text-gray-800">
-              {isEditMode ? "Edit Custom Badge" : "Create Custom Badge Template"}
+              {isEditMode
+                ? "Edit Custom Badge"
+                : "Create Custom Badge Template"}
             </h3>
             <input
               type="text"
@@ -527,7 +547,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                           onClick={() =>
                             setEditingTemplate({
                               ...editingTemplate,
-                              photoAlignment: align as "left" | "center" | "right",
+                              photoAlignment: align as
+                                | "left"
+                                | "center"
+                                | "right",
                             })
                           }
                           className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
@@ -536,9 +559,15 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
-                          {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-                          {align === "center" && <AlignCenter size={16} className="mx-auto" />}
-                          {align === "right" && <AlignRight size={16} className="mx-auto" />}
+                          {align === "left" && (
+                            <AlignLeft size={16} className="mx-auto" />
+                          )}
+                          {align === "center" && (
+                            <AlignCenter size={16} className="mx-auto" />
+                          )}
+                          {align === "right" && (
+                            <AlignRight size={16} className="mx-auto" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -581,7 +610,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 <div className="space-y-3 ml-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Size (px)
+                      </label>
                       <input
                         type="number"
                         value={editingTemplate.nameText?.size || 24}
@@ -598,7 +629,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Color</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Color
+                      </label>
                       <input
                         type="color"
                         value={editingTemplate.nameText?.color || "#ffffff"}
@@ -617,7 +650,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-600 mb-2">Alignment</label>
+                    <label className="block text-sm text-gray-600 mb-2">
+                      Alignment
+                    </label>
                     <div className="flex gap-2">
                       {["left", "center", "right"].map((align) => (
                         <button
@@ -637,16 +672,24 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
-                          {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-                          {align === "center" && <AlignCenter size={16} className="mx-auto" />}
-                          {align === "right" && <AlignRight size={16} className="mx-auto" />}
+                          {align === "left" && (
+                            <AlignLeft size={16} className="mx-auto" />
+                          )}
+                          {align === "center" && (
+                            <AlignCenter size={16} className="mx-auto" />
+                          )}
+                          {align === "right" && (
+                            <AlignRight size={16} className="mx-auto" />
+                          )}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Y Position (px)</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Y Position (px)
+                    </label>
                     <input
                       type="number"
                       value={editingTemplate.nameText?.position?.y || 280}
@@ -683,7 +726,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 <div className="space-y-3 ml-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Size (px)
+                      </label>
                       <input
                         type="number"
                         value={editingTemplate.companyText?.size || 18}
@@ -700,7 +745,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Color</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Color
+                      </label>
                       <input
                         type="color"
                         value={editingTemplate.companyText?.color || "#cccccc"}
@@ -876,7 +923,13 @@ interface BadgePreviewProps {
   CardFooter: React.FC<{ color?: string }>;
 }
 
-const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, CardHeader, CardFooter }) => {
+const Badge1Preview: React.FC<BadgePreviewProps> = ({
+  badge,
+  event,
+  onClose,
+  CardHeader,
+  CardFooter,
+}) => {
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
   const logoUrl = event?.attributes?.logo_url;
@@ -885,7 +938,9 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Preview - {badge.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Preview - {badge.name}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -893,17 +948,19 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Front Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Front Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Front Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
                 style={{
                   backgroundColor: secondaryColor,
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div
@@ -936,7 +993,9 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
                   <h2 className="text-2xl font-bold text-gray-900 mt-4">
                     John Doe
                   </h2>
-                  <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+                  <p className="text-gray-600 text-lg mt-1">
+                    Software Engineer
+                  </p>
                 </div>
 
                 <div
@@ -952,21 +1011,25 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
             {/* Back Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Back Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Back Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
                 style={{
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Additional Information</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      Additional Information
+                    </h3>
                     <p className="text-gray-600">
                       This is the back side of the badge
                     </p>
                   </div>
-                  
+
                   <div className="bg-white p-6 rounded-2xl shadow-inner">
                     <div className="flex justify-center mb-4">
                       <img
@@ -986,7 +1049,8 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be printed with attendee information.
+              This is a preview of the badge template. Actual badges will be
+              printed with attendee information.
             </p>
           </div>
         </div>
@@ -1004,7 +1068,13 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
   );
 };
 
-const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, CardHeader, CardFooter }) => {
+const Badge2Preview: React.FC<BadgePreviewProps> = ({
+  badge,
+  event,
+  onClose,
+  CardHeader,
+  CardFooter,
+}) => {
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
   const logoUrl = event?.attributes?.logo_url;
@@ -1013,7 +1083,9 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Preview - {badge.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Preview - {badge.name}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -1021,17 +1093,19 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Front Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Front Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Front Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
                 style={{
                   backgroundColor: secondaryColor,
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div
@@ -1048,15 +1122,13 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
                     <h2 className="text-2xl font-bold text-gray-900">
                       John Doe
                     </h2>
-                    <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+                    <p className="text-gray-600 text-lg mt-1">
+                      Software Engineer
+                    </p>
                   </div>
                   <div className="relative z-10 flex items-center gap-3">
                     {logoUrl && (
-                      <img
-                        src={logoUrl}
-                        alt="Logo"
-                        className="w-8 h-8 mb-3"
-                      />
+                      <img src={logoUrl} alt="Logo" className="w-8 h-8 mb-3" />
                     )}
                     <h6 className="font-semibold mb-3 text-black text-lg">
                       Company Name
@@ -1072,7 +1144,9 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
                     <CardFooter color={primaryColor} />
                   </div>
                   <div className="relative z-10">
-                    <span className="text-white font-medium text-lg">#Event2024</span>
+                    <span className="text-white font-medium text-lg">
+                      #Event2024
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1080,21 +1154,25 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
             {/* Back Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Back Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Back Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
                 style={{
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Additional Information</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      Additional Information
+                    </h3>
                     <p className="text-gray-600">
                       This is the back side of the badge
                     </p>
                   </div>
-                  
+
                   <div className="bg-white p-6 rounded-2xl shadow-inner">
                     <div className="flex justify-center mb-4">
                       <img
@@ -1114,7 +1192,8 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be printed with attendee information.
+              This is a preview of the badge template. Actual badges will be
+              printed with attendee information.
             </p>
           </div>
         </div>
@@ -1132,7 +1211,13 @@ const Badge2Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
   );
 };
 
-const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, CardHeader, CardFooter }) => {
+const Badge3Preview: React.FC<BadgePreviewProps> = ({
+  badge,
+  event,
+  onClose,
+  CardHeader,
+  CardFooter,
+}) => {
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
 
@@ -1140,7 +1225,9 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Preview - {badge.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Preview - {badge.name}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -1148,17 +1235,19 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Front Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Front Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Front Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
                 style={{
                   backgroundColor: secondaryColor,
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div
@@ -1169,7 +1258,9 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
                     <CardHeader color={primaryColor} />
                   </div>
                   <div className="relative z-10">
-                    <h6 className="font-semibold text-white text-xl">Conference 2024</h6>
+                    <h6 className="font-semibold text-white text-xl">
+                      Conference 2024
+                    </h6>
                   </div>
                 </div>
 
@@ -1182,7 +1273,9 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
                   <h2 className="text-2xl font-bold text-gray-900 mt-4">
                     John Doe
                   </h2>
-                  <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+                  <p className="text-gray-600 text-lg mt-1">
+                    Software Engineer
+                  </p>
                 </div>
 
                 <div
@@ -1198,21 +1291,25 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
             {/* Back Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Back Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Back Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
                 style={{
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Additional Information</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      Additional Information
+                    </h3>
                     <p className="text-gray-600">
                       This is the back side of the badge
                     </p>
                   </div>
-                  
+
                   <div className="bg-white p-6 rounded-2xl shadow-inner">
                     <div className="flex justify-center mb-4">
                       <img
@@ -1232,7 +1329,8 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be printed with attendee information.
+              This is a preview of the badge template. Actual badges will be
+              printed with attendee information.
             </p>
           </div>
         </div>
@@ -1250,7 +1348,13 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
   );
 };
 
-const Badge4Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, CardHeader, CardFooter }) => {
+const Badge4Preview: React.FC<BadgePreviewProps> = ({
+  badge,
+  event,
+  onClose,
+  CardHeader,
+  CardFooter,
+}) => {
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
   const logoUrl = event?.attributes?.logo_url;
@@ -1259,7 +1363,9 @@ const Badge4Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Preview - {badge.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Preview - {badge.name}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -1267,17 +1373,19 @@ const Badge4Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Front Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Front Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Front Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
                 style={{
                   backgroundColor: secondaryColor,
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div
@@ -1294,15 +1402,13 @@ const Badge4Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
                     <h2 className="text-2xl font-bold text-gray-900">
                       John Doe
                     </h2>
-                    <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+                    <p className="text-gray-600 text-lg mt-1">
+                      Software Engineer
+                    </p>
                   </div>
                   <div className="relative z-10 flex items-center gap-3">
                     {logoUrl && (
-                      <img
-                        src={logoUrl}
-                        alt="Logo"
-                        className="w-8 h-8 mb-3"
-                      />
+                      <img src={logoUrl} alt="Logo" className="w-8 h-8 mb-3" />
                     )}
                     <h6 className="font-semibold mb-3 text-black text-lg">
                       Company Name
@@ -1326,21 +1432,25 @@ const Badge4Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
             {/* Back Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Back Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Back Side
+              </h3>
               <div
                 className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
                 style={{
-                  maxWidth: "350px"
+                  maxWidth: "350px",
                 }}
               >
                 <div className="flex-1 flex flex-col items-center justify-center p-8">
                   <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">Additional Information</h3>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      Additional Information
+                    </h3>
                     <p className="text-gray-600">
                       This is the back side of the badge
                     </p>
                   </div>
-                  
+
                   <div className="bg-white p-6 rounded-2xl shadow-inner">
                     <div className="flex justify-center mb-4">
                       <img
@@ -1360,7 +1470,8 @@ const Badge4Preview: React.FC<BadgePreviewProps> = ({ badge, event, onClose, Car
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be printed with attendee information.
+              This is a preview of the badge template. Actual badges will be
+              printed with attendee information.
             </p>
           </div>
         </div>
@@ -1384,12 +1495,17 @@ interface CustomBadgePreviewProps {
   onClose: () => void;
 }
 
-const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClose }) => {
+const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
+  template,
+  onClose,
+}) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
         <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">Preview - {template.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            Preview - {template.name}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -1397,19 +1513,23 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
             <X size={24} />
           </button>
         </div>
-        
+
         <div className="p-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Front Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Front Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Front Side
+              </h3>
               <div className="flex justify-center">
                 <div
                   className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300"
                   style={{
                     width: `${template.width * 80}px`,
                     height: `${template.height * 80}px`,
-                    backgroundColor: template.hasBackground ? template.bgColor : "transparent",
+                    backgroundColor: template.hasBackground
+                      ? template.bgColor
+                      : "transparent",
                     backgroundImage:
                       template.hasBackground && template.bgImage
                         ? `url(${template.bgImage})`
@@ -1430,9 +1550,12 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                             : template.photoAlignment === "right"
                             ? "auto"
                             : "50%",
-                        right: template.photoAlignment === "right" ? "40px" : "auto",
+                        right:
+                          template.photoAlignment === "right" ? "40px" : "auto",
                         transform:
-                          template.photoAlignment === "center" ? "translateX(-50%)" : "none",
+                          template.photoAlignment === "center"
+                            ? "translateX(-50%)"
+                            : "none",
                         top: `${(template.photoPosition?.y || 60) * 0.4}px`,
                       }}
                     >
@@ -1446,7 +1569,9 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                     <div
                       className="absolute left-0 right-0"
                       style={{
-                        top: `${(template.nameText.position?.y || 280) * 0.4}px`,
+                        top: `${
+                          (template.nameText.position?.y || 280) * 0.4
+                        }px`,
                         textAlign: template.nameText.alignment || "center",
                       }}
                     >
@@ -1466,14 +1591,18 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                     <div
                       className="absolute left-0 right-0"
                       style={{
-                        top: `${(template.companyText.position?.y || 315) * 0.4}px`,
+                        top: `${
+                          (template.companyText.position?.y || 315) * 0.4
+                        }px`,
                         textAlign: template.companyText.alignment || "center",
                       }}
                     >
                       <div
                         className="px-4"
                         style={{
-                          fontSize: `${(template.companyText.size || 18) * 0.4}px`,
+                          fontSize: `${
+                            (template.companyText.size || 18) * 0.4
+                          }px`,
                           color: template.companyText.color || "#cccccc",
                         }}
                       >
@@ -1486,14 +1615,18 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                     <div
                       className="absolute left-0 right-0"
                       style={{
-                        top: `${(template.titleText.position?.y || 350) * 0.4}px`,
+                        top: `${
+                          (template.titleText.position?.y || 350) * 0.4
+                        }px`,
                         textAlign: template.titleText.alignment || "center",
                       }}
                     >
                       <div
                         className="px-4"
                         style={{
-                          fontSize: `${(template.titleText.size || 16) * 0.4}px`,
+                          fontSize: `${
+                            (template.titleText.size || 16) * 0.4
+                          }px`,
                           color: template.titleText.color || "#999999",
                         }}
                       >
@@ -1507,7 +1640,9 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                       className="absolute bg-white border-4 border-gray-400 flex items-center justify-center overflow-hidden rounded-lg"
                       style={{
                         width: `${(template.qrCodeSize.width || 120) * 0.4}px`,
-                        height: `${(template.qrCodeSize.height || 120) * 0.4}px`,
+                        height: `${
+                          (template.qrCodeSize.height || 120) * 0.4
+                        }px`,
                         left: `${(template.qrCodePosition?.x || 200) * 0.4}px`,
                         top: `${(template.qrCodePosition?.y || 400) * 0.4}px`,
                       }}
@@ -1524,7 +1659,9 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
 
             {/* Back Side */}
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Back Side</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                Back Side
+              </h3>
               <div className="flex justify-center">
                 <div
                   className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300 bg-gray-100"
@@ -1535,12 +1672,14 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
                 >
                   <div className="h-full flex flex-col items-center justify-center p-8">
                     <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">Additional Information</h3>
+                      <h3 className="text-xl font-bold text-gray-900 mb-2">
+                        Additional Information
+                      </h3>
                       <p className="text-gray-600">
                         This is the back side of the badge
                       </p>
                     </div>
-                    
+
                     <div className="bg-white p-4 rounded-xl shadow-inner">
                       <div className="flex justify-center mb-3">
                         <div className="bg-gray-200 p-4 rounded-lg">
@@ -1559,7 +1698,8 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({ template, onClo
 
           <div className="mt-8 text-center">
             <p className="text-gray-600">
-              This is a preview of your custom badge template. Actual badges will be printed with attendee information.
+              This is a preview of your custom badge template. Actual badges
+              will be printed with attendee information.
             </p>
           </div>
         </div>
@@ -1587,20 +1727,24 @@ const Badges: React.FC<BadgesProps> = ({
   plan,
 }) => {
   console.log(plan, currentStep, eventId);
-  
+
   // State for custom templates
   const [customTemplates, setCustomTemplates] = useState<BadgeTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<BadgeTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<BadgeTemplate | null>(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
-  const [editingCustomTemplate, setEditingCustomTemplate] = useState<BadgeTemplate | null>(null);
+  const [editingCustomTemplate, setEditingCustomTemplate] =
+    useState<BadgeTemplate | null>(null);
   const [isEditCustomMode, setIsEditCustomMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [event, setEvent] = useState<any>(null);
-  
+
   // Preview state
   const [previewBadge, setPreviewBadge] = useState<Badge | null>(null);
-  const [previewTemplate, setPreviewTemplate] = useState<BadgeTemplate | null>(null);
-  
+  const [previewTemplate, setPreviewTemplate] = useState<BadgeTemplate | null>(
+    null
+  );
+
   // Original badge state
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [activeBadgeId, setActiveBadgeId] = useState<number | null>(null);
@@ -1648,6 +1792,56 @@ const Badges: React.FC<BadgesProps> = ({
       qrImg: Assets.images.qr_img,
       cardHeader: Assets.images.card_header2,
       cardFooter: Assets.images.card_footer2,
+    },
+    {
+      id: 5,
+      name: "Badge 5",
+      frontImg: Assets.images.b1_front,
+      backImg: Assets.images.b1_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header,
+      cardFooter: Assets.images.card_footer,
+    },
+    {
+      id: 6,
+      name: "Badge 6",
+      frontImg: Assets.images.b2_front,
+      backImg: Assets.images.b2_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header2,
+      cardFooter: Assets.images.card_footer2,
+    },
+    {
+      id: 7,
+      name: "Badge 7",
+      frontImg: Assets.images.b3_front,
+      backImg: Assets.images.b3_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header,
+      cardFooter: Assets.images.card_footer,
+    },
+    {
+      id: 8,
+      name: "Badge 8",
+      frontImg: Assets.images.b4_front,
+      backImg: Assets.images.b4_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header2,
+      cardFooter: Assets.images.card_footer2,
+    },
+    {
+      id: 9,
+      name: "Badge 9",
+      frontImg: Assets.images.b1_front,
+      backImg: Assets.images.b1_back,
+      userImg: Assets.images.user_img,
+      qrImg: Assets.images.qr_img,
+      cardHeader: Assets.images.card_header,
+      cardFooter: Assets.images.card_footer,
     },
   ];
 
@@ -1838,7 +2032,9 @@ const Badges: React.FC<BadgesProps> = ({
               setSelectedBadge(foundBadge);
             } else {
               // Check if it's a custom template
-              const foundTemplate = customTemplates.find(t => t.id === `custom-${activeBadge}`);
+              const foundTemplate = customTemplates.find(
+                (t) => t.id === `custom-${activeBadge}`
+              );
               if (foundTemplate) {
                 setSelectedTemplate(foundTemplate);
               }
@@ -1888,7 +2084,9 @@ const Badges: React.FC<BadgesProps> = ({
     }
 
     saveTemplates(updatedTemplates);
-    toast.success(`Template ${isEditCustomMode ? 'updated' : 'created'} successfully!`);
+    toast.success(
+      `Template ${isEditCustomMode ? "updated" : "created"} successfully!`
+    );
   };
 
   const handleDeleteCustomTemplate = (templateId: string) => {
@@ -1949,57 +2147,137 @@ const Badges: React.FC<BadgesProps> = ({
           style={{ height: "33%" }}
         >
           <div className="absolute inset-0">
-            {badge.id === 1 || badge.id === 2 ? (
+            {badge.id === 1 ||
+            badge.id === 2 ||
+            badge.id === 5 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 8 ||
+            badge.id === 9 ? (
               <CardHeader color={primaryColor} />
             ) : (
               <CardHeader2 color={primaryColor} />
             )}
           </div>
-          
+
           {/* Header content for different badges */}
-          {badge.id === 1 && (
+          {(badge.id === 1 || badge.id === 5 || badge.id === 8) && (
             <div className="relative z-10 flex items-center justify-center gap-2 h-full">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-4 h-4" />}
               <h6 className="font-semibold text-white text-xs">Company Name</h6>
             </div>
           )}
-          {badge.id === 3 && (
+          {(badge.id === 3 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 9) && (
             <div className="relative z-10 flex items-center justify-center h-full">
-              <h6 className="font-semibold text-white text-xs">Conference 2024</h6>
+              <h6 className="font-semibold text-white text-xs">
+                {badge.id === 3 ? "Conference 2024" : "Event Name"}
+              </h6>
             </div>
           )}
         </div>
 
         {/* Content Section */}
         <div className="flex flex-1 flex-col justify-center items-center p-4">
-          {/* Photo - only for badges that have it enabled */}
-          {(badge.id === 1 || badge.id === 3) && (
-            <div className="w-12 h-12 rounded-full bg-gray-300 mb-2 flex items-center justify-center overflow-hidden">
-              {badge.id === 1 ? (
-                <img src={badge.userImg} className="w-full h-full object-cover" />
+          {/* Photo - for badges that have it enabled */}
+          {(badge.id === 1 ||
+            badge.id === 3 ||
+            badge.id === 5 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 8 ||
+            badge.id === 9) && (
+            <div
+              className={`${
+                badge.id === 3
+                  ? "w-12 h-12 rounded-full"
+                  : "w-12 h-12 rounded-full"
+              } bg-gray-300 mb-2 flex items-center justify-center overflow-hidden`}
+            >
+              {badge.id === 1 ||
+              badge.id === 5 ||
+              badge.id === 6 ||
+              badge.id === 7 ||
+              badge.id === 8 ||
+              badge.id === 9 ? (
+                <img
+                  src={badge.userImg}
+                  className="w-full h-full object-cover"
+                  alt="User"
+                />
               ) : (
-                <img src={badge.squareUserImg} className="w-full h-full object-cover" />
+                <img
+                  src={badge.squareUserImg}
+                  className="w-full h-full object-cover"
+                  alt="User"
+                />
               )}
             </div>
           )}
 
           {/* Name - always show for all badges */}
-          <h2 className={`text-xs font-bold ${badge.id === 2 || badge.id === 4 ? "text-white" : "text-gray-900"} mb-1`}>
+          <h2
+            className={`text-xs font-bold ${
+              badge.id === 2 ||
+              badge.id === 4 ||
+              badge.id === 6 ||
+              badge.id === 7
+                ? "text-white"
+                : "text-gray-900"
+            } mb-1`}
+          >
             John Doe
           </h2>
 
           {/* Title */}
-          <p className={`text-xs ${badge.id === 2 || badge.id === 4 ? "text-gray-300" : "text-gray-600"}`}>
+          <p
+            className={`text-xs ${
+              badge.id === 2 ||
+              badge.id === 4 ||
+              badge.id === 6 ||
+              badge.id === 7
+                ? "text-gray-300"
+                : "text-gray-600"
+            }`}
+          >
             Software Engineer
           </p>
 
-          {/* Company with logo - for badges 2 and 4 */}
-          {(badge.id === 2 || badge.id === 4) && (
+          {/* Company with logo - for badges 2, 4, and new badges */}
+          {(badge.id === 2 ||
+            badge.id === 4 ||
+            badge.id === 5 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 8 ||
+            badge.id === 9) && (
             <div className="flex items-center gap-1 mt-2">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-3 h-3" />}
-              <span className={`text-xs font-medium ${badge.id === 2 || badge.id === 4 ? "text-white" : "text-black"}`}>
+              <span
+                className={`text-xs font-medium ${
+                  badge.id === 2 ||
+                  badge.id === 4 ||
+                  badge.id === 6 ||
+                  badge.id === 7
+                    ? "text-white"
+                    : "text-black"
+                }`}
+              >
                 Tech Corp
               </span>
+            </div>
+          )}
+
+          {/* QR Code for Badge 5-9 */}
+          {(badge.id === 5 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 8 ||
+            badge.id === 9) && (
+            <div className="mt-2 w-8 h-8 bg-white rounded border border-gray-300 flex items-center justify-center">
+              <QrCode size={16} className="text-gray-600" />
             </div>
           )}
         </div>
@@ -2010,13 +2288,19 @@ const Badges: React.FC<BadgesProps> = ({
           style={{ height: 70 }}
         >
           <div className="absolute inset-0">
-            {badge.id === 1 || badge.id === 2 ? (
+            {badge.id === 1 ||
+            badge.id === 2 ||
+            badge.id === 5 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 8 ||
+            badge.id === 9 ? (
               <CardFooter color={primaryColor} />
             ) : (
               <CardFooter2 color={primaryColor} />
             )}
           </div>
-          
+
           {/* Footer content */}
           {badge.id === 2 && (
             <div className="relative z-10 flex items-center justify-center h-full">
@@ -2026,6 +2310,17 @@ const Badges: React.FC<BadgesProps> = ({
           {badge.id === 4 && (
             <div className="relative z-10 flex items-center justify-center h-full">
               <span className="text-white text-xs">VIP</span>
+            </div>
+          )}
+          {(badge.id === 5 ||
+            badge.id === 6 ||
+            badge.id === 7 ||
+            badge.id === 8 ||
+            badge.id === 9) && (
+            <div className="relative z-10 flex items-center justify-center h-full">
+              <div className="w-6 h-6 bg-white rounded border border-gray-300 flex items-center justify-center">
+                <QrCode size={12} className="text-gray-700" />
+              </div>
             </div>
           )}
         </div>
@@ -2041,7 +2336,9 @@ const Badges: React.FC<BadgesProps> = ({
           style={{
             width: `${template.width * 40}px`,
             height: `${template.height * 40}px`,
-            backgroundColor: template.hasBackground ? template.bgColor : "transparent",
+            backgroundColor: template.hasBackground
+              ? template.bgColor
+              : "transparent",
             backgroundImage:
               template.hasBackground && template.bgImage
                 ? `url(${template.bgImage})`
@@ -2064,7 +2361,9 @@ const Badges: React.FC<BadgesProps> = ({
                     : "50%",
                 right: template.photoAlignment === "right" ? "10px" : "auto",
                 transform:
-                  template.photoAlignment === "center" ? "translateX(-50%)" : "none",
+                  template.photoAlignment === "center"
+                    ? "translateX(-50%)"
+                    : "none",
                 top: `${(template.photoPosition?.y || 60) * 0.2}px`,
               }}
             >
@@ -2154,7 +2453,10 @@ const Badges: React.FC<BadgesProps> = ({
   };
 
   // -------------------- API INTEGRATION --------------------
-  const handleBadgeApiSelection = async (badgeId: number, badgeName: string) => {
+  const handleBadgeApiSelection = async (
+    badgeId: number,
+    badgeName: string
+  ) => {
     if (!effectiveEventId) {
       throw new Error("Event ID not found");
     }
@@ -2228,7 +2530,10 @@ const Badges: React.FC<BadgesProps> = ({
         toast.success("Custom badge template selected!");
 
         // Save template data for PrintBadges
-        localStorage.setItem("active_badge_template", JSON.stringify(selectedTemplate));
+        localStorage.setItem(
+          "active_badge_template",
+          JSON.stringify(selectedTemplate)
+        );
         localStorage.setItem("active_badge_id", selectedTemplate.id);
       }
 
@@ -2269,7 +2574,7 @@ const Badges: React.FC<BadgesProps> = ({
           <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-4">
             <Plus className="text-pink-500" size={32} />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2 text-center text-pink-500">
+          <h3 className="text-lg font-medium mb-2 text-center text-pink-500">
             Create Custom Badge
           </h3>
           <p className="text-sm text-gray-500 text-center">
@@ -2289,7 +2594,7 @@ const Badges: React.FC<BadgesProps> = ({
                   : "border-gray-200 hover:border-pink-500"
               }`}
             >
-              <div 
+              <div
                 className="flex-1 cursor-pointer"
                 onClick={() => handleSelectTemplate(template)}
               >
@@ -2365,8 +2670,9 @@ const Badges: React.FC<BadgesProps> = ({
 
         {/* Default Templates */}
         {badges.map((badge) => {
-          const isActive = selectedBadge?.id === badge.id || activeBadgeId === badge.id;
-          
+          const isActive =
+            selectedBadge?.id === badge.id || activeBadgeId === badge.id;
+
           return (
             <div
               key={badge.id}
@@ -2399,9 +2705,24 @@ const Badges: React.FC<BadgesProps> = ({
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <div className="flex gap-1">
-                    {(badge.id === 1 || badge.id === 3) && (
+                    {(badge.id === 1 ||
+                      badge.id === 3 ||
+                      badge.id === 5 ||
+                      badge.id === 6 ||
+                      badge.id === 7 ||
+                      badge.id === 8 ||
+                      badge.id === 9) && (
                       <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">
                         Photo
+                      </span>
+                    )}
+                    {(badge.id === 5 ||
+                      badge.id === 6 ||
+                      badge.id === 7 ||
+                      badge.id === 8 ||
+                      badge.id === 9) && (
+                      <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded text-xs">
+                        QR
                       </span>
                     )}
                   </div>
@@ -2468,11 +2789,53 @@ const Badges: React.FC<BadgesProps> = ({
           CardFooter={CardFooter2}
         />
       )}
-      {previewTemplate && (
-        <CustomBadgePreview
-          template={previewTemplate}
+      {previewBadge && previewBadge.id === 5 && (
+        <Badge5
+          badge={previewBadge}
+          event={event}
           onClose={closePreview}
+          CardHeader={CardHeader}
+          CardFooter={CardFooter}
         />
+      )}
+      {previewBadge && previewBadge.id === 6 && (
+        <Badge6
+          badge={previewBadge}
+          event={event}
+          onClose={closePreview}
+          CardHeader={CardHeader}
+          CardFooter={CardFooter}
+        />
+      )}
+      {previewBadge && previewBadge.id === 7 && (
+        <Badge7
+          badge={previewBadge}
+          event={event}
+          onClose={closePreview}
+          CardHeader={CardHeader}
+          CardFooter={CardFooter}
+        />
+      )}
+      {previewBadge && previewBadge.id === 8 && (
+        <Badge8
+          badge={previewBadge}
+          event={event}
+          onClose={closePreview}
+          CardHeader={CardHeader}
+          CardFooter={CardFooter}
+        />
+      )}
+      {previewBadge && previewBadge.id === 9 && (
+        <Badge9
+          badge={previewBadge}
+          event={event}
+          onClose={closePreview}
+          CardHeader={CardHeader}
+          CardFooter={CardFooter}
+        />
+      )}
+      {previewTemplate && (
+        <CustomBadgePreview template={previewTemplate} onClose={closePreview} />
       )}
 
       {/* Navigation Buttons */}

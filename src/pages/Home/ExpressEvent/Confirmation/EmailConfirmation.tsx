@@ -12,6 +12,81 @@ import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTempl
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 
+// Define static templates for each flow type
+const STATIC_TEMPLATES = {
+  thanks: [
+    {
+      id: "thanks-template-1",
+      title: "Thanks Template 1",
+      component: <ThanksTemplateOne />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "thanks"
+    },
+    {
+      id: "thanks-template-2",
+      title: "Thanks Template 2",
+      component: <ThanksTemplateTwo />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "thanks"
+    }
+  ],
+  confirmation: [
+    {
+      id: "confirmation-template-1",
+      title: "Confirmation Template 1",
+      component: <ConfirmationTemplateOne />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "confirmation"
+    }
+  ],
+  reminder: [
+    {
+      id: "reminder-template-1",
+      title: "Reminder Template 1",
+      component: <ReminderTemplateOne />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "reminder"
+    },
+    {
+      id: "reminder-template-2",
+      title: "Reminder Template 2",
+      component: <ReminderTemplateTwo />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "reminder"
+    }
+  ],
+  rejection: [
+    {
+      id: "rejection-template-1",
+      title: "Rejection Template 1",
+      component: <RejectionTemplateOne />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "rejection"
+    },
+    {
+      id: "rejection-template-2",
+      title: "Rejection Template 2",
+      component: <RejectionTemplateTwo />,
+      html: null,
+      design: null,
+      isStatic: true,
+      type: "rejection"
+    }
+  ]
+};
+
 const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   const emailEditorRef = useRef<any>(null);
 
@@ -24,7 +99,6 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
         } catch (err) {
           console.warn("Failed to load design into editor:", err);
         }
-      } else if (emailEditorRef.current?.editor && !initialDesign) {
       }
     }, 300);
 
@@ -101,14 +175,8 @@ const TemplateModal = ({
 }: any) => {
   if (!template) return null;
 
-  const content = template.html ? (
-    <div
-      className="w-full"
-      dangerouslySetInnerHTML={{ __html: template.html }}
-    />
-  ) : (
-    <div className="w-full">{template.component}</div>
-  );
+  // Check if it's a static template (no html, only component)
+  const isStaticTemplate = template.isStatic;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -116,21 +184,24 @@ const TemplateModal = ({
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => onEdit(template)}
-              className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
-            >
-              <Pencil size={14} />
-              {/* Edit Template */}
-            </button>
-            {/* DELETE BUTTON - ALWAYS SHOW FOR ALL TEMPLATES */}
-            <button
-              onClick={() => onDelete(template)}
-              className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
-            >
-              <Trash2 size={14} />
-              {/* Delete Template */}
-            </button>
+            {/* Edit button - only show for non-static templates */}
+            {!isStaticTemplate && template.apiId && (
+              <button
+                onClick={() => onEdit(template)}
+                className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
+              >
+                <Pencil size={14} />
+              </button>
+            )}
+            {/* Delete button - only show for non-static templates */}
+            {!isStaticTemplate && template.apiId && (
+              <button
+                onClick={() => onDelete(template)}
+                className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -141,7 +212,21 @@ const TemplateModal = ({
         </div>
 
         {/* Template content */}
-        <div className="mb-6">{content}</div>
+        <div className="mb-6 border rounded-lg p-4 bg-gray-50 min-h-[400px]">
+          {template.html ? (
+            <div className="w-full h-full overflow-auto">
+              <div dangerouslySetInnerHTML={{ __html: template.html }} />
+            </div>
+          ) : template.component ? (
+            <div className="w-full h-full flex items-center justify-center overflow-auto">
+              {template.component}
+            </div>
+          ) : (
+            <div className="flex items-center justify-center w-full h-full text-gray-400">
+              No preview available
+            </div>
+          )}
+        </div>
 
         <button
           onClick={() => onSelect(template.id)}
@@ -158,26 +243,64 @@ const TemplateModal = ({
  * TemplateThumbnail - Component to display template preview in grid
  */
 const TemplateThumbnail = ({ template }: any) => {
+  const isStaticTemplate = template.isStatic;
+  
+  // Determine scale factor based on template type or content
+  const getScaleFactor = () => {
+    if (template.type === 'thanks') return 0.5;
+    if (template.type === 'confirmation') return 0.45;
+    if (template.type === 'reminder') return 0.5;
+    if (template.type === 'rejection') return 0.5;
+    return 0.5;
+  };
+
+  const scale = getScaleFactor();
+  const scaledWidth = `${100 / scale}%`;
+  const scaledHeight = `${100 / scale}%`;
+
   return (
-    <div className="w-full rounded-xl flex items-center justify-center bg-gray-100 relative">
+    <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-100 relative">
       {template.html ? (
-        // For edited templates: Show scaled preview of the actual HTML
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ transformOrigin: "top left" }}
-        >
+        <div className="absolute inset-0">
           <div
-            className="w-full h-full"
-            dangerouslySetInnerHTML={{ __html: template.html }}
-          />
+            className="w-full h-full overflow-hidden"
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              width: scaledWidth,
+              height: scaledHeight
+            }}
+          >
+            <div
+              className="w-full h-full"
+              dangerouslySetInnerHTML={{ __html: template.html }}
+            />
+          </div>
+        </div>
+      ) : template.component ? (
+        <div className="absolute inset-0">
+          <div
+            className="w-full h-full overflow-hidden"
+            style={{
+              transform: `scale(${scale})`,
+              transformOrigin: 'top left',
+              width: scaledWidth,
+              height: scaledHeight
+            }}
+          >
+            {template.component}
+          </div>
         </div>
       ) : (
-        // For static templates: Show the React component properly scaled
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ transformOrigin: "top left" }}
-        >
-          {template.component}
+        <div className="flex items-center justify-center w-full h-full text-gray-400">
+          No preview available
+        </div>
+      )}
+      
+      {/* Show static template badge */}
+      {isStaticTemplate && (
+        <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">
+          Static
         </div>
       )}
     </div>
@@ -187,7 +310,6 @@ const TemplateThumbnail = ({ template }: any) => {
 const apiService = {
   getAuthToken() {
     const token = localStorage.getItem("token");
-    console.log("token-------+++++++++++000000000000000", token);
     return token;
   },
 
@@ -398,7 +520,7 @@ const apiService = {
     return "confirmation_templates";
   },
 
-  // Map flow types to API type parameters - BASED ON YOUR SCREENSHOT
+  // Map flow types to API type parameters
   getTypeParam(flowType: string) {
     const typeMap: { [key: string]: string } = {
       thanks: "ConfirmationThanksTemplate",
@@ -431,22 +553,21 @@ const apiService = {
       confirmation_template: {
         content: html,
         type: type,
-        // Note: We don't include 'default' field for updates as it might be controlled separately
       },
     };
   },
 
-  // Convert API templates to our format - REMOVED isDefault CHECK
+  // Convert API templates to our format
   convertApiTemplates(apiTemplates: any[], flowType: string) {
     return apiTemplates.map((template: any, index: number) => ({
       id: `api-${template.id}`,
       title: `${flowType.charAt(0).toUpperCase() + flowType.slice(1)
         } Template ${index + 1}`,
       component: null,
-      design: null,
+      design: template.attributes?.design ? JSON.parse(template.attributes.design) : null,
       html: template.attributes?.content || "",
       apiId: template.id,
-      // REMOVED: isDefault property since we don't need it anymore
+      isStatic: false,
       type: template.attributes?.type || flowType,
     }));
   },
@@ -464,14 +585,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   onPrevious,
   eventId,
 }) => {
-  // Log the received eventId
   console.log("EmailConfirmation - Received eventId:", eventId);
-
-  // Also check localStorage as fallback
   const localStorageEventId = localStorage.getItem("create_eventId");
   console.log("EmailConfirmation - localStorage eventId:", localStorageEventId);
-
-  // Use the eventId from props first, then fall back to localStorage
   const effectiveEventId = eventId || localStorageEventId;
   console.log("EmailConfirmation - Effective eventId:", effectiveEventId);
 
@@ -516,8 +632,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   }, [effectiveEventId, currentFlowIndex]);
 
-  // Remove localStorage saving for emailTemplates since we're using API only
-
   // Load templates from API
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId) return;
@@ -542,7 +656,13 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       setFlows((prevFlows) =>
         prevFlows.map((flow) =>
           flow.id === currentFlow.id
-            ? { ...flow, templates: [...convertedTemplates] }
+            ? { 
+                ...flow, 
+                templates: [
+                  ...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES] || [],
+                  ...convertedTemplates
+                ]
+              }
             : flow
         )
       );
@@ -570,9 +690,17 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   // When user clicks edit in TemplateModal
   const handleEditTemplate = (template: any) => {
-    setEditingTemplate(template);
-    setModalTemplate(null); // close preview
-    setIsEditorOpen(true); // open editor
+    // For static templates, we create a new custom template
+    if (template.isStatic) {
+      setIsCreatingNew(true);
+      setEditingTemplate(null);
+      setIsEditorOpen(true);
+    } else {
+      // For API templates, edit the existing one
+      setEditingTemplate(template);
+      setModalTemplate(null);
+      setIsEditorOpen(true);
+    }
   };
 
   // Handle creating a new template
@@ -584,6 +712,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   // Handle deleting a template
   const handleDeleteTemplate = async (template: any) => {
+    // Don't allow deletion of static templates
+    if (template.isStatic) {
+      toast.warning("Static templates cannot be deleted.");
+      return;
+    }
+
     if (!effectiveEventId || !template.apiId) {
       console.error(
         "Cannot delete template: Missing eventId or template API ID"
@@ -691,7 +825,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         design,
         html,
         apiId: apiResponse.data?.id,
-        // REMOVED: isDefault property
+        isStatic: false,
         type: currentFlow.id,
       };
 
@@ -705,7 +839,14 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       setFlows((prevFlows) =>
         prevFlows.map((flow, index) =>
           index === currentFlowIndex
-            ? { ...flow, templates: [...flow.templates, newTemplate] }
+            ? { 
+                ...flow, 
+                templates: [
+                  ...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES] || [],
+                  ...flow.templates.filter((t: any) => !t.isStatic),
+                  newTemplate
+                ]
+              }
             : flow
         )
       );
@@ -866,6 +1007,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     }
   };
 
+  // Check if all steps are completed
+  const allStepsCompleted = flows.every((flow) => selectedTemplates[flow.id]);
+
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm relative">
       {/* Toast Container */}
@@ -940,10 +1084,10 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         </div>
       )}
 
-      {/* Template Grid */}
+      {/* Template Grid - CHANGED ORDER: Create New FIRST (left), Templates after (right) */}
       {!isLoading && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Create New Template Card - Always show first */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* Create New Template Card - FIRST/LEFT SIDE */}
           <div
             onClick={handleCreateNewTemplate}
             className="border-2 border-dashed border-gray-300 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-400 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square"
@@ -959,40 +1103,65 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             </p>
           </div>
 
-          {/* Existing Templates */}
-          {currentFlow.templates.map((tpl: any) => (
-            <div
-              key={tpl.id}
-              onClick={() => handleOpenModal(tpl)}
-              className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative ${selectedTemplates[currentFlow.id] === tpl.id
-                  ? "border-pink-500 bg-pink-50 shadow-md"
-                  : "border-gray-200 hover:border-pink-300"
-                }`}
-            >
-              {/* DELETE BUTTON - ALWAYS SHOW FOR ALL TEMPLATES */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent opening modal
-                  handleDeleteTemplate(tpl);
-                }}
-                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
-                title="Delete template"
+          {/* Static Templates - MIDDLE */}
+          {currentFlow.templates
+            .filter((tpl: any) => tpl.isStatic)
+            .map((tpl: any) => (
+              <div
+                key={tpl.id}
+                onClick={() => handleOpenModal(tpl)}
+                className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative ${selectedTemplates[currentFlow.id] === tpl.id
+                    ? "border-pink-500 bg-pink-50 shadow-md"
+                    : "border-gray-200 hover:border-pink-300"
+                  }`}
               >
-                <Trash2 size={14} />
-              </button>
+                {/* Template Thumbnail */}
+                <div className="flex-1">
+                  <TemplateThumbnail template={tpl} />
+                </div>
+                <div className="mt-3">
+                  <h3 className="font-medium text-gray-900 text-center">
+                    {tpl.title}
+                  </h3>
+                </div>
+              </div>
+            ))}
 
-              {/* Template Thumbnail */}
-              <div className="flex-1">
-                <TemplateThumbnail template={tpl} />
+          {/* API Templates - RIGHT SIDE */}
+          {currentFlow.templates
+            .filter((tpl: any) => !tpl.isStatic)
+            .map((tpl: any) => (
+              <div
+                key={tpl.id}
+                onClick={() => handleOpenModal(tpl)}
+                className={`border-2 rounded-2xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md aspect-square flex flex-col relative group ${selectedTemplates[currentFlow.id] === tpl.id
+                    ? "border-pink-500 bg-pink-50 shadow-md"
+                    : "border-gray-200 hover:border-pink-300"
+                  }`}
+              >
+                {/* DELETE BUTTON - only for API templates */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTemplate(tpl);
+                  }}
+                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 z-10"
+                  title="Delete template"
+                >
+                  <Trash2 size={14} />
+                </button>
+
+                {/* Template Thumbnail */}
+                <div className="flex-1">
+                  <TemplateThumbnail template={tpl} />
+                </div>
+                <div className="mt-3">
+                  <h3 className="font-medium text-gray-900 text-center">
+                    {tpl.title}
+                  </h3>
+                </div>
               </div>
-              <div className="mt-3">
-                <h3 className="font-medium text-gray-900 text-center">
-                  {tpl.title}
-                </h3>
-                {/* REMOVED: Default badge since we don't have default templates anymore */}
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
 
@@ -1035,6 +1204,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
         <span className="text-sm text-gray-500">
           Step {currentFlowIndex + 1} of {flows.length}
+          {allStepsCompleted && " - All steps completed!"}
         </span>
 
         <button
