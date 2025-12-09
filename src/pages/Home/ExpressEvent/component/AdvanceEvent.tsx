@@ -21,7 +21,7 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    { component: AdvanceTicket, name: "Advance Ticket" },
+    // { component: AdvanceTicket, name: "Advance Ticket" },
     { component: AdvanceRegistration, name: "Advance Registration" },
     { component: AdvanceConfirmation, name: "Advance Confirmation" },
     { component: AdvanceBadge, name: "Advance Badge" },

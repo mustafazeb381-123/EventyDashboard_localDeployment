@@ -386,6 +386,23 @@ export const updateSpeakerApi = (eventId: string | number, speakerId: string | n
 };
 
 
+export const updateExhibitorApi = (eventId: string | number, exhibitorId: string | number, data: FormData) => {
+  return axiosInstance.put(`events/${eventId}/exhibitors/${exhibitorId}`, data);
+};
+
+export const createExhibitorApi = (eventId: string | number, data: FormData) => {
+  return axiosInstance.post(`events/${eventId}/exhibitors`, data);
+};
+
+export const getExhibitorsApi = (eventId: string | number) => {
+  return axiosInstance.get(`events/${eventId}/exhibitors`);
+};
+
+export const deleteExhibitorApi = (eventId: string | number, exhibitorId: string | number) => {
+  return axiosInstance.delete(`events/${eventId}/exhibitors/${exhibitorId}`);
+};
+
+
 
 
 export const createPartnerApi = (eventId: string | number, data: FormData) => {
