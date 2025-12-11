@@ -893,10 +893,12 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
         <Plus className="text-blue-600" size={20} />
         <h3 className="font-semibold text-gray-800">Add Field to Form</h3>
       </div>
-      
+
       {/* Layout Types */}
       <div className="mb-4 pb-4 border-b">
-        <h4 className="text-sm font-medium text-gray-600 mb-2">Layout Elements</h4>
+        <h4 className="text-sm font-medium text-gray-600 mb-2">
+          Layout Elements
+        </h4>
         <div className="grid grid-cols-3 gap-2">
           {layoutTypes.map((layout) => (
             <button
@@ -912,7 +914,9 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
             >
               <div className="flex flex-col items-center gap-2">
                 <div className={`text-${layout.color}-600`}>{layout.icon}</div>
-                <span className="text-xs font-medium text-gray-700">{layout.label}</span>
+                <span className="text-xs font-medium text-gray-700">
+                  {layout.label}
+                </span>
               </div>
             </button>
           ))}
@@ -939,7 +943,9 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
                       : type === "number"
                       ? "Enter a number"
                       : `Enter ${label.toLowerCase()}`,
-                  ...(type === "select" || type === "radio" || type === "checkbox"
+                  ...(type === "select" ||
+                  type === "radio" ||
+                  type === "checkbox"
                     ? {
                         options: [
                           { label: "Option 1", value: "option_1" },
@@ -997,7 +1003,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   onClose,
 }) => {
   const [fields, setFields] = useState<CustomFormField[]>(initialFields);
-  const [editingField, setEditingField] = useState<CustomFormField | null>(null);
+  const [editingField, setEditingField] = useState<CustomFormField | null>(
+    null
+  );
   const [showPreview, setShowPreview] = useState(false);
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [bannerImage, setBannerImage] = useState<File | string | null>(
@@ -1993,10 +2001,16 @@ const FormPreview: React.FC<FormPreviewProps> = ({
     // Merge field-specific styles with theme styles
     const fieldInputStyle: React.CSSProperties = {
       ...inputStyle,
-      backgroundColor: field.fieldStyle?.backgroundColor || theme?.inputBackgroundColor || "#ffffff",
-      borderColor: field.fieldStyle?.borderColor || theme?.inputBorderColor || "#d1d5db",
-      borderWidth: field.fieldStyle?.borderWidth || theme?.inputBorderWidth || "1px",
-      borderRadius: field.fieldStyle?.borderRadius || theme?.inputBorderRadius || "6px",
+      backgroundColor:
+        field.fieldStyle?.backgroundColor ||
+        theme?.inputBackgroundColor ||
+        "#ffffff",
+      borderColor:
+        field.fieldStyle?.borderColor || theme?.inputBorderColor || "#d1d5db",
+      borderWidth:
+        field.fieldStyle?.borderWidth || theme?.inputBorderWidth || "1px",
+      borderRadius:
+        field.fieldStyle?.borderRadius || theme?.inputBorderRadius || "6px",
       color: field.fieldStyle?.textColor || theme?.inputTextColor || "#111827",
       padding: field.fieldStyle?.padding || theme?.inputPadding || "10px 16px",
       width: field.fieldStyle?.width || "100%",
@@ -2095,7 +2109,9 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor =
-                field.fieldStyle?.borderColor || theme?.inputBorderColor || "#d1d5db";
+                field.fieldStyle?.borderColor ||
+                theme?.inputBorderColor ||
+                "#d1d5db";
             }}
             className="w-full transition-all bg-white"
           >
@@ -2414,7 +2430,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                       : "block"
                   }`}
                   style={{
-                    backgroundColor: field.fieldStyle?.backgroundColor || "#f9fafb",
+                    backgroundColor:
+                      field.fieldStyle?.backgroundColor || "#f9fafb",
                     borderColor: field.fieldStyle?.borderColor || "#d1d5db",
                     padding: field.fieldStyle?.padding || "16px",
                     margin: field.fieldStyle?.margin || "0",
@@ -2422,7 +2439,9 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   }}
                 >
                   <div className="text-xs text-gray-500 mb-2 font-medium">
-                    {field.containerType.charAt(0).toUpperCase() + field.containerType.slice(1)} Container
+                    {field.containerType.charAt(0).toUpperCase() +
+                      field.containerType.slice(1)}{" "}
+                    Container
                   </div>
                   <div className="text-sm text-gray-400 italic">
                     Drop fields here
@@ -2432,56 +2451,59 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             }
 
             return (
-            <div 
-              key={field.id} 
-              className="space-y-2"
-              style={{
-                margin: field.fieldStyle?.margin || "0",
-                padding: field.fieldStyle?.padding || "0",
-                width: field.fieldStyle?.width || "100%",
-              }}
-            >
-              <label
-                className="block font-semibold"
+              <div
+                key={field.id}
+                className="space-y-2"
                 style={{
-                  color: field.fieldStyle?.labelColor || theme?.labelColor || "#374151",
-                  fontSize: theme?.labelFontSize || "14px",
-                  fontWeight: theme?.labelFontWeight || "600",
+                  margin: field.fieldStyle?.margin || "0",
+                  padding: field.fieldStyle?.padding || "0",
+                  width: field.fieldStyle?.width || "100%",
                 }}
               >
-                {field.label}
-                {field.required && (
-                  <span
-                    style={{
-                      color: theme?.requiredIndicatorColor || "#ef4444",
-                      marginLeft: "4px",
-                    }}
-                  >
-                    *
-                  </span>
-                )}
-                {field.unique && (
-                  <span
-                    className="ml-2 text-xs bg-blue-50 px-2 py-0.5 rounded"
-                    style={{ color: "#2563eb" }}
-                  >
-                    Unique
-                  </span>
-                )}
-              </label>
-              {field.description && (
-                <p
-                  className="text-xs mb-2 italic"
+                <label
+                  className="block font-semibold"
                   style={{
-                    color: theme?.descriptionColor || "#6b7280",
-                    fontSize: theme?.descriptionFontSize || "12px",
+                    color:
+                      field.fieldStyle?.labelColor ||
+                      theme?.labelColor ||
+                      "#374151",
+                    fontSize: theme?.labelFontSize || "14px",
+                    fontWeight: theme?.labelFontWeight || "600",
                   }}
                 >
-                  {field.description}
-                </p>
-              )}
-              {renderField(field, inputStyle, theme)}
-            </div>
+                  {field.label}
+                  {field.required && (
+                    <span
+                      style={{
+                        color: theme?.requiredIndicatorColor || "#ef4444",
+                        marginLeft: "4px",
+                      }}
+                    >
+                      *
+                    </span>
+                  )}
+                  {field.unique && (
+                    <span
+                      className="ml-2 text-xs bg-blue-50 px-2 py-0.5 rounded"
+                      style={{ color: "#2563eb" }}
+                    >
+                      Unique
+                    </span>
+                  )}
+                </label>
+                {field.description && (
+                  <p
+                    className="text-xs mb-2 italic"
+                    style={{
+                      color: theme?.descriptionColor || "#6b7280",
+                      fontSize: theme?.descriptionFontSize || "12px",
+                    }}
+                  >
+                    {field.description}
+                  </p>
+                )}
+                {renderField(field, inputStyle, theme)}
+              </div>
             );
           })}
           <div
