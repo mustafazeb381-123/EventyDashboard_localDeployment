@@ -9,6 +9,7 @@ import Areas from "./Areas/Areas";
 import EmailConfirmation from "./Confirmation/EmailConfirmation";
 import AdvanceAppManagement from "./component/AdvanceAppManagement";
 import AdvanceEmail from "./component/AdvanceEmail";
+import AdvanceEventContent from "./component/AdvanceEventContent";
 
 export interface ToggleStates {
   confirmationMsg: boolean;
@@ -296,7 +297,7 @@ const ExpressEvent = () => {
         );
       case 2:
         return plan === "advance" ? (
-          <Badges
+          <AdvanceEventContent
             plan={plan}
             toggleStates={toggleStates}
             eventId={finalEventId}

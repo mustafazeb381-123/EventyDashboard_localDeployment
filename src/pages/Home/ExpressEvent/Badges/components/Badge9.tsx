@@ -141,4 +141,3 @@ const Badge9: React.FC<Badge9Props> = ({
 };
 
 export default Badge9;
-
