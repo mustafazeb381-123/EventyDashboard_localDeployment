@@ -1077,7 +1077,10 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
 
     return (
       <div className="w-full p-4">
-        <div className="max-w-3xl mx-auto rounded-xl shadow-lg overflow-hidden" style={formContainerStyle}>
+        <div
+          className="max-w-3xl mx-auto rounded-xl shadow-lg overflow-hidden"
+          style={formContainerStyle}
+        >
           {bannerUrl && (
             <div className="w-full h-64 bg-gray-100 overflow-hidden">
               <img
@@ -1160,7 +1163,13 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                       </p>
                     )}
                     {/* Render fields based on type */}
-                    {renderCustomField(field, inputStyle, theme, formData, setFormData)}
+                    {renderCustomField(
+                      field,
+                      inputStyle,
+                      theme,
+                      formData,
+                      setFormData
+                    )}
                   </div>
                 );
               })}
@@ -1986,7 +1995,8 @@ const AdvanceRegistration = ({
               const bannerPreviewUrl = template.bannerImage
                 ? typeof template.bannerImage === "string"
                   ? template.bannerImage
-                  : template.bannerImage instanceof File || template.bannerImage instanceof Blob
+                  : template.bannerImage instanceof File ||
+                    template.bannerImage instanceof Blob
                   ? URL.createObjectURL(template.bannerImage)
                   : null
                 : null;

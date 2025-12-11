@@ -2071,11 +2071,12 @@ const FormPreview: React.FC<FormPreviewProps> = ({
       case "file":
       case "image":
         const fileValue = formData[field.name];
-        const fileName = fileValue instanceof File 
-          ? fileValue.name 
-          : typeof fileValue === "string" 
-          ? fileValue.split('/').pop() || fileValue
-          : "";
+        const fileName =
+          fileValue instanceof File
+            ? fileValue.name
+            : typeof fileValue === "string"
+            ? fileValue.split("/").pop() || fileValue
+            : "";
 
         return (
           <div className="space-y-2">
@@ -2171,12 +2172,11 @@ const FormPreview: React.FC<FormPreviewProps> = ({
               <p className="text-xs text-gray-500 pl-1">
                 {fileValue instanceof File && (
                   <>
-                    {field.type === "image" ? "Image" : "File"}: {fileName} ({(fileValue.size / 1024).toFixed(2)} KB)
+                    {field.type === "image" ? "Image" : "File"}: {fileName} (
+                    {(fileValue.size / 1024).toFixed(2)} KB)
                   </>
                 )}
-                {typeof fileValue === "string" && (
-                  <>Selected: {fileName}</>
-                )}
+                {typeof fileValue === "string" && <>Selected: {fileName}</>}
               </p>
             )}
           </div>
