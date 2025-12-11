@@ -34,9 +34,6 @@ import {
   List,
   MousePointerClick,
   Palette,
-  Layout,
-  Columns,
-  Square,
 } from "lucide-react";
 // Removed toast import to avoid stuck notifications
 
@@ -745,48 +742,6 @@ interface FieldPaletteProps {
 }
 
 const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
-  const layoutTypes: Array<{
-    type: "row" | "column" | "container";
-    label: string;
-    icon: React.ReactNode;
-    description: string;
-    color: string;
-  }> = [
-    {
-      type: "container",
-      label: "Container",
-      icon: <Square size={18} />,
-      description: "Group fields in a container",
-      color: "slate",
-    },
-    {
-      type: "row",
-      label: "Row",
-      icon: <Layout size={18} />,
-      description: "Horizontal layout",
-      color: "blue",
-    },
-    {
-      type: "column",
-      label: "Column",
-      icon: <Columns size={18} />,
-      description: "Vertical layout",
-      color: "green",
-    },
-  ];
-
-  const handleAddLayout = (layoutType: "row" | "column" | "container") => {
-    const newField: CustomFormField = {
-      id: `layout-${Date.now()}`,
-      type: "text", // Placeholder type
-      label: layoutType.charAt(0).toUpperCase() + layoutType.slice(1),
-      name: `layout_${Date.now()}`,
-      required: false,
-      unique: false,
-      containerType: layoutType,
-    };
-    onAddField(newField);
-  };
   const fieldTypes: Array<{
     type: FieldType;
     label: string;
@@ -892,35 +847,6 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       <div className="flex items-center gap-2 mb-4">
         <Plus className="text-blue-600" size={20} />
         <h3 className="font-semibold text-gray-800">Add Field to Form</h3>
-      </div>
-
-      {/* Layout Types */}
-      <div className="mb-4 pb-4 border-b">
-        <h4 className="text-sm font-medium text-gray-600 mb-2">
-          Layout Elements
-        </h4>
-        <div className="grid grid-cols-3 gap-2">
-          {layoutTypes.map((layout) => (
-            <button
-              key={layout.type}
-              onClick={() => handleAddLayout(layout.type)}
-              className={`p-3 border-2 border-dashed rounded-lg hover:border-solid hover:shadow-md transition-all text-center ${
-                layout.color === "slate"
-                  ? "border-slate-300 hover:border-slate-400 hover:bg-slate-50"
-                  : layout.color === "blue"
-                  ? "border-blue-300 hover:border-blue-400 hover:bg-blue-50"
-                  : "border-green-300 hover:border-green-400 hover:bg-green-50"
-              }`}
-            >
-              <div className="flex flex-col items-center gap-2">
-                <div className={`text-${layout.color}-600`}>{layout.icon}</div>
-                <span className="text-xs font-medium text-gray-700">
-                  {layout.label}
-                </span>
-              </div>
-            </button>
-          ))}
-        </div>
       </div>
 
       <div>
@@ -1090,53 +1016,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   };
 
   const handleAddField = (field: CustomFormField) => {
-    const fieldLabels: Record<FieldType, string> = {
-      text: "Text Input",
-      email: "Email Address",
-      number: "Number",
-      date: "Date",
-      textarea: "Text Area",
-      select: "Dropdown",
-      radio: "Radio Buttons",
-      checkbox: "Checkboxes",
-      file: "File Upload",
-      image: "Image Upload",
-      button: "Button",
-    };
-
-    const newField: CustomFormField = {
-      id: `field_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type,
-      label: fieldLabels[type] || "Field",
-      name: `${type}_${Date.now()}`.toLowerCase().replace(/\s+/g, "_"),
-      required: false,
-      unique: false,
-      placeholder:
-        type === "email"
-          ? "example@email.com"
-          : type === "number"
-          ? "Enter a number"
-          : `Enter ${fieldLabels[type]?.toLowerCase() || "value"}`,
-      ...(type === "select" || type === "radio" || type === "checkbox"
-        ? {
-            options: [
-              { label: "Option 1", value: "option_1" },
-              { label: "Option 2", value: "option_2" },
-            ],
-          }
-        : {}),
-      ...(type === "button"
-        ? { buttonText: "Submit", buttonType: "submit" }
-        : {}),
-      ...(type === "image" ? { accept: "image/*" } : {}),
-      ...(type === "file" ? { accept: ".pdf,.doc,.docx" } : {}),
-    };
-    setFields([...fields, newField]);
-    // Auto-open configuration panel for new fields
-    setTimeout(() => {
-      const addedField = fields.find((f) => f.id === newField.id) || newField;
-      // This will be handled by parent component
-    }, 100);
+    // Simply add the field that was passed in (it's already configured from FieldPalette)
+    setFields([...fields, field]);
   };
 
   const handleUpdateField = (updatedField: CustomFormField) => {
@@ -1986,6 +1867,21 @@ const FormPreview: React.FC<FormPreviewProps> = ({
   theme,
 }) => {
   const [formData, setFormData] = useState<Record<string, any>>({});
+  const [backgroundImagePreview, setBackgroundImagePreview] = useState<
+    string | null
+  >(null);
+
+  React.useEffect(() => {
+    if (theme?.formBackgroundImage instanceof File) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBackgroundImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(theme.formBackgroundImage);
+    } else if (typeof theme?.formBackgroundImage === "string") {
+      setBackgroundImagePreview(theme.formBackgroundImage);
+    }
+  }, [theme?.formBackgroundImage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -2175,129 +2071,82 @@ const FormPreview: React.FC<FormPreviewProps> = ({
       case "file":
       case "image":
         const fileValue = formData[field.name];
-        const filePreview =
-          typeof fileValue === "string" && fileValue.startsWith("data:")
-            ? fileValue
-            : fileValue instanceof File
-            ? URL.createObjectURL(fileValue)
-            : null;
+        const fileName = fileValue instanceof File 
+          ? fileValue.name 
+          : typeof fileValue === "string" 
+          ? fileValue.split('/').pop() || fileValue
+          : "";
 
         return (
-          <div className="space-y-3">
-            <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 hover:border-blue-400 transition-colors group">
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                {field.type === "image" ? (
-                  <ImageIcon className="w-12 h-12 mb-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                ) : (
-                  <FileText className="w-12 h-12 mb-3 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                )}
-                <p className="mb-1 text-sm text-gray-600 font-medium">
-                  <span className="font-semibold">Click to upload</span> or drag
-                  and drop
-                </p>
-                {field.accept ? (
-                  <p className="text-xs text-gray-500">{field.accept}</p>
-                ) : (
-                  <p className="text-xs text-gray-500">
-                    {field.type === "image"
-                      ? "PNG, JPG, GIF up to 10MB"
-                      : "Any file type"}
-                  </p>
-                )}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div
+                className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 text-gray-500 text-sm overflow-hidden text-ellipsis whitespace-nowrap"
+                style={{
+                  ...fieldInputStyle,
+                  cursor: "default",
+                }}
+              >
+                {fileName || `No ${field.type} selected`}
               </div>
-              <input
-                type="file"
-                {...commonProps}
-                accept={
-                  field.accept ||
-                  (field.type === "image" ? "image/*" : undefined)
-                }
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    // Validate file type for images
-                    if (
-                      field.type === "image" &&
-                      !file.type.startsWith("image/")
-                    ) {
-                      alert("Please select an image file");
-                      e.target.value = "";
-                      return;
-                    }
-                    // Validate file size (10MB for images)
-                    if (
-                      field.type === "image" &&
-                      file.size > 10 * 1024 * 1024
-                    ) {
-                      alert("Image size should be less than 10MB");
-                      e.target.value = "";
-                      return;
-                    }
-                    // Store file object and create preview for images
-                    if (field.type === "image") {
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        setFormData({
-                          ...formData,
-                          [field.name]: reader.result,
-                        });
-                      };
-                      reader.readAsDataURL(file);
-                    } else {
+              <label
+                className="px-4 py-2 border rounded-lg cursor-pointer text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
+                style={{
+                  backgroundColor: theme?.buttonBackgroundColor || "#3b82f6",
+                  color: theme?.buttonTextColor || "#ffffff",
+                  borderColor: theme?.buttonBorderColor || "#3b82f6",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    theme?.buttonHoverBackgroundColor || "#2563eb";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor =
+                    theme?.buttonBackgroundColor || "#3b82f6";
+                }}
+              >
+                {field.type === "image" ? (
+                  <ImageIcon size={16} />
+                ) : (
+                  <FileText size={16} />
+                )}
+                Choose {field.type === "image" ? "Image" : "File"}
+                <input
+                  type="file"
+                  {...commonProps}
+                  accept={
+                    field.accept ||
+                    (field.type === "image" ? "image/*" : undefined)
+                  }
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Validate file type for images
+                      if (
+                        field.type === "image" &&
+                        !file.type.startsWith("image/")
+                      ) {
+                        alert("Please select an image file");
+                        e.target.value = "";
+                        return;
+                      }
+                      // Validate file size (10MB for images)
+                      if (
+                        field.type === "image" &&
+                        file.size > 10 * 1024 * 1024
+                      ) {
+                        alert("Image size should be less than 10MB");
+                        e.target.value = "";
+                        return;
+                      }
+                      // Store file object
                       setFormData({ ...formData, [field.name]: file });
                     }
-                  }
-                }}
-                className="hidden"
-              />
-            </label>
-            {filePreview && field.type === "image" && (
-              <div className="relative">
-                <div className="w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
-                  <img
-                    src={filePreview}
-                    alt="Upload preview"
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFormData((prev) => {
-                      const newData = { ...prev };
-                      delete newData[field.name];
-                      return newData;
-                    });
-                    // Reset file input
-                    const input = document.querySelector(
-                      `input[name="${field.name}"]`
-                    ) as HTMLInputElement;
-                    if (input) input.value = "";
                   }}
-                  className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
-                  title="Remove image"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-            )}
-            {fileValue && !filePreview && (
-              <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <FileText className="text-blue-600" size={20} />
-                  <div>
-                    <p className="text-sm font-medium text-gray-800">
-                      {typeof fileValue === "string"
-                        ? fileValue
-                        : fileValue.name}
-                    </p>
-                    {fileValue instanceof File && (
-                      <p className="text-xs text-gray-500">
-                        {(fileValue.size / 1024).toFixed(2)} KB
-                      </p>
-                    )}
-                  </div>
-                </div>
+                  className="hidden"
+                />
+              </label>
+              {fileName && (
                 <button
                   type="button"
                   onClick={() => {
@@ -2311,11 +2160,24 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                     ) as HTMLInputElement;
                     if (input) input.value = "";
                   }}
-                  className="p-1 text-red-600 hover:bg-red-50 rounded"
+                  className="px-3 py-2 border border-red-300 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors"
+                  title="Remove file"
                 >
                   <X size={16} />
                 </button>
-              </div>
+              )}
+            </div>
+            {fileName && (
+              <p className="text-xs text-gray-500 pl-1">
+                {fileValue instanceof File && (
+                  <>
+                    {field.type === "image" ? "Image" : "File"}: {fileName} ({(fileValue.size / 1024).toFixed(2)} KB)
+                  </>
+                )}
+                {typeof fileValue === "string" && (
+                  <>Selected: {fileName}</>
+                )}
+              </p>
             )}
           </div>
         );
@@ -2361,22 +2223,6 @@ const FormPreview: React.FC<FormPreviewProps> = ({
     padding: theme?.inputPadding || "10px 16px",
   };
 
-  const [backgroundImagePreview, setBackgroundImagePreview] = useState<
-    string | null
-  >(null);
-
-  React.useEffect(() => {
-    if (theme?.formBackgroundImage instanceof File) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setBackgroundImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(theme.formBackgroundImage);
-    } else if (typeof theme?.formBackgroundImage === "string") {
-      setBackgroundImagePreview(theme.formBackgroundImage);
-    }
-  }, [theme?.formBackgroundImage]);
-
   return (
     <div
       className="max-w-3xl mx-auto rounded-xl shadow-lg overflow-hidden"
@@ -2417,37 +2263,9 @@ const FormPreview: React.FC<FormPreviewProps> = ({
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           {fields.map((field) => {
-            // Check if this is a layout container
+            // Skip any fields with containerType (layout elements should not be rendered)
             if (field.containerType) {
-              return (
-                <div
-                  key={field.id}
-                  className={`border-2 border-dashed rounded-lg p-4 ${
-                    field.containerType === "row"
-                      ? "flex flex-row gap-4"
-                      : field.containerType === "column"
-                      ? "flex flex-col gap-4"
-                      : "block"
-                  }`}
-                  style={{
-                    backgroundColor:
-                      field.fieldStyle?.backgroundColor || "#f9fafb",
-                    borderColor: field.fieldStyle?.borderColor || "#d1d5db",
-                    padding: field.fieldStyle?.padding || "16px",
-                    margin: field.fieldStyle?.margin || "0",
-                    borderRadius: field.fieldStyle?.borderRadius || "8px",
-                  }}
-                >
-                  <div className="text-xs text-gray-500 mb-2 font-medium">
-                    {field.containerType.charAt(0).toUpperCase() +
-                      field.containerType.slice(1)}{" "}
-                    Container
-                  </div>
-                  <div className="text-sm text-gray-400 italic">
-                    Drop fields here
-                  </div>
-                </div>
-              );
+              return null;
             }
 
             return (

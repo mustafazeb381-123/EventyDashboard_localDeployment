@@ -822,6 +822,183 @@ const FormBuilderModal: React.FC<FormBuilderModalProps> = ({
   );
 };
 
+// -------------------- CUSTOM FIELD RENDERER --------------------
+const renderCustomField = (
+  field: CustomFormField,
+  inputStyle: React.CSSProperties,
+  theme: FormTheme | undefined,
+  formData: Record<string, any>,
+  setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>
+) => {
+  const fieldInputStyle: React.CSSProperties = {
+    ...inputStyle,
+    backgroundColor:
+      field.fieldStyle?.backgroundColor ||
+      theme?.inputBackgroundColor ||
+      "#ffffff",
+    borderColor:
+      field.fieldStyle?.borderColor || theme?.inputBorderColor || "#d1d5db",
+    borderWidth:
+      field.fieldStyle?.borderWidth || theme?.inputBorderWidth || "1px",
+    borderRadius:
+      field.fieldStyle?.borderRadius || theme?.inputBorderRadius || "6px",
+    color: field.fieldStyle?.textColor || theme?.inputTextColor || "#111827",
+    padding: field.fieldStyle?.padding || theme?.inputPadding || "10px 16px",
+    width: field.fieldStyle?.width || "100%",
+  };
+
+  const commonProps = {
+    id: field.id,
+    name: field.name,
+    placeholder: field.placeholder,
+    required: field.required,
+  };
+
+  switch (field.type) {
+    case "text":
+    case "email":
+    case "number":
+    case "date":
+      return (
+        <input
+          type={field.type}
+          {...commonProps}
+          value={formData[field.name] || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, [field.name]: e.target.value })
+          }
+          style={fieldInputStyle}
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      );
+    case "textarea":
+      return (
+        <textarea
+          {...commonProps}
+          value={formData[field.name] || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, [field.name]: e.target.value })
+          }
+          style={fieldInputStyle}
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+          rows={4}
+        />
+      );
+    case "select":
+      return (
+        <select
+          {...commonProps}
+          value={formData[field.name] || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, [field.name]: e.target.value })
+          }
+          style={fieldInputStyle}
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="">Select an option...</option>
+          {field.options?.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      );
+    case "radio":
+      return (
+        <div className="space-y-3">
+          {field.options?.map((opt) => (
+            <label
+              key={opt.value}
+              className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              <input
+                type="radio"
+                name={field.name}
+                value={opt.value}
+                checked={formData[field.name] === opt.value}
+                onChange={(e) =>
+                  setFormData({ ...formData, [field.name]: e.target.value })
+                }
+                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+              />
+              <span className="text-gray-700">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      );
+    case "checkbox":
+      return (
+        <div className="space-y-3">
+          {field.options?.map((opt) => (
+            <label
+              key={opt.value}
+              className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              <input
+                type="checkbox"
+                value={opt.value}
+                checked={formData[field.name]?.includes(opt.value) || false}
+                onChange={(e) => {
+                  const current = formData[field.name] || [];
+                  const updated = e.target.checked
+                    ? [...current, opt.value]
+                    : current.filter((v: string) => v !== opt.value);
+                  setFormData({ ...formData, [field.name]: updated });
+                }}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-gray-700">{opt.label}</span>
+            </label>
+          ))}
+        </div>
+      );
+    case "file":
+    case "image":
+      const fileName = formData[field.name]?.name || "";
+      return (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <div
+              className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 text-gray-500 text-sm overflow-hidden text-ellipsis whitespace-nowrap"
+              style={fieldInputStyle}
+            >
+              {fileName || `No ${field.type} selected`}
+            </div>
+            <label
+              className="px-4 py-2 border rounded-lg cursor-pointer text-sm font-medium transition-colors whitespace-nowrap"
+              style={{
+                backgroundColor: theme?.buttonBackgroundColor || "#3b82f6",
+                color: theme?.buttonTextColor || "#ffffff",
+                borderColor: theme?.buttonBorderColor || "#3b82f6",
+              }}
+            >
+              Choose {field.type === "image" ? "Image" : "File"}
+              <input
+                type="file"
+                {...commonProps}
+                accept={
+                  field.accept ||
+                  (field.type === "image" ? "image/*" : undefined)
+                }
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setFormData({ ...formData, [field.name]: file });
+                  }
+                }}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+      );
+    case "button":
+      return null;
+    default:
+      return null;
+  }
+};
+
 // -------------------- FORM BUILDER TEMPLATE FORM COMPONENT --------------------
 interface FormBuilderTemplateFormProps {
   data?: any;
@@ -839,7 +1016,196 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
   bannerImage,
   theme,
 }) => {
-  // Convert form builder data to form fields format
+  const [formData, setFormData] = useState<Record<string, any>>({});
+
+  // Check if this is a custom form builder template (has CustomFormField array)
+  const isCustomFormBuilder =
+    formBuilderData?.formData &&
+    Array.isArray(formBuilderData.formData) &&
+    formBuilderData.formData.length > 0 &&
+    formBuilderData.formData[0]?.name !== undefined;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Custom form submitted:", formData);
+    toast.success("Registration submitted successfully!");
+  };
+
+  // Render custom form builder template (exactly like preview)
+  if (isCustomFormBuilder) {
+    const customFields = formBuilderData.formData as CustomFormField[];
+
+    const bannerUrl = bannerImage
+      ? typeof bannerImage === "string"
+        ? bannerImage
+        : bannerImage instanceof File || bannerImage instanceof Blob
+        ? URL.createObjectURL(bannerImage)
+        : null
+      : null;
+
+    const backgroundImageUrl = theme?.formBackgroundImage
+      ? typeof theme.formBackgroundImage === "string"
+        ? theme.formBackgroundImage
+        : theme.formBackgroundImage instanceof File
+        ? URL.createObjectURL(theme.formBackgroundImage)
+        : null
+      : null;
+
+    const formContainerStyle: React.CSSProperties = {
+      backgroundColor: theme?.formBackgroundColor || "#ffffff",
+      backgroundImage: backgroundImageUrl
+        ? `url(${backgroundImageUrl})`
+        : undefined,
+      backgroundSize: backgroundImageUrl ? "cover" : undefined,
+      backgroundPosition: backgroundImageUrl ? "center" : undefined,
+      backgroundRepeat: backgroundImageUrl ? "no-repeat" : undefined,
+      padding: theme?.formPadding || "24px",
+      borderRadius: theme?.formBorderRadius || "8px",
+      borderColor: theme?.formBorderColor || "#e5e7eb",
+      borderWidth: theme?.formBorderWidth || "1px",
+      borderStyle: "solid",
+    };
+
+    const inputStyle: React.CSSProperties = {
+      backgroundColor: theme?.inputBackgroundColor || "#ffffff",
+      borderColor: theme?.inputBorderColor || "#d1d5db",
+      borderWidth: theme?.inputBorderWidth || "1px",
+      borderRadius: theme?.inputBorderRadius || "6px",
+      color: theme?.inputTextColor || "#111827",
+      padding: theme?.inputPadding || "10px 16px",
+    };
+
+    return (
+      <div className="w-full p-4">
+        <div className="max-w-3xl mx-auto rounded-xl shadow-lg overflow-hidden" style={formContainerStyle}>
+          {bannerUrl && (
+            <div className="w-full h-64 bg-gray-100 overflow-hidden">
+              <img
+                src={bannerUrl}
+                alt="Form banner"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
+          <div>
+            <div
+              className="mb-6 pb-4 border-b"
+              style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
+            >
+              <h3
+                className="text-2xl font-bold mb-2"
+                style={{
+                  color: theme?.headingColor || "#111827",
+                  fontSize: theme?.headingFontSize || "24px",
+                  fontWeight: theme?.headingFontWeight || "bold",
+                }}
+              >
+                Registration Form
+              </h3>
+              <p
+                className="text-sm"
+                style={{ color: theme?.descriptionColor || "#6b7280" }}
+              >
+                Please fill in the required information
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {customFields.map((field) => {
+                if (field.containerType) return null;
+
+                return (
+                  <div
+                    key={field.id}
+                    className="space-y-2"
+                    style={{
+                      margin: field.fieldStyle?.margin || "0",
+                      padding: field.fieldStyle?.padding || "0",
+                      width: field.fieldStyle?.width || "100%",
+                    }}
+                  >
+                    <label
+                      className="block font-semibold"
+                      style={{
+                        color:
+                          field.fieldStyle?.labelColor ||
+                          theme?.labelColor ||
+                          "#374151",
+                        fontSize: theme?.labelFontSize || "14px",
+                        fontWeight: theme?.labelFontWeight || "600",
+                      }}
+                    >
+                      {field.label}
+                      {field.required && (
+                        <span
+                          style={{
+                            color: theme?.requiredIndicatorColor || "#ef4444",
+                            marginLeft: "4px",
+                          }}
+                        >
+                          *
+                        </span>
+                      )}
+                    </label>
+                    {field.description && (
+                      <p
+                        className="text-xs mb-2 italic"
+                        style={{
+                          color: theme?.descriptionColor || "#6b7280",
+                          fontSize: theme?.descriptionFontSize || "12px",
+                        }}
+                      >
+                        {field.description}
+                      </p>
+                    )}
+                    {/* Render fields based on type */}
+                    {renderCustomField(field, inputStyle, theme, formData, setFormData)}
+                  </div>
+                );
+              })}
+
+              <div
+                className="pt-4 border-t"
+                style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
+              >
+                <button
+                  type="submit"
+                  className="w-full px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
+                  style={{
+                    backgroundColor: theme?.buttonBackgroundColor || "#3b82f6",
+                    color: theme?.buttonTextColor || "#ffffff",
+                    borderRadius: theme?.buttonBorderRadius || "6px",
+                    padding: theme?.buttonPadding || "12px 24px",
+                  }}
+                >
+                  Submit Registration
+                </button>
+              </div>
+            </form>
+
+            {theme?.footerEnabled && theme?.footerText && (
+              <div
+                className="mt-6 pt-4 border-t"
+                style={{
+                  backgroundColor: theme.footerBackgroundColor || "#f9fafb",
+                  color: theme.footerTextColor || "#6b7280",
+                  padding: theme.footerPadding || "16px",
+                  fontSize: theme.footerFontSize || "14px",
+                  textAlign: theme.footerAlignment || "center",
+                  borderTopColor: theme.formBorderColor || "#e5e7eb",
+                }}
+              >
+                {theme.footerText}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback to old form builder format
   const convertFormBuilderToFields = (jsonData: any): FormField[] => {
     if (!jsonData || !jsonData.formData) return [];
 
@@ -925,7 +1291,9 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
   const bannerUrl = bannerImage
     ? typeof bannerImage === "string"
       ? bannerImage
-      : URL.createObjectURL(bannerImage)
+      : bannerImage instanceof File || bannerImage instanceof Blob
+      ? URL.createObjectURL(bannerImage)
+      : null
     : null;
 
   // Get background image URL
@@ -1270,9 +1638,9 @@ const AdvanceRegistration = ({
     bannerImage?: File | string,
     theme?: FormTheme
   ) => {
-    // Convert CustomFormField to FormField format
+    // Convert CustomFormField to FormField format (for backward compatibility)
     const formFields: FormField[] = customFields
-      .filter((field) => field.type !== "button") // Exclude buttons from form fields
+      .filter((field) => field.type !== "button" && !field.containerType) // Exclude buttons and layout containers from form fields
       .map((field) => ({
         id: field.id,
         type:
@@ -1285,27 +1653,11 @@ const AdvanceRegistration = ({
         description: field.description || "",
       }));
 
-    // Create form builder data structure
+    // Store the complete custom fields data with ALL properties for exact preview rendering
     const formBuilderData = {
-      formData: customFields.map((field) => ({
-        id: field.id,
-        type: field.type,
-        label: field.label,
-        name: field.name,
-        placeholder: field.placeholder,
-        required: field.required,
-        unique: field.unique,
-        defaultValue: field.defaultValue,
-        description: field.description,
-        validation: field.validation,
-        options: field.options,
-        accept: field.accept,
-        buttonText: field.buttonText,
-        buttonType: field.buttonType,
-        conditions: field.conditions,
-      })),
-      bannerImage: bannerImage || null, // Store banner image
-      theme: theme || undefined, // Store form theme
+      formData: customFields, // Store complete CustomFormField[] with all properties
+      bannerImage: bannerImage || null,
+      theme: theme || undefined,
     };
 
     const templateData: CustomFormTemplate = {
@@ -1314,8 +1666,8 @@ const AdvanceRegistration = ({
         editingFormBuilderTemplate?.title || "Custom Form Builder Template",
       data: formFields,
       formBuilderData: formBuilderData,
-      bannerImage: bannerImage, // Store banner image
-      theme: theme, // Store form theme
+      bannerImage: bannerImage,
+      theme: theme,
       createdAt:
         editingFormBuilderTemplate?.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -1634,7 +1986,9 @@ const AdvanceRegistration = ({
               const bannerPreviewUrl = template.bannerImage
                 ? typeof template.bannerImage === "string"
                   ? template.bannerImage
-                  : URL.createObjectURL(template.bannerImage)
+                  : template.bannerImage instanceof File || template.bannerImage instanceof Blob
+                  ? URL.createObjectURL(template.bannerImage)
+                  : null
                 : null;
 
               return (
