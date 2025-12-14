@@ -6,6 +6,9 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  useDroppable,
+  useDraggable,
+  DragOverlay,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -34,6 +37,26 @@ import {
   List,
   MousePointerClick,
   Palette,
+  User,
+  Briefcase,
+  Building2,
+  Phone,
+  Badge,
+  Zap,
+  Code,
+  Copy,
+  Download,
+  Upload,
+  Layers,
+  Search,
+  Square,
+  LayoutGrid,
+  Columns2,
+  Table,
+  Minus,
+  Heading,
+  AlignLeft,
+  Space,
 } from "lucide-react";
 // Removed toast import to avoid stuck notifications
 
@@ -49,7 +72,12 @@ export type FieldType =
   | "checkbox"
   | "file"
   | "image"
-  | "button";
+  | "button"
+  | "table"
+  | "divider"
+  | "heading"
+  | "paragraph"
+  | "spacer";
 
 export interface CustomFormField {
   id: string;
@@ -72,6 +100,15 @@ export interface CustomFormField {
   accept?: string; // For file/image
   buttonText?: string; // For button
   buttonType?: "button" | "submit" | "reset";
+  // For table field
+  tableData?: {
+    columns: Array<{ header: string; key: string }>;
+    rows: Array<Record<string, any>>;
+  };
+  // For text/heading/paragraph fields
+  content?: string; // HTML or plain text content
+  // For spacer
+  height?: string; // Height of spacer (e.g., "20px", "2rem")
   conditions?: Array<{
     field: string;
     operator: "equals" | "notEquals" | "contains" | "greaterThan" | "lessThan";
@@ -94,6 +131,40 @@ export interface CustomFormField {
   containerType?: "row" | "column" | "container";
   columnSpan?: number; // For grid layouts
   rowSpan?: number;
+  // Bootstrap CSS class for column sizing (e.g., "col-6", "col-md-4", "col-lg-3")
+  bootstrapClass?: string;
+  // Container layout properties (FormEngine-like)
+  children?: string[]; // IDs of child fields
+  layoutProps?: {
+    justifyContent?:
+      | "flex-start"
+      | "flex-end"
+      | "center"
+      | "space-between"
+      | "space-around"
+      | "space-evenly";
+    alignItems?: "flex-start" | "flex-end" | "center" | "stretch" | "baseline";
+    gap?: string; // e.g., "8px", "16px", "1rem"
+    padding?: string;
+    margin?: string;
+    flexDirection?: "row" | "column";
+    flexWrap?: "nowrap" | "wrap";
+    backgroundColor?: string;
+    borderColor?: string;
+    borderWidth?: string;
+    borderRadius?: string;
+    minHeight?: string;
+  };
+  // Event handlers (FormEngine-like)
+  events?: {
+    onClick?: string; // JavaScript code or function name
+    onChange?: string;
+    onFocus?: string;
+    onBlur?: string;
+    onSubmit?: string;
+  };
+  // Inline parameters/variables (FormEngine-like)
+  inlineParams?: Record<string, string>; // e.g., {Name: "John", Email: "john@example.com"}
 }
 
 // Export FormField as an alias for compatibility
@@ -185,6 +256,11 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
       file: <FileText size={18} />,
       image: <ImageIcon size={18} />,
       button: <MousePointerClick size={18} />,
+      table: <Table size={18} />,
+      divider: <Minus size={18} />,
+      heading: <Heading size={18} />,
+      paragraph: <AlignLeft size={18} />,
+      spacer: <Space size={18} />,
     };
     return icons[type] || <Type size={18} />;
   };
@@ -611,6 +687,635 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           </div>
         )}
 
+        {/* Bootstrap Column Class (for fields inside column containers) */}
+        {!config.containerType && (
+          <div className="pt-4 border-t space-y-4">
+            <div className="flex items-center gap-2">
+              <Columns2 className="text-indigo-600" size={18} />
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Column Sizing (Bootstrap)
+              </h4>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Bootstrap CSS Class
+              </label>
+              <select
+                value={config.bootstrapClass || ""}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    bootstrapClass: e.target.value || undefined,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Auto (Equal Width)</option>
+                <option value="col-12">Full Width (col-12)</option>
+                <option value="col-6">Half Width (col-6)</option>
+                <option value="col-4">One Third (col-4)</option>
+                <option value="col-3">One Fourth (col-3)</option>
+                <option value="col-2">One Sixth (col-2)</option>
+                <option value="col-1">One Twelfth (col-1)</option>
+                <option value="col-md-6">Medium Half (col-md-6)</option>
+                <option value="col-md-4">Medium Third (col-md-4)</option>
+                <option value="col-lg-4">Large Third (col-lg-4)</option>
+                <option value="col-lg-3">Large Fourth (col-lg-3)</option>
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Set custom Bootstrap grid class. Leave empty for auto equal
+                width.
+              </p>
+              {config.bootstrapClass && (
+                <div className="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
+                  <p className="text-xs font-mono text-indigo-700">
+                    Class: {config.bootstrapClass}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Layout Properties (for containers) */}
+        {config.containerType && (
+          <div className="pt-4 border-t space-y-4">
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="text-purple-600" size={18} />
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                Layout Properties
+              </h4>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Gap (spacing between items)
+              </label>
+              <input
+                type="text"
+                value={config.layoutProps?.gap || "16px"}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      gap: e.target.value,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="16px"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Justify Content
+              </label>
+              <select
+                value={config.layoutProps?.justifyContent || "flex-start"}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      justifyContent: e.target.value as any,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="flex-start">Flex Start</option>
+                <option value="flex-end">Flex End</option>
+                <option value="center">Center</option>
+                <option value="space-between">Space Between</option>
+                <option value="space-around">Space Around</option>
+                <option value="space-evenly">Space Evenly</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Align Items
+              </label>
+              <select
+                value={config.layoutProps?.alignItems || "stretch"}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      alignItems: e.target.value as any,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="flex-start">Flex Start</option>
+                <option value="flex-end">Flex End</option>
+                <option value="center">Center</option>
+                <option value="stretch">Stretch</option>
+                <option value="baseline">Baseline</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Padding
+              </label>
+              <input
+                type="text"
+                value={config.layoutProps?.padding || "16px"}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      padding: e.target.value,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="16px"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Background Color
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={config.layoutProps?.backgroundColor || "#ffffff"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        layoutProps: {
+                          ...config.layoutProps,
+                          backgroundColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={config.layoutProps?.backgroundColor || "#ffffff"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        layoutProps: {
+                          ...config.layoutProps,
+                          backgroundColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Border Radius
+                </label>
+                <input
+                  type="text"
+                  value={config.layoutProps?.borderRadius || "8px"}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      layoutProps: {
+                        ...config.layoutProps,
+                        borderRadius: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="8px"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Field Styling */}
+        <div className="pt-2 border-t">
+          <button
+            onClick={() => {
+              const el = document.getElementById("styling-options");
+              if (el) el.classList.toggle("hidden");
+            }}
+            className="flex w-full items-center justify-between text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3"
+          >
+            <span>Custom Styling (CSS)</span>
+            <Palette size={16} />
+          </button>
+          <div id="styling-options" className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Width
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.width || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        width: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="100% or 300px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Padding
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.padding || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        padding: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Text Color
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="color"
+                    value={config.fieldStyle?.textColor || "#000000"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          textColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-6 h-8 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.textColor || ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          textColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border rounded text-sm"
+                    placeholder="#000000"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Label Color
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="color"
+                    value={config.fieldStyle?.labelColor || "#000000"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          labelColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-6 h-8 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.labelColor || ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          labelColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border rounded text-sm"
+                    placeholder="#000000"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Bg Color
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="color"
+                    value={config.fieldStyle?.backgroundColor || "#ffffff"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          backgroundColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-6 h-8 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.backgroundColor || ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          backgroundColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border rounded text-sm"
+                    placeholder="#ffffff"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Border Color
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="color"
+                    value={config.fieldStyle?.borderColor || "#cccccc"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          borderColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-6 h-8 rounded cursor-pointer border-0 p-0"
+                  />
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.borderColor || ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: {
+                          ...config.fieldStyle,
+                          borderColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border rounded text-sm"
+                    placeholder="#cccccc"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Border Width
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.borderWidth || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        borderWidth: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="1px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Border Radius
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.borderRadius || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        borderRadius: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="4px"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-600">
+                Margin
+              </label>
+              <input
+                type="text"
+                value={config.fieldStyle?.margin || ""}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    fieldStyle: {
+                      ...config.fieldStyle,
+                      margin: e.target.value,
+                    },
+                  })
+                }
+                className="w-full px-2 py-1.5 border rounded text-sm"
+                placeholder="0px or 10px 0px"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Event Handlers (FormEngine-like) */}
+        <div className="pt-4 border-t space-y-4">
+          <div className="flex items-center gap-2">
+            <Zap className="text-yellow-600" size={18} />
+            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Event Handlers
+            </h4>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              onClick Handler
+            </label>
+            <input
+              type="text"
+              value={config.events?.onClick || ""}
+              onChange={(e) =>
+                setConfig({
+                  ...config,
+                  events: { ...config.events, onClick: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
+              placeholder="handleClick() or function name"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              JavaScript function name or code to execute on click
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              onChange Handler
+            </label>
+            <input
+              type="text"
+              value={config.events?.onChange || ""}
+              onChange={(e) =>
+                setConfig({
+                  ...config,
+                  events: { ...config.events, onChange: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
+              placeholder="handleChange(value)"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Function to call when field value changes
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              onFocus Handler
+            </label>
+            <input
+              type="text"
+              value={config.events?.onFocus || ""}
+              onChange={(e) =>
+                setConfig({
+                  ...config,
+                  events: { ...config.events, onFocus: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
+              placeholder="handleFocus()"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              onBlur Handler
+            </label>
+            <input
+              type="text"
+              value={config.events?.onBlur || ""}
+              onChange={(e) =>
+                setConfig({
+                  ...config,
+                  events: { ...config.events, onBlur: e.target.value },
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
+              placeholder="handleBlur()"
+            />
+          </div>
+        </div>
+
+        {/* Inline Parameters (FormEngine-like) */}
+        <div className="pt-4 border-t space-y-4">
+          <div className="flex items-center gap-2">
+            <Code className="text-purple-600" size={18} />
+            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Inline Parameters
+            </h4>
+          </div>
+          <p className="text-xs text-gray-600">
+            Use variables like {"{Name}"} or {"{Email}"} in labels/placeholders.
+            They will be replaced with actual values.
+          </p>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              Available Variables
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {Object.keys(config.inlineParams || {}).map((key) => (
+                <span
+                  key={key}
+                  className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-mono"
+                >
+                  {"{" + key + "}"}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-2 text-gray-700">
+              Add Variable
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Variable name (e.g., Name)"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    const input = e.currentTarget;
+                    const varName = input.value.trim();
+                    if (varName) {
+                      setConfig({
+                        ...config,
+                        inlineParams: {
+                          ...config.inlineParams,
+                          [varName]: "",
+                        },
+                      });
+                      input.value = "";
+                    }
+                  }
+                }}
+              />
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Press Enter to add. Use {"{" + "VariableName" + "}"} in
+              labels/placeholders
+            </p>
+          </div>
+        </div>
+
         {/* Save Button */}
         <div className="pt-4 border-t sticky bottom-0 bg-white pb-2">
           <button
@@ -625,17 +1330,113 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
   );
 };
 
+// -------------------- MAIN DROP ZONE --------------------
+const MainDropZone: React.FC = () => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: "main-drop-zone",
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-drop-zone="main"
+      className={`min-h-[200px] transition-all rounded-lg ${
+        isOver ? "ring-2 ring-blue-400 bg-blue-50" : ""
+      }`}
+    >
+      <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-300 relative overflow-hidden">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="relative flex flex-col items-center">
+          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+            <Plus className="text-white" size={40} />
+          </div>
+          <p className="text-gray-700 font-semibold text-lg mb-2">Drop Zone</p>
+          <p className="text-sm text-gray-600 mb-4 max-w-md">
+            Drag fields from the component panel above and drop them here to
+            build your form
+          </p>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <GripVertical size={16} />
+            <span>Drag to reorder</span>
+            <span>•</span>
+            <Edit size={16} />
+            <span>Click to edit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// -------------------- DROPPABLE CONTAINER --------------------
+interface DroppableContainerProps {
+  containerId: string;
+  children: React.ReactNode;
+  isEmpty?: boolean;
+  containerType?: "row" | "column" | "container";
+}
+
+const DroppableContainer: React.FC<DroppableContainerProps> = ({
+  containerId,
+  children,
+  isEmpty = false,
+  containerType,
+}) => {
+  const { setNodeRef, isOver } = useDroppable({
+    id: containerId,
+  });
+
+  const isColumn = containerType === "column";
+  const dropZoneText = isColumn
+    ? "Column Drop Zone"
+    : isEmpty
+    ? "Drop Zone"
+    : "";
+
+  return (
+    <div
+      ref={setNodeRef}
+      data-container-id={containerId}
+      className={`min-h-[60px] transition-all relative ${
+        isOver ? "ring-2 ring-purple-400 bg-purple-100 border-purple-400" : ""
+      } ${
+        isEmpty || (isColumn && isEmpty)
+          ? "border-2 border-dashed border-gray-300 rounded-lg"
+          : ""
+      }`}
+    >
+      {children}
+      {(isEmpty || (isColumn && isEmpty)) && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center">
+            <div className="text-xs font-semibold text-gray-500 mb-1">
+              {dropZoneText}
+            </div>
+            {isColumn && (
+              <div className="text-xs text-gray-400">
+                Fields will auto-resize to equal width
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 // -------------------- SORTABLE FIELD ITEM --------------------
 interface SortableFieldItemProps {
   field: CustomFormField;
   onEdit: (field: CustomFormField) => void;
   onDelete: (id: string) => void;
+  isInsideContainer?: boolean;
 }
 
 const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
   field,
   onEdit,
   onDelete,
+  isInsideContainer = false,
 }) => {
   const {
     attributes,
@@ -665,56 +1466,99 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
       file: <FileText size={16} />,
       image: <ImageIcon size={16} />,
       button: <MousePointerClick size={16} />,
+      table: <Table size={16} />,
+      divider: <Minus size={16} />,
+      heading: <Heading size={16} />,
+      paragraph: <AlignLeft size={16} />,
+      spacer: <Space size={16} />,
     };
     return icons[type] || <Type size={16} />;
   };
+
+  const isContainer = field.containerType !== undefined;
+  const isCompact = false; // Will be controlled by selection state
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white border-2 border-gray-200 rounded-lg p-4 flex items-center gap-3 hover:shadow-lg hover:border-blue-300 transition-all group"
+      className={`bg-white border-2 rounded-lg transition-all group ${
+        isContainer
+          ? "border-purple-300 bg-purple-50/30 p-3"
+          : "border-gray-200 p-3 hover:shadow-lg hover:border-blue-300"
+      } ${isCompact ? "p-2" : "p-3"}`}
     >
-      <div
-        {...attributes}
-        {...listeners}
-        className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-blue-600 transition-colors p-1"
-        title="Drag to reorder"
-      >
-        <GripVertical size={20} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="text-blue-600">{getFieldIcon(field.type)}</div>
-          <span className="font-semibold text-gray-800">{field.label}</span>
-          {field.required && (
-            <span className="text-red-500 text-xs font-bold bg-red-50 px-1.5 py-0.5 rounded">
-              Required
-            </span>
-          )}
-          {field.unique && (
-            <span className="text-blue-600 text-xs font-medium bg-blue-50 px-1.5 py-0.5 rounded">
-              Unique
-            </span>
-          )}
+      <div className="flex items-center gap-2">
+        <div
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-blue-600 transition-colors p-1"
+          title="Drag to reorder"
+        >
+          <GripVertical size={18} />
         </div>
-        <div className="flex items-center gap-2 mt-1.5">
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
-            {field.type}
-          </span>
-          <span className="text-xs text-gray-400">•</span>
-          <span className="text-xs text-gray-500 font-mono truncate">
-            {field.name}
-          </span>
-          {field.placeholder && (
-            <>
-              <span className="text-xs text-gray-400">•</span>
-              <span className="text-xs text-gray-500 italic truncate">
-                "{field.placeholder}"
+        {isContainer ? (
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              {field.containerType === "row" && (
+                <LayoutGrid size={16} className="text-purple-600" />
+              )}
+              {field.containerType === "column" && (
+                <Columns2 size={16} className="text-purple-600" />
+              )}
+              {field.containerType === "container" && (
+                <Square size={16} className="text-purple-600" />
+              )}
+              <span className="font-semibold text-gray-800 capitalize">
+                {field.containerType}
               </span>
-            </>
-          )}
-        </div>
+              {field.children && field.children.length > 0 && (
+                <span className="text-xs text-gray-500 bg-purple-100 px-2 py-0.5 rounded">
+                  {field.children.length}{" "}
+                  {field.children.length === 1 ? "item" : "items"}
+                </span>
+              )}
+            </div>
+            {field.layoutProps && (
+              <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                {field.layoutProps.gap && (
+                  <span>Gap: {field.layoutProps.gap}</span>
+                )}
+                {field.layoutProps.justifyContent && (
+                  <span>• Justify: {field.layoutProps.justifyContent}</span>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-blue-600">{getFieldIcon(field.type)}</div>
+              <span className="font-semibold text-gray-800 text-sm">
+                {field.label}
+              </span>
+              {field.required && (
+                <span className="text-red-500 text-xs font-bold bg-red-50 px-1.5 py-0.5 rounded">
+                  Required
+                </span>
+              )}
+              {field.unique && (
+                <span className="text-blue-600 text-xs font-medium bg-blue-50 px-1.5 py-0.5 rounded">
+                  Unique
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
+                {field.type}
+              </span>
+              <span className="text-xs text-gray-400">•</span>
+              <span className="text-xs text-gray-500 font-mono truncate">
+                {field.name}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex gap-1">
         <button
@@ -742,91 +1586,407 @@ interface FieldPaletteProps {
 }
 
 const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
-  const fieldTypes: Array<{
+  const [activeCategory, setActiveCategory] = useState<
+    "basic" | "personal" | "professional" | "all" | "layout"
+  >("layout");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const fieldPresets: Array<{
+    id: string;
     type: FieldType;
     label: string;
     icon: React.ReactNode;
     description: string;
     color: string;
+    category?: "basic" | "personal" | "professional";
+    defaultLabel?: string;
+    defaultName?: string;
+    defaultPlaceholder?: string;
   }> = [
+    // --- BASIC FIELDS ---
     {
+      id: "text",
       type: "text",
       label: "Text Input",
       icon: <Type size={18} />,
       description: "Single line text",
       color: "blue",
+      category: "basic",
     },
     {
+      id: "email",
       type: "email",
       label: "Email",
       icon: <Mail size={18} />,
       description: "Email address",
       color: "green",
+      category: "basic",
     },
     {
+      id: "number",
       type: "number",
       label: "Number",
       icon: <Hash size={18} />,
       description: "Numeric input",
       color: "purple",
+      category: "basic",
     },
     {
+      id: "date",
       type: "date",
       label: "Date",
       icon: <Calendar size={18} />,
       description: "Date picker",
       color: "orange",
+      category: "basic",
     },
     {
+      id: "textarea",
       type: "textarea",
       label: "Textarea",
       icon: <FileText size={18} />,
       description: "Multi-line text",
       color: "indigo",
+      category: "basic",
     },
     {
+      id: "select",
       type: "select",
       label: "Dropdown",
       icon: <List size={18} />,
       description: "Select option",
       color: "pink",
+      category: "basic",
     },
     {
+      id: "radio",
       type: "radio",
       label: "Radio",
       icon: <Radio size={18} />,
       description: "Single choice",
       color: "teal",
+      category: "basic",
     },
     {
+      id: "checkbox",
       type: "checkbox",
       label: "Checkbox",
       icon: <CheckSquare size={18} />,
       description: "Multiple choice",
       color: "cyan",
+      category: "basic",
     },
     {
+      id: "file",
       type: "file",
       label: "File Upload",
       icon: <FileText size={18} />,
       description: "Upload files",
       color: "amber",
+      category: "basic",
     },
     {
+      id: "image",
       type: "image",
       label: "Image Upload",
       icon: <ImageIcon size={18} />,
       description: "Upload images",
       color: "rose",
+      category: "basic",
     },
     {
+      id: "button",
       type: "button",
       label: "Button",
       icon: <MousePointerClick size={18} />,
       description: "Action button",
       color: "gray",
+      category: "basic",
+    },
+
+    // --- PERSONAL INFORMATION ---
+    {
+      id: "firstname",
+      type: "text",
+      label: "First Name",
+      icon: <User size={18} />,
+      description: "User's first name",
+      color: "blue",
+      category: "personal",
+      defaultLabel: "First Name",
+      defaultName: "first_name",
+      defaultPlaceholder: "Enter first name",
+    },
+    {
+      id: "lastname",
+      type: "text",
+      label: "Last Name",
+      icon: <User size={18} />,
+      description: "User's last name",
+      color: "blue",
+      category: "personal",
+      defaultLabel: "Last Name",
+      defaultName: "last_name",
+      defaultPlaceholder: "Enter last name",
+    },
+    {
+      id: "fullname",
+      type: "text",
+      label: "Full Name",
+      icon: <User size={18} />,
+      description: "User's full name",
+      color: "blue",
+      category: "personal",
+      defaultLabel: "Full Name",
+      defaultName: "full_name",
+      defaultPlaceholder: "Enter full name",
+    },
+    {
+      id: "username",
+      type: "text",
+      label: "Username",
+      icon: <User size={18} />,
+      description: "User's username",
+      color: "purple",
+      category: "personal",
+      defaultLabel: "Username",
+      defaultName: "username",
+      defaultPlaceholder: "Enter username",
+    },
+    {
+      id: "phone",
+      type: "text", // Using text for phone to allow formatting
+      label: "Phone Number",
+      icon: <Phone size={18} />,
+      description: "Contact phone",
+      color: "green",
+      category: "personal",
+      defaultLabel: "Phone Number",
+      defaultName: "phone_number",
+      defaultPlaceholder: "+1 (555) 000-0000",
+    },
+    {
+      id: "id_number",
+      type: "text",
+      label: "ID Number",
+      icon: <Badge size={18} />,
+      description: "Identification number",
+      color: "indigo",
+      category: "personal",
+      defaultLabel: "ID Number",
+      defaultName: "id_number",
+      defaultPlaceholder: "Enter ID number",
+    },
+
+    // --- PROFESSIONAL ---
+    {
+      id: "company",
+      type: "text",
+      label: "Company",
+      icon: <Building2 size={18} />,
+      description: "Company name",
+      color: "cyan",
+      category: "professional",
+      defaultLabel: "Company",
+      defaultName: "company",
+      defaultPlaceholder: "Enter company name",
+    },
+    {
+      id: "job_title",
+      type: "text",
+      label: "Job Title",
+      icon: <Briefcase size={18} />,
+      description: "Job role/title",
+      color: "amber",
+      category: "professional",
+      defaultLabel: "Job Title",
+      defaultName: "job_title",
+      defaultPlaceholder: "Enter job title",
+    },
+    {
+      id: "positions",
+      type: "text",
+      label: "Positions",
+      icon: <Briefcase size={18} />,
+      description: "Current positions",
+      color: "amber",
+      category: "professional",
+      defaultLabel: "Positions",
+      defaultName: "positions",
+      defaultPlaceholder: "Enter positions",
+    },
+
+    // --- STATIC ELEMENTS ---
+    {
+      id: "table",
+      type: "table",
+      label: "Table",
+      icon: <Table size={18} />,
+      description: "Data table",
+      color: "indigo",
+      category: "basic",
+      defaultLabel: "Table",
+      defaultName: "table",
+    },
+    {
+      id: "divider",
+      type: "divider",
+      label: "Divider",
+      icon: <Minus size={18} />,
+      description: "Horizontal divider line",
+      color: "gray",
+      category: "basic",
+      defaultLabel: "Divider",
+      defaultName: "divider",
+    },
+    {
+      id: "heading",
+      type: "heading",
+      label: "Heading",
+      icon: <Heading size={18} />,
+      description: "Text heading",
+      color: "blue",
+      category: "basic",
+      defaultLabel: "Heading",
+      defaultName: "heading",
+      defaultPlaceholder: "Enter heading text",
+    },
+    {
+      id: "paragraph",
+      type: "paragraph",
+      label: "Paragraph",
+      icon: <AlignLeft size={18} />,
+      description: "Text paragraph",
+      color: "gray",
+      category: "basic",
+      defaultLabel: "Paragraph",
+      defaultName: "paragraph",
+      defaultPlaceholder: "Enter paragraph text",
+    },
+    {
+      id: "spacer",
+      type: "spacer",
+      label: "Spacer",
+      icon: <Space size={18} />,
+      description: "Vertical spacing",
+      color: "gray",
+      category: "basic",
+      defaultLabel: "Spacer",
+      defaultName: "spacer",
     },
   ];
+
+  interface FieldButtonProps {
+    preset: (typeof fieldPresets)[0];
+    onAdd: (field: CustomFormField) => void;
+    colorClasses: Record<string, string>;
+  }
+
+  const FieldButton: React.FC<FieldButtonProps> = ({
+    preset,
+    onAdd,
+    colorClasses,
+  }) => {
+    const {
+      type,
+      label,
+      icon,
+      description,
+      color,
+      defaultLabel,
+      defaultName,
+      defaultPlaceholder,
+    } = preset;
+
+    const createField = (): CustomFormField => ({
+      id: `${type}-${Date.now()}`,
+      type,
+      label: defaultLabel || label,
+      name: defaultName || `${type}_${Date.now()}`,
+      required: false,
+      unique: false,
+      placeholder:
+        defaultPlaceholder ||
+        (type === "email"
+          ? "example@email.com"
+          : type === "number"
+          ? "Enter a number"
+          : `Enter ${label.toLowerCase()}`),
+      ...(type === "select" || type === "radio" || type === "checkbox"
+        ? {
+            options: [
+              { label: "Option 1", value: "option_1" },
+              { label: "Option 2", value: "option_2" },
+            ],
+          }
+        : {}),
+      ...(type === "button"
+        ? { buttonText: "Submit", buttonType: "submit" }
+        : {}),
+      ...(type === "image" ? { accept: "image/*" } : {}),
+      ...(type === "file" ? { accept: ".pdf,.doc,.docx" } : {}),
+      ...(type === "table"
+        ? {
+            tableData: {
+              columns: [
+                { header: "Column 1", key: "col1" },
+                { header: "Column 2", key: "col2" },
+              ],
+              rows: [
+                { col1: "Row 1, Col 1", col2: "Row 1, Col 2" },
+                { col1: "Row 2, Col 1", col2: "Row 2, Col 2" },
+              ],
+            },
+          }
+        : {}),
+      ...(type === "heading" || type === "paragraph"
+        ? { content: defaultPlaceholder || "Enter text here" }
+        : {}),
+      ...(type === "spacer" ? { height: "20px" } : {}),
+    });
+
+    const dragId = `palette-${preset.id}`;
+    const { attributes, listeners, setNodeRef, transform, isDragging } =
+      useDraggable({
+        id: dragId,
+        data: {
+          type: "palette-item",
+          preset,
+          createField,
+        },
+      });
+
+    const style = transform
+      ? {
+          transform: CSS.Translate.toString(transform),
+          opacity: isDragging ? 0.5 : 1,
+        }
+      : undefined;
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...listeners}
+        {...attributes}
+        className="cursor-grab active:cursor-grabbing"
+      >
+        <button
+          onClick={() => {
+            onAdd(createField());
+          }}
+          className={`flex flex-col items-center gap-1.5 p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-blue-400 transition-all text-center group ${colorClasses[color]} w-full`}
+        >
+          <div className="text-gray-600 group-hover:scale-110 transition-transform">
+            {icon}
+          </div>
+          <span className="text-xs font-medium text-gray-700 block">
+            {label}
+          </span>
+        </button>
+      </div>
+    );
+  };
 
   const colorClasses: Record<string, string> = {
     blue: "hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700",
@@ -842,68 +2002,201 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
     gray: "hover:bg-gray-50 hover:border-gray-400 hover:text-gray-700",
   };
 
+  // Filter presets based on category and search
+  const filteredPresets = fieldPresets.filter((preset) => {
+    const matchesCategory =
+      activeCategory === "all" ||
+      activeCategory === "layout" ||
+      preset.category === activeCategory ||
+      (!preset.category && activeCategory === "basic");
+    const matchesSearch =
+      searchQuery === "" ||
+      preset.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      preset.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
   return (
-    <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-      <div className="flex items-center gap-2 mb-4">
-        <Plus className="text-blue-600" size={20} />
-        <h3 className="font-semibold text-gray-800">Add Field to Form</h3>
+    <div className="space-y-3">
+      {/* Search Bar */}
+      <div className="relative">
+        <Search
+          className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400"
+          size={14}
+        />
+        <input
+          type="text"
+          placeholder="Search..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+        />
       </div>
 
-      <div>
-        <h4 className="text-sm font-medium text-gray-600 mb-2">Form Fields</h4>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {fieldTypes.map(({ type, label, icon, description, color }) => (
+      {/* Category Tabs */}
+      <div className="flex flex-wrap gap-1 border-b border-gray-200 pb-2">
+        <button
+          onClick={() => setActiveCategory("layout")}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
+            activeCategory === "layout"
+              ? "border-purple-600 text-purple-600"
+              : "border-transparent text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Layout
+        </button>
+        <button
+          onClick={() => setActiveCategory("basic")}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
+            activeCategory === "basic"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Fields
+        </button>
+        <button
+          onClick={() => setActiveCategory("personal")}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
+            activeCategory === "personal"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Personal
+        </button>
+        <button
+          onClick={() => setActiveCategory("professional")}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
+            activeCategory === "professional"
+              ? "border-blue-600 text-blue-600"
+              : "border-transparent text-gray-600 hover:text-gray-900"
+          }`}
+        >
+          Professional
+        </button>
+      </div>
+
+      {/* Layout Elements Section */}
+      {activeCategory === "layout" && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+            Structure
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
             <button
-              key={type}
               onClick={() => {
-                const newField: CustomFormField = {
-                  id: `${type}-${Date.now()}`,
-                  type,
-                  label: label,
-                  name: `${type}_${Date.now()}`,
+                const newContainer: CustomFormField = {
+                  id: `container-${Date.now()}`,
+                  type: "text",
+                  label: "Container",
+                  name: `container_${Date.now()}`,
                   required: false,
                   unique: false,
-                  placeholder:
-                    type === "email"
-                      ? "example@email.com"
-                      : type === "number"
-                      ? "Enter a number"
-                      : `Enter ${label.toLowerCase()}`,
-                  ...(type === "select" ||
-                  type === "radio" ||
-                  type === "checkbox"
-                    ? {
-                        options: [
-                          { label: "Option 1", value: "option_1" },
-                          { label: "Option 2", value: "option_2" },
-                        ],
-                      }
-                    : {}),
-                  ...(type === "button"
-                    ? { buttonText: "Submit", buttonType: "submit" }
-                    : {}),
-                  ...(type === "image" ? { accept: "image/*" } : {}),
-                  ...(type === "file" ? { accept: ".pdf,.doc,.docx" } : {}),
+                  containerType: "container",
+                  children: [],
+                  layoutProps: {
+                    gap: "16px",
+                    padding: "16px",
+                    justifyContent: "flex-start",
+                    alignItems: "stretch",
+                    flexDirection: "column",
+                  },
                 };
-                onAddField(newField);
+                onAddField(newContainer);
               }}
-              className={`flex flex-col items-center gap-2 p-4 bg-white border-2 border-gray-200 rounded-lg transition-all text-left group ${colorClasses[color]}`}
+              className="flex flex-col items-center gap-1.5 p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-purple-400 transition-all text-center group"
             >
-              <div className="text-gray-600 group-hover:scale-110 transition-transform">
-                {icon}
-              </div>
-              <div className="text-center w-full">
-                <span className="text-sm font-medium text-gray-800 block">
-                  {label}
-                </span>
-                <span className="text-xs text-gray-500 mt-1 block">
-                  {description}
-                </span>
-              </div>
+              <Square className="text-purple-600" size={16} />
+              <span className="text-xs font-medium text-gray-700">
+                Container
+              </span>
             </button>
-          ))}
+            <button
+              onClick={() => {
+                const newRow: CustomFormField = {
+                  id: `row-${Date.now()}`,
+                  type: "text",
+                  label: "Row",
+                  name: `row_${Date.now()}`,
+                  required: false,
+                  unique: false,
+                  containerType: "row",
+                  children: [],
+                  layoutProps: {
+                    gap: "16px",
+                    padding: "12px",
+                    justifyContent: "flex-start",
+                    alignItems: "center",
+                    flexDirection: "row",
+                    flexWrap: "wrap",
+                  },
+                };
+                onAddField(newRow);
+              }}
+              className="flex flex-col items-center gap-1.5 p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-blue-400 transition-all text-center group"
+            >
+              <LayoutGrid className="text-blue-600" size={16} />
+              <span className="text-xs font-medium text-gray-700">Row</span>
+            </button>
+            <button
+              onClick={() => {
+                const newColumn: CustomFormField = {
+                  id: `column-${Date.now()}`,
+                  type: "text",
+                  label: "Column",
+                  name: `column_${Date.now()}`,
+                  required: false,
+                  unique: false,
+                  containerType: "column",
+                  children: [],
+                  layoutProps: {
+                    gap: "12px",
+                    padding: "12px",
+                    justifyContent: "flex-start",
+                    alignItems: "stretch",
+                    flexDirection: "column",
+                  },
+                };
+                onAddField(newColumn);
+              }}
+              className="flex flex-col items-center gap-1.5 p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-indigo-400 transition-all text-center group"
+            >
+              <Columns2 className="text-indigo-600" size={16} />
+              <span className="text-xs font-medium text-gray-700">Column</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Form Fields Section */}
+      {activeCategory !== "layout" && (
+        <div className="space-y-2">
+          <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+            {activeCategory === "basic"
+              ? "Fields"
+              : activeCategory === "personal"
+              ? "Personal Information"
+              : "Professional Options"}
+          </h4>
+          {filteredPresets.length === 0 ? (
+            <div className="text-center py-4 text-gray-500 text-xs">
+              <p>No fields found</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-1.5">
+              {filteredPresets.map((preset) => (
+                <FieldButton
+                  key={preset.id}
+                  preset={preset}
+                  onAdd={onAddField}
+                  colorClasses={colorClasses}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -934,6 +2227,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   );
   const [showPreview, setShowPreview] = useState(false);
   const [showThemePanel, setShowThemePanel] = useState(false);
+  const [showJsonEditor, setShowJsonEditor] = useState(false);
+  const [jsonEditorContent, setJsonEditorContent] = useState("");
+  const [showJsonMenu, setShowJsonMenu] = useState(false);
   const [bannerImage, setBannerImage] = useState<File | string | null>(
     initialBannerImage
   );
@@ -998,15 +2294,307 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   }, [initialBannerImage]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // Require 8px of movement before drag starts
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
 
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draggedPreset, setDraggedPreset] = useState<any>(null);
+
+  const handleDragStart = (event: { active: any }) => {
+    setActiveId(event.active.id);
+    if (event.active.data?.current?.type === "palette-item") {
+      setDraggedPreset(event.active.data.current.preset);
+    }
+    document.body.style.cursor = "grabbing";
+  };
+
   const handleDragEnd = (event: { active: any; over: any }) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
+    setActiveId(null);
+    setDraggedPreset(null);
+
+    // Reset cursor and remove highlights
+    document.body.style.cursor = "";
+    document.querySelectorAll("[data-field-id]").forEach((el) => {
+      el.classList.remove("ring-2", "ring-blue-400");
+    });
+    document.querySelectorAll("[data-container-id]").forEach((el) => {
+      el.classList.remove("ring-2", "ring-purple-400", "bg-purple-100");
+    });
+    document.querySelectorAll("[data-drop-zone]").forEach((el) => {
+      el.classList.remove("ring-2", "ring-blue-400", "bg-blue-50");
+    });
+
+    if (!over) {
+      // If dropped outside, check if it's from palette - add to end of fields
+      if (active.data?.current?.type === "palette-item") {
+        const newField = active.data.current.createField();
+        setFields([...fields, newField]);
+      }
+      return;
+    }
+
+    // Handle drag from palette
+    if (active.data?.current?.type === "palette-item") {
+      const newField = active.data.current.createField();
+
+      // Check if dropped into a container
+      const containerField = fields.find(
+        (f) => f.id === over.id && f.containerType
+      );
+
+      if (containerField) {
+        // Add to container
+        setFields((items) => {
+          const updatedItems = items.map((item) => {
+            if (item.id === containerField.id) {
+              const newChildren = [...(item.children || []), newField.id];
+
+              // If it's a column container, auto-calculate Bootstrap classes for equal width
+              if (
+                containerField.containerType === "column" &&
+                newChildren.length > 0
+              ) {
+                // Calculate Bootstrap class based on number of children
+                // For 2 fields: col-6, for 3: col-4, for 4: col-3, etc.
+                const childCount = newChildren.length;
+                let bootstrapClass = "";
+                if (childCount === 1) {
+                  bootstrapClass = "col-12";
+                } else if (childCount === 2) {
+                  bootstrapClass = "col-6";
+                } else if (childCount === 3) {
+                  bootstrapClass = "col-4";
+                } else if (childCount === 4) {
+                  bootstrapClass = "col-3";
+                } else if (childCount <= 6) {
+                  bootstrapClass = "col-2";
+                } else {
+                  bootstrapClass = "col-1";
+                }
+
+                // Update all children in this container with the calculated class
+                return {
+                  ...item,
+                  children: newChildren,
+                };
+              }
+
+              return {
+                ...item,
+                children: newChildren,
+              };
+            }
+            return item;
+          });
+
+          // If column container, update all children with equal width Bootstrap classes
+          if (containerField.containerType === "column") {
+            const containerItem = updatedItems.find(
+              (item) => item.id === containerField.id
+            );
+            if (containerItem && containerItem.children) {
+              const childCount = containerItem.children.length;
+              let bootstrapClass = "";
+              if (childCount === 1) {
+                bootstrapClass = "col-12";
+              } else if (childCount === 2) {
+                bootstrapClass = "col-6";
+              } else if (childCount === 3) {
+                bootstrapClass = "col-4";
+              } else if (childCount === 4) {
+                bootstrapClass = "col-3";
+              } else if (childCount <= 6) {
+                bootstrapClass = "col-2";
+              } else {
+                bootstrapClass = "col-1";
+              }
+
+              // Update all children with the calculated Bootstrap class
+              return updatedItems.map((item) => {
+                if (containerItem.children?.includes(item.id)) {
+                  return {
+                    ...item,
+                    bootstrapClass: item.bootstrapClass || bootstrapClass, // Keep existing if set
+                  };
+                }
+                return item;
+              });
+            }
+          }
+
+          return updatedItems;
+        });
+        // Add the new field to fields array
+        setFields((prev) => [...prev, newField]);
+        return;
+      }
+
+      // Check if dropped on a field that's inside a container
+      const parentContainer = fields.find(
+        (f) => f.containerType && f.children?.includes(over.id)
+      );
+
+      if (parentContainer) {
+        const targetIndex = parentContainer.children?.indexOf(over.id) ?? -1;
+        setFields((items) =>
+          items.map((item) => {
+            if (item.id === parentContainer.id) {
+              const newChildren = [...(item.children || [])];
+              if (targetIndex >= 0) {
+                newChildren.splice(targetIndex, 0, newField.id);
+              } else {
+                newChildren.push(newField.id);
+              }
+              return { ...item, children: newChildren };
+            }
+            return item;
+          })
+        );
+        setFields((prev) => [...prev, newField]);
+        return;
+      }
+
+      // Drop on main canvas - add after the target field or at end
+      const targetIndex = fields.findIndex((f) => f.id === over.id);
+      if (targetIndex >= 0) {
+        setFields((prev) => {
+          const newFields = [...prev];
+          newFields.splice(targetIndex + 1, 0, newField);
+          return newFields;
+        });
+      } else {
+        setFields([...fields, newField]);
+      }
+      return;
+    }
+
+    // Handle existing field drag
+    const draggedField = fields.find((f) => f.id === active.id);
+    if (!draggedField) return;
+
+    // Check if dropped into a container
+    const containerField = fields.find(
+      (f) => f.id === over.id && f.containerType
+    );
+
+    if (containerField) {
+      // Add field to container's children
+      setFields((items) => {
+        // Remove from any existing container
+        const updatedItems = items.map((item) => {
+          if (item.containerType && item.children?.includes(active.id)) {
+            return {
+              ...item,
+              children: item.children?.filter((id) => id !== active.id) || [],
+            };
+          }
+          return item;
+        });
+
+        // Add to new container and auto-resize if column
+        const withNewChild = updatedItems.map((item) => {
+          if (item.id === containerField.id) {
+            return {
+              ...item,
+              children: [...(item.children || []), active.id],
+            };
+          }
+          return item;
+        });
+
+        // If column container, auto-calculate Bootstrap classes for equal width
+        if (containerField.containerType === "column") {
+          const containerItem = withNewChild.find(
+            (item) => item.id === containerField.id
+          );
+          if (containerItem && containerItem.children) {
+            const childCount = containerItem.children.length;
+            let bootstrapClass = "";
+            if (childCount === 1) {
+              bootstrapClass = "col-12";
+            } else if (childCount === 2) {
+              bootstrapClass = "col-6";
+            } else if (childCount === 3) {
+              bootstrapClass = "col-4";
+            } else if (childCount === 4) {
+              bootstrapClass = "col-3";
+            } else if (childCount <= 6) {
+              bootstrapClass = "col-2";
+            } else {
+              bootstrapClass = "col-1";
+            }
+
+            // Update all children with the calculated Bootstrap class (keep existing if set)
+            return withNewChild.map((item) => {
+              if (containerItem.children?.includes(item.id)) {
+                return {
+                  ...item,
+                  bootstrapClass: item.bootstrapClass || bootstrapClass,
+                };
+              }
+              return item;
+            });
+          }
+        }
+
+        return withNewChild;
+      });
+      return;
+    }
+
+    // Check if dropped on another field (reordering)
+    if (over.id !== active.id) {
+      const targetField = fields.find((f) => f.id === over.id);
+
+      // If target is inside a container, add dragged field to same container
+      const parentContainer = fields.find(
+        (f) => f.containerType && f.children?.includes(over.id)
+      );
+
+      if (parentContainer) {
+        setFields((items) => {
+          // Remove from any existing container
+          const updatedItems = items.map((item) => {
+            if (item.containerType && item.children?.includes(active.id)) {
+              return {
+                ...item,
+                children: item.children?.filter((id) => id !== active.id) || [],
+              };
+            }
+            return item;
+          });
+
+          // Add to parent container
+          return updatedItems.map((item) => {
+            if (item.id === parentContainer.id) {
+              const currentChildren = item.children || [];
+              const targetIndex = currentChildren.indexOf(over.id);
+              const newChildren = [...currentChildren];
+              if (targetIndex >= 0) {
+                newChildren.splice(targetIndex, 0, active.id);
+              } else {
+                newChildren.push(active.id);
+              }
+              return {
+                ...item,
+                children: newChildren,
+              };
+            }
+            return item;
+          });
+        });
+        return;
+      }
+
+      // Regular reordering at top level
       setFields((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
@@ -1029,7 +2617,20 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
   const handleDeleteField = (id: string) => {
     if (window.confirm("Are you sure you want to delete this field?")) {
-      setFields((prev) => prev.filter((field) => field.id !== id));
+      setFields((prev) => {
+        // Remove the field and also remove it from any container's children
+        return prev
+          .filter((field) => field.id !== id)
+          .map((field) => {
+            if (field.containerType && field.children?.includes(id)) {
+              return {
+                ...field,
+                children: field.children.filter((childId) => childId !== id),
+              };
+            }
+            return field;
+          });
+      });
     }
   };
 
@@ -1065,12 +2666,36 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     onSave(fields, bannerImage || undefined, theme);
   };
 
+  // Close JSON menu when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showJsonMenu &&
+        !(event.target as HTMLElement).closest(".json-menu-container")
+      ) {
+        setShowJsonMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showJsonMenu]);
+
   return (
     <div className="flex h-full bg-gray-50">
+      {/* Left Sidebar - Components Panel (FormEngine-like) */}
+      <div className="w-64 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+        <div className="p-3 border-b bg-gray-50 shrink-0">
+          <h3 className="text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+            Components
+          </h3>
+          <FieldPalette onAddField={handleAddField} />
+        </div>
+      </div>
+
       {/* Main Builder Area */}
       <div className="flex-1 flex flex-col bg-white">
         {/* Header */}
-        <div className="p-4 border-b bg-gradient-to-r from-blue-50 to-indigo-50 flex justify-between items-center shadow-sm">
+        <div className="p-4 border-b bg-white flex justify-between items-center shadow-sm">
           <div>
             <h2 className="text-xl font-semibold text-gray-800">
               Custom Form Builder
@@ -1080,6 +2705,137 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
             </p>
           </div>
           <div className="flex gap-2">
+            {/* JSON Menu Button */}
+            <div className="relative json-menu-container">
+              <button
+                onClick={() => setShowJsonMenu(!showJsonMenu)}
+                className="px-4 py-2 border border-blue-600 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors flex items-center gap-2 bg-white"
+                title="JSON Operations"
+              >
+                <Code size={16} />
+                JSON
+              </button>
+              {showJsonMenu && (
+                <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+                  <button
+                    onClick={() => {
+                      const formData = {
+                        version: "1.0",
+                        fields: fields,
+                        theme: theme,
+                        bannerImage:
+                          bannerImage instanceof File ? null : bannerImage, // Can't serialize File
+                        exportedAt: new Date().toISOString(),
+                      };
+                      const jsonStr = JSON.stringify(formData, null, 2);
+                      const blob = new Blob([jsonStr], {
+                        type: "application/json",
+                      });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = `form-template-${Date.now()}.json`;
+                      a.click();
+                      URL.revokeObjectURL(url);
+                      setShowJsonMenu(false);
+                      alert("Form exported as JSON!");
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                  >
+                    <Download size={16} />
+                    Download JSON
+                  </button>
+                  <button
+                    onClick={() => {
+                      const input = document.createElement("input");
+                      input.type = "file";
+                      input.accept = "application/json";
+                      input.onchange = (e: any) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            try {
+                              const jsonData = JSON.parse(
+                                event.target?.result as string
+                              );
+                              if (jsonData.fields) {
+                                setFields(jsonData.fields);
+                              }
+                              if (jsonData.theme) {
+                                setTheme(jsonData.theme);
+                              }
+                              if (jsonData.bannerImage) {
+                                setBannerImage(jsonData.bannerImage);
+                                setBannerPreview(jsonData.bannerImage);
+                              }
+                              setShowJsonMenu(false);
+                              alert("Form imported successfully!");
+                            } catch (error) {
+                              alert("Error importing form: Invalid JSON file");
+                            }
+                          };
+                          reader.readAsText(file);
+                        }
+                      };
+                      input.click();
+                      setShowJsonMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                  >
+                    <Upload size={16} />
+                    Upload JSON
+                  </button>
+                  <div className="border-t border-gray-200"></div>
+                  <button
+                    onClick={() => {
+                      const formData = {
+                        version: "1.0",
+                        fields: fields,
+                        theme: theme,
+                        bannerImage:
+                          bannerImage instanceof File ? null : bannerImage,
+                        exportedAt: new Date().toISOString(),
+                      };
+                      setJsonEditorContent(JSON.stringify(formData, null, 2));
+                      setShowJsonEditor(true);
+                      setShowJsonMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                  >
+                    <Code size={16} />
+                    Edit JSON
+                  </button>
+                  <div className="border-t border-gray-200"></div>
+                  <button
+                    onClick={() => {
+                      const formData = {
+                        version: "1.0",
+                        fields: fields,
+                        theme: theme,
+                        bannerImage:
+                          bannerImage instanceof File ? null : bannerImage,
+                        exportedAt: new Date().toISOString(),
+                      };
+                      const jsonStr = JSON.stringify(formData, null, 2);
+                      navigator.clipboard
+                        .writeText(jsonStr)
+                        .then(() => {
+                          setShowJsonMenu(false);
+                          alert("JSON copied to clipboard!");
+                        })
+                        .catch(() => {
+                          alert("Failed to copy JSON to clipboard");
+                        });
+                    }}
+                    className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 text-gray-700"
+                  >
+                    <Copy size={16} />
+                    Copy JSON
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               onClick={() => setShowThemePanel(!showThemePanel)}
               className={`px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2 ${
@@ -1118,145 +2874,285 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
         {/* Builder Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-          {showPreview ? (
-            <FormPreview
-              fields={fields}
-              bannerImage={bannerPreview}
-              theme={theme}
-            />
-          ) : (
-            <>
-              {/* Banner Image Upload Section */}
-              <div className="bg-white p-5 rounded-lg shadow-sm border border-gray-200 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-800 mb-1">
-                      Form Banner Image
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Upload a banner image to display at the top of your form
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {bannerPreview ? (
-                    <div className="relative">
-                      <div className="w-full h-48 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
-                        <img
-                          src={bannerPreview}
-                          alt="Banner preview"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <button
-                        onClick={handleRemoveBanner}
-                        className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
-                        title="Remove banner"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <ImageIcon className="w-10 h-10 mb-2 text-gray-400" />
-                        <p className="mb-2 text-sm text-gray-500">
-                          <span className="font-semibold">
-                            Click to upload banner
-                          </span>{" "}
-                          or drag and drop
-                        </p>
-                        <p className="text-xs text-gray-400">
-                          PNG, JPG, GIF up to 10MB
-                        </p>
-                      </div>
-                      <input
-                        ref={bannerInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleBannerImageChange}
-                        className="hidden"
-                      />
-                    </label>
-                  )}
-                  {!bannerPreview && (
-                    <button
-                      onClick={() => bannerInputRef.current?.click()}
-                      className="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 flex items-center justify-center gap-2"
-                    >
-                      <ImageIcon size={18} />
-                      Upload Banner Image
-                    </button>
-                  )}
-                </div>
-              </div>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragOver={(event) => {
+              const overId = event.over?.id;
+              if (overId) {
+                document.querySelectorAll("[data-drop-zone]").forEach((el) => {
+                  el.classList.remove("ring-2", "ring-blue-400", "bg-blue-50");
+                });
+                document
+                  .querySelectorAll("[data-container-id]")
+                  .forEach((el) => {
+                    el.classList.remove(
+                      "ring-2",
+                      "ring-purple-400",
+                      "bg-purple-100"
+                    );
+                  });
 
-              <FieldPalette onAddField={handleAddField} />
-              <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-semibold text-gray-800">
-                    Form Fields
-                    <span className="ml-2 text-sm font-normal text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                      {fields.length} {fields.length === 1 ? "field" : "fields"}
-                    </span>
-                  </h3>
-                  {fields.length > 0 && (
-                    <button
-                      onClick={() => {
-                        if (window.confirm("Clear all fields?")) {
-                          setFields([]);
-                        }
-                      }}
-                      className="text-sm text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded"
-                    >
-                      Clear All
-                    </button>
-                  )}
-                </div>
-                {fields.length === 0 ? (
-                  <div className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-                    <div className="flex flex-col items-center">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                        <Plus className="text-blue-600" size={32} />
-                      </div>
-                      <p className="text-gray-600 font-medium mb-1">
-                        No fields added yet
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Click on a field type above to add it to your form
+                const dropZone = document.querySelector(
+                  `[data-drop-zone="${overId}"]`
+                );
+                const container = document.querySelector(
+                  `[data-container-id="${overId}"]`
+                );
+
+                if (dropZone) {
+                  (dropZone as HTMLElement).classList.add(
+                    "ring-2",
+                    "ring-blue-400",
+                    "bg-blue-50"
+                  );
+                }
+                if (container) {
+                  (container as HTMLElement).classList.add(
+                    "ring-2",
+                    "ring-purple-400",
+                    "bg-purple-100"
+                  );
+                }
+              }
+            }}
+          >
+            {showPreview ? (
+              <FormPreview
+                fields={fields}
+                bannerImage={bannerPreview}
+                theme={theme}
+              />
+            ) : (
+              <>
+                {/* Banner Image Upload Section */}
+                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-800 mb-1 text-sm">
+                        Form Banner Image
+                      </h3>
+                      <p className="text-xs text-gray-500">
+                        Upload a banner image to display at the top of your form
                       </p>
                     </div>
                   </div>
-                ) : (
-                  <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
+                  <div className="space-y-2">
+                    {bannerPreview ? (
+                      <div className="relative">
+                        <div className="w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
+                          <img
+                            src={bannerPreview}
+                            alt="Banner preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <button
+                          onClick={handleRemoveBanner}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
+                          title="Remove banner"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                        <div className="flex flex-col items-center justify-center">
+                          <ImageIcon className="w-8 h-8 mb-1 text-gray-400" />
+                          <p className="text-xs text-gray-500">
+                            <span className="font-semibold">
+                              Click to upload
+                            </span>
+                          </p>
+                        </div>
+                        <input
+                          ref={bannerInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleBannerImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                {/* Form Canvas */}
+                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-sm font-semibold text-gray-700">
+                      Form Canvas
+                      <span className="ml-2 text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+                        {fields.length}{" "}
+                        {fields.length === 1 ? "field" : "fields"}
+                      </span>
+                    </h3>
+                    {fields.length > 0 && (
+                      <button
+                        onClick={() => {
+                          if (window.confirm("Clear all fields?")) {
+                            setFields([]);
+                          }
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                  {fields.length === 0 ? (
+                    <MainDropZone />
+                  ) : (
                     <SortableContext
                       items={fields.map((f) => f.id)}
                       strategy={verticalListSortingStrategy}
                     >
-                      <div className="space-y-2">
-                        {fields.map((field) => (
-                          <SortableFieldItem
-                            key={field.id}
-                            field={field}
-                            onEdit={setEditingField}
-                            onDelete={handleDeleteField}
-                          />
-                        ))}
+                      <div className="space-y-3">
+                        {fields.map((field, index) => {
+                          // Get all child field IDs from all containers
+                          const allChildIds = fields
+                            .filter((f) => f.containerType && f.children)
+                            .flatMap((f) => f.children || []);
+
+                          // Skip rendering if this field is a child of a container
+                          if (allChildIds.includes(field.id)) {
+                            return null;
+                          }
+
+                          // If it's a container, render with droppable zone
+                          if (field.containerType) {
+                            const childFields = field.children
+                              ? fields.filter((f) =>
+                                  field.children?.includes(f.id)
+                                )
+                              : [];
+
+                            return (
+                              <div
+                                key={field.id}
+                                data-field-id={field.id}
+                                className="relative group"
+                              >
+                                <div className="bg-white border-2 border-purple-300 rounded-lg p-3">
+                                  <SortableFieldItem
+                                    field={field}
+                                    onEdit={setEditingField}
+                                    onDelete={handleDeleteField}
+                                  />
+                                  <DroppableContainer
+                                    containerId={field.id}
+                                    isEmpty={childFields.length === 0}
+                                    containerType={field.containerType}
+                                  >
+                                    <div
+                                      className={`mt-3 ${
+                                        field.containerType === "row"
+                                          ? "flex flex-row gap-3"
+                                          : "flex flex-col gap-3"
+                                      }`}
+                                      style={{
+                                        gap: field.layoutProps?.gap || "16px",
+                                        padding:
+                                          field.layoutProps?.padding || "12px",
+                                        backgroundColor:
+                                          field.layoutProps?.backgroundColor ||
+                                          "transparent",
+                                        borderRadius:
+                                          field.layoutProps?.borderRadius ||
+                                          "8px",
+                                        minHeight:
+                                          childFields.length === 0
+                                            ? "60px"
+                                            : "auto",
+                                      }}
+                                    >
+                                      {childFields.length > 0 ? (
+                                        <SortableContext
+                                          items={childFields.map((f) => f.id)}
+                                          strategy={verticalListSortingStrategy}
+                                        >
+                                          {childFields.map((childField) => (
+                                            <div
+                                              key={childField.id}
+                                              className="flex-1 min-w-0"
+                                            >
+                                              <SortableFieldItem
+                                                field={childField}
+                                                onEdit={setEditingField}
+                                                onDelete={handleDeleteField}
+                                                isInsideContainer={true}
+                                              />
+                                            </div>
+                                          ))}
+                                        </SortableContext>
+                                      ) : (
+                                        <div className="text-center py-4 text-gray-400 text-sm italic w-full">
+                                          Drop fields here
+                                        </div>
+                                      )}
+                                    </div>
+                                  </DroppableContainer>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          // Regular field
+                          return (
+                            <div
+                              key={field.id}
+                              data-field-id={field.id}
+                              className="relative group"
+                            >
+                              {/* Drop indicator above */}
+                              {index === 0 && (
+                                <div className="h-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="h-full border-2 border-dashed border-blue-400 rounded bg-blue-50"></div>
+                                </div>
+                              )}
+                              <SortableFieldItem
+                                field={field}
+                                onEdit={setEditingField}
+                                onDelete={handleDeleteField}
+                              />
+                              {/* Drop indicator below */}
+                              <div className="h-2 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="h-full border-2 border-dashed border-blue-400 rounded bg-blue-50"></div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </SortableContext>
-                  </DndContext>
-                )}
-              </div>
-            </>
-          )}
+                  )}
+                </div>
+              </>
+            )}
+            <DragOverlay>
+              {activeId && draggedPreset ? (
+                <div className="bg-white border-2 border-blue-400 rounded-lg p-3 shadow-lg opacity-90 flex items-center gap-2">
+                  {draggedPreset.icon}
+                  <span className="text-sm font-medium text-gray-800">
+                    {draggedPreset.label}
+                  </span>
+                </div>
+              ) : activeId ? (
+                <div className="bg-white border-2 border-blue-400 rounded-lg p-3 shadow-lg opacity-90">
+                  <div className="flex items-center gap-2">
+                    <GripVertical size={16} className="text-blue-600" />
+                    <span className="text-sm font-medium">Moving field...</span>
+                  </div>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
       </div>
 
-      {/* Theme Configuration Panel */}
+      {/* Theme Configuration Panel  */}
+
       {showThemePanel && (
         <ThemeConfigPanel
           theme={theme}
@@ -1265,13 +3161,91 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
         />
       )}
 
-      {/* Configuration Panel */}
+      {/* Configuration Panel  */}
+
       {editingField && (
         <FieldConfigPanel
           field={editingField}
           onUpdate={handleUpdateField}
           onClose={() => setEditingField(null)}
         />
+      )}
+
+      {/* JSON Editor Modal */}
+      {showJsonEditor && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col">
+            <div className="p-4 border-b flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Edit Form JSON
+                </h3>
+                <p className="text-xs text-gray-500 mt-1">
+                  Edit the form data in JSON format. Changes will be applied
+                  when you close this editor.
+                </p>
+              </div>
+              <button
+                onClick={() => setShowJsonEditor(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Close JSON editor"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 p-4 overflow-hidden">
+              <textarea
+                value={jsonEditorContent}
+                onChange={(e) => setJsonEditorContent(e.target.value)}
+                className="w-full h-full font-mono text-sm border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none"
+                placeholder="Paste or edit JSON here..."
+                spellCheck={false}
+              />
+            </div>
+            <div className="p-4 border-t flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowJsonEditor(false);
+                  setJsonEditorContent("");
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const jsonData = JSON.parse(jsonEditorContent);
+                    if (jsonData.fields) {
+                      setFields(jsonData.fields);
+                    }
+                    if (jsonData.theme) {
+                      setTheme(jsonData.theme);
+                    }
+                    if (jsonData.bannerImage) {
+                      setBannerImage(jsonData.bannerImage);
+                      setBannerPreview(jsonData.bannerImage);
+                    }
+                    setShowJsonEditor(false);
+                    setJsonEditorContent("");
+                    alert("Form updated from JSON successfully!");
+                  } catch (error) {
+                    alert(
+                      `Error parsing JSON: ${
+                        error instanceof Error
+                          ? error.message
+                          : "Invalid JSON format"
+                      }`
+                    );
+                  }
+                }}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Apply Changes
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -1870,6 +3844,57 @@ const FormPreview: React.FC<FormPreviewProps> = ({
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
     string | null
   >(null);
+  const [inlineParams, setInlineParams] = useState<Record<string, string>>({
+    Name: "John Doe",
+    Email: "john@example.com",
+    Company: "Acme Corp",
+  });
+
+  // Replace inline parameters in text (FormEngine-like)
+  const replaceInlineParams = (text: string | undefined): string => {
+    if (!text) return "";
+    let result = text;
+    Object.keys(inlineParams).forEach((key) => {
+      const regex = new RegExp(`\\{${key}\\}`, "g");
+      result = result.replace(regex, inlineParams[key]);
+    });
+    return result;
+  };
+
+  // Execute event handlers (FormEngine-like)
+  const executeEventHandler = (
+    handler: string | undefined,
+    fieldName: string,
+    value?: any
+  ) => {
+    if (!handler) return;
+    try {
+      // Simple handler execution - in production, you'd want a more secure approach
+      if (handler.includes("(")) {
+        // Function call like "handleChange(value)"
+        const funcName = handler.split("(")[0].trim();
+        if (typeof (window as any)[funcName] === "function") {
+          (window as any)[funcName](value, fieldName);
+        } else {
+          console.log(
+            `Event handler "${handler}" called for field "${fieldName}" with value:`,
+            value
+          );
+        }
+      } else {
+        // Simple function name
+        if (typeof (window as any)[handler] === "function") {
+          (window as any)[handler](value, fieldName);
+        } else {
+          console.log(
+            `Event handler "${handler}" called for field "${fieldName}"`
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Error executing event handler:", error);
+    }
+  };
 
   React.useEffect(() => {
     if (theme?.formBackgroundImage instanceof File) {
@@ -1911,10 +3936,13 @@ const FormPreview: React.FC<FormPreviewProps> = ({
       padding: field.fieldStyle?.padding || theme?.inputPadding || "10px 16px",
       width: field.fieldStyle?.width || "100%",
     };
+    // Replace inline parameters
+    const displayPlaceholder = replaceInlineParams(field.placeholder);
+
     const commonProps = {
       id: field.id,
       name: field.name,
-      placeholder: field.placeholder,
+      placeholder: displayPlaceholder,
       required: field.required,
       defaultValue: field.defaultValue,
     };
@@ -1929,12 +3957,14 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             type={field.type}
             {...commonProps}
             value={formData[field.name] || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, [field.name]: e.target.value })
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              setFormData({ ...formData, [field.name]: value });
+              executeEventHandler(field.events?.onChange, field.name, value);
+            }}
             style={{
-              ...inputStyle,
-              width: "100%",
+              ...fieldInputStyle,
+              width: field.fieldStyle?.width || "100%",
               outline: "none",
             }}
             onFocus={(e) => {
@@ -1942,15 +3972,25 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                 theme?.inputFocusBorderColor || "#3b82f6";
               e.currentTarget.style.backgroundColor =
                 theme?.inputFocusBackgroundColor ||
+                field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
                 "#ffffff";
+              executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor =
-                theme?.inputBorderColor || "#d1d5db";
+                field.fieldStyle?.borderColor ||
+                theme?.inputBorderColor ||
+                "#d1d5db";
               e.currentTarget.style.backgroundColor =
-                theme?.inputBackgroundColor || "#ffffff";
+                field.fieldStyle?.backgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+              executeEventHandler(field.events?.onBlur, field.name);
             }}
+            onClick={() =>
+              executeEventHandler(field.events?.onClick, field.name)
+            }
             className="w-full transition-all"
           />
         );
@@ -1959,9 +3999,11 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           <textarea
             {...commonProps}
             value={formData[field.name] || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, [field.name]: e.target.value })
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              setFormData({ ...formData, [field.name]: value });
+              executeEventHandler(field.events?.onChange, field.name, value);
+            }}
             style={{
               ...fieldInputStyle,
               width: field.fieldStyle?.width || "100%",
@@ -1973,14 +4015,21 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                 theme?.inputFocusBorderColor || "#3b82f6";
               e.currentTarget.style.backgroundColor =
                 theme?.inputFocusBackgroundColor ||
+                field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
                 "#ffffff";
+              executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor =
-                theme?.inputBorderColor || "#d1d5db";
+                field.fieldStyle?.borderColor ||
+                theme?.inputBorderColor ||
+                "#d1d5db";
               e.currentTarget.style.backgroundColor =
-                theme?.inputBackgroundColor || "#ffffff";
+                field.fieldStyle?.backgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+              executeEventHandler(field.events?.onBlur, field.name);
             }}
             className="w-full transition-all resize-y"
             rows={4}
@@ -1991,9 +4040,11 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           <select
             {...commonProps}
             value={formData[field.name] || ""}
-            onChange={(e) =>
-              setFormData({ ...formData, [field.name]: e.target.value })
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              setFormData({ ...formData, [field.name]: value });
+              executeEventHandler(field.events?.onChange, field.name, value);
+            }}
             style={{
               ...fieldInputStyle,
               width: field.fieldStyle?.width || "100%",
@@ -2002,19 +4053,35 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             onFocus={(e) => {
               e.currentTarget.style.borderColor =
                 theme?.inputFocusBorderColor || "#3b82f6";
+              e.currentTarget.style.backgroundColor =
+                theme?.inputFocusBackgroundColor ||
+                field.fieldStyle?.backgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+              executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor =
                 field.fieldStyle?.borderColor ||
                 theme?.inputBorderColor ||
                 "#d1d5db";
+              e.currentTarget.style.backgroundColor =
+                field.fieldStyle?.backgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+              executeEventHandler(field.events?.onBlur, field.name);
             }}
+            onClick={() =>
+              executeEventHandler(field.events?.onClick, field.name)
+            }
             className="w-full transition-all bg-white"
           >
-            <option value="">Select an option...</option>
+            <option value="">
+              {displayPlaceholder || "Select an option..."}
+            </option>
             {field.options?.map((opt) => (
               <option key={opt.value} value={opt.value}>
-                {opt.label}
+                {replaceInlineParams(opt.label)}
               </option>
             ))}
           </select>
@@ -2032,12 +4099,29 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   name={field.name}
                   value={opt.value}
                   checked={formData[field.name] === opt.value}
-                  onChange={(e) =>
-                    setFormData({ ...formData, [field.name]: e.target.value })
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData({ ...formData, [field.name]: value });
+                    executeEventHandler(
+                      field.events?.onChange,
+                      field.name,
+                      value
+                    );
+                  }}
+                  onFocus={() =>
+                    executeEventHandler(field.events?.onFocus, field.name)
+                  }
+                  onBlur={() =>
+                    executeEventHandler(field.events?.onBlur, field.name)
+                  }
+                  onClick={() =>
+                    executeEventHandler(field.events?.onClick, field.name)
                   }
                   className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
                 />
-                <span className="text-gray-700">{opt.label}</span>
+                <span className="text-gray-700">
+                  {replaceInlineParams(opt.label)}
+                </span>
               </label>
             ))}
           </div>
@@ -2060,10 +4144,26 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                       ? [...current, opt.value]
                       : current.filter((v: string) => v !== opt.value);
                     setFormData({ ...formData, [field.name]: updated });
+                    executeEventHandler(
+                      field.events?.onChange,
+                      field.name,
+                      updated
+                    );
                   }}
+                  onFocus={() =>
+                    executeEventHandler(field.events?.onFocus, field.name)
+                  }
+                  onBlur={() =>
+                    executeEventHandler(field.events?.onBlur, field.name)
+                  }
+                  onClick={() =>
+                    executeEventHandler(field.events?.onClick, field.name)
+                  }
                   className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                 />
-                <span className="text-gray-700">{opt.label}</span>
+                <span className="text-gray-700">
+                  {replaceInlineParams(opt.label)}
+                </span>
               </label>
             ))}
           </div>
@@ -2190,6 +4290,90 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             {field.buttonText || "Button"}
           </button>
         );
+      case "table":
+        if (!field.tableData) {
+          return <div className="text-gray-400 text-sm">No table data</div>;
+        }
+        return (
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-300 rounded-lg">
+              <thead>
+                <tr className="bg-gray-100">
+                  {field.tableData.columns.map((col, idx) => (
+                    <th
+                      key={idx}
+                      className="px-4 py-2 text-left border-b border-gray-300 font-semibold"
+                      style={{ color: theme?.labelColor || "#374151" }}
+                    >
+                      {col.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {field.tableData.rows.map((row, rowIdx) => (
+                  <tr key={rowIdx} className="border-b border-gray-200">
+                    {field.tableData!.columns.map((col, colIdx) => (
+                      <td
+                        key={colIdx}
+                        className="px-4 py-2"
+                        style={{ color: theme?.textColor || "#111827" }}
+                      >
+                        {row[col.key] || ""}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        );
+      case "divider":
+        return (
+          <hr
+            className="my-4"
+            style={{
+              borderColor: theme?.formBorderColor || "#e5e7eb",
+              borderWidth: "1px",
+            }}
+          />
+        );
+      case "heading":
+        return (
+          <h3
+            className="font-bold"
+            style={{
+              color: theme?.headingColor || "#111827",
+              fontSize: theme?.headingFontSize || "24px",
+              fontWeight: theme?.headingFontWeight || "bold",
+            }}
+          >
+            {replaceInlineParams(field.content || field.label || "Heading")}
+          </h3>
+        );
+      case "paragraph":
+        return (
+          <p
+            className="text-sm"
+            style={{
+              color: theme?.textColor || "#111827",
+              fontSize: theme?.textFontSize || "16px",
+            }}
+          >
+            {replaceInlineParams(
+              field.content || field.label || "Paragraph text"
+            )}
+          </p>
+        );
+      case "spacer":
+        return (
+          <div
+            style={{
+              height: field.height || "20px",
+              width: "100%",
+            }}
+          />
+        );
       default:
         return null;
     }
@@ -2262,68 +4446,210 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
-          {fields.map((field) => {
-            // Skip any fields with containerType (layout elements should not be rendered)
-            if (field.containerType) {
-              return null;
-            }
+          {(() => {
+            // Calculate all child field IDs once to avoid duplicate rendering
+            const allChildIds = new Set(
+              fields
+                .filter((f) => f.containerType && f.children)
+                .flatMap((f) => f.children || [])
+            );
 
-            return (
-              <div
-                key={field.id}
-                className="space-y-2"
-                style={{
-                  margin: field.fieldStyle?.margin || "0",
-                  padding: field.fieldStyle?.padding || "0",
-                  width: field.fieldStyle?.width || "100%",
-                }}
-              >
-                <label
-                  className="block font-semibold"
+            return fields.map((field) => {
+              // Skip rendering if this field is a child of a container (it will be rendered inside its parent)
+              if (allChildIds.has(field.id)) {
+                return null;
+              }
+
+              // Render containers with their children
+              if (field.containerType) {
+                const isRowLayout = field.containerType === "row";
+                const containerStyle: React.CSSProperties = {
+                  display: "flex",
+                  flexDirection: isRowLayout ? "row" : "column",
+                  justifyContent:
+                    field.layoutProps?.justifyContent || "flex-start",
+                  alignItems:
+                    field.layoutProps?.alignItems ||
+                    (isRowLayout ? "flex-start" : "stretch"),
+                  gap: field.layoutProps?.gap || "16px",
+                  padding:
+                    field.layoutProps?.padding || (isRowLayout ? "0" : "16px"),
+                  margin: field.layoutProps?.margin || "0",
+                  backgroundColor:
+                    field.layoutProps?.backgroundColor || "transparent",
+                  borderRadius: field.layoutProps?.borderRadius || "0px",
+                  flexWrap:
+                    field.layoutProps?.flexWrap ||
+                    (isRowLayout ? "wrap" : "nowrap"),
+                  width: "100%",
+                };
+
+                const childFields = field.children
+                  ? fields.filter((f) => field.children?.includes(f.id))
+                  : [];
+
+                // For column containers, use Bootstrap grid if Bootstrap classes are set
+                const isColumnContainer = field.containerType === "column";
+                const hasBootstrapClasses = childFields.some(
+                  (f) => f.bootstrapClass
+                );
+
+                // If column container with Bootstrap classes, use row wrapper
+                const containerClassName =
+                  isColumnContainer && hasBootstrapClasses ? "row" : "";
+
+                // Always apply containerStyle for row containers, or if no Bootstrap classes
+                const shouldApplyContainerStyle =
+                  isRowLayout || !hasBootstrapClasses;
+
+                return (
+                  <div
+                    key={field.id}
+                    className={`w-full ${containerClassName}`}
+                    style={
+                      shouldApplyContainerStyle ? containerStyle : undefined
+                    }
+                  >
+                    {childFields.length > 0 ? (
+                      childFields.map((childField) => {
+                        // Determine wrapper style/class based on container type and Bootstrap class
+                        let fieldWrapperClassName = "";
+                        let fieldWrapperStyle: React.CSSProperties = {};
+
+                        if (isColumnContainer && childField.bootstrapClass) {
+                          // Use Bootstrap class
+                          fieldWrapperClassName = childField.bootstrapClass;
+                          fieldWrapperStyle = {
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                          };
+                        } else if (isRowLayout) {
+                          // For row layouts without Bootstrap, use flex equal width
+                          fieldWrapperStyle = {
+                            flex: "1 1 0%",
+                            minWidth: "0",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                          };
+                        } else {
+                          // Default column layout
+                          fieldWrapperStyle = {
+                            width: "100%",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "4px",
+                          };
+                        }
+
+                        return (
+                          <div
+                            key={childField.id}
+                            className={fieldWrapperClassName}
+                            style={fieldWrapperStyle}
+                          >
+                            <label
+                              className="block font-semibold text-sm mb-1"
+                              style={{
+                                color: theme?.labelColor || "#374151",
+                                fontSize: theme?.labelFontSize || "14px",
+                                fontWeight: theme?.labelFontWeight || "600",
+                              }}
+                            >
+                              {replaceInlineParams(childField.label)}
+                              {childField.required && (
+                                <span
+                                  style={{
+                                    color:
+                                      theme?.requiredIndicatorColor ||
+                                      "#ef4444",
+                                    marginLeft: "4px",
+                                  }}
+                                >
+                                  *
+                                </span>
+                              )}
+                            </label>
+                            <div style={{ width: "100%" }}>
+                              {renderField(
+                                childField,
+                                {
+                                  ...inputStyle,
+                                  width: "100%",
+                                },
+                                theme
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center py-8 text-gray-400 text-sm italic w-full">
+                        Drop fields here
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div
+                  key={field.id}
+                  className="space-y-2"
                   style={{
-                    color:
-                      field.fieldStyle?.labelColor ||
-                      theme?.labelColor ||
-                      "#374151",
-                    fontSize: theme?.labelFontSize || "14px",
-                    fontWeight: theme?.labelFontWeight || "600",
+                    margin: field.fieldStyle?.margin || "0",
+                    padding: field.fieldStyle?.padding || "0",
+                    width: field.fieldStyle?.width || "100%",
                   }}
                 >
-                  {field.label}
-                  {field.required && (
-                    <span
-                      style={{
-                        color: theme?.requiredIndicatorColor || "#ef4444",
-                        marginLeft: "4px",
-                      }}
-                    >
-                      *
-                    </span>
-                  )}
-                  {field.unique && (
-                    <span
-                      className="ml-2 text-xs bg-blue-50 px-2 py-0.5 rounded"
-                      style={{ color: "#2563eb" }}
-                    >
-                      Unique
-                    </span>
-                  )}
-                </label>
-                {field.description && (
-                  <p
-                    className="text-xs mb-2 italic"
+                  <label
+                    className="block font-semibold"
                     style={{
-                      color: theme?.descriptionColor || "#6b7280",
-                      fontSize: theme?.descriptionFontSize || "12px",
+                      color:
+                        field.fieldStyle?.labelColor ||
+                        theme?.labelColor ||
+                        "#374151",
+                      fontSize: theme?.labelFontSize || "14px",
+                      fontWeight: theme?.labelFontWeight || "600",
                     }}
                   >
-                    {field.description}
-                  </p>
-                )}
-                {renderField(field, inputStyle, theme)}
-              </div>
-            );
-          })}
+                    {replaceInlineParams(field.label)}
+                    {field.required && (
+                      <span
+                        style={{
+                          color: theme?.requiredIndicatorColor || "#ef4444",
+                          marginLeft: "4px",
+                        }}
+                      >
+                        *
+                      </span>
+                    )}
+                    {field.unique && (
+                      <span
+                        className="ml-2 text-xs bg-blue-50 px-2 py-0.5 rounded"
+                        style={{ color: "#2563eb" }}
+                      >
+                        Unique
+                      </span>
+                    )}
+                  </label>
+                  {field.description && (
+                    <p
+                      className="text-xs mb-2 italic"
+                      style={{
+                        color: theme?.descriptionColor || "#6b7280",
+                        fontSize: theme?.descriptionFontSize || "12px",
+                      }}
+                    >
+                      {field.description}
+                    </p>
+                  )}
+                  {renderField(field, inputStyle, theme)}
+                </div>
+              );
+            });
+          })()}
           <div
             className="pt-4 border-t"
             style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
@@ -2385,4 +4711,3 @@ const FormPreview: React.FC<FormPreviewProps> = ({
 };
 
 export default CustomFormBuilder;
-export type { CustomFormField, FieldType };

@@ -994,6 +994,88 @@ const renderCustomField = (
       );
     case "button":
       return null;
+    case "table":
+      if (!field.tableData) {
+        return <div className="text-gray-400 text-sm">No table data</div>;
+      }
+      return (
+        <div className="overflow-x-auto">
+          <table className="min-w-full border border-gray-300 rounded-lg">
+            <thead>
+              <tr className="bg-gray-100">
+                {field.tableData.columns.map((col, idx) => (
+                  <th
+                    key={idx}
+                    className="px-4 py-2 text-left border-b border-gray-300 font-semibold"
+                    style={{ color: theme?.labelColor || "#374151" }}
+                  >
+                    {col.header}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {field.tableData.rows.map((row, rowIdx) => (
+                <tr key={rowIdx} className="border-b border-gray-200">
+                  {field.tableData!.columns.map((col, colIdx) => (
+                    <td
+                      key={colIdx}
+                      className="px-4 py-2"
+                      style={{ color: theme?.textColor || "#111827" }}
+                    >
+                      {row[col.key] || ""}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    case "divider":
+      return (
+        <hr
+          className="my-4"
+          style={{
+            borderColor: theme?.formBorderColor || "#e5e7eb",
+            borderWidth: "1px",
+          }}
+        />
+      );
+    case "heading":
+      return (
+        <h3
+          className="font-bold"
+          style={{
+            color: theme?.headingColor || "#111827",
+            fontSize: theme?.headingFontSize || "24px",
+            fontWeight: theme?.headingFontWeight || "bold",
+          }}
+        >
+          {field.content || field.label || "Heading"}
+        </h3>
+      );
+    case "paragraph":
+      return (
+        <p
+          className="text-sm"
+          style={{
+            color: theme?.textColor || "#111827",
+            fontSize: theme?.textFontSize || "16px",
+          }}
+        >
+          {field.content || field.label || "Paragraph text"}
+        </p>
+      );
+    case "spacer":
+      return (
+        <div
+          style={{
+            height: field.height || "20px",
+            width: "100%",
+          }}
+        />
+      );
     default:
       return null;
   }
@@ -1115,64 +1197,233 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {customFields.map((field) => {
-                if (field.containerType) return null;
+              {(() => {
+                // Calculate all child field IDs once to avoid duplicate rendering
+                const allChildIds = new Set(
+                  customFields
+                    .filter((f) => f.containerType && f.children)
+                    .flatMap((f) => f.children || [])
+                );
 
-                return (
-                  <div
-                    key={field.id}
-                    className="space-y-2"
-                    style={{
-                      margin: field.fieldStyle?.margin || "0",
-                      padding: field.fieldStyle?.padding || "0",
-                      width: field.fieldStyle?.width || "100%",
-                    }}
-                  >
-                    <label
-                      className="block font-semibold"
+                return customFields.map((field) => {
+                  // Skip rendering if this field is a child of a container (it will be rendered inside its parent)
+                  if (allChildIds.has(field.id)) {
+                    return null;
+                  }
+
+                  // Render containers with their children
+                  if (field.containerType) {
+                    const isRowLayout = field.containerType === "row";
+                    const containerStyle: React.CSSProperties = {
+                      display: "flex",
+                      flexDirection: isRowLayout ? "row" : "column",
+                      justifyContent:
+                        field.layoutProps?.justifyContent || "flex-start",
+                      alignItems:
+                        field.layoutProps?.alignItems ||
+                        (isRowLayout ? "flex-start" : "stretch"),
+                      gap: field.layoutProps?.gap || "16px",
+                      padding:
+                        field.layoutProps?.padding ||
+                        (isRowLayout ? "0" : "16px"),
+                      margin: field.layoutProps?.margin || "0",
+                      backgroundColor:
+                        field.layoutProps?.backgroundColor || "transparent",
+                      borderRadius: field.layoutProps?.borderRadius || "0px",
+                      flexWrap:
+                        field.layoutProps?.flexWrap ||
+                        (isRowLayout ? "wrap" : "nowrap"),
+                      width: "100%",
+                    };
+
+                    const childFields = field.children
+                      ? customFields.filter((f) =>
+                          field.children?.includes(f.id)
+                        )
+                      : [];
+
+                    // For column containers, use Bootstrap grid if Bootstrap classes are set
+                    const isColumnContainer = field.containerType === "column";
+                    const hasBootstrapClasses = childFields.some(
+                      (f) => f.bootstrapClass
+                    );
+
+                    // If column container with Bootstrap classes, use row wrapper
+                    const containerClassName =
+                      isColumnContainer && hasBootstrapClasses ? "row" : "";
+
+                    // Always apply containerStyle for row containers, or if no Bootstrap classes
+                    const shouldApplyContainerStyle =
+                      isRowLayout || !hasBootstrapClasses;
+
+                    return (
+                      <div
+                        key={field.id}
+                        className={`w-full ${containerClassName}`}
+                        style={
+                          shouldApplyContainerStyle ? containerStyle : undefined
+                        }
+                      >
+                        {childFields.length > 0 ? (
+                          childFields.map((childField) => {
+                            // Determine wrapper style/class based on container type and Bootstrap class
+                            let fieldWrapperClassName = "";
+                            let fieldWrapperStyle: React.CSSProperties = {};
+
+                            if (
+                              isColumnContainer &&
+                              childField.bootstrapClass
+                            ) {
+                              // Use Bootstrap class
+                              fieldWrapperClassName = childField.bootstrapClass;
+                              fieldWrapperStyle = {
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "4px",
+                              };
+                            } else if (isRowLayout) {
+                              // For row layouts without Bootstrap, use flex equal width
+                              fieldWrapperStyle = {
+                                flex: "1 1 0%",
+                                minWidth: "0",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "4px",
+                              };
+                            } else {
+                              // Default column layout
+                              fieldWrapperStyle = {
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "4px",
+                              };
+                            }
+
+                            return (
+                              <div
+                                key={childField.id}
+                                className={fieldWrapperClassName}
+                                style={fieldWrapperStyle}
+                              >
+                                {childField.type !== "checkbox" &&
+                                  childField.type !== "divider" &&
+                                  childField.type !== "spacer" &&
+                                  childField.type !== "heading" &&
+                                  childField.type !== "paragraph" && (
+                                    <label
+                                      className="block font-semibold text-sm mb-1"
+                                      style={{
+                                        color:
+                                          childField.fieldStyle?.labelColor ||
+                                          theme?.labelColor ||
+                                          "#374151",
+                                        fontSize:
+                                          theme?.labelFontSize || "14px",
+                                        fontWeight:
+                                          theme?.labelFontWeight || "600",
+                                      }}
+                                    >
+                                      {childField.label}
+                                      {childField.required && (
+                                        <span
+                                          style={{
+                                            color:
+                                              theme?.requiredIndicatorColor ||
+                                              "#ef4444",
+                                            marginLeft: "4px",
+                                          }}
+                                        >
+                                          *
+                                        </span>
+                                      )}
+                                    </label>
+                                  )}
+                                <div style={{ width: "100%" }}>
+                                  {renderCustomField(
+                                    childField,
+                                    inputStyle,
+                                    theme,
+                                    formData,
+                                    setFormData
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <div className="text-center py-8 text-gray-400 text-sm italic w-full">
+                            Drop fields here
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // Render regular fields
+                  return (
+                    <div
+                      key={field.id}
+                      className="space-y-2"
                       style={{
-                        color:
-                          field.fieldStyle?.labelColor ||
-                          theme?.labelColor ||
-                          "#374151",
-                        fontSize: theme?.labelFontSize || "14px",
-                        fontWeight: theme?.labelFontWeight || "600",
+                        margin: field.fieldStyle?.margin || "0",
+                        padding: field.fieldStyle?.padding || "0",
+                        width: field.fieldStyle?.width || "100%",
                       }}
                     >
-                      {field.label}
-                      {field.required && (
-                        <span
+                      {field.type !== "checkbox" &&
+                        field.type !== "divider" &&
+                        field.type !== "spacer" &&
+                        field.type !== "heading" &&
+                        field.type !== "paragraph" && (
+                          <label
+                            className="block font-semibold"
+                            style={{
+                              color:
+                                field.fieldStyle?.labelColor ||
+                                theme?.labelColor ||
+                                "#374151",
+                              fontSize: theme?.labelFontSize || "14px",
+                              fontWeight: theme?.labelFontWeight || "600",
+                            }}
+                          >
+                            {field.label}
+                            {field.required && (
+                              <span
+                                style={{
+                                  color:
+                                    theme?.requiredIndicatorColor || "#ef4444",
+                                  marginLeft: "4px",
+                                }}
+                              >
+                                *
+                              </span>
+                            )}
+                          </label>
+                        )}
+                      {field.description && (
+                        <p
+                          className="text-xs mb-2 italic"
                           style={{
-                            color: theme?.requiredIndicatorColor || "#ef4444",
-                            marginLeft: "4px",
+                            color: theme?.descriptionColor || "#6b7280",
+                            fontSize: theme?.descriptionFontSize || "12px",
                           }}
                         >
-                          *
-                        </span>
+                          {field.description}
+                        </p>
                       )}
-                    </label>
-                    {field.description && (
-                      <p
-                        className="text-xs mb-2 italic"
-                        style={{
-                          color: theme?.descriptionColor || "#6b7280",
-                          fontSize: theme?.descriptionFontSize || "12px",
-                        }}
-                      >
-                        {field.description}
-                      </p>
-                    )}
-                    {/* Render fields based on type */}
-                    {renderCustomField(
-                      field,
-                      inputStyle,
-                      theme,
-                      formData,
-                      setFormData
-                    )}
-                  </div>
-                );
-              })}
+                      {/* Render fields based on type */}
+                      {renderCustomField(
+                        field,
+                        inputStyle,
+                        theme,
+                        formData,
+                        setFormData
+                      )}
+                    </div>
+                  );
+                });
+              })()}
 
               <div
                 className="pt-4 border-t"
