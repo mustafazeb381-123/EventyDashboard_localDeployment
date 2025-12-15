@@ -122,7 +122,15 @@ export interface CustomFormField {
     borderWidth?: string;
     borderRadius?: string;
     padding?: string;
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
     margin?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
     textColor?: string;
     labelColor?: string;
     width?: string;
@@ -1167,6 +1175,170 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 className="w-full px-2 py-1.5 border rounded text-sm"
                 placeholder="0px or 10px 0px"
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Margin Top
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.marginTop || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        marginTop: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Margin Bottom
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.marginBottom || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        marginBottom: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Margin Left
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.marginLeft || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        marginLeft: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Margin Right
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.marginRight || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        marginRight: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Padding Top
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.paddingTop || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        paddingTop: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Padding Bottom
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.paddingBottom || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        paddingBottom: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Padding Left
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.paddingLeft || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        paddingLeft: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">
+                  Padding Right
+                </label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.paddingRight || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: {
+                        ...config.fieldStyle,
+                        paddingRight: e.target.value,
+                      },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border rounded text-sm"
+                  placeholder="10px"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -3935,6 +4107,18 @@ const FormPreview: React.FC<FormPreviewProps> = ({
       color: field.fieldStyle?.textColor || theme?.inputTextColor || "#111827",
       padding: field.fieldStyle?.padding || theme?.inputPadding || "10px 16px",
       width: field.fieldStyle?.width || "100%",
+      ...(field.fieldStyle?.paddingTop
+        ? { paddingTop: field.fieldStyle.paddingTop }
+        : {}),
+      ...(field.fieldStyle?.paddingRight
+        ? { paddingRight: field.fieldStyle.paddingRight }
+        : {}),
+      ...(field.fieldStyle?.paddingBottom
+        ? { paddingBottom: field.fieldStyle.paddingBottom }
+        : {}),
+      ...(field.fieldStyle?.paddingLeft
+        ? { paddingLeft: field.fieldStyle.paddingLeft }
+        : {}),
     };
     // Replace inline parameters
     const displayPlaceholder = replaceInlineParams(field.placeholder);
@@ -4516,6 +4700,46 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                         let fieldWrapperClassName = "";
                         let fieldWrapperStyle: React.CSSProperties = {};
 
+                        // Apply per-field spacing so custom margins/paddings are respected
+                        const fieldSpacing: React.CSSProperties = {
+                          margin: childField.fieldStyle?.margin || undefined,
+                          padding: childField.fieldStyle?.padding || undefined,
+                          width: childField.fieldStyle?.width || "100%",
+                          ...(childField.fieldStyle?.marginTop
+                            ? { marginTop: childField.fieldStyle.marginTop }
+                            : {}),
+                          ...(childField.fieldStyle?.marginRight
+                            ? { marginRight: childField.fieldStyle.marginRight }
+                            : {}),
+                          ...(childField.fieldStyle?.marginBottom
+                            ? {
+                                marginBottom:
+                                  childField.fieldStyle.marginBottom,
+                              }
+                            : {}),
+                          ...(childField.fieldStyle?.marginLeft
+                            ? { marginLeft: childField.fieldStyle.marginLeft }
+                            : {}),
+                          ...(childField.fieldStyle?.paddingTop
+                            ? { paddingTop: childField.fieldStyle.paddingTop }
+                            : {}),
+                          ...(childField.fieldStyle?.paddingRight
+                            ? {
+                                paddingRight:
+                                  childField.fieldStyle.paddingRight,
+                              }
+                            : {}),
+                          ...(childField.fieldStyle?.paddingBottom
+                            ? {
+                                paddingBottom:
+                                  childField.fieldStyle.paddingBottom,
+                              }
+                            : {}),
+                          ...(childField.fieldStyle?.paddingLeft
+                            ? { paddingLeft: childField.fieldStyle.paddingLeft }
+                            : {}),
+                        };
+
                         if (isColumnContainer && childField.bootstrapClass) {
                           // Use Bootstrap class
                           fieldWrapperClassName = childField.bootstrapClass;
@@ -4523,6 +4747,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                             display: "flex",
                             flexDirection: "column",
                             gap: "4px",
+                            ...fieldSpacing,
                           };
                         } else if (isRowLayout) {
                           // For row layouts without Bootstrap, use flex equal width
@@ -4532,6 +4757,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                             display: "flex",
                             flexDirection: "column",
                             gap: "4px",
+                            ...fieldSpacing,
                           };
                         } else {
                           // Default column layout
@@ -4540,6 +4766,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                             display: "flex",
                             flexDirection: "column",
                             gap: "4px",
+                            ...fieldSpacing,
                           };
                         }
 
@@ -4552,7 +4779,10 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                             <label
                               className="block font-semibold text-sm mb-1"
                               style={{
-                                color: theme?.labelColor || "#374151",
+                                color:
+                                  childField.fieldStyle?.labelColor ||
+                                  theme?.labelColor ||
+                                  "#374151",
                                 fontSize: theme?.labelFontSize || "14px",
                                 fontWeight: theme?.labelFontWeight || "600",
                               }}
@@ -4598,9 +4828,33 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   key={field.id}
                   className="space-y-2"
                   style={{
-                    margin: field.fieldStyle?.margin || "0",
-                    padding: field.fieldStyle?.padding || "0",
+                    margin: field.fieldStyle?.margin || undefined,
+                    padding: field.fieldStyle?.padding || undefined,
                     width: field.fieldStyle?.width || "100%",
+                    ...(field.fieldStyle?.marginTop
+                      ? { marginTop: field.fieldStyle.marginTop }
+                      : {}),
+                    ...(field.fieldStyle?.marginRight
+                      ? { marginRight: field.fieldStyle.marginRight }
+                      : {}),
+                    ...(field.fieldStyle?.marginBottom
+                      ? { marginBottom: field.fieldStyle.marginBottom }
+                      : {}),
+                    ...(field.fieldStyle?.marginLeft
+                      ? { marginLeft: field.fieldStyle.marginLeft }
+                      : {}),
+                    ...(field.fieldStyle?.paddingTop
+                      ? { paddingTop: field.fieldStyle.paddingTop }
+                      : {}),
+                    ...(field.fieldStyle?.paddingRight
+                      ? { paddingRight: field.fieldStyle.paddingRight }
+                      : {}),
+                    ...(field.fieldStyle?.paddingBottom
+                      ? { paddingBottom: field.fieldStyle.paddingBottom }
+                      : {}),
+                    ...(field.fieldStyle?.paddingLeft
+                      ? { paddingLeft: field.fieldStyle.paddingLeft }
+                      : {}),
                   }}
                 >
                   <label

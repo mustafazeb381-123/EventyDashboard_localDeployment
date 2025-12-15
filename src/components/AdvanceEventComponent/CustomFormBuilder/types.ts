@@ -60,7 +60,15 @@ export interface CustomFormField {
     borderWidth?: string;
     borderRadius?: string;
     padding?: string;
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
     margin?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
     textColor?: string;
     labelColor?: string;
     width?: string;

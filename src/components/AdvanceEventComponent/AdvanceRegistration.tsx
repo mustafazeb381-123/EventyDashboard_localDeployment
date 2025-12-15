@@ -845,6 +845,18 @@ const renderCustomField = (
     color: field.fieldStyle?.textColor || theme?.inputTextColor || "#111827",
     padding: field.fieldStyle?.padding || theme?.inputPadding || "10px 16px",
     width: field.fieldStyle?.width || "100%",
+    ...(field.fieldStyle?.paddingTop
+      ? { paddingTop: field.fieldStyle.paddingTop }
+      : {}),
+    ...(field.fieldStyle?.paddingRight
+      ? { paddingRight: field.fieldStyle.paddingRight }
+      : {}),
+    ...(field.fieldStyle?.paddingBottom
+      ? { paddingBottom: field.fieldStyle.paddingBottom }
+      : {}),
+    ...(field.fieldStyle?.paddingLeft
+      ? { paddingLeft: field.fieldStyle.paddingLeft }
+      : {}),
   };
 
   const commonProps = {
@@ -1270,6 +1282,59 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                             let fieldWrapperClassName = "";
                             let fieldWrapperStyle: React.CSSProperties = {};
 
+                            const fieldSpacing: React.CSSProperties = {
+                              margin:
+                                childField.fieldStyle?.margin || undefined,
+                              padding:
+                                childField.fieldStyle?.padding || undefined,
+                              width: childField.fieldStyle?.width || "100%",
+                              ...(childField.fieldStyle?.marginTop
+                                ? { marginTop: childField.fieldStyle.marginTop }
+                                : {}),
+                              ...(childField.fieldStyle?.marginRight
+                                ? {
+                                    marginRight:
+                                      childField.fieldStyle.marginRight,
+                                  }
+                                : {}),
+                              ...(childField.fieldStyle?.marginBottom
+                                ? {
+                                    marginBottom:
+                                      childField.fieldStyle.marginBottom,
+                                  }
+                                : {}),
+                              ...(childField.fieldStyle?.marginLeft
+                                ? {
+                                    marginLeft:
+                                      childField.fieldStyle.marginLeft,
+                                  }
+                                : {}),
+                              ...(childField.fieldStyle?.paddingTop
+                                ? {
+                                    paddingTop:
+                                      childField.fieldStyle.paddingTop,
+                                  }
+                                : {}),
+                              ...(childField.fieldStyle?.paddingRight
+                                ? {
+                                    paddingRight:
+                                      childField.fieldStyle.paddingRight,
+                                  }
+                                : {}),
+                              ...(childField.fieldStyle?.paddingBottom
+                                ? {
+                                    paddingBottom:
+                                      childField.fieldStyle.paddingBottom,
+                                  }
+                                : {}),
+                              ...(childField.fieldStyle?.paddingLeft
+                                ? {
+                                    paddingLeft:
+                                      childField.fieldStyle.paddingLeft,
+                                  }
+                                : {}),
+                            };
+
                             if (
                               isColumnContainer &&
                               childField.bootstrapClass
@@ -1280,6 +1345,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: "4px",
+                                ...fieldSpacing,
                               };
                             } else if (isRowLayout) {
                               // For row layouts without Bootstrap, use flex equal width
@@ -1289,6 +1355,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: "4px",
+                                ...fieldSpacing,
                               };
                             } else {
                               // Default column layout
@@ -1297,6 +1364,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: "4px",
+                                ...fieldSpacing,
                               };
                             }
 
@@ -1366,9 +1434,33 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                       key={field.id}
                       className="space-y-2"
                       style={{
-                        margin: field.fieldStyle?.margin || "0",
-                        padding: field.fieldStyle?.padding || "0",
+                        margin: field.fieldStyle?.margin || undefined,
+                        padding: field.fieldStyle?.padding || undefined,
                         width: field.fieldStyle?.width || "100%",
+                        ...(field.fieldStyle?.marginTop
+                          ? { marginTop: field.fieldStyle.marginTop }
+                          : {}),
+                        ...(field.fieldStyle?.marginRight
+                          ? { marginRight: field.fieldStyle.marginRight }
+                          : {}),
+                        ...(field.fieldStyle?.marginBottom
+                          ? { marginBottom: field.fieldStyle.marginBottom }
+                          : {}),
+                        ...(field.fieldStyle?.marginLeft
+                          ? { marginLeft: field.fieldStyle.marginLeft }
+                          : {}),
+                        ...(field.fieldStyle?.paddingTop
+                          ? { paddingTop: field.fieldStyle.paddingTop }
+                          : {}),
+                        ...(field.fieldStyle?.paddingRight
+                          ? { paddingRight: field.fieldStyle.paddingRight }
+                          : {}),
+                        ...(field.fieldStyle?.paddingBottom
+                          ? { paddingBottom: field.fieldStyle.paddingBottom }
+                          : {}),
+                        ...(field.fieldStyle?.paddingLeft
+                          ? { paddingLeft: field.fieldStyle.paddingLeft }
+                          : {}),
                       }}
                     >
                       {field.type !== "checkbox" &&
