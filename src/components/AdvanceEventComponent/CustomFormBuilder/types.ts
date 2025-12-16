@@ -158,4 +158,10 @@ export interface FormTheme {
   requiredIndicatorColor?: string;
   errorTextColor?: string;
   errorBorderColor?: string;
+  // Logo properties
+  logo?: string | File | null;
+  logoPosition?: "left" | "center" | "right";
+  logoWidth?: string;
+  logoHeight?: string;
+  formBackgroundImage?: string | File | null;
 }

@@ -1185,6 +1185,40 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
             </div>
           )}
 
+          {/* Logo */}
+          {theme?.logo && (
+            <div
+              className="w-full py-4 flex"
+              style={{
+                justifyContent:
+                  theme.logoPosition === "left"
+                    ? "flex-start"
+                    : theme.logoPosition === "right"
+                    ? "flex-end"
+                    : "center",
+                paddingLeft: theme.logoPosition === "left" ? "16px" : "0",
+                paddingRight: theme.logoPosition === "right" ? "16px" : "0",
+              }}
+            >
+              <img
+                src={
+                  typeof theme.logo === "string"
+                    ? theme.logo
+                    : theme.logo instanceof File || theme.logo instanceof Blob
+                    ? URL.createObjectURL(theme.logo)
+                    : ""
+                }
+                alt="Form logo"
+                style={{
+                  width: theme.logoWidth || "100px",
+                  height: theme.logoHeight || "auto",
+                  maxWidth: "100%",
+                  objectFit: "contain",
+                }}
+              />
+            </div>
+          )}
+
           <div>
             <div
               className="mb-6 pb-4 border-b"
@@ -1690,6 +1724,40 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
             src={bannerUrl}
             alt="Form banner"
             className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+
+      {/* Logo */}
+      {theme?.logo && (
+        <div
+          className="w-full mb-6 flex"
+          style={{
+            justifyContent:
+              theme.logoPosition === "left"
+                ? "flex-start"
+                : theme.logoPosition === "right"
+                ? "flex-end"
+                : "center",
+            paddingLeft: theme.logoPosition === "left" ? "16px" : "0",
+            paddingRight: theme.logoPosition === "right" ? "16px" : "0",
+          }}
+        >
+          <img
+            src={
+              typeof theme.logo === "string"
+                ? theme.logo
+                : theme.logo instanceof File || theme.logo instanceof Blob
+                ? URL.createObjectURL(theme.logo)
+                : ""
+            }
+            alt="Form logo"
+            style={{
+              width: theme.logoWidth || "100px",
+              height: theme.logoHeight || "auto",
+              maxWidth: "100%",
+              objectFit: "contain",
+            }}
           />
         </div>
       )}
