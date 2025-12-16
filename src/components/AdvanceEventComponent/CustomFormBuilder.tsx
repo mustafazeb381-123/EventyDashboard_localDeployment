@@ -57,6 +57,7 @@ import {
   Heading,
   AlignLeft,
   Space,
+  AlertCircle,
 } from "lucide-react";
 // Removed toast import to avoid stuck notifications
 
@@ -77,7 +78,8 @@ export type FieldType =
   | "divider"
   | "heading"
   | "paragraph"
-  | "spacer";
+  | "spacer"
+  | "container";
 
 export interface CustomFormField {
   id: string;
@@ -134,6 +136,8 @@ export interface CustomFormField {
     textColor?: string;
     labelColor?: string;
     width?: string;
+    fontSize?: string;
+    fontWeight?: string;
   };
   // Layout properties
   containerType?: "row" | "column" | "container";
@@ -145,12 +149,12 @@ export interface CustomFormField {
   children?: string[]; // IDs of child fields
   layoutProps?: {
     justifyContent?:
-      | "flex-start"
-      | "flex-end"
-      | "center"
-      | "space-between"
-      | "space-around"
-      | "space-evenly";
+    | "flex-start"
+    | "flex-end"
+    | "center"
+    | "space-between"
+    | "space-around"
+    | "space-evenly";
     alignItems?: "flex-start" | "flex-end" | "center" | "stretch" | "baseline";
     gap?: string; // e.g., "8px", "16px", "1rem"
     padding?: string;
@@ -162,6 +166,7 @@ export interface CustomFormField {
     borderWidth?: string;
     borderRadius?: string;
     minHeight?: string;
+    marginBottom?: string;
   };
   // Event handlers (FormEngine-like)
   events?: {
@@ -176,7 +181,7 @@ export interface CustomFormField {
 }
 
 // Export FormField as an alias for compatibility
-export interface FormField extends CustomFormField {}
+export interface FormField extends CustomFormField { }
 
 export interface FormTheme {
   // Form Container
@@ -237,6 +242,7 @@ export interface FormTheme {
 
 interface FieldConfigProps {
   field: CustomFormField | null;
+  allFields: CustomFormField[];
   onUpdate: (field: CustomFormField) => void;
   onClose: () => void;
 }
@@ -244,6 +250,7 @@ interface FieldConfigProps {
 // -------------------- FIELD CONFIGURATION PANEL --------------------
 const FieldConfigPanel: React.FC<FieldConfigProps> = ({
   field,
+  allFields,
   onUpdate,
   onClose,
 }) => {
@@ -269,6 +276,7 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
       heading: <Heading size={18} />,
       paragraph: <AlignLeft size={18} />,
       spacer: <Space size={18} />,
+      container: <LayoutGrid size={18} />,
     };
     return icons[type] || <Type size={18} />;
   };
@@ -447,69 +455,69 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {(config.type === "select" ||
           config.type === "radio" ||
           config.type === "checkbox") && (
-          <div className="pt-2 border-t">
-            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-              Options
-            </h4>
-            <div className="space-y-2">
-              {(config.options || []).map((option, index) => (
-                <div
-                  key={index}
-                  className="flex gap-2 items-center p-2 bg-gray-50 rounded-lg border border-gray-200"
-                >
-                  <span className="text-xs text-gray-500 font-mono w-6 text-center">
-                    {index + 1}
-                  </span>
-                  <input
-                    type="text"
-                    value={option.label}
-                    onChange={(e) => {
-                      const newOptions = [...(config.options || [])];
-                      newOptions[index] = {
-                        ...option,
-                        label: e.target.value,
-                        value: e.target.value
-                          .toLowerCase()
-                          .replace(/\s+/g, "_"),
-                      };
-                      setConfig({ ...config, options: newOptions });
-                    }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                    placeholder="Option label"
-                  />
-                  <button
-                    onClick={() => {
-                      const newOptions = config.options?.filter(
-                        (_, i) => i !== index
-                      );
-                      setConfig({ ...config, options: newOptions || [] });
-                    }}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Remove option"
+            <div className="pt-2 border-t">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+                Options
+              </h4>
+              <div className="space-y-2">
+                {(config.options || []).map((option, index) => (
+                  <div
+                    key={index}
+                    className="flex gap-2 items-center p-2 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ))}
-              <button
-                onClick={() => {
-                  const newOptions = [
-                    ...(config.options || []),
-                    {
-                      label: `Option ${(config.options?.length || 0) + 1}`,
-                      value: `option_${(config.options?.length || 0) + 1}`,
-                    },
-                  ];
-                  setConfig({ ...config, options: newOptions });
-                }}
-                className="w-full px-3 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-2 transition-colors"
-              >
-                <Plus size={16} />
-                Add Option
-              </button>
+                    <span className="text-xs text-gray-500 font-mono w-6 text-center">
+                      {index + 1}
+                    </span>
+                    <input
+                      type="text"
+                      value={option.label}
+                      onChange={(e) => {
+                        const newOptions = [...(config.options || [])];
+                        newOptions[index] = {
+                          ...option,
+                          label: e.target.value,
+                          value: e.target.value
+                            .toLowerCase()
+                            .replace(/\s+/g, "_"),
+                        };
+                        setConfig({ ...config, options: newOptions });
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                      placeholder="Option label"
+                    />
+                    <button
+                      onClick={() => {
+                        const newOptions = config.options?.filter(
+                          (_, i) => i !== index
+                        );
+                        setConfig({ ...config, options: newOptions || [] });
+                      }}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Remove option"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    const newOptions = [
+                      ...(config.options || []),
+                      {
+                        label: `Option ${(config.options?.length || 0) + 1}`,
+                        value: `option_${(config.options?.length || 0) + 1}`,
+                      },
+                    ];
+                    setConfig({ ...config, options: newOptions });
+                  }}
+                  className="w-full px-3 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-2 transition-colors"
+                >
+                  <Plus size={16} />
+                  Add Option
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {(config.type === "file" || config.type === "image") && (
           <div>
@@ -572,128 +580,258 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           config.type === "email" ||
           config.type === "number" ||
           config.type === "textarea") && (
-          <div className="border-t pt-4">
-            <h4 className="font-medium mb-3">Validation Rules</h4>
-            <div className="space-y-3">
-              {config.type === "number" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Minimum Value
-                    </label>
-                    <input
-                      type="number"
-                      value={config.validation?.min || ""}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          validation: {
-                            ...config.validation,
-                            min: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
-                          },
-                        })
-                      }
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Maximum Value
-                    </label>
-                    <input
-                      type="number"
-                      value={config.validation?.max || ""}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          validation: {
-                            ...config.validation,
-                            max: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
-                          },
-                        })
-                      }
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                </>
-              )}
-              {(config.type === "text" ||
-                config.type === "email" ||
-                config.type === "textarea") && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Minimum Length
-                    </label>
-                    <input
-                      type="number"
-                      value={config.validation?.minLength || ""}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          validation: {
-                            ...config.validation,
-                            minLength: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
-                          },
-                        })
-                      }
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Maximum Length
-                    </label>
-                    <input
-                      type="number"
-                      value={config.validation?.maxLength || ""}
-                      onChange={(e) =>
-                        setConfig({
-                          ...config,
-                          validation: {
-                            ...config.validation,
-                            maxLength: e.target.value
-                              ? Number(e.target.value)
-                              : undefined,
-                          },
-                        })
-                      }
-                      className="w-full px-3 py-2 border rounded-lg"
-                    />
-                  </div>
-                  {config.type === "text" && (
+            <div className="border-t pt-4">
+              <h4 className="font-medium mb-3">Validation Rules</h4>
+              <div className="space-y-3">
+                {config.type === "number" && (
+                  <>
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Pattern (Regex)
+                        Minimum Value
                       </label>
                       <input
-                        type="text"
-                        value={config.validation?.pattern || ""}
+                        type="number"
+                        value={config.validation?.min || ""}
                         onChange={(e) =>
                           setConfig({
                             ...config,
                             validation: {
                               ...config.validation,
-                              pattern: e.target.value || undefined,
+                              min: e.target.value
+                                ? Number(e.target.value)
+                                : undefined,
                             },
                           })
                         }
                         className="w-full px-3 py-2 border rounded-lg"
-                        placeholder="^[A-Za-z]+$"
                       />
                     </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Maximum Value
+                      </label>
+                      <input
+                        type="number"
+                        value={config.validation?.max || ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            validation: {
+                              ...config.validation,
+                              max: e.target.value
+                                ? Number(e.target.value)
+                                : undefined,
+                            },
+                          })
+                        }
+                        className="w-full px-3 py-2 border rounded-lg"
+                      />
+                    </div>
+                  </>
+                )}
+                {(config.type === "text" ||
+                  config.type === "email" ||
+                  config.type === "textarea") && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Minimum Length
+                        </label>
+                        <input
+                          type="number"
+                          value={config.validation?.minLength || ""}
+                          onChange={(e) =>
+                            setConfig({
+                              ...config,
+                              validation: {
+                                ...config.validation,
+                                minLength: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              },
+                            })
+                          }
+                          className="w-full px-3 py-2 border rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">
+                          Maximum Length
+                        </label>
+                        <input
+                          type="number"
+                          value={config.validation?.maxLength || ""}
+                          onChange={(e) =>
+                            setConfig({
+                              ...config,
+                              validation: {
+                                ...config.validation,
+                                maxLength: e.target.value
+                                  ? Number(e.target.value)
+                                  : undefined,
+                              },
+                            })
+                          }
+                          className="w-full px-3 py-2 border rounded-lg"
+                        />
+                      </div>
+                      {config.type === "text" && (
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Pattern (Regex)
+                          </label>
+                          <input
+                            type="text"
+                            value={config.validation?.pattern || ""}
+                            onChange={(e) =>
+                              setConfig({
+                                ...config,
+                                validation: {
+                                  ...config.validation,
+                                  pattern: e.target.value || undefined,
+                                },
+                              })
+                            }
+                            className="w-full px-3 py-2 border rounded-lg"
+                            placeholder="^[A-Za-z]+$"
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
-                </>
-              )}
+              </div>
             </div>
+          )}
+
+        {/* Conditional Logic */}
+        <div className="pt-4 border-t space-y-4">
+          <div className="flex items-center gap-2">
+            <Layers className="text-orange-600" size={18} />
+            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Conditional Logic
+            </h4>
           </div>
-        )}
+
+          <div className="space-y-3">
+            {(config.conditions || []).map((condition, index) => (
+              <div
+                key={index}
+                className="p-3 bg-gray-50 rounded-lg border border-gray-200 text-sm space-y-3 relative"
+              >
+                <button
+                  onClick={() => {
+                    const newConditions = config.conditions?.filter(
+                      (_, i) => i !== index
+                    );
+                    setConfig({ ...config, conditions: newConditions });
+                  }}
+                  className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                  title="Remove condition"
+                >
+                  <X size={16} />
+                </button>
+
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-600 w-12">If</span>
+                  <select
+                    value={condition.field}
+                    onChange={(e) => {
+                      const newConditions = [...(config.conditions || [])];
+                      newConditions[index] = {
+                        ...condition,
+                        field: e.target.value,
+                      };
+                      setConfig({ ...config, conditions: newConditions });
+                    }}
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="">Select Field</option>
+                    {allFields
+                      .filter((f) => f.id !== config.id)
+                      .map((f) => (
+                        <option key={f.id} value={f.name}>
+                          {f.label || f.name}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-2 items-center">
+                  <select
+                    value={condition.operator}
+                    onChange={(e) => {
+                      const newConditions = [...(config.conditions || [])];
+                      newConditions[index] = {
+                        ...condition,
+                        operator: e.target.value as any,
+                      };
+                      setConfig({ ...config, conditions: newConditions });
+                    }}
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="equals">Equals</option>
+                    <option value="notEquals">Not Equals</option>
+                    <option value="contains">Contains</option>
+                    <option value="greaterThan">Greater Than</option>
+                    <option value="lessThan">Less Than</option>
+                  </select>
+                  <input
+                    type="text"
+                    value={condition.value}
+                    onChange={(e) => {
+                      const newConditions = [...(config.conditions || [])];
+                      newConditions[index] = {
+                        ...condition,
+                        value: e.target.value,
+                      };
+                      setConfig({ ...config, conditions: newConditions });
+                    }}
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                    placeholder="Value"
+                  />
+                </div>
+
+                <div className="flex gap-2 items-center">
+                  <span className="font-medium text-gray-600 w-12">Then</span>
+                  <select
+                    value={condition.action}
+                    onChange={(e) => {
+                      const newConditions = [...(config.conditions || [])];
+                      newConditions[index] = {
+                        ...condition,
+                        action: e.target.value as any,
+                      };
+                      setConfig({ ...config, conditions: newConditions });
+                    }}
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
+                  >
+                    <option value="show">Show Field</option>
+                    <option value="hide">Hide Field</option>
+                  </select>
+                </div>
+              </div>
+            ))}
+
+            <button
+              onClick={() => {
+                const newConditions = [
+                  ...(config.conditions || []),
+                  {
+                    field: "",
+                    operator: "equals",
+                    value: "",
+                    action: "show",
+                  },
+                ];
+                setConfig({ ...config, conditions: newConditions as any });
+              }}
+              className="w-full py-2 bg-white border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2 transition-colors text-sm"
+            >
+              <Plus size={16} />
+              Add Condition
+            </button>
+          </div>
+        </div>
 
         {/* Bootstrap Column Class (for fields inside column containers) */}
         {!config.containerType && (
@@ -1512,9 +1650,8 @@ const MainDropZone: React.FC = () => {
     <div
       ref={setNodeRef}
       data-drop-zone="main"
-      className={`min-h-[200px] transition-all rounded-lg ${
-        isOver ? "ring-2 ring-blue-400 bg-blue-50" : ""
-      }`}
+      className={`min-h-[200px] transition-all rounded-lg ${isOver ? "ring-2 ring-blue-400 bg-blue-50" : ""
+        }`}
     >
       <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-300 relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
@@ -1562,20 +1699,18 @@ const DroppableContainer: React.FC<DroppableContainerProps> = ({
   const dropZoneText = isColumn
     ? "Column Drop Zone"
     : isEmpty
-    ? "Drop Zone"
-    : "";
+      ? "Drop Zone"
+      : "";
 
   return (
     <div
       ref={setNodeRef}
       data-container-id={containerId}
-      className={`min-h-[60px] transition-all relative ${
-        isOver ? "ring-2 ring-purple-400 bg-purple-100 border-purple-400" : ""
-      } ${
-        isEmpty || (isColumn && isEmpty)
+      className={`min-h-[60px] transition-all relative ${isOver ? "ring-2 ring-purple-400 bg-purple-100 border-purple-400" : ""
+        } ${isEmpty || (isColumn && isEmpty)
           ? "border-2 border-dashed border-gray-300 rounded-lg"
           : ""
-      }`}
+        }`}
     >
       {children}
       {(isEmpty || (isColumn && isEmpty)) && (
@@ -1643,6 +1778,7 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
       heading: <Heading size={16} />,
       paragraph: <AlignLeft size={16} />,
       spacer: <Space size={16} />,
+      container: <LayoutGrid size={16} />,
     };
     return icons[type] || <Type size={16} />;
   };
@@ -1654,21 +1790,15 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white border-2 rounded-lg transition-all group ${
-        isContainer
-          ? "border-purple-300 bg-purple-50/30 p-3"
-          : "border-gray-200 p-3 hover:shadow-lg hover:border-blue-300"
-      } ${isCompact ? "p-2" : "p-3"}`}
+      className={`bg-white border-2 rounded-lg transition-all group ${isContainer
+        ? "border-purple-300 bg-purple-50/30 p-3"
+        : "border-gray-200 p-3 hover:shadow-lg hover:border-blue-300"
+        } ${isCompact ? "p-2" : "p-3"} relative`}
+      {...attributes}
+      {...listeners}
     >
       <div className="flex items-center gap-2">
-        <div
-          {...attributes}
-          {...listeners}
-          className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-blue-600 transition-colors p-1"
-          title="Drag to reorder"
-        >
-          <GripVertical size={18} />
-        </div>
+        {/* Drag handle removed visually but entire item is draggable */}
         {isContainer ? (
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -1732,18 +1862,26 @@ const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
           </div>
         )}
       </div>
-      <div className="flex gap-1">
+      <div className="flex gap-1 absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 p-1 rounded-md shadow-sm">
         <button
-          onClick={() => onEdit(field)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(field);
+          }}
           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
           title="Edit field configuration"
+          onPointerDown={(e) => e.stopPropagation()} // Prevent drag start when clicking button
         >
           <Edit size={18} />
         </button>
         <button
-          onClick={() => onDelete(field.id)}
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(field.id);
+          }}
           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
           title="Delete field"
+          onPointerDown={(e) => e.stopPropagation()} // Prevent drag start when clicking button
         >
           <Trash2 size={18} />
         </button>
@@ -1775,278 +1913,278 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
     defaultName?: string;
     defaultPlaceholder?: string;
   }> = [
-    // --- BASIC FIELDS ---
-    {
-      id: "text",
-      type: "text",
-      label: "Text Input",
-      icon: <Type size={18} />,
-      description: "Single line text",
-      color: "blue",
-      category: "basic",
-    },
-    {
-      id: "email",
-      type: "email",
-      label: "Email",
-      icon: <Mail size={18} />,
-      description: "Email address",
-      color: "green",
-      category: "basic",
-    },
-    {
-      id: "number",
-      type: "number",
-      label: "Number",
-      icon: <Hash size={18} />,
-      description: "Numeric input",
-      color: "purple",
-      category: "basic",
-    },
-    {
-      id: "date",
-      type: "date",
-      label: "Date",
-      icon: <Calendar size={18} />,
-      description: "Date picker",
-      color: "orange",
-      category: "basic",
-    },
-    {
-      id: "textarea",
-      type: "textarea",
-      label: "Textarea",
-      icon: <FileText size={18} />,
-      description: "Multi-line text",
-      color: "indigo",
-      category: "basic",
-    },
-    {
-      id: "select",
-      type: "select",
-      label: "Dropdown",
-      icon: <List size={18} />,
-      description: "Select option",
-      color: "pink",
-      category: "basic",
-    },
-    {
-      id: "radio",
-      type: "radio",
-      label: "Radio",
-      icon: <Radio size={18} />,
-      description: "Single choice",
-      color: "teal",
-      category: "basic",
-    },
-    {
-      id: "checkbox",
-      type: "checkbox",
-      label: "Checkbox",
-      icon: <CheckSquare size={18} />,
-      description: "Multiple choice",
-      color: "cyan",
-      category: "basic",
-    },
-    {
-      id: "file",
-      type: "file",
-      label: "File Upload",
-      icon: <FileText size={18} />,
-      description: "Upload files",
-      color: "amber",
-      category: "basic",
-    },
-    {
-      id: "image",
-      type: "image",
-      label: "Image Upload",
-      icon: <ImageIcon size={18} />,
-      description: "Upload images",
-      color: "rose",
-      category: "basic",
-    },
-    {
-      id: "button",
-      type: "button",
-      label: "Button",
-      icon: <MousePointerClick size={18} />,
-      description: "Action button",
-      color: "gray",
-      category: "basic",
-    },
+      // --- BASIC FIELDS ---
+      {
+        id: "text",
+        type: "text",
+        label: "Text Input",
+        icon: <Type size={18} />,
+        description: "Single line text",
+        color: "blue",
+        category: "basic",
+      },
+      {
+        id: "email",
+        type: "email",
+        label: "Email",
+        icon: <Mail size={18} />,
+        description: "Email address",
+        color: "green",
+        category: "basic",
+      },
+      {
+        id: "number",
+        type: "number",
+        label: "Number",
+        icon: <Hash size={18} />,
+        description: "Numeric input",
+        color: "purple",
+        category: "basic",
+      },
+      {
+        id: "date",
+        type: "date",
+        label: "Date",
+        icon: <Calendar size={18} />,
+        description: "Date picker",
+        color: "orange",
+        category: "basic",
+      },
+      {
+        id: "textarea",
+        type: "textarea",
+        label: "Textarea",
+        icon: <FileText size={18} />,
+        description: "Multi-line text",
+        color: "indigo",
+        category: "basic",
+      },
+      {
+        id: "select",
+        type: "select",
+        label: "Dropdown",
+        icon: <List size={18} />,
+        description: "Select option",
+        color: "pink",
+        category: "basic",
+      },
+      {
+        id: "radio",
+        type: "radio",
+        label: "Radio",
+        icon: <Radio size={18} />,
+        description: "Single choice",
+        color: "teal",
+        category: "basic",
+      },
+      {
+        id: "checkbox",
+        type: "checkbox",
+        label: "Checkbox",
+        icon: <CheckSquare size={18} />,
+        description: "Multiple choice",
+        color: "cyan",
+        category: "basic",
+      },
+      {
+        id: "file",
+        type: "file",
+        label: "File Upload",
+        icon: <FileText size={18} />,
+        description: "Upload files",
+        color: "amber",
+        category: "basic",
+      },
+      {
+        id: "image",
+        type: "image",
+        label: "Image Upload",
+        icon: <ImageIcon size={18} />,
+        description: "Upload images",
+        color: "rose",
+        category: "basic",
+      },
+      {
+        id: "button",
+        type: "button",
+        label: "Button",
+        icon: <MousePointerClick size={18} />,
+        description: "Action button",
+        color: "gray",
+        category: "basic",
+      },
 
-    // --- PERSONAL INFORMATION ---
-    {
-      id: "firstname",
-      type: "text",
-      label: "First Name",
-      icon: <User size={18} />,
-      description: "User's first name",
-      color: "blue",
-      category: "personal",
-      defaultLabel: "First Name",
-      defaultName: "first_name",
-      defaultPlaceholder: "Enter first name",
-    },
-    {
-      id: "lastname",
-      type: "text",
-      label: "Last Name",
-      icon: <User size={18} />,
-      description: "User's last name",
-      color: "blue",
-      category: "personal",
-      defaultLabel: "Last Name",
-      defaultName: "last_name",
-      defaultPlaceholder: "Enter last name",
-    },
-    {
-      id: "fullname",
-      type: "text",
-      label: "Full Name",
-      icon: <User size={18} />,
-      description: "User's full name",
-      color: "blue",
-      category: "personal",
-      defaultLabel: "Full Name",
-      defaultName: "full_name",
-      defaultPlaceholder: "Enter full name",
-    },
-    {
-      id: "username",
-      type: "text",
-      label: "Username",
-      icon: <User size={18} />,
-      description: "User's username",
-      color: "purple",
-      category: "personal",
-      defaultLabel: "Username",
-      defaultName: "username",
-      defaultPlaceholder: "Enter username",
-    },
-    {
-      id: "phone",
-      type: "text", // Using text for phone to allow formatting
-      label: "Phone Number",
-      icon: <Phone size={18} />,
-      description: "Contact phone",
-      color: "green",
-      category: "personal",
-      defaultLabel: "Phone Number",
-      defaultName: "phone_number",
-      defaultPlaceholder: "+1 (555) 000-0000",
-    },
-    {
-      id: "id_number",
-      type: "text",
-      label: "ID Number",
-      icon: <Badge size={18} />,
-      description: "Identification number",
-      color: "indigo",
-      category: "personal",
-      defaultLabel: "ID Number",
-      defaultName: "id_number",
-      defaultPlaceholder: "Enter ID number",
-    },
+      // --- PERSONAL INFORMATION ---
+      {
+        id: "firstname",
+        type: "text",
+        label: "First Name",
+        icon: <User size={18} />,
+        description: "User's first name",
+        color: "blue",
+        category: "personal",
+        defaultLabel: "First Name",
+        defaultName: "first_name",
+        defaultPlaceholder: "Enter first name",
+      },
+      {
+        id: "lastname",
+        type: "text",
+        label: "Last Name",
+        icon: <User size={18} />,
+        description: "User's last name",
+        color: "blue",
+        category: "personal",
+        defaultLabel: "Last Name",
+        defaultName: "last_name",
+        defaultPlaceholder: "Enter last name",
+      },
+      {
+        id: "fullname",
+        type: "text",
+        label: "Full Name",
+        icon: <User size={18} />,
+        description: "User's full name",
+        color: "blue",
+        category: "personal",
+        defaultLabel: "Full Name",
+        defaultName: "full_name",
+        defaultPlaceholder: "Enter full name",
+      },
+      {
+        id: "username",
+        type: "text",
+        label: "Username",
+        icon: <User size={18} />,
+        description: "User's username",
+        color: "purple",
+        category: "personal",
+        defaultLabel: "Username",
+        defaultName: "username",
+        defaultPlaceholder: "Enter username",
+      },
+      {
+        id: "phone",
+        type: "text", // Using text for phone to allow formatting
+        label: "Phone Number",
+        icon: <Phone size={18} />,
+        description: "Contact phone",
+        color: "green",
+        category: "personal",
+        defaultLabel: "Phone Number",
+        defaultName: "phone_number",
+        defaultPlaceholder: "+1 (555) 000-0000",
+      },
+      {
+        id: "id_number",
+        type: "text",
+        label: "ID Number",
+        icon: <Badge size={18} />,
+        description: "Identification number",
+        color: "indigo",
+        category: "personal",
+        defaultLabel: "ID Number",
+        defaultName: "id_number",
+        defaultPlaceholder: "Enter ID number",
+      },
 
-    // --- PROFESSIONAL ---
-    {
-      id: "company",
-      type: "text",
-      label: "Company",
-      icon: <Building2 size={18} />,
-      description: "Company name",
-      color: "cyan",
-      category: "professional",
-      defaultLabel: "Company",
-      defaultName: "company",
-      defaultPlaceholder: "Enter company name",
-    },
-    {
-      id: "job_title",
-      type: "text",
-      label: "Job Title",
-      icon: <Briefcase size={18} />,
-      description: "Job role/title",
-      color: "amber",
-      category: "professional",
-      defaultLabel: "Job Title",
-      defaultName: "job_title",
-      defaultPlaceholder: "Enter job title",
-    },
-    {
-      id: "positions",
-      type: "text",
-      label: "Positions",
-      icon: <Briefcase size={18} />,
-      description: "Current positions",
-      color: "amber",
-      category: "professional",
-      defaultLabel: "Positions",
-      defaultName: "positions",
-      defaultPlaceholder: "Enter positions",
-    },
+      // --- PROFESSIONAL ---
+      {
+        id: "company",
+        type: "text",
+        label: "Company",
+        icon: <Building2 size={18} />,
+        description: "Company name",
+        color: "cyan",
+        category: "professional",
+        defaultLabel: "Company",
+        defaultName: "company",
+        defaultPlaceholder: "Enter company name",
+      },
+      {
+        id: "job_title",
+        type: "text",
+        label: "Job Title",
+        icon: <Briefcase size={18} />,
+        description: "Job role/title",
+        color: "amber",
+        category: "professional",
+        defaultLabel: "Job Title",
+        defaultName: "job_title",
+        defaultPlaceholder: "Enter job title",
+      },
+      {
+        id: "positions",
+        type: "text",
+        label: "Positions",
+        icon: <Briefcase size={18} />,
+        description: "Current positions",
+        color: "amber",
+        category: "professional",
+        defaultLabel: "Positions",
+        defaultName: "positions",
+        defaultPlaceholder: "Enter positions",
+      },
 
-    // --- STATIC ELEMENTS ---
-    {
-      id: "table",
-      type: "table",
-      label: "Table",
-      icon: <Table size={18} />,
-      description: "Data table",
-      color: "indigo",
-      category: "basic",
-      defaultLabel: "Table",
-      defaultName: "table",
-    },
-    {
-      id: "divider",
-      type: "divider",
-      label: "Divider",
-      icon: <Minus size={18} />,
-      description: "Horizontal divider line",
-      color: "gray",
-      category: "basic",
-      defaultLabel: "Divider",
-      defaultName: "divider",
-    },
-    {
-      id: "heading",
-      type: "heading",
-      label: "Heading",
-      icon: <Heading size={18} />,
-      description: "Text heading",
-      color: "blue",
-      category: "basic",
-      defaultLabel: "Heading",
-      defaultName: "heading",
-      defaultPlaceholder: "Enter heading text",
-    },
-    {
-      id: "paragraph",
-      type: "paragraph",
-      label: "Paragraph",
-      icon: <AlignLeft size={18} />,
-      description: "Text paragraph",
-      color: "gray",
-      category: "basic",
-      defaultLabel: "Paragraph",
-      defaultName: "paragraph",
-      defaultPlaceholder: "Enter paragraph text",
-    },
-    {
-      id: "spacer",
-      type: "spacer",
-      label: "Spacer",
-      icon: <Space size={18} />,
-      description: "Vertical spacing",
-      color: "gray",
-      category: "basic",
-      defaultLabel: "Spacer",
-      defaultName: "spacer",
-    },
-  ];
+      // --- STATIC ELEMENTS ---
+      {
+        id: "table",
+        type: "table",
+        label: "Table",
+        icon: <Table size={18} />,
+        description: "Data table",
+        color: "indigo",
+        category: "basic",
+        defaultLabel: "Table",
+        defaultName: "table",
+      },
+      {
+        id: "divider",
+        type: "divider",
+        label: "Divider",
+        icon: <Minus size={18} />,
+        description: "Horizontal divider line",
+        color: "gray",
+        category: "basic",
+        defaultLabel: "Divider",
+        defaultName: "divider",
+      },
+      {
+        id: "heading",
+        type: "heading",
+        label: "Heading",
+        icon: <Heading size={18} />,
+        description: "Text heading",
+        color: "blue",
+        category: "basic",
+        defaultLabel: "Heading",
+        defaultName: "heading",
+        defaultPlaceholder: "Enter heading text",
+      },
+      {
+        id: "paragraph",
+        type: "paragraph",
+        label: "Paragraph",
+        icon: <AlignLeft size={18} />,
+        description: "Text paragraph",
+        color: "gray",
+        category: "basic",
+        defaultLabel: "Paragraph",
+        defaultName: "paragraph",
+        defaultPlaceholder: "Enter paragraph text",
+      },
+      {
+        id: "spacer",
+        type: "spacer",
+        label: "Spacer",
+        icon: <Space size={18} />,
+        description: "Vertical spacing",
+        color: "gray",
+        category: "basic",
+        defaultLabel: "Spacer",
+        defaultName: "spacer",
+      },
+    ];
 
   interface FieldButtonProps {
     preset: (typeof fieldPresets)[0];
@@ -2082,15 +2220,15 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
         (type === "email"
           ? "example@email.com"
           : type === "number"
-          ? "Enter a number"
-          : `Enter ${label.toLowerCase()}`),
+            ? "Enter a number"
+            : `Enter ${label.toLowerCase()}`),
       ...(type === "select" || type === "radio" || type === "checkbox"
         ? {
-            options: [
-              { label: "Option 1", value: "option_1" },
-              { label: "Option 2", value: "option_2" },
-            ],
-          }
+          options: [
+            { label: "Option 1", value: "option_1" },
+            { label: "Option 2", value: "option_2" },
+          ],
+        }
         : {}),
       ...(type === "button"
         ? { buttonText: "Submit", buttonType: "submit" }
@@ -2099,17 +2237,17 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       ...(type === "file" ? { accept: ".pdf,.doc,.docx" } : {}),
       ...(type === "table"
         ? {
-            tableData: {
-              columns: [
-                { header: "Column 1", key: "col1" },
-                { header: "Column 2", key: "col2" },
-              ],
-              rows: [
-                { col1: "Row 1, Col 1", col2: "Row 1, Col 2" },
-                { col1: "Row 2, Col 1", col2: "Row 2, Col 2" },
-              ],
-            },
-          }
+          tableData: {
+            columns: [
+              { header: "Column 1", key: "col1" },
+              { header: "Column 2", key: "col2" },
+            ],
+            rows: [
+              { col1: "Row 1, Col 1", col2: "Row 1, Col 2" },
+              { col1: "Row 2, Col 1", col2: "Row 2, Col 2" },
+            ],
+          },
+        }
         : {}),
       ...(type === "heading" || type === "paragraph"
         ? { content: defaultPlaceholder || "Enter text here" }
@@ -2130,9 +2268,9 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
 
     const style = transform
       ? {
-          transform: CSS.Translate.toString(transform),
-          opacity: isDragging ? 0.5 : 1,
-        }
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.5 : 1,
+      }
       : undefined;
 
     return (
@@ -2209,41 +2347,37 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       <div className="flex flex-wrap gap-1 border-b border-gray-200 pb-2">
         <button
           onClick={() => setActiveCategory("layout")}
-          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
-            activeCategory === "layout"
-              ? "border-purple-600 text-purple-600"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${activeCategory === "layout"
+            ? "border-purple-600 text-purple-600"
+            : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
         >
           Layout
         </button>
         <button
           onClick={() => setActiveCategory("basic")}
-          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
-            activeCategory === "basic"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${activeCategory === "basic"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
         >
           Fields
         </button>
         <button
           onClick={() => setActiveCategory("personal")}
-          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
-            activeCategory === "personal"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${activeCategory === "personal"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
         >
           Personal
         </button>
         <button
           onClick={() => setActiveCategory("professional")}
-          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${
-            activeCategory === "professional"
-              ? "border-blue-600 text-blue-600"
-              : "border-transparent text-gray-600 hover:text-gray-900"
-          }`}
+          className={`px-2 py-1 text-xs font-medium transition-colors border-b-2 ${activeCategory === "professional"
+            ? "border-blue-600 text-blue-600"
+            : "border-transparent text-gray-600 hover:text-gray-900"
+            }`}
         >
           Professional
         </button>
@@ -2348,8 +2482,8 @@ const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
             {activeCategory === "basic"
               ? "Fields"
               : activeCategory === "personal"
-              ? "Personal Information"
-              : "Professional Options"}
+                ? "Personal Information"
+                : "Professional Options"}
           </h4>
           {filteredPresets.length === 0 ? (
             <div className="text-center py-4 text-gray-500 text-xs">
@@ -2386,6 +2520,337 @@ interface CustomFormBuilderProps {
   onClose: () => void;
 }
 
+// -------------------- DEFAULT FIELDS (Complex Master Form) --------------------
+const DEFAULT_FORM_FIELDS: CustomFormField[] = [
+  {
+    id: "heading-main",
+    type: "heading",
+    label: "Complex Master Form",
+    name: "form_title",
+    required: false,
+    unique: false,
+    content: "Complex Master Form",
+    fieldStyle: { fontSize: "24px", fontWeight: "bold", marginBottom: "10px" },
+  },
+  {
+    id: "desc-main",
+    type: "paragraph",
+    label: "Description",
+    name: "form_desc",
+    required: false,
+    unique: false,
+    content: "Use a permanent address where you can receive mail.",
+    fieldStyle: { textColor: "#6b7280", marginBottom: "20px" },
+  },
+  {
+    id: "container-name",
+    type: "container",
+    containerType: "row",
+    label: "Name Container",
+    name: "name_container",
+    required: false,
+    unique: false,
+    children: ["first_name", "last_name"],
+    layoutProps: { gap: "16px", flexWrap: "wrap", marginBottom: "16px" },
+  },
+  {
+    id: "first_name",
+    type: "text",
+    label: "First name",
+    name: "first_name",
+    required: true,
+    unique: false,
+    placeholder: "",
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "last_name",
+    type: "text",
+    label: "Last name",
+    name: "last_name",
+    required: true,
+    unique: false,
+    placeholder: "",
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "email",
+    type: "email",
+    label: "Email address",
+    name: "email",
+    required: true,
+    unique: true,
+    placeholder: "",
+    fieldStyle: { marginBottom: "16px" },
+  },
+  {
+    id: "country_region_1",
+    type: "select",
+    label: "Country / Region",
+    name: "country_region_1",
+    required: false,
+    unique: false,
+    placeholder: "Enter country name",
+    options: [
+      { label: "United States", value: "us" },
+      { label: "Canada", value: "ca" },
+      { label: "Mexico", value: "mx" },
+    ],
+    fieldStyle: { marginBottom: "24px" },
+  },
+  {
+    id: "heading-sub",
+    type: "heading",
+    label: "Subheader",
+    name: "subheader",
+    required: false,
+    unique: false,
+    content: "Subheader inside the form",
+    fieldStyle: { fontSize: "20px", fontWeight: "bold", marginBottom: "10px" },
+  },
+  {
+    id: "desc-sub",
+    type: "paragraph",
+    label: "Sub Description",
+    name: "sub_desc",
+    required: false,
+    unique: false,
+    content: "Use a permanent address where you can receive mail.",
+    fieldStyle: { textColor: "#6b7280", marginBottom: "20px" },
+  },
+  {
+    id: "street_address",
+    type: "text",
+    label: "Street address",
+    name: "street_address",
+    required: false,
+    unique: false,
+    placeholder: "",
+    fieldStyle: { marginBottom: "16px" },
+  },
+  {
+    id: "container-location",
+    type: "container",
+    containerType: "row",
+    label: "Location Container",
+    name: "location_container",
+    required: false,
+    unique: false,
+    children: ["city", "state", "zip"],
+    layoutProps: { gap: "16px", flexWrap: "wrap", marginBottom: "16px" },
+  },
+  {
+    id: "city",
+    type: "text",
+    label: "City",
+    name: "city",
+    required: false,
+    unique: false,
+    placeholder: "",
+    bootstrapClass: "col-md-4",
+  },
+  {
+    id: "state",
+    type: "text",
+    label: "State / Province",
+    name: "state",
+    required: false,
+    unique: false,
+    placeholder: "",
+    bootstrapClass: "col-md-4",
+  },
+  {
+    id: "zip",
+    type: "text",
+    label: "ZIP / Postal",
+    name: "zip",
+    required: false,
+    unique: false,
+    placeholder: "",
+    bootstrapClass: "col-md-4",
+  },
+  {
+    id: "container-countries",
+    type: "container",
+    containerType: "row",
+    label: "Countries Container",
+    name: "countries_container",
+    required: false,
+    unique: false,
+    children: ["country_2", "country_3", "country_4"],
+    layoutProps: { gap: "16px", flexWrap: "wrap", marginBottom: "16px" },
+  },
+  {
+    id: "country_2",
+    type: "select",
+    label: "Country / Region",
+    name: "country_2",
+    required: false,
+    unique: false,
+    placeholder: "Enter country name",
+    bootstrapClass: "col-md-4",
+  },
+  {
+    id: "country_3",
+    type: "select",
+    label: "Country / Region",
+    name: "country_3",
+    required: false,
+    unique: false,
+    placeholder: "Enter country name",
+    bootstrapClass: "col-md-4",
+  },
+  {
+    id: "country_4",
+    type: "select",
+    label: "Country / Region",
+    name: "country_4",
+    required: false,
+    unique: false,
+    placeholder: "Enter country name",
+    bootstrapClass: "col-md-4",
+  },
+  {
+    id: "website",
+    type: "text",
+    label: "Website",
+    name: "website",
+    required: false,
+    unique: false,
+    placeholder: "https://www.example.com",
+    fieldStyle: { marginBottom: "16px" },
+  },
+  {
+    id: "about",
+    type: "textarea",
+    label: "About",
+    name: "about",
+    required: false,
+    unique: false,
+    placeholder: "you@example.com",
+    description: "Brief description for your profile. URLs are hyperlinked.",
+    fieldStyle: { marginBottom: "16px" },
+  },
+  {
+    id: "photo",
+    type: "image",
+    label: "Photo",
+    name: "photo",
+    required: false,
+    unique: false,
+    buttonText: "Upload",
+    fieldStyle: { marginBottom: "24px" },
+  },
+  {
+    id: "heading-notifications",
+    type: "heading",
+    label: "Notifications",
+    name: "notifications_heading",
+    required: false,
+    unique: false,
+    content: "Notifications",
+    fieldStyle: { fontSize: "20px", fontWeight: "bold", marginBottom: "10px" },
+  },
+  {
+    id: "desc-notifications",
+    type: "paragraph",
+    label: "Notifications Desc",
+    name: "notifications_desc",
+    required: false,
+    unique: false,
+    content: "Use a permanent address where you can receive mail.",
+    fieldStyle: { textColor: "#6b7280", marginBottom: "20px" },
+  },
+  {
+    id: "email_notifs_label",
+    type: "heading",
+    label: "By Email",
+    name: "by_email",
+    required: false,
+    unique: false,
+    content: "By Email",
+    fieldStyle: { fontSize: "16px", fontWeight: "bold", marginBottom: "10px", marginTop: "10px" },
+  },
+  {
+    id: "comments",
+    type: "checkbox",
+    label: "",
+    name: "comments",
+    required: false,
+    unique: false,
+    options: [{ label: "Comments", value: "comments" }],
+    description: "Get notified when someones posts a comment on a posting.",
+    fieldStyle: { marginBottom: "12px" },
+  },
+  {
+    id: "candidates",
+    type: "checkbox",
+    label: "",
+    name: "candidates",
+    required: false,
+    unique: false,
+    options: [{ label: "Candidates", value: "candidates" }],
+    description: "Get notified when a candidate applies for a job.",
+    fieldStyle: { marginBottom: "12px" },
+  },
+  {
+    id: "offers",
+    type: "checkbox",
+    label: "",
+    name: "offers",
+    required: false,
+    unique: false,
+    options: [{ label: "Offers", value: "offers" }],
+    description: "Get notified when a candidate accepts or rejects an offer.",
+    fieldStyle: { marginBottom: "24px" },
+  },
+  {
+    id: "push_notifs_label",
+    type: "heading",
+    label: "Push Notifications",
+    name: "push_notifications",
+    required: false,
+    unique: false,
+    content: "Push Notifications",
+    fieldStyle: { fontSize: "16px", fontWeight: "bold", marginBottom: "10px" },
+  },
+  {
+    id: "push_desc",
+    type: "paragraph",
+    label: "Push Desc",
+    name: "push_desc",
+    required: false,
+    unique: false,
+    content: "These are delivered via SMS to your mobile phone.",
+    fieldStyle: { textColor: "#6b7280", marginBottom: "10px" },
+  },
+  {
+    id: "push_settings",
+    type: "radio",
+    label: "", // Hide label as options are self-explanatory
+    name: "push_settings",
+    required: false,
+    unique: false,
+    options: [
+      { label: "Everything", value: "everything" },
+      { label: "Same as email", value: "same_as_email" },
+      { label: "No push notifications", value: "no_push" },
+    ],
+    fieldStyle: { marginBottom: "24px" },
+  },
+  {
+    id: "save_button",
+    type: "button",
+    label: "Save Button",
+    name: "save",
+    required: false,
+    unique: false,
+    buttonText: "Save",
+    buttonType: "submit",
+    fieldStyle: { width: "100%", marginTop: "10px" },
+  },
+];
+
 const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   initialFields = [],
   initialBannerImage = null,
@@ -2393,7 +2858,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   onSave,
   onClose,
 }) => {
-  const [fields, setFields] = useState<CustomFormField[]>(initialFields);
+  const [fields, setFields] = useState<CustomFormField[]>(
+    initialFields.length > 0 ? initialFields : DEFAULT_FORM_FIELDS
+  );
   const [editingField, setEditingField] = useState<CustomFormField | null>(
     null
   );
@@ -3010,11 +3477,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
             </div>
             <button
               onClick={() => setShowThemePanel(!showThemePanel)}
-              className={`px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2 ${
-                showThemePanel
-                  ? "bg-purple-600 text-white border-purple-600"
-                  : "bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-              }`}
+              className={`px-4 py-2 border rounded-lg font-medium transition-colors flex items-center gap-2 ${showThemePanel
+                ? "bg-purple-600 text-white border-purple-600"
+                : "bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                }`}
               title="Theme & Styling"
             >
               <Palette size={16} />
@@ -3197,8 +3663,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                           if (field.containerType) {
                             const childFields = field.children
                               ? fields.filter((f) =>
-                                  field.children?.includes(f.id)
-                                )
+                                field.children?.includes(f.id)
+                              )
                               : [];
 
                             return (
@@ -3219,11 +3685,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                                     containerType={field.containerType}
                                   >
                                     <div
-                                      className={`mt-3 ${
-                                        field.containerType === "row"
-                                          ? "flex flex-row gap-3"
-                                          : "flex flex-col gap-3"
-                                      }`}
+                                      className={`mt-3 ${field.containerType === "row"
+                                        ? "flex flex-row gap-3"
+                                        : "flex flex-col gap-3"
+                                        }`}
                                       style={{
                                         gap: field.layoutProps?.gap || "16px",
                                         padding:
@@ -3338,6 +3803,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       {editingField && (
         <FieldConfigPanel
           field={editingField}
+          allFields={fields}
           onUpdate={handleUpdateField}
           onClose={() => setEditingField(null)}
         />
@@ -3403,10 +3869,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                     alert("Form updated from JSON successfully!");
                   } catch (error) {
                     alert(
-                      `Error parsing JSON: ${
-                        error instanceof Error
-                          ? error.message
-                          : "Invalid JSON format"
+                      `Error parsing JSON: ${error instanceof Error
+                        ? error.message
+                        : "Invalid JSON format"
                       }`
                     );
                   }
@@ -4021,6 +4486,85 @@ const FormPreview: React.FC<FormPreviewProps> = ({
     Email: "john@example.com",
     Company: "Acme Corp",
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // -------------------- VALIDATION & LOGIC --------------------
+
+  const checkCondition = (condition: any, data: any) => {
+    const fieldValue = data[condition.field];
+    const targetValue = condition.value;
+    if (fieldValue === undefined || fieldValue === null) return false;
+
+    switch (condition.operator) {
+      case "equals":
+        return String(fieldValue) == targetValue;
+      case "notEquals":
+        return String(fieldValue) != targetValue;
+      case "contains":
+        return String(fieldValue).includes(targetValue);
+      case "greaterThan":
+        return Number(fieldValue) > Number(targetValue);
+      case "lessThan":
+        return Number(fieldValue) < Number(targetValue);
+      default:
+        return false;
+    }
+  };
+
+  const isFieldVisible = (field: CustomFormField, data: any) => {
+    if (!field.conditions || field.conditions.length === 0) return true;
+    const hasShowAction = field.conditions.some((c) => c.action === "show");
+    if (hasShowAction) {
+      return field.conditions.some(
+        (c) => c.action === "show" && checkCondition(c, data)
+      );
+    }
+    const shouldHide = field.conditions.some(
+      (c) => c.action === "hide" && checkCondition(c, data)
+    );
+    return !shouldHide;
+  };
+
+  const validateField = (field: CustomFormField, value: any): string | null => {
+    if (!isFieldVisible(field, formData)) return null;
+    if (
+      field.required &&
+      (!value || (Array.isArray(value) && value.length === 0))
+    ) {
+      return "This field is required";
+    }
+    if (value) {
+      if (field.type === "email" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value))
+        return "Invalid email address";
+      if (
+        field.validation?.min !== undefined &&
+        Number(value) < field.validation.min
+      )
+        return `Min value: ${field.validation.min}`;
+      if (
+        field.validation?.max !== undefined &&
+        Number(value) > field.validation.max
+      )
+        return `Max value: ${field.validation.max}`;
+      if (
+        field.validation?.minLength !== undefined &&
+        String(value).length < field.validation.minLength
+      )
+        return `Min length: ${field.validation.minLength}`;
+      if (
+        field.validation?.maxLength !== undefined &&
+        String(value).length > field.validation.maxLength
+      )
+        return `Max length: ${field.validation.maxLength}`;
+      if (field.validation?.pattern) {
+        try {
+          const regex = new RegExp(field.validation.pattern);
+          if (!regex.test(String(value))) return "Invalid format";
+        } catch (e) { }
+      }
+    }
+    return null;
+  };
 
   // Replace inline parameters in text (FormEngine-like)
   const replaceInlineParams = (text: string | undefined): string => {
@@ -4082,8 +4626,27 @@ const FormPreview: React.FC<FormPreviewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted:", formData);
-    alert("Form submitted! Check console for data.");
+    const newErrors: Record<string, string> = {};
+    let isValid = true;
+
+    fields.forEach((field) => {
+      const error = validateField(field, formData[field.name]);
+      if (error) {
+        newErrors[field.name] = error;
+        isValid = false;
+      }
+    });
+
+    setErrors(newErrors);
+
+    if (isValid) {
+      console.log("Form submitted:", formData);
+      alert(
+        "Form submitted successfully!\n" + JSON.stringify(formData, null, 2)
+      );
+    } else {
+      alert("Please fix the errors in the form.");
+    }
   };
 
   const renderField = (
@@ -4123,6 +4686,18 @@ const FormPreview: React.FC<FormPreviewProps> = ({
     // Replace inline parameters
     const displayPlaceholder = replaceInlineParams(field.placeholder);
 
+    const handleChange = (name: string, value: any) => {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      if (errors[name]) {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors[name];
+          return newErrors;
+        });
+      }
+      executeEventHandler(field.events?.onChange, name, value);
+    };
+
     const commonProps = {
       id: field.id,
       name: field.name,
@@ -4141,11 +4716,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
             type={field.type}
             {...commonProps}
             value={formData[field.name] || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData({ ...formData, [field.name]: value });
-              executeEventHandler(field.events?.onChange, field.name, value);
-            }}
+            onChange={(e) => handleChange(field.name, e.target.value)}
             style={{
               ...fieldInputStyle,
               width: field.fieldStyle?.width || "100%",
@@ -4183,11 +4754,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           <textarea
             {...commonProps}
             value={formData[field.name] || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData({ ...formData, [field.name]: value });
-              executeEventHandler(field.events?.onChange, field.name, value);
-            }}
+            onChange={(e) => handleChange(field.name, e.target.value)}
             style={{
               ...fieldInputStyle,
               width: field.fieldStyle?.width || "100%",
@@ -4224,11 +4791,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           <select
             {...commonProps}
             value={formData[field.name] || ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              setFormData({ ...formData, [field.name]: value });
-              executeEventHandler(field.events?.onChange, field.name, value);
-            }}
+            onChange={(e) => handleChange(field.name, e.target.value)}
             style={{
               ...fieldInputStyle,
               width: field.fieldStyle?.width || "100%",
@@ -4283,15 +4846,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                   name={field.name}
                   value={opt.value}
                   checked={formData[field.name] === opt.value}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setFormData({ ...formData, [field.name]: value });
-                    executeEventHandler(
-                      field.events?.onChange,
-                      field.name,
-                      value
-                    );
-                  }}
+                  onChange={(e) => handleChange(field.name, e.target.value)}
                   onFocus={() =>
                     executeEventHandler(field.events?.onFocus, field.name)
                   }
@@ -4327,12 +4882,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                     const updated = e.target.checked
                       ? [...current, opt.value]
                       : current.filter((v: string) => v !== opt.value);
-                    setFormData({ ...formData, [field.name]: updated });
-                    executeEventHandler(
-                      field.events?.onChange,
-                      field.name,
-                      updated
-                    );
+                    handleChange(field.name, updated);
                   }}
                   onFocus={() =>
                     executeEventHandler(field.events?.onFocus, field.name)
@@ -4359,8 +4909,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           fileValue instanceof File
             ? fileValue.name
             : typeof fileValue === "string"
-            ? fileValue.split("/").pop() || fileValue
-            : "";
+              ? fileValue.split("/").pop() || fileValue
+              : "";
 
         return (
           <div className="space-y-2">
@@ -4425,7 +4975,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                         return;
                       }
                       // Store file object
-                      setFormData({ ...formData, [field.name]: file });
+                      handleChange(field.name, file);
                     }
                   }}
                   className="hidden"
@@ -4435,11 +4985,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setFormData((prev) => {
-                      const newData = { ...prev };
-                      delete newData[field.name];
-                      return newData;
-                    });
+                    handleChange(field.name, null);
                     const input = document.querySelector(
                       `input[name="${field.name}"]`
                     ) as HTMLInputElement;
@@ -4569,8 +5115,8 @@ const FormPreview: React.FC<FormPreviewProps> = ({
       ? typeof theme.formBackgroundImage === "string"
         ? `url(${theme.formBackgroundImage})`
         : backgroundImagePreview
-        ? `url(${backgroundImagePreview})`
-        : undefined
+          ? `url(${backgroundImagePreview})`
+          : undefined
       : undefined,
     backgroundSize: theme?.formBackgroundImage ? "cover" : undefined,
     backgroundPosition: theme?.formBackgroundImage ? "center" : undefined,
@@ -4644,6 +5190,11 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                 return null;
               }
 
+              // Check visibility
+              if (!isFieldVisible(field, formData)) {
+                return null;
+              }
+
               // Render containers with their children
               if (field.containerType) {
                 const isRowLayout = field.containerType === "row";
@@ -4713,9 +5264,9 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                             : {}),
                           ...(childField.fieldStyle?.marginBottom
                             ? {
-                                marginBottom:
-                                  childField.fieldStyle.marginBottom,
-                              }
+                              marginBottom:
+                                childField.fieldStyle.marginBottom,
+                            }
                             : {}),
                           ...(childField.fieldStyle?.marginLeft
                             ? { marginLeft: childField.fieldStyle.marginLeft }
@@ -4725,15 +5276,15 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                             : {}),
                           ...(childField.fieldStyle?.paddingRight
                             ? {
-                                paddingRight:
-                                  childField.fieldStyle.paddingRight,
-                              }
+                              paddingRight:
+                                childField.fieldStyle.paddingRight,
+                            }
                             : {}),
                           ...(childField.fieldStyle?.paddingBottom
                             ? {
-                                paddingBottom:
-                                  childField.fieldStyle.paddingBottom,
-                              }
+                              paddingBottom:
+                                childField.fieldStyle.paddingBottom,
+                            }
                             : {}),
                           ...(childField.fieldStyle?.paddingLeft
                             ? { paddingLeft: childField.fieldStyle.paddingLeft }
@@ -4900,6 +5451,12 @@ const FormPreview: React.FC<FormPreviewProps> = ({
                     </p>
                   )}
                   {renderField(field, inputStyle, theme)}
+                  {errors[field.name] && (
+                    <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                      <AlertCircle size={12} />
+                      {errors[field.name]}
+                    </p>
+                  )}
                 </div>
               );
             });
