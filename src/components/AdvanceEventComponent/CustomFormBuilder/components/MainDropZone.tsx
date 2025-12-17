@@ -18,17 +18,17 @@ export const MainDropZone: React.FC<MainDropZoneProps> = ({
   return (
     <div
       ref={setNodeRef}
-      data-drop-zone="main"
+      data-drop-zone="main-drop-zone"
       className={`min-h-[200px] transition-all rounded-lg ${
         isOver ? "ring-2 ring-blue-400 bg-blue-50" : ""
       }`}
     >
       {children}
       {isEmpty && (
-        <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-300 relative overflow-hidden">
+        <div className="text-center py-16 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-300 relative overflow-hidden">
           <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
           <div className="relative flex flex-col items-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+            <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
               <Plus className="text-white" size={40} />
             </div>
             <p className="text-gray-700 font-semibold text-lg mb-2">

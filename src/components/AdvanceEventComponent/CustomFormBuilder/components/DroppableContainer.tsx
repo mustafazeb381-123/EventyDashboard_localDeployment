@@ -1,6 +1,10 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Edit, Trash2, LayoutGrid, Columns2, Square } from "lucide-react";
 import type { CustomFormField } from "../types";
@@ -9,6 +13,7 @@ import { SortableFieldItem } from "./SortableFieldItem";
 interface DroppableContainerProps {
   field: CustomFormField;
   childFields: CustomFormField[];
+  allFields: CustomFormField[];
   onEdit: (field: CustomFormField) => void;
   onDelete: (id: string) => void;
   onEditChild: (field: CustomFormField) => void;
@@ -18,13 +23,15 @@ interface DroppableContainerProps {
 export const DroppableContainer: React.FC<DroppableContainerProps> = ({
   field,
   childFields,
+  allFields,
   onEdit,
   onDelete,
   onEditChild,
   onDeleteChild,
 }) => {
+  const droppableId = `container:${field.id}`;
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
-    id: field.id,
+    id: droppableId,
   });
 
   const {
@@ -45,14 +52,9 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
   const isEmpty = childFields.length === 0;
   const containerType = field.containerType;
 
-  const setNodeRef = (node: HTMLElement | null) => {
-    setDroppableRef(node);
-    setSortableRef(node);
-  };
-
   return (
     <div
-      ref={setNodeRef}
+      ref={setSortableRef}
       style={style}
       data-container-id={field.id}
       className={`bg-white border-2 rounded-lg transition-all group relative pt-5 p-3 ${
@@ -122,21 +124,49 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
           isEmpty ? "border-2 border-dashed border-gray-300 rounded-lg p-4" : ""
         }`}
       >
-        {isEmpty ? (
-          <div className="text-center py-8 text-gray-400 text-sm italic">
-            Drop fields here
-          </div>
-        ) : (
-          childFields.map((childField) => (
-            <SortableFieldItem
-              key={childField.id}
-              field={childField}
-              onEdit={onEditChild}
-              onDelete={onDeleteChild}
-              isInsideContainer
-            />
-          ))
-        )}
+        <SortableContext
+          items={childFields.map((f) => f.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          {isEmpty ? (
+            <div className="text-center py-8 text-gray-400 text-sm italic">
+              Drop fields here
+            </div>
+          ) : (
+            childFields.map((childField) => {
+              if (childField.containerType) {
+                const nestedChildFields = childField.children
+                  ? (childField.children
+                      .map((id) => allFields.find((f) => f.id === id))
+                      .filter(Boolean) as CustomFormField[])
+                  : [];
+
+                return (
+                  <DroppableContainer
+                    key={childField.id}
+                    field={childField}
+                    childFields={nestedChildFields}
+                    allFields={allFields}
+                    onEdit={onEditChild}
+                    onDelete={onDeleteChild}
+                    onEditChild={onEditChild}
+                    onDeleteChild={onDeleteChild}
+                  />
+                );
+              }
+
+              return (
+                <SortableFieldItem
+                  key={childField.id}
+                  field={childField}
+                  onEdit={onEditChild}
+                  onDelete={onDeleteChild}
+                  isInsideContainer
+                />
+              );
+            })
+          )}
+        </SortableContext>
       </div>
     </div>
   );

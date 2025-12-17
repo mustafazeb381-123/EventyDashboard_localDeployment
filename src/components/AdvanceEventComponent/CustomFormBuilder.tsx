@@ -71,6 +71,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   const [showJsonEditor, setShowJsonEditor] = useState(false);
   const [jsonEditorContent, setJsonEditorContent] = useState("");
   const [showJsonMenu, setShowJsonMenu] = useState(false);
+  const [deleteCandidate, setDeleteCandidate] =
+    useState<CustomFormField | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [bannerImage, setBannerImage] = useState<File | string | null>(
     initialBannerImage
   );
@@ -139,6 +142,15 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     }
   }, [initialBannerImage]);
 
+  // Load logo preview from initial theme (string/logo data URL)
+  React.useEffect(() => {
+    if (typeof theme.logo === "string") {
+      setLogoPreview(theme.logo);
+    } else if (!theme.logo) {
+      setLogoPreview(null);
+    }
+  }, [theme.logo]);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -185,7 +197,34 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       return;
     }
 
-    const overId = over.id;
+    const overId: string = over.id;
+    const getContainerIdFromOverId = (id: string) =>
+      id.startsWith("container:") ? id.replace("container:", "") : null;
+
+    const findParentContainerId = (
+      fieldId: string,
+      inFields: CustomFormField[]
+    ) => inFields.find((f) => f.children?.includes(fieldId))?.id || null;
+
+    const isDescendant = (
+      ancestorId: string,
+      possibleDescendantId: string,
+      inFields: CustomFormField[]
+    ) => {
+      const ancestor = inFields.find((f) => f.id === ancestorId);
+      if (!ancestor?.children?.length) return false;
+      const queue = [...ancestor.children];
+      const visited = new Set<string>();
+      while (queue.length) {
+        const current = queue.shift()!;
+        if (current === possibleDescendantId) return true;
+        if (visited.has(current)) continue;
+        visited.add(current);
+        const node = inFields.find((f) => f.id === current);
+        if (node?.children?.length) queue.push(...node.children);
+      }
+      return false;
+    };
 
     if (active.data?.current?.type === "palette-item") {
       const newField = active.data.current.createField();
@@ -195,19 +234,29 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
         return;
       }
 
+      const containerTargetId = getContainerIdFromOverId(overId);
+      if (containerTargetId) {
+        setFields((prevFields) => {
+          const updated = prevFields.map((f) =>
+            f.id === containerTargetId
+              ? { ...f, children: [...(f.children || []), newField.id] }
+              : f
+          );
+          return [...updated, newField];
+        });
+        return;
+      }
+
       const overField = fields.find((f) => f.id === overId);
       if (overField?.containerType) {
-        setFields((prevFields) =>
-          prevFields.map((f) =>
+        setFields((prevFields) => {
+          const updated = prevFields.map((f) =>
             f.id === overId
-              ? {
-                  ...f,
-                  children: [...(f.children || []), newField.id],
-                }
+              ? { ...f, children: [...(f.children || []), newField.id] }
               : f
-          )
-        );
-        setFields((prevFields) => [...prevFields, newField]);
+          );
+          return [...updated, newField];
+        });
         return;
       }
 
@@ -223,10 +272,123 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       return;
     }
 
+    // Existing field drag
     if (active.id !== overId) {
-      const oldIndex = fields.findIndex((f) => f.id === active.id);
-      const newIndex = fields.findIndex((f) => f.id === overId);
+      const activeIdStr: string = active.id;
+      const containerTargetId = getContainerIdFromOverId(overId);
 
+      const sourceParentId = findParentContainerId(activeIdStr, fields);
+
+      // Dropped into a container drop-zone
+      if (containerTargetId) {
+        // Prevent cycles (can't drop a container into itself or its descendants)
+        const activeField = fields.find((f) => f.id === activeIdStr);
+        if (activeField?.containerType) {
+          if (containerTargetId === activeIdStr) return;
+          if (isDescendant(activeIdStr, containerTargetId, fields)) return;
+        }
+
+        setFields((prevFields) => {
+          // Remove from previous parent if needed
+          let next = prevFields.map((f) =>
+            f.children?.includes(activeIdStr)
+              ? {
+                  ...f,
+                  children: f.children.filter((id) => id !== activeIdStr),
+                }
+              : f
+          );
+
+          // Add to target container
+          next = next.map((f) =>
+            f.id === containerTargetId
+              ? {
+                  ...f,
+                  children: [...(f.children || []), activeIdStr],
+                }
+              : f
+          );
+          return next;
+        });
+        return;
+      }
+
+      // Dropped on main drop zone: detach from parent (move to root)
+      if (overId === "main-drop-zone") {
+        if (!sourceParentId) return;
+        setFields((prevFields) =>
+          prevFields.map((f) =>
+            f.id === sourceParentId
+              ? {
+                  ...f,
+                  children: (f.children || []).filter(
+                    (id) => id !== activeIdStr
+                  ),
+                }
+              : f
+          )
+        );
+        return;
+      }
+
+      // Dropped over another field: reorder within the same container if both are siblings
+      const overFieldId = overId;
+      const targetParentId = findParentContainerId(overFieldId, fields);
+
+      // If dropped over a child inside a container, move into that container (or reorder inside it)
+      if (targetParentId) {
+        const activeField = fields.find((f) => f.id === activeIdStr);
+        if (activeField?.containerType) {
+          if (targetParentId === activeIdStr) return;
+          if (isDescendant(activeIdStr, targetParentId, fields)) return;
+        }
+
+        setFields((prevFields) => {
+          let next = prevFields;
+
+          // If moving across containers/root, detach from source parent first
+          next = next.map((f) =>
+            f.children?.includes(activeIdStr)
+              ? {
+                  ...f,
+                  children: f.children.filter((id) => id !== activeIdStr),
+                }
+              : f
+          );
+
+          // Insert into target parent's children near the over item
+          next = next.map((f) => {
+            if (f.id !== targetParentId) return f;
+            const children = [...(f.children || [])];
+            const overIndex = children.indexOf(overFieldId);
+            const insertIndex =
+              overIndex === -1 ? children.length : overIndex + 1;
+
+            if (children.includes(activeIdStr)) {
+              // Reorder within same parent
+              const oldIndex = children.indexOf(activeIdStr);
+              return {
+                ...f,
+                children: arrayMove(
+                  children,
+                  oldIndex,
+                  insertIndex > oldIndex ? insertIndex - 1 : insertIndex
+                ),
+              };
+            }
+
+            children.splice(insertIndex, 0, activeIdStr);
+            return { ...f, children };
+          });
+
+          return next;
+        });
+        return;
+      }
+
+      // Root-level reorder (both are root items)
+      const oldIndex = fields.findIndex((f) => f.id === activeIdStr);
+      const newIndex = fields.findIndex((f) => f.id === overFieldId);
       if (oldIndex !== -1 && newIndex !== -1) {
         setFields(arrayMove(fields, oldIndex, newIndex));
       }
@@ -247,17 +409,18 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   };
 
   const handleDeleteField = (id: string) => {
-    const fieldToDelete = fields.find((f) => f.id === id);
-    if (
-      fieldToDelete &&
-      !confirm(
-        `Are you sure you want to delete "${
-          fieldToDelete.label || fieldToDelete.name
-        }"?`
-      )
-    ) {
+    const fieldToDelete = fields.find((f) => f.id === id) || null;
+    setDeleteCandidate(fieldToDelete);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteField = () => {
+    if (!deleteCandidate) {
+      setShowDeleteModal(false);
       return;
     }
+
+    const id = deleteCandidate.id;
 
     setFields((prevFields) => {
       const newFields = prevFields.filter((f) => f.id !== id);
@@ -267,7 +430,30 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
           : f
       );
     });
+
+    if (editingField?.id === id) {
+      setEditingField(null);
+    }
+
+    setShowDeleteModal(false);
+    setDeleteCandidate(null);
   };
+
+  const cancelDeleteField = () => {
+    setShowDeleteModal(false);
+    setDeleteCandidate(null);
+  };
+
+  React.useEffect(() => {
+    if (!showDeleteModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        cancelDeleteField();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showDeleteModal]);
 
   const handleExportJson = () => {
     const dataStr = JSON.stringify(
@@ -425,7 +611,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
       onDragOver={(event) => {
-        const overId = event.over?.id;
+        const rawOverId = event.over?.id as string | undefined;
+        const overId = rawOverId?.startsWith("container:")
+          ? rawOverId.replace("container:", "")
+          : rawOverId;
         if (overId) {
           document.querySelectorAll("[data-drop-zone]").forEach((el) => {
             el.classList.remove("ring-2", "ring-blue-400", "bg-blue-50");
@@ -461,7 +650,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       <div className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm z-40 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between shadow-lg">
+          <div className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between shadow-lg">
             <div>
               <h2 className="text-2xl font-bold">Custom Form Builder</h2>
               <p className="text-blue-100 text-sm mt-0.5">
@@ -561,12 +750,12 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
             </div>
 
             {/* Main Canvas */}
-            <div className="flex-1 overflow-y-auto p-6 bg-gradient-to-br from-gray-50 to-white">
+            <div className="flex-1 overflow-y-auto p-6 bg-linear-to-br from-gray-50 to-white">
               {!showPreview ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {/* Banner Image Section */}
                   <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                    <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-b border-gray-200">
+                    <div className="p-4 bg-linear-to-r from-purple-50 to-pink-50 border-b border-gray-200">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                           <ImageIcon size={18} className="text-purple-600" />
@@ -612,7 +801,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
                   {/* Logo Section */}
                   <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                    <div className="p-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-gray-800 flex items-center gap-2">
                           <ImageIcon size={18} className="text-blue-600" />
@@ -726,48 +915,59 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                       Form Fields
                     </h3>
                     <MainDropZone isEmpty={fields.length === 0}>
-                      <SortableContext
-                        items={fields.map((f) => f.id)}
-                        strategy={verticalListSortingStrategy}
-                      >
-                        <div className="space-y-3">
-                          {fields.map((field) => {
-                            const isChild = fields.some((f) =>
-                              f.children?.includes(field.id)
-                            );
-                            if (isChild) return null;
+                      {(() => {
+                        const childIds = new Set(
+                          fields
+                            .filter((f) => f.children?.length)
+                            .flatMap((f) => f.children || [])
+                        );
+                        const rootFields = fields.filter(
+                          (f) => !childIds.has(f.id)
+                        );
 
-                            if (field.containerType) {
-                              const childFields = field.children
-                                ? fields.filter((f) =>
-                                    field.children?.includes(f.id)
-                                  )
-                                : [];
+                        return (
+                          <SortableContext
+                            items={rootFields.map((f) => f.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <div className="space-y-3">
+                              {rootFields.map((field) => {
+                                if (field.containerType) {
+                                  const childFields = field.children
+                                    ? (field.children
+                                        .map((id) =>
+                                          fields.find((f) => f.id === id)
+                                        )
+                                        .filter(Boolean) as CustomFormField[])
+                                    : [];
 
-                              return (
-                                <DroppableContainer
-                                  key={field.id}
-                                  field={field}
-                                  childFields={childFields}
-                                  onEdit={handleEditField}
-                                  onDelete={handleDeleteField}
-                                  onEditChild={handleEditField}
-                                  onDeleteChild={handleDeleteField}
-                                />
-                              );
-                            }
+                                  return (
+                                    <DroppableContainer
+                                      key={field.id}
+                                      field={field}
+                                      childFields={childFields}
+                                      allFields={fields}
+                                      onEdit={handleEditField}
+                                      onDelete={handleDeleteField}
+                                      onEditChild={handleEditField}
+                                      onDeleteChild={handleDeleteField}
+                                    />
+                                  );
+                                }
 
-                            return (
-                              <SortableFieldItem
-                                key={field.id}
-                                field={field}
-                                onEdit={handleEditField}
-                                onDelete={handleDeleteField}
-                              />
-                            );
-                          })}
-                        </div>
-                      </SortableContext>
+                                return (
+                                  <SortableFieldItem
+                                    key={field.id}
+                                    field={field}
+                                    onEdit={handleEditField}
+                                    onDelete={handleDeleteField}
+                                  />
+                                );
+                              })}
+                            </div>
+                          </SortableContext>
+                        );
+                      })()}
                     </MainDropZone>
                   </div>
                 </div>
@@ -805,6 +1005,64 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
         />
       )}
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) cancelDeleteField();
+          }}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Delete {deleteCandidate?.containerType ? "Container" : "Field"}
+              </h3>
+              <button
+                onClick={cancelDeleteField}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <p className="text-sm text-gray-700">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">
+                  {deleteCandidate?.label ||
+                    deleteCandidate?.name ||
+                    "this item"}
+                </span>
+                ?
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                This action can’t be undone.
+              </p>
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-end gap-3 bg-white">
+              <button
+                onClick={cancelDeleteField}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteField}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Theme Panel */}
       {showThemePanel && (
         <ThemeConfigPanel
@@ -816,7 +1074,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
       {/* JSON Editor Modal */}
       {showJsonEditor && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
             <div className="p-4 border-b flex items-center justify-between">
               <h3 className="text-lg font-semibold">JSON Editor</h3>

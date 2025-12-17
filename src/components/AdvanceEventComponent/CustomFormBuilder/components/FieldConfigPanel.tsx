@@ -18,7 +18,6 @@ import {
   Space,
   LayoutGrid,
   Columns2,
-  Square,
   Trash2,
   Plus,
   Layers,
@@ -75,7 +74,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
   return (
     <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 overflow-y-auto border-l border-gray-200">
-      <div className="p-5 border-b sticky top-0 bg-gradient-to-r from-gray-50 to-white z-10 shadow-sm">
+      <div className="p-5 border-b sticky top-0 bg-linear-to-r from-gray-50 to-white z-10 shadow-sm">
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
@@ -550,6 +549,50 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 <option value="reset">Reset</option>
               </select>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Alignment
+              </label>
+              <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
+                {["left", "center", "right"].map((align) => (
+                  <button
+                    key={align}
+                    onClick={() =>
+                      setConfig({
+                        ...config,
+                        buttonAlignment: align as "left" | "center" | "right",
+                      })
+                    }
+                    className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      (config.buttonAlignment || "left") === align
+                        ? "bg-white shadow text-blue-600"
+                        : "text-gray-500 hover:text-gray-700"
+                    }`}
+                  >
+                    {align.charAt(0).toUpperCase() + align.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Width</label>
+              <select
+                value={config.buttonWidth || "auto"}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    buttonWidth: e.target.value as "auto" | "full" | "custom",
+                  })
+                }
+                className="w-full px-3 py-2 border rounded-lg"
+              >
+                <option value="auto">Auto (Content Width)</option>
+                <option value="full">Full Width (100%)</option>
+                <option value="custom">Custom Width</option>
+              </select>
+            </div>
           </div>
         )}
 
@@ -1019,6 +1062,73 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               />
             </div>
 
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Margin
+              </label>
+              <input
+                type="text"
+                value={config.layoutProps?.margin || "0"}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      margin: e.target.value,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Flex Wrap
+              </label>
+              <select
+                value={
+                  config.layoutProps?.flexWrap ||
+                  (config.containerType === "row" ? "wrap" : "nowrap")
+                }
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      flexWrap: e.target.value as "nowrap" | "wrap",
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="nowrap">No Wrap</option>
+                <option value="wrap">Wrap</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Min Height
+              </label>
+              <input
+                type="text"
+                value={config.layoutProps?.minHeight || ""}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    layoutProps: {
+                      ...config.layoutProps,
+                      minHeight: e.target.value || undefined,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="e.g. 80px"
+              />
+            </div>
+
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
@@ -1073,6 +1183,65 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="8px"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Border Color
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="color"
+                    value={config.layoutProps?.borderColor || "#e5e7eb"}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        layoutProps: {
+                          ...config.layoutProps,
+                          borderColor: e.target.value,
+                        },
+                      })
+                    }
+                    className="w-12 h-10 rounded border border-gray-300 cursor-pointer"
+                  />
+                  <input
+                    type="text"
+                    value={config.layoutProps?.borderColor || ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        layoutProps: {
+                          ...config.layoutProps,
+                          borderColor: e.target.value || undefined,
+                        },
+                      })
+                    }
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    placeholder="#e5e7eb"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-700">
+                  Border Width
+                </label>
+                <input
+                  type="text"
+                  value={config.layoutProps?.borderWidth || ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      layoutProps: {
+                        ...config.layoutProps,
+                        borderWidth: e.target.value || undefined,
+                      },
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="1px"
                 />
               </div>
             </div>
@@ -1663,7 +1832,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         <div className="pt-4 border-t sticky bottom-0 bg-white pb-2">
           <button
             onClick={handleUpdate}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
+            className="w-full bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
           >
             Save Changes
           </button>

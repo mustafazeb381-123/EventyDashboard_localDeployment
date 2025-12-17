@@ -294,7 +294,7 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
   return (
     <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 overflow-y-auto border-l border-gray-200">
-      <div className="p-5 border-b sticky top-0 bg-gradient-to-r from-gray-50 to-white z-10 shadow-sm">
+      <div className="p-5 border-b sticky top-0 bg-linear-to-r from-gray-50 to-white z-10 shadow-sm">
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
@@ -1882,7 +1882,7 @@ const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         <div className="pt-4 border-t sticky bottom-0 bg-white pb-2">
           <button
             onClick={handleUpdate}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
+            className="w-full bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
           >
             Save Changes
           </button>
@@ -1906,10 +1906,10 @@ const MainDropZone: React.FC = () => {
         isOver ? "ring-2 ring-blue-400 bg-blue-50" : ""
       }`}
     >
-      <div className="text-center py-16 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-300 relative overflow-hidden">
+      <div className="text-center py-16 bg-linear-to-br from-blue-50 to-indigo-50 rounded-lg border-2 border-dashed border-blue-300 relative overflow-hidden">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         <div className="relative flex flex-col items-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
+          <div className="w-20 h-20 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mb-4 shadow-lg">
             <Plus className="text-white" size={40} />
           </div>
           <p className="text-gray-700 font-semibold text-lg mb-2">Drop Zone</p>
@@ -3840,7 +3840,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
+                className="px-6 py-2 bg-linear-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 shadow-md hover:shadow-lg"
               >
                 <Save size={16} />
                 Save Form
@@ -4231,7 +4231,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
       {/* JSON Editor Modal */}
       {showJsonEditor && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-100 flex items-center justify-center p-4">
           <div className="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[80vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
               <div>
@@ -4382,7 +4382,7 @@ const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
   return (
     <div className="absolute right-0 top-0 h-full w-96 bg-white border-l border-gray-200 shadow-2xl z-50 overflow-y-auto">
-      <div className="sticky top-0 bg-gradient-to-r from-purple-50 to-pink-50 p-4 border-b border-gray-200 flex justify-between items-center">
+      <div className="sticky top-0 bg-linear-to-r from-purple-50 to-pink-50 p-4 border-b border-gray-200 flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold text-gray-800">
             Theme & Styling
@@ -5439,7 +5439,7 @@ const FormPreview: React.FC<FormPreviewProps> = ({
         return (
           <button
             type={field.buttonType || "button"}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
+            className="px-6 py-2.5 bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
           >
             {field.buttonText || "Button"}
           </button>

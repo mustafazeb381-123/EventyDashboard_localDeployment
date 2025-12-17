@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { AlertCircle, X, FileText, Image as ImageIcon } from "lucide-react";
 import type { CustomFormField, FormTheme } from "../types";
+import { FormHeader } from "./FormHeader";
+import { FormButtonField } from "./FormButtonField";
 
 interface FormPreviewProps {
   fields: CustomFormField[];
@@ -17,7 +19,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
     string | null
   >(null);
-  const [inlineParams, setInlineParams] = useState<Record<string, string>>({
+  const [inlineParams, _setInlineParams] = useState<Record<string, string>>({
     Name: "John Doe",
     Email: "john@example.com",
     Company: "Acme Corp",
@@ -187,12 +189,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
   const renderField = (
     field: CustomFormField,
-    inputStyle?: React.CSSProperties,
+    overrideInputStyle?: React.CSSProperties,
     theme?: FormTheme
   ) => {
     // Merge field-specific styles with theme styles
     const fieldInputStyle: React.CSSProperties = {
-      ...inputStyle,
+      ...overrideInputStyle,
       backgroundColor:
         field.fieldStyle?.backgroundColor ||
         theme?.inputBackgroundColor ||
@@ -548,14 +550,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
         );
       case "button":
-        return (
-          <button
-            type={field.buttonType || "button"}
-            className="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-md hover:shadow-lg transition-all"
-          >
-            {field.buttonText || "Button"}
-          </button>
-        );
+        return <FormButtonField field={field} theme={theme} />;
       case "table":
         if (!field.tableData) {
           return <div className="text-gray-400 text-sm">No table data</div>;
@@ -664,7 +659,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     borderStyle: "solid",
   };
 
-  const inputStyle: React.CSSProperties = {
+  const baseInputStyle: React.CSSProperties = {
     backgroundColor: theme?.inputBackgroundColor || "#ffffff",
     borderColor: theme?.inputBorderColor || "#d1d5db",
     borderWidth: theme?.inputBorderWidth || "1px",
@@ -673,10 +668,27 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     padding: theme?.inputPadding || "10px 16px",
   };
 
+  const formLayoutStyle: React.CSSProperties = {
+    ...formStyle,
+    maxWidth: theme?.formMaxWidth || "768px",
+    marginLeft:
+      theme?.formAlignment === "left"
+        ? "0"
+        : theme?.formAlignment === "right"
+        ? "auto"
+        : "auto",
+    marginRight:
+      theme?.formAlignment === "left"
+        ? "auto"
+        : theme?.formAlignment === "right"
+        ? "0"
+        : "auto",
+  };
+
   return (
     <div
-      className="max-w-3xl mx-auto rounded-xl shadow-lg overflow-hidden"
-      style={formStyle}
+      className="w-full rounded-xl shadow-lg overflow-hidden"
+      style={formLayoutStyle}
     >
       {/* Banner Image */}
       {bannerImage && (
@@ -689,33 +701,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         </div>
       )}
 
-      {/* Logo */}
-      {theme?.logo && (
-        <div
-          className="w-full py-4 flex"
-          style={{
-            justifyContent:
-              theme.logoPosition === "left"
-                ? "flex-start"
-                : theme.logoPosition === "right"
-                ? "flex-end"
-                : "center",
-            paddingLeft: theme.logoPosition === "left" ? "16px" : "0",
-            paddingRight: theme.logoPosition === "right" ? "16px" : "0",
-          }}
-        >
-          <img
-            src={typeof theme.logo === "string" ? theme.logo : ""}
-            alt="Form logo"
-            style={{
-              width: theme.logoWidth || "100px",
-              height: theme.logoHeight || "auto",
-              maxWidth: "100%",
-              objectFit: "contain",
-            }}
-          />
-        </div>
-      )}
+      <FormHeader theme={theme} />
 
       <div>
         <div
@@ -777,6 +763,13 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   backgroundColor:
                     field.layoutProps?.backgroundColor || "transparent",
                   borderRadius: field.layoutProps?.borderRadius || "0px",
+                  borderColor: field.layoutProps?.borderColor || undefined,
+                  borderWidth: field.layoutProps?.borderWidth || undefined,
+                  borderStyle:
+                    field.layoutProps?.borderColor ||
+                    field.layoutProps?.borderWidth
+                      ? "solid"
+                      : undefined,
                   flexWrap:
                     field.layoutProps?.flexWrap ||
                     (isRowLayout ? "wrap" : "nowrap"),
@@ -784,7 +777,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 };
 
                 const childFields = field.children
-                  ? fields.filter((f) => field.children?.includes(f.id))
+                  ? (field.children
+                      .map((id) => fields.find((f) => f.id === id))
+                      .filter(Boolean) as CustomFormField[])
                   : [];
 
                 // For column containers, use Bootstrap grid if Bootstrap classes are set
@@ -920,7 +915,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                               {renderField(
                                 childField,
                                 {
-                                  ...inputStyle,
+                                  ...baseInputStyle,
                                   width: "100%",
                                 },
                                 theme
@@ -1014,7 +1009,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                       {field.description}
                     </p>
                   )}
-                  {renderField(field, inputStyle, theme)}
+                  {renderField(field, baseInputStyle, theme)}
                   {errors[field.name] && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                       <AlertCircle size={12} />

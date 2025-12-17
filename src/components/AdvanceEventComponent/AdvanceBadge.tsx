@@ -181,7 +181,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   template,
   isEditMode = false,
 }) => {
-  const [editingTemplate, setEditingTemplate] = useState<BadgeTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<BadgeTemplate | null>(
+    null
+  );
 
   const defaultTemplate: BadgeTemplate = {
     id: "",
@@ -227,7 +229,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     if (template) {
       setEditingTemplate({ ...template });
     } else {
-      setEditingTemplate({ ...defaultTemplate, id: `custom-badge-${Date.now()}` });
+      setEditingTemplate({
+        ...defaultTemplate,
+        id: `custom-badge-${Date.now()}`,
+      });
     }
   }, [template]);
 
@@ -265,7 +270,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           style={{
             width: `${template.width * 40}px`,
             height: `${template.height * 40}px`,
-            backgroundColor: template.hasBackground ? template.bgColor : "transparent",
+            backgroundColor: template.hasBackground
+              ? template.bgColor
+              : "transparent",
             backgroundImage:
               template.hasBackground && template.bgImage
                 ? `url(${template.bgImage})`
@@ -288,11 +295,13 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     : "50%",
                 right: template.photoAlignment === "right" ? "10px" : "auto",
                 transform:
-                  template.photoAlignment === "center" ? "translateX(-50%)" : "none",
+                  template.photoAlignment === "center"
+                    ? "translateX(-50%)"
+                    : "none",
                 top: `${(template.photoPosition?.y || 60) * 0.2}px`,
               }}
             >
-              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400" />
+              <div className="w-full h-full bg-linear-to-br from-gray-200 to-gray-400" />
             </div>
           )}
 
@@ -377,9 +386,13 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     );
   };
 
-  const ToggleSwitch = ({ checked, onChange, label }: { 
-    checked: boolean; 
-    onChange: (checked: boolean) => void; 
+  const ToggleSwitch = ({
+    checked,
+    onChange,
+    label,
+  }: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
     label: string;
   }) => (
     <div className="flex items-center justify-between mb-3">
@@ -404,7 +417,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
         <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold text-gray-800">
-              {isEditMode ? "Edit Custom Badge" : "Create Custom Badge Template"}
+              {isEditMode
+                ? "Edit Custom Badge"
+                : "Create Custom Badge Template"}
             </h3>
             <input
               type="text"
@@ -612,7 +627,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                           onClick={() =>
                             setEditingTemplate({
                               ...editingTemplate,
-                              photoAlignment: align as "left" | "center" | "right",
+                              photoAlignment: align as
+                                | "left"
+                                | "center"
+                                | "right",
                             })
                           }
                           className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
@@ -621,9 +639,15 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
-                          {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-                          {align === "center" && <AlignCenter size={16} className="mx-auto" />}
-                          {align === "right" && <AlignRight size={16} className="mx-auto" />}
+                          {align === "left" && (
+                            <AlignLeft size={16} className="mx-auto" />
+                          )}
+                          {align === "center" && (
+                            <AlignCenter size={16} className="mx-auto" />
+                          )}
+                          {align === "right" && (
+                            <AlignRight size={16} className="mx-auto" />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -666,7 +690,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 <div className="space-y-3 ml-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Size (px)
+                      </label>
                       <input
                         type="number"
                         value={editingTemplate.nameText?.size || 24}
@@ -683,7 +709,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Color</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Color
+                      </label>
                       <input
                         type="color"
                         value={editingTemplate.nameText?.color || "#ffffff"}
@@ -702,7 +730,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-600 mb-2">Alignment</label>
+                    <label className="block text-sm text-gray-600 mb-2">
+                      Alignment
+                    </label>
                     <div className="flex gap-2">
                       {["left", "center", "right"].map((align) => (
                         <button
@@ -722,16 +752,24 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                               : "border-gray-300 hover:border-gray-400"
                           }`}
                         >
-                          {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-                          {align === "center" && <AlignCenter size={16} className="mx-auto" />}
-                          {align === "right" && <AlignRight size={16} className="mx-auto" />}
+                          {align === "left" && (
+                            <AlignLeft size={16} className="mx-auto" />
+                          )}
+                          {align === "center" && (
+                            <AlignCenter size={16} className="mx-auto" />
+                          )}
+                          {align === "right" && (
+                            <AlignRight size={16} className="mx-auto" />
+                          )}
                         </button>
                       ))}
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">Y Position (px)</label>
+                    <label className="block text-sm text-gray-600 mb-1">
+                      Y Position (px)
+                    </label>
                     <input
                       type="number"
                       value={editingTemplate.nameText?.position?.y || 280}
@@ -768,7 +806,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 <div className="space-y-3 ml-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Size (px)</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Size (px)
+                      </label>
                       <input
                         type="number"
                         value={editingTemplate.companyText?.size || 18}
@@ -785,7 +825,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-gray-600 mb-1">Color</label>
+                      <label className="block text-sm text-gray-600 mb-1">
+                        Color
+                      </label>
                       <input
                         type="color"
                         value={editingTemplate.companyText?.color || "#cccccc"}
@@ -868,12 +910,15 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
 
   // State for custom templates
   const [customTemplates, setCustomTemplates] = useState<BadgeTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<BadgeTemplate | null>(null);
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<BadgeTemplate | null>(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
-  const [editingCustomTemplate, setEditingCustomTemplate] = useState<BadgeTemplate | null>(null);
+  const [editingCustomTemplate, setEditingCustomTemplate] =
+    useState<BadgeTemplate | null>(null);
   const [isEditCustomMode, setIsEditCustomMode] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [reviewingTemplate, setReviewingTemplate] = useState<BadgeTemplate | null>(null);
+  const [reviewingTemplate, setReviewingTemplate] =
+    useState<BadgeTemplate | null>(null);
   const [loading, setLoading] = useState(false);
   const [event, setEvent] = useState<any>(null);
 
@@ -1094,24 +1139,56 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
     }
 
     saveTemplates(updatedTemplates);
-    toast.success(`Template ${isEditCustomMode ? 'updated' : 'created'} successfully!`);
+    toast.success(
+      `Template ${isEditCustomMode ? "updated" : "created"} successfully!`
+    );
   };
+
+  const [deleteCustomTemplateCandidate, setDeleteCustomTemplateCandidate] =
+    useState<BadgeTemplate | null>(null);
+  const [isDeleteCustomTemplateModalOpen, setIsDeleteCustomTemplateModalOpen] =
+    useState(false);
 
   const handleDeleteCustomTemplate = (templateId: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      const updatedTemplates = customTemplates.filter(
-        (template) => template.id !== templateId
-      );
-      saveTemplates(updatedTemplates);
-
-      if (selectedTemplate?.id === templateId) {
-        setSelectedTemplate(null);
-      }
-
-      setIsReviewModalOpen(false);
-      toast.success("Template deleted successfully!");
-    }
+    const template = customTemplates.find((t) => t.id === templateId) || null;
+    setDeleteCustomTemplateCandidate(template);
+    setIsDeleteCustomTemplateModalOpen(true);
   };
+
+  const cancelDeleteCustomTemplate = () => {
+    setIsDeleteCustomTemplateModalOpen(false);
+    setDeleteCustomTemplateCandidate(null);
+  };
+
+  const confirmDeleteCustomTemplate = () => {
+    if (!deleteCustomTemplateCandidate) {
+      cancelDeleteCustomTemplate();
+      return;
+    }
+
+    const templateId = deleteCustomTemplateCandidate.id;
+    const updatedTemplates = customTemplates.filter(
+      (template) => template.id !== templateId
+    );
+    saveTemplates(updatedTemplates);
+
+    if (selectedTemplate?.id === templateId) {
+      setSelectedTemplate(null);
+    }
+
+    setIsReviewModalOpen(false);
+    toast.success("Template deleted successfully!");
+    cancelDeleteCustomTemplate();
+  };
+
+  React.useEffect(() => {
+    if (!isDeleteCustomTemplateModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelDeleteCustomTemplate();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isDeleteCustomTemplateModalOpen]);
 
   const handleSelectTemplate = (template: BadgeTemplate) => {
     setSelectedTemplate(template);
@@ -1148,7 +1225,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
               <CardHeader2 color={primaryColor} />
             )}
           </div>
-          
+
           {/* Header content for different badges */}
           {badgeId === "1" && (
             <div className="relative z-10 flex items-center justify-center gap-2 h-full">
@@ -1158,7 +1235,9 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
           )}
           {badgeId === "3" && (
             <div className="relative z-10 flex items-center justify-center h-full">
-              <h6 className="font-semibold text-white text-xs">Conference 2024</h6>
+              <h6 className="font-semibold text-white text-xs">
+                Conference 2024
+              </h6>
             </div>
           )}
         </div>
@@ -1173,13 +1252,25 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
           )}
 
           {/* Name - always show for all badges */}
-          <h2 className={`text-xs font-bold ${badgeId === "2" || badgeId === "4" ? "text-white" : "text-gray-900"} mb-1`}>
+          <h2
+            className={`text-xs font-bold ${
+              badgeId === "2" || badgeId === "4"
+                ? "text-white"
+                : "text-gray-900"
+            } mb-1`}
+          >
             John Doe
           </h2>
 
           {/* Title */}
           {template.hasTitle && (
-            <p className={`text-xs ${badgeId === "2" || badgeId === "4" ? "text-gray-300" : "text-gray-600"}`}>
+            <p
+              className={`text-xs ${
+                badgeId === "2" || badgeId === "4"
+                  ? "text-gray-300"
+                  : "text-gray-600"
+              }`}
+            >
               Software Engineer
             </p>
           )}
@@ -1188,7 +1279,13 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
           {(badgeId === "2" || badgeId === "4") && template.hasCompany && (
             <div className="flex items-center gap-1 mt-2">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-3 h-3" />}
-              <span className={`text-xs font-medium ${badgeId === "2" || badgeId === "4" ? "text-white" : "text-black"}`}>
+              <span
+                className={`text-xs font-medium ${
+                  badgeId === "2" || badgeId === "4"
+                    ? "text-white"
+                    : "text-black"
+                }`}
+              >
                 Tech Corp
               </span>
             </div>
@@ -1198,7 +1295,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
         {/* Footer Section */}
         <div
           className="relative w-full rounded-b-xl overflow-hidden"
-          style={{ height: 70}}
+          style={{ height: 70 }}
         >
           <div className="absolute inset-0">
             {badgeId === "1" || badgeId === "3" ? (
@@ -1207,7 +1304,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
               <CardFooter2 color={primaryColor} />
             )}
           </div>
-          
+
           {/* Footer content */}
           {badgeId === "2" && (
             <div className="relative z-10 flex items-center justify-center h-full">
@@ -1232,7 +1329,9 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
           style={{
             width: `${template.width * 40}px`,
             height: `${template.height * 40}px`,
-            backgroundColor: template.hasBackground ? template.bgColor : "transparent",
+            backgroundColor: template.hasBackground
+              ? template.bgColor
+              : "transparent",
             backgroundImage:
               template.hasBackground && template.bgImage
                 ? `url(${template.bgImage})`
@@ -1255,11 +1354,13 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
                     : "50%",
                 right: template.photoAlignment === "right" ? "10px" : "auto",
                 transform:
-                  template.photoAlignment === "center" ? "translateX(-50%)" : "none",
+                  template.photoAlignment === "center"
+                    ? "translateX(-50%)"
+                    : "none",
                 top: `${(template.photoPosition?.y || 60) * 0.2}px`,
               }}
             >
-              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400" />
+              <div className="w-full h-full bg-linear-to-br from-gray-200 to-gray-400" />
             </div>
           )}
 
@@ -1375,7 +1476,10 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
       toast.success("Badge template selected successfully!");
 
       // Save template data for PrintBadges
-      localStorage.setItem("active_badge_template", JSON.stringify(selectedTemplate));
+      localStorage.setItem(
+        "active_badge_template",
+        JSON.stringify(selectedTemplate)
+      );
       localStorage.setItem("active_badge_id", selectedTemplate.id);
 
       setTimeout(() => {
@@ -1541,7 +1645,9 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
                   Review: {reviewingTemplate.name}
                 </h3>
                 <span className="text-sm text-gray-500">
-                  {reviewingTemplate.type === "custom" ? "Custom Template" : "Default Template"}
+                  {reviewingTemplate.type === "custom"
+                    ? "Custom Template"
+                    : "Default Template"}
                 </span>
               </div>
               <button
@@ -1565,14 +1671,18 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
                 {reviewingTemplate.type === "custom" && (
                   <>
                     <button
-                      onClick={() => handleDeleteCustomTemplate(reviewingTemplate.id)}
+                      onClick={() =>
+                        handleDeleteCustomTemplate(reviewingTemplate.id)
+                      }
                       className="px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-2"
                     >
                       <Trash2 size={16} />
                       Delete
                     </button>
                     <button
-                      onClick={() => handleEditCustomTemplate(reviewingTemplate)}
+                      onClick={() =>
+                        handleEditCustomTemplate(reviewingTemplate)
+                      }
                       className="px-4 py-2 border border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors flex items-center gap-2"
                     >
                       <Edit2 size={16} />
@@ -1586,6 +1696,62 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
                 className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
                 Choose Template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Custom Template Modal */}
+      {isDeleteCustomTemplateModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) cancelDeleteCustomTemplate();
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Delete Template
+              </h3>
+              <button
+                onClick={cancelDeleteCustomTemplate}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <p className="text-sm text-gray-700">
+                Are you sure you want to delete{" "}
+                <span className="font-semibold">
+                  {deleteCustomTemplateCandidate?.name || "this template"}
+                </span>
+                ?
+              </p>
+              <p className="text-xs text-gray-500 mt-2">
+                This action can’t be undone.
+              </p>
+            </div>
+
+            <div className="p-4 border-t flex items-center justify-end gap-3">
+              <button
+                onClick={cancelDeleteCustomTemplate}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteCustomTemplate}
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+              >
+                Delete
               </button>
             </div>
           </div>
