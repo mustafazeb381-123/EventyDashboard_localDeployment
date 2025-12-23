@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Check,
   ChevronLeft,
@@ -72,8 +72,88 @@ const useToast = () => {
 
 const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
   const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+  const [bodyHtml, setBodyHtml] = useState("<p></p>");
   const [selectedSuggestion, setSelectedSuggestion] = useState(null);
+  const editorRef = useRef(null);
+
+  const applyHtmlToEditor = (html) => {
+    if (editorRef.current) {
+      editorRef.current.innerHTML = html;
+    }
+  };
+
+  useEffect(() => {
+    if (initialContent) {
+      setSubject(initialContent.subject || "");
+      const incomingBody =
+        initialContent.body || initialContent.bodyHtml || "<p></p>";
+      setBodyHtml(incomingBody);
+      applyHtmlToEditor(incomingBody);
+    } else {
+      setSubject("");
+      setBodyHtml("<p></p>");
+      applyHtmlToEditor("<p></p>");
+    }
+  }, [initialContent]);
+
+  const execCommand = (command, value = null) => {
+    if (!editorRef.current) return;
+    editorRef.current.focus();
+    document.execCommand(command, false, value);
+    setBodyHtml(editorRef.current.innerHTML);
+  };
+
+  const isInList = () => {
+    if (!editorRef.current) return false;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return false;
+    let node = selection.anchorNode;
+    while (node && node !== editorRef.current) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node;
+        if (el.tagName === "UL" || el.tagName === "OL") return true;
+      }
+      // @ts-ignore: traverse up
+      node = node.parentNode;
+    }
+    return false;
+  };
+
+  const setListStyle = (style) => {
+    if (!editorRef.current) return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    let node = selection.anchorNode;
+    while (node && node !== editorRef.current) {
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const el = node;
+        if (el.tagName === "UL" || el.tagName === "OL") {
+          el.style.listStyleType = style;
+          return;
+        }
+      }
+      // @ts-ignore: traverse up to parent
+      node = node.parentNode;
+    }
+  };
+
+  const insertTokenLink = (label, token) => {
+    const linkHtml = `<a href="${token}" data-token="${token}" style="color:#2563eb;text-decoration:underline;">${label}</a>`;
+    execCommand("insertHTML", linkHtml);
+  };
+
+  const handleBodyInput = (e) => {
+    setBodyHtml(e.currentTarget.innerHTML);
+  };
+
+  const convertPlainTextToHtml = (text) => {
+    if (!text) return "<p></p>";
+    const paragraphs = text.split(/\n\s*\n/).map((block) => {
+      const lines = block.split("\n").join("<br>");
+      return `<p>${lines}</p>`;
+    });
+    return paragraphs.join("");
+  };
 
   const suggestions = [
     {
@@ -95,11 +175,15 @@ const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
   ];
 
   const handleSuggestionClick = (suggestion) => {
-    setBody(suggestion.text);
+    const htmlBody = convertPlainTextToHtml(suggestion.text);
+    setBodyHtml(htmlBody);
     setSelectedSuggestion(suggestion.id);
+    applyHtmlToEditor(htmlBody);
+    if (editorRef.current) editorRef.current.focus();
   };
 
   const handleSave = () => {
+    const safeBody = bodyHtml || "<p></p>";
     const html = `
 <!DOCTYPE html>
 <html>
@@ -107,22 +191,23 @@ const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
-    .email-container { max-width: 10px; margin: 0 auto; }
-    h2 { color: #333; }
-    p { color: #666; line-height: 1.6; white-space: pre-wrap; }
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background:#f7f7f7; }
+    .email-container { max-width: 620px; margin: 0 auto; background:#ffffff; padding:24px; border-radius:12px; box-shadow:0 12px 35px rgba(0,0,0,0.05); }
+    h2 { color: #1f2937; margin:0 0 12px; font-size:20px; }
+    p { color: #4b5563; line-height: 1.6; }
+    a { color:#2563eb; }
   </style>
 </head>
 <body>
   <div class="email-container">
     <h2>${subject}</h2>
-    <p>${body}</p>
+    <div>${safeBody}</div>
   </div>
 </body>
 </html>
     `.trim();
 
-    const design = { subject, body };
+    const design = { subject, body: safeBody };
     onSave(design, html);
   };
 
@@ -157,13 +242,217 @@ const CustomEmailEditor = ({ initialContent, onClose, onSave }) => {
               <label className="block text-base font-normal text-gray-900 mb-3">
                 Email Body
               </label>
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Write your thoughts here"
-                className="w-full h-96 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent resize-none text-sm"
-                style={{ whiteSpace: 'pre-wrap' }}
-              />
+              <div className="border border-gray-300 rounded-lg shadow-sm overflow-hidden bg-white">
+                <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-50 text-sm text-gray-700">
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => execCommand("bold")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 font-semibold"
+                      title="Bold"
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("italic")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 italic"
+                      title="Italic"
+                    >
+                      I
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("underline")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 underline"
+                      title="Underline"
+                    >
+                      U
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("removeFormat")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Clear formatting"
+                    >
+                      Tx
+                    </button>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300" />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => execCommand("undo")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Undo"
+                    >
+                      ↶
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("redo")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Redo"
+                    >
+                      ↷
+                    </button>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300" />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => execCommand("justifyLeft")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Align left"
+                    >
+                      ⬅
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("justifyCenter")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Align center"
+                    >
+                      ⬍
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("justifyRight")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Align right"
+                    >
+                      ➡
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("justifyFull")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Justify"
+                    >
+                      ☰
+                    </button>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300" />
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => execCommand("insertUnorderedList")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Bullet list"
+                    >
+                      ••
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("insertOrderedList")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Numbered list"
+                    >
+                      1.
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setListStyle("disc")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 text-xs"
+                      title="Bullet: Disc"
+                    >
+                      •
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setListStyle("circle")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 text-xs"
+                      title="Bullet: Circle"
+                    >
+                      ○
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setListStyle("square")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 text-xs"
+                      title="Bullet: Square"
+                    >
+                      ◼
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setListStyle("decimal")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 text-xs"
+                      title="Numbered: 1,2,3"
+                    >
+                      1⋯
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setListStyle("lower-alpha")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 text-xs"
+                      title="Numbered: a,b,c"
+                    >
+                      a⋯
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setListStyle("lower-roman")}
+                      className="px-2 py-1 rounded hover:bg-gray-200 text-xs"
+                      title="Numbered: i, ii, iii"
+                    >
+                      i⋯
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("outdent")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Outdent"
+                    >
+                      ⇤
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => execCommand("indent")}
+                      className="px-2 py-1 rounded hover:bg-gray-200"
+                      title="Indent"
+                    >
+                      ⇥
+                    </button>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300" />
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => insertTokenLink("Insert Unique Link", "{{unique_link}}")}
+                      className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 border border-gray-200 text-xs font-medium"
+                    >
+                      Insert Unique Link
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        insertTokenLink(
+                          "Insert Confirm Attendance Link",
+                          "{{confirm_attendance_link}}"
+                        )
+                      }
+                      className="px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 border border-gray-200 text-xs font-medium"
+                    >
+                      Insert Confirm Attendance Link
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  ref={editorRef}
+                  contentEditable
+                  suppressContentEditableWarning
+                  onInput={handleBodyInput}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && isInList()) {
+                      e.preventDefault();
+                      execCommand("insertHTML", "<li><br></li>");
+                    }
+                  }}
+                  className="w-full min-h-[320px] px-4 py-3 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
             </div>
           </div>
 
@@ -751,7 +1040,7 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
 
               <div className="flex-1 flex items-center justify-center bg-gray-50 rounded-lg overflow-hidden">
                 {tpl.html ? (
-                  <div className="w-full h-full transform origin-top-left scale-50">
+                  <div className="w-full h-full transform origin-top-left">
                     <div dangerouslySetInnerHTML={{ __html: tpl.html }} />
                   </div>
                 ) : (
@@ -780,7 +1069,7 @@ const AdvanceEmail = ({ onNext, onPrevious, eventId }) => {
 
       {isEditorOpen && (
         <CustomEmailEditor
-          initialContent={null}
+          initialContent={editingTemplate?.design || null}
           onClose={() => {
             setIsEditorOpen(false);
             setEditingTemplate(null);
