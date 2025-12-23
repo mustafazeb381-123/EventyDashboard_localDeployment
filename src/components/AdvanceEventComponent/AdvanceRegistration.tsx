@@ -33,6 +33,8 @@ import TemplateFormSeven from "@/pages/Home/ExpressEvent/RegistrationForm/Regist
 import ReusableRegistrationForm from "@/pages/Home/ExpressEvent/RegistrationForm/components/ReusableRegistrationForm";
 import CustomFormBuilder from "./CustomFormBuilder";
 import type { CustomFormField, FormTheme } from "./CustomFormBuilder";
+import { FormHeader } from "./CustomFormBuilder/components/FormHeader";
+import { FormButtonField } from "./CustomFormBuilder/components/FormButtonField";
 
 // Import Form Builder Library
 import { rSuiteComponents } from "@react-form-builder/components-rsuite";
@@ -1005,7 +1007,7 @@ const renderCustomField = (
         </div>
       );
     case "button":
-      return null;
+      return <FormButtonField field={field} theme={theme} />;
     case "table":
       if (!field.tableData) {
         return <div className="text-gray-400 text-sm">No table data</div>;
@@ -1160,7 +1162,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
       borderStyle: "solid",
     };
 
-    const inputStyle: React.CSSProperties = {
+    const baseInputStyle: React.CSSProperties = {
       backgroundColor: theme?.inputBackgroundColor || "#ffffff",
       borderColor: theme?.inputBorderColor || "#d1d5db",
       borderWidth: theme?.inputBorderWidth || "1px",
@@ -1172,8 +1174,23 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
     return (
       <div className="w-full p-4">
         <div
-          className="max-w-3xl mx-auto rounded-xl shadow-lg overflow-hidden"
-          style={formContainerStyle}
+          className="w-full rounded-xl shadow-lg overflow-hidden"
+          style={{
+            ...formContainerStyle,
+            maxWidth: theme?.formMaxWidth || "768px",
+            marginLeft:
+              theme?.formAlignment === "left"
+                ? "0"
+                : theme?.formAlignment === "right"
+                ? "auto"
+                : "auto",
+            marginRight:
+              theme?.formAlignment === "left"
+                ? "auto"
+                : theme?.formAlignment === "right"
+                ? "0"
+                : "auto",
+          }}
         >
           {bannerUrl && (
             <div className="w-full h-64 bg-gray-100 overflow-hidden">
@@ -1184,6 +1201,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
               />
             </div>
           )}
+
+          <FormHeader theme={theme} />
 
           <div>
             <div
@@ -1238,10 +1257,18 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                       padding:
                         field.layoutProps?.padding ||
                         (isRowLayout ? "0" : "16px"),
-                      margin: field.layoutProps?.margin || "0",
+                      margin: field.layoutProps?.margin || undefined,
+                      minHeight: field.layoutProps?.minHeight || undefined,
                       backgroundColor:
                         field.layoutProps?.backgroundColor || "transparent",
                       borderRadius: field.layoutProps?.borderRadius || "0px",
+                      borderColor: field.layoutProps?.borderColor || undefined,
+                      borderWidth: field.layoutProps?.borderWidth || undefined,
+                      borderStyle:
+                        field.layoutProps?.borderColor ||
+                        field.layoutProps?.borderWidth
+                          ? "solid"
+                          : undefined,
                       flexWrap:
                         field.layoutProps?.flexWrap ||
                         (isRowLayout ? "wrap" : "nowrap"),
@@ -1249,9 +1276,9 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                     };
 
                     const childFields = field.children
-                      ? customFields.filter((f) =>
-                          field.children?.includes(f.id)
-                        )
+                      ? (field.children
+                          .map((id) => customFields.find((f) => f.id === id))
+                          .filter(Boolean) as CustomFormField[])
                       : [];
 
                     // For column containers, use Bootstrap grid if Bootstrap classes are set
@@ -1410,7 +1437,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                                 <div style={{ width: "100%" }}>
                                   {renderCustomField(
                                     childField,
-                                    inputStyle,
+                                    baseInputStyle,
                                     theme,
                                     formData,
                                     setFormData
@@ -1507,7 +1534,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                       {/* Render fields based on type */}
                       {renderCustomField(
                         field,
-                        inputStyle,
+                        baseInputStyle,
                         theme,
                         formData,
                         setFormData
@@ -1517,23 +1544,28 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                 });
               })()}
 
-              <div
-                className="pt-4 border-t"
-                style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
-              >
-                <button
-                  type="submit"
-                  className="w-full px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
-                  style={{
-                    backgroundColor: theme?.buttonBackgroundColor || "#3b82f6",
-                    color: theme?.buttonTextColor || "#ffffff",
-                    borderRadius: theme?.buttonBorderRadius || "6px",
-                    padding: theme?.buttonPadding || "12px 24px",
-                  }}
+              {!customFields.some(
+                (f) => f.type === "button" && f.buttonType === "submit"
+              ) && (
+                <div
+                  className="pt-4 border-t"
+                  style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
                 >
-                  Submit Registration
-                </button>
-              </div>
+                  <button
+                    type="submit"
+                    className="w-full px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
+                    style={{
+                      backgroundColor:
+                        theme?.buttonBackgroundColor || "#3b82f6",
+                      color: theme?.buttonTextColor || "#ffffff",
+                      borderRadius: theme?.buttonBorderRadius || "6px",
+                      padding: theme?.buttonPadding || "12px 24px",
+                    }}
+                  >
+                    Submit Registration
+                  </button>
+                </div>
+              )}
             </form>
 
             {theme?.footerEnabled && theme?.footerText && (
@@ -1694,6 +1726,40 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
         </div>
       )}
 
+      {/* Logo */}
+      {theme?.logo && (
+        <div
+          className="w-full mb-6 flex"
+          style={{
+            justifyContent:
+              theme.logoPosition === "left"
+                ? "flex-start"
+                : theme.logoPosition === "right"
+                ? "flex-end"
+                : "center",
+            paddingLeft: theme.logoPosition === "left" ? "16px" : "0",
+            paddingRight: theme.logoPosition === "right" ? "16px" : "0",
+          }}
+        >
+          <img
+            src={
+              typeof theme.logo === "string"
+                ? theme.logo
+                : theme.logo instanceof File || theme.logo instanceof Blob
+                ? URL.createObjectURL(theme.logo)
+                : ""
+            }
+            alt="Form logo"
+            style={{
+              width: theme.logoWidth || "100px",
+              height: theme.logoHeight || "auto",
+              maxWidth: "100%",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      )}
+
       <div className="rounded-lg" style={formContainerStyle}>
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill in the registration information.
@@ -1823,6 +1889,10 @@ const AdvanceRegistration = ({
   const [editingFormBuilderTemplate, setEditingFormBuilderTemplate] =
     useState<CustomFormTemplate | null>(null);
   const [isEditFormBuilderMode, setIsEditFormBuilderMode] = useState(false);
+  const [deleteFormBuilderCandidate, setDeleteFormBuilderCandidate] =
+    useState<CustomFormTemplate | null>(null);
+  const [isDeleteFormBuilderModalOpen, setIsDeleteFormBuilderModalOpen] =
+    useState(false);
 
   // -------------------- HELPER FUNCTIONS FOR FORM BUILDER --------------------
   // Helper function to validate and convert form builder data
@@ -2057,13 +2127,60 @@ const AdvanceRegistration = ({
         return;
       }
 
+      const blobToDataUrl = (blob: Blob) =>
+        new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = () => reject(new Error("Failed to read file"));
+          reader.readAsDataURL(blob);
+        });
+
+      const normalizeImageValue = async (
+        value: unknown
+      ): Promise<string | null | undefined> => {
+        if (typeof value === "string") return value;
+        if (value instanceof Blob) return await blobToDataUrl(value);
+        if (value == null) return null;
+        // Handles legacy corrupted values (e.g., {} after JSON.stringify)
+        return null;
+      };
+
+      const normalizedBannerImage = await normalizeImageValue(
+        template.bannerImage ?? template.formBuilderData?.bannerImage
+      );
+
+      const normalizedTheme: FormTheme | undefined = template.theme
+        ? {
+            ...template.theme,
+            logo: await normalizeImageValue(template.theme.logo),
+            formBackgroundImage: await normalizeImageValue(
+              template.theme.formBackgroundImage
+            ),
+          }
+        : undefined;
+
+      const normalizedFormBuilderData = template.formBuilderData
+        ? {
+            ...template.formBuilderData,
+            bannerImage: normalizedBannerImage ?? null,
+            theme: normalizedTheme,
+          }
+        : template.formBuilderData;
+
+      const normalizedTemplate: CustomFormTemplate = {
+        ...template,
+        bannerImage: normalizedBannerImage ?? null,
+        theme: normalizedTheme,
+        formBuilderData: normalizedFormBuilderData,
+      };
+
       // Save to API
       const templateData = {
-        name: template.title,
-        description: `Custom form builder template: ${template.title}`,
-        fields: (template.data || []) as FormField[],
+        name: normalizedTemplate.title,
+        description: `Custom form builder template: ${normalizedTemplate.title}`,
+        fields: (normalizedTemplate.data || []) as FormField[],
         templateComponent: "FormBuilderTemplate",
-        formBuilderData: template.formBuilderData,
+        formBuilderData: normalizedTemplate.formBuilderData,
       };
 
       const payload = {
@@ -2085,13 +2202,13 @@ const AdvanceRegistration = ({
         // Update existing template
         updatedTemplates = formBuilderTemplates.map((t) =>
           t.id === editingFormBuilderTemplate.id
-            ? { ...template, updatedAt: new Date().toISOString() }
+            ? { ...normalizedTemplate, updatedAt: new Date().toISOString() }
             : t
         );
       } else {
         // Create new template
-        updatedTemplates = [...formBuilderTemplates, template];
-        setConfirmedTemplate(template.id);
+        updatedTemplates = [...formBuilderTemplates, normalizedTemplate];
+        setConfirmedTemplate(normalizedTemplate.id);
       }
 
       setFormBuilderTemplates(updatedTemplates);
@@ -2116,27 +2233,52 @@ const AdvanceRegistration = ({
   };
 
   const handleDeleteFormBuilderTemplate = (templateId: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      const updatedTemplates = formBuilderTemplates.filter(
-        (template) => template.id !== templateId
-      );
-      setFormBuilderTemplates(updatedTemplates);
-
-      if (confirmedTemplate === templateId) {
-        setConfirmedTemplate(null);
-      }
-
-      // Update localStorage
-      if (effectiveEventId) {
-        localStorage.setItem(
-          `formBuilderTemplates_${effectiveEventId}`,
-          JSON.stringify(updatedTemplates)
-        );
-      }
-
-      toast.success("Template deleted successfully!");
-    }
+    const template =
+      formBuilderTemplates.find((t) => t.id === templateId) || null;
+    setDeleteFormBuilderCandidate(template);
+    setIsDeleteFormBuilderModalOpen(true);
   };
+
+  const cancelDeleteFormBuilderTemplate = () => {
+    setIsDeleteFormBuilderModalOpen(false);
+    setDeleteFormBuilderCandidate(null);
+  };
+
+  const confirmDeleteFormBuilderTemplate = () => {
+    if (!deleteFormBuilderCandidate) {
+      cancelDeleteFormBuilderTemplate();
+      return;
+    }
+
+    const templateId = deleteFormBuilderCandidate.id;
+    const updatedTemplates = formBuilderTemplates.filter(
+      (template) => template.id !== templateId
+    );
+    setFormBuilderTemplates(updatedTemplates);
+
+    if (confirmedTemplate === templateId) {
+      setConfirmedTemplate(null);
+    }
+
+    if (effectiveEventId) {
+      localStorage.setItem(
+        `formBuilderTemplates_${effectiveEventId}`,
+        JSON.stringify(updatedTemplates)
+      );
+    }
+
+    toast.success("Template deleted successfully!");
+    cancelDeleteFormBuilderTemplate();
+  };
+
+  React.useEffect(() => {
+    if (!isDeleteFormBuilderModalOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") cancelDeleteFormBuilderTemplate();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isDeleteFormBuilderModalOpen]);
 
   const [isFormBuilderPreviewModalOpen, setIsFormBuilderPreviewModalOpen] =
     useState(false);
@@ -2298,7 +2440,7 @@ const AdvanceRegistration = ({
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
                 <Plus className="text-green-600" size={32} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2 text-center text-green-600">
+              <h3 className="text-lg font-medium mb-2 text-center text-green-600">
                 Custom Form Builder
               </h3>
               <p className="text-sm text-gray-500 text-center">
@@ -2315,7 +2457,7 @@ const AdvanceRegistration = ({
               <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
                 <Plus className="text-blue-500" size={32} />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2 text-center text-blue-500">
+              <h3 className="text-lg font-medium mb-2 text-center text-blue-500">
                 Design with Form Builder
               </h3>
               <p className="text-sm text-gray-500 text-center">
@@ -2396,7 +2538,7 @@ const AdvanceRegistration = ({
                           alt="Template banner"
                           className="w-full h-full object-cover"
                         />
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
                           <p className="text-white text-xs font-medium truncate">
                             {template.title}
                           </p>
@@ -2500,6 +2642,63 @@ const AdvanceRegistration = ({
           isEditMode={isEditFormBuilderMode}
           eventId={effectiveEventId}
         />
+
+        {/* Delete Form Builder Template Modal */}
+        {isDeleteFormBuilderModalOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget)
+                cancelDeleteFormBuilderTemplate();
+            }}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Delete Template
+                </h3>
+                <button
+                  onClick={cancelDeleteFormBuilderTemplate}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-4">
+                <p className="text-sm text-gray-700">
+                  Are you sure you want to delete{" "}
+                  <span className="font-semibold">
+                    {deleteFormBuilderCandidate?.title || "this template"}
+                  </span>
+                  ?
+                </p>
+                <p className="text-xs text-gray-500 mt-2">
+                  This action can’t be undone.
+                </p>
+              </div>
+
+              <div className="p-4 border-t flex items-center justify-end gap-3">
+                <button
+                  onClick={cancelDeleteFormBuilderTemplate}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteFormBuilderTemplate}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Custom Form Builder Modal */}
         {isCustomFormBuilderOpen && (

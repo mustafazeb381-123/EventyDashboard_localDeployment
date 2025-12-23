@@ -180,11 +180,11 @@ const ExpressEvent = () => {
             onClick={handleBackNavigation}
             className="flex items-center gap-2 text-gray-800 hover:text-gray-600"
           >
-            <div className="p-2 bg-white rounded-md cursor-pointer">
+            <div className="p-2 rounded-md cursor-pointer">
               <ChevronLeft size={20} />
             </div>
             <span className="text-sm font-poppins font-medium">
-              Express Event
+              {plan === "express" ? "Express" : "Advance"} Event
             </span>
           </Button>
         </div>

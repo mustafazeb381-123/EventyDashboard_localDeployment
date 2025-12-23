@@ -38,6 +38,8 @@ export interface CustomFormField {
   accept?: string; // For file/image
   buttonText?: string; // For button
   buttonType?: "button" | "submit" | "reset";
+  buttonAlignment?: "left" | "center" | "right";
+  buttonWidth?: "auto" | "full" | "custom";
   // For table field
   tableData?: {
     columns: Array<{ header: string; key: string }>;
@@ -71,6 +73,8 @@ export interface CustomFormField {
     marginLeft?: string;
     textColor?: string;
     labelColor?: string;
+    fontSize?: string;
+    height?: string;
     width?: string;
   };
   // Layout properties
@@ -117,6 +121,9 @@ export interface CustomFormField {
 export type FormField = CustomFormField;
 
 export interface FormTheme {
+  // High-level layout
+  formMaxWidth?: string; // e.g. "768px", "900px", "100%"
+  formAlignment?: "left" | "center" | "right";
   formBackgroundColor?: string;
   formPadding?: string;
   formBorderRadius?: string;
@@ -158,4 +165,17 @@ export interface FormTheme {
   requiredIndicatorColor?: string;
   errorTextColor?: string;
   errorBorderColor?: string;
+  // Logo properties
+  logo?: string | File | null;
+  logoPosition?: "left" | "center" | "right";
+  logoWidth?: string;
+  logoHeight?: string;
+  formBackgroundImage?: string | File | null;
+  // Event Details (beside logo)
+  eventName?: string;
+  eventDescription?: string;
+  eventLocation?: string;
+  eventDate?: string;
+  eventDetailsAlignment?: "left" | "center" | "right";
+  eventDetailsColor?: string;
 }
