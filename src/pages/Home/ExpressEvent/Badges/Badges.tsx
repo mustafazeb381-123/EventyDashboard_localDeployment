@@ -17,11 +17,7 @@ import Assets from "@/utils/Assets";
 import { toast, ToastContainer } from "react-toastify";
 import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
 import type { ToggleStates } from "../ExpressEvent";
-import Badge5 from "./components/Badge5";
-import Badge6 from "./components/Badge6";
-import Badge7 from "./components/Badge7";
-import Badge8 from "./components/Badge8";
-import Badge9 from "./components/Badge9";
+import CustomBadgeModal from "./components/CustomBadgeModal";
 
 // -------------------- TYPES --------------------
 interface BadgeTemplate {
@@ -85,1040 +81,6 @@ interface BadgesProps {
   plan?: string;
 }
 
-// -------------------- CUSTOM BADGE BUILDER MODAL --------------------
-interface CustomBadgeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (template: BadgeTemplate) => void;
-  template?: BadgeTemplate | null;
-  isEditMode?: boolean;
-}
-
-const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-  template,
-  isEditMode = false,
-}) => {
-  const [editingTemplate, setEditingTemplate] = useState<BadgeTemplate | null>(
-    null
-  );
-
-  const defaultTemplate: BadgeTemplate = {
-    id: "",
-    name: "New Custom Badge",
-    type: "custom",
-    width: 3.5,
-    height: 5.5,
-    hasBackground: true,
-    bgColor: "#1a1a1a",
-    bgImage: null,
-    hasPersonalPhoto: false,
-    photoSize: { width: 200, height: 200 },
-    photoAlignment: "center",
-    photoPosition: { x: 200, y: 60 },
-    hasName: true,
-    nameText: {
-      size: 24,
-      color: "#ffffff",
-      alignment: "center",
-      position: { x: 200, y: 280 },
-    },
-    hasCompany: false,
-    companyText: {
-      size: 18,
-      color: "#cccccc",
-      alignment: "center",
-      position: { x: 200, y: 315 },
-    },
-    hasTitle: true,
-    titleText: {
-      size: 16,
-      color: "#999999",
-      alignment: "center",
-      position: { x: 200, y: 350 },
-    },
-    hasQrCode: false,
-    qrCodeSize: { width: 120, height: 120 },
-    qrCodePosition: { x: 200, y: 400 },
-  };
-
-  // Initialize form data when template changes
-  useEffect(() => {
-    if (template) {
-      setEditingTemplate({ ...template });
-    } else {
-      setEditingTemplate({
-        ...defaultTemplate,
-        id: `custom-badge-${Date.now()}`,
-      });
-    }
-  }, [template]);
-
-  const handleSaveTemplate = () => {
-    if (!editingTemplate) return;
-
-    if (editingTemplate.name.trim() === "") {
-      toast.warning("Please enter a template name");
-      return;
-    }
-
-    onSave(editingTemplate);
-    onClose();
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && editingTemplate) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setEditingTemplate({
-          ...editingTemplate,
-          bgImage: event.target?.result as string,
-        });
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const renderCustomBadgePreview = (template: BadgeTemplate) => {
-    const previewWidth = template.width * 40;
-
-    return (
-      <div className="flex flex-col items-center justify-center p-4">
-        <div
-          className="relative rounded-lg shadow-md overflow-hidden border-2 border-gray-200"
-          style={{
-            width: `${previewWidth}px`,
-            height: `${template.height * 40}px`,
-            backgroundColor: template.hasBackground
-              ? template.bgColor
-              : "transparent",
-            backgroundImage:
-              template.hasBackground && template.bgImage
-                ? `url(${template.bgImage})`
-                : "none",
-            backgroundSize: "cover",
-            backgroundPosition: "center",
-          }}
-        >
-          {template.hasPersonalPhoto && template.photoSize && (
-            <div
-              className="absolute rounded-full bg-gray-300 border-2 border-white flex items-center justify-center overflow-hidden"
-              style={{
-                width: `${(template.photoSize.width || 200) * 0.2}px`,
-                height: `${(template.photoSize.height || 200) * 0.2}px`,
-                left:
-                  template.photoAlignment === "left"
-                    ? `${(template.photoPosition?.x || 200) * 0.2}px`
-                    : template.photoAlignment === "right"
-                    ? `auto`
-                    : "50%",
-                right:
-                  template.photoAlignment === "right"
-                    ? `${(template.photoPosition?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.photoAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
-                top: `${(template.photoPosition?.y || 60) * 0.2}px`,
-              }}
-            >
-              <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400" />
-            </div>
-          )}
-
-          {template.hasName && template.nameText && (
-            <div
-              className="absolute"
-              style={{
-                top: `${(template.nameText.position?.y || 280) * 0.2}px`,
-                left:
-                  template.nameText.alignment === "left"
-                    ? `${(template.nameText.position?.x || 200) * 0.2}px`
-                    : template.nameText.alignment === "right"
-                    ? "auto"
-                    : "50%",
-                right:
-                  template.nameText.alignment === "right"
-                    ? `${(template.nameText.position?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.nameText.alignment === "center"
-                    ? `translateX(-${
-                        (template.nameText.position?.x || 200) * 0.2
-                      }px)`
-                    : "none",
-                textAlign: template.nameText.alignment || "center",
-              }}
-            >
-              <div
-                className="font-bold px-2 whitespace-nowrap"
-                style={{
-                  fontSize: `${(template.nameText.size || 24) * 0.2}px`,
-                  color: template.nameText.color || "#ffffff",
-                }}
-              >
-                Name
-              </div>
-            </div>
-          )}
-
-          {template.hasCompany && template.companyText && (
-            <div
-              className="absolute"
-              style={{
-                top: `${(template.companyText.position?.y || 315) * 0.2}px`,
-                left:
-                  template.companyText.alignment === "left"
-                    ? `${(template.companyText.position?.x || 200) * 0.2}px`
-                    : template.companyText.alignment === "right"
-                    ? "auto"
-                    : "50%",
-                right:
-                  template.companyText.alignment === "right"
-                    ? `${(template.companyText.position?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.companyText.alignment === "center"
-                    ? `translateX(-${
-                        (template.companyText.position?.x || 200) * 0.2
-                      }px)`
-                    : "none",
-                textAlign: template.companyText.alignment || "center",
-              }}
-            >
-              <div
-                className="px-2 whitespace-nowrap"
-                style={{
-                  fontSize: `${(template.companyText.size || 18) * 0.2}px`,
-                  color: template.companyText.color || "#cccccc",
-                }}
-              >
-                Company
-              </div>
-            </div>
-          )}
-
-          {template.hasTitle && template.titleText && (
-            <div
-              className="absolute"
-              style={{
-                top: `${(template.titleText.position?.y || 350) * 0.2}px`,
-                left:
-                  template.titleText.alignment === "left"
-                    ? `${(template.titleText.position?.x || 200) * 0.2}px`
-                    : template.titleText.alignment === "right"
-                    ? "auto"
-                    : "50%",
-                right:
-                  template.titleText.alignment === "right"
-                    ? `${(template.titleText.position?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.titleText.alignment === "center"
-                    ? `translateX(-${
-                        (template.titleText.position?.x || 200) * 0.2
-                      }px)`
-                    : "none",
-                textAlign: template.titleText.alignment || "center",
-              }}
-            >
-              <div
-                className="px-2 whitespace-nowrap"
-                style={{
-                  fontSize: `${(template.titleText.size || 16) * 0.2}px`,
-                  color: template.titleText.color || "#999999",
-                }}
-              >
-                Title
-              </div>
-            </div>
-          )}
-
-          {template.hasQrCode && template.qrCodeSize && (
-            <div
-              className="absolute bg-white border-2 border-gray-300 flex items-center justify-center overflow-hidden"
-              style={{
-                width: `${(template.qrCodeSize.width || 120) * 0.2}px`,
-                height: `${(template.qrCodeSize.height || 120) * 0.2}px`,
-                left: `${(template.qrCodePosition?.x || 200) * 0.2}px`,
-                top: `${(template.qrCodePosition?.y || 400) * 0.2}px`,
-              }}
-            >
-              <QrCode
-                size={(template.qrCodeSize.width || 120) * 0.1}
-                className="text-gray-400"
-              />
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  const ToggleSwitch = ({
-    checked,
-    onChange,
-    label,
-  }: {
-    checked: boolean;
-    onChange: (checked: boolean) => void;
-    label: string;
-  }) => (
-    <div className="flex items-center justify-between mb-3">
-      <label className="text-sm font-medium text-gray-700">{label}</label>
-      <label className="relative inline-flex items-center cursor-pointer">
-        <input
-          type="checkbox"
-          checked={checked}
-          onChange={(e) => onChange(e.target.checked)}
-          className="sr-only peer"
-        />
-        <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500"></div>
-      </label>
-    </div>
-  );
-
-  // Position input component
-  const PositionInput = ({
-    label,
-    value,
-    onChange,
-    type = "y",
-  }: {
-    label: string;
-    value: number;
-    onChange: (value: number) => void;
-    type?: "x" | "y";
-  }) => (
-    <div>
-      <label className="block text-sm text-gray-600 mb-1">
-        {type === "x" ? "X Position (px)" : "Y Position (px)"}
-      </label>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-      />
-    </div>
-  );
-
-  // Alignment buttons component
-  const AlignmentButtons = ({
-    value,
-    onChange,
-  }: {
-    value: "left" | "center" | "right";
-    onChange: (value: "left" | "center" | "right") => void;
-  }) => (
-    <div>
-      <label className="block text-sm text-gray-600 mb-2">Alignment</label>
-      <div className="flex gap-2">
-        {["left", "center", "right"].map((align) => (
-          <button
-            key={align}
-            type="button"
-            onClick={() => onChange(align as "left" | "center" | "right")}
-            className={`flex-1 px-4 py-2 rounded-lg border-2 transition-colors ${
-              value === align
-                ? "border-pink-500 bg-pink-50"
-                : "border-gray-300 hover:border-gray-400"
-            }`}
-          >
-            {align === "left" && <AlignLeft size={16} className="mx-auto" />}
-            {align === "center" && (
-              <AlignCenter size={16} className="mx-auto" />
-            )}
-            {align === "right" && <AlignRight size={16} className="mx-auto" />}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-
-  if (!isOpen || !editingTemplate) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              {isEditMode
-                ? "Edit Custom Badge"
-                : "Create Custom Badge Template"}
-            </h3>
-            <input
-              type="text"
-              value={editingTemplate.name}
-              onChange={(e) =>
-                setEditingTemplate({
-                  ...editingTemplate,
-                  name: e.target.value,
-                })
-              }
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Template name"
-            />
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 overflow-auto p-6">
-            <h4 className="font-semibold text-gray-800 mb-4">
-              Badge Configuration
-            </h4>
-
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Width (inches)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editingTemplate.width}
-                    onChange={(e) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        width: parseFloat(e.target.value) || 3.5,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Height (inches)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editingTemplate.height}
-                    onChange={(e) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        height: parseFloat(e.target.value) || 5.5,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
-              </div>
-
-              <ToggleSwitch
-                checked={editingTemplate.hasBackground}
-                onChange={(checked) =>
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    hasBackground: checked,
-                  })
-                }
-                label="Badge Background"
-              />
-
-              {editingTemplate.hasBackground && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Background Color
-                    </label>
-                    <div className="flex gap-3">
-                      <input
-                        type="color"
-                        value={editingTemplate.bgColor}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            bgColor: e.target.value,
-                          })
-                        }
-                        className="w-16 h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={editingTemplate.bgColor}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            bgColor: e.target.value,
-                          })
-                        }
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Background Image
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer inline-flex items-center gap-2">
-                        <Upload size={16} />
-                        Upload Image
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                      </label>
-                      {editingTemplate.bgImage && (
-                        <button
-                          onClick={() =>
-                            setEditingTemplate({
-                              ...editingTemplate,
-                              bgImage: null,
-                            })
-                          }
-                          className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          Remove
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <ToggleSwitch
-                checked={editingTemplate.hasPersonalPhoto}
-                onChange={(checked) =>
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    hasPersonalPhoto: checked,
-                  })
-                }
-                label="Personal Photo"
-              />
-
-              {editingTemplate.hasPersonalPhoto && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Width (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.photoSize?.width || 200}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            photoSize: {
-                              ...editingTemplate.photoSize,
-                              width: parseInt(e.target.value) || 200,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Height (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.photoSize?.height || 200}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            photoSize: {
-                              ...editingTemplate.photoSize,
-                              height: parseInt(e.target.value) || 200,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <AlignmentButtons
-                    value={editingTemplate.photoAlignment}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        photoAlignment: alignment,
-                      })
-                    }
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
-                      value={editingTemplate.photoPosition?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          photoPosition: {
-                            ...editingTemplate.photoPosition,
-                            x: value,
-                          },
-                        })
-                      }
-                    />
-                    <PositionInput
-                      label="Y Position"
-                      value={editingTemplate.photoPosition?.y || 60}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          photoPosition: {
-                            ...editingTemplate.photoPosition,
-                            y: value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              <ToggleSwitch
-                checked={editingTemplate.hasName}
-                onChange={(checked) =>
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    hasName: checked,
-                  })
-                }
-                label="Name Text"
-              />
-
-              {editingTemplate.hasName && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Size (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.nameText?.size || 24}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            nameText: {
-                              ...editingTemplate.nameText,
-                              size: parseInt(e.target.value) || 24,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={editingTemplate.nameText?.color || "#ffffff"}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            nameText: {
-                              ...editingTemplate.nameText,
-                              color: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  <AlignmentButtons
-                    value={editingTemplate.nameText?.alignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        nameText: {
-                          ...editingTemplate.nameText,
-                          alignment: alignment,
-                        },
-                      })
-                    }
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
-                      value={editingTemplate.nameText?.position?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          nameText: {
-                            ...editingTemplate.nameText,
-                            position: {
-                              ...editingTemplate.nameText?.position,
-                              x: value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <PositionInput
-                      label="Y Position"
-                      value={editingTemplate.nameText?.position?.y || 280}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          nameText: {
-                            ...editingTemplate.nameText,
-                            position: {
-                              ...editingTemplate.nameText?.position,
-                              y: value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              <ToggleSwitch
-                checked={editingTemplate.hasCompany}
-                onChange={(checked) =>
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    hasCompany: checked,
-                  })
-                }
-                label="Company Text"
-              />
-
-              {editingTemplate.hasCompany && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Size (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.companyText?.size || 18}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            companyText: {
-                              ...editingTemplate.companyText,
-                              size: parseInt(e.target.value) || 18,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={editingTemplate.companyText?.color || "#cccccc"}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            companyText: {
-                              ...editingTemplate.companyText,
-                              color: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  <AlignmentButtons
-                    value={editingTemplate.companyText?.alignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        companyText: {
-                          ...editingTemplate.companyText,
-                          alignment: alignment,
-                        },
-                      })
-                    }
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
-                      value={editingTemplate.companyText?.position?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          companyText: {
-                            ...editingTemplate.companyText,
-                            position: {
-                              ...editingTemplate.companyText?.position,
-                              x: value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <PositionInput
-                      label="Y Position"
-                      value={editingTemplate.companyText?.position?.y || 315}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          companyText: {
-                            ...editingTemplate.companyText,
-                            position: {
-                              ...editingTemplate.companyText?.position,
-                              y: value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              <ToggleSwitch
-                checked={editingTemplate.hasTitle}
-                onChange={(checked) =>
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    hasTitle: checked,
-                  })
-                }
-                label="Title Text"
-              />
-
-              {editingTemplate.hasTitle && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Size (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.titleText?.size || 16}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            titleText: {
-                              ...editingTemplate.titleText,
-                              size: parseInt(e.target.value) || 16,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={editingTemplate.titleText?.color || "#999999"}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            titleText: {
-                              ...editingTemplate.titleText,
-                              color: e.target.value,
-                            },
-                          })
-                        }
-                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
-                      />
-                    </div>
-                  </div>
-
-                  <AlignmentButtons
-                    value={editingTemplate.titleText?.alignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        titleText: {
-                          ...editingTemplate.titleText,
-                          alignment: alignment,
-                        },
-                      })
-                    }
-                  />
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
-                      value={editingTemplate.titleText?.position?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          titleText: {
-                            ...editingTemplate.titleText,
-                            position: {
-                              ...editingTemplate.titleText?.position,
-                              x: value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                    <PositionInput
-                      label="Y Position"
-                      value={editingTemplate.titleText?.position?.y || 350}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          titleText: {
-                            ...editingTemplate.titleText,
-                            position: {
-                              ...editingTemplate.titleText?.position,
-                              y: value,
-                            },
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-
-              <ToggleSwitch
-                checked={editingTemplate.hasQrCode}
-                onChange={(checked) =>
-                  setEditingTemplate({
-                    ...editingTemplate,
-                    hasQrCode: checked,
-                  })
-                }
-                label="QR Code"
-              />
-
-              {editingTemplate.hasQrCode && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Width (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.qrCodeSize?.width || 120}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            qrCodeSize: {
-                              ...editingTemplate.qrCodeSize,
-                              width: parseInt(e.target.value) || 120,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Height (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.qrCodeSize?.height || 120}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            qrCodeSize: {
-                              ...editingTemplate.qrCodeSize,
-                              height: parseInt(e.target.value) || 120,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
-                      value={editingTemplate.qrCodePosition?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          qrCodePosition: {
-                            ...editingTemplate.qrCodePosition,
-                            x: value,
-                          },
-                        })
-                      }
-                    />
-                    <PositionInput
-                      label="Y Position"
-                      value={editingTemplate.qrCodePosition?.y || 400}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          qrCodePosition: {
-                            ...editingTemplate.qrCodePosition,
-                            y: value,
-                          },
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="w-96 border-l border-gray-200 p-6 overflow-auto bg-gray-50">
-            <h4 className="font-semibold text-gray-800 mb-4 text-center">
-              Badge Preview
-            </h4>
-            {renderCustomBadgePreview(editingTemplate)}
-          </div>
-        </div>
-
-        <div className="p-4 border-t flex justify-end gap-3 bg-gray-100">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSaveTemplate}
-            className="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors font-medium"
-          >
-            Save Template
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // -------------------- SVG COMPONENTS --------------------
 export const CardHeader: React.FC<{ color?: string }> = ({
   color = "#4D4D4D",
@@ -1129,7 +91,6 @@ export const CardHeader: React.FC<{ color?: string }> = ({
     viewBox="0 0 204 90"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className="w-full h-full rounded-t-xl"
     preserveAspectRatio="none"
   >
     <path
@@ -1180,7 +141,6 @@ export const CardFooter: React.FC<{ color?: string }> = ({
     viewBox="0 0 204 41"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
-    className="w-full h-full rounded-b-xl"
     preserveAspectRatio="none"
   >
     <path
@@ -1218,15 +178,13 @@ export const CardFooter2: React.FC<{ color?: string }> = ({
 interface BadgePreviewProps {
   badge: Badge;
   event: any;
-  onClose: () => void;
   CardHeader: React.FC<{ color?: string }>;
   CardFooter: React.FC<{ color?: string }>;
 }
 
-const Badge1Preview: React.FC<BadgePreviewProps> = ({
+const Template1Preview: React.FC<BadgePreviewProps> = ({
   badge,
   event,
-  onClose,
   CardHeader,
   CardFooter,
 }) => {
@@ -1235,286 +193,84 @@ const Badge1Preview: React.FC<BadgePreviewProps> = ({
   const logoUrl = event?.attributes?.logo_url;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
-            Preview - {badge.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+      <div className="p-8">
+        <div className="flex justify-center">
+          <div
+            className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden shadow-lg"
+            style={{
+              backgroundColor: secondaryColor,
+              maxWidth: "350px",
+            }}
           >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Front Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Front Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
-                style={{
-                  backgroundColor: secondaryColor,
-                  maxWidth: "350px",
-                }}
-              >
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                  style={{ height: "33%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardHeader color={primaryColor} />
-                  </div>
-                  <div className="relative z-10 flex items-center gap-2">
-                    {logoUrl && (
-                      <img
-                        src={logoUrl}
-                        alt="Logo"
-                        className="w-8 h-8 mb-3 rounded-full bg-white p-1"
-                      />
-                    )}
-                    <h6 className="font-semibold mb-3 text-white text-lg">
-                      Company Name
-                    </h6>
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col justify-center items-center p-6">
+            {/* Header Section - Fixed height container */}
+            <div
+              className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+              style={{ height: "90px" }}
+            >
+              <div className="absolute inset-0 h-full w-full">
+                <CardHeader color={primaryColor} />
+              </div>
+              {/* <div className="relative z-10 flex items-center gap-2">
+                {logoUrl && (
                   <img
-                    src={badge.userImg}
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
-                    alt="User"
+                    src={logoUrl}
+                    alt="Logo"
+                    className="w-8 h-8 mb-3 rounded-full bg-white p-1"
                   />
-                  <h2 className="text-2xl font-bold text-gray-900 mt-4">
-                    John Doe
-                  </h2>
-                  <p className="text-gray-600 text-lg mt-1">
-                    Software Engineer
-                  </p>
-                </div>
+                )}
+                <h6 className="font-semibold mb-3 text-white text-lg">
+                  Company Name
+                </h6>
+              </div> */}
+            </div>
 
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                  style={{ height: "15%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardFooter color={primaryColor} />
-                  </div>
-                </div>
+            {/* Content Section */}
+            <div className="flex flex-1 flex-col justify-center items-center p-6">
+              <img
+                src={badge.userImg}
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
+                alt="User"
+              />
+              <h2 className="text-2xl font-bold text-gray-900 mt-4">
+                John Doe
+              </h2>
+              <p className="text-gray-600 text-lg mt-1">
+                Software Engineer
+              </p>
+              
+              {/* QR Code on front side */}
+              <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
+                <img
+                  src={badge.qrImg}
+                  alt="QR Code"
+                  className="w-24 h-24"
+                />
+                {/* <p className="text-center text-gray-500 text-xs mt-2">
+                  Scan for details
+                </p> */}
               </div>
             </div>
 
-            {/* Back Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Back Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
-                style={{
-                  maxWidth: "350px",
-                }}
-              >
-                <div className="flex-1 flex flex-col items-center justify-center p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      Additional Information
-                    </h3>
-                    <p className="text-gray-600">
-                      This is the back side of the badge
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-inner">
-                    <div className="flex justify-center mb-4">
-                      <img
-                        src={badge.qrImg}
-                        alt="QR Code"
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <p className="text-center text-gray-500 text-sm">
-                      Scan QR code for event details
-                    </p>
-                  </div>
-                </div>
+            {/* Footer Section - Fixed height container */}
+            <div
+              className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+              style={{ height: "41px" }}
+            >
+              <div className="absolute inset-0 h-full w-full">
+                <CardFooter color={primaryColor} />
               </div>
             </div>
           </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be
-              printed with attendee information.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 border-t flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
-          >
-            Close Preview
-          </button>
         </div>
       </div>
     </div>
   );
 };
 
-const Badge2Preview: React.FC<BadgePreviewProps> = ({
+const Template2Preview: React.FC<BadgePreviewProps> = ({
   badge,
   event,
-  onClose,
-  CardHeader,
-  CardFooter,
-}) => {
-  const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
-  const secondaryColor = event?.attributes?.secondary_color || "white";
-  const logoUrl = event?.attributes?.logo_url;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
-            Preview - {badge.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Front Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Front Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
-                style={{
-                  backgroundColor: secondaryColor,
-                  maxWidth: "350px",
-                }}
-              >
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                  style={{ height: "33%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardHeader color={primaryColor} />
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col justify-evenly items-center p-6">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      John Doe
-                    </h2>
-                    <p className="text-gray-600 text-lg mt-1">
-                      Software Engineer
-                    </p>
-                  </div>
-                  <div className="relative z-10 flex items-center gap-3">
-                    {logoUrl && (
-                      <img src={logoUrl} alt="Logo" className="w-8 h-8 mb-3" />
-                    )}
-                    <h6 className="font-semibold mb-3 text-black text-lg">
-                      Company Name
-                    </h6>
-                  </div>
-                </div>
-
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                  style={{ height: "15%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardFooter color={primaryColor} />
-                  </div>
-                  <div className="relative z-10">
-                    <span className="text-white font-medium text-lg">
-                      #Event2024
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Back Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Back Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
-                style={{
-                  maxWidth: "350px",
-                }}
-              >
-                <div className="flex-1 flex flex-col items-center justify-center p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      Additional Information
-                    </h3>
-                    <p className="text-gray-600">
-                      This is the back side of the badge
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-inner">
-                    <div className="flex justify-center mb-4">
-                      <img
-                        src={badge.qrImg}
-                        alt="QR Code"
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <p className="text-center text-gray-500 text-sm">
-                      Scan QR code for event details
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be
-              printed with attendee information.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 border-t flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
-          >
-            Close Preview
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Badge3Preview: React.FC<BadgePreviewProps> = ({
-  badge,
-  event,
-  onClose,
   CardHeader,
   CardFooter,
 }) => {
@@ -1522,267 +278,67 @@ const Badge3Preview: React.FC<BadgePreviewProps> = ({
   const secondaryColor = event?.attributes?.secondary_color || "white";
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
-            Preview - {badge.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
+    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+      <div className="p-8">
+        <div className="flex justify-center">
+          <div
+            className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden shadow-lg"
+            style={{
+              backgroundColor: secondaryColor,
+              maxWidth: "350px",
+            }}
           >
-            <X size={24} />
-          </button>
-        </div>
+            {/* Header Section - Fixed height container */}
+            <div
+              className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+              style={{ height: "106px" }}
+            >
+              <div className="absolute inset-0 h-full w-full">
+                <CardHeader color={primaryColor} />
+              </div>
+              {/* <div className="relative z-10">
+                <h6 className="font-semibold text-white text-xl">
+                  Conference 2024
+                </h6>
+              </div> */}
+            </div>
 
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Front Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Front Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
-                style={{
-                  backgroundColor: secondaryColor,
-                  maxWidth: "350px",
-                }}
-              >
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                  style={{ height: "33%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardHeader color={primaryColor} />
-                  </div>
-                  <div className="relative z-10">
-                    <h6 className="font-semibold text-white text-xl">
-                      Conference 2024
-                    </h6>
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col justify-center items-center p-6">
-                  <img
-                    src={badge.squareUserImg}
-                    className="w-32 h-32 object-cover rounded-lg border-4 border-white shadow-lg"
-                    alt="User"
-                  />
-                  <h2 className="text-2xl font-bold text-gray-900 mt-4">
-                    John Doe
-                  </h2>
-                  <p className="text-gray-600 text-lg mt-1">
-                    Software Engineer
-                  </p>
-                </div>
-
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                  style={{ height: "15%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardFooter color={primaryColor} />
-                  </div>
-                </div>
+            <div className="flex flex-1 flex-col justify-center items-center p-6">
+              <img
+                src={badge.squareUserImg}
+                className="w-32 h-32 object-cover rounded-lg border-4 border-white shadow-lg"
+                alt="User"
+              />
+              <h2 className="text-2xl font-bold text-gray-900 mt-4">
+                John Doe
+              </h2>
+              <p className="text-gray-600 text-lg mt-1">
+                Software Engineer
+              </p>
+              
+              {/* QR Code on front side */}
+              <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
+                <img
+                  src={badge.qrImg}
+                  alt="QR Code"
+                  className="w-24 h-24"
+                />
+                {/* <p className="text-center text-gray-500 text-xs mt-2">
+                  Scan for details
+                </p> */}
               </div>
             </div>
 
-            {/* Back Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Back Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
-                style={{
-                  maxWidth: "350px",
-                }}
-              >
-                <div className="flex-1 flex flex-col items-center justify-center p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      Additional Information
-                    </h3>
-                    <p className="text-gray-600">
-                      This is the back side of the badge
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-inner">
-                    <div className="flex justify-center mb-4">
-                      <img
-                        src={badge.qrImg}
-                        alt="QR Code"
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <p className="text-center text-gray-500 text-sm">
-                      Scan QR code for event details
-                    </p>
-                  </div>
-                </div>
+            {/* Footer Section - Fixed height container */}
+            <div
+              className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+              style={{ height: "54px" }}
+            >
+              <div className="absolute inset-0 h-full w-full">
+                <CardFooter color={primaryColor} />
               </div>
             </div>
           </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be
-              printed with attendee information.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 border-t flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
-          >
-            Close Preview
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const Badge4Preview: React.FC<BadgePreviewProps> = ({
-  badge,
-  event,
-  onClose,
-  CardHeader,
-  CardFooter,
-}) => {
-  const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
-  const secondaryColor = event?.attributes?.secondary_color || "white";
-  const logoUrl = event?.attributes?.logo_url;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
-            Preview - {badge.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Front Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Front Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg"
-                style={{
-                  backgroundColor: secondaryColor,
-                  maxWidth: "350px",
-                }}
-              >
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-t-xl overflow-hidden"
-                  style={{ height: "33%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardHeader color={primaryColor} />
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col justify-evenly items-center p-6">
-                  <div className="text-center">
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      John Doe
-                    </h2>
-                    <p className="text-gray-600 text-lg mt-1">
-                      Software Engineer
-                    </p>
-                  </div>
-                  <div className="relative z-10 flex items-center gap-3">
-                    {logoUrl && (
-                      <img src={logoUrl} alt="Logo" className="w-8 h-8 mb-3" />
-                    )}
-                    <h6 className="font-semibold mb-3 text-black text-lg">
-                      Company Name
-                    </h6>
-                  </div>
-                </div>
-
-                <div
-                  className="relative flex justify-center items-center gap-2 w-full rounded-b-xl overflow-hidden"
-                  style={{ height: "15%" }}
-                >
-                  <div className="absolute inset-0">
-                    <CardFooter color={primaryColor} />
-                  </div>
-                  <div className="relative z-10">
-                    <span className="text-white font-bold text-xl">VIP</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Back Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Back Side
-              </h3>
-              <div
-                className="flex flex-col h-[500px] w-full rounded-xl border-4 border-gray-300 overflow-hidden mx-auto shadow-lg bg-gray-100"
-                style={{
-                  maxWidth: "350px",
-                }}
-              >
-                <div className="flex-1 flex flex-col items-center justify-center p-8">
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      Additional Information
-                    </h3>
-                    <p className="text-gray-600">
-                      This is the back side of the badge
-                    </p>
-                  </div>
-
-                  <div className="bg-white p-6 rounded-2xl shadow-inner">
-                    <div className="flex justify-center mb-4">
-                      <img
-                        src={badge.qrImg}
-                        alt="QR Code"
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <p className="text-center text-gray-500 text-sm">
-                      Scan QR code for event details
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              This is a preview of the badge template. Actual badges will be
-              printed with attendee information.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 border-t flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
-          >
-            Close Preview
-          </button>
         </div>
       </div>
     </div>
@@ -1792,289 +348,207 @@ const Badge4Preview: React.FC<BadgePreviewProps> = ({
 // Custom Badge Preview Modal
 interface CustomBadgePreviewProps {
   template: BadgeTemplate;
-  onClose: () => void;
 }
 
 const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
   template,
-  onClose,
 }) => {
   const previewWidth = template.width * 80;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-3xl w-full max-w-4xl overflow-hidden">
-        <div className="p-6 border-b flex justify-between items-center">
-          <h2 className="text-xl font-bold text-gray-900">
-            Preview - {template.name}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full"
-          >
-            <X size={24} />
-          </button>
-        </div>
-
-        <div className="p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            {/* Front Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Front Side
-              </h3>
-              <div className="flex justify-center">
+    <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+      <div className="p-8">
+        <div className="flex justify-center">
+          <div className="flex justify-center">
+            <div
+              className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300"
+              style={{
+                width: `${previewWidth}px`,
+                height: `${template.height * 80}px`,
+                backgroundColor: template.hasBackground
+                  ? template.bgColor
+                  : "transparent",
+                backgroundImage:
+                  template.hasBackground && template.bgImage
+                    ? `url(${template.bgImage})`
+                    : "none",
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              {template.hasPersonalPhoto && template.photoSize && (
                 <div
-                  className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300"
+                  className="absolute rounded-full bg-gray-300 border-4 border-white flex items-center justify-center overflow-hidden"
                   style={{
-                    width: `${previewWidth}px`,
-                    height: `${template.height * 80}px`,
-                    backgroundColor: template.hasBackground
-                      ? template.bgColor
-                      : "transparent",
-                    backgroundImage:
-                      template.hasBackground && template.bgImage
-                        ? `url(${template.bgImage})`
+                    width: `${(template.photoSize.width || 200) * 0.4}px`,
+                    height: `${(template.photoSize.height || 200) * 0.4}px`,
+                    left:
+                      template.photoAlignment === "left"
+                        ? `${(template.photoPosition?.x || 200) * 0.4}px`
+                        : template.photoAlignment === "right"
+                        ? "auto"
+                        : "50%",
+                    right:
+                      template.photoAlignment === "right"
+                        ? `${(template.photoPosition?.x || 200) * 0.4}px`
+                        : "auto",
+                    transform:
+                      template.photoAlignment === "center"
+                        ? "translateX(-50%)"
                         : "none",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
+                    top: `${(template.photoPosition?.y || 60) * 0.4}px`,
                   }}
                 >
-                  {template.hasPersonalPhoto && template.photoSize && (
-                    <div
-                      className="absolute rounded-full bg-gray-300 border-4 border-white flex items-center justify-center overflow-hidden"
-                      style={{
-                        width: `${(template.photoSize.width || 200) * 0.4}px`,
-                        height: `${(template.photoSize.height || 200) * 0.4}px`,
-                        left:
-                          template.photoAlignment === "left"
-                            ? `${(template.photoPosition?.x || 200) * 0.4}px`
-                            : template.photoAlignment === "right"
-                            ? "auto"
-                            : "50%",
-                        right:
-                          template.photoAlignment === "right"
-                            ? `${(template.photoPosition?.x || 200) * 0.4}px`
-                            : "auto",
-                        transform:
-                          template.photoAlignment === "center"
-                            ? "translateX(-50%)"
-                            : "none",
-                        top: `${(template.photoPosition?.y || 60) * 0.4}px`,
-                      }}
-                    >
-                      <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
-                        <span className="text-gray-500">Photo</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {template.hasName && template.nameText && (
-                    <div
-                      className="absolute"
-                      style={{
-                        top: `${
-                          (template.nameText.position?.y || 280) * 0.4
-                        }px`,
-                        left:
-                          template.nameText.alignment === "left"
-                            ? `${
-                                (template.nameText.position?.x || 200) * 0.4
-                              }px`
-                            : template.nameText.alignment === "right"
-                            ? "auto"
-                            : "50%",
-                        right:
-                          template.nameText.alignment === "right"
-                            ? `${
-                                (template.nameText.position?.x || 200) * 0.4
-                              }px`
-                            : "auto",
-                        transform:
-                          template.nameText.alignment === "center"
-                            ? `translateX(-${
-                                (template.nameText.position?.x || 200) * 0.4
-                              }px)`
-                            : "none",
-                        textAlign: template.nameText.alignment || "center",
-                      }}
-                    >
-                      <div
-                        className="font-bold px-4 whitespace-nowrap"
-                        style={{
-                          fontSize: `${(template.nameText.size || 24) * 0.4}px`,
-                          color: template.nameText.color || "#ffffff",
-                        }}
-                      >
-                        John Doe
-                      </div>
-                    </div>
-                  )}
-
-                  {template.hasCompany && template.companyText && (
-                    <div
-                      className="absolute"
-                      style={{
-                        top: `${
-                          (template.companyText.position?.y || 315) * 0.4
-                        }px`,
-                        left:
-                          template.companyText.alignment === "left"
-                            ? `${
-                                (template.companyText.position?.x || 200) * 0.4
-                              }px`
-                            : template.companyText.alignment === "right"
-                            ? "auto"
-                            : "50%",
-                        right:
-                          template.companyText.alignment === "right"
-                            ? `${
-                                (template.companyText.position?.x || 200) * 0.4
-                              }px`
-                            : "auto",
-                        transform:
-                          template.companyText.alignment === "center"
-                            ? `translateX(-${
-                                (template.companyText.position?.x || 200) * 0.4
-                              }px)`
-                            : "none",
-                        textAlign: template.companyText.alignment || "center",
-                      }}
-                    >
-                      <div
-                        className="px-4 whitespace-nowrap"
-                        style={{
-                          fontSize: `${
-                            (template.companyText.size || 18) * 0.4
-                          }px`,
-                          color: template.companyText.color || "#cccccc",
-                        }}
-                      >
-                        Tech Company
-                      </div>
-                    </div>
-                  )}
-
-                  {template.hasTitle && template.titleText && (
-                    <div
-                      className="absolute"
-                      style={{
-                        top: `${
-                          (template.titleText.position?.y || 350) * 0.4
-                        }px`,
-                        left:
-                          template.titleText.alignment === "left"
-                            ? `${
-                                (template.titleText.position?.x || 200) * 0.4
-                              }px`
-                            : template.titleText.alignment === "right"
-                            ? "auto"
-                            : "50%",
-                        right:
-                          template.titleText.alignment === "right"
-                            ? `${
-                                (template.titleText.position?.x || 200) * 0.4
-                              }px`
-                            : "auto",
-                        transform:
-                          template.titleText.alignment === "center"
-                            ? `translateX(-${
-                                (template.titleText.position?.x || 200) * 0.4
-                              }px)`
-                            : "none",
-                        textAlign: template.titleText.alignment || "center",
-                      }}
-                    >
-                      <div
-                        className="px-4 whitespace-nowrap"
-                        style={{
-                          fontSize: `${
-                            (template.titleText.size || 16) * 0.4
-                          }px`,
-                          color: template.titleText.color || "#999999",
-                        }}
-                      >
-                        Software Engineer
-                      </div>
-                    </div>
-                  )}
-
-                  {template.hasQrCode && template.qrCodeSize && (
-                    <div
-                      className="absolute bg-white border-4 border-gray-400 flex items-center justify-center overflow-hidden rounded-lg"
-                      style={{
-                        width: `${(template.qrCodeSize.width || 120) * 0.4}px`,
-                        height: `${
-                          (template.qrCodeSize.height || 120) * 0.4
-                        }px`,
-                        left: `${(template.qrCodePosition?.x || 200) * 0.4}px`,
-                        top: `${(template.qrCodePosition?.y || 400) * 0.4}px`,
-                      }}
-                    >
-                      <QrCode
-                        size={(template.qrCodeSize.width || 120) * 0.2}
-                        className="text-gray-600"
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Back Side */}
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                Back Side
-              </h3>
-              <div className="flex justify-center">
-                <div
-                  className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300 bg-gray-100"
-                  style={{
-                    width: `${previewWidth}px`,
-                    height: `${template.height * 80}px`,
-                  }}
-                >
-                  <div className="h-full flex flex-col items-center justify-center p-8">
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">
-                        Additional Information
-                      </h3>
-                      <p className="text-gray-600">
-                        This is the back side of the badge
-                      </p>
-                    </div>
-
-                    <div className="bg-white p-4 rounded-xl shadow-inner">
-                      <div className="flex justify-center mb-3">
-                        <div className="bg-gray-200 p-4 rounded-lg">
-                          <QrCode size={80} className="text-gray-400" />
-                        </div>
-                      </div>
-                      <p className="text-center text-gray-500 text-sm">
-                        Scan QR code for event details
-                      </p>
-                    </div>
+                  <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
+                    <span className="text-gray-500">Photo</span>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {template.hasName && template.nameText && (
+                <div
+                  className="absolute"
+                  style={{
+                    top: `${(template.nameText.position?.y || 280) * 0.4}px`,
+                    left:
+                      template.nameText.alignment === "left"
+                        ? `${
+                            (template.nameText.position?.x || 200) * 0.4
+                          }px`
+                        : template.nameText.alignment === "right"
+                        ? "auto"
+                        : "50%",
+                    right:
+                      template.nameText.alignment === "right"
+                        ? `${
+                            (template.nameText.position?.x || 200) * 0.4
+                          }px`
+                        : "auto",
+                    transform:
+                      template.nameText.alignment === "center"
+                        ? `translateX(-${
+                            (template.nameText.position?.x || 200) * 0.4
+                          }px)`
+                        : "none",
+                    textAlign: template.nameText.alignment || "center",
+                  }}
+                >
+                  <div
+                    className="font-bold px-4 whitespace-nowrap"
+                    style={{
+                      fontSize: `${(template.nameText.size || 24) * 0.4}px`,
+                      color: template.nameText.color || "#ffffff",
+                    }}
+                  >
+                    John Doe
+                  </div>
+                </div>
+              )}
+
+              {template.hasCompany && template.companyText && (
+                <div
+                  className="absolute"
+                  style={{
+                    top: `${
+                      (template.companyText.position?.y || 315) * 0.4
+                    }px`,
+                    left:
+                      template.companyText.alignment === "left"
+                        ? `${
+                            (template.companyText.position?.x || 200) * 0.4
+                          }px`
+                        : template.companyText.alignment === "right"
+                        ? "auto"
+                        : "50%",
+                    right:
+                      template.companyText.alignment === "right"
+                        ? `${
+                            (template.companyText.position?.x || 200) * 0.4
+                          }px`
+                        : "auto",
+                    transform:
+                      template.companyText.alignment === "center"
+                        ? `translateX(-${
+                            (template.companyText.position?.x || 200) * 0.4
+                          }px)`
+                        : "none",
+                    textAlign: template.companyText.alignment || "center",
+                  }}
+                >
+                  <div
+                    className="px-4 whitespace-nowrap"
+                    style={{
+                      fontSize: `${(template.companyText.size || 18) * 0.4}px`,
+                      color: template.companyText.color || "#cccccc",
+                    }}
+                  >
+                    Tech Company
+                  </div>
+                </div>
+              )}
+
+              {template.hasTitle && template.titleText && (
+                <div
+                  className="absolute"
+                  style={{
+                    top: `${(template.titleText.position?.y || 350) * 0.4}px`,
+                    left:
+                      template.titleText.alignment === "left"
+                        ? `${
+                            (template.titleText.position?.x || 200) * 0.4
+                          }px`
+                        : template.titleText.alignment === "right"
+                        ? "auto"
+                        : "50%",
+                    right:
+                      template.titleText.alignment === "right"
+                        ? `${
+                            (template.titleText.position?.x || 200) * 0.4
+                          }px`
+                        : "auto",
+                    transform:
+                      template.titleText.alignment === "center"
+                        ? `translateX(-${
+                            (template.titleText.position?.x || 200) * 0.4
+                          }px)`
+                        : "none",
+                    textAlign: template.titleText.alignment || "center",
+                  }}
+                >
+                  <div
+                    className="px-4 whitespace-nowrap"
+                    style={{
+                      fontSize: `${(template.titleText.size || 16) * 0.4}px`,
+                      color: template.titleText.color || "#999999",
+                    }}
+                  >
+                    Software Engineer
+                  </div>
+                </div>
+              )}
+
+              {template.hasQrCode && template.qrCodeSize && (
+                <div
+                  className="absolute bg-white border-4 border-gray-400 flex items-center justify-center overflow-hidden rounded-lg"
+                  style={{
+                    width: `${(template.qrCodeSize.width || 120) * 0.4}px`,
+                    height: `${
+                      (template.qrCodeSize.height || 120) * 0.4
+                    }px`,
+                    left: `${(template.qrCodePosition?.x || 200) * 0.4}px`,
+                    top: `${(template.qrCodePosition?.y || 400) * 0.4}px`,
+                  }}
+                >
+                  <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                    <QrCode
+                      size={(template.qrCodeSize.width || 120) * 0.2}
+                      className="text-gray-600"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-gray-600">
-              This is a preview of your custom badge template. Actual badges
-              will be printed with attendee information.
-            </p>
-          </div>
-        </div>
-
-        <div className="p-6 border-t flex justify-end">
-          <button
-            onClick={onClose}
-            className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
-          >
-            Close Preview
-          </button>
         </div>
       </div>
     </div>
@@ -2118,10 +592,11 @@ const Badges: React.FC<BadgesProps> = ({
   console.log("Badges - Received eventId:", eventId);
   console.log("Badges - Effective eventId:", effectiveEventId);
 
+  // Updated badges array with only Template 1 and Template 2 (with profile photos)
   const badges: Badge[] = [
     {
       id: 1,
-      name: "Badge 1",
+      name: "Template 1",
       frontImg: Assets.images.b1_front,
       backImg: Assets.images.b1_back,
       userImg: Assets.images.user_img,
@@ -2130,17 +605,8 @@ const Badges: React.FC<BadgesProps> = ({
       cardFooter: Assets.images.card_footer,
     },
     {
-      id: 2,
-      name: "Badge 2",
-      frontImg: Assets.images.b2_front,
-      backImg: Assets.images.b2_back,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header,
-      cardFooter: Assets.images.card_footer,
-    },
-    {
       id: 3,
-      name: "Badge 3",
+      name: "Template 2",
       frontImg: Assets.images.b3_front,
       backImg: Assets.images.b3_back,
       squareUserImg: Assets.images.square_user_img,
@@ -2148,72 +614,13 @@ const Badges: React.FC<BadgesProps> = ({
       cardHeader: Assets.images.card_header2,
       cardFooter: Assets.images.card_footer2,
     },
-    {
-      id: 4,
-      name: "Badge 4",
-      frontImg: Assets.images.b4_front,
-      backImg: Assets.images.b4_back,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header2,
-      cardFooter: Assets.images.card_footer2,
-    },
-    {
-      id: 5,
-      name: "Badge 5",
-      frontImg: Assets.images.b1_front,
-      backImg: Assets.images.b1_back,
-      userImg: Assets.images.user_img,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header,
-      cardFooter: Assets.images.card_footer,
-    },
-    {
-      id: 6,
-      name: "Badge 6",
-      frontImg: Assets.images.b2_front,
-      backImg: Assets.images.b2_back,
-      userImg: Assets.images.user_img,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header2,
-      cardFooter: Assets.images.card_footer2,
-    },
-    {
-      id: 7,
-      name: "Badge 7",
-      frontImg: Assets.images.b3_front,
-      backImg: Assets.images.b3_back,
-      userImg: Assets.images.user_img,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header,
-      cardFooter: Assets.images.card_footer,
-    },
-    {
-      id: 8,
-      name: "Badge 8",
-      frontImg: Assets.images.b4_front,
-      backImg: Assets.images.b4_back,
-      userImg: Assets.images.user_img,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header2,
-      cardFooter: Assets.images.card_footer2,
-    },
-    {
-      id: 9,
-      name: "Badge 9",
-      frontImg: Assets.images.b1_front,
-      backImg: Assets.images.b1_back,
-      userImg: Assets.images.user_img,
-      qrImg: Assets.images.qr_img,
-      cardHeader: Assets.images.card_header,
-      cardFooter: Assets.images.card_footer,
-    },
   ];
 
-  // Existing badge templates (Badge1-4 as BadgeTemplate objects)
+  // Existing badge templates (Only Template 1 and 2 as BadgeTemplate objects)
   const existingBadges: BadgeTemplate[] = [
     {
       id: "existing-1",
-      name: "Badge 1",
+      name: "Template 1",
       type: "existing",
       width: 3.5,
       height: 5.5,
@@ -2245,51 +652,13 @@ const Badges: React.FC<BadgesProps> = ({
         alignment: "center",
         position: { x: 200, y: 295 },
       },
-      hasQrCode: false,
-      qrCodeSize: { width: 100, height: 100 },
-      qrCodePosition: { x: 150, y: 350 },
-    },
-    {
-      id: "existing-2",
-      name: "Badge 2",
-      type: "existing",
-      width: 3.5,
-      height: 5.5,
-      hasBackground: true,
-      bgColor: "#000000",
-      bgImage: null,
-      hasPersonalPhoto: false,
-      photoSize: { width: 0, height: 0 },
-      photoAlignment: "center",
-      photoPosition: { x: 0, y: 0 },
-      hasName: true,
-      nameText: {
-        size: 20,
-        color: "#FFFFFF",
-        alignment: "center",
-        position: { x: 200, y: 180 },
-      },
-      hasCompany: true,
-      companyText: {
-        size: 16,
-        color: "#CCCCCC",
-        alignment: "center",
-        position: { x: 200, y: 220 },
-      },
-      hasTitle: true,
-      titleText: {
-        size: 14,
-        color: "#999999",
-        alignment: "center",
-        position: { x: 200, y: 250 },
-      },
-      hasQrCode: false,
-      qrCodeSize: { width: 100, height: 100 },
-      qrCodePosition: { x: 150, y: 320 },
+      hasQrCode: true,
+      qrCodeSize: { width: 120, height: 120 },
+      qrCodePosition: { x: 200, y: 380 },
     },
     {
       id: "existing-3",
-      name: "Badge 3",
+      name: "Template 2",
       type: "existing",
       width: 3.5,
       height: 5.5,
@@ -2321,47 +690,9 @@ const Badges: React.FC<BadgesProps> = ({
         alignment: "center",
         position: { x: 200, y: 270 },
       },
-      hasQrCode: false,
-      qrCodeSize: { width: 100, height: 100 },
-      qrCodePosition: { x: 150, y: 330 },
-    },
-    {
-      id: "existing-4",
-      name: "Badge 4",
-      type: "existing",
-      width: 3.5,
-      height: 5.5,
-      hasBackground: true,
-      bgColor: "#000000",
-      bgImage: null,
-      hasPersonalPhoto: false,
-      photoSize: { width: 0, height: 0 },
-      photoAlignment: "center",
-      photoPosition: { x: 0, y: 0 },
-      hasName: true,
-      nameText: {
-        size: 18,
-        color: "#FFFFFF",
-        alignment: "center",
-        position: { x: 200, y: 170 },
-      },
-      hasCompany: true,
-      companyText: {
-        size: 14,
-        color: "#CCCCCC",
-        alignment: "center",
-        position: { x: 200, y: 210 },
-      },
-      hasTitle: true,
-      titleText: {
-        size: 12,
-        color: "#999999",
-        alignment: "center",
-        position: { x: 200, y: 240 },
-      },
-      hasQrCode: false,
-      qrCodeSize: { width: 100, height: 100 },
-      qrCodePosition: { x: 150, y: 300 },
+      hasQrCode: true,
+      qrCodeSize: { width: 120, height: 120 },
+      qrCodePosition: { x: 200, y: 380 },
     },
   ];
 
@@ -2443,8 +774,6 @@ const Badges: React.FC<BadgesProps> = ({
     } else {
       // Create new template
       updatedTemplates = [...customTemplates, template];
-      setSelectedTemplate(template);
-      setSelectedBadge(null); // Clear any selected existing badge
     }
 
     saveTemplates(updatedTemplates);
@@ -2468,9 +797,16 @@ const Badges: React.FC<BadgesProps> = ({
   };
 
   const handleSelectTemplate = (template: BadgeTemplate) => {
-    setSelectedTemplate(template);
-    setSelectedBadge(null); // Clear existing badge selection
-    toast.success("Template selected!");
+    // If clicking the same template that's already selected, deselect it
+    if (selectedTemplate?.id === template.id) {
+      setSelectedTemplate(null);
+      toast.success("Template deselected!");
+    } else {
+      // Select new template and deselect any existing badge
+      setSelectedTemplate(template);
+      setSelectedBadge(null);
+      toast.success("Template selected!");
+    }
   };
 
   const handlePreviewBadge = (badge: Badge) => {
@@ -2490,8 +826,14 @@ const Badges: React.FC<BadgesProps> = ({
 
   // -------------------- EXISTING BADGE FUNCTIONS --------------------
   const handleSelectExistingBadge = (badge: Badge) => {
-    setSelectedBadge(selectedBadge?.id === badge.id ? null : badge);
-    setSelectedTemplate(null); // Clear custom template selection
+    // If clicking the same badge that's already selected, deselect it
+    if (selectedBadge?.id === badge.id) {
+      setSelectedBadge(null);
+    } else {
+      // Select new badge and deselect any custom template
+      setSelectedBadge(badge);
+      setSelectedTemplate(null);
+    }
   };
 
   // -------------------- RENDER FUNCTIONS --------------------
@@ -2502,22 +844,16 @@ const Badges: React.FC<BadgesProps> = ({
 
     return (
       <div
-        className="flex flex-col h-full w-full rounded-xl border overflow-hidden"
+        className="flex flex-col h-full w-48 rounded-xl border overflow-hidden"
         style={{ backgroundColor: secondaryColor }}
       >
         {/* Header Section */}
         <div
-          className="relative w-full rounded-t-xl overflow-hidden"
-          style={{ height: "33%" }}
+          className="relative w-full overflow-hidden"
+          style={{ height: "90px" }}
         >
-          <div className="absolute inset-0">
-            {badge.id === 1 ||
-            badge.id === 2 ||
-            badge.id === 5 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 8 ||
-            badge.id === 9 ? (
+          <div className="absolute inset-0 h-full w-full">
+            {badge.id === 1 ? (
               <CardHeader color={primaryColor} />
             ) : (
               <CardHeader2 color={primaryColor} />
@@ -2525,168 +861,76 @@ const Badges: React.FC<BadgesProps> = ({
           </div>
 
           {/* Header content for different badges */}
-          {(badge.id === 1 || badge.id === 5 || badge.id === 8) && (
+          {/* {badge.id === 1 && (
             <div className="relative z-10 flex items-center justify-center gap-2 h-full">
               {logoUrl && <img src={logoUrl} alt="Logo" className="w-4 h-4" />}
               <h6 className="font-semibold text-white text-xs">Company Name</h6>
             </div>
           )}
-          {(badge.id === 3 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 9) && (
+          {badge.id === 3 && (
             <div className="relative z-10 flex items-center justify-center h-full">
               <h6 className="font-semibold text-white text-xs">
-                {badge.id === 3 ? "Conference 2024" : "Event Name"}
+                Conference 2024
               </h6>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Content Section */}
         <div className="flex flex-1 flex-col justify-center items-center p-4">
-          {/* Photo - for badges that have it enabled */}
-          {(badge.id === 1 ||
-            badge.id === 3 ||
-            badge.id === 5 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 8 ||
-            badge.id === 9) && (
-            <div
-              className={`${
-                badge.id === 3
-                  ? "w-12 h-12 rounded-full"
-                  : "w-12 h-12 rounded-full"
-              } bg-gray-300 mb-2 flex items-center justify-center overflow-hidden`}
-            >
-              {badge.id === 1 ||
-              badge.id === 5 ||
-              badge.id === 6 ||
-              badge.id === 7 ||
-              badge.id === 8 ||
-              badge.id === 9 ? (
-                <img
-                  src={badge.userImg}
-                  className="w-full h-full object-cover"
-                  alt="User"
-                />
-              ) : (
-                <img
-                  src={badge.squareUserImg}
-                  className="w-full h-full object-cover"
-                  alt="User"
-                />
-              )}
-            </div>
-          )}
+          {/* Photo - both badges have profile photos */}
+          <div
+            className={`${
+              badge.id === 3 ? "w-12 h-12 rounded-full" : "w-12 h-12 rounded-full"
+            } bg-gray-300 mb-2 flex items-center justify-center overflow-hidden`}
+          >
+            {badge.id === 1 ? (
+              <img
+                src={badge.userImg}
+                className="w-full h-full object-cover"
+                alt="User"
+              />
+            ) : (
+              <img
+                src={badge.squareUserImg}
+                className="w-full h-full object-cover"
+                alt="User"
+              />
+            )}
+          </div>
 
-          {/* Name - always show for all badges */}
+          {/* Name */}
           <h2
             className={`text-xs font-bold ${
-              badge.id === 2 ||
-              badge.id === 4 ||
-              badge.id === 6 ||
-              badge.id === 7
-                ? "text-white"
-                : "text-gray-900"
+              badge.id === 3 ? "text-gray-900" : "text-gray-900"
             } mb-1`}
           >
             John Doe
           </h2>
 
           {/* Title */}
-          <p
-            className={`text-xs ${
-              badge.id === 2 ||
-              badge.id === 4 ||
-              badge.id === 6 ||
-              badge.id === 7
-                ? "text-gray-300"
-                : "text-gray-600"
-            }`}
-          >
+          <p className="text-xs text-gray-600 mb-2">
             Software Engineer
           </p>
 
-          {/* Company with logo - for badges 2, 4, and new badges */}
-          {(badge.id === 2 ||
-            badge.id === 4 ||
-            badge.id === 5 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 8 ||
-            badge.id === 9) && (
-            <div className="flex items-center gap-1 mt-2">
-              {logoUrl && <img src={logoUrl} alt="Logo" className="w-3 h-3" />}
-              <span
-                className={`text-xs font-medium ${
-                  badge.id === 2 ||
-                  badge.id === 4 ||
-                  badge.id === 6 ||
-                  badge.id === 7
-                    ? "text-white"
-                    : "text-black"
-                }`}
-              >
-                Tech Corp
-              </span>
-            </div>
-          )}
-
-          {/* QR Code for Badge 5-9 */}
-          {(badge.id === 5 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 8 ||
-            badge.id === 9) && (
-            <div className="mt-2 w-8 h-8 bg-white rounded border border-gray-300 flex items-center justify-center">
-              <QrCode size={16} className="text-gray-600" />
-            </div>
-          )}
+          {/* QR Code on front side */}
+          <div className="w-10 h-10 bg-white rounded border border-gray-300 flex items-center justify-center">
+            <QrCode size={20} className="text-gray-600" />
+          </div>
         </div>
 
         {/* Footer Section */}
         <div
-          className="relative w-full rounded-b-xl overflow-hidden"
-          style={{ height: 70 }}
+          className="relative w-full overflow-hidden"
+          style={{ height: badge.id === 1 ? "41px" : "54px" }}
         >
-          <div className="absolute inset-0">
-            {badge.id === 1 ||
-            badge.id === 2 ||
-            badge.id === 5 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 8 ||
-            badge.id === 9 ? (
+          <div className="absolute inset-0 h-full w-full">
+            {badge.id === 1 ? (
               <CardFooter color={primaryColor} />
             ) : (
               <CardFooter2 color={primaryColor} />
             )}
           </div>
-
-          {/* Footer content */}
-          {badge.id === 2 && (
-            <div className="relative z-10 flex items-center justify-center h-full">
-              <span className="text-white text-xs">#Event2024</span>
-            </div>
-          )}
-          {badge.id === 4 && (
-            <div className="relative z-10 flex items-center justify-center h-full">
-              <span className="text-white text-xs">VIP</span>
-            </div>
-          )}
-          {(badge.id === 5 ||
-            badge.id === 6 ||
-            badge.id === 7 ||
-            badge.id === 8 ||
-            badge.id === 9) && (
-            <div className="relative z-10 flex items-center justify-center h-full">
-              <div className="w-6 h-6 bg-white rounded border border-gray-300 flex items-center justify-center">
-                <QrCode size={12} className="text-gray-700" />
-              </div>
-            </div>
-          )}
         </div>
       </div>
     );
@@ -2923,7 +1167,7 @@ const Badges: React.FC<BadgesProps> = ({
           selectedBadge.id,
           selectedBadge.name
         );
-        toast.success("Badge template selected!");
+        toast.success("Template selected!");
         setActiveBadgeId(selectedBadge.id);
 
         // Save only required data for PrintBadges
@@ -2944,7 +1188,7 @@ const Badges: React.FC<BadgesProps> = ({
       } else if (selectedTemplate) {
         // Custom template selected
         await handleCustomBadgeApiSelection(selectedTemplate);
-        toast.success("Custom badge template selected!");
+        toast.success("Custom template selected!");
 
         // Save template data for PrintBadges
         localStorage.setItem(
@@ -2962,8 +1206,8 @@ const Badges: React.FC<BadgesProps> = ({
         }
       }, 1000);
     } catch (error) {
-      toast.error("Failed to select badge template.");
-      console.error("Badge selection error:", error);
+      toast.error("Failed to select template.");
+      console.error("Template selection error:", error);
     } finally {
       setLoading(false);
     }
@@ -3085,10 +1329,9 @@ const Badges: React.FC<BadgesProps> = ({
           );
         })}
 
-        {/* Default Templates */}
+        {/* Default Templates (Only Template 1 and Template 2) */}
         {badges.map((badge) => {
-          const isActive =
-            selectedBadge?.id === badge.id || activeBadgeId === badge.id;
+          const isActive = selectedBadge?.id === badge.id;
 
           return (
             <div
@@ -3122,26 +1365,12 @@ const Badges: React.FC<BadgesProps> = ({
                 </div>
                 <div className="flex justify-between items-center mt-2">
                   <div className="flex gap-1">
-                    {(badge.id === 1 ||
-                      badge.id === 3 ||
-                      badge.id === 5 ||
-                      badge.id === 6 ||
-                      badge.id === 7 ||
-                      badge.id === 8 ||
-                      badge.id === 9) && (
-                      <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">
-                        Photo
-                      </span>
-                    )}
-                    {(badge.id === 5 ||
-                      badge.id === 6 ||
-                      badge.id === 7 ||
-                      badge.id === 8 ||
-                      badge.id === 9) && (
-                      <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded text-xs">
-                        QR
-                      </span>
-                    )}
+                    <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">
+                      Photo
+                    </span>
+                    <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded text-xs">
+                      QR
+                    </span>
                   </div>
                   <button
                     onClick={(e) => {
@@ -3170,89 +1399,82 @@ const Badges: React.FC<BadgesProps> = ({
       />
 
       {/* Preview Modals */}
-      {previewBadge && previewBadge.id === 1 && (
-        <Badge1Preview
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
+      {previewBadge && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+            {/* Modal Header with close button */}
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                {previewBadge.name} Preview
+              </h2>
+              <button
+                onClick={closePreview}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Badge Preview Content */}
+            {previewBadge.id === 1 ? (
+              <Template1Preview
+                badge={previewBadge}
+                event={event}
+                CardHeader={CardHeader}
+                CardFooter={CardFooter}
+              />
+            ) : (
+              <Template2Preview
+                badge={previewBadge}
+                event={event}
+                CardHeader={CardHeader2}
+                CardFooter={CardFooter2}
+              />
+            )}
+
+            {/* Modal Footer */}
+            {/* <div className="p-6 border-t flex justify-end">
+              <button
+                onClick={closePreview}
+                className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
+              >
+                Close
+              </button>
+            </div> */}
+          </div>
+        </div>
       )}
-      {previewBadge && previewBadge.id === 2 && (
-        <Badge2Preview
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
-      )}
-      {previewBadge && previewBadge.id === 3 && (
-        <Badge3Preview
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader2}
-          CardFooter={CardFooter2}
-        />
-      )}
-      {previewBadge && previewBadge.id === 4 && (
-        <Badge4Preview
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader2}
-          CardFooter={CardFooter2}
-        />
-      )}
-      {previewBadge && previewBadge.id === 5 && (
-        <Badge5
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
-      )}
-      {previewBadge && previewBadge.id === 6 && (
-        <Badge6
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
-      )}
-      {previewBadge && previewBadge.id === 7 && (
-        <Badge7
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
-      )}
-      {previewBadge && previewBadge.id === 8 && (
-        <Badge8
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
-      )}
-      {previewBadge && previewBadge.id === 9 && (
-        <Badge9
-          badge={previewBadge}
-          event={event}
-          onClose={closePreview}
-          CardHeader={CardHeader}
-          CardFooter={CardFooter}
-        />
-      )}
+
       {previewTemplate && (
-        <CustomBadgePreview template={previewTemplate} onClose={closePreview} />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
+            {/* Modal Header with close button */}
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-900">
+                {previewTemplate.name} Preview
+              </h2>
+              <button
+                onClick={closePreview}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Custom Badge Preview Content */}
+            <CustomBadgePreview template={previewTemplate} />
+
+            {/* Modal Footer */}
+            {/* <div className="p-6 border-t flex justify-end">
+              <button
+                onClick={closePreview}
+                className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
+              >
+                Close
+              </button>
+            </div> */}
+          </div>
+        </div>
       )}
 
       {/* Navigation Buttons */}

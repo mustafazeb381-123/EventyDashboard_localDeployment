@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { deleteEventUser, getBadgeApi, getEventUsers, updateEventUser } from "@/apis/apiHelpers";
+import { deleteEventUser, getBadgeApi, getBadgesApi, getEventBadges, getEventUsers, updateEventUser } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -11,6 +11,7 @@ import PrintBadgesFilterAndSearch from "./component/printBadgeFilterSearch";
 import BadgePreviewModal from "./component/badgePreviewModal";
 import DeleteConfirmationModal from "./component/deleteConfirmationModal";
 import { usePrintStyles } from "./hook/usePrintStyle";
+
 
 function PrintBadges() {
   const location = useLocation();
@@ -43,6 +44,21 @@ function PrintBadges() {
 
   // Integrate the custom print styles hook
   usePrintStyles("badges-print-container", isPrinting);
+
+
+  const fetchBadgeApi = async () => {
+    try {
+      const response = await getEventBadges(eventId);
+      console.log("Response of get badge api:", response.data);
+    } catch (error) {
+      console.error("Error fetching badges:", error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchBadgeApi();
+  }, [eventId]);
+  
 
   // --- Data Fetching ---
   useEffect(() => {

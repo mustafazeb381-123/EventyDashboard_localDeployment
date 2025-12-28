@@ -45,6 +45,11 @@ export const postBadgesApi = (data: any, id: number) => {
   return axiosInstance.post(`/events/${id}/badge_templates`, data);
 };
 
+export const getBadgesApi = (id: number) => {
+  // return axiosInstance.post(`/events/${id}/badges`, data);
+  return axiosInstance.get(`/events/${id}/badge_templates`);
+};
+
 export const postRegistrationTemplateFieldApi = (data: any, id: string) => {
   return axiosInstance.post(`/events/${id}/registration_fields`, data);
 };
