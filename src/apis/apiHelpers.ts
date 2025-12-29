@@ -345,7 +345,7 @@ export const getBadgeApi = (eventId: string | number) => {
 };
 
 export const deleteBadgeType = (
-    eventId: string | number,
+  eventId: string | number,
   badgeId: string | number
 ) => {
   console.log("API Helper - Deleting badge:", badgeId, "from event:", eventId);
@@ -445,6 +445,73 @@ export const deleteAgendaApi = (eventId: string | number, agendaId: string | num
 
 export const updateAgendaApi = (eventId: string | number, agendaId: string | number, data: any) => {
   return axiosInstance.put(`events/${eventId}/agendas/${agendaId}`, data);
+};
+
+// ---------------------- Confirmation Templates ----------------------
+
+const getConfirmationTypeParam = (flowType: string) => {
+  const map: Record<string, string> = {
+    thanks: "ConfirmationThanksTemplate",
+    confirmation: "ConfirmationRegisterTemplate",
+    reminder: "ConfirmationReminderTemplate",
+    rejection: "ConfirmationRejectionTemplate",
+  };
+  return map[flowType] || "ConfirmationThanksTemplate";
+};
+
+export const getConfirmationTemplatesApi = (
+  eventId: string | number,
+  flowType: string
+) => {
+  const typeParam = getConfirmationTypeParam(flowType);
+  return axiosInstance.get(
+    `/events/${eventId}/confirmation_templates?type=${typeParam}`
+  );
+};
+
+export const saveConfirmationTemplateApi = (
+  eventId: string | number,
+  flowType: string,
+  html: string,
+  _title: string = "Custom Template"
+) => {
+  const payload = {
+    confirmation_template: {
+      content: html,
+      default: false,
+      type: getConfirmationTypeParam(flowType),
+    },
+  };
+  return axiosInstance.post(
+    `/events/${eventId}/confirmation_templates`,
+    payload
+  );
+};
+
+export const updateConfirmationTemplateApi = (
+  eventId: string | number,
+  templateId: string | number,
+  flowType: string,
+  html: string
+) => {
+  const payload = {
+    confirmation_template: { content: html, type: getConfirmationTypeParam(flowType) },
+  };
+  return axiosInstance.patch(
+    `/events/${eventId}/confirmation_templates/${templateId}?type=${getConfirmationTypeParam(
+      flowType
+    )}`,
+    payload
+  );
+};
+
+export const deleteConfirmationTemplateApi = (
+  eventId: string | number,
+  templateId: string | number
+) => {
+  return axiosInstance.delete(
+    `/events/${eventId}/confirmation_templates/${templateId}`
+  );
 };
 
 
