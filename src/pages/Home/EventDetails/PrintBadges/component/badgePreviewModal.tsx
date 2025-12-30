@@ -11,13 +11,7 @@ interface BadgePreviewModalProps {
   usersToPreview: any[];
   selectedUserForPreview: any;
   eventData: any;
-  selectedBadgeTemplate: number;
-  badgeColors: {
-    headerColor: string;
-    footerColor: string;
-    backgroundColor: string;
-  };
-  qrImage: string;
+  selectedBadgeTemplate: any; // Badge template object from API
   onPrint: () => void;
   setIsPrinting: (printing: boolean) => void;
   updatingPrintStatus?: boolean;
@@ -30,8 +24,6 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   selectedUserForPreview,
   eventData,
   selectedBadgeTemplate,
-  badgeColors,
-  qrImage,
   onPrint,
   setIsPrinting,
   updatingPrintStatus = false,
@@ -380,10 +372,8 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
                   >
                     {renderBadgeTemplate(
                       selectedBadgeTemplate,
-                      user,
                       eventData,
-                      badgeColors,
-                      qrImage
+                      user
                     )}
                   </div>
                 </div>

@@ -12,6 +12,7 @@ import ReminderTemplateOne from "./Templates/ReminderEmailTemplate/ReminderTempl
 import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTemplateTwo";
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
+import { getConfirmationTemplatesApi, saveConfirmationTemplateApi, updateConfirmationTemplateApi, deleteConfirmationTemplateApi } from "@/apis/apiHelpers";
 
 const STATIC_TEMPLATES = {
   thanks: [
@@ -31,73 +32,19 @@ const STATIC_TEMPLATES = {
   ]
 };
 
-// ---------- API Service ----------
-const apiService = {
-  getAuthToken() { return localStorage.getItem("token"); },
-
-  getEndpoint() { return "confirmation_templates"; },
-  getTypeParam(flowType: string) {
-    const map: Record<string, string> = {
-      thanks: "ConfirmationThanksTemplate",
-      confirmation: "ConfirmationRegisterTemplate",
-      reminder: "ConfirmationReminderTemplate",
-      rejection: "ConfirmationRejectionTemplate",
-    };
-    return map[flowType] || "ConfirmationThanksTemplate";
-  },
-
-  async getTemplates(eventId: string | number, flowType: string) {
-    const typeParam = this.getTypeParam(flowType);
-    const url = `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}?type=${typeParam}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${this.getAuthToken()}`, "Content-Type": "application/json" } });
-    if (!res.ok) throw new Error(`Failed to fetch templates: ${res.status}`);
-    const data = await res.json();
-    return data.data || [];
-  },
-
-  async saveTemplate(eventId: string | number, flowType: string, html: string, title: string = "Custom Template") {
-    const payload = { confirmation_template: { content: html, default: false, type: this.getTypeParam(flowType) } };
-    const res = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${this.getAuthToken()}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error(`Failed to save template: ${res.status}`);
-    return res.json();
-  },
-
-  async updateTemplate(eventId: string | number, templateId: string | number, flowType: string, html: string) {
-    const payload = { confirmation_template: { content: html, type: this.getTypeParam(flowType) } };
-    const res = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}/${templateId}?type=${this.getTypeParam(flowType)}`, {
-      method: "PATCH",
-      headers: { Authorization: `Bearer ${this.getAuthToken()}`, "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error(`Failed to update template: ${res.status}`);
-    return res.json();
-  },
-
-  async deleteTemplate(eventId: string | number, templateId: string | number) {
-    const res = await fetch(`https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/${this.getEndpoint()}/${templateId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${this.getAuthToken()}` },
-    });
-    if (!res.ok) throw new Error(`Failed to delete template: ${res.status}`);
-    return res.status === 204 ? { success: true } : res.json();
-  },
-
-  convertApiTemplates(apiTemplates: any[], flowType: string) {
-    return apiTemplates.map((tpl, idx) => ({
-      id: `api-${tpl.id}`,
-      title: `${flowType.charAt(0).toUpperCase() + flowType.slice(1)} Template ${idx + 1}`,
-      component: null,
-      design: tpl.attributes?.design ? JSON.parse(tpl.attributes.design) : null,
-      html: tpl.attributes?.content || "",
-      apiId: tpl.id,
-      isStatic: false,
-      type: tpl.attributes?.type || flowType,
-    }));
-  }
+// ---------- Helper Functions ----------
+const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
+  return apiTemplates.map((tpl, idx) => ({
+    id: `api-${tpl.id}`,
+    title: `${flowType.charAt(0).toUpperCase() + flowType.slice(1)} Template ${idx + 1
+      }`,
+    component: null,
+    design: tpl.attributes?.design ? JSON.parse(tpl.attributes.design) : null,
+    html: tpl.attributes?.content || "",
+    apiId: tpl.id,
+    isStatic: false,
+    type: tpl.attributes?.type || flowType,
+  }));
 };
 
 // ---------- Modals ----------
@@ -196,8 +143,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     if (!effectiveEventId) return;
     setIsLoading(true);
     try {
-      const apiTemplates = await apiService.getTemplates(effectiveEventId, currentFlow.id);
-      const convertedTemplates = apiService.convertApiTemplates(apiTemplates, currentFlow.id);
+      const response = await getConfirmationTemplatesApi(effectiveEventId, currentFlow.id);
+      const apiTemplates = response.data.data || [];
+      const convertedTemplates = convertApiTemplates(apiTemplates, currentFlow.id);
       setFlows(prev => prev.map(f => f.id === currentFlow.id ? { ...f, templates: [...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES], ...convertedTemplates] } : f));
     } catch (e) { toast.error("Failed to load templates"); }
     finally { setIsLoading(false); }
@@ -208,24 +156,25 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   const handleSelectTemplate = (templateId: string) => { setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: templateId }); setModalTemplate(null); toast.success("Template selected!"); };
   const handleCreateNewTemplate = () => { setIsCreatingNew(true); setEditingTemplate(null); setIsEditorOpen(true); };
   const handleEditTemplate = (template: any) => { if (template.isStatic) { setIsCreatingNew(true); setEditingTemplate(null); setIsEditorOpen(true); } else { setEditingTemplate(template); setModalTemplate(null); setIsEditorOpen(true); }; };
-  
+
   const handleBack = () => { if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1); else onPrevious?.(); };
   const handleNext = () => { if (!selectedTemplates[currentFlow.id]) { toast.warning("Please select template"); return; } if (currentFlowIndex < flows.length - 1) setCurrentFlowIndex(currentFlowIndex + 1); else onNext?.(effectiveEventId); };
 
   const handleSaveFromEditor = async (design: any, html: string) => {
+    if (!effectiveEventId) return;
+
     if (isCreatingNew) {
-      if (!effectiveEventId) return;
       setIsLoading(true);
       try {
-        const apiResp = await apiService.saveTemplate(effectiveEventId, currentFlow.id, html, `Custom ${currentFlow.label} Template`);
-        const newTemplate = { id: `custom-${Date.now()}`, title: `Custom ${currentFlow.label} Template`, component: null, design, html, apiId: apiResp.data?.id, isStatic: false, type: currentFlow.id };
+        const apiResp = await saveConfirmationTemplateApi(effectiveEventId, currentFlow.id, html, `Custom ${currentFlow.label} Template`);
+        const newTemplate = { id: `custom-${Date.now()}`, title: `Custom ${currentFlow.label} Template`, component: null, design, html, apiId: apiResp.data.data?.id, isStatic: false, type: currentFlow.id };
         setFlows(prev => prev.map((f, idx) => idx === currentFlowIndex ? { ...f, templates: [...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES], ...f.templates.filter(t => !t.isStatic), newTemplate] } : f));
         setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });
         setIsCreatingNew(false); setIsEditorOpen(false); toast.success("Template created!");
       } catch (e) { toast.error("Failed to create template"); } finally { setIsLoading(false); }
     } else if (editingTemplate) {
       setIsLoading(true);
-      try { await apiService.updateTemplate(effectiveEventId, editingTemplate.apiId, currentFlow.id, html); setFlows(prev => prev.map(f => ({ ...f, templates: f.templates.map(t => t.id === editingTemplate.id ? { ...t, html, design } : t) }))); setEditingTemplate(null); setIsEditorOpen(false); toast.success("Template updated!"); }
+      try { await updateConfirmationTemplateApi(effectiveEventId, editingTemplate.apiId, currentFlow.id, html); setFlows(prev => prev.map(f => ({ ...f, templates: f.templates.map((t: any) => t.id === editingTemplate.id ? { ...t, html, design } : t) }))); setEditingTemplate(null); setIsEditorOpen(false); toast.success("Template updated!"); }
       catch { toast.error("Failed to update template"); } finally { setIsLoading(false); }
     }
   };
@@ -265,7 +214,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         <button onClick={handleNext} className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white">Next</button>
       </div>
 
-      <TemplateModal template={modalTemplate} onClose={handleCloseModal} onSelect={handleSelectTemplate} onEdit={handleEditTemplate} onDelete={async (tpl: any) => { if (!effectiveEventId || !tpl.apiId) return; setIsLoading(true); try { await apiService.deleteTemplate(effectiveEventId, tpl.apiId); setFlows(prev => prev.map(f => ({ ...f, templates: f.templates.filter(t => t.id !== tpl.id) }))); toast.success("Template deleted"); handleCloseModal(); } catch { toast.error("Failed to delete template"); } finally { setIsLoading(false); } }} />
+      <TemplateModal template={modalTemplate} onClose={handleCloseModal} onSelect={handleSelectTemplate} onEdit={handleEditTemplate} onDelete={async (tpl: any) => { if (!effectiveEventId || !tpl.apiId) return; setIsLoading(true); try { await deleteConfirmationTemplateApi(effectiveEventId, tpl.apiId); setFlows(prev => prev.map(f => ({ ...f, templates: f.templates.filter(t => t.id !== tpl.id) }))); toast.success("Template deleted"); handleCloseModal(); } catch { toast.error("Failed to delete template"); } finally { setIsLoading(false); } }} />
 
       <EmailEditorModal open={isEditorOpen} initialDesign={editingTemplate?.design} onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} onSave={handleSaveFromEditor} />
     </div>

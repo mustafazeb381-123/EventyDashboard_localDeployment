@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { deleteEventUser, getBadgeApi, getBadgesApi, getEventBadges, getEventUsers, updateEventUser } from "@/apis/apiHelpers";
+import { deleteEventUser, getBadgesApi, getEventUsers, updateEventUser, getEventbyId, getBadgeApi } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -27,18 +27,11 @@ function PrintBadges() {
   const [showBadgePreviewModal, setShowBadgePreviewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserForPreview, setSelectedUserForPreview] = useState<any>(null);
-  const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<number>(1);
+  const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<any>(null); // Store full badge template from API
   const [eventData, setEventData] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [updatingPrintStatus, setUpdatingPrintStatus] = useState(false);
-
-  const [badgeColors, setBadgeColors] = useState({
-    headerColor: "#4D4D4D",
-    footerColor: "#4D4D4D",
-    backgroundColor: "white",
-  });
-  const [qrImage, setQrImage] = useState<string>("");
 
   const rowsPerPage = 8;
 
@@ -46,52 +39,62 @@ function PrintBadges() {
   usePrintStyles("badges-print-container", isPrinting);
 
 
-  const fetchBadgeApi = async () => {
-    try {
-      const response = await getEventBadges(eventId);
-      console.log("Response of get badge api:", response.data);
-    } catch (error) {
-      console.error("Error fetching badges:", error);
-    }
-  };
-  
-  useEffect(() => {
-    fetchBadgeApi();
-  }, [eventId]);
-  
-
   // --- Data Fetching ---
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const idFromQuery = searchParams.get("eventId");
     setEventId(idFromQuery);
 
-    // Load saved badge preferences from localStorage
-    const savedBadgeId = localStorage.getItem("active_badge_id");
-    const savedQrImage = localStorage.getItem("badge_qr_image");
-    const savedHeaderColor = localStorage.getItem("badge_header_color");
-    const savedFooterColor = localStorage.getItem("badge_footer_color");
-    const savedBgColor = localStorage.getItem("badge_background_color");
-
-    if (savedBadgeId) {
-      setSelectedBadgeTemplate(parseInt(savedBadgeId, 10));
-    }
-    if (savedQrImage) {
-      setQrImage(savedQrImage);
-    }
-    if (savedHeaderColor || savedFooterColor || savedBgColor) {
-      setBadgeColors({
-        headerColor: savedHeaderColor || "#4D4D4D",
-        footerColor: savedFooterColor || "#4D4D4D",
-        backgroundColor: savedBgColor || "white",
-      });
-    }
-
     if (idFromQuery) {
       fetchUsers(idFromQuery);
-      fetchEventData(idFromQuery);
+      fetchSelectedBadgeTemplate(idFromQuery);
     }
   }, [location.search]);
+
+  // Fetch selected badge template from API - using default endpoint like registration forms
+  const fetchSelectedBadgeTemplate = async (eventId: string) => {
+    try {
+      // Get event data
+      const eventResponse = await getEventbyId(eventId);
+      const eventData = eventResponse?.data?.data;
+      setEventData(eventData);
+
+      // Get the default badge template directly (same pattern as registration templates)
+      const templateResponse = await getBadgeApi(eventId);
+      const templateData = templateResponse?.data?.data;
+
+      if (templateData) {
+        setSelectedBadgeTemplate(templateData);
+        console.log("=== Badge Template Selection (Default Endpoint) ===");
+        console.log("Selected template name:", templateData?.attributes?.name);
+        console.log("Selected template ID:", templateData?.id);
+        console.log("Is default:", templateData?.attributes?.default);
+        console.log("Template type:", templateData?.attributes?.template_data?.type);
+        console.log("Background image URL:", templateData?.attributes?.background_image);
+        console.log("Template data bgImage:", templateData?.attributes?.template_data?.bgImage);
+      } else {
+        console.log("No default badge template found!");
+        setSelectedBadgeTemplate(null);
+      }
+    } catch (error) {
+      console.error("Error fetching default badge template:", error);
+      // Fallback: try to get all templates and find default
+      try {
+        const templatesResponse = await getBadgesApi(parseInt(eventId, 10));
+        const templates = templatesResponse?.data?.data || [];
+        const defaultTemplate = templates.find((t: any) => t.attributes?.default === true);
+        if (defaultTemplate) {
+          setSelectedBadgeTemplate(defaultTemplate);
+          console.log("Fallback: Found default template from all templates");
+        } else {
+          toast.error("No default badge template found");
+        }
+      } catch (fallbackError) {
+        console.error("Fallback also failed:", fallbackError);
+        toast.error("Failed to load badge template");
+      }
+    }
+  };
 
   const fetchUsers = async (id: string) => {
     setLoadingUsers(true);
@@ -114,14 +117,6 @@ function PrintBadges() {
     }
   };
 
-  const fetchEventData = async (id: string) => {
-    try {
-      const response = await getBadgeApi(id);
-      setEventData(response?.data?.data);
-    } catch (error) {
-      console.error("Error fetching event data:", error);
-    }
-  };
 
   // --- Update Print Status API Call ---
   const updatePrintStatus = async (userIds: string[]) => {
@@ -349,7 +344,6 @@ const handlePrint = useCallback(async () => {
               setShowBadgePreviewModal(true);
             }}
             disablePreview={selectedUsers.size === 0}
-            updatingPrintStatus={updatingPrintStatus}
           />
 
           {/* Search and Filter Section */}
@@ -381,7 +375,6 @@ const handlePrint = useCallback(async () => {
             filteredUsersCount={filteredUsers.length}
             rowsPerPage={rowsPerPage}
             startIndex={startIndex}
-            updatingPrintStatus={updatingPrintStatus}
           />
         </div>
 
@@ -404,8 +397,6 @@ const handlePrint = useCallback(async () => {
           selectedUserForPreview={selectedUserForPreview}
           eventData={eventData}
           selectedBadgeTemplate={selectedBadgeTemplate}
-          badgeColors={badgeColors}
-          qrImage={qrImage}
           onPrint={handlePrint}
           setIsPrinting={setIsPrinting}
           updatingPrintStatus={updatingPrintStatus}
