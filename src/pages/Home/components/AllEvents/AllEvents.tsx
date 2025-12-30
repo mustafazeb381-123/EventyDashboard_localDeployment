@@ -1,9 +1,9 @@
-import { getAllEvents, deleteEvent, getEventbyId } from "@/apis/apiHelpers";
+import { getAllEvents } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
-import { useEffect, useState } from "react";
-import { Trash2, Search, Loader2, Grid3X3, List } from "lucide-react";
-import { toast } from "react-toastify";
+import { useEffect, useState, useRef } from "react";
+import { Trash2, Search, Grid3X3, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // import { useNavigate } from "react-router-dom";
 
@@ -15,9 +15,31 @@ interface Event {
 }
 
 interface ApiEventItem {
-  id: string;
-  type: string;
-  attributes: {
+  id: string | number;
+  uuid?: string;
+  name: string;
+  event_date_from: string;
+  event_date_to?: string;
+  event_time_from?: string;
+  event_time_to?: string;
+  event_type: string;
+  require_approval?: boolean;
+  about?: string;
+  location?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  template?: string;
+  print_qr?: boolean;
+  display_confirmation_message?: boolean;
+  display_location?: boolean;
+  display_event_details?: boolean;
+  logo_url?: string;
+  badge_background_url?: string;
+  registration_page_banner_url?: string;
+  created_at?: string;
+  updated_at?: string;
+  // Support for nested structure if API returns it
+  attributes?: {
     event_type: string;
     name: string;
     event_date_from: string;
@@ -38,7 +60,7 @@ function Pagination({
   currentPage,
   totalPages,
   onPageChange,
-  className = ""
+  className = "",
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -62,10 +84,11 @@ function Pagination({
         <button
           key={i}
           onClick={() => goToPage(i + 1)}
-          className={`px-3 py-1 rounded-md text-sm transition ${currentPage === i + 1
-            ? "bg-blue-600 text-white"
-            : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-            }`}
+          className={`px-3 py-1 rounded-md text-sm transition ${
+            currentPage === i + 1
+              ? "bg-blue-600 text-white"
+              : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+          }`}
         >
           {i + 1}
         </button>
@@ -83,16 +106,20 @@ function Pagination({
 }
 
 function AllEvents() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [allEvents, setAllEvents] = useState<Event[]>([]); // all events fetched from backend
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]); // events after search filter
+  const [events, setEvents] = useState<Event[]>([]); // events to display (paginated)
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const navigate = useNavigate();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // Adjust as needed
+  const [totalPages, setTotalPages] = useState(1);
+  const itemsPerPage = 15; // You can adjust this or make it user-configurable
 
   const getEventStyle = (type: string) => {
     switch (type) {
@@ -120,151 +147,185 @@ function AllEvents() {
     }
   };
 
+  // Only one fetch useEffect (see below)
+
+  // Debounce search input
   useEffect(() => {
-    const fetchAllEventsApi = async () => {
-      try {
-        const response = await getAllEvents();
-        console.log("All Events Response:", response.data);
-
-        if (response.data?.data && Array.isArray(response.data.data)) {
-          const mappedEvents = response.data.data.map((item: ApiEventItem) => ({
-            id: item.id,
-            type: item.attributes.event_type,
-            name: item.attributes.name,
-            date: new Date(item.attributes.event_date_from).toLocaleDateString(
-              "en-US",
-              {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              }
-            ),
-          }));
-          console.log("mappped event  data", mappedEvents);
-
-          setEvents(mappedEvents);
-        } else {
-          console.log("No data or data is not an array");
-          setEvents([]);
-        }
-      } catch (error) {
-        console.error("Error fetching events:", error);
-        setEvents([]);
-      } finally {
-        setLoading(false);
-      }
+    if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => {
+      if (debounceTimeout.current) clearTimeout(debounceTimeout.current);
     };
+  }, [searchQuery]);
 
-    fetchAllEventsApi();
-  }, []);
-
-  const handleDelete = async (id: string) => {
-    try {
-      setDeletingId(id);
-      await deleteEvent(id);
-      setEvents((prev) => prev.filter((e) => e.id !== id));
-      toast.success("Event Deleted Successfully");
-    } catch (error) {
-      toast.error("Error deleting event");
-      console.error(error);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
+  // Handle event click
   const handleEventClick = (eventId: string) => {
-    // Navigate
     setTimeout(() => {
       navigate(`/home/${eventId}`, {
         state: { eventId: eventId },
       });
+      localStorage.setItem("edit_eventId", eventId);
     }, 300);
-
-    console.log();
-    console.log("event id for specific event:", eventId);
-
-    // Save in localStorage
-    localStorage.setItem("edit_eventId", eventId);
   };
 
-  // Filter events based on search query
-  const filteredEvents = events.filter((event) =>
-    event.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
-
-  // Reset to first page when search query changes
+  // Reset to first page when debouncedSearch changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [debouncedSearch]);
 
-  if (loading) {
-    return (
-      <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
-        {/* Header with skeleton */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <div>
-            <p className="font-poppins text-md font-medium text-neutral-900">
-              All Events
-            </p>
-            <div className="h-4 bg-gray-200 rounded w-24 mt-1 animate-pulse"></div>
-          </div>
+  // Fetch all events from API (fetch all pages)
+  useEffect(() => {
+    const fetchAllEventsApi = async () => {
+      setLoading(true);
+      try {
+        let allFetchedEvents: Event[] = [];
+        let currentPageNum = 1;
+        let hasMorePages = true;
 
-          {/* Search Input Skeleton */}
-          <div className="w-full sm:w-64">
-            <div className="h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-        </div>
+        // Fetch all pages until we get all events
+        while (hasMorePages) {
+          const params: Record<string, any> = {
+            page: currentPageNum,
+            per_page: 100, // Fetch large page size to minimize API calls
+          };
+          const response = await getAllEvents(params);
 
-        {/* Loading Spinner with Message */}
-        <div className="flex flex-col justify-center items-center py-12">
-          <div className="relative">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-          <p className="text-gray-500 text-sm mt-4 font-medium">
-            Loading events...
-          </p>
-          <p className="text-gray-400 text-xs mt-1">
-            Please wait while we fetch your events
-          </p>
-        </div>
+          if (response.data?.data && Array.isArray(response.data.data)) {
+            const mappedEvents = response.data.data.map(
+              (item: ApiEventItem) => {
+                // Handle both flat structure (from Swagger) and nested structure
+                const eventType =
+                  item.event_type || item.attributes?.event_type || "";
+                const eventName = item.name || item.attributes?.name || "";
+                const eventDate =
+                  item.event_date_from ||
+                  item.attributes?.event_date_from ||
+                  "";
 
-        {/* View Mode Toggle Skeleton */}
-        <div className="flex justify-end">
-          <div className="h-10 w-20 bg-gray-200 rounded-lg animate-pulse"></div>
-        </div>
+                return {
+                  id: String(item.id),
+                  type: eventType,
+                  name: eventName,
+                  date: eventDate
+                    ? new Date(eventDate).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })
+                    : "",
+                };
+              }
+            );
+            allFetchedEvents = [...allFetchedEvents, ...mappedEvents];
 
-        {/* Event Cards Skeleton */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-          {[1, 2, 3, 4, 5, 6].map((index) => (
-            <div
-              key={index}
-              className="bg-gray-100 rounded-2xl animate-pulse"
-              style={{ padding: 24 }}
-            >
-              <div className="flex flex-row items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-gray-300 rounded-full"></div>
-                  <div className="h-4 bg-gray-300 rounded w-16"></div>
-                </div>
-                <div className="w-6 h-6 bg-gray-300 rounded-full"></div>
-              </div>
+            // Check if there are more pages
+            const pagination = response.data?.meta?.pagination;
+            console.log(`Fetched page ${currentPageNum}:`, {
+              eventsOnPage: mappedEvents.length,
+              totalFetched: allFetchedEvents.length,
+              pagination: pagination,
+              nextPage: pagination?.next_page,
+              totalPages: pagination?.total_pages,
+              currentPage: pagination?.current_page,
+            });
 
-              <div className="mt-10">
-                <div className="h-5 bg-gray-300 rounded w-3/4 mb-2"></div>
-                <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+            // Check multiple conditions to determine if there are more pages
+            if (pagination) {
+              // Use next_page if available (most reliable)
+              if (
+                pagination.next_page !== null &&
+                pagination.next_page !== undefined
+              ) {
+                currentPageNum = pagination.next_page;
+              }
+              // Fallback to comparing current page with total pages
+              else if (pagination.current_page && pagination.total_pages) {
+                if (pagination.current_page < pagination.total_pages) {
+                  currentPageNum = pagination.current_page + 1;
+                } else {
+                  hasMorePages = false;
+                }
+              }
+              // Another fallback: compare our page number with total_pages
+              else if (
+                pagination.total_pages &&
+                currentPageNum < pagination.total_pages
+              ) {
+                currentPageNum++;
+              } else {
+                hasMorePages = false;
+              }
+            } else if (mappedEvents.length === 0) {
+              // If no data returned, we've reached the end
+              hasMorePages = false;
+            } else {
+              // If no pagination info but we got data, try next page
+              // But add a safety limit to prevent infinite loops
+              if (currentPageNum < 100) {
+                currentPageNum++;
+              } else {
+                console.warn("Reached safety limit of 100 pages");
+                hasMorePages = false;
+              }
+            }
+          } else {
+            // No data or invalid response structure
+            console.warn(`No data returned for page ${currentPageNum}`);
+            hasMorePages = false;
+          }
+        }
+
+        console.log(`Total events fetched: ${allFetchedEvents.length}`);
+
+        setAllEvents(allFetchedEvents);
+      } catch (error) {
+        console.error("Error fetching events:", error);
+        setAllEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAllEventsApi();
+  }, []);
+
+  // Filter events by name on frontend
+  useEffect(() => {
+    if (debouncedSearch.trim()) {
+      // Only show events that match the search query
+      const searchTerm = debouncedSearch.toLowerCase().trim();
+      const filtered = allEvents.filter((e) =>
+        e.name.toLowerCase().includes(searchTerm)
+      );
+      console.log("Search filter applied:", {
+        searchTerm: debouncedSearch,
+        totalEvents: allEvents.length,
+        filteredCount: filtered.length,
+        filteredEvents: filtered.map((e) => e.name),
+      });
+      setFilteredEvents(filtered);
+    } else {
+      // No search query - show all events
+      setFilteredEvents(allEvents);
+    }
+  }, [allEvents, debouncedSearch]);
+
+  // Paginate filtered events on frontend
+  useEffect(() => {
+    const totalFiltered = filteredEvents.length;
+    const totalPagesCalc = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
+    setTotalPages(totalPagesCalc);
+
+    const startIdx = (currentPage - 1) * itemsPerPage;
+    const endIdx = startIdx + itemsPerPage;
+    setEvents(filteredEvents.slice(startIdx, endIdx));
+  }, [filteredEvents, currentPage, itemsPerPage]);
+
+  // Use the paginated events
+  const paginatedEvents = events;
+
+  // Always show the real search input, even while loading
 
   return (
     <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
@@ -275,16 +336,25 @@ function AllEvents() {
             <p className="font-poppins text-md font-medium text-neutral-900">
               All Events
             </p>
-            {searchQuery && !loading && (
+            {allEvents.length > 0 && (
               <p className="text-sm text-gray-500 mt-1">
-                Showing {Math.min(endIndex, filteredEvents.length)} of {filteredEvents.length} events
-                {filteredEvents.length !== events.length && ` (filtered from ${events.length} total)`}
+                {searchQuery ? (
+                  <>
+                    Showing {paginatedEvents.length} of {filteredEvents.length}{" "}
+                    event{filteredEvents.length !== 1 ? "s" : ""}
+                    {filteredEvents.length !== allEvents.length &&
+                      ` (${allEvents.length} total)`}
+                  </>
+                ) : (
+                  <>
+                    {allEvents.length} event{allEvents.length !== 1 ? "s" : ""}{" "}
+                    total
+                  </>
+                )}
               </p>
             )}
-            {!searchQuery && !loading && (
-              <p className="text-sm text-gray-500 mt-1">
-                {events.length} event{events.length !== 1 ? 's' : ''} total
-              </p>
+            {loading && allEvents.length === 0 && (
+              <Skeleton className="h-4 w-32 mt-1" />
             )}
           </div>
 
@@ -299,11 +369,13 @@ function AllEvents() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              // input is never disabled
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery("")}
                 className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                // button is never disabled
               >
                 <svg
                   className="h-4 w-4"
@@ -324,37 +396,80 @@ function AllEvents() {
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex justify-between items-center">
-          <div className="text-sm text-gray-600">
-            Page {currentPage} of {totalPages}
-          </div>
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-md transition-all duration-200 ${viewMode === "grid"
-                ? "bg-white shadow-sm text-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+        {!loading || allEvents.length > 0 ? (
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </div>
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode("grid")}
+                className={`p-2 rounded-md transition-all duration-200 ${
+                  viewMode === "grid"
+                    ? "bg-white shadow-sm text-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
-              title="Grid view"
-            >
-              <Grid3X3 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("list")}
-              className={`p-2 rounded-md transition-all duration-200 ${viewMode === "list"
-                ? "bg-white shadow-sm text-blue-600"
-                : "text-gray-500 hover:text-gray-700"
+                title="Grid view"
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-2 rounded-md transition-all duration-200 ${
+                  viewMode === "list"
+                    ? "bg-white shadow-sm text-blue-600"
+                    : "text-gray-500 hover:text-gray-700"
                 }`}
-              title="List view"
-            >
-              <List className="h-4 w-4" />
-            </button>
+                title="List view"
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Events Display - Grid or List View */}
-      {viewMode === "grid" ? (
+      {loading && allEvents.length === 0 ? (
+        // Skeleton loader for initial load
+        viewMode === "grid" ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+            {[...Array(6)].map((_, index) => (
+              <div
+                key={index}
+                className="flex flex-col bg-neutral-100 rounded-2xl p-6"
+              >
+                <div className="flex flex-row items-center justify-between mb-4">
+                  <Skeleton className="h-8 w-24 rounded-2xl" />
+                  <Skeleton className="h-8 w-8 rounded-full" />
+                </div>
+                <div className="flex flex-col gap-2 mt-6">
+                  <Skeleton className="h-5 w-3/4 rounded" />
+                  <Skeleton className="h-4 w-1/2 rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3 mt-6">
+            {[...Array(5)].map((_, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl"
+              >
+                <div className="flex items-center gap-4 flex-1">
+                  <Skeleton className="h-10 w-24 rounded-lg" />
+                  <div className="flex flex-col gap-2 flex-1">
+                    <Skeleton className="h-5 w-3/4 rounded" />
+                    <Skeleton className="h-4 w-1/2 rounded" />
+                  </div>
+                </div>
+                <Skeleton className="h-10 w-10 rounded-full" />
+              </div>
+            ))}
+          </div>
+        )
+      ) : viewMode === "grid" ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
             {paginatedEvents.map((event) => {
@@ -380,7 +495,11 @@ function AllEvents() {
                     <div
                       className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
                     >
-                      <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                      <img
+                        style={{ width: 8, height: 8 }}
+                        src={icon}
+                        alt="dot"
+                      />
                       <p
                         style={{
                           color,
@@ -397,13 +516,11 @@ function AllEvents() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent parent click
-                        handleDelete(event.id);
+                        {
+                          /* handleDelete(event.id); */
+                        }
                       }}
-                      disabled={deletingId === event.id}
-                      className={`p-1 rounded-full cursor-pointer ${deletingId === event.id
-                        ? "bg-red-300"
-                        : "bg-red-500 hover:bg-red-600"
-                        }`}
+                      className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600"
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
@@ -423,12 +540,14 @@ function AllEvents() {
           </div>
 
           {/* Pagination for Grid View */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            className="mt-6"
-          />
+          {!loading && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="mt-6"
+            />
+          )}
         </>
       ) : (
         <>
@@ -447,7 +566,11 @@ function AllEvents() {
                     <div
                       className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
                     >
-                      <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                      <img
+                        style={{ width: 8, height: 8 }}
+                        src={icon}
+                        alt="dot"
+                      />
                       <p
                         style={{
                           color,
@@ -476,13 +599,11 @@ function AllEvents() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent parent click
-                      handleDelete(event.id);
+                      {
+                        /* handleDelete(event.id); */
+                      }
                     }}
-                    disabled={deletingId === event.id}
-                    className={`p-2 rounded-full cursor-pointer shrink-0 ${deletingId === event.id
-                      ? "bg-red-300"
-                      : "bg-red-500 hover:bg-red-600"
-                      }`}
+                    className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600"
                   >
                     <Trash2 className="w-4 h-4 text-white" />
                   </button>
@@ -492,17 +613,19 @@ function AllEvents() {
           </div>
 
           {/* Pagination for List View */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-            className="mt-6"
-          />
+          {!loading && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              className="mt-6"
+            />
+          )}
         </>
       )}
 
-      {/* Empty States */}
-      {!loading && events.length === 0 && (
+      {/* Empty States - Only show when not loading and we have finished fetching */}
+      {!loading && allEvents.length === 0 && (
         <div className="w-full flex flex-col justify-center items-center py-10">
           <img
             className="h-40 w-40"
@@ -514,7 +637,7 @@ function AllEvents() {
       )}
 
       {!loading &&
-        events.length > 0 &&
+        allEvents.length > 0 &&
         filteredEvents.length === 0 &&
         searchQuery && (
           <div className="w-full flex flex-col justify-center items-center py-10">
