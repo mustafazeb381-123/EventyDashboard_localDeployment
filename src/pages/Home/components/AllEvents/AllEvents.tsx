@@ -106,10 +106,11 @@ function Pagination({
 }
 
 function AllEvents() {
-  const [allEvents, setAllEvents] = useState<Event[]>([]); // all events fetched from backend
+  const [allEvents, setAllEvents] = useState<Event[]>([]); // all events fetched when searching
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]); // events after search filter
   const [events, setEvents] = useState<Event[]>([]); // events to display (paginated)
   const [loading, setLoading] = useState(true);
+  const [searching, setSearching] = useState(false); // loading state when searching
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -175,10 +176,79 @@ function AllEvents() {
     setCurrentPage(1);
   }, [debouncedSearch]);
 
-  // Fetch all events from API (fetch all pages)
+  // Fetch events from API with pagination (only when not searching)
   useEffect(() => {
-    const fetchAllEventsApi = async () => {
+    // Skip if searching - search will fetch all pages
+    if (debouncedSearch.trim()) {
+      return;
+    }
+
+    const fetchEventsApi = async () => {
       setLoading(true);
+      try {
+        const params: Record<string, any> = {
+          page: currentPage,
+          per_page: itemsPerPage,
+        };
+
+        const response = await getAllEvents(params);
+
+        if (response.data?.data && Array.isArray(response.data.data)) {
+          const mappedEvents = response.data.data.map((item: ApiEventItem) => {
+            // Handle both flat structure (from Swagger) and nested structure
+            const eventType =
+              item.event_type || item.attributes?.event_type || "";
+            const eventName = item.name || item.attributes?.name || "";
+            const eventDate =
+              item.event_date_from || item.attributes?.event_date_from || "";
+
+            return {
+              id: String(item.id),
+              type: eventType,
+              name: eventName,
+              date: eventDate
+                ? new Date(eventDate).toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "",
+            };
+          });
+
+          setEvents(mappedEvents);
+
+          // Set pagination from API meta
+          const pagination = response.data?.meta?.pagination;
+          if (pagination) {
+            setTotalPages(pagination.total_pages || 1);
+          }
+        } else {
+          setEvents([]);
+        }
+      } catch (error) {
+        console.error("AllEvents - Error fetching events:", error);
+        setEvents([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEventsApi();
+  }, [currentPage, itemsPerPage, debouncedSearch]);
+
+  // Fetch all pages when searching
+  useEffect(() => {
+    if (!debouncedSearch.trim()) {
+      // Clear search results when search is cleared
+      setAllEvents([]);
+      setFilteredEvents([]);
+      setSearching(false);
+      return;
+    }
+
+    const fetchAllEventsForSearch = async () => {
+      setSearching(true);
       try {
         let allFetchedEvents: Event[] = [];
         let currentPageNum = 1;
@@ -218,20 +288,11 @@ function AllEvents() {
                 };
               }
             );
+
             allFetchedEvents = [...allFetchedEvents, ...mappedEvents];
 
-            // Check if there are more pages
+            // Check pagination to see if there are more pages
             const pagination = response.data?.meta?.pagination;
-            console.log(`Fetched page ${currentPageNum}:`, {
-              eventsOnPage: mappedEvents.length,
-              totalFetched: allFetchedEvents.length,
-              pagination: pagination,
-              nextPage: pagination?.next_page,
-              totalPages: pagination?.total_pages,
-              currentPage: pagination?.current_page,
-            });
-
-            // Check multiple conditions to determine if there are more pages
             if (pagination) {
               // Use next_page if available (most reliable)
               if (
@@ -241,12 +302,12 @@ function AllEvents() {
                 currentPageNum = pagination.next_page;
               }
               // Fallback to comparing current page with total pages
-              else if (pagination.current_page && pagination.total_pages) {
-                if (pagination.current_page < pagination.total_pages) {
-                  currentPageNum = pagination.current_page + 1;
-                } else {
-                  hasMorePages = false;
-                }
+              else if (
+                pagination.current_page &&
+                pagination.total_pages &&
+                pagination.current_page < pagination.total_pages
+              ) {
+                currentPageNum = pagination.current_page + 1;
               }
               // Another fallback: compare our page number with total_pages
               else if (
@@ -271,59 +332,59 @@ function AllEvents() {
               }
             }
           } else {
-            // No data or invalid response structure
-            console.warn(`No data returned for page ${currentPageNum}`);
             hasMorePages = false;
           }
         }
 
-        console.log(`Total events fetched: ${allFetchedEvents.length}`);
-
         setAllEvents(allFetchedEvents);
       } catch (error) {
-        console.error("Error fetching events:", error);
+        console.error(
+          "AllEvents - Error fetching all events for search:",
+          error
+        );
         setAllEvents([]);
       } finally {
-        setLoading(false);
+        setSearching(false);
       }
     };
-    fetchAllEventsApi();
-  }, []);
 
-  // Filter events by name on frontend
+    fetchAllEventsForSearch();
+  }, [debouncedSearch]);
+
+  // Filter events by name on frontend when searching
   useEffect(() => {
-    if (debouncedSearch.trim()) {
-      // Only show events that match the search query
+    if (debouncedSearch.trim() && allEvents.length > 0) {
       const searchTerm = debouncedSearch.toLowerCase().trim();
       const filtered = allEvents.filter((e) =>
         e.name.toLowerCase().includes(searchTerm)
       );
-      console.log("Search filter applied:", {
-        searchTerm: debouncedSearch,
-        totalEvents: allEvents.length,
-        filteredCount: filtered.length,
-        filteredEvents: filtered.map((e) => e.name),
-      });
       setFilteredEvents(filtered);
     } else {
-      // No search query - show all events
-      setFilteredEvents(allEvents);
+      setFilteredEvents([]);
     }
   }, [allEvents, debouncedSearch]);
 
-  // Paginate filtered events on frontend
+  // Paginate filtered events on frontend when searching
   useEffect(() => {
-    const totalFiltered = filteredEvents.length;
-    const totalPagesCalc = Math.max(1, Math.ceil(totalFiltered / itemsPerPage));
-    setTotalPages(totalPagesCalc);
+    if (debouncedSearch.trim()) {
+      const totalFiltered = filteredEvents.length;
+      const totalPagesCalc = Math.max(
+        1,
+        Math.ceil(totalFiltered / itemsPerPage)
+      );
+      setTotalPages(totalPagesCalc);
 
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    setEvents(filteredEvents.slice(startIdx, endIdx));
-  }, [filteredEvents, currentPage, itemsPerPage]);
+      const startIdx = (currentPage - 1) * itemsPerPage;
+      const endIdx = startIdx + itemsPerPage;
+      setEvents(filteredEvents.slice(startIdx, endIdx));
+    }
+  }, [filteredEvents, currentPage, itemsPerPage, debouncedSearch]);
 
   // Use the paginated events
   const paginatedEvents = events;
+
+  // Show loading when searching or initial load
+  const isLoading = loading || searching;
 
   // Always show the real search input, even while loading
 
@@ -336,25 +397,29 @@ function AllEvents() {
             <p className="font-poppins text-md font-medium text-neutral-900">
               All Events
             </p>
-            {allEvents.length > 0 && (
+            {!isLoading && (
               <p className="text-sm text-gray-500 mt-1">
                 {searchQuery ? (
                   <>
                     Showing {paginatedEvents.length} of {filteredEvents.length}{" "}
-                    event{filteredEvents.length !== 1 ? "s" : ""}
+                    event{filteredEvents.length !== 1 ? "s" : ""} found
                     {filteredEvents.length !== allEvents.length &&
-                      ` (${allEvents.length} total)`}
+                      ` (${allEvents.length} total searched)`}
                   </>
                 ) : (
                   <>
-                    {allEvents.length} event{allEvents.length !== 1 ? "s" : ""}{" "}
-                    total
+                    Showing {paginatedEvents.length} event
+                    {paginatedEvents.length !== 1 ? "s" : ""} on page{" "}
+                    {currentPage} of {totalPages}
                   </>
                 )}
               </p>
             )}
-            {loading && allEvents.length === 0 && (
-              <Skeleton className="h-4 w-32 mt-1" />
+            {isLoading && <Skeleton className="h-4 w-32 mt-1" />}
+            {searching && (
+              <p className="text-sm text-blue-500 mt-1">
+                Searching through all pages...
+              </p>
             )}
           </div>
 
@@ -396,7 +461,7 @@ function AllEvents() {
         </div>
 
         {/* View Mode Toggle */}
-        {!loading || allEvents.length > 0 ? (
+        {!isLoading || events.length > 0 ? (
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
               Page {currentPage} of {totalPages}
@@ -430,7 +495,7 @@ function AllEvents() {
       </div>
 
       {/* Events Display - Grid or List View */}
-      {loading && allEvents.length === 0 ? (
+      {isLoading && events.length === 0 ? (
         // Skeleton loader for initial load
         viewMode === "grid" ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
@@ -540,7 +605,7 @@ function AllEvents() {
           </div>
 
           {/* Pagination for Grid View */}
-          {!loading && (
+          {!isLoading && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -613,7 +678,7 @@ function AllEvents() {
           </div>
 
           {/* Pagination for List View */}
-          {!loading && (
+          {!isLoading && (
             <Pagination
               currentPage={currentPage}
               totalPages={totalPages}
@@ -624,8 +689,8 @@ function AllEvents() {
         </>
       )}
 
-      {/* Empty States - Only show when not loading and we have finished fetching */}
-      {!loading && allEvents.length === 0 && (
+      {/* Empty States */}
+      {!isLoading && events.length === 0 && !searchQuery && (
         <div className="w-full flex flex-col justify-center items-center py-10">
           <img
             className="h-40 w-40"
@@ -636,18 +701,15 @@ function AllEvents() {
         </div>
       )}
 
-      {!loading &&
-        allEvents.length > 0 &&
-        filteredEvents.length === 0 &&
-        searchQuery && (
-          <div className="w-full flex flex-col justify-center items-center py-10">
-            <Search className="h-16 w-16 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg font-medium">No events found</p>
-            <p className="text-gray-400 text-sm mt-2">
-              No events match "{searchQuery}". Try a different search term.
-            </p>
-          </div>
-        )}
+      {!isLoading && !searching && events.length === 0 && searchQuery && (
+        <div className="w-full flex flex-col justify-center items-center py-10">
+          <Search className="h-16 w-16 text-gray-300 mb-4" />
+          <p className="text-gray-500 text-lg font-medium">No events found</p>
+          <p className="text-gray-400 text-sm mt-2">
+            No events match "{searchQuery}". Try a different search term.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
