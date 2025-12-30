@@ -1,8 +1,7 @@
-import { getAllEvents, deleteEvent, getEventbyId } from "@/apis/apiHelpers";
+import { getAllEvents } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
 import { useEffect, useState } from "react";
-import { Trash2, Search, Loader2, Grid3X3, List } from "lucide-react";
-import { toast } from "react-toastify";
+import { Trash2, Search, Grid3X3, List } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 // import { useNavigate } from "react-router-dom";
@@ -38,7 +37,7 @@ function Pagination({
   currentPage,
   totalPages,
   onPageChange,
-  className = ""
+  className = "",
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
@@ -62,10 +61,11 @@ function Pagination({
         <button
           key={i}
           onClick={() => goToPage(i + 1)}
-          className={`px-3 py-1 rounded-md text-sm transition ${currentPage === i + 1
-            ? "bg-blue-600 text-white"
-            : "border border-gray-300 text-gray-700 hover:bg-gray-100"
-            }`}
+          className={`px-3 py-1 rounded-md text-sm transition ${
+            currentPage === i + 1
+              ? "bg-blue-600 text-white"
+              : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+          }`}
         >
           {i + 1}
         </button>
@@ -85,14 +85,15 @@ function Pagination({
 function AllEvents() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const navigate = useNavigate();
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // Adjust as needed
+  const [totalPages, setTotalPages] = useState(1);
+  // const [totalCount, setTotalCount] = useState(0); // Not used
+  const itemsPerPage = 15; // You can adjust this or make it user-configurable
 
   const getEventStyle = (type: string) => {
     switch (type) {
@@ -120,12 +121,17 @@ function AllEvents() {
     }
   };
 
+  // Fetch events from API with pagination and search
   useEffect(() => {
     const fetchAllEventsApi = async () => {
+      setLoading(true);
       try {
-        const response = await getAllEvents();
-        console.log("All Events Response:", response.data);
-
+        const params: Record<string, any> = {
+          page: currentPage,
+          per_page: itemsPerPage,
+        };
+        if (searchQuery) params.q = searchQuery;
+        const response = await getAllEvents(params);
         if (response.data?.data && Array.isArray(response.data.data)) {
           const mappedEvents = response.data.data.map((item: ApiEventItem) => ({
             id: item.id,
@@ -140,68 +146,40 @@ function AllEvents() {
               }
             ),
           }));
-          console.log("mappped event  data", mappedEvents);
-
           setEvents(mappedEvents);
         } else {
-          console.log("No data or data is not an array");
           setEvents([]);
         }
+        // Set pagination from API meta
+        const pagination = response.data?.meta?.pagination;
+        setTotalPages(pagination?.total_pages || 1);
+        // setTotalCount(pagination?.total_count || 0); // Not used
       } catch (error) {
-        console.error("Error fetching events:", error);
         setEvents([]);
       } finally {
         setLoading(false);
       }
     };
-
     fetchAllEventsApi();
-  }, []);
+  }, [currentPage, itemsPerPage, searchQuery]);
 
-  const handleDelete = async (id: string) => {
-    try {
-      setDeletingId(id);
-      await deleteEvent(id);
-      setEvents((prev) => prev.filter((e) => e.id !== id));
-      toast.success("Event Deleted Successfully");
-    } catch (error) {
-      toast.error("Error deleting event");
-      console.error(error);
-    } finally {
-      setDeletingId(null);
-    }
-  };
-
+  // Handle event click
   const handleEventClick = (eventId: string) => {
-    // Navigate
     setTimeout(() => {
       navigate(`/home/${eventId}`, {
         state: { eventId: eventId },
       });
+      localStorage.setItem("edit_eventId", eventId);
     }, 300);
-
-    console.log();
-    console.log("event id for specific event:", eventId);
-
-    // Save in localStorage
-    localStorage.setItem("edit_eventId", eventId);
   };
-
-  // Filter events based on search query
-  const filteredEvents = events.filter((event) =>
-    event.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  // Pagination calculations
-  const totalPages = Math.ceil(filteredEvents.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedEvents = filteredEvents.slice(startIndex, endIndex);
 
   // Reset to first page when search query changes
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery]);
+
+  // Use the events directly since pagination is handled by API
+  const paginatedEvents = events;
 
   if (loading) {
     return (
@@ -223,12 +201,11 @@ function AllEvents() {
 
         {/* Loading Spinner with Message */}
         <div className="flex flex-col justify-center items-center py-12">
-          <div className="relative">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-          <p className="text-gray-500 text-sm mt-4 font-medium">
-            Loading events...
-          </p>
+          {searchQuery && !loading && (
+            <p className="text-sm text-gray-500 mt-1">
+              Showing {paginatedEvents.length} of {events.length} events
+            </p>
+          )}
           <p className="text-gray-400 text-xs mt-1">
             Please wait while we fetch your events
           </p>
@@ -277,13 +254,12 @@ function AllEvents() {
             </p>
             {searchQuery && !loading && (
               <p className="text-sm text-gray-500 mt-1">
-                Showing {Math.min(endIndex, filteredEvents.length)} of {filteredEvents.length} events
-                {filteredEvents.length !== events.length && ` (filtered from ${events.length} total)`}
+                Showing {paginatedEvents.length} of {events.length} events
               </p>
             )}
             {!searchQuery && !loading && (
               <p className="text-sm text-gray-500 mt-1">
-                {events.length} event{events.length !== 1 ? 's' : ''} total
+                {events.length} event{events.length !== 1 ? "s" : ""} total
               </p>
             )}
           </div>
@@ -331,20 +307,22 @@ function AllEvents() {
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode("grid")}
-              className={`p-2 rounded-md transition-all duration-200 ${viewMode === "grid"
-                ? "bg-white shadow-sm text-blue-600"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
+              className={`p-2 rounded-md transition-all duration-200 ${
+                viewMode === "grid"
+                  ? "bg-white shadow-sm text-blue-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
               title="Grid view"
             >
               <Grid3X3 className="h-4 w-4" />
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`p-2 rounded-md transition-all duration-200 ${viewMode === "list"
-                ? "bg-white shadow-sm text-blue-600"
-                : "text-gray-500 hover:text-gray-700"
-                }`}
+              className={`p-2 rounded-md transition-all duration-200 ${
+                viewMode === "list"
+                  ? "bg-white shadow-sm text-blue-600"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
               title="List view"
             >
               <List className="h-4 w-4" />
@@ -380,7 +358,11 @@ function AllEvents() {
                     <div
                       className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
                     >
-                      <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                      <img
+                        style={{ width: 8, height: 8 }}
+                        src={icon}
+                        alt="dot"
+                      />
                       <p
                         style={{
                           color,
@@ -397,13 +379,11 @@ function AllEvents() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent parent click
-                        handleDelete(event.id);
+                        {
+                          /* handleDelete(event.id); */
+                        }
                       }}
-                      disabled={deletingId === event.id}
-                      className={`p-1 rounded-full cursor-pointer ${deletingId === event.id
-                        ? "bg-red-300"
-                        : "bg-red-500 hover:bg-red-600"
-                        }`}
+                      className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600"
                     >
                       <Trash2 className="w-4 h-4 text-white" />
                     </button>
@@ -447,7 +427,11 @@ function AllEvents() {
                     <div
                       className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
                     >
-                      <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                      <img
+                        style={{ width: 8, height: 8 }}
+                        src={icon}
+                        alt="dot"
+                      />
                       <p
                         style={{
                           color,
@@ -476,13 +460,11 @@ function AllEvents() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent parent click
-                      handleDelete(event.id);
+                      {
+                        /* handleDelete(event.id); */
+                      }
                     }}
-                    disabled={deletingId === event.id}
-                    className={`p-2 rounded-full cursor-pointer shrink-0 ${deletingId === event.id
-                      ? "bg-red-300"
-                      : "bg-red-500 hover:bg-red-600"
-                      }`}
+                    className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600"
                   >
                     <Trash2 className="w-4 h-4 text-white" />
                   </button>
@@ -515,7 +497,7 @@ function AllEvents() {
 
       {!loading &&
         events.length > 0 &&
-        filteredEvents.length === 0 &&
+        paginatedEvents.length === 0 &&
         searchQuery && (
           <div className="w-full flex flex-col justify-center items-center py-10">
             <Search className="h-16 w-16 text-gray-300 mb-4" />
