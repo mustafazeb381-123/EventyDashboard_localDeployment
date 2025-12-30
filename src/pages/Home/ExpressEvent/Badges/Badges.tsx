@@ -557,6 +557,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   // State for custom templates
   const [customTemplates, setCustomTemplates] = useState<BadgeTemplate[]>([]);
+  const [allTemplatesFromApi, setAllTemplatesFromApi] = useState<any[]>([]); // Store all templates including Template 1 and 2
   const [selectedTemplate, setSelectedTemplate] =
     useState<BadgeTemplate | null>(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
@@ -854,6 +855,9 @@ const Badges: React.FC<BadgesProps> = ({
           const templatesData = response?.data?.data || [];
           console.log("Custom badge templates from API:", templatesData);
 
+          // Store all templates (including Template 1 and Template 2) for checking if they exist
+          setAllTemplatesFromApi(templatesData);
+
           // Filter only custom templates (not default templates like "Template 1", "Template 2")
           const customTemplatesFromApi = templatesData
             .filter((item: any) => {
@@ -903,6 +907,9 @@ const Badges: React.FC<BadgesProps> = ({
     try {
       const response = await getBadgesApi(parseInt(effectiveEventId, 10));
       const templatesData = response?.data?.data || [];
+      
+      // Store all templates (including Template 1 and Template 2) for checking if they exist
+      setAllTemplatesFromApi(templatesData);
       
       const customTemplatesFromApi = templatesData
         .filter((item: any) => {
@@ -1449,11 +1456,93 @@ const Badges: React.FC<BadgesProps> = ({
       throw new Error("Event ID not found");
     }
 
+    // Find the template data from existingBadges array
+    const templateData = existingBadges.find(
+      (badge) => badge.id === `existing-${badgeId}` || badge.name === badgeName
+    );
+
+    // Construct full template_data for API
+    const fullTemplateData = templateData
+      ? {
+          name: templateData.name,
+          type: templateData.type || "existing",
+          width: templateData.width || 3.5,
+          height: templateData.height || 5.5,
+          hasBackground: templateData.hasBackground ?? true,
+          bgColor: templateData.bgColor || "#ffffff",
+          hasPersonalPhoto: templateData.hasPersonalPhoto ?? false,
+          photoSize: templateData.photoSize || { width: 200, height: 200 },
+          photoAlignment: templateData.photoAlignment || "center",
+          photoPosition: templateData.photoPosition || { x: 200, y: 60 },
+          hasName: templateData.hasName ?? true,
+          nameText: templateData.nameText || {
+            size: 24,
+            color: "#000000",
+            alignment: "center",
+            position: { x: 200, y: 280 },
+          },
+          hasCompany: templateData.hasCompany ?? false,
+          companyText: templateData.companyText || {
+            size: 18,
+            color: "#666666",
+            alignment: "center",
+            position: { x: 200, y: 315 },
+          },
+          hasTitle: templateData.hasTitle ?? true,
+          titleText: templateData.titleText || {
+            size: 16,
+            color: "#999999",
+            alignment: "center",
+            position: { x: 200, y: 350 },
+          },
+          hasQrCode: templateData.hasQrCode ?? false,
+          qrCodeSize: templateData.qrCodeSize || { width: 120, height: 120 },
+          qrCodePosition: templateData.qrCodePosition || { x: 200, y: 400 },
+          qrCodeAlignment: templateData.qrCodeAlignment || "center",
+        }
+      : {
+          name: badgeName,
+          type: "existing",
+          width: 3.5,
+          height: 5.5,
+          hasBackground: true,
+          bgColor: "#ffffff",
+          hasPersonalPhoto: true,
+          photoSize: { width: 200, height: 200 },
+          photoAlignment: "center",
+          photoPosition: { x: 200, y: 60 },
+          hasName: true,
+          nameText: {
+            size: 24,
+            color: "#000000",
+            alignment: "center",
+            position: { x: 200, y: 280 },
+          },
+          hasCompany: false,
+          companyText: {
+            size: 18,
+            color: "#666666",
+            alignment: "center",
+            position: { x: 200, y: 315 },
+          },
+          hasTitle: true,
+          titleText: {
+            size: 16,
+            color: "#999999",
+            alignment: "center",
+            position: { x: 200, y: 350 },
+          },
+          hasQrCode: true,
+          qrCodeSize: { width: 120, height: 120 },
+          qrCodePosition: { x: 200, y: 400 },
+          qrCodeAlignment: "center",
+        };
+
     const data = {
       badge_template: {
         name: badgeName,
-        event_id: effectiveEventId,
         default: true,
+        template_data: fullTemplateData,
       },
     };
 
@@ -1489,13 +1578,92 @@ const Badges: React.FC<BadgesProps> = ({
     setLoading(true);
     try {
       if (selectedBadge) {
-        // Existing badge selected
-        const response = await handleBadgeApiSelection(
-          selectedBadge.id,
-          selectedBadge.name
+        // Check if Template 1 or Template 2 already exists in API
+        const existingTemplate = allTemplatesFromApi.find(
+          (item: any) => item.attributes?.name === selectedBadge.name
         );
-        toast.success("Template selected!");
-        setActiveBadgeId(selectedBadge.id);
+
+        if (existingTemplate) {
+          // Template already exists, update it to set default: true via PUT API
+          const templateId = existingTemplate.id;
+          const numericId = typeof templateId === 'string' ? parseInt(templateId, 10) : templateId;
+          
+          if (!isNaN(numericId) && numericId > 0 && effectiveEventId) {
+            // Get existing template data from API (preserve what's already there)
+            const existingTemplateData = existingTemplate.attributes?.template_data || {};
+            
+            // Get the full template data from existingBadges (for defaults)
+            const templateData = existingBadges.find(
+              (badge) => badge.id === `existing-${selectedBadge.id}` || badge.name === selectedBadge.name
+            );
+
+            // Merge: Use API data first, then fallback to local templateData, then defaults
+            // This ensures bgColor from API is preserved
+            const fullTemplateData = {
+              name: existingTemplateData.name || templateData?.name || selectedBadge.name,
+              type: existingTemplateData.type || templateData?.type || "existing",
+              width: existingTemplateData.width || templateData?.width || 3.5,
+              height: existingTemplateData.height || templateData?.height || 5.5,
+              hasBackground: existingTemplateData.hasBackground ?? templateData?.hasBackground ?? true,
+              bgColor: existingTemplateData.bgColor || templateData?.bgColor || "#ffffff", // Preserve bgColor from API
+              hasPersonalPhoto: existingTemplateData.hasPersonalPhoto ?? templateData?.hasPersonalPhoto ?? false,
+              photoSize: existingTemplateData.photoSize || templateData?.photoSize || { width: 200, height: 200 },
+              photoAlignment: existingTemplateData.photoAlignment || templateData?.photoAlignment || "center",
+              photoPosition: existingTemplateData.photoPosition || templateData?.photoPosition || { x: 200, y: 60 },
+              hasName: existingTemplateData.hasName ?? templateData?.hasName ?? true,
+              nameText: existingTemplateData.nameText || templateData?.nameText || {
+                size: 24,
+                color: "#000000",
+                alignment: "center",
+                position: { x: 200, y: 280 },
+              },
+              hasCompany: existingTemplateData.hasCompany ?? templateData?.hasCompany ?? false,
+              companyText: existingTemplateData.companyText || templateData?.companyText || {
+                size: 18,
+                color: "#666666",
+                alignment: "center",
+                position: { x: 200, y: 315 },
+              },
+              hasTitle: existingTemplateData.hasTitle ?? templateData?.hasTitle ?? true,
+              titleText: existingTemplateData.titleText || templateData?.titleText || {
+                size: 16,
+                color: "#999999",
+                alignment: "center",
+                position: { x: 200, y: 350 },
+              },
+              hasQrCode: existingTemplateData.hasQrCode ?? templateData?.hasQrCode ?? false,
+              qrCodeSize: existingTemplateData.qrCodeSize || templateData?.qrCodeSize || { width: 120, height: 120 },
+              qrCodePosition: existingTemplateData.qrCodePosition || templateData?.qrCodePosition || { x: 200, y: 400 },
+              qrCodeAlignment: existingTemplateData.qrCodeAlignment || templateData?.qrCodeAlignment || "center",
+            };
+
+            const updateData = {
+              badge_template: {
+                name: selectedBadge.name,
+                default: true, // Set as default
+                template_data: fullTemplateData,
+              },
+            };
+
+            await updateBadgeTemplateApi(
+              parseInt(effectiveEventId, 10),
+              numericId,
+              updateData
+            );
+            console.log(`Updated ready-made badge template ${numericId} to default`);
+            console.log("Template bgColor:", fullTemplateData.bgColor);
+          }
+          toast.success("Template selected!");
+          setActiveBadgeId(selectedBadge.id);
+        } else {
+          // Template doesn't exist, create it via POST API
+          await handleBadgeApiSelection(
+            selectedBadge.id,
+            selectedBadge.name
+          );
+          toast.success("Template selected!");
+          setActiveBadgeId(selectedBadge.id);
+        }
 
         // Save only required data for PrintBadges
         localStorage.setItem("active_badge_id", selectedBadge.id.toString());
@@ -1513,16 +1681,64 @@ const Badges: React.FC<BadgesProps> = ({
           event?.attributes?.secondary_color || "white"
         );
       } else if (selectedTemplate) {
-        // Custom template selected
-        await handleCustomBadgeApiSelection(selectedTemplate);
-        toast.success("Custom template selected!");
+        // Custom template selected - update it to set as default
+        // Extract numeric ID from template ID for PUT request
+        let numericId: number | null = null;
+        const templateId = selectedTemplate.id;
+        
+        // Try direct parse (for API IDs like "58")
+        const directParse = parseInt(templateId, 10);
+        if (!isNaN(directParse) && directParse > 0) {
+          numericId = directParse;
+        } else if (templateId.startsWith("custom-")) {
+          // Extract from formats like "custom-badge-123" or "custom-123"
+          const parts = templateId.split("-");
+          const lastPart = parts[parts.length - 1];
+          const parsed = parseInt(lastPart, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            numericId = parsed;
+          }
+        }
 
-        // Save template data for PrintBadges
-        localStorage.setItem(
-          "active_badge_template",
-          JSON.stringify(selectedTemplate)
-        );
-        localStorage.setItem("active_badge_id", selectedTemplate.id);
+        if (numericId && numericId > 0 && effectiveEventId) {
+          // Find the existing template from API to preserve background_image and bgImage
+          const existingTemplateFromApi = allTemplatesFromApi.find(
+            (t: any) => {
+              const tId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
+              return tId === numericId;
+            }
+          );
+
+          // Update the template to set it as default
+          const apiData = transformTemplateToApi(selectedTemplate);
+          
+          // Preserve bgImage from existing template if it exists, otherwise use selectedTemplate's bgImage
+          if (existingTemplateFromApi?.attributes?.template_data?.bgImage) {
+            // Preserve existing bgImage from API
+            apiData.template_data.bgImage = existingTemplateFromApi.attributes.template_data.bgImage;
+          } else if (selectedTemplate.bgImage) {
+            // Use the bgImage from selectedTemplate if available
+            apiData.template_data.bgImage = selectedTemplate.bgImage;
+          }
+
+          const updateData = {
+            badge_template: {
+              ...apiData,
+              default: true, // Set as default
+            },
+          };
+
+          await updateBadgeTemplateApi(
+            parseInt(effectiveEventId, 10),
+            numericId,
+            updateData
+          );
+          console.log(`Updated custom badge template ${numericId} to default`);
+          console.log("Background image (bgImage):", updateData.badge_template.template_data?.bgImage);
+          console.log("Background image URL:", existingTemplateFromApi?.attributes?.background_image);
+        }
+
+        toast.success("Custom template selected!");
       }
 
       setTimeout(() => {
@@ -1583,7 +1799,7 @@ const Badges: React.FC<BadgesProps> = ({
             >
               <div
                 className="flex-1 cursor-pointer"
-                onClick={() => handleSelectTemplate(template)}
+                onClick={() => handlePreviewTemplate(template)}
               >
                 <div className="flex items-center justify-center">
                   {renderCustomBadgePreview(template)}
@@ -1606,50 +1822,6 @@ const Badges: React.FC<BadgesProps> = ({
                     )}
                   </div>
                 </div>
-                <div className="flex justify-between items-center mt-2">
-                  <div className="flex gap-1">
-                    {template.hasPersonalPhoto && (
-                      <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">
-                        Photo
-                      </span>
-                    )}
-                    {template.hasQrCode && (
-                      <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded text-xs">
-                        QR
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePreviewTemplate(template);
-                      }}
-                      className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      <Eye size={14} />
-                      Preview
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditCustomTemplate(template);
-                      }}
-                      className="flex items-center gap-1 text-gray-600 hover:text-gray-800 text-sm"
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteCustomTemplate(template.id);
-                      }}
-                      className="flex items-center gap-1 text-red-600 hover:text-red-800 text-sm"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
               </div>
             </div>
           );
@@ -1666,7 +1838,7 @@ const Badges: React.FC<BadgesProps> = ({
                 ? "border-green-500 bg-green-50"
                 : "border-gray-200 hover:border-blue-500"
                 }`}
-              onClick={() => handleSelectExistingBadge(badge)}
+              onClick={() => handlePreviewBadge(badge)}
             >
               <div className="flex-1 h-48 flex items-center justify-center">
                 {renderExistingBadgePreview(badge)}
@@ -1687,26 +1859,6 @@ const Badges: React.FC<BadgesProps> = ({
                       </div>
                     )}
                   </div>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <div className="flex gap-1">
-                    <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded text-xs">
-                      Photo
-                    </span>
-                    <span className="bg-green-100 text-green-600 px-2 py-0.5 rounded text-xs">
-                      QR
-                    </span>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePreviewBadge(badge);
-                    }}
-                    className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-                  >
-                    <Eye size={14} />
-                    Preview
-                  </button>
                 </div>
               </div>
             </div>
@@ -1757,15 +1909,25 @@ const Badges: React.FC<BadgesProps> = ({
               />
             )}
 
-            {/* Modal Footer */}
-            {/* <div className="p-6 border-t flex justify-end">
+            {/* Modal Footer with Select button */}
+            <div className="p-6 border-t flex justify-between items-center">
+              <button
+                onClick={() => {
+                  handleSelectExistingBadge(previewBadge);
+                  closePreview();
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded-lg transition-colors"
+              >
+                <Check size={16} />
+                Select
+              </button>
               <button
                 onClick={closePreview}
-                className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
+                className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
               >
                 Close
               </button>
-            </div> */}
+            </div>
           </div>
         </div>
       )}
@@ -1789,15 +1951,47 @@ const Badges: React.FC<BadgesProps> = ({
             {/* Custom Badge Preview Content */}
             <CustomBadgePreview template={previewTemplate} />
 
-            {/* Modal Footer */}
-            {/* <div className="p-6 border-t flex justify-end">
+            {/* Modal Footer with Select, Edit and Delete buttons */}
+            <div className="p-6 border-t flex justify-between items-center">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    handleSelectTemplate(previewTemplate);
+                    closePreview();
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white hover:bg-pink-600 rounded-lg transition-colors"
+                >
+                  <Check size={16} />
+                  Select
+                </button>
+                <button
+                  onClick={() => {
+                    closePreview();
+                    handleEditCustomTemplate(previewTemplate);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Edit2 size={16} />
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    closePreview();
+                    handleDeleteCustomTemplate(previewTemplate.id);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 size={16} />
+                  Delete
+                </button>
+              </div>
               <button
                 onClick={closePreview}
-                className="px-8 py-3 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
+                className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
               >
                 Close
               </button>
-            </div> */}
+            </div>
           </div>
         </div>
       )}
