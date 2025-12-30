@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   Edit,
-  Eye,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -36,29 +35,24 @@ import type { CustomFormField, FormTheme } from "./CustomFormBuilder";
 import { FormHeader } from "./CustomFormBuilder/components/FormHeader";
 import { FormButtonField } from "./CustomFormBuilder/components/FormButtonField";
 
-// Import Form Builder Library
-import { rSuiteComponents } from "@react-form-builder/components-rsuite";
-import { BuilderView, FormBuilder } from "@react-form-builder/designer";
 
-const components = rSuiteComponents.map((c) => c.build());
-const builderView = new BuilderView(components);
 
 // -------------------- TYPES --------------------
 interface FormField {
   id: string;
   type:
-    | "text"
-    | "email"
-    | "number"
-    | "select"
-    | "textarea"
-    | "checkbox"
-    | "radio"
-    | "header"
-    | "paragraph"
-    | "date"
-    | "file"
-    | "button";
+  | "text"
+  | "email"
+  | "number"
+  | "select"
+  | "textarea"
+  | "checkbox"
+  | "radio"
+  | "header"
+  | "paragraph"
+  | "date"
+  | "file"
+  | "button";
   label: string;
   placeholder?: string;
   required: boolean;
@@ -98,731 +92,9 @@ type RegistrationFormProps = {
   plan?: string;
 };
 
-// -------------------- FORM BUILDER WRAPPER COMPONENT --------------------
-interface FormBuilderWrapperProps {
-  builderView: BuilderView;
-  onChange: (data: any) => void;
-  initialData?: any;
-  templateId: string;
-}
 
-const FormBuilderWrapper: React.FC<FormBuilderWrapperProps> = ({
-  builderView,
-  onChange,
-  initialData,
-  templateId,
-}) => {
-  const containerRef = React.useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    // Set up a more aggressive data capture
-    const captureData = () => {
-      try {
-        // Try multiple ways to get data
-        let data = null;
 
-        // Method 1: Direct access
-        if ((builderView as any).formData) {
-          data = (builderView as any).formData;
-          console.log("Captured from builderView.formData:", data);
-        }
-        // Method 2: Getter function
-        else if (typeof (builderView as any).getFormData === "function") {
-          data = (builderView as any).getFormData();
-          console.log("Captured from builderView.getFormData():", data);
-        }
-        // Method 3: State access
-        else if ((builderView as any).state?.formData) {
-          data = (builderView as any).state.formData;
-          console.log("Captured from builderView.state.formData:", data);
-        }
-        // Method 4: Try to get from the view's items
-        else if ((builderView as any).items) {
-          data = { formData: (builderView as any).items };
-          console.log("Captured from builderView.items:", data);
-        }
-        // Method 5: Try to access through the view's internal structure
-        else if ((builderView as any).view) {
-          const view = (builderView as any).view;
-          if (view.formData) {
-            data = view.formData;
-            console.log("Captured from builderView.view.formData:", data);
-          } else if (view.items) {
-            data = { formData: view.items };
-            console.log("Captured from builderView.view.items:", data);
-          }
-        }
-
-        if (data) {
-          console.log("FormBuilderWrapper successfully captured data:", data);
-          onChange(data);
-          return true;
-        }
-        return false;
-      } catch (error) {
-        console.warn("FormBuilderWrapper capture error:", error);
-        return false;
-      }
-    };
-
-    // Try to capture immediately
-    setTimeout(captureData, 500);
-
-    // Then periodically check
-    const intervalId = setInterval(() => {
-      captureData();
-    }, 2000);
-
-    // Also set up a MutationObserver to detect DOM changes
-    let observer: MutationObserver | null = null;
-    if (containerRef.current) {
-      observer = new MutationObserver(() => {
-        console.log("DOM mutation detected, trying to capture data...");
-        setTimeout(captureData, 500);
-      });
-
-      observer.observe(containerRef.current, {
-        childList: true,
-        subtree: true,
-        attributes: false,
-      });
-    }
-
-    return () => {
-      clearInterval(intervalId);
-      if (observer) {
-        observer.disconnect();
-      }
-    };
-  }, [builderView, onChange]);
-
-  return (
-    <div ref={containerRef} className="h-full w-full">
-      {/* @ts-ignore - FormBuilder component type issue */}
-      <FormBuilder
-        view={builderView}
-        onChange={(data: any) => {
-          console.log("FormBuilder onChange fired directly:", data);
-          if (data) {
-            onChange(data);
-          }
-        }}
-        onUpdate={(data: any) => {
-          console.log("FormBuilder onUpdate fired:", data);
-          if (data) {
-            onChange(data);
-          }
-        }}
-        onFormChange={(data: any) => {
-          console.log("FormBuilder onFormChange fired:", data);
-          if (data) {
-            onChange(data);
-          }
-        }}
-        initialData={initialData}
-        key={templateId}
-      />
-    </div>
-  );
-};
-
-// -------------------- FORM BUILDER MODAL (Using Library) --------------------
-interface FormBuilderModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (template: CustomFormTemplate) => void;
-  template?: CustomFormTemplate | null;
-  isEditMode?: boolean;
-  eventId?: string;
-}
-
-const FormBuilderModal: React.FC<FormBuilderModalProps> = ({
-  isOpen,
-  onClose,
-  onSave,
-  template,
-  isEditMode = false,
-  eventId,
-}) => {
-  const [templateTitle, setTemplateTitle] = useState(
-    template?.title || "My Form Builder Template"
-  );
-  const [formBuilderJson, setFormBuilderJson] = useState<any>(
-    template?.formBuilderData || null
-  );
-  const [isFormBuilderReady, setIsFormBuilderReady] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
-  const [previewFields, setPreviewFields] = useState<FormField[]>([]);
-
-  // Initialize form builder
-  useEffect(() => {
-    if (isOpen) {
-      if (template?.formBuilderData) {
-        console.log(
-          "Loading template data for edit:",
-          template.formBuilderData
-        );
-        setFormBuilderJson(template.formBuilderData);
-        // Also initialize preview fields
-        const fields = convertFormBuilderToFields(template.formBuilderData);
-        setPreviewFields(fields);
-      } else {
-        // Reset for new template
-        setFormBuilderJson(null);
-        setPreviewFields([]);
-      }
-      setTemplateTitle(template?.title || "My Form Builder Template");
-      setShowPreview(false);
-      setIsFormBuilderReady(true);
-    }
-  }, [template, isOpen]);
-
-  // Periodic check to capture form data (fallback if onChange doesn't fire)
-  useEffect(() => {
-    if (!isOpen || !isFormBuilderReady) return;
-
-    const intervalId = setInterval(() => {
-      // Try to get data from builderView
-      try {
-        if (builderView) {
-          // Check if builderView has formData
-          const viewData =
-            (builderView as any).formData ||
-            (builderView as any).getFormData?.() ||
-            (builderView as any).state?.formData;
-
-          if (viewData && viewData !== formBuilderJson) {
-            console.log("Periodic check found new data:", viewData);
-            handleFormBuilderChange(viewData);
-          }
-        }
-      } catch (error) {
-        // Silently fail - this is just a fallback
-      }
-    }, 2000); // Check every 2 seconds
-
-    return () => clearInterval(intervalId);
-  }, [isOpen, isFormBuilderReady, formBuilderJson]);
-
-  const handleSaveTemplate = () => {
-    // Try multiple ways to get the form data
-    let dataToSave = formBuilderJson;
-
-    console.log("=== SAVE TEMPLATE DEBUG ===");
-    console.log("Current formBuilderJson state:", formBuilderJson);
-    console.log("Current previewFields:", previewFields);
-    console.log("formBuilderRef.current:", formBuilderRef.current);
-
-    // Try to get data from builderView
-    try {
-      if (builderView && typeof builderView.getFormData === "function") {
-        const viewData = builderView.getFormData();
-        console.log("Got data from builderView.getFormData():", viewData);
-        if (viewData) dataToSave = viewData;
-      } else if (builderView && builderView.formData) {
-        console.log(
-          "Got data from builderView.formData:",
-          builderView.formData
-        );
-        if (builderView.formData) dataToSave = builderView.formData;
-      }
-    } catch (error) {
-      console.warn("Could not get data from builderView:", error);
-    }
-
-    // If we have previewFields but no formBuilderJson, try to reconstruct from previewFields
-    if (!dataToSave && previewFields.length > 0) {
-      console.log("Using previewFields to reconstruct form data");
-      // Reconstruct a basic form data structure from previewFields
-      dataToSave = {
-        formData: previewFields.map((field) => ({
-          id: field.id,
-          type: field.type,
-          label: field.label,
-          placeholder: field.placeholder,
-          required: field.required,
-          value: field.value,
-          description: field.description,
-          options: field.options,
-        })),
-      };
-    }
-
-    // Try to get data from builderView if still not found
-    if (!dataToSave && builderView) {
-      try {
-        // Access builderView's internal state or methods
-        if ((builderView as any).formData) {
-          dataToSave = (builderView as any).formData;
-          console.log(
-            "Got data from builderView.formData (direct):",
-            dataToSave
-          );
-        } else if ((builderView as any).getFormData) {
-          dataToSave = (builderView as any).getFormData();
-          console.log("Got data from builderView.getFormData():", dataToSave);
-        }
-      } catch (error) {
-        console.warn("Could not get data from builderView:", error);
-      }
-    }
-
-    console.log("Final dataToSave:", dataToSave);
-    console.log("=== END SAVE DEBUG ===");
-
-    if (!dataToSave) {
-      toast.warning(
-        "Please design a form before saving. Add at least one field to the form. If you've added fields, try clicking 'Capture Data' button first."
-      );
-      return;
-    }
-
-    // Convert form builder JSON to our FormField format for preview
-    const formFields: FormField[] = convertFormBuilderToFields(dataToSave);
-
-    console.log("Converted formFields for save:", formFields);
-
-    if (formFields.length === 0) {
-      toast.warning(
-        "No fields detected. Please add at least one field to the form."
-      );
-      return;
-    }
-
-    const templateData: CustomFormTemplate = {
-      id: template?.id || `formbuilder-template-${Date.now()}`,
-      title: templateTitle,
-      data: formFields,
-      formBuilderData: dataToSave,
-      createdAt: template?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isCustom: true,
-    };
-
-    console.log("Final templateData to save:", templateData);
-    onSave(templateData);
-    onClose();
-  };
-
-  // Helper function to convert form builder JSON to FormField format
-  const convertFormBuilderToFields = (jsonData: any): FormField[] => {
-    console.log("convertFormBuilderToFields called with:", jsonData);
-
-    if (!jsonData) {
-      console.log("No jsonData provided");
-      return [];
-    }
-
-    // Check different possible data structures
-    let formDataArray: any[] = [];
-
-    if (jsonData.formData && Array.isArray(jsonData.formData)) {
-      formDataArray = jsonData.formData;
-    } else if (Array.isArray(jsonData)) {
-      formDataArray = jsonData;
-    } else if (jsonData.items && Array.isArray(jsonData.items)) {
-      formDataArray = jsonData.items;
-    } else if (jsonData.elements && Array.isArray(jsonData.elements)) {
-      formDataArray = jsonData.elements;
-    }
-
-    console.log("Extracted formDataArray:", formDataArray);
-
-    if (formDataArray.length === 0) {
-      console.log("No form data found in structure");
-      return [];
-    }
-
-    const fields: FormField[] = [];
-
-    // Process form builder structure
-    formDataArray.forEach((item: any, index: number) => {
-      console.log(`Processing item ${index}:`, item);
-
-      const field: FormField = {
-        id: item.id || item.elementId || `field-${Date.now()}-${index}`,
-        type: mapFormBuilderType(item.type || item.element || item.fieldType),
-        label: item.label || item.name || item.title || "Field",
-        placeholder: item.placeholder || item.hint || "",
-        required: item.required || item.mandatory || false,
-        value: item.value || item.defaultValue || "",
-        description: item.description || item.helpText || "",
-      };
-
-      // Handle options for select/radio/checkbox
-      if (item.options && Array.isArray(item.options)) {
-        field.options = item.options.map((opt: any) =>
-          typeof opt === "string" ? opt : opt.label || opt.value || opt.text
-        );
-      } else if (item.values && Array.isArray(item.values)) {
-        field.options = item.values.map((val: any) =>
-          typeof val === "string" ? val : val.label || val.value || val.text
-        );
-      }
-
-      fields.push(field);
-    });
-
-    console.log("Final converted fields:", fields);
-    return fields;
-  };
-
-  // Map form builder field types to our types
-  const mapFormBuilderType = (fbType: string): FormField["type"] => {
-    const typeMap: Record<string, FormField["type"]> = {
-      text: "text",
-      email: "email",
-      number: "number",
-      select: "select",
-      textarea: "textarea",
-      checkbox: "checkbox",
-      radio: "radio",
-      header: "header",
-      paragraph: "paragraph",
-      date: "date",
-      file: "file",
-    };
-
-    return typeMap[fbType] || "text";
-  };
-
-  // Handle form builder changes
-  const handleFormBuilderChange = (jsonData: any) => {
-    console.log("=== FormBuilder onChange/onUpdate called ===");
-    console.log("jsonData:", jsonData);
-    console.log("Type of jsonData:", typeof jsonData);
-    console.log("Is array?", Array.isArray(jsonData));
-    console.log(
-      "Is null/undefined?",
-      jsonData === null || jsonData === undefined
-    );
-    if (jsonData) {
-      console.log("Keys:", Object.keys(jsonData));
-      console.log("Full structure:", JSON.stringify(jsonData, null, 2));
-    }
-
-    // Store the raw data - even if it's an empty object, store it
-    setFormBuilderJson(jsonData);
-
-    // Update preview fields when form builder changes
-    if (jsonData) {
-      const fields = convertFormBuilderToFields(jsonData);
-      console.log("Converted fields:", fields);
-      setPreviewFields(fields);
-
-      if (fields.length > 0) {
-        toast.success(`${fields.length} field(s) detected!`, {
-          autoClose: 2000,
-        });
-      }
-    } else {
-      console.log("jsonData is null/undefined, clearing preview fields");
-      setPreviewFields([]);
-    }
-    console.log("=== END onChange ===");
-  };
-
-  // Handle preview button click
-  const handlePreview = () => {
-    // Try to get current data
-    let dataToPreview = formBuilderJson;
-
-    // If no data in state, try to get from builderView
-    if (!dataToPreview && builderView) {
-      try {
-        if ((builderView as any).formData) {
-          dataToPreview = (builderView as any).formData;
-        } else if ((builderView as any).getFormData) {
-          dataToPreview = (builderView as any).getFormData();
-        }
-      } catch (error) {
-        console.warn("Could not get data for preview:", error);
-      }
-    }
-
-    if (!dataToPreview) {
-      toast.warning(
-        "Please design a form before previewing. Add at least one field."
-      );
-      return;
-    }
-
-    const fields = convertFormBuilderToFields(dataToPreview);
-    if (fields.length === 0) {
-      toast.warning(
-        "No fields detected. Please add at least one field to preview."
-      );
-      return;
-    }
-    setPreviewFields(fields);
-    setShowPreview(true);
-  };
-
-  // Convert FormField to format expected by ReusableRegistrationForm
-  const convertToReusableFormFields = (fields: FormField[]) => {
-    return fields.map((field) => ({
-      id: field.id,
-      name: field.id,
-      type: field.type,
-      label: field.label,
-      placeholder: field.placeholder || `Enter ${field.label}`,
-      required: field.required,
-      active: true,
-      options: field.options?.map((opt) => ({
-        value: opt,
-        label: opt,
-      })),
-      description: field.description,
-    }));
-  };
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-7xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
-        {/* Modal Header */}
-        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
-          <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">
-              {isEditMode ? "Edit Form Template" : "Design Form with Builder"}
-            </h3>
-            <input
-              type="text"
-              value={templateTitle}
-              onChange={(e) => setTemplateTitle(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
-              placeholder="Template name"
-            />
-          </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200"
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Modal Body - Form Builder or Preview */}
-        <div className="flex-1 overflow-hidden">
-          {showPreview ? (
-            <div className="h-full overflow-y-auto p-6 bg-gray-50">
-              <div className="max-w-2xl mx-auto bg-white rounded-lg p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Form Preview
-                  </h3>
-                  <button
-                    onClick={() => setShowPreview(false)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-                <ReusableRegistrationForm
-                  formFields={convertToReusableFormFields(previewFields)}
-                  onSubmit={(data) => {
-                    console.log("Preview form submitted:", data);
-                    toast.info("This is a preview. Save the form to use it.");
-                  }}
-                  submitButtonText="Register (Preview)"
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              {isFormBuilderReady ? (
-                <div className="h-full" id="form-builder-container">
-                  <FormBuilderWrapper
-                    builderView={builderView}
-                    onChange={handleFormBuilderChange}
-                    initialData={formBuilderJson || undefined}
-                    templateId={template?.id || "new"}
-                  />
-                </div>
-              ) : (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-8 w-8 animate-spin text-slate-600" />
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Modal Footer */}
-        <div className="p-4 border-t flex justify-between items-center bg-gray-100">
-          <div className="flex gap-3">
-            {!showPreview && (
-              <>
-                <button
-                  onClick={() => {
-                    // Force capture current form data
-                    console.log("=== MANUAL DATA CAPTURE ===");
-                    console.log("formBuilderJson state:", formBuilderJson);
-                    console.log("previewFields:", previewFields);
-                    console.log("isFormBuilderReady:", isFormBuilderReady);
-
-                    // Try to get data from the DOM or builderView
-                    let capturedData = formBuilderJson;
-                    let captureMethod = "";
-
-                    // If we have data in state, use it
-                    if (capturedData) {
-                      console.log("Using formBuilderJson from state");
-                      const fields = convertFormBuilderToFields(capturedData);
-                      if (fields.length > 0) {
-                        toast.success(
-                          `Found ${fields.length} field(s) in saved state!`
-                        );
-                        return;
-                      }
-                    }
-
-                    // Try to access builderView directly with multiple methods
-                    try {
-                      if (builderView) {
-                        console.log("builderView object:", builderView);
-                        console.log("builderView type:", typeof builderView);
-                        console.log(
-                          "builderView constructor:",
-                          builderView.constructor?.name
-                        );
-                        console.log(
-                          "builderView methods:",
-                          Object.getOwnPropertyNames(
-                            Object.getPrototypeOf(builderView)
-                          )
-                        );
-                        console.log(
-                          "builderView properties:",
-                          Object.keys(builderView)
-                        );
-
-                        // Method 1: Direct property
-                        if ((builderView as any).formData) {
-                          capturedData = (builderView as any).formData;
-                          captureMethod = "builderView.formData";
-                          console.log(
-                            "✓ Got data from builderView.formData:",
-                            capturedData
-                          );
-                        }
-                        // Method 2: Getter function
-                        else if (
-                          typeof (builderView as any).getFormData === "function"
-                        ) {
-                          capturedData = (builderView as any).getFormData();
-                          captureMethod = "builderView.getFormData()";
-                          console.log(
-                            "✓ Got data from builderView.getFormData():",
-                            capturedData
-                          );
-                        }
-                        // Method 3: State access
-                        else if ((builderView as any).state?.formData) {
-                          capturedData = (builderView as any).state.formData;
-                          captureMethod = "builderView.state.formData";
-                          console.log(
-                            "✓ Got data from builderView.state.formData:",
-                            capturedData
-                          );
-                        }
-                        // Method 4: Items
-                        else if ((builderView as any).items) {
-                          capturedData = {
-                            formData: (builderView as any).items,
-                          };
-                          captureMethod = "builderView.items";
-                          console.log(
-                            "✓ Got data from builderView.items:",
-                            capturedData
-                          );
-                        }
-                        // Method 5: View property
-                        else if ((builderView as any).view) {
-                          const view = (builderView as any).view;
-                          if (view.formData) {
-                            capturedData = view.formData;
-                            captureMethod = "builderView.view.formData";
-                            console.log(
-                              "✓ Got data from builderView.view.formData:",
-                              capturedData
-                            );
-                          } else if (view.items) {
-                            capturedData = { formData: view.items };
-                            captureMethod = "builderView.view.items";
-                            console.log(
-                              "✓ Got data from builderView.view.items:",
-                              capturedData
-                            );
-                          }
-                        }
-                      }
-                    } catch (error) {
-                      console.error("Error accessing builderView:", error);
-                    }
-
-                    // If we found data, update state
-                    if (capturedData) {
-                      console.log(
-                        `✓ Captured data via ${captureMethod}:`,
-                        capturedData
-                      );
-                      handleFormBuilderChange(capturedData);
-                      const fields = convertFormBuilderToFields(capturedData);
-                      toast.success(
-                        `Form data captured! Found ${fields.length} field(s).`
-                      );
-                    } else {
-                      console.log("✗ No data found. Current state:", {
-                        formBuilderJson,
-                        previewFields,
-                        builderViewExists: !!builderView,
-                        builderViewType: builderView
-                          ? typeof builderView
-                          : "null",
-                      });
-                      toast.warning(
-                        "No form data detected. Please:\n1. Add at least one field to the form builder\n2. Wait a moment for auto-capture\n3. Or check the browser console for details"
-                      );
-                    }
-                    console.log("=== END CAPTURE ===");
-                  }}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
-                  title="Check and capture current form data"
-                >
-                  <Check size={16} />
-                  Capture Data
-                </button>
-                <button
-                  onClick={handlePreview}
-                  className="px-4 py-2 border border-blue-300 rounded-lg text-blue-700 hover:bg-blue-50 transition-colors flex items-center gap-2"
-                >
-                  <Eye size={16} />
-                  Preview
-                </button>
-              </>
-            )}
-          </div>
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSaveTemplate}
-              className="bg-pink-500 hover:bg-pink-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
-            >
-              {isEditMode ? "Update Template" : "Save Template"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 // -------------------- CUSTOM FIELD RENDERER --------------------
 const renderCustomField = (
@@ -1135,16 +407,16 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
       ? typeof bannerImage === "string"
         ? bannerImage
         : bannerImage instanceof File || bannerImage instanceof Blob
-        ? URL.createObjectURL(bannerImage)
-        : null
+          ? URL.createObjectURL(bannerImage)
+          : null
       : null;
 
     const backgroundImageUrl = theme?.formBackgroundImage
       ? typeof theme.formBackgroundImage === "string"
         ? theme.formBackgroundImage
         : theme.formBackgroundImage instanceof File
-        ? URL.createObjectURL(theme.formBackgroundImage)
-        : null
+          ? URL.createObjectURL(theme.formBackgroundImage)
+          : null
       : null;
 
     const formContainerStyle: React.CSSProperties = {
@@ -1182,14 +454,14 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
               theme?.formAlignment === "left"
                 ? "0"
                 : theme?.formAlignment === "right"
-                ? "auto"
-                : "auto",
+                  ? "auto"
+                  : "auto",
             marginRight:
               theme?.formAlignment === "left"
                 ? "auto"
                 : theme?.formAlignment === "right"
-                ? "0"
-                : "auto",
+                  ? "0"
+                  : "auto",
           }}
         >
           {bannerUrl && (
@@ -1266,7 +538,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                       borderWidth: field.layoutProps?.borderWidth || undefined,
                       borderStyle:
                         field.layoutProps?.borderColor ||
-                        field.layoutProps?.borderWidth
+                          field.layoutProps?.borderWidth
                           ? "solid"
                           : undefined,
                       flexWrap:
@@ -1277,8 +549,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
 
                     const childFields = field.children
                       ? (field.children
-                          .map((id) => customFields.find((f) => f.id === id))
-                          .filter(Boolean) as CustomFormField[])
+                        .map((id) => customFields.find((f) => f.id === id))
+                        .filter(Boolean) as CustomFormField[])
                       : [];
 
                     // For column containers, use Bootstrap grid if Bootstrap classes are set
@@ -1320,45 +592,45 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                                 : {}),
                               ...(childField.fieldStyle?.marginRight
                                 ? {
-                                    marginRight:
-                                      childField.fieldStyle.marginRight,
-                                  }
+                                  marginRight:
+                                    childField.fieldStyle.marginRight,
+                                }
                                 : {}),
                               ...(childField.fieldStyle?.marginBottom
                                 ? {
-                                    marginBottom:
-                                      childField.fieldStyle.marginBottom,
-                                  }
+                                  marginBottom:
+                                    childField.fieldStyle.marginBottom,
+                                }
                                 : {}),
                               ...(childField.fieldStyle?.marginLeft
                                 ? {
-                                    marginLeft:
-                                      childField.fieldStyle.marginLeft,
-                                  }
+                                  marginLeft:
+                                    childField.fieldStyle.marginLeft,
+                                }
                                 : {}),
                               ...(childField.fieldStyle?.paddingTop
                                 ? {
-                                    paddingTop:
-                                      childField.fieldStyle.paddingTop,
-                                  }
+                                  paddingTop:
+                                    childField.fieldStyle.paddingTop,
+                                }
                                 : {}),
                               ...(childField.fieldStyle?.paddingRight
                                 ? {
-                                    paddingRight:
-                                      childField.fieldStyle.paddingRight,
-                                  }
+                                  paddingRight:
+                                    childField.fieldStyle.paddingRight,
+                                }
                                 : {}),
                               ...(childField.fieldStyle?.paddingBottom
                                 ? {
-                                    paddingBottom:
-                                      childField.fieldStyle.paddingBottom,
-                                  }
+                                  paddingBottom:
+                                    childField.fieldStyle.paddingBottom,
+                                }
                                 : {}),
                               ...(childField.fieldStyle?.paddingLeft
                                 ? {
-                                    paddingLeft:
-                                      childField.fieldStyle.paddingLeft,
-                                  }
+                                  paddingLeft:
+                                    childField.fieldStyle.paddingLeft,
+                                }
                                 : {}),
                             };
 
@@ -1547,25 +819,25 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
               {!customFields.some(
                 (f) => f.type === "button" && f.buttonType === "submit"
               ) && (
-                <div
-                  className="pt-4 border-t"
-                  style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
-                >
-                  <button
-                    type="submit"
-                    className="w-full px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
-                    style={{
-                      backgroundColor:
-                        theme?.buttonBackgroundColor || "#3b82f6",
-                      color: theme?.buttonTextColor || "#ffffff",
-                      borderRadius: theme?.buttonBorderRadius || "6px",
-                      padding: theme?.buttonPadding || "12px 24px",
-                    }}
+                  <div
+                    className="pt-4 border-t"
+                    style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
                   >
-                    Submit Registration
-                  </button>
-                </div>
-              )}
+                    <button
+                      type="submit"
+                      className="w-full px-6 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
+                      style={{
+                        backgroundColor:
+                          theme?.buttonBackgroundColor || "#3b82f6",
+                        color: theme?.buttonTextColor || "#ffffff",
+                        borderRadius: theme?.buttonBorderRadius || "6px",
+                        padding: theme?.buttonPadding || "12px 24px",
+                      }}
+                    >
+                      Submit Registration
+                    </button>
+                  </div>
+                )}
             </form>
 
             {theme?.footerEnabled && theme?.footerText && (
@@ -1676,8 +948,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
     ? typeof bannerImage === "string"
       ? bannerImage
       : bannerImage instanceof File || bannerImage instanceof Blob
-      ? URL.createObjectURL(bannerImage)
-      : null
+        ? URL.createObjectURL(bannerImage)
+        : null
     : null;
 
   // Get background image URL
@@ -1685,8 +957,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
     ? typeof theme.formBackgroundImage === "string"
       ? theme.formBackgroundImage
       : theme.formBackgroundImage instanceof File
-      ? URL.createObjectURL(theme.formBackgroundImage)
-      : null
+        ? URL.createObjectURL(theme.formBackgroundImage)
+        : null
     : null;
 
   const formContainerStyle: React.CSSProperties = {
@@ -1735,8 +1007,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
               theme.logoPosition === "left"
                 ? "flex-start"
                 : theme.logoPosition === "right"
-                ? "flex-end"
-                : "center",
+                  ? "flex-end"
+                  : "center",
             paddingLeft: theme.logoPosition === "left" ? "16px" : "0",
             paddingRight: theme.logoPosition === "right" ? "16px" : "0",
           }}
@@ -1746,8 +1018,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
               typeof theme.logo === "string"
                 ? theme.logo
                 : theme.logo instanceof File || theme.logo instanceof Blob
-                ? URL.createObjectURL(theme.logo)
-                : ""
+                  ? URL.createObjectURL(theme.logo)
+                  : ""
             }
             alt="Form logo"
             style={{
@@ -1837,9 +1109,8 @@ const TemplateModal = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${
-              isLoading ? "cursor-not-allowed opacity-50" : ""
-            }`}
+            className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${isLoading ? "cursor-not-allowed opacity-50" : ""
+              }`}
           >
             <X />
           </button>
@@ -1884,7 +1155,7 @@ const AdvanceRegistration = ({
   const [formBuilderTemplates, setFormBuilderTemplates] = useState<
     CustomFormTemplate[]
   >([]);
-  const [isFormBuilderModalOpen, setIsFormBuilderModalOpen] = useState(false);
+
   const [isCustomFormBuilderOpen, setIsCustomFormBuilderOpen] = useState(false);
   const [editingFormBuilderTemplate, setEditingFormBuilderTemplate] =
     useState<CustomFormTemplate | null>(null);
@@ -1928,8 +1199,8 @@ const AdvanceRegistration = ({
       options:
         item.options || item.values
           ? (item.options || item.values).map((opt: any) =>
-              typeof opt === "string" ? opt : opt.label || opt.value || opt.text
-            )
+            typeof opt === "string" ? opt : opt.label || opt.value || opt.text
+          )
           : undefined,
     }));
   };
@@ -2038,11 +1309,11 @@ const AdvanceRegistration = ({
   ];
 
   // -------------------- FORM BUILDER FUNCTIONS --------------------
-  const handleOpenFormBuilder = () => {
-    setEditingFormBuilderTemplate(null);
-    setIsEditFormBuilderMode(false);
-    setIsFormBuilderModalOpen(true);
-  };
+  // const handleOpenFormBuilder = () => {
+  //   setEditingFormBuilderTemplate(null);
+  //   setIsEditFormBuilderMode(false);
+  //   setIsFormBuilderModalOpen(true);
+  // };
 
   const handleOpenCustomFormBuilder = (template?: CustomFormTemplate) => {
     if (template) {
@@ -2111,10 +1382,7 @@ const AdvanceRegistration = ({
       // It's a custom form builder template
       handleOpenCustomFormBuilder(template);
     } else {
-      // It's the old form builder template
-      setEditingFormBuilderTemplate(template);
-      setIsEditFormBuilderMode(true);
-      setIsFormBuilderModalOpen(true);
+      toast.info("Legacy form templates cannot be edited. Please create a new Custom Form Template.");
     }
   };
 
@@ -2151,20 +1419,20 @@ const AdvanceRegistration = ({
 
       const normalizedTheme: FormTheme | undefined = template.theme
         ? {
-            ...template.theme,
-            logo: await normalizeImageValue(template.theme.logo),
-            formBackgroundImage: await normalizeImageValue(
-              template.theme.formBackgroundImage
-            ),
-          }
+          ...template.theme,
+          logo: await normalizeImageValue(template.theme.logo),
+          formBackgroundImage: await normalizeImageValue(
+            template.theme.formBackgroundImage
+          ),
+        }
         : undefined;
 
       const normalizedFormBuilderData = template.formBuilderData
         ? {
-            ...template.formBuilderData,
-            bannerImage: normalizedBannerImage ?? null,
-            theme: normalizedTheme,
-          }
+          ...template.formBuilderData,
+          bannerImage: normalizedBannerImage ?? null,
+          theme: normalizedTheme,
+        }
         : template.formBuilderData;
 
       const normalizedTemplate: CustomFormTemplate = {
@@ -2222,8 +1490,7 @@ const AdvanceRegistration = ({
       }
 
       toast.success(
-        `Form Builder template ${
-          isEditFormBuilderMode ? "updated" : "saved"
+        `Form Builder template ${isEditFormBuilderMode ? "updated" : "saved"
         } successfully!`
       );
     } catch (error: any) {
@@ -2450,20 +1717,7 @@ const AdvanceRegistration = ({
             </div>
 
             {/* Form Builder Template Card (Second Position) */}
-            <div
-              onClick={handleOpenFormBuilder}
-              className="border-2 border-dashed border-gray-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-blue-400 hover:bg-blue-50 flex flex-col items-center justify-center aspect-square"
-            >
-              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <Plus className="text-blue-500" size={32} />
-              </div>
-              <h3 className="text-lg font-medium mb-2 text-center text-blue-500">
-                Design with Form Builder
-              </h3>
-              <p className="text-sm text-gray-500 text-center">
-                Use drag & drop to create custom forms
-              </p>
-            </div>
+
 
             {/* Form Builder Templates */}
             {formBuilderTemplates.map((template) => {
@@ -2482,18 +1736,17 @@ const AdvanceRegistration = ({
                   ? template.bannerImage
                   : template.bannerImage instanceof File ||
                     template.bannerImage instanceof Blob
-                  ? URL.createObjectURL(template.bannerImage)
-                  : null
+                    ? URL.createObjectURL(template.bannerImage)
+                    : null
                 : null;
 
               return (
                 <div
                   key={template.id}
-                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${
-                    confirmedTemplate === template.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-blue-500"
-                  }`}
+                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${confirmedTemplate === template.id
+                    ? "border-blue-500 bg-blue-50"
+                    : "border-gray-200 hover:border-blue-500"
+                    }`}
                 >
                   {/* Edit/Delete buttons */}
                   <div className="absolute top-2 right-2 flex gap-1 z-10">
@@ -2584,11 +1837,10 @@ const AdvanceRegistration = ({
                 <div
                   key={tpl.id}
                   onClick={() => !isLoadingFormData && handleOpenModal(tpl.id)}
-                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col ${
-                    confirmedTemplate === tpl.id
-                      ? "border-pink-500 bg-pink-50"
-                      : "border-gray-200 hover:border-pink-500"
-                  }`}
+                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col ${confirmedTemplate === tpl.id
+                    ? "border-pink-500 bg-pink-50"
+                    : "border-gray-200 hover:border-pink-500"
+                    }`}
                 >
                   <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
                     {isLoadingFormData && (
@@ -2633,15 +1885,7 @@ const AdvanceRegistration = ({
           />
         )}
 
-        {/* Form Builder Modal */}
-        <FormBuilderModal
-          isOpen={isFormBuilderModalOpen}
-          onClose={() => setIsFormBuilderModalOpen(false)}
-          onSave={handleSaveFormBuilderTemplate}
-          template={editingFormBuilderTemplate}
-          isEditMode={isEditFormBuilderMode}
-          eventId={effectiveEventId}
-        />
+
 
         {/* Delete Form Builder Template Modal */}
         {isDeleteFormBuilderModalOpen && (
@@ -2708,7 +1952,7 @@ const AdvanceRegistration = ({
                 initialFields={
                   editingFormBuilderTemplate?.formBuilderData?.formData
                     ? (editingFormBuilderTemplate.formBuilderData
-                        .formData as CustomFormField[])
+                      .formData as CustomFormField[])
                     : []
                 }
                 initialBannerImage={editingFormBuilderTemplate?.bannerImage}
@@ -2740,11 +1984,10 @@ const AdvanceRegistration = ({
                       )
                     }
                     disabled={isLoading}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium ${
-                      isLoading
-                        ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        : "bg-pink-500 hover:bg-pink-600 text-white"
-                    }`}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium ${isLoading
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-pink-500 hover:bg-pink-600 text-white"
+                      }`}
                   >
                     {isLoading ? "Saving..." : "Use This Template"}
                   </button>
@@ -2754,9 +1997,8 @@ const AdvanceRegistration = ({
                       setPreviewFormBuilderTemplate(null);
                     }}
                     disabled={isLoading}
-                    className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${
-                      isLoading ? "cursor-not-allowed opacity-50" : ""
-                    }`}
+                    className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${isLoading ? "cursor-not-allowed opacity-50" : ""
+                      }`}
                   >
                     <X />
                   </button>
@@ -2778,11 +2020,10 @@ const AdvanceRegistration = ({
           <button
             onClick={onPrevious}
             disabled={isLoading || isLoadingFormData}
-            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-medium border text-slate-800 border-gray-300 hover:bg-gray-50 ${
-              isLoading || isLoadingFormData
-                ? "cursor-not-allowed opacity-50"
-                : ""
-            }`}
+            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-medium border text-slate-800 border-gray-300 hover:bg-gray-50 ${isLoading || isLoadingFormData
+              ? "cursor-not-allowed opacity-50"
+              : ""
+              }`}
           >
             ← Previous
           </button>
@@ -2790,11 +2031,10 @@ const AdvanceRegistration = ({
           <button
             onClick={handleNextClick}
             disabled={!confirmedTemplate || isLoading || isLoadingFormData}
-            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center ${
-              !confirmedTemplate || isLoading || isLoadingFormData
-                ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                : "bg-slate-800 hover:bg-slate-900 text-white"
-            }`}
+            className={`w-full sm:w-auto px-6 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center ${!confirmedTemplate || isLoading || isLoadingFormData
+              ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+              : "bg-slate-800 hover:bg-slate-900 text-white"
+              }`}
           >
             {isLoading || isLoadingFormData ? (
               <>

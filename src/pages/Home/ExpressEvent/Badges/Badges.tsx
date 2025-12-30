@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Assets from "@/utils/Assets";
 import { toast, ToastContainer } from "react-toastify";
-import { getEventbyId, postBadgesApi } from "@/apis/apiHelpers";
+import { getEventbyId, postBadgesApi, getBadgesApi, deleteBadgeTemplateApi, updateBadgeTemplateApi } from "@/apis/apiHelpers";
 import type { ToggleStates } from "../ExpressEvent";
 import CustomBadgeModal from "./components/CustomBadgeModal";
 
@@ -354,7 +354,12 @@ interface CustomBadgePreviewProps {
 const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
   template,
 }) => {
-  const previewWidth = template.width * 100;
+  // Convert pixels to inches if needed (if width > 50, assume it's in pixels)
+  const widthInInches = template.width > 50 ? template.width / 96 : template.width;
+  const heightInInches = template.height > 50 ? template.height / 96 : template.height;
+  
+  const previewWidth = widthInInches * 100;
+  const previewHeight = heightInInches * 100;
 
   // Scaling ratio for positioning elements (100px per inch vs base units if any)
   // The positioning in the template seems to be based on some unit.
@@ -370,6 +375,26 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
 
   const multiplier = 0.5;
 
+  // Use the fixRedBackground function (defined in parent component)
+  // For preview modal, we'll define it here too
+  const getValidBgColor = (bgColor: string | null | undefined): string => {
+    if (!bgColor) return "#ffffff";
+    const color = bgColor.toLowerCase().trim();
+    if (
+      color === "#ff0000" ||
+      color === "#f00" ||
+      color === "red" ||
+      color === "rgb(255, 0, 0)" ||
+      color === "rgba(255, 0, 0, 1)" ||
+      (color.startsWith("#ff") && (color.includes("0000") || color === "#ff0000" || color === "#ff00"))
+    ) {
+      return "#ffffff";
+    }
+    return bgColor;
+  };
+
+  const validBgColor = getValidBgColor(template.bgColor);
+
   return (
     <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden">
       <div className="p-8">
@@ -379,10 +404,12 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
               className="relative rounded-2xl shadow-xl overflow-hidden border-4 border-gray-300"
               style={{
                 width: `${previewWidth}px`,
-                height: `${template.height * 100}px`,
+                height: `${previewHeight}px`,
+                maxWidth: "100%",
+                maxHeight: "100%",
                 backgroundColor: template.hasBackground
-                  ? template.bgColor
-                  : "transparent",
+                  ? validBgColor
+                  : "#ffffff",
                 backgroundImage:
                   template.hasBackground && template.bgImage
                     ? `url(${template.bgImage})`
@@ -658,23 +685,150 @@ const Badges: React.FC<BadgesProps> = ({
     },
   ];
 
-  // Load custom templates from localStorage
-  useEffect(() => {
-    const saved = localStorage.getItem("customBadgeTemplates");
-    if (saved) {
-      try {
-        setCustomTemplates(JSON.parse(saved));
-      } catch (error) {
-        console.error("Error loading templates:", error);
-      }
+  // -------------------- API TRANSFORMATION HELPERS --------------------
+  // Transform BadgeTemplate to API format
+  const transformTemplateToApi = (template: BadgeTemplate) => {
+    // Keep width/height in inches (API expects inches, not pixels)
+    const width = template.width || 3.5;
+    const height = template.height || 5.5;
+
+    // Send full template_data structure with id field (API accepts it)
+    const templateData: any = {
+      id: template.id, // Include id field as API accepts it
+      name: template.name || "Untitled",
+      type: template.type || "custom",
+      width: width,
+      height: height,
+      hasBackground: template.hasBackground ?? true,
+      bgColor: template.bgColor || "#ffffff",
+      hasPersonalPhoto: template.hasPersonalPhoto ?? false,
+      photoSize: template.photoSize || { width: 200, height: 200 },
+      photoAlignment: template.photoAlignment || "center",
+      photoPosition: template.photoPosition || { x: 200, y: 60 },
+      hasName: template.hasName ?? true,
+      nameText: template.nameText || {
+        size: 24,
+        color: "#000000",
+        alignment: "center",
+        position: { x: 200, y: 280 },
+      },
+      hasCompany: template.hasCompany ?? false,
+      companyText: template.companyText || {
+        size: 18,
+        color: "#666666",
+        alignment: "center",
+        position: { x: 200, y: 315 },
+      },
+      hasTitle: template.hasTitle ?? true,
+      titleText: template.titleText || {
+        size: 16,
+        color: "#999999",
+        alignment: "center",
+        position: { x: 200, y: 350 },
+      },
+      hasQrCode: template.hasQrCode ?? false,
+      qrCodeSize: template.qrCodeSize || { width: 120, height: 120 },
+      qrCodePosition: template.qrCodePosition || { x: 200, y: 400 },
+      qrCodeAlignment: template.qrCodeAlignment || "center",
+    };
+
+    // Only include bgImage if it's not null (base64 string)
+    if (template.bgImage) {
+      templateData.bgImage = template.bgImage;
     }
 
-    // Load event data
+    return {
+      name: template.name || "Untitled",
+      default: false,
+      template_data: templateData,
+    };
+  };
+
+  // Helper to fix red background colors
+  const fixRedBackground = (bgColor: string | null | undefined): string => {
+    if (!bgColor) return "#ffffff";
+    const color = bgColor.toLowerCase().trim();
+    // Check for various red color formats
+    if (
+      color === "#ff0000" ||
+      color === "#f00" ||
+      color === "red" ||
+      color === "rgb(255, 0, 0)" ||
+      color === "rgba(255, 0, 0, 1)" ||
+      (color.startsWith("#ff") && (color.includes("0000") || color === "#ff0000" || color === "#ff00"))
+    ) {
+      return "#ffffff"; // Replace red with white
+    }
+    return bgColor;
+  };
+
+  // Transform API response to BadgeTemplate
+  const transformApiToTemplate = (apiData: any): BadgeTemplate => {
+    const templateData = apiData.attributes?.template_data || {};
+    
+    // Convert pixels to inches if needed (API might return pixels like 400x600)
+    let width = templateData.width || 3.5;
+    let height = templateData.height || 5.5;
+    
+    // If width/height are > 50, assume they're in pixels and convert to inches
+    // Standard DPI is 96 pixels per inch
+    if (width > 50) {
+      width = width / 96;
+    }
+    if (height > 50) {
+      height = height / 96;
+    }
+    
+    return {
+      id: apiData.id || `custom-${apiData.id}`,
+      name: apiData.attributes?.name || templateData.name || "Untitled",
+      type: "custom",
+      width: width,
+      height: height,
+      hasBackground: templateData.hasBackground ?? true,
+      bgColor: fixRedBackground(templateData.bgColor || "#ffffff"),
+      bgImage: apiData.attributes?.background_image || templateData.bgImage || null,
+      hasPersonalPhoto: templateData.hasPersonalPhoto ?? false,
+      photoSize: templateData.photoSize || { width: 200, height: 200 },
+      photoAlignment: templateData.photoAlignment || "center",
+      photoPosition: templateData.photoPosition || { x: 200, y: 60 },
+      hasName: templateData.hasName ?? true,
+      nameText: templateData.nameText || {
+        size: 24,
+        color: "#000000",
+        alignment: "center",
+        position: { x: 200, y: 280 },
+      },
+      hasCompany: templateData.hasCompany ?? false,
+      companyText: templateData.companyText || {
+        size: 18,
+        color: "#666666",
+        alignment: "center",
+        position: { x: 200, y: 315 },
+      },
+      hasTitle: templateData.hasTitle ?? true,
+      titleText: templateData.titleText || {
+        size: 16,
+        color: "#999999",
+        alignment: "center",
+        position: { x: 200, y: 350 },
+      },
+      hasQrCode: templateData.hasQrCode ?? false,
+      qrCodeSize: templateData.qrCodeSize || { width: 120, height: 120 },
+      qrCodePosition: templateData.qrCodePosition || { x: 200, y: 400 },
+      qrCodeAlignment: templateData.qrCodeAlignment || "center",
+    };
+  };
+
+  // Load custom templates from API only (API is the source of truth)
+  useEffect(() => {
+    // Load event data and custom templates from API
     if (effectiveEventId) {
+      // Load event data
       getEventbyId(effectiveEventId)
         .then((response) => {
           const eventData = response?.data?.data;
-          console.log("response of get badge api", eventData);
+          console.log("response of get event api", eventData);
           setEvent(eventData);
 
           const activeBadge =
@@ -687,10 +841,43 @@ const Badges: React.FC<BadgesProps> = ({
             const foundBadge = badges.find((b) => b.id === activeBadge);
             if (foundBadge) {
               setSelectedBadge(foundBadge);
-            } else {
-              // Check if it's a custom template
-              const foundTemplate = customTemplates.find(
-                (t) => t.id === `custom-${activeBadge}`
+            }
+          }
+        })
+        .catch((error) => {
+          console.error("Failed to fetch event data:", error);
+        });
+
+      // Load custom badge templates from API
+      getBadgesApi(parseInt(effectiveEventId, 10))
+        .then((response) => {
+          const templatesData = response?.data?.data || [];
+          console.log("Custom badge templates from API:", templatesData);
+
+          // Filter only custom templates (not default templates like "Template 1", "Template 2")
+          const customTemplatesFromApi = templatesData
+            .filter((item: any) => {
+              const name = item.attributes?.name || "";
+              // Exclude default templates
+              return !["Template 1", "Template 2", "Badge 1", "Badge 2", "Badge 3", "Badge 4"].includes(name);
+            })
+            .map((item: any) => {
+              const template = transformApiToTemplate(item) as BadgeTemplate;
+              // Fix any red backgrounds in loaded templates
+              template.bgColor = fixRedBackground(template.bgColor);
+              return template;
+            });
+
+          // Always set templates from API (even if empty array) - API is the source of truth
+          setCustomTemplates(customTemplatesFromApi);
+
+          // Check if active badge is a custom template (from event state)
+          // Note: event state is set in the previous API call
+          if (event && customTemplatesFromApi.length > 0) {
+            const activeBadgeId = event?.attributes?.active_badge_id;
+            if (activeBadgeId) {
+              const foundTemplate = customTemplatesFromApi.find(
+                (t: BadgeTemplate) => t.id === activeBadgeId.toString() || t.id === `custom-${activeBadgeId}`
               );
               if (foundTemplate) {
                 setSelectedTemplate(foundTemplate);
@@ -699,15 +886,39 @@ const Badges: React.FC<BadgesProps> = ({
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch event data:", error);
+          console.error("Failed to fetch custom badge templates:", error);
+          // On error, clear templates (don't show stale localStorage data)
+          setCustomTemplates([]);
         });
+    } else {
+      // No event ID, clear templates
+      setCustomTemplates([]);
     }
   }, [effectiveEventId]);
 
-  // Save templates to localStorage
-  const saveTemplates = (newTemplates: BadgeTemplate[]) => {
-    localStorage.setItem("customBadgeTemplates", JSON.stringify(newTemplates));
-    setCustomTemplates(newTemplates);
+  // Reload custom templates from API
+  const reloadCustomTemplates = async () => {
+    if (!effectiveEventId) return;
+    
+    try {
+      const response = await getBadgesApi(parseInt(effectiveEventId, 10));
+      const templatesData = response?.data?.data || [];
+      
+      const customTemplatesFromApi = templatesData
+        .filter((item: any) => {
+          const name = item.attributes?.name || "";
+          return !["Template 1", "Template 2", "Badge 1", "Badge 2", "Badge 3", "Badge 4"].includes(name);
+        })
+        .map((item: any) => {
+          const template = transformApiToTemplate(item) as BadgeTemplate;
+          template.bgColor = fixRedBackground(template.bgColor);
+          return template;
+        });
+      
+      setCustomTemplates(customTemplatesFromApi);
+    } catch (error) {
+      console.error("Failed to reload custom badge templates:", error);
+    }
   };
 
   // -------------------- CUSTOM TEMPLATE FUNCTIONS --------------------
@@ -723,38 +934,192 @@ const Badges: React.FC<BadgesProps> = ({
     setIsCustomModalOpen(true);
   };
 
-  const handleSaveCustomTemplate = (template: BadgeTemplate) => {
-    let updatedTemplates: BadgeTemplate[];
-
-    if (isEditCustomMode && editingCustomTemplate) {
-      // Update existing template
-      updatedTemplates = customTemplates.map((t) =>
-        t.id === editingCustomTemplate.id
-          ? { ...template, updatedAt: new Date().toISOString() }
-          : t
-      );
-    } else {
-      // Create new template
-      updatedTemplates = [...customTemplates, template];
+  const handleSaveCustomTemplate = async (template: BadgeTemplate) => {
+    if (!effectiveEventId) {
+      toast.error("Event ID not found. Cannot save template.");
+      return;
     }
 
-    saveTemplates(updatedTemplates);
-    toast.success(
-      `Template ${isEditCustomMode ? "updated" : "created"} successfully!`
-    );
+    setLoading(true);
+    try {
+      // Transform template to API format
+      const apiData = transformTemplateToApi(template);
+      const requestData = {
+        badge_template: apiData,
+      };
+
+      console.log("Saving badge template to API:", JSON.stringify(requestData, null, 2));
+
+      let response;
+      
+      if (isEditCustomMode && editingCustomTemplate) {
+        // Extract numeric ID from template ID for PUT request
+        let numericId: number | null = null;
+        const templateId = editingCustomTemplate.id;
+        
+        // Try direct parse (for API IDs like "58")
+        const directParse = parseInt(templateId, 10);
+        if (!isNaN(directParse) && directParse > 0) {
+          numericId = directParse;
+        } else if (templateId.startsWith("custom-")) {
+          // Extract from formats like "custom-badge-123" or "custom-123"
+          const parts = templateId.split("-");
+          const lastPart = parts[parts.length - 1];
+          const parsed = parseInt(lastPart, 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            numericId = parsed;
+          }
+        }
+
+        if (!numericId || numericId === 0) {
+          toast.error("Invalid template ID. Cannot update template.");
+          setLoading(false);
+          return;
+        }
+
+        // Call PUT API for update
+        console.log(`Updating badge template ${numericId} for event ${effectiveEventId}`);
+        response = await updateBadgeTemplateApi(
+          parseInt(effectiveEventId, 10),
+          numericId,
+          requestData
+        );
+      } else {
+        // Call POST API for create
+        response = await postBadgesApi(
+          requestData,
+          parseInt(effectiveEventId, 10)
+        );
+      }
+
+      console.log("Badge template saved successfully:", response.data);
+
+      toast.success(
+        `Template ${isEditCustomMode ? "updated" : "created"} successfully!`
+      );
+      
+      // Close modal after successful save
+      setIsCustomModalOpen(false);
+      
+      // Reload templates from API to get the latest data
+      await reloadCustomTemplates();
+    } catch (error: any) {
+      console.error("Failed to save badge template:", error);
+      console.error("Error response:", error?.response);
+      console.error("Error data:", error?.response?.data);
+      console.error("Error status:", error?.response?.status);
+      
+      // Show detailed validation errors if available
+      let errorMessage = `Failed to ${isEditCustomMode ? "update" : "create"} template.`;
+      
+      if (error?.response?.data?.errors) {
+        // Handle validation errors object
+        const errors = error.response.data.errors;
+        console.error("Full validation errors object:", JSON.stringify(errors, null, 2));
+        
+        // Check if errors.errors is an array of error objects
+        if (Array.isArray(errors.errors)) {
+          // Extract messages from error objects
+          const messages = errors.errors.map((err: any) => {
+            if (typeof err === "string") {
+              return err;
+            } else if (err?.message) {
+              return err.message;
+            } else if (err?.field && err?.code) {
+              return `${err.field}: ${err.message || err.code}`;
+            }
+            return JSON.stringify(err);
+          });
+          errorMessage = messages.length > 0 ? messages.join(", ") : "Validation failed";
+        } else if (errors.errors && typeof errors.errors === "object") {
+          // Handle errors.errors as an object
+          const errorMessages = Object.entries(errors.errors)
+            .map(([field, messages]: [string, any]) => {
+              const msgArray = Array.isArray(messages) ? messages : [messages];
+              return `${field}: ${msgArray.join(", ")}`;
+            })
+            .join(", ");
+          errorMessage = errorMessages || "Validation failed";
+        } else {
+          // Fallback: try to stringify the errors
+          errorMessage = errors.message || "Validation failed";
+        }
+        console.error("Validation errors:", errors);
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteCustomTemplate = (templateId: string) => {
-    if (confirm("Are you sure you want to delete this template?")) {
-      const updatedTemplates = customTemplates.filter(
-        (template) => template.id !== templateId
-      );
-      saveTemplates(updatedTemplates);
+  const handleDeleteCustomTemplate = async (templateId: string) => {
+    if (!confirm("Are you sure you want to delete this template?")) {
+      return;
+    }
 
+    if (!effectiveEventId) {
+      toast.error("Event ID not found. Cannot delete template.");
+      return;
+    }
+
+    // Extract numeric ID from template ID
+    // Template ID formats:
+    // - From API: "58", "50" (numeric string)
+    // - Locally generated: "custom-badge-1767063894117" (timestamp-based)
+    // - Legacy: "custom-58" (if any)
+    let numericId: number | null = null;
+    
+    // First, try direct parse (for API IDs like "58")
+    const directParse = parseInt(templateId, 10);
+    if (!isNaN(directParse) && directParse > 0) {
+      numericId = directParse;
+    } else if (templateId.startsWith("custom-")) {
+      // Extract from formats like "custom-badge-123" or "custom-123"
+      const parts = templateId.split("-");
+      const lastPart = parts[parts.length - 1];
+      const parsed = parseInt(lastPart, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        numericId = parsed;
+      }
+    }
+
+    // If we still don't have a valid numeric ID, we can't delete from API
+    if (!numericId || numericId === 0) {
+      toast.error("Invalid template ID. Cannot delete from server.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log(`Deleting badge template ${numericId} from event ${effectiveEventId}`);
+      
+      // Call DELETE API
+      await deleteBadgeTemplateApi(
+        parseInt(effectiveEventId, 10),
+        numericId
+      );
+
+      // Clear selection if deleted template was selected
       if (selectedTemplate?.id === templateId) {
         setSelectedTemplate(null);
       }
+
       toast.success("Template deleted successfully!");
+      
+      // Reload templates from API to get the latest data
+      await reloadCustomTemplates();
+    } catch (error: any) {
+      console.error("Failed to delete badge template:", error);
+      toast.error(
+        error?.response?.data?.error || "Failed to delete template."
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -896,21 +1261,47 @@ const Badges: React.FC<BadgesProps> = ({
     );
   };
 
+  // Helper function to validate and fix background color
+  const getValidBackgroundColor = (bgColor: string | null | undefined): string => {
+    if (!bgColor) return "#ffffff";
+    const color = bgColor.toLowerCase().trim();
+    // Check if it's a red color (common red hex codes)
+    if (
+      color === "#ff0000" ||
+      color === "#f00" ||
+      color === "red" ||
+      color.startsWith("#ff") && (color.includes("0000") || color === "#ff0000" || color === "#ff00")
+    ) {
+      return "#ffffff"; // Replace red with white
+    }
+    return bgColor;
+  };
+
   const renderCustomBadgePreview = (template: BadgeTemplate) => {
     const previewScale = 55;
     const internalScale = 0.275;
-    const previewWidth = template.width * previewScale;
+    
+    // Convert pixels to inches if needed (if width > 50, assume it's in pixels)
+    // 1 inch = 96 pixels (standard DPI), so divide by 96 to convert
+    const widthInInches = template.width > 50 ? template.width / 96 : template.width;
+    const heightInInches = template.height > 50 ? template.height / 96 : template.height;
+    
+    const previewWidth = widthInInches * previewScale;
+    const previewHeight = heightInInches * previewScale;
+    const validBgColor = getValidBackgroundColor(template.bgColor);
 
     return (
-      <div className="flex flex-col items-center justify-center p-4">
+      <div className="flex flex-col items-center justify-center p-4 overflow-hidden">
         <div
           className="relative rounded-xl shadow-md overflow-hidden border border-gray-200"
           style={{
             width: `${previewWidth}px`,
-            height: `${template.height * previewScale}px`,
+            height: `${previewHeight}px`,
+            maxWidth: "100%",
+            maxHeight: "100%",
             backgroundColor: template.hasBackground
-              ? template.bgColor
-              : "transparent",
+              ? validBgColor
+              : "#ffffff",
             backgroundImage:
               template.hasBackground && template.bgImage
                 ? `url(${template.bgImage})`
@@ -1076,12 +1467,12 @@ const Badges: React.FC<BadgesProps> = ({
       throw new Error("Event ID not found");
     }
 
+    // Transform template to API format
+    const apiData = transformTemplateToApi(template);
     const data = {
       badge_template: {
-        name: template.name,
-        event_id: effectiveEventId,
-        default: true,
-        template_data: template, // Include the full template data
+        ...apiData,
+        default: true, // Set as default when selecting
       },
     };
 
@@ -1162,7 +1553,7 @@ const Badges: React.FC<BadgesProps> = ({
       </div>
 
       {/* Badge Templates Grid */}
-      <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 overflow-hidden">
         {/* Custom Badge Creation Card (First Position) */}
         <div
           onClick={handleCreateNewTemplate}
@@ -1185,9 +1576,9 @@ const Badges: React.FC<BadgesProps> = ({
           return (
             <div
               key={template.id}
-              className={`border-2 rounded-3xl p-4 transition-colors flex flex-col min-h-[350px] ${isSelected
+              className={`border-2 rounded-3xl p-4 transition-colors flex flex-col min-h-[350px] overflow-hidden ${isSelected
                 ? "border-pink-500 bg-pink-50"
-                : "border-gray-200 hover:border-pink-500"
+                : "border-gray-200 hover:border-pink-500 bg-white"
                 }`}
             >
               <div

@@ -46,8 +46,16 @@ export const postBadgesApi = (data: any, id: number) => {
 };
 
 export const getBadgesApi = (id: number) => {
-  // return axiosInstance.post(`/events/${id}/badges`, data);
+  // return axiosInstance.post(`/events/${id}/badges`, datfa);
   return axiosInstance.get(`/events/${id}/badge_templates`);
+};
+
+export const deleteBadgeTemplateApi = (eventId: number, templateId: number) => {
+  return axiosInstance.delete(`/events/${eventId}/badge_templates/${templateId}`);
+};
+
+export const updateBadgeTemplateApi = (eventId: number, templateId: number, data: any) => {
+  return axiosInstance.put(`/events/${eventId}/badge_templates/${templateId}`, data);
 };
 
 export const postRegistrationTemplateFieldApi = (data: any, id: string) => {
