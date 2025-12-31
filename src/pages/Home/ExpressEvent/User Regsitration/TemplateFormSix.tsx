@@ -38,37 +38,14 @@ const TemplateFormSix = ({
       };
     });
 
-    // ✅ Create user_type field from event data
-    const userTypeField = {
-      id: 999, // Unique ID
-      name: "user_type",
-      type: "select",
-      label: "User Type",
-      placeholder: "Select User Type",
-      required: true,
-      active: true,
-      fullWidth: false,
-      options: eventData?.attributes?.user_types?.map((type: string) => ({
-        value: type,
-        label: type,
-      })) || [],
-    };
-
-    // ✅ Find the index of the name field
-    const nameFieldIndex = mapped.findIndex((f: any) => f.name === "name");
-
-    // ✅ Insert user_type right after name field
-    const fieldsWithUserType = [...mapped];
-    if (nameFieldIndex !== -1 && userTypeField.options.length > 0) {
-      fieldsWithUserType.splice(nameFieldIndex + 1, 0, userTypeField);
-    }
-
-    // ✅ Move image fields to the end
-    const nonImageFields = fieldsWithUserType.filter(f => f.name !== "image");
-    const imageFields = fieldsWithUserType.filter(f => f.name === "image");
-
-    return [...nonImageFields, ...imageFields];
-  }, [formFields, eventData?.attributes?.user_types]);
+    // ✅ Preserve the order property - fields are already sorted by order in UserRegistration.tsx
+    // Sort by order to ensure correct display order
+    return mapped.sort((a: any, b: any) => {
+      const orderA = a.order ?? 999;
+      const orderB = b.order ?? 999;
+      return orderA - orderB;
+    });
+  }, [formFields]);
 
   return (
     <div className="w-full flex flex-row p-4">
@@ -83,7 +60,9 @@ const TemplateFormSix = ({
           }}
           className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
         >
-          {!eventData?.attributes?.registration_page_banner && <div className="text-white text-center" />}
+          {!eventData?.attributes?.registration_page_banner && (
+            <div className="text-white text-center" />
+          )}
         </div>
 
         <div style={{ marginTop: 16 }} />
@@ -105,14 +84,23 @@ const TemplateFormSix = ({
               </p>
 
               <div className="flex flex-row items-center gap-3">
-                <img src={Assets.icons.clock} style={{ height: 20, width: 20 }} alt="" />
+                <img
+                  src={Assets.icons.clock}
+                  style={{ height: 20, width: 20 }}
+                  alt=""
+                />
                 <p className="text-neutral-600 font-poppins font-normal text-xs">
-                  {eventData?.attributes?.event_date_from} - {eventData?.attributes?.event_date_to}
+                  {eventData?.attributes?.event_date_from} -{" "}
+                  {eventData?.attributes?.event_date_to}
                 </p>
               </div>
 
               <div className="flex flex-row items-center gap-3">
-                <img src={Assets.icons.location} style={{ height: 20, width: 20 }} alt="" />
+                <img
+                  src={Assets.icons.location}
+                  style={{ height: 20, width: 20 }}
+                  alt=""
+                />
                 <p className="text-neutral-600 font-poppins font-normal text-xs">
                   {eventData?.attributes?.location || "Location"}
                 </p>

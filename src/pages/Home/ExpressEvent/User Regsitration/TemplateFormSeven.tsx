@@ -10,8 +10,8 @@ const TemplateFormSeven = ({
   eventData: any;
   formFields: any[];
 }) => {
-  console.log('Event Attributes:', eventData?.attributes);
-  console.log('Event Form Data Attributes (RAW):', formFields);
+  console.log("Event Attributes:", eventData?.attributes);
+  console.log("Event Form Data Attributes (RAW):", formFields);
 
   // ✅ Get tenant_uuid from localStorage
   const tenantUuid = localStorage.getItem("tenant_uuid");
@@ -42,39 +42,16 @@ const TemplateFormSeven = ({
       };
     });
 
-    // ✅ Create user_type field from event data
-    const userTypeField = {
-      id: 999, // Unique ID
-      name: "user_type",
-      type: "select",
-      label: "User Type",
-      placeholder: "Select User Type",
-      required: true,
-      active: true,
-      fullWidth: false,
-      options: eventData?.attributes?.user_types?.map((type: string) => ({
-        value: type,
-        label: type,
-      })) || [],
-    };
+    // ✅ Preserve the order property - fields are already sorted by order in UserRegistration.tsx
+    // Sort by order to ensure correct display order
+    return mapped.sort((a: any, b: any) => {
+      const orderA = a.order ?? 999;
+      const orderB = b.order ?? 999;
+      return orderA - orderB;
+    });
+  }, [formFields]);
 
-    // ✅ Find the index of the name field
-    const nameFieldIndex = mapped.findIndex((f: any) => f.name === "name");
-
-    // ✅ Insert user_type right after name field
-    const fieldsWithUserType = [...mapped];
-    if (nameFieldIndex !== -1 && userTypeField.options.length > 0) {
-      fieldsWithUserType.splice(nameFieldIndex + 1, 0, userTypeField);
-    }
-
-    // ✅ Move image fields to the end
-    const nonImageFields = fieldsWithUserType.filter(f => f.name !== "image");
-    const imageFields = fieldsWithUserType.filter(f => f.name === "image");
-
-    return [...nonImageFields, ...imageFields];
-  }, [formFields, eventData?.attributes?.user_types]);
-
-  console.log('Mapped Form Fields (Template 7):', mappedFormFields);
+  console.log("Mapped Form Fields (Template 7):", mappedFormFields);
 
   return (
     <div className="w-full p-4">

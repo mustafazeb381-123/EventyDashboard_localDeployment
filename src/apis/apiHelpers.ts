@@ -62,6 +62,37 @@ export const postRegistrationTemplateFieldApi = (data: any, id: string) => {
   return axiosInstance.post(`/events/${id}/registration_fields`, data);
 };
 
+// Create a new registration field
+export const createRegistrationFieldApi = (
+  eventId: string | number,
+  fieldData: {
+    field: string;
+    name: string;
+    order?: number;
+    active?: boolean;
+    custom?: boolean;
+    required?: boolean;
+    full_width?: boolean;
+    validation_type?: string;
+    max_companion?: number;
+    field_options?: string[];
+  }
+) => {
+  return axiosInstance.post(`/events/${eventId}/registration_fields`, {
+    event_registration_field: fieldData,
+  });
+};
+
+// Delete a registration field
+export const deleteRegistrationFieldApi = (
+  eventId: string | number,
+  fieldId: number
+) => {
+  return axiosInstance.delete(
+    `/events/${eventId}/registration_fields/${fieldId}`
+  );
+};
+
 export const getRegistrationFieldApi = (id: string) => {
   return axiosInstance.get(`/events/${id}/registration_fields`);
 };
@@ -88,6 +119,20 @@ export const updateRegistrationFieldToggleApi = (
 ) => {
   return axiosInstance.patch(
     `events/${eventId}/registration_fields/${fieldId}/toggle_active`
+  );
+};
+
+export const reorderRegistrationFieldApi = (
+  eventId: string | number,
+  fieldId: number,
+  targetFieldId: number
+) => {
+  return axiosInstance.patch(
+    `events/${eventId}/registration_fields/reorder`,
+    {
+      field_id: fieldId,
+      target_field_id: targetFieldId,
+    }
   );
 };
 

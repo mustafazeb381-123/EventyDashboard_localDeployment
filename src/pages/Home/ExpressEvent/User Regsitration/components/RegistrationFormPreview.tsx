@@ -40,11 +40,13 @@ const RegistrationFormPreview = ({
   const handleSubmit = async () => {
     try {
       // ✅ VALIDATION: Check required fields
-      const requiredFields = formFields.filter(field => field.required);
-      const missingFields = requiredFields.filter(field => !formData[field.name]);
+      const requiredFields = formFields.filter((field) => field.required);
+      const missingFields = requiredFields.filter(
+        (field) => !formData[field.name]
+      );
 
       if (missingFields.length > 0) {
-        const fieldNames = missingFields.map(f => f.label).join(", ");
+        const fieldNames = missingFields.map((f) => f.label).join(", ");
         toast.error(`Please fill in required fields: ${fieldNames}`);
         return;
       }
@@ -61,9 +63,7 @@ const RegistrationFormPreview = ({
       // Append user data
       formDataToSend.append("event_user[name]", formData.name);
 
-      // ✅ Add user_type (now validated as required)
-      if (formData.user_type)
-        formDataToSend.append("event_user[user_type]", formData.user_type);
+      // user_type field removed - no longer needed
 
       formDataToSend.append("event_user[phone_number]", formData.phone_number);
       formDataToSend.append("event_user[email]", formData.email);
