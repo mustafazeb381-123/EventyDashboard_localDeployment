@@ -1,9 +1,10 @@
-import { getAllEvents } from "@/apis/apiHelpers";
+import { deleteEvent, getAllEvents } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
 import { useEffect, useState, useRef } from "react";
-import { Trash2, Search, Grid3X3, List } from "lucide-react";
+import { Trash2, Search, Grid3X3, List, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "react-toastify";
 
 // import { useNavigate } from "react-router-dom";
 
@@ -111,6 +112,7 @@ function AllEvents() {
   const [events, setEvents] = useState<Event[]>([]); // events to display (paginated)
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false); // loading state when searching
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null); // track which event is being deleted
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -388,6 +390,156 @@ function AllEvents() {
 
   // Always show the real search input, even while loading
 
+  const handleDelete = async (eventId: string) => {
+    if (deletingEventId) return; // Prevent multiple deletions
+
+    setDeletingEventId(eventId);
+    try {
+      await deleteEvent(eventId);
+      toast.success("Event deleted successfully!");
+
+      // Refresh the events list
+      if (debouncedSearch.trim()) {
+        // If searching, refetch all pages
+        const fetchAllEventsForSearch = async () => {
+          try {
+            let allFetchedEvents: Event[] = [];
+            let currentPageNum = 1;
+            let hasMorePages = true;
+
+            while (hasMorePages) {
+              const params: Record<string, any> = {
+                page: currentPageNum,
+                per_page: 100,
+              };
+              const response = await getAllEvents(params);
+
+              if (response.data?.data && Array.isArray(response.data.data)) {
+                const mappedEvents = response.data.data.map(
+                  (item: ApiEventItem) => {
+                    const eventType =
+                      item.event_type || item.attributes?.event_type || "";
+                    const eventName = item.name || item.attributes?.name || "";
+                    const eventDate =
+                      item.event_date_from ||
+                      item.attributes?.event_date_from ||
+                      "";
+
+                    return {
+                      id: String(item.id),
+                      type: eventType,
+                      name: eventName,
+                      date: eventDate
+                        ? new Date(eventDate).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "",
+                    };
+                  }
+                );
+
+                allFetchedEvents = [...allFetchedEvents, ...mappedEvents];
+
+                const pagination = response.data?.meta?.pagination;
+                if (pagination) {
+                  if (
+                    pagination.next_page !== null &&
+                    pagination.next_page !== undefined
+                  ) {
+                    currentPageNum = pagination.next_page;
+                  } else if (
+                    pagination.current_page &&
+                    pagination.total_pages &&
+                    pagination.current_page < pagination.total_pages
+                  ) {
+                    currentPageNum = pagination.current_page + 1;
+                  } else if (
+                    pagination.total_pages &&
+                    currentPageNum < pagination.total_pages
+                  ) {
+                    currentPageNum++;
+                  } else {
+                    hasMorePages = false;
+                  }
+                } else if (mappedEvents.length === 0) {
+                  hasMorePages = false;
+                } else {
+                  if (currentPageNum < 100) {
+                    currentPageNum++;
+                  } else {
+                    hasMorePages = false;
+                  }
+                }
+              } else {
+                hasMorePages = false;
+              }
+            }
+
+            setAllEvents(allFetchedEvents);
+          } catch (error) {
+            console.error("Error refreshing events:", error);
+          }
+        };
+        fetchAllEventsForSearch();
+      } else {
+        // If not searching, refetch current page
+        const fetchEventsApi = async () => {
+          try {
+            const params: Record<string, any> = {
+              page: currentPage,
+              per_page: itemsPerPage,
+            };
+
+            const response = await getAllEvents(params);
+
+            if (response.data?.data && Array.isArray(response.data.data)) {
+              const mappedEvents = response.data.data.map(
+                (item: ApiEventItem) => {
+                  const eventType =
+                    item.event_type || item.attributes?.event_type || "";
+                  const eventName = item.name || item.attributes?.name || "";
+                  const eventDate =
+                    item.event_date_from ||
+                    item.attributes?.event_date_from ||
+                    "";
+
+                  return {
+                    id: String(item.id),
+                    type: eventType,
+                    name: eventName,
+                    date: eventDate
+                      ? new Date(eventDate).toLocaleDateString("en-US", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })
+                      : "",
+                  };
+                }
+              );
+
+              setEvents(mappedEvents);
+
+              const pagination = response.data?.meta?.pagination;
+              if (pagination) {
+                setTotalPages(pagination.total_pages || 1);
+              }
+            }
+          } catch (error) {
+            console.error("Error refreshing events:", error);
+          }
+        };
+        fetchEventsApi();
+      }
+    } catch (error) {
+      console.error("AllEvents - Error deleting event:", error);
+      toast.error("Failed to delete event. Please try again.");
+    } finally {
+      setDeletingEventId(null);
+    }
+  };
   return (
     <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
       <div className="flex flex-col gap-4 mb-6">
@@ -581,13 +733,16 @@ function AllEvents() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent parent click
-                        {
-                          /* handleDelete(event.id); */
-                        }
+                        handleDelete(event.id);
                       }}
-                      className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600"
+                      disabled={deletingEventId === event.id}
+                      className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                     >
-                      <Trash2 className="w-4 h-4 text-white" />
+                      {deletingEventId === event.id ? (
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 text-white" />
+                      )}
                     </button>
                   </div>
 
@@ -664,13 +819,16 @@ function AllEvents() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent parent click
-                      {
-                        /* handleDelete(event.id); */
-                      }
+                      handleDelete(event.id);
                     }}
-                    className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600"
+                    disabled={deletingEventId === event.id}
+                    className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                   >
-                    <Trash2 className="w-4 h-4 text-white" />
+                    {deletingEventId === event.id ? (
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
+                    ) : (
+                      <Trash2 className="w-4 h-4 text-white" />
+                    )}
                   </button>
                 </div>
               );
