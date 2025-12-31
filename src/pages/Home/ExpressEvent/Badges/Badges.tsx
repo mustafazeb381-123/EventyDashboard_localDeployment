@@ -1499,6 +1499,9 @@ const Badges: React.FC<BadgesProps> = ({
     );
 
     // Construct full template_data for API
+    // For ready-made templates, ensure we use the correct default bgColor
+    const defaultBgColor = templateData?.bgColor || (badgeName === "Template 1" ? "#2563eb" : badgeName === "Template 2" ? "#FFFFFF" : "#ffffff");
+    
     const fullTemplateData = templateData
       ? {
           name: templateData.name,
@@ -1506,7 +1509,7 @@ const Badges: React.FC<BadgesProps> = ({
           width: templateData.width || 3.5,
           height: templateData.height || 5.5,
           hasBackground: templateData.hasBackground ?? true,
-          bgColor: templateData.bgColor || "#ffffff",
+          bgColor: templateData.bgColor || defaultBgColor,
           hasPersonalPhoto: templateData.hasPersonalPhoto ?? false,
           photoSize: templateData.photoSize || { width: 200, height: 200 },
           photoAlignment: templateData.photoAlignment || "center",
@@ -1543,7 +1546,7 @@ const Badges: React.FC<BadgesProps> = ({
           width: 3.5,
           height: 5.5,
           hasBackground: true,
-          bgColor: "#ffffff",
+          bgColor: defaultBgColor,
           hasPersonalPhoto: true,
           photoSize: { width: 200, height: 200 },
           photoAlignment: "center",
@@ -1635,14 +1638,21 @@ const Badges: React.FC<BadgesProps> = ({
             );
 
             // Merge: Use API data first, then fallback to local templateData, then defaults
-            // This ensures bgColor from API is preserved
+            // This ensures bgColor from API is preserved, but if API doesn't have one, use template default
+            // For ready-made templates, always ensure bgColor is set from template defaults if missing
+            // Get the correct default bgColor for this template
+            const templateDefaultBgColor = templateData?.bgColor || (selectedBadge.id === 1 ? "#2563eb" : selectedBadge.id === 3 ? "#FFFFFF" : "#ffffff");
+            const apiBgColor = existingTemplateData.bgColor;
+            // Use API bgColor if it exists and is not empty, otherwise use template default
+            const finalBgColor = (apiBgColor && apiBgColor.trim() !== "" && apiBgColor.trim() !== "null") ? apiBgColor : templateDefaultBgColor;
+            
             const fullTemplateData = {
               name: existingTemplateData.name || templateData?.name || selectedBadge.name,
               type: existingTemplateData.type || templateData?.type || "existing",
               width: existingTemplateData.width || templateData?.width || 3.5,
               height: existingTemplateData.height || templateData?.height || 5.5,
               hasBackground: existingTemplateData.hasBackground ?? templateData?.hasBackground ?? true,
-              bgColor: existingTemplateData.bgColor || templateData?.bgColor || "#ffffff", // Preserve bgColor from API
+              bgColor: finalBgColor, // Use API bgColor if available, otherwise use template default
               hasPersonalPhoto: existingTemplateData.hasPersonalPhoto ?? templateData?.hasPersonalPhoto ?? false,
               photoSize: existingTemplateData.photoSize || templateData?.photoSize || { width: 200, height: 200 },
               photoAlignment: existingTemplateData.photoAlignment || templateData?.photoAlignment || "center",
@@ -1703,6 +1713,8 @@ const Badges: React.FC<BadgesProps> = ({
         }
 
         // Save only required data for PrintBadges
+        // For ready-made templates, ALWAYS use event colors from main data
+        // This ensures consistency between badge screen and print badge
         localStorage.setItem("active_badge_id", selectedBadge.id.toString());
         localStorage.setItem("badge_qr_image", selectedBadge.qrImg);
         localStorage.setItem(
@@ -1715,7 +1727,7 @@ const Badges: React.FC<BadgesProps> = ({
         );
         localStorage.setItem(
           "badge_background_color",
-          event?.attributes?.secondary_color || "white"
+          event?.attributes?.secondary_color || "white" // Use event's secondary_color from main data
         );
       } else if (selectedTemplate) {
         // Custom template selected - update it to set as default

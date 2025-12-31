@@ -68,6 +68,20 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
         print-color-adjust: exact !important;
       }
 
+      /* Ensure SVG colors are preserved */
+      svg, svg * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
+      /* Ensure background colors are preserved */
+      [style*="background-color"], [style*="backgroundColor"] {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+
       body {
         font-family: Arial, sans-serif;
         background: #f9f9f9;
