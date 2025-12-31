@@ -733,9 +733,22 @@ const Badges: React.FC<BadgesProps> = ({
       qrCodeAlignment: template.qrCodeAlignment || "center",
     };
 
-    // Only include bgImage if it's not null (base64 string)
-    if (template.bgImage) {
-      templateData.bgImage = template.bgImage;
+    // Only include bgImage if it's base64 (data:image/...), not a URL
+    // If bgImage is a URL, the API stores it in attributes.background_image automatically
+    // and we should NOT include it in template_data.bgImage (API expects base64 there)
+    if (template.bgImage !== null && template.bgImage !== undefined && template.bgImage !== '') {
+      // Check if it's base64 (starts with "data:image") or a URL (starts with "http")
+      if (template.bgImage.startsWith('data:image')) {
+        // It's base64 - include it in template_data
+        templateData.bgImage = template.bgImage;
+      } else if (template.bgImage.startsWith('http://') || template.bgImage.startsWith('https://')) {
+        // It's a URL - DON'T include it in template_data.bgImage
+        // The API will preserve it in attributes.background_image automatically
+        console.log("bgImage is a URL, not including in template_data (API will preserve in attributes.background_image)");
+      } else {
+        // Unknown format - include it anyway (might be base64 without data: prefix)
+        templateData.bgImage = template.bgImage;
+      }
     }
 
     return {
@@ -982,6 +995,30 @@ const Badges: React.FC<BadgesProps> = ({
           toast.error("Invalid template ID. Cannot update template.");
           setLoading(false);
           return;
+        }
+
+        // Preserve bgImage from existing template if the new template doesn't have one
+        // Find the existing template from API to preserve background_image and bgImage
+        const existingTemplateFromApi = allTemplatesFromApi.find(
+          (t: any) => {
+            const tId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
+            return tId === numericId;
+          }
+        );
+
+        // Preserve bgImage if it exists in the existing template but not in the new template
+        if (existingTemplateFromApi && !template.bgImage) {
+          const existingBgImage = existingTemplateFromApi?.attributes?.template_data?.bgImage;
+          const existingBackgroundImageUrl = existingTemplateFromApi?.attributes?.background_image;
+          
+          if (existingBgImage) {
+            apiData.template_data.bgImage = existingBgImage;
+          } else if (existingBackgroundImageUrl) {
+            apiData.template_data.bgImage = existingBackgroundImageUrl;
+          }
+          
+          // Update requestData with the preserved bgImage
+          requestData.badge_template = apiData;
         }
 
         // Call PUT API for update
@@ -1709,17 +1746,41 @@ const Badges: React.FC<BadgesProps> = ({
             }
           );
 
-          // Update the template to set it as default
-          const apiData = transformTemplateToApi(selectedTemplate);
+          // CRITICAL: Preserve bgImage from existing template
+          // The API stores base64 in template_data.bgImage OR URL in attributes.background_image
+          // We need to preserve it correctly based on where it's stored
+          const existingBgImage = existingTemplateFromApi?.attributes?.template_data?.bgImage;
+          const existingBackgroundImageUrl = existingTemplateFromApi?.attributes?.background_image;
           
-          // Preserve bgImage from existing template if it exists, otherwise use selectedTemplate's bgImage
-          if (existingTemplateFromApi?.attributes?.template_data?.bgImage) {
-            // Preserve existing bgImage from API
-            apiData.template_data.bgImage = existingTemplateFromApi.attributes.template_data.bgImage;
+          // Create a copy of selectedTemplate with preserved bgImage if it exists in the API
+          const templateWithPreservedBgImage = { ...selectedTemplate };
+          
+          // Priority: 
+          // 1. If template_data.bgImage exists (base64), use it
+          // 2. If attributes.background_image exists (URL), use it (transformTemplateToApi will handle it correctly)
+          // 3. Otherwise use selectedTemplate.bgImage
+          if (existingBgImage) {
+            // Preserve existing bgImage (base64) from API template_data
+            templateWithPreservedBgImage.bgImage = existingBgImage;
+            console.log("Preserving bgImage (base64) from existing template:", existingBgImage.substring(0, 50) + "...");
+          } else if (existingBackgroundImageUrl) {
+            // Preserve existing background_image (URL) from API attributes
+            // transformTemplateToApi will detect it's a URL and NOT include it in template_data.bgImage
+            // The API will preserve attributes.background_image automatically
+            templateWithPreservedBgImage.bgImage = existingBackgroundImageUrl;
+            console.log("Preserving background_image (URL) from existing template:", existingBackgroundImageUrl);
           } else if (selectedTemplate.bgImage) {
-            // Use the bgImage from selectedTemplate if available
-            apiData.template_data.bgImage = selectedTemplate.bgImage;
+            // Use selectedTemplate's bgImage if it exists
+            console.log("Using selectedTemplate.bgImage:", selectedTemplate.bgImage.substring(0, 50) + "...");
+          } else {
+            console.log("No bgImage found anywhere");
           }
+
+          // Update the template to set it as default
+          // transformTemplateToApi will automatically exclude URLs from template_data.bgImage
+          const apiData = transformTemplateToApi(templateWithPreservedBgImage);
+          
+          console.log("Final bgImage in apiData.template_data:", apiData.template_data.bgImage ? "exists (base64)" : "not included (URL will be preserved in attributes.background_image)");
 
           const updateData = {
             badge_template: {
