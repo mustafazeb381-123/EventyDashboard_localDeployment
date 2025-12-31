@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import Assets from "@/utils/Assets";
 import { toast, ToastContainer } from "react-toastify";
-import { getEventbyId, postBadgesApi, getBadgesApi, deleteBadgeTemplateApi, updateBadgeTemplateApi } from "@/apis/apiHelpers";
+import { getEventbyId, postBadgesApi, getBadgesApi, deleteBadgeTemplateApi, updateBadgeTemplateApi, updateEventById } from "@/apis/apiHelpers";
 import type { ToggleStates } from "../ExpressEvent";
 import CustomBadgeModal from "./components/CustomBadgeModal";
 
@@ -733,9 +733,22 @@ const Badges: React.FC<BadgesProps> = ({
       qrCodeAlignment: template.qrCodeAlignment || "center",
     };
 
-    // Only include bgImage if it's not null (base64 string)
-    if (template.bgImage) {
-      templateData.bgImage = template.bgImage;
+    // Only include bgImage if it's base64 (data:image/...), not a URL
+    // If bgImage is a URL, the API stores it in attributes.background_image automatically
+    // and we should NOT include it in template_data.bgImage (API expects base64 there)
+    if (template.bgImage !== null && template.bgImage !== undefined && template.bgImage !== '') {
+      // Check if it's base64 (starts with "data:image") or a URL (starts with "http")
+      if (template.bgImage.startsWith('data:image')) {
+        // It's base64 - include it in template_data
+        templateData.bgImage = template.bgImage;
+      } else if (template.bgImage.startsWith('http://') || template.bgImage.startsWith('https://')) {
+        // It's a URL - DON'T include it in template_data.bgImage
+        // The API will preserve it in attributes.background_image automatically
+        console.log("bgImage is a URL, not including in template_data (API will preserve in attributes.background_image)");
+      } else {
+        // Unknown format - include it anyway (might be base64 without data: prefix)
+        templateData.bgImage = template.bgImage;
+      }
     }
 
     return {
@@ -825,34 +838,17 @@ const Badges: React.FC<BadgesProps> = ({
   useEffect(() => {
     // Load event data and custom templates from API
     if (effectiveEventId) {
-      // Load event data
-      getEventbyId(effectiveEventId)
-        .then((response) => {
-          const eventData = response?.data?.data;
+      // Load event data and custom templates in parallel
+      Promise.all([
+        getEventbyId(effectiveEventId),
+        getBadgesApi(parseInt(effectiveEventId, 10))
+      ])
+        .then(([eventResponse, templatesResponse]) => {
+          const eventData = eventResponse?.data?.data;
           console.log("response of get event api", eventData);
           setEvent(eventData);
 
-          const activeBadge =
-            eventData?.attributes?.active_badge_id ||
-            parseInt(localStorage.getItem("active_badge_id") || "0", 10);
-
-          if (activeBadge) {
-            setActiveBadgeId(activeBadge);
-            // Try to find if it's an existing badge
-            const foundBadge = badges.find((b) => b.id === activeBadge);
-            if (foundBadge) {
-              setSelectedBadge(foundBadge);
-            }
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fetch event data:", error);
-        });
-
-      // Load custom badge templates from API
-      getBadgesApi(parseInt(effectiveEventId, 10))
-        .then((response) => {
-          const templatesData = response?.data?.data || [];
+          const templatesData = templatesResponse?.data?.data || [];
           console.log("Custom badge templates from API:", templatesData);
 
           // Store all templates (including Template 1 and Template 2) for checking if they exist
@@ -875,24 +871,97 @@ const Badges: React.FC<BadgesProps> = ({
           // Always set templates from API (even if empty array) - API is the source of truth
           setCustomTemplates(customTemplatesFromApi);
 
-          // Check if active badge is a custom template (from event state)
-          // Note: event state is set in the previous API call
-          if (event && customTemplatesFromApi.length > 0) {
-            const activeBadgeId = event?.attributes?.active_badge_id;
-            if (activeBadgeId) {
-              const foundTemplate = customTemplatesFromApi.find(
-                (t: BadgeTemplate) => t.id === activeBadgeId.toString() || t.id === `custom-${activeBadgeId}`
-              );
-              if (foundTemplate) {
-                setSelectedTemplate(foundTemplate);
+          // Now that we have both event data and templates, set the active badge selection
+          // Priority: 1. active_badge_id from event API, 2. default: true template, 3. localStorage (fallback only)
+          let activeBadgeId = eventData?.attributes?.active_badge_id;
+          
+          // If no active_badge_id in event, check for default template
+          if (!activeBadgeId && templatesData.length > 0) {
+            const defaultTemplate = templatesData.find((item: any) => 
+              item.attributes?.default === true
+            );
+            if (defaultTemplate) {
+              const templateId = typeof defaultTemplate.id === 'string' 
+                ? parseInt(defaultTemplate.id, 10) 
+                : defaultTemplate.id;
+              activeBadgeId = templateId;
+              console.log("Found default template with ID:", activeBadgeId);
+            }
+          }
+          
+          // Last resort: check localStorage (only for backward compatibility, not for incognito)
+          if (!activeBadgeId) {
+            const localStorageId = parseInt(localStorage.getItem("active_badge_id") || "0", 10);
+            if (localStorageId && localStorageId > 0) {
+              // Only use if it's a valid badge ID (1 or 3) - not a template ID
+              if (localStorageId === 1 || localStorageId === 3) {
+                activeBadgeId = localStorageId;
+                console.log("Using localStorage badge ID:", activeBadgeId);
               }
             }
           }
+
+          if (activeBadgeId) {
+            setActiveBadgeId(activeBadgeId);
+            
+            // First, check if active_badge_id matches a template ID in the API
+            // This could be either an existing badge template (Template 1, Template 2) or a custom template
+            const apiTemplate = templatesData.find((item: any) => {
+              const itemId = typeof item.id === 'string' ? parseInt(item.id, 10) : item.id;
+              return itemId === activeBadgeId;
+            });
+            
+            if (apiTemplate) {
+              const templateName = apiTemplate.attributes?.name || "";
+              
+              // Check if it's an existing badge template (Template 1 or Template 2)
+              if (templateName === "Template 1" || templateName === "Template 2") {
+                // Find the corresponding badge by name
+                const foundBadge = badges.find((b) => b.name === templateName);
+                if (foundBadge) {
+                  setSelectedBadge(foundBadge);
+                  setSelectedTemplate(null); // Ensure custom template is not selected
+                  console.log("Selected existing badge:", foundBadge.name);
+                }
+              } else {
+                // It's a custom template
+                const transformedTemplate = transformApiToTemplate(apiTemplate) as BadgeTemplate;
+                transformedTemplate.bgColor = fixRedBackground(transformedTemplate.bgColor);
+                setSelectedTemplate(transformedTemplate);
+                setSelectedBadge(null); // Ensure existing badge is not selected
+                console.log("Selected custom template:", transformedTemplate.name);
+              }
+            } else {
+              // active_badge_id doesn't match any template ID, might be a legacy badge ID (1 or 3)
+              // Try to find if it's an existing badge ID
+              const foundBadge = badges.find((b) => b.id === activeBadgeId);
+              if (foundBadge) {
+                setSelectedBadge(foundBadge);
+                setSelectedTemplate(null);
+                console.log("Selected existing badge by ID:", foundBadge.name);
+              } else {
+                // Try to find in custom templates by ID format
+                const foundTemplate = customTemplatesFromApi.find(
+                  (t: BadgeTemplate) => {
+                    const tId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
+                    return tId === activeBadgeId || 
+                           t.id === activeBadgeId.toString() || 
+                           t.id === `custom-${activeBadgeId}`;
+                  }
+                );
+                if (foundTemplate) {
+                  setSelectedTemplate(foundTemplate);
+                  setSelectedBadge(null);
+                  console.log("Selected custom template by ID:", foundTemplate.name);
+                }
+              }
+            }
+          } else {
+            console.log("No active badge found in API or localStorage");
+          }
         })
         .catch((error) => {
-          console.error("Failed to fetch custom badge templates:", error);
-          // On error, clear templates (don't show stale localStorage data)
-          setCustomTemplates([]);
+          console.error("Failed to fetch event data or templates:", error);
         });
     } else {
       // No event ID, clear templates
@@ -900,13 +969,22 @@ const Badges: React.FC<BadgesProps> = ({
     }
   }, [effectiveEventId]);
 
-  // Reload custom templates from API
+  // Reload custom templates and event data from API
   const reloadCustomTemplates = async () => {
     if (!effectiveEventId) return;
     
     try {
-      const response = await getBadgesApi(parseInt(effectiveEventId, 10));
-      const templatesData = response?.data?.data || [];
+      // Reload both event data and templates to get latest selection state
+      const [eventResponse, templatesResponse] = await Promise.all([
+        getEventbyId(effectiveEventId),
+        getBadgesApi(parseInt(effectiveEventId, 10))
+      ]);
+      
+      const eventData = eventResponse?.data?.data;
+      const templatesData = templatesResponse?.data?.data || [];
+      
+      // Update event data
+      setEvent(eventData);
       
       // Store all templates (including Template 1 and Template 2) for checking if they exist
       setAllTemplatesFromApi(templatesData);
@@ -923,6 +1001,54 @@ const Badges: React.FC<BadgesProps> = ({
         });
       
       setCustomTemplates(customTemplatesFromApi);
+      
+      // Update selection state based on latest API data
+      let activeBadgeId = eventData?.attributes?.active_badge_id;
+      
+      // If no active_badge_id in event, check for default template
+      if (!activeBadgeId && templatesData.length > 0) {
+        const defaultTemplate = templatesData.find((item: any) => 
+          item.attributes?.default === true
+        );
+        if (defaultTemplate) {
+          const templateId = typeof defaultTemplate.id === 'string' 
+            ? parseInt(defaultTemplate.id, 10) 
+            : defaultTemplate.id;
+          activeBadgeId = templateId;
+        }
+      }
+      
+      if (activeBadgeId) {
+        setActiveBadgeId(activeBadgeId);
+        
+        const apiTemplate = templatesData.find((item: any) => {
+          const itemId = typeof item.id === 'string' ? parseInt(item.id, 10) : item.id;
+          return itemId === activeBadgeId;
+        });
+        
+        if (apiTemplate) {
+          const templateName = apiTemplate.attributes?.name || "";
+          
+          if (templateName === "Template 1" || templateName === "Template 2") {
+            const foundBadge = badges.find((b) => b.name === templateName);
+            if (foundBadge) {
+              setSelectedBadge(foundBadge);
+              setSelectedTemplate(null);
+            }
+          } else {
+            const transformedTemplate = transformApiToTemplate(apiTemplate) as BadgeTemplate;
+            transformedTemplate.bgColor = fixRedBackground(transformedTemplate.bgColor);
+            setSelectedTemplate(transformedTemplate);
+            setSelectedBadge(null);
+          }
+        } else {
+          const foundBadge = badges.find((b) => b.id === activeBadgeId);
+          if (foundBadge) {
+            setSelectedBadge(foundBadge);
+            setSelectedTemplate(null);
+          }
+        }
+      }
     } catch (error) {
       console.error("Failed to reload custom badge templates:", error);
     }
@@ -982,6 +1108,30 @@ const Badges: React.FC<BadgesProps> = ({
           toast.error("Invalid template ID. Cannot update template.");
           setLoading(false);
           return;
+        }
+
+        // Preserve bgImage from existing template if the new template doesn't have one
+        // Find the existing template from API to preserve background_image and bgImage
+        const existingTemplateFromApi = allTemplatesFromApi.find(
+          (t: any) => {
+            const tId = typeof t.id === 'string' ? parseInt(t.id, 10) : t.id;
+            return tId === numericId;
+          }
+        );
+
+        // Preserve bgImage if it exists in the existing template but not in the new template
+        if (existingTemplateFromApi && !template.bgImage) {
+          const existingBgImage = existingTemplateFromApi?.attributes?.template_data?.bgImage;
+          const existingBackgroundImageUrl = existingTemplateFromApi?.attributes?.background_image;
+          
+          if (existingBgImage) {
+            apiData.template_data.bgImage = existingBgImage;
+          } else if (existingBackgroundImageUrl) {
+            apiData.template_data.bgImage = existingBackgroundImageUrl;
+          }
+          
+          // Update requestData with the preserved bgImage
+          requestData.badge_template = apiData;
         }
 
         // Call PUT API for update
@@ -1134,11 +1284,12 @@ const Badges: React.FC<BadgesProps> = ({
     // If clicking the same template that's already selected, deselect it
     if (selectedTemplate?.id === template.id) {
       setSelectedTemplate(null);
+      setSelectedBadge(null); // Also clear badge selection
       toast.success("Template deselected!");
     } else {
       // Select new template and deselect any existing badge
       setSelectedTemplate(template);
-      setSelectedBadge(null);
+      setSelectedBadge(null); // Ensure existing badge is cleared
       toast.success("Template selected!");
     }
   };
@@ -1163,10 +1314,11 @@ const Badges: React.FC<BadgesProps> = ({
     // If clicking the same badge that's already selected, deselect it
     if (selectedBadge?.id === badge.id) {
       setSelectedBadge(null);
+      setSelectedTemplate(null); // Also clear template selection
     } else {
       // Select new badge and deselect any custom template
       setSelectedBadge(badge);
-      setSelectedTemplate(null);
+      setSelectedTemplate(null); // Ensure custom template is cleared
     }
   };
 
@@ -1462,6 +1614,9 @@ const Badges: React.FC<BadgesProps> = ({
     );
 
     // Construct full template_data for API
+    // For ready-made templates, ensure we use the correct default bgColor
+    const defaultBgColor = templateData?.bgColor || (badgeName === "Template 1" ? "#2563eb" : badgeName === "Template 2" ? "#FFFFFF" : "#ffffff");
+    
     const fullTemplateData = templateData
       ? {
           name: templateData.name,
@@ -1469,7 +1624,7 @@ const Badges: React.FC<BadgesProps> = ({
           width: templateData.width || 3.5,
           height: templateData.height || 5.5,
           hasBackground: templateData.hasBackground ?? true,
-          bgColor: templateData.bgColor || "#ffffff",
+          bgColor: templateData.bgColor || defaultBgColor,
           hasPersonalPhoto: templateData.hasPersonalPhoto ?? false,
           photoSize: templateData.photoSize || { width: 200, height: 200 },
           photoAlignment: templateData.photoAlignment || "center",
@@ -1506,7 +1661,7 @@ const Badges: React.FC<BadgesProps> = ({
           width: 3.5,
           height: 5.5,
           hasBackground: true,
-          bgColor: "#ffffff",
+          bgColor: defaultBgColor,
           hasPersonalPhoto: true,
           photoSize: { width: 200, height: 200 },
           photoAlignment: "center",
@@ -1598,14 +1753,21 @@ const Badges: React.FC<BadgesProps> = ({
             );
 
             // Merge: Use API data first, then fallback to local templateData, then defaults
-            // This ensures bgColor from API is preserved
+            // This ensures bgColor from API is preserved, but if API doesn't have one, use template default
+            // For ready-made templates, always ensure bgColor is set from template defaults if missing
+            // Get the correct default bgColor for this template
+            const templateDefaultBgColor = templateData?.bgColor || (selectedBadge.id === 1 ? "#2563eb" : selectedBadge.id === 3 ? "#FFFFFF" : "#ffffff");
+            const apiBgColor = existingTemplateData.bgColor;
+            // Use API bgColor if it exists and is not empty, otherwise use template default
+            const finalBgColor = (apiBgColor && apiBgColor.trim() !== "" && apiBgColor.trim() !== "null") ? apiBgColor : templateDefaultBgColor;
+            
             const fullTemplateData = {
               name: existingTemplateData.name || templateData?.name || selectedBadge.name,
               type: existingTemplateData.type || templateData?.type || "existing",
               width: existingTemplateData.width || templateData?.width || 3.5,
               height: existingTemplateData.height || templateData?.height || 5.5,
               hasBackground: existingTemplateData.hasBackground ?? templateData?.hasBackground ?? true,
-              bgColor: existingTemplateData.bgColor || templateData?.bgColor || "#ffffff", // Preserve bgColor from API
+              bgColor: finalBgColor, // Use API bgColor if available, otherwise use template default
               hasPersonalPhoto: existingTemplateData.hasPersonalPhoto ?? templateData?.hasPersonalPhoto ?? false,
               photoSize: existingTemplateData.photoSize || templateData?.photoSize || { width: 200, height: 200 },
               photoAlignment: existingTemplateData.photoAlignment || templateData?.photoAlignment || "center",
@@ -1655,17 +1817,45 @@ const Badges: React.FC<BadgesProps> = ({
           }
           toast.success("Template selected!");
           setActiveBadgeId(selectedBadge.id);
+          
+          // Update event's active_badge_id in API for cross-device visibility
+          if (effectiveEventId) {
+            const fd = new FormData();
+            fd.append("event[active_badge_id]", numericId.toString());
+            try {
+              await updateEventById(effectiveEventId, fd);
+              console.log(`Updated event active_badge_id to ${numericId} for cross-device visibility`);
+            } catch (error) {
+              console.error("Failed to update event active_badge_id:", error);
+            }
+          }
         } else {
           // Template doesn't exist, create it via POST API
-          await handleBadgeApiSelection(
+          const response = await handleBadgeApiSelection(
             selectedBadge.id,
             selectedBadge.name
           );
           toast.success("Template selected!");
           setActiveBadgeId(selectedBadge.id);
+          
+          // Update event's active_badge_id in API for cross-device visibility
+          // The response should contain the created template ID
+          if (effectiveEventId && response?.data?.data?.id) {
+            const createdTemplateId = response.data.data.id;
+            const fd = new FormData();
+            fd.append("event[active_badge_id]", createdTemplateId.toString());
+            try {
+              await updateEventById(effectiveEventId, fd);
+              console.log(`Updated event active_badge_id to ${createdTemplateId} for cross-device visibility`);
+            } catch (error) {
+              console.error("Failed to update event active_badge_id:", error);
+            }
+          }
         }
 
         // Save only required data for PrintBadges
+        // For ready-made templates, ALWAYS use event colors from main data
+        // This ensures consistency between badge screen and print badge
         localStorage.setItem("active_badge_id", selectedBadge.id.toString());
         localStorage.setItem("badge_qr_image", selectedBadge.qrImg);
         localStorage.setItem(
@@ -1678,7 +1868,7 @@ const Badges: React.FC<BadgesProps> = ({
         );
         localStorage.setItem(
           "badge_background_color",
-          event?.attributes?.secondary_color || "white"
+          event?.attributes?.secondary_color || "white" // Use event's secondary_color from main data
         );
       } else if (selectedTemplate) {
         // Custom template selected - update it to set as default
@@ -1709,17 +1899,41 @@ const Badges: React.FC<BadgesProps> = ({
             }
           );
 
-          // Update the template to set it as default
-          const apiData = transformTemplateToApi(selectedTemplate);
+          // CRITICAL: Preserve bgImage from existing template
+          // The API stores base64 in template_data.bgImage OR URL in attributes.background_image
+          // We need to preserve it correctly based on where it's stored
+          const existingBgImage = existingTemplateFromApi?.attributes?.template_data?.bgImage;
+          const existingBackgroundImageUrl = existingTemplateFromApi?.attributes?.background_image;
           
-          // Preserve bgImage from existing template if it exists, otherwise use selectedTemplate's bgImage
-          if (existingTemplateFromApi?.attributes?.template_data?.bgImage) {
-            // Preserve existing bgImage from API
-            apiData.template_data.bgImage = existingTemplateFromApi.attributes.template_data.bgImage;
+          // Create a copy of selectedTemplate with preserved bgImage if it exists in the API
+          const templateWithPreservedBgImage = { ...selectedTemplate };
+          
+          // Priority: 
+          // 1. If template_data.bgImage exists (base64), use it
+          // 2. If attributes.background_image exists (URL), use it (transformTemplateToApi will handle it correctly)
+          // 3. Otherwise use selectedTemplate.bgImage
+          if (existingBgImage) {
+            // Preserve existing bgImage (base64) from API template_data
+            templateWithPreservedBgImage.bgImage = existingBgImage;
+            console.log("Preserving bgImage (base64) from existing template:", existingBgImage.substring(0, 50) + "...");
+          } else if (existingBackgroundImageUrl) {
+            // Preserve existing background_image (URL) from API attributes
+            // transformTemplateToApi will detect it's a URL and NOT include it in template_data.bgImage
+            // The API will preserve attributes.background_image automatically
+            templateWithPreservedBgImage.bgImage = existingBackgroundImageUrl;
+            console.log("Preserving background_image (URL) from existing template:", existingBackgroundImageUrl);
           } else if (selectedTemplate.bgImage) {
-            // Use the bgImage from selectedTemplate if available
-            apiData.template_data.bgImage = selectedTemplate.bgImage;
+            // Use selectedTemplate's bgImage if it exists
+            console.log("Using selectedTemplate.bgImage:", selectedTemplate.bgImage.substring(0, 50) + "...");
+          } else {
+            console.log("No bgImage found anywhere");
           }
+
+          // Update the template to set it as default
+          // transformTemplateToApi will automatically exclude URLs from template_data.bgImage
+          const apiData = transformTemplateToApi(templateWithPreservedBgImage);
+          
+          console.log("Final bgImage in apiData.template_data:", apiData.template_data.bgImage ? "exists (base64)" : "not included (URL will be preserved in attributes.background_image)");
 
           const updateData = {
             badge_template: {
@@ -1736,6 +1950,18 @@ const Badges: React.FC<BadgesProps> = ({
           console.log(`Updated custom badge template ${numericId} to default`);
           console.log("Background image (bgImage):", updateData.badge_template.template_data?.bgImage);
           console.log("Background image URL:", existingTemplateFromApi?.attributes?.background_image);
+          
+          // Update event's active_badge_id in API for cross-device visibility
+          if (effectiveEventId) {
+            const fd = new FormData();
+            fd.append("event[active_badge_id]", numericId.toString());
+            try {
+              await updateEventById(effectiveEventId, fd);
+              console.log(`Updated event active_badge_id to ${numericId} for cross-device visibility`);
+            } catch (error) {
+              console.error("Failed to update event active_badge_id:", error);
+            }
+          }
         }
 
         toast.success("Custom template selected!");
@@ -1835,8 +2061,8 @@ const Badges: React.FC<BadgesProps> = ({
             <div
               key={badge.id}
               className={`relative border-2 rounded-3xl p-4 transition-colors cursor-pointer flex flex-col min-h-[350px] ${isActive
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-blue-500"
+                ? "border-pink-500 bg-pink-50"
+                : "border-gray-200 hover:border-pink-500"
                 }`}
               onClick={() => handlePreviewBadge(badge)}
             >
@@ -1852,8 +2078,8 @@ const Badges: React.FC<BadgesProps> = ({
                   <div className="flex items-center gap-2">
                     {isActive && (
                       <div className="flex items-center">
-                        <Check size={16} className="text-green-500 mr-1" />
-                        <span className="text-sm text-green-500 font-medium">
+                        <Check size={16} className="text-pink-500 mr-1" />
+                        <span className="text-sm text-pink-500 font-medium">
                           Selected
                         </span>
                       </div>
@@ -1916,7 +2142,7 @@ const Badges: React.FC<BadgesProps> = ({
                   handleSelectExistingBadge(previewBadge);
                   closePreview();
                 }}
-                className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white hover:bg-green-600 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white hover:bg-pink-600 rounded-lg transition-colors"
               >
                 <Check size={16} />
                 Select

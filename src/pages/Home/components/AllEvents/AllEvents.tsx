@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Trash2, Search, Grid3X3, List, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 
 // import { useNavigate } from "react-router-dom";
 
@@ -113,6 +113,7 @@ function AllEvents() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false); // loading state when searching
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null); // track which event is being deleted
+  const [eventToDelete, setEventToDelete] = useState<{ id: string; name: string } | null>(null); // track event pending deletion confirmation
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -390,10 +391,24 @@ function AllEvents() {
 
   // Always show the real search input, even while loading
 
-  const handleDelete = async (eventId: string) => {
-    if (deletingEventId) return; // Prevent multiple deletions
+  // Show confirmation modal when delete is clicked
+  const handleDeleteClick = (eventId: string, eventName: string) => {
+    setEventToDelete({ id: eventId, name: eventName });
+  };
 
+  // Close confirmation modal
+  const handleCloseDeleteModal = () => {
+    setEventToDelete(null);
+  };
+
+  // Confirm and proceed with deletion
+  const handleDelete = async () => {
+    if (!eventToDelete || deletingEventId) return; // Prevent multiple deletions
+
+    const eventId = eventToDelete.id;
+    console.log("eventId", eventId);
     setDeletingEventId(eventId);
+    setEventToDelete(null); // Close modal
     try {
       await deleteEvent(eventId);
       toast.success("Event deleted successfully!");
@@ -733,7 +748,7 @@ function AllEvents() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent parent click
-                        handleDelete(event.id);
+                        handleDeleteClick(event.id, event.name);
                       }}
                       disabled={deletingEventId === event.id}
                       className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
@@ -819,7 +834,7 @@ function AllEvents() {
                   <button
                     onClick={(e) => {
                       e.stopPropagation(); // Prevent parent click
-                      handleDelete(event.id);
+                      handleDeleteClick(event.id, event.name);
                     }}
                     disabled={deletingEventId === event.id}
                     className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
@@ -868,6 +883,50 @@ function AllEvents() {
           </p>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {eventToDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={handleCloseDeleteModal}
+        >
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
+          >
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+              Delete Event?
+            </h3>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Are you sure you want to delete{" "}
+              <strong>{eventToDelete.name || "this event"}</strong>? This action
+              cannot be undone.
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={handleCloseDeleteModal}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deletingEventId === eventToDelete.id}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingEventId === eventToDelete.id ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToastContainer />
     </div>
   );
 }

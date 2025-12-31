@@ -18,6 +18,8 @@ interface BadgeTemplateProps {
 const getBadgeColors = (template: any, event: any) => {
   const templateData = template?.attributes?.template_data || {};
   const eventColors = event?.attributes || {};
+  const templateName = template?.attributes?.name || "";
+  const templateType = templateData.type || "";
 
   // Fix red background colors
   const fixRedBackground = (bgColor: string | null | undefined): string => {
@@ -36,18 +38,27 @@ const getBadgeColors = (template: any, event: any) => {
     return bgColor;
   };
 
-  // Get background color - prioritize template bgColor
-  const bgColor = templateData.bgColor;
-  const finalBgColor = fixRedBackground(bgColor) || eventColors.secondary_color || "white";
+  // For ready-made templates (Template 1 or Template 2), ALWAYS use event colors from main data
+  // This ensures consistency between badge screen and print badge
+  const isReadyMadeTemplate = templateName === "Template 1" || templateName === "Template 2" || templateType === "existing";
   
-  console.log("getBadgeColors - Template name:", template?.attributes?.name);
-  console.log("getBadgeColors - templateData.bgColor:", bgColor);
-  console.log("getBadgeColors - final backgroundColor:", finalBgColor);
-  console.log("getBadgeColors - event secondary_color:", eventColors.secondary_color);
+  let finalBgColor: string;
+  if (isReadyMadeTemplate) {
+    // For ready-made templates, ALWAYS use event's secondary_color from main data
+    // This is the color set by the user in the main event settings
+    finalBgColor = fixRedBackground(eventColors.secondary_color) || "white";
+  } else {
+    // For custom templates, use template bgColor if available, otherwise use event color
+    const bgColor = templateData.bgColor;
+    finalBgColor = fixRedBackground(bgColor) || fixRedBackground(eventColors.secondary_color) || "white";
+  }
+  
+  // Get header/footer color - ALWAYS use event primary color from main data
+  const headerFooterColor = eventColors.primary_color || "#4D4D4D";
 
   return {
-    headerColor: eventColors.primary_color || "#4D4D4D",
-    footerColor: eventColors.primary_color || "#4D4D4D",
+    headerColor: headerFooterColor,
+    footerColor: headerFooterColor,
     backgroundColor: finalBgColor,
   };
 };
