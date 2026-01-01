@@ -110,7 +110,7 @@ const SideBar = ({
       setActiveItem("Registered Users");
     } else if (currentPath === "/agenda") {
       setActiveItem("Agenda");
-    } else if (currentPath === "/galleries") {
+    } else if (currentPath.includes("/galleries")) {
       setActiveItem("Galleries");
     } else if (currentPath === "/user/registration") {
       setActiveItem("User Registration");
@@ -199,7 +199,7 @@ const SideBar = ({
       icon: Image,
       label: "Galleries",
       path: currentEventId
-        ? `/galleries?eventId=${currentEventId}`
+        ? `/home/${currentEventId}/galleries`
         : "/galleries",
       availableForExpress: false,
     },
@@ -413,10 +413,10 @@ const SideBar = ({
                   <div key={index}>
                     <div
                       className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${isActive
-                          ? "bg-blue-600/30 text-white border border-blue-500/30"
-                          : isDisabled
-                            ? "text-slate-500 cursor-not-allowed opacity-60"
-                            : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                        ? "bg-blue-600/30 text-white border border-blue-500/30"
+                        : isDisabled
+                          ? "text-slate-500 cursor-not-allowed opacity-60"
+                          : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                         }`}
                       onClick={() => {
                         if (isDisabled) {
@@ -465,10 +465,10 @@ const SideBar = ({
                             <div
                               key={subIndex}
                               className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${isSubActive
-                                  ? "bg-blue-500/20 text-white border border-blue-400/30"
-                                  : isSubDisabled
-                                    ? "text-slate-500 cursor-not-allowed opacity-60"
-                                    : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
+                                ? "bg-blue-500/20 text-white border border-blue-400/30"
+                                : isSubDisabled
+                                  ? "text-slate-500 cursor-not-allowed opacity-60"
+                                  : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
                                 }`}
                               onClick={() => {
                                 if (isSubDisabled) {
