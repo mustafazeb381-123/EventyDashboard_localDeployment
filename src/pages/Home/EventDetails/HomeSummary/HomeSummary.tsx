@@ -3,7 +3,11 @@ import Assets from "../../../../utils/Assets";
 import { Clock, Edit, MapPin, Loader2, Share2 } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
-import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
+import {
+  getEventbyId,
+  updateEventById,
+  getEventUserMetrics,
+} from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 
 type HomeSummaryProps = {
@@ -14,6 +18,7 @@ type HomeSummaryProps = {
 function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [eventData, setEventData] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [metrics, setMetrics] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const navigate = useNavigate();
@@ -31,8 +36,22 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   };
 
+  // Fetch metrics data
+  const fetchEventMetrics = async (id: string | number) => {
+    try {
+      const response = await getEventUserMetrics(id);
+      console.log("Metrics response:", response.data);
+      setMetrics(response.data.metrics);
+    } catch (error) {
+      console.error("Error fetching event metrics:", error);
+    }
+  };
+
   useEffect(() => {
-    if (eventId) getEventDataById(eventId);
+    if (eventId) {
+      getEventDataById(eventId);
+      fetchEventMetrics(eventId);
+    }
   }, [eventId]);
 
   if (!eventData) {
@@ -70,32 +89,27 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     require_approval,
   } = eventData.attributes;
 
-  // Define stats config (label + icon + key)
+  // Define stats config (label + icon + key) using real metrics data
   const stats = [
     {
       label: "Total Registrations",
-      value: 1256892,
+      value: metrics?.total_registration || 0,
       icon: Assets.icons.totalRegistration,
     },
     {
       label: "Today Registrations",
-      value: 56789,
+      value: metrics?.todays_registration || 0,
       icon: Assets.icons.todayRegistration,
     },
     {
-      label: "Invitation Registrations",
-      value: 12456,
-      icon: Assets.icons.invitationRegistration,
+      label: "Approved Registrations",
+      value: metrics?.approved_registration || 0,
+      icon: Assets.icons.approvedRegistration,
     },
     {
       label: "Pending Users",
-      value: 88888,
+      value: metrics?.pending_users || 0,
       icon: Assets.icons.pendingUsers,
-    },
-    {
-      label: "Approved Registrations",
-      value: 15667,
-      icon: Assets.icons.approvedRegistration,
     },
   ];
 

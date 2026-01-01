@@ -182,6 +182,11 @@ export const getEventUsers = (eventId: string) => {
   return axiosInstance.get(`/events/${eventId}/event_users`);
 };
 
+// Get registration metrics for event users
+export const getEventUserMetrics = (eventId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/event_users/metrics`);
+};
+
 // Delete a specific user from an event
 export const deleteEventUser = (eventId: string, userId: string | number) => {
   return axiosInstance.delete(`/events/${eventId}/event_users/${userId}`);
