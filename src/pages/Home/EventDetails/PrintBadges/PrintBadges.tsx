@@ -156,7 +156,7 @@ function PrintBadges() {
         )
       );
 
-      toast.success(`Print status updated for ${userIds.length} user(s)`);
+      // toast.success(`Print status updated for ${userIds.length} user(s)`);
       return true;
     } catch (error) {
       console.error("Error updating print status:", error);
@@ -308,7 +308,7 @@ const handlePrint = useCallback(async () => {
     return;
   }
 
-  toast.success("Print status updated to 'Printed'!");
+  // toast.success("Print status updated to 'Printed'!");
 }, [usersInPreviewModal]);
 
 
