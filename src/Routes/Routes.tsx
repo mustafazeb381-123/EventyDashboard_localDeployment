@@ -4,6 +4,7 @@ import ProtectedRoute from "./ProtectedRoutes";
 
 import Home from "../pages/Home/Home";
 import NotFound from "../pages/NotFound/NotFound";
+import ErrorPage from "../pages/ErrorPage/ErrorPage";
 import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
 import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
@@ -13,6 +14,7 @@ import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
 import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
 import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
 import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
+import GalleriesList from "@/pages/Home/EventDetails/Galleries/GalleriesList";
 import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 import Users from "@/pages/Home/EventDetails/Invitation/Users";
 import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
@@ -27,6 +29,7 @@ const router = createBrowserRouter([
   {
     path: "/", // The main path for all protected routes
     element: <ProtectedRoute />,
+    errorElement: <ErrorPage />,
     children: [
       {
         element: <MainRoutes />, // MainRoutes now acts as a layout for children
@@ -48,7 +51,11 @@ const router = createBrowserRouter([
             element: <Agenda />,
           },
           {
-            path: "galleries",
+            path: "home/:id/galleries",
+            element: <GalleriesList />,
+          },
+          {
+            path: "home/:id/galleries/:galleryId",
             element: <Galleries />,
           },
           {
