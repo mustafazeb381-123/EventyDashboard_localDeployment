@@ -2,6 +2,90 @@ import { useState, useRef } from "react";
 import { createEventUser } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
 
+// Image compression utility
+const compressImage = (
+  file: File,
+  maxWidth: number = 1200,
+  maxHeight: number = 1200,
+  quality: number = 0.8
+): Promise<File> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          reject(new Error("Could not get canvas context"));
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (!blob) {
+              reject(new Error("Could not create blob from canvas"));
+              return;
+            }
+
+            // Get file extension from original file
+            const extension = file.name.split(".").pop() || "jpg";
+            const compressedFile = new File(
+              [blob],
+              `${file.name.split(".")[0]}_compressed.${extension}`,
+              {
+                type: file.type,
+                lastModified: Date.now(),
+              }
+            );
+
+            console.log(
+              `📸 Image compressed: ${(file.size / 1024).toFixed(2)}KB → ${(
+                compressedFile.size / 1024
+              ).toFixed(2)}KB`
+            );
+            resolve(compressedFile);
+          },
+          file.type,
+          quality
+        );
+      };
+      img.onerror = () => {
+        reject(new Error("Could not load image"));
+      };
+      img.src = event.target?.result as string;
+    };
+
+    reader.onerror = () => {
+      reject(new Error("Could not read file"));
+    };
+
+    reader.readAsDataURL(file);
+  });
+};
+
 interface FormField {
   id: number;
   name: string;
@@ -82,7 +166,7 @@ const RegistrationFormPreview = ({
 
       const response = await createEventUser(eventId, formDataToSend);
 
-      toast.success(response?.data?.message);
+      toast.success("Registration successfull");
       console.log("✅ User created:", response);
 
       // Reset form data
@@ -93,11 +177,8 @@ const RegistrationFormPreview = ({
         if (input) input.value = "";
       });
     } catch (error: any) {
-      console.error(
-        "❌ Error creating event user:",
-        error?.response?.data?.message || error?.message
-      );
-      console.log("error", error?.response?.data?.message || error?.message);
+      console.error("❌ Error creating event user:", error?.response);
+      console.log("error", error?.response);
       toast.error(error.response?.data?.message || error.message);
     } finally {
       setLoading(false);
@@ -167,10 +248,30 @@ const RegistrationFormPreview = ({
               ref={(el) => {
                 if (el) fileInputRefs.current[field.name] = el;
               }}
-              onChange={(e) => {
+              onChange={async (e) => {
                 const files = e.target.files;
                 if (files && files[0]) {
-                  handleInputChange(field.name, files[0]); // Store File object
+                  const file = files[0];
+
+                  // Check if it's an image file
+                  if (file.type.startsWith("image/")) {
+                    try {
+                      toast.info("Compressing image...");
+                      const compressedFile = await compressImage(file);
+                      handleInputChange(field.name, compressedFile);
+                      toast.success(`Image compressed and ready to upload`);
+                    } catch (error) {
+                      console.error("Error compressing image:", error);
+                      toast.warning(
+                        "Could not compress image, uploading original"
+                      );
+                      // Fallback to original file if compression fails
+                      handleInputChange(field.name, file);
+                    }
+                  } else {
+                    // Non-image file, use as is
+                    handleInputChange(field.name, file);
+                  }
                 }
               }}
               className="w-full text-sm border border-gray-300 rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"

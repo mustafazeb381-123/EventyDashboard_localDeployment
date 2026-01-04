@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { deleteEventUser } from "@/apis/apiHelpers";
 import { updateEventUser } from "@/apis/apiHelpers";
@@ -10,13 +10,13 @@ import { resetCheckInOutStatus } from "@/apis/apiHelpers";
 
 import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { Trash2, Mail, Plus, Edit, RotateCcw } from "lucide-react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 function RegisterdUser() {
-
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
@@ -26,16 +26,11 @@ function RegisterdUser() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5; // adjust as needed
-
-  const filteredUsers = eventUsers.filter((user) =>
-    user.attributes.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+  const [pagination, setPagination] = useState<any>(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const itemsPerPage = 10; // Server-side pagination items per page
 
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -43,14 +38,13 @@ function RegisterdUser() {
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
 
-  // Store event user length in localStorage whenever eventUsers changes
+  // Store event user length in localStorage whenever pagination changes
   useEffect(() => {
-    if (eventId) {
+    if (eventId && pagination?.total_count) {
       const storageKey = `eventUsersLength_${eventId}`;
-      localStorage.setItem(storageKey, eventUsers.length?.toString());
+      localStorage.setItem(storageKey, pagination.total_count.toString());
     }
-  }, [eventUsers, eventId]);
-
+  }, [pagination, eventId]);
 
   const [editForm, setEditForm] = useState({
     image: "",
@@ -59,7 +53,6 @@ function RegisterdUser() {
     organization: "",
     user_type: "",
     printed: false,
-
   });
 
   const handleDownloadTemplate = async () => {
@@ -105,7 +98,7 @@ function RegisterdUser() {
       console.log("Import response:", response.data);
       toast.success("Users imported successfully!");
 
-      fetchUsers(eventId); // refresh user list
+      fetchUsers(eventId, currentPage); // refresh user list
 
       // Reset uploadFile so the submit button disappears
       setUploadFile(null);
@@ -117,7 +110,9 @@ function RegisterdUser() {
 
       if (err.response) {
         console.error("Server response data:", err.response.data);
-        toast.error(`Import failed: ${err.response.data?.message || "Validation error"}`);
+        toast.error(
+          `Import failed: ${err.response.data?.message || "Validation error"}`
+        );
       } else {
         toast.error("Failed to import users. Check the file and try again.");
       }
@@ -156,17 +151,23 @@ function RegisterdUser() {
 
       // Append user fields
       if (editForm.name) formData.append("event_user[name]", editForm.name);
-      if (editForm.phone_number) formData.append("event_user[phone_number]", editForm.phone_number);
+      if (editForm.phone_number)
+        formData.append("event_user[phone_number]", editForm.phone_number);
       if (editForm.email) formData.append("event_user[email]", editForm.email);
-      if (editForm.position) formData.append("event_user[position]", editForm.position);
-      if (editForm.organization) formData.append("event_user[organization]", editForm.organization);
-      if (editForm.printed !== undefined) formData.append("event_user[printed]", editForm.printed);
+      if (editForm.position)
+        formData.append("event_user[position]", editForm.position);
+      if (editForm.organization)
+        formData.append("event_user[organization]", editForm.organization);
+      if (editForm.printed !== undefined)
+        formData.append("event_user[printed]", editForm.printed);
 
       // ✅ Add user_type
-      if (editForm.user_type) formData.append("event_user[user_type]", editForm.user_type);
+      if (editForm.user_type)
+        formData.append("event_user[user_type]", editForm.user_type);
 
       // Append image if provided
-      if (selectedImageFile) formData.append("event_user[image]", selectedImageFile);
+      if (selectedImageFile)
+        formData.append("event_user[image]", selectedImageFile);
 
       const response = await updateEventUser(eventId, editingUser.id, formData);
       console.log("Update response:", response.data);
@@ -178,16 +179,16 @@ function RegisterdUser() {
         prev.map((u) =>
           u.id === editingUser.id
             ? {
-              ...u,
-              attributes: {
-                ...u.attributes,
-                ...editForm, // includes user_type now
-                image: updatedUser?.attributes?.image
-                  ? `${updatedUser.attributes.image}?t=${Date.now()}`
-                  : u.attributes.image,
-                updated_at: new Date().toISOString(),
-              },
-            }
+                ...u,
+                attributes: {
+                  ...u.attributes,
+                  ...editForm, // includes user_type now
+                  image: updatedUser?.attributes?.image
+                    ? `${updatedUser.attributes.image}?t=${Date.now()}`
+                    : u.attributes.image,
+                  updated_at: new Date().toISOString(),
+                },
+              }
             : u
         )
       );
@@ -195,6 +196,9 @@ function RegisterdUser() {
       toast.success("User updated successfully!");
       setEditingUser(null);
       setSelectedImageFile(null);
+
+      // Refresh current page to show updated data
+      fetchUsers(eventId, currentPage);
     } catch (error) {
       console.error("Error updating user:", error);
       toast.error("Failed to update user. Please try again.");
@@ -203,28 +207,160 @@ function RegisterdUser() {
     }
   };
 
+  // Handle event ID change from URL
   useEffect(() => {
     const searchParams = new URLSearchParams(location.search);
     const idFromQuery = searchParams.get("eventId");
-    setEventId(idFromQuery);
 
-    if (idFromQuery) {
-      fetchUsers(idFromQuery);
+    if (idFromQuery && idFromQuery !== eventId) {
+      // Event changed, reset to page 1
+      setEventId(idFromQuery);
+      setCurrentPage(1);
     }
   }, [location.search]);
 
-  const fetchUsers = async (id: string) => {
-    setLoadingUsers(true); // start loader
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Reset to page 1 when search changes
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  // Fetch users when eventId, currentPage, or search term changes
+  useEffect(() => {
+    if (eventId && currentPage > 0) {
+      if (debouncedSearchTerm) {
+        searchUsersAcrossPages(eventId, debouncedSearchTerm);
+      } else {
+        fetchUsers(eventId, currentPage);
+      }
+    }
+  }, [eventId, currentPage, debouncedSearchTerm]);
+
+  const fetchUsers = async (id: string, page: number = 1) => {
+    setLoadingUsers(true);
+    setIsSearching(false);
     try {
-      setLoadingUsers(true);
-      const response = await getEventUsers(id);
+      const response = await getEventUsers(id, {
+        page,
+        per_page: itemsPerPage,
+      });
       console.log("get event users api:", response.data);
 
-      // adjust depending on backend shape
-      const users = response.data.data || response.data || [];
+      // Handle JSON:API response structure
+      const responseData = response.data?.data || response.data;
+      const users = Array.isArray(responseData)
+        ? responseData
+        : responseData?.data || [];
+
       setUsers(users);
+
+      // Set pagination metadata
+      const paginationMeta =
+        response.data?.meta?.pagination || response.data?.pagination;
+      if (paginationMeta) {
+        setPagination(paginationMeta);
+        // Update localStorage with total count
+        if (id) {
+          const storageKey = `eventUsersLength_${id}`;
+          localStorage.setItem(
+            storageKey,
+            paginationMeta.total_count?.toString() || "0"
+          );
+        }
+      }
     } catch (error) {
       console.error("Error fetching event users:", error);
+      toast.error("Failed to load users");
+    } finally {
+      setLoadingUsers(false);
+    }
+  };
+
+  // Search users across all pages
+  const searchUsersAcrossPages = async (id: string, searchQuery: string) => {
+    setLoadingUsers(true);
+    setIsSearching(true);
+    try {
+      // First, get the first page to know total pages
+      const firstPageResponse = await getEventUsers(id, {
+        page: 1,
+        per_page: itemsPerPage,
+      });
+
+      const paginationMeta =
+        firstPageResponse.data?.meta?.pagination ||
+        firstPageResponse.data?.pagination;
+      const totalPages = paginationMeta?.total_pages || 1;
+
+      // Search through all pages
+      const allMatchingUsers: any[] = [];
+      const searchLower = searchQuery.toLowerCase();
+
+      // Fetch all pages and filter
+      const pagePromises = [];
+      for (let page = 1; page <= totalPages; page++) {
+        pagePromises.push(
+          getEventUsers(id, {
+            page,
+            per_page: itemsPerPage,
+          })
+        );
+      }
+
+      const allPagesResponses = await Promise.all(pagePromises);
+
+      // Filter users from all pages
+      allPagesResponses.forEach((response) => {
+        const responseData = response.data?.data || response.data;
+        const users = Array.isArray(responseData)
+          ? responseData
+          : responseData?.data || [];
+
+        const matchingUsers = users.filter((user: any) => {
+          const name = user.attributes?.name?.toLowerCase() || "";
+          const email = user.attributes?.email?.toLowerCase() || "";
+          const organization =
+            user.attributes?.organization?.toLowerCase() || "";
+          const phoneNumber =
+            user.attributes?.phone_number?.toLowerCase() || "";
+
+          return (
+            name.includes(searchLower) ||
+            email.includes(searchLower) ||
+            organization.includes(searchLower) ||
+            phoneNumber.includes(searchLower)
+          );
+        });
+
+        allMatchingUsers.push(...matchingUsers);
+      });
+
+      // Paginate the search results
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedResults = allMatchingUsers.slice(startIndex, endIndex);
+
+      setUsers(paginatedResults);
+
+      // Set pagination metadata for search results
+      setPagination({
+        current_page: currentPage,
+        total_pages: Math.ceil(allMatchingUsers.length / itemsPerPage),
+        total_count: allMatchingUsers.length,
+        per_page: itemsPerPage,
+        next_page:
+          currentPage < Math.ceil(allMatchingUsers.length / itemsPerPage)
+            ? currentPage + 1
+            : null,
+        prev_page: currentPage > 1 ? currentPage - 1 : null,
+      });
+    } catch (error) {
+      console.error("Error searching users:", error);
+      toast.error("Failed to search users");
     } finally {
       setLoadingUsers(false);
     }
@@ -273,13 +409,15 @@ function RegisterdUser() {
       console.log("Deleting user with:", {
         eventId,
         userId: user.id,
-        apiCall: `/events/${eventId}/event_users/${user.id}`
+        apiCall: `/events/${eventId}/event_users/${user.id}`,
       });
 
       await deleteEventUser(eventId, user.id);
 
-      // Remove user from local state
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      toast.success("User deleted successfully");
+
+      // Refresh current page
+      fetchUsers(eventId, currentPage);
 
       toast.success("User deleted successfully!");
     } catch (error: any) {
@@ -287,10 +425,12 @@ function RegisterdUser() {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
-        requestUrl: error.config?.url
+        requestUrl: error.config?.url,
       });
 
-      toast.error(`Failed to delete user: ${error.response?.data?.error || error.message}`);
+      toast.error(
+        `Failed to delete user: ${error.response?.data?.error || error.message}`
+      );
     }
   };
 
@@ -343,7 +483,11 @@ function RegisterdUser() {
   const handleResetCheckInOut = async (userId: string) => {
     if (!eventId) return toast.error("Event ID is missing.");
 
-    if (!window.confirm("Are you sure you want to reset this user's check-in/out status?"))
+    if (
+      !window.confirm(
+        "Are you sure you want to reset this user's check-in/out status?"
+      )
+    )
       return;
 
     try {
@@ -357,13 +501,9 @@ function RegisterdUser() {
     }
   };
 
-
   return (
-
     <div className="bg-white min-h-screen p-6">
-
       <div className="max-w-8xl mx-auto">
-
         <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
 
         {/* Header */}
@@ -392,7 +532,9 @@ function RegisterdUser() {
                 className="bg-white p-6 rounded-lg w-96"
                 onClick={(e) => e.stopPropagation()} // Prevent modal content clicks from closing
               >
-                <h2 className="text-xl font-bold mb-4 text-center">Import Attendees</h2>
+                <h2 className="text-xl font-bold mb-4 text-center">
+                  Import Attendees
+                </h2>
 
                 {/* Download Template */}
                 <button
@@ -402,7 +544,6 @@ function RegisterdUser() {
                 >
                   {downloadingTemplate ? "...Downloading" : "Download Template"}
                 </button>
-
 
                 {/* File Upload */}
                 <input
@@ -421,23 +562,16 @@ function RegisterdUser() {
                 >
                   {uploadingTemplate ? "...Uploading" : "Submit"}
                 </button>
-
-
-
               </div>
-
             </div>
-
           )}
-
-
-
         </div>
 
         {selectedUsers.length > 0 && (
           <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
             <p className="text-blue-700 font-medium">
-              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""} selected
+              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
+              selected
             </p>
 
             <button
@@ -448,8 +582,6 @@ function RegisterdUser() {
               <Mail className="w-4 h-4" />
               {sendingCredentials ? "...Sending" : "Send Credentials"}
             </button>
-
-
           </div>
         )}
 
@@ -459,31 +591,110 @@ function RegisterdUser() {
               value={searchTerm}
               onChange={(val) => {
                 setSearchTerm(val);
-                setCurrentPage(1); // reset to first page when searching
               }}
-              placeholder="Search users..."
+              placeholder="Search users across all pages..."
             />
           </div>
           <div>
             <span className="text-gray-600 text-sm">
-              Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of {filteredUsers.length} users
+              {pagination ? (
+                <>
+                  Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
+                  {Math.min(currentPage * itemsPerPage, pagination.total_count)}{" "}
+                  of {pagination.total_count} users
+                </>
+              ) : (
+                <>Loading...</>
+              )}
             </span>
           </div>
         </div>
 
         {/* Table */}
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-
           {loadingUsers ? (
-            <div className="flex flex-col items-center justify-center py-16 text-gray-500">
-              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-              <p className="text-sm">Loading users...</p>
+            <div className="p-6">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-12 px-6 py-3 text-left">
+                      <Skeleton className="w-4 h-4" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-12" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-20" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-24" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-28" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-16" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-20" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-20" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-16" />
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {Array.from({ length: 10 }).map((_, index) => (
+                    <tr
+                      key={index}
+                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    >
+                      <td className="px-6 py-4">
+                        <Skeleton className="w-4 h-4" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-12" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="w-10 h-10 rounded-full" />
+                          <Skeleton className="h-4 w-32" />
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-40" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-36" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-6 w-20 rounded-full" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <Skeleton className="w-8 h-8 rounded-lg" />
+                          <Skeleton className="w-8 h-8 rounded-lg" />
+                          <Skeleton className="w-8 h-8 rounded-lg" />
+                          <Skeleton className="w-8 h-8 rounded-lg" />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <>
-
               <table className="min-w-full">
-
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="w-12 px-6 py-3 text-left">
@@ -495,7 +706,6 @@ function RegisterdUser() {
                           eventUsers.length > 0 &&
                           selectedUsers.length === eventUsers.length
                         }
-
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -528,106 +738,121 @@ function RegisterdUser() {
                 </thead>
 
                 <tbody className="divide-y divide-gray-200">
-                  {paginatedUsers.map((user, index) => (
-                    <tr
-                      key={user.id}
-                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    >
-                      <td className="px-6 py-4">
-                        <input
-                          type="checkbox"
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                          checked={selectedUsers.includes(user.id)}
-                          onChange={() => handleSelectUser(user.id)}
-                        />
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {user.id}
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <UserAvatar user={user} />
-                          <span className="text-sm font-medium text-gray-900">
-                            {user?.attributes?.name}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {user?.attributes?.email}
-                      </td>
-
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {user?.attributes?.organization}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                          {user?.attributes?.user_type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {formatDate(user?.attributes?.created_at)}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
-                        {formatDate(user?.attributes?.updated_at)}
-                      </td>
-
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-
-                          <button
-                            onClick={() => handleResetCheckInOut(user.id)}
-                            className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                          </button>
-
-
-                          <button
-                            onClick={() => handleDeleteUser(user)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-
-                          <button onClick={() => {
-                            setEditingUser(user);
-                            setEditForm({
-                              name: user?.attributes?.name || "",
-                              email: user?.attributes?.email || "",
-                              organization: user?.attributes?.organization || "",
-                              image: user?.attributes?.image || "",
-                              user_type: user?.attributes?.user_type || "",
-                              printed: user?.attributes?.printed|| false
-
-                            });
-                          }} className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer">
-                            <Edit className="w-4 h-4" />
-                          </button>
-
-
-                          <button
-                            onClick={() => handleSendCredentials([user.id])}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                          >
-                            <Mail className="w-4 h-4" />
-
-                          </button>
-
-
-                        </div>
+                  {eventUsers.length === 0 && !loadingUsers ? (
+                    <tr>
+                      <td
+                        colSpan={9}
+                        className="px-6 py-8 text-center text-gray-500"
+                      >
+                        {isSearching && debouncedSearchTerm
+                          ? `No users found matching "${debouncedSearchTerm}"`
+                          : "No users found"}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    eventUsers.map((user, index) => (
+                      <tr
+                        key={user.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            checked={selectedUsers.includes(user.id)}
+                            onChange={() => handleSelectUser(user.id)}
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {user.id}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <UserAvatar user={user} />
+                            <span className="text-sm font-medium text-gray-900">
+                              {user?.attributes?.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {user?.attributes?.email}
+                        </td>
+
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {user?.attributes?.organization}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {user?.attributes?.user_type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {formatDate(user?.attributes?.created_at)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {formatDate(user?.attributes?.updated_at)}
+                        </td>
+
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleResetCheckInOut(user.id)}
+                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteUser(user)}
+                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => {
+                                setEditingUser(user);
+                                setEditForm({
+                                  name: user?.attributes?.name || "",
+                                  email: user?.attributes?.email || "",
+                                  organization:
+                                    user?.attributes?.organization || "",
+                                  image: user?.attributes?.image || "",
+                                  user_type: user?.attributes?.user_type || "",
+                                  printed: user?.attributes?.printed || false,
+                                });
+                              }}
+                              className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleSendCredentials([user.id])}
+                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            >
+                              <Mail className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
 
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                className="m-2"
-              />
-
+              {pagination && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={pagination.total_pages || 1}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    // Scroll to top when page changes
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="m-2"
+                />
+              )}
             </>
           )}
 
@@ -699,32 +924,40 @@ function RegisterdUser() {
                   type="text"
                   placeholder="Name"
                   value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, name: e.target.value })
+                  }
                   className="w-full mb-2 p-2 border rounded"
                 />
                 <input
                   type="email"
                   placeholder="Email"
                   value={editForm.email}
-                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, email: e.target.value })
+                  }
                   className="w-full mb-2 p-2 border rounded"
                 />
                 <input
                   type="text"
                   placeholder="Organization"
                   value={editForm.organization}
-                  onChange={(e) => setEditForm({ ...editForm, organization: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, organization: e.target.value })
+                  }
                   className="w-full mb-2 p-2 border rounded"
                 />
                 <input
                   type="text"
                   placeholder="User Type"
                   value={editForm.user_type}
-                  onChange={(e) => setEditForm({ ...editForm, user_type: e.target.value })}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, user_type: e.target.value })
+                  }
                   className="w-full mb-4 p-2 border rounded"
                 />
 
-{/* <div className="mb-4">
+                {/* <div className="mb-4">
   <label className="flex items-center gap-2">
     <input
       type="checkbox"
@@ -743,26 +976,23 @@ function RegisterdUser() {
   </label>
 </div> */}
 
-
-
                 <button
                   onClick={handleUpdateUser}
                   disabled={isUpdating}
-                  className={`w-full px-4 py-2 rounded text-white ${isUpdating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'}`}
+                  className={`w-full px-4 py-2 rounded text-white ${
+                    isUpdating
+                      ? "bg-blue-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700"
+                  }`}
                 >
-                  {isUpdating ? '...Updating' : 'Update'}
+                  {isUpdating ? "...Updating" : "Update"}
                 </button>
-
-
               </div>
             </div>
           )}
-
         </div>
       </div>
-
-    </div >
-
+    </div>
   );
 }
 
