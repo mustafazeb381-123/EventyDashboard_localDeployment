@@ -53,28 +53,101 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
         const badgeNode = badgeRefs.current[user.id];
         if (!badgeNode) continue;
         if (i > 0) pdf.addPage();
-        const dataUrl = await domtoimage.toPng(badgeNode, {
-          width: badgeNode.offsetWidth * scale,
-          height: badgeNode.offsetHeight * scale,
-          style: {
-            transform: `scale(${scale})`,
-            transformOrigin: "top left",
-            width: `${badgeNode.offsetWidth}px`,
-            height: `${badgeNode.offsetHeight}px`,
-          },
-          cacheBust: true,
-        });
+  //       const dataUrl = await domtoimage.toPng(badgeNode, {
+  //         width: badgeNode.offsetWidth * scale,
+  //         height: badgeNode.offsetHeight * scale,
+  //         style: {
+  //           transform: `scale(${scale})`,
+  //           transformOrigin: "top left",
+  //           width: `${badgeNode.offsetWidth}px`,
+  //           height: `${badgeNode.offsetHeight}px`,
+  //         },
+  //         cacheBust: true,
+  //       });
 
-        const pdfW = pdf.internal.pageSize.getWidth();
-        const pdfH = pdf.internal.pageSize.getHeight();
-        pdf.addImage(dataUrl, "PNG", (pdfW - 350) / 2, (pdfH - 550) / 2, 350, 550);
-      }
-      pdf.save(`badges-${new Date().getTime()}.pdf`);
-      toast.success("PDF downloaded!");
-    } catch (err) {
-      toast.error("Failed to create PDF.");
-    }
-  };
+  //       const pdfW = pdf.internal.pageSize.getWidth();
+  //       const pdfH = pdf.internal.pageSize.getHeight();
+  //       pdf.addImage(dataUrl, "PNG", (pdfW - 350) / 2, (pdfH - 550) / 2, 350, 550);
+  //     }
+  //     pdf.save(`badges-${new Date().getTime()}.pdf`);
+  //     toast.success("PDF downloaded!");
+  //   } catch (err) {
+  //     toast.error("Failed to create PDF.");
+  //   }
+  // };
+
+  const dataUrl = await domtoimage.toPng(badgeNode, {
+    width: badgeNode.offsetWidth * scale,
+    height: badgeNode.offsetHeight * scale,
+    style: {
+      transform: `scale(${scale})`,
+      transformOrigin: "top left",
+      width: `${badgeNode.offsetWidth}px`,
+      height: `${badgeNode.offsetHeight}px`,
+      border: "none",
+      boxShadow: "none",
+      outline: "none",
+    },
+    cacheBust: true,
+    filter: (node) => true,
+    onclone: (clonedBadgeElement) => {
+      const doc = clonedBadgeElement.ownerDocument;
+      const style = doc.createElement("style");
+      style.textContent = `
+        * {
+          box-shadow: none !important;
+          border: none !important;
+          outline: none !important;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+        img, svg {
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+      `;
+      doc.head.appendChild(style);
+      clonedBadgeElement.style.border = "none";
+      clonedBadgeElement.style.outline = "none";
+      clonedBadgeElement.style.boxShadow = "none";
+      const allElements = clonedBadgeElement.querySelectorAll("*");
+      allElements.forEach((el) => {
+        (el as HTMLElement).style.border = "none";
+        (el as HTMLElement).style.outline = "none";
+        (el as HTMLElement).style.boxShadow = "none";
+      });
+    },
+  });
+
+  const pdfW = pdf.internal.pageSize.getWidth();
+  const pdfH = pdf.internal.pageSize.getHeight();
+  const margin = 36;
+  const targetW = pdfW - 2 * margin;
+  const targetH = pdfH - 2 * margin;
+
+  const img = new Image();
+  img.src = dataUrl;
+  await new Promise((r) => (img.onload = r));
+
+  const widthScale = targetW / img.width;
+  const heightScale = targetH / img.height;
+  const scaleFactor = Math.min(widthScale, heightScale);
+
+  const finalW = img.width * scaleFactor;
+  const finalH = img.height * scaleFactor;
+  const x = (pdfW - finalW) / 2;
+  const y = (pdfH - finalH) / 2;
+
+  pdf.addImage(dataUrl, "PNG", x, y, finalW, finalH);
+}
+
+pdf.save(`badges-${new Date().toISOString().slice(0, 19)}.pdf`);
+toast.success("PDF downloaded successfully!");
+} catch (err) {
+console.error("PDF generation failed", err);
+toast.error("Failed to create PDF.");
+}
+};
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
