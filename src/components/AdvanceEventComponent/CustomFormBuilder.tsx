@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import {
   DndContext,
@@ -51,7 +52,334 @@ interface CustomFormBuilderProps {
   onClose: () => void;
 }
 
-const DEFAULT_FORM_FIELDS: CustomFormField[] = [];
+const DEFAULT_FORM_FIELDS: CustomFormField[] = [
+  // Heading
+  {
+    id: "heading-1",
+    type: "heading",
+    label: "Complex Master Form",
+    name: "heading-1",
+    required: false,
+    unique: false,
+    content: "Complex Master Form",
+    description: "Use a permanent address where you can receive mail.",
+  },
+  // Personal Information Section - Row Container
+  {
+    id: "container-personal-info",
+    type: "text", // Dummy type for container
+    label: "Personal Information",
+    name: "container-personal-info",
+    required: false,
+    unique: false,
+    containerType: "row",
+    children: ["field-firstname", "field-lastname"],
+    layoutProps: {
+      gap: "16px",
+      flexWrap: "wrap",
+    },
+  },
+  {
+    id: "field-firstname",
+    type: "text",
+    label: "First name",
+    name: "firstname",
+    placeholder: "Enter first name",
+    required: true,
+    unique: false,
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "field-lastname",
+    type: "text",
+    label: "Last name",
+    name: "lastname",
+    placeholder: "Enter last name",
+    required: true,
+    unique: false,
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "field-email",
+    type: "email",
+    label: "Email address",
+    name: "email",
+    placeholder: "Enter email address",
+    required: true,
+    unique: false,
+  },
+  {
+    id: "field-country-1",
+    type: "select",
+    label: "Country / Region",
+    name: "country",
+    placeholder: "Enter country name",
+    required: false,
+    unique: false,
+    options: [
+      { label: "Select country...", value: "" },
+      { label: "United States", value: "us" },
+      { label: "Canada", value: "ca" },
+      { label: "United Kingdom", value: "uk" },
+    ],
+  },
+  // Subheader
+  {
+    id: "heading-2",
+    type: "heading",
+    label: "Subheader inside the form",
+    name: "heading-2",
+    required: false,
+    unique: false,
+    content: "Subheader inside the form",
+    description: "Use a permanent address where you can receive mail.",
+  },
+  // Address Section - Row Container
+  {
+    id: "container-address",
+    type: "text",
+    label: "Address",
+    name: "container-address",
+    required: false,
+    unique: false,
+    containerType: "row",
+    children: ["field-street", "field-city"],
+    layoutProps: {
+      gap: "16px",
+      flexWrap: "wrap",
+    },
+  },
+  {
+    id: "field-street",
+    type: "text",
+    label: "Street address",
+    name: "street",
+    placeholder: "Enter street address",
+    required: false,
+    unique: false,
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "field-city",
+    type: "text",
+    label: "City",
+    name: "city",
+    placeholder: "Enter city",
+    required: false,
+    unique: false,
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "container-address-2",
+    type: "text",
+    label: "Address 2",
+    name: "container-address-2",
+    required: false,
+    unique: false,
+    containerType: "row",
+    children: ["field-state", "field-zip"],
+    layoutProps: {
+      gap: "16px",
+      flexWrap: "wrap",
+    },
+  },
+  {
+    id: "field-state",
+    type: "text",
+    label: "State / Province",
+    name: "state",
+    placeholder: "Enter state or province",
+    required: false,
+    unique: false,
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "field-zip",
+    type: "text",
+    label: "ZIP / Postal",
+    name: "zip",
+    placeholder: "Enter ZIP or postal code",
+    required: false,
+    unique: false,
+    bootstrapClass: "col-md-6",
+  },
+  {
+    id: "field-country-2",
+    type: "select",
+    label: "Country / Region",
+    name: "country2",
+    placeholder: "Enter country name",
+    required: false,
+    unique: false,
+    options: [
+      { label: "Select country...", value: "" },
+      { label: "United States", value: "us" },
+      { label: "Canada", value: "ca" },
+      { label: "United Kingdom", value: "uk" },
+    ],
+  },
+  {
+    id: "field-country-3",
+    type: "select",
+    label: "Country / Region",
+    name: "country3",
+    placeholder: "Enter country name",
+    required: false,
+    unique: false,
+    options: [
+      { label: "Select country...", value: "" },
+      { label: "United States", value: "us" },
+      { label: "Canada", value: "ca" },
+      { label: "United Kingdom", value: "uk" },
+    ],
+  },
+  {
+    id: "field-country-4",
+    type: "select",
+    label: "Country / Region",
+    name: "country4",
+    placeholder: "Enter country name",
+    required: false,
+    unique: false,
+    options: [
+      { label: "Select country...", value: "" },
+      { label: "United States", value: "us" },
+      { label: "Canada", value: "ca" },
+      { label: "United Kingdom", value: "uk" },
+    ],
+  },
+  // Contact Section
+  {
+    id: "field-website",
+    type: "text",
+    label: "Website",
+    name: "website",
+    placeholder: "https://www.example.com",
+    required: false,
+    unique: false,
+  },
+  {
+    id: "field-about",
+    type: "textarea",
+    label: "About",
+    name: "about",
+    placeholder: "you@example.com",
+    required: false,
+    unique: false,
+  },
+  {
+    id: "paragraph-1",
+    type: "paragraph",
+    label: "Description",
+    name: "paragraph-1",
+    required: false,
+    unique: false,
+    content: "Brief description for your profile. URLs are hyperlinked.",
+  },
+  // Photo Upload
+  {
+    id: "field-photo",
+    type: "image",
+    label: "Photo",
+    name: "photo",
+    placeholder: "Upload photo",
+    required: false,
+    unique: false,
+    accept: "image/*",
+  },
+  // Notifications Section
+  {
+    id: "heading-notifications",
+    type: "heading",
+    label: "Notifications",
+    name: "heading-notifications",
+    required: false,
+    unique: false,
+    content: "Notifications",
+    description: "Use a permanent address where you can receive mail.",
+  },
+  {
+    id: "paragraph-email",
+    type: "paragraph",
+    label: "By Email",
+    name: "paragraph-email",
+    required: false,
+    unique: false,
+    content: "By Email",
+  },
+  {
+    id: "checkbox-comments",
+    type: "checkbox",
+    label: "Comments",
+    name: "notifications_comments",
+    required: false,
+    unique: false,
+    description: "Get notified when someones posts a comment on a posting.",
+    options: [
+      { label: "Comments", value: "comments" },
+    ],
+  },
+  {
+    id: "checkbox-candidates",
+    type: "checkbox",
+    label: "Candidates",
+    name: "notifications_candidates",
+    required: false,
+    unique: false,
+    description: "Get notified when a candidate applies for a job.",
+    options: [
+      { label: "Candidates", value: "candidates" },
+    ],
+  },
+  {
+    id: "checkbox-offers",
+    type: "checkbox",
+    label: "Offers",
+    name: "notifications_offers",
+    required: false,
+    unique: false,
+    description: "Get notified when a candidate accepts or rejects an offer.",
+    options: [
+      { label: "Offers", value: "offers" },
+    ],
+  },
+  {
+    id: "heading-push",
+    type: "heading",
+    label: "Push Notifications",
+    name: "heading-push",
+    required: false,
+    unique: false,
+    content: "Push Notifications",
+    description: "These are delivered via SMS to your mobile phone.",
+  },
+  {
+    id: "radio-push",
+    type: "radio",
+    label: "Push Notifications",
+    name: "push_notifications",
+    required: false,
+    unique: false,
+    options: [
+      { label: "Everything", value: "everything" },
+      { label: "Same as email", value: "same_as_email" },
+      { label: "No push notifications", value: "none" },
+    ],
+  },
+  // Save Button
+  {
+    id: "button-save",
+    type: "button",
+    label: "Save",
+    name: "save_button",
+    required: false,
+    unique: false,
+    buttonText: "Save",
+    buttonType: "submit",
+    buttonAlignment: "center",
+    buttonWidth: "full",
+  },
+];
 
 const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   initialFields = [],
@@ -1129,6 +1457,7 @@ export default CustomFormBuilder;
 
 
 
+
 // import React, { useState, useRef } from "react";
 // import {
 //   DndContext,
@@ -1182,334 +1511,7 @@ export default CustomFormBuilder;
 //   onClose: () => void;
 // }
 
-// const DEFAULT_FORM_FIELDS: CustomFormField[] = [
-//   // Heading
-//   {
-//     id: "heading-1",
-//     type: "heading",
-//     label: "Complex Master Form",
-//     name: "heading-1",
-//     required: false,
-//     unique: false,
-//     content: "Complex Master Form",
-//     description: "Use a permanent address where you can receive mail.",
-//   },
-//   // Personal Information Section - Row Container
-//   {
-//     id: "container-personal-info",
-//     type: "text", // Dummy type for container
-//     label: "Personal Information",
-//     name: "container-personal-info",
-//     required: false,
-//     unique: false,
-//     containerType: "row",
-//     children: ["field-firstname", "field-lastname"],
-//     layoutProps: {
-//       gap: "16px",
-//       flexWrap: "wrap",
-//     },
-//   },
-//   {
-//     id: "field-firstname",
-//     type: "text",
-//     label: "First name",
-//     name: "firstname",
-//     placeholder: "Enter first name",
-//     required: true,
-//     unique: false,
-//     bootstrapClass: "col-md-6",
-//   },
-//   {
-//     id: "field-lastname",
-//     type: "text",
-//     label: "Last name",
-//     name: "lastname",
-//     placeholder: "Enter last name",
-//     required: true,
-//     unique: false,
-//     bootstrapClass: "col-md-6",
-//   },
-//   {
-//     id: "field-email",
-//     type: "email",
-//     label: "Email address",
-//     name: "email",
-//     placeholder: "Enter email address",
-//     required: true,
-//     unique: false,
-//   },
-//   {
-//     id: "field-country-1",
-//     type: "select",
-//     label: "Country / Region",
-//     name: "country",
-//     placeholder: "Enter country name",
-//     required: false,
-//     unique: false,
-//     options: [
-//       { label: "Select country...", value: "" },
-//       { label: "United States", value: "us" },
-//       { label: "Canada", value: "ca" },
-//       { label: "United Kingdom", value: "uk" },
-//     ],
-//   },
-//   // Subheader
-//   {
-//     id: "heading-2",
-//     type: "heading",
-//     label: "Subheader inside the form",
-//     name: "heading-2",
-//     required: false,
-//     unique: false,
-//     content: "Subheader inside the form",
-//     description: "Use a permanent address where you can receive mail.",
-//   },
-//   // Address Section - Row Container
-//   {
-//     id: "container-address",
-//     type: "text",
-//     label: "Address",
-//     name: "container-address",
-//     required: false,
-//     unique: false,
-//     containerType: "row",
-//     children: ["field-street", "field-city"],
-//     layoutProps: {
-//       gap: "16px",
-//       flexWrap: "wrap",
-//     },
-//   },
-//   {
-//     id: "field-street",
-//     type: "text",
-//     label: "Street address",
-//     name: "street",
-//     placeholder: "Enter street address",
-//     required: false,
-//     unique: false,
-//     bootstrapClass: "col-md-6",
-//   },
-//   {
-//     id: "field-city",
-//     type: "text",
-//     label: "City",
-//     name: "city",
-//     placeholder: "Enter city",
-//     required: false,
-//     unique: false,
-//     bootstrapClass: "col-md-6",
-//   },
-//   {
-//     id: "container-address-2",
-//     type: "text",
-//     label: "Address 2",
-//     name: "container-address-2",
-//     required: false,
-//     unique: false,
-//     containerType: "row",
-//     children: ["field-state", "field-zip"],
-//     layoutProps: {
-//       gap: "16px",
-//       flexWrap: "wrap",
-//     },
-//   },
-//   {
-//     id: "field-state",
-//     type: "text",
-//     label: "State / Province",
-//     name: "state",
-//     placeholder: "Enter state or province",
-//     required: false,
-//     unique: false,
-//     bootstrapClass: "col-md-6",
-//   },
-//   {
-//     id: "field-zip",
-//     type: "text",
-//     label: "ZIP / Postal",
-//     name: "zip",
-//     placeholder: "Enter ZIP or postal code",
-//     required: false,
-//     unique: false,
-//     bootstrapClass: "col-md-6",
-//   },
-//   {
-//     id: "field-country-2",
-//     type: "select",
-//     label: "Country / Region",
-//     name: "country2",
-//     placeholder: "Enter country name",
-//     required: false,
-//     unique: false,
-//     options: [
-//       { label: "Select country...", value: "" },
-//       { label: "United States", value: "us" },
-//       { label: "Canada", value: "ca" },
-//       { label: "United Kingdom", value: "uk" },
-//     ],
-//   },
-//   {
-//     id: "field-country-3",
-//     type: "select",
-//     label: "Country / Region",
-//     name: "country3",
-//     placeholder: "Enter country name",
-//     required: false,
-//     unique: false,
-//     options: [
-//       { label: "Select country...", value: "" },
-//       { label: "United States", value: "us" },
-//       { label: "Canada", value: "ca" },
-//       { label: "United Kingdom", value: "uk" },
-//     ],
-//   },
-//   {
-//     id: "field-country-4",
-//     type: "select",
-//     label: "Country / Region",
-//     name: "country4",
-//     placeholder: "Enter country name",
-//     required: false,
-//     unique: false,
-//     options: [
-//       { label: "Select country...", value: "" },
-//       { label: "United States", value: "us" },
-//       { label: "Canada", value: "ca" },
-//       { label: "United Kingdom", value: "uk" },
-//     ],
-//   },
-//   // Contact Section
-//   {
-//     id: "field-website",
-//     type: "text",
-//     label: "Website",
-//     name: "website",
-//     placeholder: "https://www.example.com",
-//     required: false,
-//     unique: false,
-//   },
-//   {
-//     id: "field-about",
-//     type: "textarea",
-//     label: "About",
-//     name: "about",
-//     placeholder: "you@example.com",
-//     required: false,
-//     unique: false,
-//   },
-//   {
-//     id: "paragraph-1",
-//     type: "paragraph",
-//     label: "Description",
-//     name: "paragraph-1",
-//     required: false,
-//     unique: false,
-//     content: "Brief description for your profile. URLs are hyperlinked.",
-//   },
-//   // Photo Upload
-//   {
-//     id: "field-photo",
-//     type: "image",
-//     label: "Photo",
-//     name: "photo",
-//     placeholder: "Upload photo",
-//     required: false,
-//     unique: false,
-//     accept: "image/*",
-//   },
-//   // Notifications Section
-//   {
-//     id: "heading-notifications",
-//     type: "heading",
-//     label: "Notifications",
-//     name: "heading-notifications",
-//     required: false,
-//     unique: false,
-//     content: "Notifications",
-//     description: "Use a permanent address where you can receive mail.",
-//   },
-//   {
-//     id: "paragraph-email",
-//     type: "paragraph",
-//     label: "By Email",
-//     name: "paragraph-email",
-//     required: false,
-//     unique: false,
-//     content: "By Email",
-//   },
-//   {
-//     id: "checkbox-comments",
-//     type: "checkbox",
-//     label: "Comments",
-//     name: "notifications_comments",
-//     required: false,
-//     unique: false,
-//     description: "Get notified when someones posts a comment on a posting.",
-//     options: [
-//       { label: "Comments", value: "comments" },
-//     ],
-//   },
-//   {
-//     id: "checkbox-candidates",
-//     type: "checkbox",
-//     label: "Candidates",
-//     name: "notifications_candidates",
-//     required: false,
-//     unique: false,
-//     description: "Get notified when a candidate applies for a job.",
-//     options: [
-//       { label: "Candidates", value: "candidates" },
-//     ],
-//   },
-//   {
-//     id: "checkbox-offers",
-//     type: "checkbox",
-//     label: "Offers",
-//     name: "notifications_offers",
-//     required: false,
-//     unique: false,
-//     description: "Get notified when a candidate accepts or rejects an offer.",
-//     options: [
-//       { label: "Offers", value: "offers" },
-//     ],
-//   },
-//   {
-//     id: "heading-push",
-//     type: "heading",
-//     label: "Push Notifications",
-//     name: "heading-push",
-//     required: false,
-//     unique: false,
-//     content: "Push Notifications",
-//     description: "These are delivered via SMS to your mobile phone.",
-//   },
-//   {
-//     id: "radio-push",
-//     type: "radio",
-//     label: "Push Notifications",
-//     name: "push_notifications",
-//     required: false,
-//     unique: false,
-//     options: [
-//       { label: "Everything", value: "everything" },
-//       { label: "Same as email", value: "same_as_email" },
-//       { label: "No push notifications", value: "none" },
-//     ],
-//   },
-//   // Save Button
-//   {
-//     id: "button-save",
-//     type: "button",
-//     label: "Save",
-//     name: "save_button",
-//     required: false,
-//     unique: false,
-//     buttonText: "Save",
-//     buttonType: "submit",
-//     buttonAlignment: "center",
-//     buttonWidth: "full",
-//   },
-// ];
+// const DEFAULT_FORM_FIELDS: CustomFormField[] = [];
 
 // const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 //   initialFields = [],
@@ -2573,4 +2575,16 @@ export default CustomFormBuilder;
 // };
 
 // export default CustomFormBuilder;
+
+
+
+
+
+
+
+
+
+
+
+
 
