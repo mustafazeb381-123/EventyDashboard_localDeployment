@@ -56,6 +56,7 @@ const RegistrationFormPreview = ({
       console.log("📤 Sending data:", { eventId, tenantUuid, formData });
 
       const formDataToSend = new FormData();
+      console.log("formData", formData);
 
       // Append tenant_uuid if provided
       if (tenantUuid) formDataToSend.append("tenant_uuid", tenantUuid);
@@ -81,7 +82,7 @@ const RegistrationFormPreview = ({
 
       const response = await createEventUser(eventId, formDataToSend);
 
-      toast.success("User registered successfully!");
+      toast.success(response?.data?.message);
       console.log("✅ User created:", response);
 
       // Reset form data
@@ -92,8 +93,12 @@ const RegistrationFormPreview = ({
         if (input) input.value = "";
       });
     } catch (error: any) {
-      console.error("❌ Error creating event user:", error);
-      toast.error(error.response?.data?.message || "Registration failed");
+      console.error(
+        "❌ Error creating event user:",
+        error?.response?.data?.message || error?.message
+      );
+      console.log("error", error?.response?.data?.message || error?.message);
+      toast.error(error.response?.data?.message || error.message);
     } finally {
       setLoading(false);
     }

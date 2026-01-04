@@ -204,7 +204,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         ...prev,
         attributes: {
           ...prev.attributes,
-          logo_url: response.data.data.attributes.logo_url,
+          logo_url: response?.data?.data?.attributes?.logo_url,
         },
       }));
 
