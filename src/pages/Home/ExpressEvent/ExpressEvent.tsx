@@ -298,13 +298,9 @@ const ExpressEvent = () => {
       case 2:
         return plan === "advance" ? (
           <AdvanceEventContent
-            plan={plan}
-            toggleStates={toggleStates}
             eventId={finalEventId}
-            onNext={handleNext}
+            onComplete={handleNext}
             onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
           />
         ) : (
           <Badges

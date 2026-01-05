@@ -29,91 +29,94 @@ interface Speaker {
 function AdvanceSpeaker({
   onNext,
   onPrevious,
-  currentStep = 1,
+  currentStep = 0,
   totalSteps = 5,
   eventId,
 }: AdvanceSpeakerProps) {
-  console.log('-------evnt id---------------', eventId)
+  // currentStep is passed from parent (0-3 for 4 steps)
+  console.log('-------event id---------------', eventId);
+  
   const [eventUsers, setEventUsers] = useState<Speaker[]>([]);
-  console.log('event users-------', eventUsers)
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+  
   const [newSpeaker, setNewSpeaker] = useState({
     name: "",
     description: "",
     organization: "",
     image: "",
   });
+  
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
+  
+  // Loading states
+  const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
+  const [isAddingSpeaker, setIsAddingSpeaker] = useState(false);
+  const [isUpdatingSpeaker, setIsUpdatingSpeaker] = useState(false);
+  const [isDeletingSpeaker, setIsDeletingSpeaker] = useState<string | null>(null);
+  
   const [editModalOpen, setEditModalOpen] = useState(false);
-const [editingSpeaker, setEditingSpeaker] = useState<Speaker | null>(null);
-const [editSpeakerData, setEditSpeakerData] = useState({
-  name: "",
-  description: "",
-  organization: "",
-  image: "",
-});
-const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
-const [currentPage, setCurrentPage] = useState(1);
-const [loading, setLoading] = useState(false);
-const itemsPerPage = 5; // You can adjust this
-const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
+  const [editingSpeaker, setEditingSpeaker] = useState<Speaker | null>(null);
+  const [editSpeakerData, setEditSpeakerData] = useState({
+    name: "",
+    description: "",
+    organization: "",
+    image: "",
+  });
+  
+  const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
 
-// Compute speakers for current page
-const currentSpeakers = eventUsers.slice(
-  (currentPage - 1) * itemsPerPage,
-  currentPage * itemsPerPage
-);
+  // Compute speakers for current page
+  const currentSpeakers = eventUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
-  // const EVENT_ID = 100;
+  useEffect(() => {
+    const fetchSpeakers = async () => {
+      if (!eventId) return;
+      
+      setIsFetchingSpeakers(true);
+      try {
+        const response = await getSpeakersApi(eventId);
 
- useEffect(() => {
-  const fetchSpeakers = async () => {
-    if (!eventId) return;
-    setIsLoading(true)
-    try {
-      setIsLoading(true);
-      const response = await getSpeakersApi(eventId);
+        if (response.status === 200) {
+          const speakersData = response.data.data.map((item: any) => ({
+            id: item.id,
+            attributes: {
+              name: item.attributes.name,
+              description: item.attributes.description,
+              organization: item.attributes.organization,
+              image: item.attributes.image_url, 
+              image_url: item.attributes.image_url,
+              created_at: item.attributes.created_at,
+              updated_at: item.attributes.updated_at,
+              event_id: item.attributes.event_id,
+              agenda_ids: item.attributes.agenda_ids,
+            },
+          }));
 
-      if (response.status === 200) {
-        const speakersData = response.data.data.map((item: any) => ({
-          id: item.id,
-          attributes: {
-            name: item.attributes.name,
-            description: item.attributes.description,
-            organization: item.attributes.organization,
-            image: item.attributes.image_url, 
-            image_url: item.attributes.image_url,
-            created_at: item.attributes.created_at,
-            updated_at: item.attributes.updated_at,
-            event_id: item.attributes.event_id,
-            agenda_ids: item.attributes.agenda_ids,
-          },
-        }));
-        console.log('speaker data-------', speakersData)
-
-        setEventUsers(speakersData);
-      } else {
-        showNotification("Failed to fetch speakers", "error");
+          setEventUsers(speakersData);
+        } else {
+          showNotification("Failed to fetch speakers", "error");
+        }
+      } catch (error: any) {
+        console.log("💥 GET speakers error:", error);
+        showNotification("Network error: Cannot fetch speakers", "error");
+      } finally {
+        setIsFetchingSpeakers(false);
       }
-    } catch (error: any) {
-      console.log("💥 GET speakers error:", error);
-      showNotification("Network error: Cannot fetch speakers", "error");
-      setIsLoading(false);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
-  fetchSpeakers();
-}, [eventId]);
-
+    fetchSpeakers();
+  }, [eventId]);
 
   useEffect(() => {
     if (notification) {
@@ -143,187 +146,168 @@ const currentSpeakers = eventUsers.slice(
   };
 
   const handleDeleteUser = async (user: Speaker) => {
-  if (!window.confirm("Are you sure you want to delete this user?")) return;
+    if (!window.confirm("Are you sure you want to delete this speaker?")) return;
 
-  try {
-    setIsLoading(true);
+    setIsDeletingSpeaker(user.id);
+    try {
+      const response = await deleteSpeakerApi(eventId!, user.id);
 
-    const response = await deleteSpeakerApi(eventId!, user.id);
-
-    // Backend returns 200 or 204 on successful deletion
-    if (response.status === 200 || response.status === 204) {
-      // Remove the speaker from local state
-      setEventUsers(prev => prev.filter(u => u.id !== user.id));
-      showNotification("Speaker deleted successfully!", "success");
-    } else {
-      showNotification("Failed to delete speaker", "error");
-    }
-  } catch (error: any) {
-    console.error("Delete speaker error:", error);
-    showNotification(
-      error.response?.data?.message || "Network error: Cannot delete speaker",
-      "error"
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
- const handleEditUser = (user: Speaker) => {
-  setEditingSpeaker(user);
-  setEditSpeakerData({
-    name: user.attributes.name,
-    description: user.attributes.description,
-    organization: user.attributes.organization,
-    image: user.attributes.image_url || "",
-  });
-  setEditSelectedImageFile(null);
-  setEditModalOpen(true);
-};
-
-
-  // ONLY CREATE API IS CALLED - FIXED VERSION
-const handleAddSpeaker = async () => {
-  console.log("🚀 START: handleAddSpeaker");
-
-  if (!newSpeaker.name || !newSpeaker.organization) {
-    showNotification("Please fill all required fields!", "error");
-    return;
-  }
-
-  console.log("✅ Validation passed");
-
-  try {
-    setIsLoading(true);
-
-    // ✅ CREATE FORM DATA HERE (this was missing)
-    const formData = new FormData();
-    formData.append("speaker[name]", newSpeaker.name);
-    formData.append("speaker[description]", newSpeaker.description);
-    formData.append("speaker[organization]", newSpeaker.organization);
-
-    if (selectedImageFile) {
-      formData.append("speaker[image]", selectedImageFile);
-    }
-
-    console.log("📤 Sending formData:", {
-      name: newSpeaker.name,
-      description: newSpeaker.description,
-      organization: newSpeaker.organization,
-      image: selectedImageFile?.name,
-    });
-
-    // ✅ CALL API HELPER (correct usage)
-    const response = await createSpeakerApi(eventId, formData);
-
-    console.log("📨 Axios response:", response);
-
-    if (response.status === 201 || response.status === 200) {
-      const result = response.data;
-
-      const newSpeakerData: Speaker = {
-        id: result.data.id.toString(),
-        attributes: {
-          name: result.data.attributes.name,
-          description: result.data.attributes.description,
-          organization: result.data.attributes.organization,
-          image: result.data.attributes.image_url,
-          image_url: result.data.attributes.image_url,
-          created_at: result.data.attributes.created_at,
-          updated_at: result.data.attributes.updated_at,
-          event_id: result.data.attributes.event_id,
-          agenda_ids: result.data.attributes.agenda_ids,
-        },
-      };
-
-      setEventUsers((prev) => [...prev, newSpeakerData]);
-      showNotification("Speaker added successfully!", "success");
-
-      // Reset UI
-      setNewSpeaker({
-        name: "",
-        description: "",
-        organization: "",
-        image: "",
-      });
-      setSelectedImageFile(null);
-      setAddModalOpen(false);
-    }
-  } catch (error: any) {
-    console.log("💥 Axios error", error);
-
-    if (error.response) {
+      if (response.status === 200 || response.status === 204) {
+        setEventUsers(prev => prev.filter(u => u.id !== user.id));
+        showNotification("Speaker deleted successfully!", "success");
+      } else {
+        showNotification("Failed to delete speaker", "error");
+      }
+    } catch (error: any) {
+      console.error("Delete speaker error:", error);
       showNotification(
-        error.response.data?.message || "Failed to add speaker",
+        error.response?.data?.message || "Network error: Cannot delete speaker",
         "error"
       );
-    } else {
-      showNotification("Network error: Cannot connect to server.", "error");
+    } finally {
+      setIsDeletingSpeaker(null);
     }
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
 
-const handleUpdateSpeaker = async () => {
-  if (!editingSpeaker) return;
+  const handleEditUser = (user: Speaker) => {
+    setEditingSpeaker(user);
+    setEditSpeakerData({
+      name: user.attributes.name,
+      description: user.attributes.description,
+      organization: user.attributes.organization,
+      image: user.attributes.image_url || "",
+    });
+    setEditSelectedImageFile(null);
+    setEditModalOpen(true);
+  };
 
-  if (!editSpeakerData.name || !editSpeakerData.organization) {
-    showNotification("Please fill all required fields!", "error");
-    return;
-  }
-
-  try {
-    setIsLoading(true);
-
-    const formData = new FormData();
-    formData.append("speaker[name]", editSpeakerData.name);
-    formData.append("speaker[description]", editSpeakerData.description);
-    formData.append("speaker[organization]", editSpeakerData.organization);
-
-    if (editSelectedImageFile) {
-      formData.append("speaker[image]", editSelectedImageFile);
+  const handleAddSpeaker = async () => {
+    if (!newSpeaker.name || !newSpeaker.organization) {
+      showNotification("Please fill all required fields!", "error");
+      return;
     }
 
-    const response = await updateSpeakerApi(eventId!, editingSpeaker.id, formData);
+    setIsAddingSpeaker(true);
+    try {
+      const formData = new FormData();
+      formData.append("speaker[name]", newSpeaker.name);
+      formData.append("speaker[description]", newSpeaker.description);
+      formData.append("speaker[organization]", newSpeaker.organization);
 
-    if (response.status === 200) {
-      const updated = response.data.data;
-      setEventUsers(prev =>
-        prev.map(u =>
-          u.id === editingSpeaker.id
-            ? {
-                ...u,
-                attributes: {
-                  ...u.attributes,
-                  name: updated.attributes.name,
-                  description: updated.attributes.description,
-                  organization: updated.attributes.organization,
-                  image: updated.attributes.image_url,
-                  image_url: updated.attributes.image_url,
-                },
-              }
-            : u
-        )
+      if (selectedImageFile) {
+        formData.append("speaker[image]", selectedImageFile);
+      }
+
+      if (!eventId) {
+        showNotification("Event ID is required!", "error");
+        setIsAddingSpeaker(false);
+        return;
+      }
+
+      const response = await createSpeakerApi(eventId, formData);
+
+      if (response.status === 201 || response.status === 200) {
+        const result = response.data;
+
+        const newSpeakerData: Speaker = {
+          id: result.data.id.toString(),
+          attributes: {
+            name: result.data.attributes.name,
+            description: result.data.attributes.description,
+            organization: result.data.attributes.organization,
+            image: result.data.attributes.image_url,
+            image_url: result.data.attributes.image_url,
+            created_at: result.data.attributes.created_at,
+            updated_at: result.data.attributes.updated_at,
+            event_id: result.data.attributes.event_id,
+            agenda_ids: result.data.attributes.agenda_ids,
+          },
+        };
+
+        setEventUsers((prev) => [...prev, newSpeakerData]);
+        showNotification("Speaker added successfully!", "success");
+
+        // Reset form
+        setNewSpeaker({
+          name: "",
+          description: "",
+          organization: "",
+          image: "",
+        });
+        setSelectedImageFile(null);
+        setAddModalOpen(false);
+      }
+    } catch (error: any) {
+      console.log("💥 Axios error", error);
+
+      if (error.response) {
+        showNotification(
+          error.response.data?.message || "Failed to add speaker",
+          "error"
+        );
+      } else {
+        showNotification("Network error: Cannot connect to server.", "error");
+      }
+    } finally {
+      setIsAddingSpeaker(false);
+    }
+  };
+
+  const handleUpdateSpeaker = async () => {
+    if (!editingSpeaker) return;
+
+    if (!editSpeakerData.name || !editSpeakerData.organization) {
+      showNotification("Please fill all required fields!", "error");
+      return;
+    }
+
+    setIsUpdatingSpeaker(true);
+    try {
+      const formData = new FormData();
+      formData.append("speaker[name]", editSpeakerData.name);
+      formData.append("speaker[description]", editSpeakerData.description);
+      formData.append("speaker[organization]", editSpeakerData.organization);
+
+      if (editSelectedImageFile) {
+        formData.append("speaker[image]", editSelectedImageFile);
+      }
+
+      const response = await updateSpeakerApi(eventId!, editingSpeaker.id, formData);
+
+      if (response.status === 200) {
+        const updated = response.data.data;
+        setEventUsers(prev =>
+          prev.map(u =>
+            u.id === editingSpeaker.id
+              ? {
+                  ...u,
+                  attributes: {
+                    ...u.attributes,
+                    name: updated.attributes.name,
+                    description: updated.attributes.description,
+                    organization: updated.attributes.organization,
+                    image: updated.attributes.image_url,
+                    image_url: updated.attributes.image_url,
+                  },
+                }
+              : u
+          )
+        );
+
+        showNotification("Speaker updated successfully!", "success");
+        setEditModalOpen(false);
+        setEditingSpeaker(null);
+      }
+    } catch (error: any) {
+      console.error("Update speaker error:", error);
+      showNotification(
+        error.response?.data?.message || "Network error: Cannot update speaker",
+        "error"
       );
-
-      showNotification("Speaker updated successfully!", "success");
-      setEditModalOpen(false);
-      setEditingSpeaker(null);
+    } finally {
+      setIsUpdatingSpeaker(false);
     }
-  } catch (error: any) {
-    console.error("Update speaker error:", error);
-    showNotification(
-      error.response?.data?.message || "Network error: Cannot update speaker",
-      "error"
-    );
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-
+  };
 
   const handleNext = () => {
     if (onNext) {
@@ -407,304 +391,389 @@ const handleUpdateSpeaker = async () => {
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-gray-900">Speakers</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {eventUsers.length} Speakers
+              {isFetchingSpeakers ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                `${eventUsers.length} Speakers`
+              )}
             </span>
           </div>
 
           <button
             onClick={() => setAddModalOpen(true)}
-            disabled={isLoading}
+            disabled={isFetchingSpeakers}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isLoading ? "Loading..." : "Add Speaker"}
+            {isFetchingSpeakers ? "Loading..." : "Add Speaker"}
           </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <table className="min-w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="w-12 px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    onChange={handleSelectAll}
-                    checked={
-                      eventUsers.length > 0 &&
-                      selectedUsers.length === eventUsers.length
-                    }
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Organization
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-          <tbody className="divide-y divide-gray-200">
-  {currentSpeakers.map((user, index) => (
-    <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
-      <td className="px-6 py-4">
-        <input
-          type="checkbox"
-          checked={selectedUsers.includes(user.id)}
-          onChange={() => handleSelectUser(user.id)}
-        />
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <UserAvatar user={user} />
-          <span className="text-sm font-medium text-gray-900">
-            {user.attributes.name}
-          </span>
-        </div>
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
-        {user.attributes.description}
-      </td>
-      <td className="px-6 py-4 text-sm text-gray-600">
-        {user.attributes.organization}
-      </td>
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => handleDeleteUser(user)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => handleEditUser(user)}
-            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg"
-          >
-            <Edit2 className="w-4 h-4" />
-          </button>
-        </div>
-      </td>
-    </tr>
-  ))}
-</tbody>
-
-          </table>
-        </div>
-
-        {/* Add Speaker Modal */}
-        {addModalOpen && (
-          <div
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => !isLoading && setAddModalOpen(false)}
-          >
-            <div
-              className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
+        {/* Loading State for Speakers Table */}
+        {isFetchingSpeakers ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">Loading speakers...</p>
+          </div>
+        ) : eventUsers.length === 0 ? (
+          <div className="text-center py-12 border border-gray-200 rounded-lg">
+            <p className="text-gray-500 mb-4">No speakers found</p>
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
-              <h2 className="text-xl font-bold mb-4 text-gray-900">
-                Add Speaker
-              </h2>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Name *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter speaker name"
-                    value={newSpeaker.name}
-                    onChange={(e) =>
-                      setNewSpeaker({ ...newSpeaker, name: e.target.value })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Upload Pic (max 800KB)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          const file = e.target.files[0];
-                          if (file.size > 800 * 1024) {
-                            showNotification("Image must be less than 800KB", "error");
-                            return;
-                          }
-                          setSelectedImageFile(file);
+              <Plus className="w-4 h-4" />
+              Add Your First Speaker
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-12 px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        onChange={handleSelectAll}
+                        checked={
+                          eventUsers.length > 0 &&
+                          selectedUsers.length === eventUsers.length
                         }
-                      }}
-                      className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                  {selectedImageFile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
-                    </p>
-                  )}
-                </div>
+                        disabled={isFetchingSpeakers}
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Organization
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {currentSpeakers.map((user, index) => (
+                    <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => handleSelectUser(user.id)}
+                          disabled={isDeletingSpeaker === user.id}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar user={user} />
+                          <span className="text-sm font-medium text-gray-900">
+                            {user.attributes.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
+                        {user.attributes.description}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {user.attributes.organization}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={isDeletingSpeaker === user.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isDeletingSpeaker === user.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            disabled={isDeletingSpeaker === user.id}
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Description
-                  </label>
-                  <textarea
-                    placeholder="Enter speaker description"
-                    value={newSpeaker.description}
-                    onChange={(e) =>
-                      setNewSpeaker({
-                        ...newSpeaker,
-                        description: e.target.value,
-                      })
-                    }
-                    rows={3}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                  />
-                </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page) => setCurrentPage(page)}
+                className="mt-4"
+              />
+            )}
+          </>
+        )}
+      </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Organization *
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter organization name"
-                    value={newSpeaker.organization}
-                    onChange={(e) =>
-                      setNewSpeaker({
-                        ...newSpeaker,
-                        organization: e.target.value,
-                      })
-                    }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
+      {/* Add Speaker Modal */}
+      {addModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => !isAddingSpeaker && setAddModalOpen(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4 text-gray-900">
+              Add Speaker
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter speaker name"
+                  value={newSpeaker.name}
+                  onChange={(e) =>
+                    setNewSpeaker({ ...newSpeaker, name: e.target.value })
+                  }
+                  disabled={isAddingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
+                />
               </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setAddModalOpen(false)}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddSpeaker}
-                  disabled={isLoading}
-                  className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="w-4 h-4" />
-                  {isLoading ? "Adding Speaker..." : "Add Speaker"}
-                </button>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Upload Profile Picture
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files[0]) {
+                        const file = e.target.files[0];
+                        setSelectedImageFile(file);
+                      }
+                    }}
+                    disabled={isAddingSpeaker}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                </div>
+                {selectedImageFile && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Enter speaker description"
+                  value={newSpeaker.description}
+                  onChange={(e) =>
+                    setNewSpeaker({
+                      ...newSpeaker,
+                      description: e.target.value,
+                    })
+                  }
+                  rows={3}
+                  disabled={isAddingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Organization *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter organization name"
+                  value={newSpeaker.organization}
+                  onChange={(e) =>
+                    setNewSpeaker({
+                      ...newSpeaker,
+                      organization: e.target.value,
+                    })
+                  }
+                  disabled={isAddingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
+                />
               </div>
             </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setAddModalOpen(false)}
+                disabled={isAddingSpeaker}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddSpeaker}
+                disabled={isAddingSpeaker}
+                className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isAddingSpeaker ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Adding Speaker...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" />
+                    Add Speaker
+                  </>
+                )}
+              </button>
+            </div>
           </div>
-        )}
-        {editModalOpen && editingSpeaker && (
-  <div
-    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-    onClick={() => !isLoading && setEditModalOpen(false)}
-  >
-    <div
-      className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h2 className="text-xl font-bold mb-4 text-gray-900">
-        Edit Speaker
-      </h2>
+        </div>
+      )}
 
-      <div className="space-y-4">
-        <input
-          type="text"
-          placeholder="Enter speaker name"
-          value={editSpeakerData.name}
-          onChange={(e) => setEditSpeakerData({ ...editSpeakerData, name: e.target.value })}
-          className="w-full p-2.5 border border-gray-300 rounded-md"
-        />
-
-        <input
-          type="text"
-          placeholder="Organization"
-          value={editSpeakerData.organization}
-          onChange={(e) => setEditSpeakerData({ ...editSpeakerData, organization: e.target.value })}
-          className="w-full p-2.5 border border-gray-300 rounded-md"
-        />
-
-        <textarea
-          placeholder="Description"
-          value={editSpeakerData.description}
-          onChange={(e) => setEditSpeakerData({ ...editSpeakerData, description: e.target.value })}
-          rows={3}
-          className="w-full p-2.5 border border-gray-300 rounded-md"
-        />
-
-        <input
-          type="file"
-          accept="image/*"
-          onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
-              const file = e.target.files[0];
-              if (file.size > 800 * 1024) {
-                showNotification("Image must be less than 800KB", "error");
-                return;
-              }
-              setEditSelectedImageFile(file);
-            }
-          }}
-          className="w-full p-2.5 border border-gray-300 rounded-md"
-        />
-        {editSelectedImageFile && <p>Selected: {editSelectedImageFile.name}</p>}
-      </div>
-
-      <div className="flex gap-3 mt-6">
-        <button onClick={() => setEditModalOpen(false)} className="flex-1 px-4 py-2 border rounded-lg">
-          Cancel
-        </button>
-        <button
-          onClick={handleUpdateSpeaker}
-          className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg"
+      {/* Edit Speaker Modal */}
+      {editModalOpen && editingSpeaker && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => !isUpdatingSpeaker && setEditModalOpen(false)}
         >
-          {isLoading ? "Updating..." : "Update Speaker"}
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+          <div
+            className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4 text-gray-900">
+              Edit Speaker
+            </h2>
 
-      </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter speaker name"
+                  value={editSpeakerData.name}
+                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, name: e.target.value })}
+                  disabled={isUpdatingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Organization *
+                </label>
+                <input
+                  type="text"
+                  placeholder="Organization"
+                  value={editSpeakerData.organization}
+                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, organization: e.target.value })}
+                  disabled={isUpdatingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Description"
+                  value={editSpeakerData.description}
+                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, description: e.target.value })}
+                  rows={3}
+                  disabled={isUpdatingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Upload New Profile Picture
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    if (e.target.files && e.target.files[0]) {
+                      const file = e.target.files[0];
+                      setEditSelectedImageFile(file);
+                    }
+                  }}
+                  disabled={isUpdatingSpeaker}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                {editSelectedImageFile && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Selected: {editSelectedImageFile.name} ({(editSelectedImageFile.size / 1024).toFixed(0)} KB)
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                disabled={isUpdatingSpeaker}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateSpeaker}
+                disabled={isUpdatingSpeaker}
+                className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUpdatingSpeaker ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Speaker"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Footer */}
       <div className="flex justify-between items-center pt-6 border-t border-gray-100 mt-6">
         <button
           onClick={handleBack}
-          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          disabled={isFetchingSpeakers}
+          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ← Previous
         </button>
 
-       <Pagination
-  currentPage={currentPage}
-  totalPages={totalPages}
-  onPageChange={(page) => setCurrentPage(page)}
-  className="mt-4"
-/>
-
-
         <button
           onClick={handleNext}
-          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900"
+          disabled={isFetchingSpeakers}
+          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next →
         </button>

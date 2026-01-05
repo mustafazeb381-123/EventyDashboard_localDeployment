@@ -12,11 +12,11 @@ interface AdvanceAreaProps {
 function AdvanceArea({
   onNext,
   onPrevious,
-  currentStep = 1,
+  currentStep = 4,
   totalSteps = 5,
   eventId,
 }: AdvanceAreaProps) {
-  const [eventUsers, setUsers] = useState<any[]>([]);
+  const [, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<{
