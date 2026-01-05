@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
+import {
+  createSessionAreaApi,
+  getSessionAreaApi,
+  deleteSessionAreaApi,
+  updateSessionAreaApi,
+} from "@/apis/apiHelpers";
 
 interface AdvanceAreaProps {
   onNext?: (eventId?: string | number) => void;
@@ -9,6 +15,22 @@ interface AdvanceAreaProps {
   eventId?: string | number;
 }
 
+export type Area = {
+  id: string;
+  title: string;
+  location: string;
+  type: string;
+  travelNumber: number;
+};
+
+export type Badge = {
+  id: string;
+  attributes: {
+    name: string;
+    badge_type: string;
+  };
+};
+
 function AdvanceArea({
   onNext,
   onPrevious,
@@ -16,7 +38,6 @@ function AdvanceArea({
   totalSteps = 5,
   eventId,
 }: AdvanceAreaProps) {
-  const [, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<{
@@ -27,80 +48,105 @@ function AdvanceArea({
     title: "",
     location: "",
     travelNumber: "",
-    selectedTypes: [] as string[],
+    type: "",
   });
+  const [sessions, setSessions] = useState<Area[]>([]);
+  const [editingRow, setEditingRow] = useState<string | null>(null);
+  const [editData, setEditData] = useState<Area | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
+  const [saveLoading, setSaveLoading] = useState<string | null>(null);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [badgeLoading, setBadgeLoading] = useState(false);
 
-  const staticUsers = [
-    {
-      id: "1",
-      attributes: {
-        name: "Ethan Carter",
-        organization: "Scc",
-        image: "https://i.pravatar.cc/100?img=1",
-      },
-    },
-    {
-      id: "2",
-      attributes: {
-        name: "Luca Thompson",
-        organization: "Mothmerat",
-        image: "https://i.pravatar.cc/100?img=2",
-      },
-    },
-    {
-      id: "3",
-      attributes: {
-        name: "Liam Anderson",
-        organization: "Sodic",
-        image: "https://i.pravatar.cc/100?img=3",
-      },
-    },
-  ];
+  const currentEventId = eventId || localStorage.getItem("create_eventId");
 
-  const staticSessions = [
-    {
-      id: "1",
-      title: "Name One",
-      location: "Location Name",
-      type: "Type-Id",
-      travelNumber: "20",
-    },
-    {
-      id: "2",
-      title: "Name Two",
-      location: "Location Name",
-      type: "Type-Id",
-      travelNumber: "40",
-    },
-    {
-      id: "3",
-      title: "Name Three",
-      location: "Location Name",
-      type: "Type-Id",
-      travelNumber: "20",
-    },
-    {
-      id: "4",
-      title: "Name Four",
-      location: "Location Name",
-      type: "Type-Id",
-      travelNumber: "60",
-    },
-    {
-      id: "5",
-      title: "Name Five",
-      location: "Location Name",
-      type: "Type-Id",
-      travelNumber: "20",
-    },
-  ];
+  // Fetch badges for user type dropdown
+  const fetchBadgeApi = async () => {
+    if (!currentEventId) return;
 
-  const [sessions, setSessions] = useState<any[]>(staticSessions);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found");
+      return;
+    }
+
+    try {
+      setBadgeLoading(true);
+      const response = await fetch(
+        `https://scceventy.dev/en/api_dashboard/v1/events/${currentEventId}/badges`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        console.error("API Error:", response);
+        return;
+      }
+
+      const result = await response.json();
+      const allBadges = result?.data || [];
+      
+      // Deduplicate badges by badge_type to avoid showing duplicates
+      const uniqueBadges = allBadges.filter((badge: Badge, index: number, self: Badge[]) =>
+        index === self.findIndex((b: Badge) => b.attributes.badge_type === badge.attributes.badge_type)
+      );
+      
+      setBadges(uniqueBadges);
+    } catch (error) {
+      console.error("❌ Fetch error:", error);
+    } finally {
+      setBadgeLoading(false);
+    }
+  };
+
+  // Fetch session areas
+  const fetchSessionAreas = async () => {
+    if (!currentEventId) {
+      console.log("No event ID found");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await getSessionAreaApi(currentEventId as string);
+      console.log("GET API Response:", response);
+
+      if (response?.data?.data) {
+        // Transform API response to match our Area type
+        const areas: Area[] = response.data.data.map((item: any) => ({
+          id: item.id,
+          title: item.attributes.name,
+          location: item.attributes.location,
+          type: item.attributes.user_type,
+          travelNumber: item.attributes.guest_number,
+        }));
+
+        setSessions(areas);
+      } else {
+        setSessions([]);
+      }
+    } catch (error) {
+      console.error("Error fetching session areas:", error);
+      showNotification("Failed to fetch session areas", "error");
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setUsers(staticUsers);
-    setSessions(staticSessions);
-  }, []);
+    if (currentEventId) {
+      fetchBadgeApi();
+      fetchSessionAreas();
+    }
+  }, [currentEventId]);
 
   useEffect(() => {
     if (notification) {
@@ -129,34 +175,156 @@ function AdvanceArea({
     );
   };
 
-  const handleDeleteSession = (session: any) => {
+  const handleDeleteSession = async (session: Area) => {
     if (!window.confirm("Are you sure you want to delete this session?"))
       return;
-    setSessions((prev) => prev.filter((s) => s.id !== session.id));
-    showNotification("Session deleted successfully!", "success");
-  };
 
-  const handleAddSession = () => {
-    if (!newSession.title || !newSession.location || !newSession.travelNumber) {
-      showNotification("Please fill all required fields!", "error");
+    if (!currentEventId) {
+      showNotification("Event ID not found", "error");
       return;
     }
-    const session = {
-      id: Date.now().toString(),
-      title: newSession.title,
-      location: newSession.location,
-      type: "Type-Id",
-      travelNumber: newSession.travelNumber,
-    };
-    setSessions((prev) => [...prev, session]);
-    showNotification("Session added successfully!", "success");
-    setNewSession({
-      title: "",
-      location: "",
-      travelNumber: "",
-      selectedTypes: [],
-    });
-    setAddModalOpen(false);
+
+    try {
+      setDeleteLoading(session.id);
+      const response = await deleteSessionAreaApi(
+        currentEventId as string,
+        session.id
+      );
+
+      if (response.status === 200 || response.status === 204) {
+        await fetchSessionAreas();
+        showNotification("Session deleted successfully!", "success");
+      } else {
+        throw new Error(`Delete failed with status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Error deleting session:", error);
+      showNotification("Failed to delete session", "error");
+      await fetchSessionAreas();
+    } finally {
+      setDeleteLoading(null);
+    }
+  };
+
+  const handleAddSession = async () => {
+    if (!currentEventId) {
+      showNotification("Event ID not found", "error");
+      return;
+    }
+
+    try {
+      // Convert guest_number to number
+      const guestNumber = parseInt(newSession.travelNumber || "0", 10) || 0;
+
+      const AreaData = {
+        session_area: {
+          name: newSession.title || "",
+          location: newSession.location || "",
+          user_type: newSession.type || "",
+          guest_number: guestNumber,
+          event_id: currentEventId as string,
+        },
+      };
+
+      const response = await createSessionAreaApi(
+        AreaData,
+        currentEventId as string
+      );
+
+      if (response?.data?.data) {
+        // Transform the new area data to match our Area type
+        const newAreaData: Area = {
+          id: response.data.data.id,
+          title: response.data.data.attributes.name,
+          location: response.data.data.attributes.location,
+          type: response.data.data.attributes.user_type,
+          travelNumber: response.data.data.attributes.guest_number,
+        };
+
+        setSessions((prevData) => [...prevData, newAreaData]);
+        setNewSession({
+          title: "",
+          location: "",
+          travelNumber: "",
+          type: "",
+        });
+        setAddModalOpen(false);
+        showNotification("Session added successfully!", "success");
+      } else {
+        showNotification("Failed to add session: Invalid response", "error");
+      }
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || "Failed to add session";
+      showNotification(errorMessage, "error");
+      await fetchSessionAreas();
+    }
+  };
+
+  const handleEdit = (session: Area) => {
+    setEditingRow(session.id);
+    setEditData({ ...session });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editData || !currentEventId) {
+      showNotification("Edit data or Event ID not found", "error");
+      return;
+    }
+
+    try {
+      setSaveLoading(editData.id);
+
+      // Prepare data for UPDATE API
+      const updateData = {
+        session_area: {
+          name: editData.title,
+          location: editData.location,
+          user_type: editData.type,
+          guest_number: editData.travelNumber,
+          event_id: currentEventId,
+        },
+      };
+
+      const response = await updateSessionAreaApi(
+        currentEventId as string,
+        editData.id,
+        updateData
+      );
+
+      if (response?.data?.data) {
+        // Use the response data to ensure consistency
+        const updatedArea: Area = {
+          id: response.data.data.id,
+          title: response.data.data.attributes.name,
+          location: response.data.data.attributes.location,
+          type: response.data.data.attributes.user_type,
+          travelNumber: response.data.data.attributes.guest_number,
+        };
+
+        setSessions((prevData) =>
+          prevData.map((area) =>
+            area.id === updatedArea.id ? updatedArea : area
+          )
+        );
+
+        setEditingRow(null);
+        setEditData(null);
+        showNotification("Session updated successfully!", "success");
+      } else {
+        throw new Error("Update response format is invalid");
+      }
+    } catch (error) {
+      console.error("Error updating session:", error);
+      showNotification("Failed to update session", "error");
+      await fetchSessionAreas();
+    } finally {
+      setSaveLoading(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingRow(null);
+    setEditData(null);
   };
 
   const handleNext = () => {
@@ -280,7 +448,20 @@ function AdvanceArea({
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {sessions.map((session) => (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    Loading sessions...
+                  </td>
+                </tr>
+              ) : sessions.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                    No sessions found. Add your first session above.
+                  </td>
+                </tr>
+              ) : (
+                sessions.map((session) => (
                 <tr
                   key={session.id}
                   className="hover:bg-gray-50 transition-colors"
@@ -295,36 +476,138 @@ function AdvanceArea({
                   </td>
 
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {session.title}
+                      {editingRow === session.id ? (
+                        <input
+                          type="text"
+                          value={editData?.title || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev ? { ...prev, title: e.target.value } : null
+                            )
+                          }
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      ) : (
+                        session.title
+                      )}
                   </td>
 
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {session.location}
+                      {editingRow === session.id ? (
+                        <input
+                          type="text"
+                          value={editData?.location || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev
+                                ? { ...prev, location: e.target.value }
+                                : null
+                            )
+                          }
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      ) : (
+                        session.location
+                      )}
                   </td>
 
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {session.type || "Type-Id"}
+                      {editingRow === session.id ? (
+                        <select
+                          value={editData?.type || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev ? { ...prev, type: e.target.value } : null
+                            )
+                          }
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        >
+                          {badges.map((badge) => (
+                            <option
+                              key={badge.attributes.badge_type}
+                              value={badge.attributes.badge_type}
+                            >
+                              {badge.attributes.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        badges.find((b) => b.attributes.badge_type === session.type)
+                          ?.attributes.name || session.type
+                      )}
                   </td>
 
                   <td className="px-4 py-3 text-sm text-gray-600">
-                    {session.travelNumber || "20"}
+                      {editingRow === session.id ? (
+                        <input
+                          type="number"
+                          value={editData?.travelNumber || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    travelNumber: parseInt(e.target.value) || 0,
+                                  }
+                                : null
+                            )
+                          }
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                        />
+                      ) : (
+                        session.travelNumber
+                      )}
                   </td>
 
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-2">
+                        {editingRow === session.id ? (
+                          <>
+                            <button
+                              onClick={handleSaveEdit}
+                              disabled={saveLoading === session.id}
+                              className="p-1.5 text-green-500 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {saveLoading === session.id ? (
+                                <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Check className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={saveLoading === session.id}
+                              className="p-1.5 text-gray-500 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
                       <button
                         onClick={() => handleDeleteSession(session)}
-                        className="p-1.5 text-pink-500 hover:bg-pink-50 rounded-md transition-colors"
+                              disabled={deleteLoading === session.id}
+                              className="p-1.5 text-pink-500 hover:bg-pink-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       >
+                              {deleteLoading === session.id ? (
+                                <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                              ) : (
                         <Trash2 className="w-4 h-4" />
+                              )}
                       </button>
-                      <button className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-md transition-colors">
+                            <button
+                              onClick={() => handleEdit(session)}
+                              className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-md transition-colors"
+                            >
                         <Edit2 className="w-4 h-4" />
                       </button>
+                          </>
+                        )}
                     </div>
                   </td>
                 </tr>
-              ))}
+                ))
+              )}
             </tbody>
           </table>
         </div>
@@ -396,50 +679,45 @@ function AdvanceArea({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User type:
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    User Type
                   </label>
-                  <div className="flex gap-3 mb-5">
-                    {[
-                      { id: "1", label: "Type 01" },
-                      { id: "2", label: "Type 02" },
-                      { id: "3", label: "Type 03" },
-                      { id: "4", label: "Type 04" },
-                      { id: "5", label: "Type 05" },
-                    ].map((type) => (
-                      <label
-                        key={type.id}
-                        className="flex items-center gap-1.5 cursor-pointer pe-8 ps-2 py-1.5 rounded border"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={
-                            newSession.selectedTypes?.includes(type.id) || false
-                          }
-                          onChange={(e) => {
-                            const types = newSession.selectedTypes || [];
-                            setNewSession({
-                              ...newSession,
-                              selectedTypes: e.target.checked
-                                ? [...types, type.id]
-                                : types.filter((t) => t !== type.id),
-                            });
-                          }}
-                          className="w-4 h-4 rounded border-gray-300 text-pink-500 focus:ring-pink-500"
-                        />
-                        <span className="text-xs text-gray-700">
-                          {type.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
+                  <select
+                    value={newSession.type}
+                    onChange={(e) =>
+                      setNewSession({ ...newSession, type: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    <option value="" disabled>
+                      Select User Type
+                    </option>
+                    {badgeLoading ? (
+                      <option value="" disabled>
+                        Loading badges...
+                      </option>
+                    ) : (
+                      badges.map((badge) => (
+                        <option
+                          key={badge.attributes.badge_type}
+                          value={badge.attributes.badge_type}
+                        >
+                          {badge.attributes.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
               </div>
 
               <button
-                onClick={handleAddSession}
-                            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-                // className="mt-6 w-full bg-gray-900 hover:bg-gray-800 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors text-sm"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleAddSession();
+                }}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors mt-4"
               >
                 <Plus className="w-4 h-4" /> Add Sessions
               </button>
@@ -497,6 +775,13 @@ function AdvanceArea({
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
+        }
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        .animate-spin {
+          animation: spin 1s linear infinite;
         }
       `}</style>
     </div>
