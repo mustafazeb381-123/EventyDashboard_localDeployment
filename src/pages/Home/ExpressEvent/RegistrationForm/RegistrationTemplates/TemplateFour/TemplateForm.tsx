@@ -472,8 +472,8 @@ function TemplateFormFour({
         <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
-              Please fill name and contact information of attendees.
-            </h3>
+            Please fill name and contact information of attendees.
+          </h3>
             {!isUserRegistration && (
               <button
                 type="button"

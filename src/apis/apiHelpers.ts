@@ -177,9 +177,12 @@ export const createEventUser = (eventId: string, formData: FormData) => {
   });
 };
 
-// Get all users for a specific event
-export const getEventUsers = (eventId: string) => {
-  return axiosInstance.get(`/events/${eventId}/event_users`);
+// Get all users for a specific event with pagination
+export const getEventUsers = (
+  eventId: string,
+  params?: { page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(`/events/${eventId}/event_users`, { params });
 };
 
 // Get registration metrics for event users

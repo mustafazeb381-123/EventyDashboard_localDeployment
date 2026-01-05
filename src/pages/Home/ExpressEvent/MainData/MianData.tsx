@@ -49,6 +49,7 @@ type MainFormData = {
   timeTo: string; // HH:MM
   location: string;
   requireApproval: boolean;
+  duplicateRegistration: boolean;
   guestTypes: string[];
   eventLogo: File | null;
   existingLogoUrl: string | null;
@@ -118,6 +119,7 @@ const MainData = ({
     timeTo: "17:00",
     location: "",
     requireApproval: false,
+    duplicateRegistration: false,
     guestTypes: [], // ✅ Empty array - no default "Guest"
     eventLogo: null,
     existingLogoUrl: null,
@@ -437,6 +439,7 @@ const MainData = ({
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
+        duplicateRegistration: attributes.duplicate_registration || false,
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
@@ -496,6 +499,10 @@ const MainData = ({
     fd.append("event[about]", formData.description);
     fd.append("event[location]", formData.location);
     fd.append("event[require_approval]", String(formData.requireApproval));
+    fd.append(
+      "event[duplicate_registration]",
+      String(formData.duplicateRegistration)
+    );
     fd.append("event[primary_color]", formData.primaryColor);
     fd.append("event[secondary_color]", formData.secondaryColor);
     fd.append("event[event_type]", plan);
@@ -1240,6 +1247,45 @@ const MainData = ({
                 <div
                   className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
                     formData.requireApproval
+                      ? "translate-x-5"
+                      : "translate-x-0.5"
+                  } mt-0.5`}
+                />
+              </div>
+            </label>
+          </div>
+
+          {/* Duplicate Registration Toggle */}
+          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <label className="text-sm font-medium text-gray-700">
+                Duplicate registration
+              </label>
+              <Info size={14} className="text-gray-400" />
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.duplicateRegistration}
+                onChange={(e) => {
+                  console.log(
+                    "Duplicate registration toggled. Event ID:",
+                    eventId,
+                    "Checked:",
+                    e.target.checked
+                  );
+                  handleInputChange("duplicateRegistration", e.target.checked);
+                }}
+                className="sr-only"
+              />
+              <div
+                className={`w-11 h-6 rounded-full transition-colors ${
+                  formData.duplicateRegistration ? "bg-teal-500" : "bg-gray-200"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    formData.duplicateRegistration
                       ? "translate-x-5"
                       : "translate-x-0.5"
                   } mt-0.5`}

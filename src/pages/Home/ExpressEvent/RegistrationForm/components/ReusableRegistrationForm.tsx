@@ -529,18 +529,18 @@ const ReusableRegistrationForm = ({
                   return (
                     <SortableFieldItem key={childField.id} field={childField}>
                       {(listeners) => (
-                        <div
+                    <div
                           className={`${fieldWrapperClassName} relative group border rounded-lg p-3 bg-gray-50`}
-                          style={fieldWrapperStyle}
-                        >
-                          {childField.type !== "checkbox" && (
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              {childField.label}
-                              {childField.required && (
-                                <span className="text-red-500 ml-1">*</span>
-                              )}
-                            </label>
+                      style={fieldWrapperStyle}
+                    >
+                      {childField.type !== "checkbox" && (
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {childField.label}
+                          {childField.required && (
+                            <span className="text-red-500 ml-1">*</span>
                           )}
+                        </label>
+                      )}
 
                           <div className="flex items-center gap-3">
                             {/* Drag Handle for child fields */}
@@ -564,32 +564,32 @@ const ReusableRegistrationForm = ({
                             {showReorder && (
                               <div className="flex items-center gap-2">
                                 {/* Toggle Field Button */}
-                                {onToggleField && (
-                                  <button
-                                    type="button"
-                                    onClick={() => onToggleField(childField.id)}
+                        {onToggleField && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleField(childField.id)}
                                     className="flex items-center justify-center transition-colors shrink-0 hover:bg-gray-200 p-2 rounded"
-                                    title={
-                                      isFieldVisible(childField)
-                                        ? "Disable field"
-                                        : "Enable field"
-                                    }
-                                    disabled={!!toggleLoading[childField.id]}
-                                  >
-                                    {isFieldVisible(childField) ? (
+                            title={
+                              isFieldVisible(childField)
+                                ? "Disable field"
+                                : "Enable field"
+                            }
+                            disabled={!!toggleLoading[childField.id]}
+                          >
+                            {isFieldVisible(childField) ? (
                                       <Eye size={20} className="text-red-500" />
-                                    ) : (
+                            ) : (
                                       <EyeOff
                                         size={20}
                                         className="text-gray-400"
                                       />
-                                    )}
-                                    {toggleLoading[childField.id] && (
+                            )}
+                            {toggleLoading[childField.id] && (
                                       <span className="ml-1 text-xs text-gray-400">
-                                        ...
-                                      </span>
-                                    )}
-                                  </button>
+                                ...
+                              </span>
+                            )}
+                          </button>
                                 )}
 
                                 {/* Delete Field Button - Available for all fields */}
@@ -619,16 +619,16 @@ const ReusableRegistrationForm = ({
                                   </button>
                                 )}
                               </div>
-                            )}
-                          </div>
+                        )}
+                      </div>
 
-                          {errors[childField.name] && (
-                            <p className="mt-1 flex items-center text-xs text-red-600">
-                              <Info size={14} className="mr-1 flex-shrink-0" />
-                              {errors[childField.name]}
-                            </p>
-                          )}
-                        </div>
+                      {errors[childField.name] && (
+                        <p className="mt-1 flex items-center text-xs text-red-600">
+                          <Info size={14} className="mr-1 flex-shrink-0" />
+                          {errors[childField.name]}
+                        </p>
+                      )}
+                    </div>
                       )}
                     </SortableFieldItem>
                   );
@@ -647,14 +647,14 @@ const ReusableRegistrationForm = ({
           <SortableFieldItem key={field.id || field.name} field={field}>
             {(listeners) => (
               <div className="relative group border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                {field.type !== "checkbox" && (
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {field.label}
+            {field.type !== "checkbox" && (
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                {field.label}
                     {field.required && (
                       <span className="text-red-500 ml-1">*</span>
                     )}
-                  </label>
-                )}
+              </label>
+            )}
 
                 <div className="flex items-center gap-3">
                   {/* Drag Handle - Always visible in edit mode */}
@@ -667,30 +667,30 @@ const ReusableRegistrationForm = ({
                     </div>
                   )}
 
-                  <div className="flex-1">{renderField(field)}</div>
+              <div className="flex-1">{renderField(field)}</div>
 
                   {/* Action Buttons - Toggle and Delete */}
                   {showReorder && (
                     <div className="flex items-center gap-2">
                       {/* Toggle Field Button - Enable/Disable */}
-                      {onToggleField && (
-                        <button
-                          type="button"
-                          onClick={() => onToggleField(field.id)}
+              {onToggleField && (
+                <button
+                  type="button"
+                  onClick={() => onToggleField(field.id)}
                           className="flex items-center justify-center transition-colors shrink-0 hover:bg-gray-200 p-2 rounded"
-                          title={
+                  title={
                             isFieldVisible(field)
                               ? "Disable field"
                               : "Enable field"
-                          }
-                          disabled={!!toggleLoading[field.id]}
-                        >
-                          {isFieldVisible(field) ? (
+                  }
+                  disabled={!!toggleLoading[field.id]}
+                >
+                  {isFieldVisible(field) ? (
                             <Eye size={20} className="text-red-500" />
-                          ) : (
+                  ) : (
                             <EyeOff size={20} className="text-gray-400" />
-                          )}
-                          {toggleLoading[field.id] && (
+                  )}
+                  {toggleLoading[field.id] && (
                             <span className="ml-1 text-xs text-gray-400">
                               ...
                             </span>
@@ -717,20 +717,20 @@ const ReusableRegistrationForm = ({
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-500"></div>
                           ) : (
                             <Trash2 size={18} className="text-red-500" />
-                          )}
-                        </button>
+                  )}
+                </button>
                       )}
                     </div>
-                  )}
-                </div>
+              )}
+            </div>
 
-                {errors[field.name] && (
-                  <p className="mt-1 flex items-center text-xs text-red-600">
-                    <Info size={14} className="mr-1 flex-shrink-0" />
-                    {errors[field.name]}
-                  </p>
-                )}
-              </div>
+            {errors[field.name] && (
+              <p className="mt-1 flex items-center text-xs text-red-600">
+                <Info size={14} className="mr-1 flex-shrink-0" />
+                {errors[field.name]}
+              </p>
+            )}
+          </div>
             )}
           </SortableFieldItem>
         );
@@ -862,7 +862,7 @@ const ReusableRegistrationForm = ({
     <>
       <form onSubmit={handleSubmit} className="space-y-6">
         {formContent}
-      </form>
+    </form>
 
       {/* Delete Confirmation Modal */}
       {deleteConfirmModal.isOpen && (

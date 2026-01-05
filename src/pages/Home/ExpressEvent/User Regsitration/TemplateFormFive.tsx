@@ -124,7 +124,7 @@ const TemplateFormFive = ({
 
           <RegistrationFormPreview
             formFields={mappedFormFields}
-            eventId={eventData?.attributes?.uuid}
+            eventId={eventData?.id}
             tenantUuid={tenantUuid || undefined}
             submitButtonText="Register Now"
           />
