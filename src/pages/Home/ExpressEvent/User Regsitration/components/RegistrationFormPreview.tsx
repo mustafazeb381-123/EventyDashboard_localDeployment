@@ -117,6 +117,7 @@ const RegistrationFormPreview = ({
 }: RegistrationFormPreviewProps) => {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Refs for file inputs
   const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
@@ -169,8 +170,9 @@ const RegistrationFormPreview = ({
       toast.success("Registration successfull");
       console.log("✅ User created:", response);
 
-      // Reset form data
+      // Reset form data and errors
       setFormData({});
+      setFieldErrors({});
 
       // Clear all file inputs
       Object.values(fileInputRefs.current).forEach((input) => {
@@ -179,7 +181,76 @@ const RegistrationFormPreview = ({
     } catch (error: any) {
       console.error("❌ Error creating event user:", error?.response);
       console.log("error", error?.response);
-      toast.error(error.response?.data?.message || error.message);
+
+      // Handle 422 validation errors
+      if (error?.response?.status === 422) {
+        const errorData = error.response?.data?.data?.errors?.errors || [];
+        const errors: Record<string, string> = {};
+        const errorMessages: string[] = [];
+
+        // Map API field names to form field names (snake_case to camelCase or direct mapping)
+        const fieldNameMap: Record<string, string> = {
+          email: "email",
+          phone_number: "phone_number",
+          name: "name",
+          position: "position",
+          organization: "organization",
+        };
+
+        errorData.forEach(
+          (err: { field: string; message: string; code?: string }) => {
+            // Use field name mapping or fallback to the field name from API
+            const formFieldName = fieldNameMap[err.field] || err.field;
+
+            // Format user-friendly error messages
+            let errorMessage = err.message;
+            if (err.code === "taken") {
+              // Customize message based on field
+              const fieldLabel =
+                err.field === "email"
+                  ? "Email"
+                  : err.field === "phone_number"
+                  ? "Phone number"
+                  : err.field === "name"
+                  ? "Name"
+                  : err.field === "position"
+                  ? "Position"
+                  : err.field === "organization"
+                  ? "Organization"
+                  : err.field;
+              errorMessage = `${fieldLabel} is already taken`;
+            }
+
+            errors[formFieldName] = errorMessage;
+            errorMessages.push(errorMessage);
+          }
+        );
+
+        setFieldErrors(errors);
+
+        // Show toast with all validation errors
+        if (errorMessages.length > 0) {
+          const errorSummary =
+            errorMessages.length === 1
+              ? errorMessages[0]
+              : `Validation failed: ${errorMessages.join(", ")}`;
+          toast.error(errorSummary);
+        } else {
+          toast.error(
+            error.response?.data?.data?.message ||
+              "Validation failed. Please check the form."
+          );
+        }
+      } else {
+        // Handle other errors
+        toast.error(
+          error.response?.data?.message ||
+            error.response?.data?.data?.message ||
+            error.message ||
+            "Registration failed. Please try again."
+        );
+        setFieldErrors({});
+      }
     } finally {
       setLoading(false);
     }
@@ -190,53 +261,86 @@ const RegistrationFormPreview = ({
       ...prev,
       [fieldName]: value,
     }));
+    // Clear error for this field when user starts typing
+    if (fieldErrors[fieldName]) {
+      setFieldErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors[fieldName];
+        return newErrors;
+      });
+    }
   };
 
   const renderField = (field: FormField) => {
-    const commonInputClasses =
-      "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white";
+    const hasError = fieldErrors[field.name];
+    const commonInputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors bg-white ${
+      hasError
+        ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+        : "border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+    }`;
 
     switch (field.type) {
       case "text":
       case "email":
       case "tel":
         return (
-          <input
-            type={field.type}
-            placeholder={field.placeholder}
-            value={formData[field.name] || ""}
-            onChange={(e) => handleInputChange(field.name, e.target.value)}
-            className={commonInputClasses}
-          />
+          <div>
+            <input
+              type={field.type}
+              placeholder={field.placeholder}
+              value={formData[field.name] || ""}
+              onChange={(e) => handleInputChange(field.name, e.target.value)}
+              className={commonInputClasses}
+            />
+            {fieldErrors[field.name] && (
+              <p className="mt-1 text-sm text-red-600">
+                {fieldErrors[field.name]}
+              </p>
+            )}
+          </div>
         );
 
       case "textarea":
         return (
-          <textarea
-            placeholder={field.placeholder}
-            value={formData[field.name] || ""}
-            onChange={(e) => handleInputChange(field.name, e.target.value)}
-            rows={field.rows || 3}
-            className={commonInputClasses}
-          />
+          <div>
+            <textarea
+              placeholder={field.placeholder}
+              value={formData[field.name] || ""}
+              onChange={(e) => handleInputChange(field.name, e.target.value)}
+              rows={field.rows || 3}
+              className={commonInputClasses}
+            />
+            {fieldErrors[field.name] && (
+              <p className="mt-1 text-sm text-red-600">
+                {fieldErrors[field.name]}
+              </p>
+            )}
+          </div>
         );
 
       case "select":
         return (
-          <select
-            value={formData[field.name] || ""}
-            onChange={(e) => handleInputChange(field.name, e.target.value)}
-            className={commonInputClasses}
-          >
-            <option value="">
-              {field.placeholder || `Select ${field.label}`}
-            </option>
-            {field.options?.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+          <div>
+            <select
+              value={formData[field.name] || ""}
+              onChange={(e) => handleInputChange(field.name, e.target.value)}
+              className={commonInputClasses}
+            >
+              <option value="">
+                {field.placeholder || `Select ${field.label}`}
               </option>
-            ))}
-          </select>
+              {field.options?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {fieldErrors[field.name] && (
+              <p className="mt-1 text-sm text-red-600">
+                {fieldErrors[field.name]}
+              </p>
+            )}
+          </div>
         );
 
       case "file":
@@ -274,9 +378,16 @@ const RegistrationFormPreview = ({
                   }
                 }
               }}
-              className="w-full text-sm border border-gray-300 rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+              className={`w-full text-sm border rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer ${
+                fieldErrors[field.name] ? "border-red-500" : "border-gray-300"
+              }`}
             />
-            {field.hint && (
+            {fieldErrors[field.name] && (
+              <p className="mt-1 text-sm text-red-600">
+                {fieldErrors[field.name]}
+              </p>
+            )}
+            {field.hint && !fieldErrors[field.name] && (
               <p className="mt-2 text-xs text-gray-500">{field.hint}</p>
             )}
           </div>
