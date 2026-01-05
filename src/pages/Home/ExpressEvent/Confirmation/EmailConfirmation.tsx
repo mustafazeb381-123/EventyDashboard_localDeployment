@@ -167,6 +167,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       setIsLoading(true);
       try {
         const apiResp = await saveConfirmationTemplateApi(effectiveEventId, currentFlow.id, html, `Custom ${currentFlow.label} Template`);
+        console.log('apiResp------+++++++++_--------', apiResp.data)
         const newTemplate = { id: `custom-${Date.now()}`, title: `Custom ${currentFlow.label} Template`, component: null, design, html, apiId: apiResp.data.data?.id, isStatic: false, type: currentFlow.id };
         setFlows(prev => prev.map((f, idx) => idx === currentFlowIndex ? { ...f, templates: [...STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES], ...f.templates.filter(t => !t.isStatic), newTemplate] } : f));
         setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });

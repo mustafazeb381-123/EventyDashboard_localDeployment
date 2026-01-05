@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2 } from "lucide-react";
 import { createSpeakerApi, deleteSpeakerApi, getSpeakersApi, updateSpeakerApi } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
@@ -61,6 +61,7 @@ const [editSpeakerData, setEditSpeakerData] = useState({
 });
 const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
 const [currentPage, setCurrentPage] = useState(1);
+const [loading, setLoading] = useState(false);
 const itemsPerPage = 5; // You can adjust this
 const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
 
@@ -75,7 +76,7 @@ const currentSpeakers = eventUsers.slice(
  useEffect(() => {
   const fetchSpeakers = async () => {
     if (!eventId) return;
-
+    setIsLoading(true)
     try {
       setIsLoading(true);
       const response = await getSpeakersApi(eventId);
@@ -104,6 +105,7 @@ const currentSpeakers = eventUsers.slice(
     } catch (error: any) {
       console.log("💥 GET speakers error:", error);
       showNotification("Network error: Cannot fetch speakers", "error");
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }

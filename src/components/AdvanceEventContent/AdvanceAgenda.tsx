@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2, X } from "lucide-react";
-import { createAgendaApi, getAgendaApi, updateAgendaApi, deleteAgendaApi } from "@/apis/apiHelpers";
+import { createAgendaApi, getAgendaApi, updateAgendaApi, deleteAgendaApi, getSpeakersApi } from "@/apis/apiHelpers";
 
 interface AdvanceAgendaProps {
   onNext?: (eventId?: string | number) => void;
@@ -17,7 +17,6 @@ function AdvanceAgenda({
   totalSteps = 5,
   eventId,
 }: AdvanceAgendaProps) {
-  const [eventUsers, setUsers] = useState<any[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -32,10 +31,11 @@ function AdvanceAgenda({
     timeFrom: "",
     timeTo: "",
     location: "",
-    display: true, // This controls visibility on normal screen
-    requiredEnrolment: false,
-    paid: false,
+    display: true, 
+    requiredEnrolment: true,
+    paid: true,
     price: "",
+    currency: "USD", // Currency: USD or SAR
     onlinePayment: false,
     cashPayment: false,
   });
@@ -45,8 +45,35 @@ function AdvanceAgenda({
 
   const [sessions, setSessions] = useState<any[]>([]);
 
+  // Fetch speakers from API
+  useEffect(() => {
+    const fetchSpeakers = async () => {
+      if (!eventId) return;
+
+      try {
+        const response = await getSpeakersApi(eventId!);
+        if (response.status === 200) {
+          const speakersData = response.data.data.map((item: any) => ({
+            id: parseInt(item.id),
+            name: item.attributes.name,
+            organization: item.attributes.organization,
+            image_url: item.attributes.image_url,
+            description: item.attributes.description,
+          }));
+          setAvailableSpeakers(speakersData);
+        }
+      } catch (error) {
+        console.error("Error fetching speakers:", error);
+      }
+    };
+
+    fetchSpeakers();
+  }, [eventId]);
+
   useEffect(() => {
     const fetchEventData = async () => {
+      if (!eventId) return;
+      
       try {
         const response = await getAgendaApi(eventId);
         const agendas = response.data.data.map((item: any) => ({
@@ -67,17 +94,6 @@ function AdvanceAgenda({
           speaker_ids: item.attributes.speaker_ids || []
         }));
         setSessions(agendas);
-
-        // Extract all unique speakers from sessions for the modal
-        const allSpeakers: any[] = [];
-        agendas.forEach((agenda: any) => {
-          agenda.sponsors.forEach((speaker: any) => {
-            if (!allSpeakers.find(s => s.id === speaker.id)) {
-              allSpeakers.push(speaker);
-            }
-          });
-        });
-        setAvailableSpeakers(allSpeakers);
         
       } catch (error) {
         console.error("Error fetching event data:", error);
@@ -122,7 +138,7 @@ function AdvanceAgenda({
     
     try {
       // Call the delete API
-      const response = await deleteAgendaApi(eventId, session.id);
+      const response = await deleteAgendaApi(eventId!, session.id);
       
       // Check if the delete was successful (204 No Content)
       if (response.status === 204) {
@@ -146,6 +162,11 @@ function AdvanceAgenda({
     // Format date from the session data
     const startDate = session.start_date || session.startTime.split(' ')[0];
     
+    // Determine payment settings
+    const isPaid = session.pay_by !== "free";
+    const onlinePayment = session.pay_by === "online";
+    const cashPayment = session.pay_by === "cash";
+    
     setNewSession({
       title: session.title,
       date: startDate,
@@ -154,10 +175,11 @@ function AdvanceAgenda({
       location: session.location,
       display: session.display, // Set the current display status
       requiredEnrolment: session.require_enroll,
-      paid: session.pay_by !== "free",
+      paid: isPaid,
       price: session.price || "",
-      onlinePayment: session.pay_by === "online",
-      cashPayment: session.pay_by === "cash",
+      currency: session.currency || "USD",
+      onlinePayment: onlinePayment,
+      cashPayment: cashPayment,
     });
     
     // Set selected speakers from the session
@@ -168,7 +190,29 @@ function AdvanceAgenda({
   const handleUpdateSession = async () => {
     if (!editingSession) return;
 
-    // Prepare payload without display field if API doesn't support it
+    // Validation for paid sessions
+    if (newSession.paid) {
+      // Validate pay_by is either "cash" or "online"
+      if (!newSession.onlinePayment && !newSession.cashPayment) {
+        showNotification("Please select a payment method (Online or Cash) for paid sessions!", "error");
+        return;
+      }
+
+      // Validate price is greater than 0
+      const priceNum = parseFloat(newSession.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        showNotification("Price must be greater than 0 for paid sessions!", "error");
+        return;
+      }
+
+      // Validate currency is either "USD" or "SAR"
+      if (newSession.currency !== "USD" && newSession.currency !== "SAR") {
+        showNotification("Currency must be either USD or SAR!", "error");
+        return;
+      }
+    }
+
+    // Prepare payload
     const payload: any = {
       agenda: {
         title: newSession.title,
@@ -180,20 +224,17 @@ function AdvanceAgenda({
         require_enroll: newSession.requiredEnrolment,
         pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
         price: newSession.paid ? newSession.price : "0",
-        currency: "USD",
-        speaker_ids: selectedSpeakers.map(id => parseInt(id))
+        currency: newSession.currency || "USD",
+        speaker_ids: selectedSpeakers.map(id => parseInt(id)),
+        display: newSession.display // Include display field in API call if supported
       }
     };
 
-    // Only include display field if API supports it
-    // If API doesn't support display field, we'll handle it locally
-    // payload.agenda.display = newSession.display;
-
     try {
-      const response = await updateAgendaApi(eventId, editingSession.id, payload);
+      const response = await updateAgendaApi(eventId!, editingSession.id, payload);
       console.log('Update response:', response.data);
       
-      // Update local state - we handle display locally if API doesn't support it
+      // Update local state
       setSessions(prev => prev.map(session => 
         session.id === editingSession.id 
           ? {
@@ -202,10 +243,11 @@ function AdvanceAgenda({
               location: newSession.location,
               startTime: `${newSession.date} ${newSession.timeFrom}:00 +0300`,
               endTime: `${newSession.date} ${newSession.timeTo}:00 +0300`,
-              display: newSession.display, // Update display status locally
+              display: newSession.display, // Update display status
               require_enroll: newSession.requiredEnrolment,
               pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
               price: newSession.price,
+              currency: newSession.currency,
               sponsors: availableSpeakers.filter(speaker => selectedSpeakers.includes(speaker.id.toString())),
               speaker_ids: selectedSpeakers.map(id => parseInt(id))
             }
@@ -228,6 +270,28 @@ function AdvanceAgenda({
       return;
     }
 
+    // Validation for paid sessions
+    if (newSession.paid) {
+      // Validate pay_by is either "cash" or "online"
+      if (!newSession.onlinePayment && !newSession.cashPayment) {
+        showNotification("Please select a payment method (Online or Cash) for paid sessions!", "error");
+        return;
+      }
+
+      // Validate price is greater than 0
+      const priceNum = parseFloat(newSession.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        showNotification("Price must be greater than 0 for paid sessions!", "error");
+        return;
+      }
+
+      // Validate currency is either "USD" or "SAR"
+      if (newSession.currency !== "USD" && newSession.currency !== "SAR") {
+        showNotification("Currency must be either USD or SAR!", "error");
+        return;
+      }
+    }
+
     const payload: any = {
       agenda: {
         title: newSession.title,
@@ -239,16 +303,14 @@ function AdvanceAgenda({
         require_enroll: newSession.requiredEnrolment,
         pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
         price: newSession.paid ? newSession.price : "0",
-        currency: "USD",
-        speaker_ids: selectedSpeakers.map(id => parseInt(id))
+        currency: newSession.currency || "USD",
+        speaker_ids: selectedSpeakers.map(id => parseInt(id)),
+        display: newSession.display // Include display field in API call if supported
       }
     };
 
-    // Only include display field if API supports it
-    // payload.agenda.display = newSession.display;
-
     try {
-      const response = await createAgendaApi(eventId, payload);
+      const response = await createAgendaApi(eventId!, payload);
       console.log('Create response:', response.data);
 
       // Add to local state
@@ -264,6 +326,7 @@ function AdvanceAgenda({
         require_enroll: newSession.requiredEnrolment,
         pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
         price: newSession.price,
+        currency: newSession.currency,
         speaker_ids: selectedSpeakers.map(id => parseInt(id))
       };
 
@@ -288,6 +351,7 @@ function AdvanceAgenda({
       requiredEnrolment: false,
       paid: false,
       price: "",
+      currency: "USD",
       onlinePayment: false,
       cashPayment: false,
     });
@@ -680,122 +744,143 @@ function AdvanceAgenda({
 
                 {/* Right Side - Toggle Buttons */}
                 <div className="space-y-6">
-                  {/* Display Toggle - Controls visibility on normal screen */}
+                  {/* Display Toggle - Fixed Switch */}
                   <div className="flex items-center justify-between">
                     <label className="text-base font-medium text-gray-700">
                       Show on Normal Screen
                     </label>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newSession.display}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            display: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${newSession.display ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      onClick={() => setNewSession({ ...newSession, display: !newSession.display })}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newSession.display ? 'translate-x-5' : 'translate-x-0'}`}
                       />
-                      <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${newSession.display ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    </div>
+                    </button>
                   </div>
 
+                  {/* Required Enrolment Toggle */}
                   <div className="flex items-center justify-between">
                     <label className="text-base font-medium text-gray-700">
                       Required Enrolment
                     </label>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newSession.requiredEnrolment}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            requiredEnrolment: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${newSession.requiredEnrolment ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      onClick={() => setNewSession({ ...newSession, requiredEnrolment: !newSession.requiredEnrolment })}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newSession.requiredEnrolment ? 'translate-x-5' : 'translate-x-0'}`}
                       />
-                      <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${newSession.requiredEnrolment ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    </div>
+                    </button>
                   </div>
 
+                  {/* Paid Session Toggle */}
                   <div className="flex items-center justify-between">
                     <label className="text-base font-medium text-gray-700">
                       Paid Session
                     </label>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newSession.paid}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            paid: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${newSession.paid ? 'bg-blue-600' : 'bg-gray-300'}`}
+                      onClick={() => {
+                        const updatedPaid = !newSession.paid;
+                        setNewSession({ 
+                          ...newSession, 
+                          paid: updatedPaid,
+                          // Reset payment methods if turning off paid
+                          onlinePayment: updatedPaid ? newSession.onlinePayment : false,
+                          cashPayment: updatedPaid ? newSession.cashPayment : false,
+                          price: updatedPaid ? newSession.price : ""
+                        });
+                      }}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newSession.paid ? 'translate-x-5' : 'translate-x-0'}`}
                       />
-                      <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${newSession.paid ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    </div>
+                    </button>
                   </div>
 
                   {/* Price and Payment Options */}
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-1.5">
-                      Price
+                      Price {newSession.paid && <span className="text-red-500">*</span>}
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Price here"
-                      value={newSession.price}
-                      onChange={(e) =>
-                        setNewSession({ ...newSession, price: e.target.value })
-                      }
-                      // disabled={!newSession.paid}
-                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                    />
-                    {/* Payment Options */}
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Price here"
+                        value={newSession.price}
+                        onChange={(e) =>
+                          setNewSession({ ...newSession, price: e.target.value })
+                        }
+                        disabled={!newSession.paid}
+                        className={`flex-1 p-2.5 border rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!newSession.paid ? 'bg-gray-100 border-gray-300 cursor-not-allowed' : 'border-gray-300'}`}
+                      />
+                      <select
+                        value={newSession.currency}
+                        onChange={(e) =>
+                          setNewSession({ ...newSession, currency: e.target.value })
+                        }
+                        disabled={!newSession.paid}
+                        className={`p-2.5 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!newSession.paid ? 'bg-gray-100 border-gray-300 cursor-not-allowed' : 'border-gray-300'}`}
+                      >
+                        <option value="USD">USD</option>
+                        <option value="SAR">SAR</option>
+                      </select>
+                    </div>
+                    
+                    {/* Payment Options - Show only when Paid Session is enabled */}
                     {newSession.paid && (
-                      <div className="mt-3 flex items-center gap-4">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            checked={newSession.onlinePayment}
-                            onChange={(e) =>
-                              setNewSession({
-                                ...newSession,
-                                onlinePayment: true,
-                                cashPayment: false,
-                              })
-                            }
-                            className="text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">
-                            Online payment
-                          </span>
-                        </label>
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Payment Method:</p>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={newSession.onlinePayment}
+                              onChange={() =>
+                                setNewSession({
+                                  ...newSession,
+                                  onlinePayment: true,
+                                  cashPayment: false,
+                                })
+                              }
+                              className="text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              Online payment
+                            </span>
+                          </label>
 
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            checked={newSession.cashPayment}
-                            onChange={(e) =>
-                              setNewSession({
-                                ...newSession,
-                                cashPayment: true,
-                                onlinePayment: false,
-                              })
-                            }
-                            className="text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">
-                            Cash payment
-                          </span>
-                        </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={newSession.cashPayment}
+                              onChange={() =>
+                                setNewSession({
+                                  ...newSession,
+                                  cashPayment: true,
+                                  onlinePayment: false,
+                                })
+                              }
+                              className="text-blue-500 focus:ring-blue-500"
+                            />
+                            <span className="text-sm text-gray-700">
+                              Cash payment
+                            </span>
+                          </label>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {!newSession.onlinePayment && !newSession.cashPayment ? 
+                            "Please select a payment method for paid sessions" : 
+                            ""}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -812,6 +897,9 @@ function AdvanceAgenda({
 
               <div className="mt-4 text-sm text-gray-600">
                 <p><strong>Note:</strong> "Show on Normal Screen" controls whether this session appears on the public event agenda. Uncheck to hide from attendees.</p>
+                {newSession.paid && (
+                  <p className="mt-1"><strong>For Paid Sessions:</strong> Price must be greater than 0 and a payment method must be selected.</p>
+                )}
               </div>
             </div>
           </div>
@@ -859,5 +947,3 @@ function AdvanceAgenda({
 }
 
 export default AdvanceAgenda;
-
-
