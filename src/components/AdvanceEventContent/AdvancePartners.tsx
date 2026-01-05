@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2 } from "lucide-react";
 import { createPartnerApi, deletePartnerApi, getPartnerApi, updatePartnerApi } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
@@ -29,13 +29,12 @@ interface Partner {
 function AdvancePartners({
   onNext,
   onPrevious,
-  currentStep = 1,
+  currentStep = 2,
   totalSteps = 5,
   eventId,
 }: AdvancePartnersProps) {
-  console.log('-------event id---------------', eventId)
+  // currentStep is passed from parent (0-3 for 4 steps)
   const [eventUsers, setEventUsers] = useState<Partner[]>([]);
-  console.log('event partners-------', eventUsers)
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<{
@@ -47,7 +46,13 @@ function AdvancePartners({
     image: "",
   });
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Loading states
+  const [isFetchingPartners, setIsFetchingPartners] = useState(false);
+  const [isAddingPartner, setIsAddingPartner] = useState(false);
+  const [isUpdatingPartner, setIsUpdatingPartner] = useState(false);
+  const [isDeletingPartner, setIsDeletingPartner] = useState<string | null>(null);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
@@ -56,6 +61,7 @@ function AdvancePartners({
     image: "",
   });
   const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
@@ -68,10 +74,13 @@ function AdvancePartners({
 
   useEffect(() => {
     const fetchPartners = async () => {
-      if (!eventId) return;
+      if (!eventId) {
+        setIsFetchingPartners(false);
+        return;
+      }
 
+      setIsFetchingPartners(true);
       try {
-        setIsLoading(true);
         const response = await getPartnerApi(eventId);
 
         if (response.status === 200) {
@@ -89,7 +98,6 @@ function AdvancePartners({
               agenda_ids: item.attributes.agenda_ids,
             },
           }));
-          console.log('partner data-------', partnersData)
 
           setEventUsers(partnersData);
         } else {
@@ -99,7 +107,7 @@ function AdvancePartners({
         console.log("💥 GET partners error:", error);
         showNotification("Network error: Cannot fetch partners", "error");
       } finally {
-        setIsLoading(false);
+        setIsFetchingPartners(false);
       }
     };
 
@@ -136,9 +144,8 @@ function AdvancePartners({
   const handleDeleteUser = async (user: Partner) => {
     if (!window.confirm("Are you sure you want to delete this partner?")) return;
 
+    setIsDeletingPartner(user.id);
     try {
-      setIsLoading(true);
-
       const response = await deletePartnerApi(eventId!, user.id);
 
       if (response.status === 200 || response.status === 204) {
@@ -154,7 +161,7 @@ function AdvancePartners({
         "error"
       );
     } finally {
-      setIsLoading(false);
+      setIsDeletingPartner(null);
     }
   };
 
@@ -165,22 +172,18 @@ function AdvancePartners({
       image: user.attributes.image_url || "",
     });
     setEditSelectedImageFile(null);
+    setEditImagePreview(null);
     setEditModalOpen(true);
   };
 
   const handleAddPartner = async () => {
-    console.log("🚀 START: handleAddPartner");
-
     if (!newPartner.name) {
       showNotification("Please fill the partner name!", "error");
       return;
     }
 
-    console.log("✅ Validation passed");
-
+    setIsAddingPartner(true);
     try {
-      setIsLoading(true);
-
       const formData = new FormData();
       formData.append("partner[name]", newPartner.name);
 
@@ -188,14 +191,13 @@ function AdvancePartners({
         formData.append("partner[image]", selectedImageFile);
       }
 
-      console.log("📤 Sending formData:", {
-        name: newPartner.name,
-        image: selectedImageFile?.name,
-      });
+      if (!eventId) {
+        showNotification("Event ID is required!", "error");
+        setIsAddingPartner(false);
+        return;
+      }
 
       const response = await createPartnerApi(eventId, formData);
-
-      console.log("📨 Axios response:", response);
 
       if (response.status === 201 || response.status === 200) {
         const result = response.data;
@@ -223,6 +225,7 @@ function AdvancePartners({
           image: "",
         });
         setSelectedImageFile(null);
+        setImagePreview(null);
         setAddModalOpen(false);
       }
     } catch (error: any) {
@@ -237,7 +240,7 @@ function AdvancePartners({
         showNotification("Network error: Cannot connect to server.", "error");
       }
     } finally {
-      setIsLoading(false);
+      setIsAddingPartner(false);
     }
   };
 
@@ -249,9 +252,8 @@ function AdvancePartners({
       return;
     }
 
+    setIsUpdatingPartner(true);
     try {
-      setIsLoading(true);
-
       const formData = new FormData();
       formData.append("partner[name]", editPartnerData.name);
 
@@ -263,6 +265,9 @@ function AdvancePartners({
 
       if (response.status === 200) {
         const updated = response.data.data;
+        console.log("Update API response:", updated);
+        console.log("New image_url:", updated.attributes.image_url);
+        
         setEventUsers(prev =>
           prev.map(u =>
             u.id === editingPartner.id
@@ -282,6 +287,34 @@ function AdvancePartners({
         showNotification("Partner updated successfully!", "success");
         setEditModalOpen(false);
         setEditingPartner(null);
+        setEditSelectedImageFile(null);
+        setEditImagePreview(null);
+        
+        // Refetch partners to ensure we have the latest data from server
+        if (eventId) {
+          try {
+            const refreshResponse = await getPartnerApi(eventId);
+            if (refreshResponse.status === 200) {
+              const partnersData = refreshResponse.data.data.map((item: any) => ({
+                id: item.id,
+                attributes: {
+                  name: item.attributes.name,
+                  description: item.attributes.description,
+                  organization: item.attributes.organization,
+                  image: item.attributes.image_url,
+                  image_url: item.attributes.image_url,
+                  created_at: item.attributes.created_at,
+                  updated_at: item.attributes.updated_at,
+                  event_id: item.attributes.event_id,
+                  agenda_ids: item.attributes.agenda_ids,
+                },
+              }));
+              setEventUsers(partnersData);
+            }
+          } catch (error) {
+            console.error("Error refreshing partners:", error);
+          }
+        }
       }
     } catch (error: any) {
       console.error("Update partner error:", error);
@@ -290,7 +323,7 @@ function AdvancePartners({
         "error"
       );
     } finally {
-      setIsLoading(false);
+      setIsUpdatingPartner(false);
     }
   };
 
@@ -306,13 +339,22 @@ function AdvancePartners({
     }
   };
 
-  const UserAvatar = ({ user }: { user: Partner }) => (
-    <img
-      src={user.attributes.image || user.attributes.image_url || "https://i.pravatar.cc/100?img=10"}
-      alt={user.attributes.name}
-      className="w-10 h-10 rounded-full object-cover"
-    />
-  );
+  const UserAvatar = ({ user }: { user: Partner }) => {
+    const imageUrl = user.attributes.image_url || user.attributes.image;
+    
+    return (
+      <img
+        key={imageUrl} // Force re-render when image URL changes
+        src={imageUrl || "https://i.pravatar.cc/100?img=10"}
+        alt={user.attributes.name}
+        className="w-10 h-10 rounded-full object-cover"
+        onError={(e) => {
+          // Fallback to placeholder if image fails to load
+          e.currentTarget.src = "https://i.pravatar.cc/100?img=10";
+        }}
+      />
+    );
+  };
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm">
@@ -376,22 +418,48 @@ function AdvancePartners({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-gray-900">Partners</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {eventUsers.length} Partners
+              {isFetchingPartners ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                `${eventUsers.length} Partners`
+              )}
             </span>
           </div>
 
           <button
             onClick={() => setAddModalOpen(true)}
-            disabled={isLoading}
+            disabled={isFetchingPartners}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isLoading ? "Loading..." : "Add Partner"}
+            {isFetchingPartners ? "Loading..." : "Add Partner"}
           </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        {/* Loading State for Partners Table */}
+        {isFetchingPartners ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">Loading partners...</p>
+          </div>
+        ) : eventUsers.length === 0 ? (
+          <div className="text-center py-12 border border-gray-200 rounded-lg">
+            <p className="text-gray-500 mb-4">No partners found</p>
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Your First Partner
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -435,13 +503,19 @@ function AdvancePartners({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        disabled={isDeletingPartner === user.id}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {isDeletingPartner === user.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg"
+                        disabled={isDeletingPartner === user.id}
+                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -453,11 +527,23 @@ function AdvancePartners({
           </table>
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page: number) => setCurrentPage(page)}
+            className="mt-4"
+          />
+        )}
+          </>
+        )}
+
         {/* Add Partner Modal */}
         {addModalOpen && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => !isLoading && setAddModalOpen(false)}
+            onClick={() => !isAddingPartner && setAddModalOpen(false)}
           >
             <div
               className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -479,13 +565,14 @@ function AdvancePartners({
                     onChange={(e) =>
                       setNewPartner({ ...newPartner, name: e.target.value })
                     }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isAddingPartner}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Upload Pic (max 800KB)
+                    Upload Profile Picture
                   </label>
                   <div className="relative">
                     <input
@@ -494,20 +581,34 @@ function AdvancePartners({
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
-                          if (file.size > 800 * 1024) {
-                            showNotification("Image must be less than 800KB", "error");
-                            return;
-                          }
                           setSelectedImageFile(file);
+                          // Create preview URL
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setImagePreview(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
                         }
                       }}
-                      className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isAddingPartner}
+                      className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   {selectedImageFile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
-                    </p>
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                      </p>
+                      {imagePreview && (
+                        <div className="mt-2">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
               </div>
@@ -515,18 +616,27 @@ function AdvancePartners({
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setAddModalOpen(false)}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  disabled={isAddingPartner}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddPartner}
-                  disabled={isLoading}
+                  disabled={isAddingPartner}
                   className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Plus className="w-4 h-4" />
-                  {isLoading ? "Adding Partner..." : "Add Partner"}
+                  {isAddingPartner ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Adding Partner...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add Partner
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -537,7 +647,7 @@ function AdvancePartners({
         {editModalOpen && editingPartner && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => !isLoading && setEditModalOpen(false)}
+            onClick={() => !isUpdatingPartner && setEditModalOpen(false)}
           >
             <div
               className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -557,13 +667,14 @@ function AdvancePartners({
                     placeholder="Enter partner name"
                     value={editPartnerData.name}
                     onChange={(e) => setEditPartnerData({ ...editPartnerData, name: e.target.value })}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isUpdatingPartner}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Upload Pic (max 800KB)
+                    Upload New Profile Picture
                   </label>
                   <input
                     type="file"
@@ -571,32 +682,66 @@ function AdvancePartners({
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
-                        if (file.size > 800 * 1024) {
-                          showNotification("Image must be less than 800KB", "error");
-                          return;
-                        }
                         setEditSelectedImageFile(file);
+                        // Create preview URL
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEditImagePreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isUpdatingPartner}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  {editSelectedImageFile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {editSelectedImageFile.name} ({(editSelectedImageFile.size / 1024).toFixed(0)} KB)
-                    </p>
-                  )}
+                  {/* Show current image or new preview */}
+                  <div className="mt-3">
+                    {editImagePreview ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">
+                          New: {editSelectedImageFile?.name} ({(editSelectedImageFile ? (editSelectedImageFile.size / 1024).toFixed(0) : 0)} KB)
+                        </p>
+                        <img
+                          src={editImagePreview}
+                          alt="New preview"
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                        />
+                      </div>
+                    ) : editingPartner?.attributes?.image_url ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Current image:</p>
+                        <img
+                          src={editingPartner.attributes.image_url}
+                          alt="Current"
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setEditModalOpen(false)} className="flex-1 px-4 py-2 border rounded-lg">
+                <button
+                  onClick={() => setEditModalOpen(false)}
+                  disabled={isUpdatingPartner}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdatePartner}
-                  className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg"
+                  disabled={isUpdatingPartner}
+                  className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? "Updating..." : "Update Partner"}
+                  {isUpdatingPartner ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Partner"
+                  )}
                 </button>
               </div>
             </div>
@@ -608,21 +753,25 @@ function AdvancePartners({
       <div className="flex justify-between items-center pt-6 border-t border-gray-100 mt-6">
         <button
           onClick={handleBack}
-          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          disabled={isFetchingPartners}
+          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ← Previous
         </button>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={(page) => setCurrentPage(page)}
-          className="mt-4"
-        />
+        {!isFetchingPartners && eventUsers.length > 0 && totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page: number) => setCurrentPage(page)}
+            className="mt-4"
+          />
+        )}
 
         <button
           onClick={handleNext}
-          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900"
+          disabled={isFetchingPartners}
+          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next →
         </button>

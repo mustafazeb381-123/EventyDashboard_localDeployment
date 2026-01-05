@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, X } from "lucide-react";
-import { createAgendaApi, getAgendaApi, updateAgendaApi, deleteAgendaApi } from "@/apis/apiHelpers";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, X, Loader2 } from "lucide-react";
+import { createAgendaApi, getAgendaApi, updateAgendaApi, deleteAgendaApi, getSpeakersApi } from "@/apis/apiHelpers";
 
 interface AdvanceAgendaProps {
   onNext?: (eventId?: string | number) => void;
@@ -13,11 +13,12 @@ interface AdvanceAgendaProps {
 function AdvanceAgenda({
   onNext,
   onPrevious,
-  currentStep = 1,
+  currentStep = 3,
   totalSteps = 5,
   eventId,
 }: AdvanceAgendaProps) {
-  const [eventUsers, setUsers] = useState<any[]>([]);
+  // currentStep is passed from parent (0-3 for 4 steps)
+  // When currentStep is 3 (4th step), clicking Next will redirect via onComplete
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -32,21 +33,65 @@ function AdvanceAgenda({
     timeFrom: "",
     timeTo: "",
     location: "",
-    display: true, // This controls visibility on normal screen
-    requiredEnrolment: false,
-    paid: false,
+    display: true, 
+    requiredEnrolment: true,
+    paid: true,
     price: "",
+    currency: "USD", // Currency: USD or SAR
     onlinePayment: false,
     cashPayment: false,
   });
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
-  console.log('selected speaker-----', selectedSpeakers)
   const [availableSpeakers, setAvailableSpeakers] = useState<any[]>([]);
 
   const [sessions, setSessions] = useState<any[]>([]);
+  
+  // Loading states
+  const [isFetchingAgendas, setIsFetchingAgendas] = useState(false);
+  const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
+  const [isAddingSession, setIsAddingSession] = useState(false);
+  const [isUpdatingSession, setIsUpdatingSession] = useState(false);
+  const [isDeletingSession, setIsDeletingSession] = useState<string | null>(null);
+
+  // Fetch speakers from API
+  useEffect(() => {
+    const fetchSpeakers = async () => {
+      if (!eventId) {
+        setIsFetchingSpeakers(false);
+        return;
+      }
+
+      setIsFetchingSpeakers(true);
+      try {
+        const response = await getSpeakersApi(eventId!);
+        if (response.status === 200) {
+          const speakersData = response.data.data.map((item: any) => ({
+            id: parseInt(item.id),
+            name: item.attributes.name,
+            organization: item.attributes.organization,
+            image_url: item.attributes.image_url,
+            description: item.attributes.description,
+          }));
+          setAvailableSpeakers(speakersData);
+        }
+      } catch (error) {
+        console.error("Error fetching speakers:", error);
+      } finally {
+        setIsFetchingSpeakers(false);
+      }
+    };
+
+    fetchSpeakers();
+  }, [eventId]);
 
   useEffect(() => {
     const fetchEventData = async () => {
+      if (!eventId) {
+        setIsFetchingAgendas(false);
+        return;
+      }
+      
+      setIsFetchingAgendas(true);
       try {
         const response = await getAgendaApi(eventId);
         const agendas = response.data.data.map((item: any) => ({
@@ -67,20 +112,12 @@ function AdvanceAgenda({
           speaker_ids: item.attributes.speaker_ids || []
         }));
         setSessions(agendas);
-
-        // Extract all unique speakers from sessions for the modal
-        const allSpeakers: any[] = [];
-        agendas.forEach((agenda: any) => {
-          agenda.sponsors.forEach((speaker: any) => {
-            if (!allSpeakers.find(s => s.id === speaker.id)) {
-              allSpeakers.push(speaker);
-            }
-          });
-        });
-        setAvailableSpeakers(allSpeakers);
         
       } catch (error) {
         console.error("Error fetching event data:", error);
+        showNotification("Network error: Cannot fetch agendas", "error");
+      } finally {
+        setIsFetchingAgendas(false);
       }
     };
 
@@ -120,9 +157,10 @@ function AdvanceAgenda({
     if (!window.confirm("Are you sure you want to delete this session?"))
       return;
     
+    setIsDeletingSession(session.id);
     try {
       // Call the delete API
-      const response = await deleteAgendaApi(eventId, session.id);
+      const response = await deleteAgendaApi(eventId!, session.id);
       
       // Check if the delete was successful (204 No Content)
       if (response.status === 204) {
@@ -137,6 +175,8 @@ function AdvanceAgenda({
     } catch (error) {
       console.error("Error deleting session:", error);
       showNotification("Error deleting session!", "error");
+    } finally {
+      setIsDeletingSession(null);
     }
   };
 
@@ -146,6 +186,11 @@ function AdvanceAgenda({
     // Format date from the session data
     const startDate = session.start_date || session.startTime.split(' ')[0];
     
+    // Determine payment settings
+    const isPaid = session.pay_by !== "free";
+    const onlinePayment = session.pay_by === "online";
+    const cashPayment = session.pay_by === "cash";
+    
     setNewSession({
       title: session.title,
       date: startDate,
@@ -154,10 +199,11 @@ function AdvanceAgenda({
       location: session.location,
       display: session.display, // Set the current display status
       requiredEnrolment: session.require_enroll,
-      paid: session.pay_by !== "free",
+      paid: isPaid,
       price: session.price || "",
-      onlinePayment: session.pay_by === "online",
-      cashPayment: session.pay_by === "cash",
+      currency: session.currency || "USD",
+      onlinePayment: onlinePayment,
+      cashPayment: cashPayment,
     });
     
     // Set selected speakers from the session
@@ -168,7 +214,29 @@ function AdvanceAgenda({
   const handleUpdateSession = async () => {
     if (!editingSession) return;
 
-    // Prepare payload without display field if API doesn't support it
+    // Validation for paid sessions
+    if (newSession.paid) {
+      // Validate pay_by is either "cash" or "online"
+      if (!newSession.onlinePayment && !newSession.cashPayment) {
+        showNotification("Please select a payment method (Online or Cash) for paid sessions!", "error");
+        return;
+      }
+
+      // Validate price is greater than 0
+      const priceNum = parseFloat(newSession.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        showNotification("Price must be greater than 0 for paid sessions!", "error");
+        return;
+      }
+
+      // Validate currency is either "USD" or "SAR"
+      if (newSession.currency !== "USD" && newSession.currency !== "SAR") {
+        showNotification("Currency must be either USD or SAR!", "error");
+        return;
+      }
+    }
+
+    // Prepare payload
     const payload: any = {
       agenda: {
         title: newSession.title,
@@ -180,20 +248,18 @@ function AdvanceAgenda({
         require_enroll: newSession.requiredEnrolment,
         pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
         price: newSession.paid ? newSession.price : "0",
-        currency: "USD",
-        speaker_ids: selectedSpeakers.map(id => parseInt(id))
+        currency: newSession.currency || "USD",
+        speaker_ids: selectedSpeakers.map(id => parseInt(id)),
+        display: newSession.display // Include display field in API call if supported
       }
     };
 
-    // Only include display field if API supports it
-    // If API doesn't support display field, we'll handle it locally
-    // payload.agenda.display = newSession.display;
-
+    setIsUpdatingSession(true);
     try {
-      const response = await updateAgendaApi(eventId, editingSession.id, payload);
+      const response = await updateAgendaApi(eventId!, editingSession.id, payload);
       console.log('Update response:', response.data);
       
-      // Update local state - we handle display locally if API doesn't support it
+      // Update local state
       setSessions(prev => prev.map(session => 
         session.id === editingSession.id 
           ? {
@@ -202,10 +268,11 @@ function AdvanceAgenda({
               location: newSession.location,
               startTime: `${newSession.date} ${newSession.timeFrom}:00 +0300`,
               endTime: `${newSession.date} ${newSession.timeTo}:00 +0300`,
-              display: newSession.display, // Update display status locally
+              display: newSession.display, // Update display status
               require_enroll: newSession.requiredEnrolment,
               pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
               price: newSession.price,
+              currency: newSession.currency,
               sponsors: availableSpeakers.filter(speaker => selectedSpeakers.includes(speaker.id.toString())),
               speaker_ids: selectedSpeakers.map(id => parseInt(id))
             }
@@ -219,6 +286,8 @@ function AdvanceAgenda({
     } catch (error) {
       console.error("Error updating session:", error);
       showNotification("Error updating session!", "error");
+    } finally {
+      setIsUpdatingSession(false);
     }
   };
 
@@ -226,6 +295,28 @@ function AdvanceAgenda({
     if (!newSession.title || !newSession.date || !newSession.timeFrom || !newSession.timeTo) {
       showNotification("Please fill all required fields!", "error");
       return;
+    }
+
+    // Validation for paid sessions
+    if (newSession.paid) {
+      // Validate pay_by is either "cash" or "online"
+      if (!newSession.onlinePayment && !newSession.cashPayment) {
+        showNotification("Please select a payment method (Online or Cash) for paid sessions!", "error");
+        return;
+      }
+
+      // Validate price is greater than 0
+      const priceNum = parseFloat(newSession.price);
+      if (isNaN(priceNum) || priceNum <= 0) {
+        showNotification("Price must be greater than 0 for paid sessions!", "error");
+        return;
+      }
+
+      // Validate currency is either "USD" or "SAR"
+      if (newSession.currency !== "USD" && newSession.currency !== "SAR") {
+        showNotification("Currency must be either USD or SAR!", "error");
+        return;
+      }
     }
 
     const payload: any = {
@@ -239,16 +330,15 @@ function AdvanceAgenda({
         require_enroll: newSession.requiredEnrolment,
         pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
         price: newSession.paid ? newSession.price : "0",
-        currency: "USD",
-        speaker_ids: selectedSpeakers.map(id => parseInt(id))
+        currency: newSession.currency || "USD",
+        speaker_ids: selectedSpeakers.map(id => parseInt(id)),
+        display: newSession.display // Include display field in API call if supported
       }
     };
 
-    // Only include display field if API supports it
-    // payload.agenda.display = newSession.display;
-
+    setIsAddingSession(true);
     try {
-      const response = await createAgendaApi(eventId, payload);
+      const response = await createAgendaApi(eventId!, payload);
       console.log('Create response:', response.data);
 
       // Add to local state
@@ -264,6 +354,7 @@ function AdvanceAgenda({
         require_enroll: newSession.requiredEnrolment,
         pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
         price: newSession.price,
+        currency: newSession.currency,
         speaker_ids: selectedSpeakers.map(id => parseInt(id))
       };
 
@@ -274,6 +365,8 @@ function AdvanceAgenda({
     } catch (error) {
       console.error("Error creating session:", error);
       showNotification("Error creating session!", "error");
+    } finally {
+      setIsAddingSession(false);
     }
   };
 
@@ -288,6 +381,7 @@ function AdvanceAgenda({
       requiredEnrolment: false,
       paid: false,
       price: "",
+      currency: "USD",
       onlinePayment: false,
       cashPayment: false,
     });
@@ -379,21 +473,48 @@ function AdvanceAgenda({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-gray-900">Sessions</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {displayedSessions.length} of {sessions.length} sessions visible
+              {isFetchingAgendas ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                `${displayedSessions.length} of ${sessions.length} sessions visible`
+              )}
             </span>
           </div>
 
           <button
             onClick={() => setAddModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            disabled={isFetchingAgendas}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            Add Sessions
+            {isFetchingAgendas ? "Loading..." : "Add Sessions"}
           </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        {/* Loading State for Sessions Table */}
+        {isFetchingAgendas ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">Loading sessions...</p>
+          </div>
+        ) : sessions.length === 0 ? (
+          <div className="text-center py-12 border border-gray-200 rounded-lg">
+            <p className="text-gray-500 mb-4">No sessions found</p>
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Your First Session
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -405,7 +526,8 @@ function AdvanceAgenda({
                       sessions.length > 0 &&
                       selectedUsers.length === sessions.length
                     }
-                    className="w-4 h-4"
+                    disabled={isFetchingAgendas}
+                    className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -449,7 +571,8 @@ function AdvanceAgenda({
                       type="checkbox"
                       checked={selectedUsers.includes(session.id)}
                       onChange={() => handleSelectUser(session.id)}
-                      className="w-4 h-4"
+                      disabled={isDeletingSession === session.id}
+                      className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </td>
 
@@ -507,13 +630,19 @@ function AdvanceAgenda({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDeleteSession(session)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        disabled={isDeletingSession === session.id}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {isDeletingSession === session.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                       <button 
                         onClick={() => handleEditSession(session)}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg"
+                        disabled={isDeletingSession === session.id}
+                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -524,12 +653,14 @@ function AdvanceAgenda({
             </tbody>
           </table>
         </div>
+          </>
+        )}
 
         {/* Add/Edit Session Modal */}
         {(addModalOpen || editModalOpen) && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={closeModals}
+            onClick={() => !isAddingSession && !isUpdatingSession && closeModals()}
           >
             <div
               className="bg-slate-50 p-8 rounded-3xl w-[80%] max-h-[90vh] overflow-y-auto shadow-lg"
@@ -540,10 +671,10 @@ function AdvanceAgenda({
                   {editModalOpen ? "Edit Session" : "Add Sessions"}
                 </h2>
                 <X 
-                  onClick={closeModals} 
+                  onClick={() => !isAddingSession && !isUpdatingSession && closeModals()} 
                   size={24} 
                   color="#000" 
-                  className="cursor-pointer"
+                  className={`cursor-pointer ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : ''}`}
                 />
               </div>
 
@@ -561,7 +692,8 @@ function AdvanceAgenda({
                       onChange={(e) =>
                         setNewSession({ ...newSession, title: e.target.value })
                       }
-                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isAddingSession || isUpdatingSession}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                     />
                   </div>
 
@@ -575,7 +707,8 @@ function AdvanceAgenda({
                       onChange={(e) =>
                         setNewSession({ ...newSession, date: e.target.value })
                       }
-                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isAddingSession || isUpdatingSession}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                     />
                   </div>
 
@@ -593,7 +726,8 @@ function AdvanceAgenda({
                             timeFrom: e.target.value,
                           })
                         }
-                        className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={isAddingSession || isUpdatingSession}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                       />
                     </div>
 
@@ -610,7 +744,8 @@ function AdvanceAgenda({
                             timeTo: e.target.value,
                           })
                         }
-                        className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        disabled={isAddingSession || isUpdatingSession}
+                        className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                       />
                     </div>
                   </div>
@@ -629,7 +764,8 @@ function AdvanceAgenda({
                           location: e.target.value,
                         })
                       }
-                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isAddingSession || isUpdatingSession}
+                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                     />
                   </div>
 
@@ -639,22 +775,28 @@ function AdvanceAgenda({
                       Speakers
                     </label>
                     <div className="flex flex-wrap gap-3">
-                      {availableSpeakers.length > 0 ? (
+                      {isFetchingSpeakers ? (
+                        <div className="flex items-center gap-2 text-gray-500 text-sm">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Loading speakers...
+                        </div>
+                      ) : availableSpeakers.length > 0 ? (
                         availableSpeakers.map((speaker) => (
                           <div
                             key={speaker.id}
-                            onClick={() => toggleSpeakerSelection(speaker.id.toString())}
-                            className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-all ${selectedSpeakers.includes(speaker.id.toString())
+                            onClick={() => !isAddingSession && !isUpdatingSession && toggleSpeakerSelection(speaker.id.toString())}
+                            className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${selectedSpeakers.includes(speaker.id.toString())
                                 ? "border-blue-500 bg-blue-50"
                                 : "border-gray-200 hover:border-gray-300"
-                              }`}
+                              } ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
                             {/* Checkbox */}
                             <input
                               type="checkbox"
                               checked={selectedSpeakers.includes(speaker.id.toString())}
                               onChange={() => toggleSpeakerSelection(speaker.id.toString())}
-                              className="w-4 h-4"
+                              disabled={isAddingSession || isUpdatingSession}
+                              className="w-4 h-4 disabled:opacity-50 disabled:cursor-not-allowed"
                               onClick={(e) => e.stopPropagation()}
                             />
 
@@ -680,122 +822,148 @@ function AdvanceAgenda({
 
                 {/* Right Side - Toggle Buttons */}
                 <div className="space-y-6">
-                  {/* Display Toggle - Controls visibility on normal screen */}
+                  {/* Display Toggle - Fixed Switch */}
                   <div className="flex items-center justify-between">
                     <label className="text-base font-medium text-gray-700">
                       Show on Normal Screen
                     </label>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newSession.display}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            display: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      disabled={isAddingSession || isUpdatingSession}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${newSession.display ? 'bg-blue-600' : 'bg-gray-300'} ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      onClick={() => setNewSession({ ...newSession, display: !newSession.display })}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newSession.display ? 'translate-x-5' : 'translate-x-0'}`}
                       />
-                      <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${newSession.display ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    </div>
+                    </button>
                   </div>
 
+                  {/* Required Enrolment Toggle */}
                   <div className="flex items-center justify-between">
                     <label className="text-base font-medium text-gray-700">
                       Required Enrolment
                     </label>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newSession.requiredEnrolment}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            requiredEnrolment: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      disabled={isAddingSession || isUpdatingSession}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${newSession.requiredEnrolment ? 'bg-blue-600' : 'bg-gray-300'} ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      onClick={() => setNewSession({ ...newSession, requiredEnrolment: !newSession.requiredEnrolment })}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newSession.requiredEnrolment ? 'translate-x-5' : 'translate-x-0'}`}
                       />
-                      <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${newSession.requiredEnrolment ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    </div>
+                    </button>
                   </div>
 
+                  {/* Paid Session Toggle */}
                   <div className="flex items-center justify-between">
                     <label className="text-base font-medium text-gray-700">
                       Paid Session
                     </label>
-                    <div className="relative">
-                      <input
-                        type="checkbox"
-                        checked={newSession.paid}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            paid: e.target.checked,
-                          })
-                        }
-                        className="sr-only peer"
+                    <button
+                      type="button"
+                      disabled={isAddingSession || isUpdatingSession}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${newSession.paid ? 'bg-blue-600' : 'bg-gray-300'} ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                      onClick={() => {
+                        const updatedPaid = !newSession.paid;
+                        setNewSession({ 
+                          ...newSession, 
+                          paid: updatedPaid,
+                          // Reset payment methods if turning off paid
+                          onlinePayment: updatedPaid ? newSession.onlinePayment : false,
+                          cashPayment: updatedPaid ? newSession.cashPayment : false,
+                          price: updatedPaid ? newSession.price : ""
+                        });
+                      }}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${newSession.paid ? 'translate-x-5' : 'translate-x-0'}`}
                       />
-                      <div className={`w-11 h-6 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all ${newSession.paid ? 'bg-blue-600' : 'bg-gray-200'}`}></div>
-                    </div>
+                    </button>
                   </div>
 
                   {/* Price and Payment Options */}
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-1.5">
-                      Price
+                      Price {newSession.paid && <span className="text-red-500">*</span>}
                     </label>
-                    <input
-                      type="text"
-                      placeholder="Price here"
-                      value={newSession.price}
-                      onChange={(e) =>
-                        setNewSession({ ...newSession, price: e.target.value })
-                      }
-                      // disabled={!newSession.paid}
-                      className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
-                    />
-                    {/* Payment Options */}
+                    <div className="flex gap-2">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Price here"
+                        value={newSession.price}
+                        onChange={(e) =>
+                          setNewSession({ ...newSession, price: e.target.value })
+                        }
+                        disabled={!newSession.paid || isAddingSession || isUpdatingSession}
+                        className={`flex-1 p-2.5 border rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!newSession.paid || isAddingSession || isUpdatingSession ? 'bg-gray-100 border-gray-300 cursor-not-allowed' : 'border-gray-300'}`}
+                      />
+                      <select
+                        value={newSession.currency}
+                        onChange={(e) =>
+                          setNewSession({ ...newSession, currency: e.target.value })
+                        }
+                        disabled={!newSession.paid || isAddingSession || isUpdatingSession}
+                        className={`p-2.5 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${!newSession.paid || isAddingSession || isUpdatingSession ? 'bg-gray-100 border-gray-300 cursor-not-allowed' : 'border-gray-300'}`}
+                      >
+                        <option value="USD">USD</option>
+                        <option value="SAR">SAR</option>
+                      </select>
+                    </div>
+                    
+                    {/* Payment Options - Show only when Paid Session is enabled */}
                     {newSession.paid && (
-                      <div className="mt-3 flex items-center gap-4">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            checked={newSession.onlinePayment}
-                            onChange={(e) =>
-                              setNewSession({
-                                ...newSession,
-                                onlinePayment: true,
-                                cashPayment: false,
-                              })
-                            }
-                            className="text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">
-                            Online payment
-                          </span>
-                        </label>
+                      <div className="mt-3 space-y-2">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Payment Method:</p>
+                        <div className="flex items-center gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={newSession.onlinePayment}
+                              onChange={() =>
+                                setNewSession({
+                                  ...newSession,
+                                  onlinePayment: true,
+                                  cashPayment: false,
+                                })
+                              }
+                              disabled={isAddingSession || isUpdatingSession}
+                              className="text-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                            <span className="text-sm text-gray-700">
+                              Online payment
+                            </span>
+                          </label>
 
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="paymentMethod"
-                            checked={newSession.cashPayment}
-                            onChange={(e) =>
-                              setNewSession({
-                                ...newSession,
-                                cashPayment: true,
-                                onlinePayment: false,
-                              })
-                            }
-                            className="text-blue-500 focus:ring-blue-500"
-                          />
-                          <span className="text-sm text-gray-700">
-                            Cash payment
-                          </span>
-                        </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              checked={newSession.cashPayment}
+                              onChange={() =>
+                                setNewSession({
+                                  ...newSession,
+                                  cashPayment: true,
+                                  onlinePayment: false,
+                                })
+                              }
+                              disabled={isAddingSession || isUpdatingSession}
+                              className="text-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            />
+                            <span className="text-sm text-gray-700">
+                              Cash payment
+                            </span>
+                          </label>
+                        </div>
+                        <p className="mt-2 text-xs text-gray-500">
+                          {!newSession.onlinePayment && !newSession.cashPayment ? 
+                            "Please select a payment method for paid sessions" : 
+                            ""}
+                        </p>
                       </div>
                     )}
                   </div>
@@ -804,14 +972,27 @@ function AdvanceAgenda({
 
               <button
                 onClick={editModalOpen ? handleUpdateSession : handleAddSession}
-                className="mt-6 w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors"
+                disabled={isAddingSession || isUpdatingSession}
+                className="mt-6 w-full bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-lg flex items-center justify-center gap-2 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Plus className="w-4 h-4" /> 
-                {editModalOpen ? "Update Session" : "Add Sessions"}
+                {isAddingSession || isUpdatingSession ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    {editModalOpen ? "Updating Session..." : "Adding Session..."}
+                  </>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4" /> 
+                    {editModalOpen ? "Update Session" : "Add Sessions"}
+                  </>
+                )}
               </button>
 
               <div className="mt-4 text-sm text-gray-600">
                 <p><strong>Note:</strong> "Show on Normal Screen" controls whether this session appears on the public event agenda. Uncheck to hide from attendees.</p>
+                {newSession.paid && (
+                  <p className="mt-1"><strong>For Paid Sessions:</strong> Price must be greater than 0 and a payment method must be selected.</p>
+                )}
               </div>
             </div>
           </div>
@@ -822,7 +1003,8 @@ function AdvanceAgenda({
       <div className="flex justify-between items-center pt-6 border-t border-gray-100 mt-6">
         <button
           onClick={handleBack}
-          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          disabled={isFetchingAgendas}
+          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ← Previous
         </button>
@@ -833,7 +1015,8 @@ function AdvanceAgenda({
 
         <button
           onClick={handleNext}
-          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900"
+          disabled={isFetchingAgendas}
+          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next →
         </button>
@@ -859,5 +1042,3 @@ function AdvanceAgenda({
 }
 
 export default AdvanceAgenda;
-
-

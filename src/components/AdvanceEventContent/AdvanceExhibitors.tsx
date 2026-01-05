@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2 } from "lucide-react";
 import { createExhibitorApi, deleteExhibitorApi, getExhibitorsApi, updateExhibitorApi } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
@@ -29,12 +29,11 @@ function AdvanceExhibitors({
   onNext,
   onPrevious,
   currentStep = 1,
-  totalSteps = 5,
+  totalSteps = 4,
   eventId,
 }: AdvanceExhibitorsProps) {
-  console.log('-------event id---------------', eventId);
+  // currentStep is passed from parent (0-3 for 4 steps)
   const [eventUsers, setEventUsers] = useState<Exhibitor[]>([]);
-  console.log('exhibitors-------', eventUsers);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [notification, setNotification] = useState<{
@@ -48,7 +47,13 @@ function AdvanceExhibitors({
     image: "",
   });
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  
+  // Loading states
+  const [isFetchingExhibitors, setIsFetchingExhibitors] = useState(false);
+  const [isAddingExhibitor, setIsAddingExhibitor] = useState(false);
+  const [isUpdatingExhibitor, setIsUpdatingExhibitor] = useState(false);
+  const [isDeletingExhibitor, setIsDeletingExhibitor] = useState<string | null>(null);
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingExhibitor, setEditingExhibitor] = useState<Exhibitor | null>(null);
@@ -59,6 +64,7 @@ function AdvanceExhibitors({
     image: "",
   });
   const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+  const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
@@ -73,8 +79,8 @@ function AdvanceExhibitors({
     const fetchExhibitors = async () => {
       if (!eventId) return;
 
+      setIsFetchingExhibitors(true);
       try {
-        setIsLoading(true);
         const response = await getExhibitorsApi(eventId);
 
         if (response.status === 200) {
@@ -91,7 +97,6 @@ function AdvanceExhibitors({
               event_id: item.attributes.event_id,
             },
           }));
-          console.log('exhibitor data-------', exhibitorsData)
 
           setEventUsers(exhibitorsData);
         } else {
@@ -101,7 +106,7 @@ function AdvanceExhibitors({
         console.log("💥 GET exhibitors error:", error);
         showNotification("Network error: Cannot fetch exhibitors", "error");
       } finally {
-        setIsLoading(false);
+        setIsFetchingExhibitors(false);
       }
     };
 
@@ -138,9 +143,8 @@ function AdvanceExhibitors({
   const handleDeleteUser = async (user: Exhibitor) => {
     if (!window.confirm("Are you sure you want to delete this exhibitor?")) return;
 
+    setIsDeletingExhibitor(user.id);
     try {
-      setIsLoading(true);
-
       const response = await deleteExhibitorApi(eventId!, user.id);
 
       // Backend returns 200 or 204 on successful deletion
@@ -158,7 +162,7 @@ function AdvanceExhibitors({
         "error"
       );
     } finally {
-      setIsLoading(false);
+      setIsDeletingExhibitor(null);
     }
   };
 
@@ -171,22 +175,18 @@ function AdvanceExhibitors({
       image: user.attributes.image_url || "",
     });
     setEditSelectedImageFile(null);
+    setEditImagePreview(null);
     setEditModalOpen(true);
   };
 
   const handleAddExhibitor = async () => {
-    console.log("🚀 START: handleAddExhibitor");
-
     if (!newExhibitor.name || !newExhibitor.organization) {
       showNotification("Please fill all required fields!", "error");
       return;
     }
 
-    console.log("✅ Validation passed");
-
+    setIsAddingExhibitor(true);
     try {
-      setIsLoading(true);
-
       // Create form data
       const formData = new FormData();
       formData.append("exhibitor[name]", newExhibitor.name);
@@ -197,17 +197,13 @@ function AdvanceExhibitors({
         formData.append("exhibitor[image]", selectedImageFile);
       }
 
-      console.log("📤 Sending formData:", {
-        name: newExhibitor.name,
-        description: newExhibitor.description,
-        organization: newExhibitor.organization,
-        image: selectedImageFile?.name,
-      });
+      if (!eventId) {
+        showNotification("Event ID is required!", "error");
+        setIsAddingExhibitor(false);
+        return;
+      }
 
-      // Call API helper
-      const response = await createExhibitorApi(eventId!, formData);
-
-      console.log("📨 Axios response:", response);
+      const response = await createExhibitorApi(eventId, formData);
 
       if (response.status === 201 || response.status === 200) {
         const result = response.data;
@@ -237,6 +233,7 @@ function AdvanceExhibitors({
           image: "",
         });
         setSelectedImageFile(null);
+        setImagePreview(null);
         setAddModalOpen(false);
       }
     } catch (error: any) {
@@ -251,7 +248,7 @@ function AdvanceExhibitors({
         showNotification("Network error: Cannot connect to server.", "error");
       }
     } finally {
-      setIsLoading(false);
+      setIsAddingExhibitor(false);
     }
   };
 
@@ -263,9 +260,8 @@ function AdvanceExhibitors({
       return;
     }
 
+    setIsUpdatingExhibitor(true);
     try {
-      setIsLoading(true);
-
       const formData = new FormData();
       formData.append("exhibitor[name]", editExhibitorData.name);
       formData.append("exhibitor[description]", editExhibitorData.description);
@@ -279,6 +275,14 @@ function AdvanceExhibitors({
 
       if (response.status === 200) {
         const updated = response.data.data;
+        console.log("Update API response:", updated);
+        console.log("New image_url:", updated.attributes.image_url);
+        
+        // Add cache-busting parameter to force image refresh
+        const imageUrl = updated.attributes.image_url 
+          ? `${updated.attributes.image_url}?t=${Date.now()}`
+          : updated.attributes.image_url;
+        
         setEventUsers(prev =>
           prev.map(u =>
             u.id === editingExhibitor.id
@@ -290,7 +294,7 @@ function AdvanceExhibitors({
                     description: updated.attributes.description,
                     organization: updated.attributes.organization,
                     image: updated.attributes.image_url,
-                    image_url: updated.attributes.image_url,
+                    image_url: updated.attributes.image_url, // Keep original URL, cache-busting in display
                   },
                 }
               : u
@@ -300,6 +304,8 @@ function AdvanceExhibitors({
         showNotification("Exhibitor updated successfully!", "success");
         setEditModalOpen(false);
         setEditingExhibitor(null);
+        setEditSelectedImageFile(null);
+        setEditImagePreview(null);
       }
     } catch (error: any) {
       console.error("Update exhibitor error:", error);
@@ -308,7 +314,7 @@ function AdvanceExhibitors({
         "error"
       );
     } finally {
-      setIsLoading(false);
+      setIsUpdatingExhibitor(false);
     }
   };
 
@@ -324,13 +330,25 @@ function AdvanceExhibitors({
     }
   };
 
-  const UserAvatar = ({ user }: { user: Exhibitor }) => (
-    <img
-      src={user.attributes.image || user.attributes.image_url || "https://i.pravatar.cc/100?img=10"}
-      alt={user.attributes.name}
-      className="w-10 h-10 rounded-full object-cover"
-    />
-  );
+  const UserAvatar = ({ user }: { user: Exhibitor }) => {
+    const imageUrl = user.attributes.image_url || user.attributes.image;
+    // Add cache-busting parameter to force browser to reload image
+    const imageSrc = imageUrl 
+      ? `${imageUrl}${imageUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
+      : "https://i.pravatar.cc/100?img=10";
+    
+    return (
+      <img
+        src={imageSrc}
+        alt={user.attributes.name}
+        className="w-10 h-10 rounded-full object-cover"
+        onError={(e) => {
+          // Fallback to placeholder if image fails to load
+          e.currentTarget.src = "https://i.pravatar.cc/100?img=10";
+        }}
+      />
+    );
+  };
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm">
@@ -394,22 +412,48 @@ function AdvanceExhibitors({
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-semibold text-gray-900">Exhibitors</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {eventUsers.length} Exhibitors
+              {isFetchingExhibitors ? (
+                <span className="flex items-center gap-1">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading...
+                </span>
+              ) : (
+                `${eventUsers.length} Exhibitors`
+              )}
             </span>
           </div>
 
           <button
             onClick={() => setAddModalOpen(true)}
-            disabled={isLoading}
+            disabled={isFetchingExhibitors}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isLoading ? "Loading..." : "Add Exhibitor"}
+            {isFetchingExhibitors ? "Loading..." : "Add Exhibitor"}
           </button>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+        {/* Loading State for Exhibitors Table */}
+        {isFetchingExhibitors ? (
+          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
+            <p className="text-gray-600">Loading exhibitors...</p>
+          </div>
+        ) : eventUsers.length === 0 ? (
+          <div className="text-center py-12 border border-gray-200 rounded-lg">
+            <p className="text-gray-500 mb-4">No exhibitors found</p>
+            <button
+              onClick={() => setAddModalOpen(true)}
+              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Your First Exhibitor
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
           <table className="min-w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
@@ -465,13 +509,19 @@ function AdvanceExhibitors({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDeleteUser(user)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
+                        disabled={isDeletingExhibitor === user.id}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        {isDeletingExhibitor === user.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleEditUser(user)}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg"
+                        disabled={isDeletingExhibitor === user.id}
+                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
@@ -483,11 +533,23 @@ function AdvanceExhibitors({
           </table>
         </div>
 
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page: number) => setCurrentPage(page)}
+            className="mt-4"
+          />
+        )}
+          </>
+        )}
+
         {/* Add Exhibitor Modal */}
         {addModalOpen && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => !isLoading && setAddModalOpen(false)}
+            onClick={() => !isAddingExhibitor && setAddModalOpen(false)}
           >
             <div
               className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -509,13 +571,14 @@ function AdvanceExhibitors({
                     onChange={(e) =>
                       setNewExhibitor({ ...newExhibitor, name: e.target.value })
                     }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isAddingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Upload Pic (max 800KB)
+                    Upload Profile Picture
                   </label>
                   <div className="relative">
                     <input
@@ -524,20 +587,34 @@ function AdvanceExhibitors({
                       onChange={(e) => {
                         if (e.target.files && e.target.files[0]) {
                           const file = e.target.files[0];
-                          if (file.size > 800 * 1024) {
-                            showNotification("Image must be less than 800KB", "error");
-                            return;
-                          }
                           setSelectedImageFile(file);
+                          // Create preview URL
+                          const reader = new FileReader();
+                          reader.onloadend = () => {
+                            setImagePreview(reader.result as string);
+                          };
+                          reader.readAsDataURL(file);
                         }
                       }}
-                      className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      disabled={isAddingExhibitor}
+                      className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                   </div>
                   {selectedImageFile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
-                    </p>
+                    <div className="mt-3">
+                      <p className="text-xs text-gray-500 mb-2">
+                        Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                      </p>
+                      {imagePreview && (
+                        <div className="mt-2">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                          />
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -555,7 +632,8 @@ function AdvanceExhibitors({
                       })
                     }
                     rows={3}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    disabled={isAddingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
@@ -573,7 +651,8 @@ function AdvanceExhibitors({
                         organization: e.target.value,
                       })
                     }
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={isAddingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
               </div>
@@ -581,18 +660,27 @@ function AdvanceExhibitors({
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setAddModalOpen(false)}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50"
+                  disabled={isAddingExhibitor}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleAddExhibitor}
-                  disabled={isLoading}
+                  disabled={isAddingExhibitor}
                   className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Plus className="w-4 h-4" />
-                  {isLoading ? "Adding Exhibitor..." : "Add Exhibitor"}
+                  {isAddingExhibitor ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Adding Exhibitor...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4" />
+                      Add Exhibitor
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -603,7 +691,7 @@ function AdvanceExhibitors({
         {editModalOpen && editingExhibitor && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
-            onClick={() => !isLoading && setEditModalOpen(false)}
+            onClick={() => !isUpdatingExhibitor && setEditModalOpen(false)}
           >
             <div
               className="bg-white p-6 rounded-xl w-[80%] max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -623,7 +711,8 @@ function AdvanceExhibitors({
                     placeholder="Enter exhibitor name"
                     value={editExhibitorData.name}
                     onChange={(e) => setEditExhibitorData({ ...editExhibitorData, name: e.target.value })}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm"
+                    disabled={isUpdatingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
@@ -636,7 +725,8 @@ function AdvanceExhibitors({
                     placeholder="Organization"
                     value={editExhibitorData.organization}
                     onChange={(e) => setEditExhibitorData({ ...editExhibitorData, organization: e.target.value })}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm"
+                    disabled={isUpdatingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
@@ -649,13 +739,14 @@ function AdvanceExhibitors({
                     value={editExhibitorData.description}
                     onChange={(e) => setEditExhibitorData({ ...editExhibitorData, description: e.target.value })}
                     rows={3}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm resize-none"
+                    disabled={isUpdatingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Upload Pic (max 800KB)
+                    Upload New Profile Picture
                   </label>
                   <input
                     type="file"
@@ -663,37 +754,66 @@ function AdvanceExhibitors({
                     onChange={(e) => {
                       if (e.target.files && e.target.files[0]) {
                         const file = e.target.files[0];
-                        if (file.size > 800 * 1024) {
-                          showNotification("Image must be less than 800KB", "error");
-                          return;
-                        }
                         setEditSelectedImageFile(file);
+                        // Create preview URL
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setEditImagePreview(reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
                       }
                     }}
-                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm"
+                    disabled={isUpdatingExhibitor}
+                    className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                   />
-                  {editSelectedImageFile && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selected: {editSelectedImageFile.name}
-                    </p>
-                  )}
+                  {/* Show current image or new preview */}
+                  <div className="mt-3">
+                    {editImagePreview ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">
+                          New: {editSelectedImageFile?.name} ({(editSelectedImageFile ? (editSelectedImageFile.size / 1024).toFixed(0) : 0)} KB)
+                        </p>
+                        <img
+                          src={editImagePreview}
+                          alt="New preview"
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                        />
+                      </div>
+                    ) : editingExhibitor?.attributes?.image_url ? (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-2">Current image:</p>
+                        <img
+                          src={editingExhibitor.attributes.image_url}
+                          alt="Current"
+                          className="w-32 h-32 object-cover rounded-lg border border-gray-300"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setEditModalOpen(false)}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+                  disabled={isUpdatingExhibitor}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleUpdateExhibitor}
-                  disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-blue-900 text-white rounded-lg hover:bg-blue-950 disabled:opacity-50"
+                  disabled={isUpdatingExhibitor}
+                  className="flex-1 bg-blue-900 hover:bg-blue-950 text-white py-2 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? "Updating..." : "Update Exhibitor"}
+                  {isUpdatingExhibitor ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    "Update Exhibitor"
+                  )}
                 </button>
               </div>
             </div>
@@ -705,21 +825,25 @@ function AdvanceExhibitors({
       <div className="flex justify-between items-center pt-6 border-t border-gray-100 mt-6">
         <button
           onClick={handleBack}
-          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+          disabled={isFetchingExhibitors}
+          className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           ← Previous
         </button>
 
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={(page: number) => setCurrentPage(page)}
-          className="mt-4"
-        />
+        {!isFetchingExhibitors && eventUsers.length > 0 && totalPages > 1 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={(page: number) => setCurrentPage(page)}
+            className="mt-4"
+          />
+        )}
 
         <button
           onClick={handleNext}
-          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900"
+          disabled={isFetchingExhibitors}
+          className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-slate-800 hover:bg-slate-900 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next →
         </button>
