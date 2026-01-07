@@ -65,7 +65,7 @@ function ThanksTemplateTwo({
     <>
       <div className="w-full bg-gray-50 p-10">
         {logoUrl ? (
-          <div className="flex items-center justify-center">
+          <div className="flex items-center">
             <img src={logoUrl} alt="Event Logo" style={{ maxHeight: 60, maxWidth: 200 }} />
           </div>
         ) : (
