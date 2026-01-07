@@ -341,17 +341,24 @@ const renderCustomField = (
           {field.content || field.label || "Heading"}
         </h3>
       );
-    case "paragraph":
+      case "paragraph":
+      const paragraphContent = formData[field.name] || field.content || field.label || "";
       return (
-        <p
-          className="text-sm"
+        <textarea
+          value={paragraphContent}
+          onChange={(e) =>
+            setFormData({ ...formData, [field.name]: e.target.value })
+          }
+          className="w-full text-sm resize-y transition-all outline-none focus:ring-2 focus:ring-blue-500"
           style={{
+            ...fieldInputStyle,
             color: theme?.textColor || "#111827",
             fontSize: theme?.textFontSize || "16px",
+            minHeight: "80px",
           }}
-        >
-          {field.content || field.label || "Paragraph text"}
-        </p>
+          rows={4}
+          placeholder="Enter your paragraph"
+        />
       );
     case "spacer":
       return (
@@ -465,7 +472,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
           }}
         >
           {bannerUrl && (
-            <div className="w-full h-64 bg-gray-100 overflow-hidden">
+            <div className="w-full h-24 bg-gray-100 overflow-hidden mb-2">
               <img
                 src={bannerUrl}
                 alt="Form banner"
@@ -476,29 +483,7 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
 
           <FormHeader theme={theme} />
 
-          <div>
-            <div
-              className="mb-6 pb-4 border-b"
-              style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
-            >
-              <h3
-                className="text-2xl font-bold mb-2"
-                style={{
-                  color: theme?.headingColor || "#111827",
-                  fontSize: theme?.headingFontSize || "24px",
-                  fontWeight: theme?.headingFontWeight || "bold",
-                }}
-              >
-                Registration Form
-              </h3>
-              <p
-                className="text-sm"
-                style={{ color: theme?.descriptionColor || "#6b7280" }}
-              >
-                Please fill in the required information
-              </p>
-            </div>
-
+          <div style={{ backgroundColor: theme?.formBackgroundColor || "#ffffff" }}>
             <form onSubmit={handleSubmit} className="space-y-6">
               {(() => {
                 // Calculate all child field IDs once to avoid duplicate rendering
@@ -511,6 +496,11 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                 return customFields.map((field) => {
                   // Skip rendering if this field is a child of a container (it will be rendered inside its parent)
                   if (allChildIds.has(field.id)) {
+                    return null;
+                  }
+
+                  // Skip heading fields from rendering
+                  if (field.type === "heading") {
                     return null;
                   }
 
@@ -677,7 +667,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                                   childField.type !== "divider" &&
                                   childField.type !== "spacer" &&
                                   childField.type !== "heading" &&
-                                  childField.type !== "paragraph" && (
+                                  childField.type !== "paragraph" &&
+                                  childField.type !== "button" && (
                                     <label
                                       className="block font-semibold text-sm mb-1"
                                       style={{
@@ -766,7 +757,8 @@ const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
                         field.type !== "divider" &&
                         field.type !== "spacer" &&
                         field.type !== "heading" &&
-                        field.type !== "paragraph" && (
+                        field.type !== "paragraph" &&
+                        field.type !== "button" && (
                           <label
                             className="block font-semibold"
                             style={{
@@ -1326,51 +1318,149 @@ const AdvanceRegistration = ({
     setIsCustomFormBuilderOpen(true);
   };
 
-  const handleSaveCustomForm = (
+  // Helper function to compress image if too large
+  const compressImageIfNeeded = async (
+    base64String: string,
+    maxSizeKB: number = 500
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 1920; // Max width or height
+
+        // Resize if too large
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension;
+            width = maxDimension;
+          } else {
+            width = (width / height) * maxDimension;
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        // Try different quality levels until we get under maxSizeKB
+        let quality = 0.9;
+        let compressed = canvas.toDataURL("image/jpeg", quality);
+        
+        // If still too large, reduce quality
+        while (
+          compressed.length > maxSizeKB * 1024 &&
+          quality > 0.1
+        ) {
+          quality -= 0.1;
+          compressed = canvas.toDataURL("image/jpeg", quality);
+        }
+
+        resolve(compressed);
+      };
+      img.onerror = () => resolve(base64String); // Return original if compression fails
+      img.src = base64String;
+    });
+  };
+
+  const handleSaveCustomForm = async (
     customFields: CustomFormField[],
     bannerImage?: File | string,
     theme?: FormTheme
   ) => {
-    // Convert CustomFormField to FormField format (for backward compatibility)
-    const formFields: FormField[] = customFields
-      .filter((field) => field.type !== "button" && !field.containerType) // Exclude buttons and layout containers from form fields
-      .map((field) => ({
-        id: field.id,
-        type:
-          field.type === "image" ? "file" : (field.type as FormField["type"]),
-        label: field.label,
-        placeholder: field.placeholder || "",
-        required: field.required,
-        options: field.options?.map((opt) => opt.label),
-        value: field.defaultValue || "",
-        description: field.description || "",
-      }));
+    try {
+      // Convert File to base64 string if needed
+      let normalizedBannerImage: string | null = null;
+      if (bannerImage) {
+        if (bannerImage instanceof File) {
+          // Convert File to base64 string
+          normalizedBannerImage = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = () => reject(new Error("Failed to read banner image"));
+            reader.readAsDataURL(bannerImage);
+          });
+          
+          // Compress if larger than 500KB
+          if (normalizedBannerImage.length > 500 * 1024) {
+            console.log("Compressing banner image...");
+            normalizedBannerImage = await compressImageIfNeeded(
+              normalizedBannerImage,
+              500
+            );
+            console.log(
+              "Banner image compressed to:",
+              (normalizedBannerImage.length / 1024).toFixed(2),
+              "KB"
+            );
+          }
+        } else if (typeof bannerImage === "string") {
+          normalizedBannerImage = bannerImage;
+          
+          // Compress if larger than 500KB
+          if (normalizedBannerImage.length > 500 * 1024) {
+            console.log("Compressing existing banner image...");
+            normalizedBannerImage = await compressImageIfNeeded(
+              normalizedBannerImage,
+              500
+            );
+            console.log(
+              "Banner image compressed to:",
+              (normalizedBannerImage.length / 1024).toFixed(2),
+              "KB"
+            );
+          }
+        }
+      }
 
-    // Store the complete custom fields data with ALL properties for exact preview rendering
-    const formBuilderData = {
-      formData: customFields, // Store complete CustomFormField[] with all properties
-      bannerImage: bannerImage || null,
-      theme: theme || undefined,
-    };
+      // Convert CustomFormField to FormField format (for backward compatibility)
+      const formFields: FormField[] = customFields
+        .filter((field) => field.type !== "button" && !field.containerType) // Exclude buttons and layout containers from form fields
+        .map((field) => ({
+          id: field.id,
+          type:
+            field.type === "image" ? "file" : (field.type as FormField["type"]),
+          label: field.label,
+          placeholder: field.placeholder || "",
+          required: field.required,
+          options: field.options?.map((opt) => opt.label),
+          value: field.defaultValue || "",
+          description: field.description || "",
+        }));
 
-    const templateData: CustomFormTemplate = {
-      id: editingFormBuilderTemplate?.id || `custom-form-${Date.now()}`,
-      title:
-        editingFormBuilderTemplate?.title || "Custom Form Builder Template",
-      data: formFields,
-      formBuilderData: formBuilderData,
-      bannerImage: bannerImage,
-      theme: theme,
-      createdAt:
-        editingFormBuilderTemplate?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      isCustom: true,
-    };
+      // Store the complete custom fields data with ALL properties for exact preview rendering
+      const formBuilderData = {
+        formData: customFields, // Store complete CustomFormField[] with all properties
+        bannerImage: normalizedBannerImage || null,
+        theme: theme || undefined,
+      };
 
-    handleSaveFormBuilderTemplate(templateData);
-    setIsCustomFormBuilderOpen(false);
-    setEditingFormBuilderTemplate(null);
-    setIsEditFormBuilderMode(false);
+      const templateData: CustomFormTemplate = {
+        id: editingFormBuilderTemplate?.id || `custom-form-${Date.now()}`,
+        title:
+          editingFormBuilderTemplate?.title || "Custom Form Builder Template",
+        data: formFields,
+        formBuilderData: formBuilderData,
+        bannerImage: normalizedBannerImage || null,
+        theme: theme,
+        createdAt:
+          editingFormBuilderTemplate?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isCustom: true,
+      };
+
+      await handleSaveFormBuilderTemplate(templateData);
+      setIsCustomFormBuilderOpen(false);
+      setEditingFormBuilderTemplate(null);
+      setIsEditFormBuilderMode(false);
+    } catch (error: any) {
+      console.error("Error in handleSaveCustomForm:", error);
+      toast.error(error?.message || "Failed to save form. Please try again.");
+    }
   };
 
   const handleEditFormBuilderTemplate = (template: CustomFormTemplate) => {
@@ -1406,16 +1496,34 @@ const AdvanceRegistration = ({
       const normalizeImageValue = async (
         value: unknown
       ): Promise<string | null | undefined> => {
-        if (typeof value === "string") return value;
-        if (value instanceof Blob) return await blobToDataUrl(value);
-        if (value == null) return null;
+        if (typeof value === "string") {
+          // Already a base64 string or URL
+          return value;
+        }
+        if (value instanceof File || value instanceof Blob) {
+          // Convert File/Blob to base64 string
+          return await blobToDataUrl(value);
+        }
+        if (value == null) {
+          return null;
+        }
         // Handles legacy corrupted values (e.g., {} after JSON.stringify)
+        console.warn("Unexpected image value type:", typeof value, value);
         return null;
       };
 
       const normalizedBannerImage = await normalizeImageValue(
         template.bannerImage ?? template.formBuilderData?.bannerImage
       );
+
+      // Check banner image size and warn if too large
+      if (normalizedBannerImage && normalizedBannerImage.length > 5 * 1024 * 1024) {
+        console.warn(
+          "Banner image is large (",
+          (normalizedBannerImage.length / 1024 / 1024).toFixed(2),
+          "MB). This may cause save issues. Consider compressing the image."
+        );
+      }
 
       const normalizedTheme: FormTheme | undefined = template.theme
         ? {
@@ -1451,17 +1559,49 @@ const AdvanceRegistration = ({
         formBuilderData: normalizedTemplate.formBuilderData,
       };
 
+      // Stringify the template data and check for errors
+      let stringifiedContent: string;
+      try {
+        stringifiedContent = JSON.stringify(templateData);
+        // Check if the content is too large (e.g., > 10MB)
+        if (stringifiedContent.length > 10 * 1024 * 1024) {
+          throw new Error(
+            "Form data is too large. Please reduce the size of banner images or other assets."
+          );
+        }
+      } catch (stringifyError: any) {
+        console.error("Error stringifying template data:", stringifyError);
+        if (stringifyError.message?.includes("circular")) {
+          throw new Error(
+            "Form data contains circular references. Please check your form configuration."
+          );
+        }
+        throw new Error(
+          `Failed to prepare form data: ${stringifyError.message || "Unknown error"}`
+        );
+      }
+
       const payload = {
         registration_template: {
           name: template.id,
-          content: JSON.stringify(templateData),
+          content: stringifiedContent,
           event_registration_fields_ids: [], // Form builder templates don't use API fields
           default: false,
           is_custom: true,
         },
       };
 
-      await createTemplatePostApi(payload, effectiveEventId);
+      // Log payload size for debugging
+      console.log("Saving template with payload size:", stringifiedContent.length, "bytes");
+      console.log("Payload structure:", {
+        name: payload.registration_template.name,
+        contentLength: payload.registration_template.content.length,
+        hasBannerImage: !!normalizedBannerImage,
+        bannerImageLength: normalizedBannerImage?.length || 0,
+      });
+
+      const response = await createTemplatePostApi(payload, effectiveEventId);
+      console.log("Template saved successfully:", response);
 
       // Also save to localStorage for quick access
       let updatedTemplates: CustomFormTemplate[];
@@ -1495,7 +1635,37 @@ const AdvanceRegistration = ({
       );
     } catch (error: any) {
       console.error("Error saving form builder template:", error);
-      toast.error("Failed to save template. Please try again.");
+      
+      // Extract detailed error message
+      let errorMessage = "Failed to save template. Please try again.";
+      
+      if (error?.response) {
+        // API returned an error response
+        const apiError = error.response.data;
+        if (apiError?.error) {
+          errorMessage = `API Error: ${apiError.error}`;
+        } else if (apiError?.message) {
+          errorMessage = `API Error: ${apiError.message}`;
+        } else if (typeof apiError === "string") {
+          errorMessage = `API Error: ${apiError}`;
+        } else {
+          errorMessage = `API Error: ${error.response.status} ${error.response.statusText || "Unknown error"}`;
+        }
+        console.error("API Error Details:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: apiError,
+        });
+      } else if (error?.request) {
+        // Request was made but no response received
+        errorMessage = "Network error: No response from server. Please check your connection.";
+        console.error("Network Error:", error.request);
+      } else if (error?.message) {
+        // Error in setting up the request or other error
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -1784,26 +1954,12 @@ const AdvanceRegistration = ({
                         <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
                       </div>
                     )}
-                    {bannerPreviewUrl ? (
-                      <div className="w-full h-full relative">
-                        <img
-                          src={bannerPreviewUrl}
-                          alt="Template banner"
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/60 to-transparent p-2">
-                          <p className="text-white text-xs font-medium truncate">
-                            {template.title}
-                          </p>
-                        </div>
+                    {/* Always show the full form preview (banner + fields) */}
+                    <div style={{scale:0.25}} className="transform pointer-events-none">
+                      <div className="w-[1200px]">
+                        <FormBuilderComponent />
                       </div>
-                    ) : (
-                      <div className="transform scale-[0.15] pointer-events-none">
-                        <div className="w-[1200px]">
-                          <FormBuilderComponent />
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
 
                   {/* Template Title */}

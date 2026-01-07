@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import Assets from "../../../../utils/Assets";
-import { Clock, Edit, MapPin, Loader2, Share2 } from "lucide-react";
+import { Clock, Edit, MapPin, Loader2, Share2, XCircle } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import {
@@ -9,6 +9,7 @@ import {
   getEventUserMetrics,
 } from "@/apis/apiHelpers";
 import { toast, ToastContainer } from "react-toastify";
+import imageCompression from "browser-image-compression";
 
 type HomeSummaryProps = {
   chartData?: Array<Record<string, any>>;
@@ -20,6 +21,26 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Image cropping states
+  const [isCropping, setIsCropping] = useState<boolean>(false);
+  const [originalImageSrc, setOriginalImageSrc] = useState<string>("");
+  const [cropArea, setCropArea] = useState({
+    x: 0,
+    y: 0,
+    width: 100,
+    height: 100,
+  });
+  const [imageDimensions, setImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeCorner, setResizeCorner] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -136,70 +157,52 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Direct image upload function
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle file selection - show cropping modal
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     const file = files && files[0];
     if (!file || !eventId) return;
 
-    // File size validation
-    const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error(
-        `File size is ${fileSizeInMB}MB. Maximum allowed size is 2MB.`
-      );
-      return;
-    }
-
     // File type validation
-    const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg"];
+    const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Invalid file type. Please upload SVG, PNG, or JPG.");
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
       return;
     }
 
-    // Image dimension validation for non-SVG files
-    if (file.type !== "image/svg+xml") {
-      const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
-
-      const dimensionValidation = await new Promise<boolean>((resolve) => {
-        img.onload = function () {
-          URL.revokeObjectURL(objectUrl);
-          if (img.width > 400 || img.height > 400) {
-            toast.error(
-              `Image dimensions are ${img.width}x${img.height}px. Maximum allowed dimensions are 400x400px.`
-            );
-            resolve(false);
-            return;
-          }
-          resolve(true);
-        };
-
-        img.onerror = function () {
-          URL.revokeObjectURL(objectUrl);
-          toast.error("Failed to load image. Please try a different file.");
-          resolve(false);
-        };
-
-        img.src = objectUrl;
-      });
-
-      if (!dimensionValidation) {
-        return;
-      }
+    // For SVG files, skip cropping and compress directly
+    if (file.type === "image/svg+xml") {
+      handleSvgUpload(file);
+      return;
     }
 
-    // Direct upload
+    // For other image types, open crop interface
+    const objectUrl = URL.createObjectURL(file);
+    setOriginalImageSrc(objectUrl);
+    setIsCropping(true);
+  };
+
+  // Handle SVG upload (no cropping needed)
+  const handleSvgUpload = async (file: File) => {
     setIsUploading(true);
     try {
+      // Compress SVG if needed (though SVG compression is limited)
+      let fileToUpload = file;
+      
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error("SVG file is too large. Maximum allowed size is 2MB.");
+        setIsUploading(false);
+        return;
+      }
+
       const fd = new FormData();
-      fd.append("event[logo]", file);
+      fd.append("event[logo]", fileToUpload);
 
       const response = await updateEventById(eventId, fd);
-      console.log("Logo updated successfully:", response.data);
-
-      // Update the event data with new logo URL
+      
       setEventData((prev: any) => ({
         ...prev,
         attributes: {
@@ -213,10 +216,305 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       toast.error(error?.response?.data?.message || "Error updating logo");
     } finally {
       setIsUploading(false);
-      // Clear the input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  // Handle image load for cropping
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    setImageDimensions({
+      width: img.width,
+      height: img.height,
+    });
+
+    // Initialize crop area to center square (80% of smaller dimension) for logo
+    const size = Math.min(img.width, img.height) * 0.8;
+    setCropArea({
+      x: (img.width - size) / 2,
+      y: (img.height - size) / 2,
+      width: size,
+      height: size,
+    });
+  };
+
+  // Handle mouse/touch events for cropping
+  const handleCropStart = (e: React.MouseEvent | React.TouchEvent) => {
+    if (isResizing) return;
+
+    e.preventDefault();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    // Check if click is on a resize handle
+    const clickX = clientX - rect.left;
+    const clickY = clientY - rect.top;
+
+    // Define resize handle areas (20px hit area)
+    const handles = {
+      topLeft: { x: cropArea.x - 10, y: cropArea.y - 10, width: 20, height: 20 },
+      topRight: {
+        x: cropArea.x + cropArea.width - 10,
+        y: cropArea.y - 10,
+        width: 20,
+        height: 20,
+      },
+      bottomLeft: {
+        x: cropArea.x - 10,
+        y: cropArea.y + cropArea.height - 10,
+        width: 20,
+        height: 20,
+      },
+      bottomRight: {
+        x: cropArea.x + cropArea.width - 10,
+        y: cropArea.y + cropArea.height - 10,
+        width: 20,
+        height: 20,
+      },
+    };
+
+    // Check which handle was clicked
+    for (const [corner, area] of Object.entries(handles)) {
+      if (
+        clickX >= area.x &&
+        clickX <= area.x + area.width &&
+        clickY >= area.y &&
+        clickY <= area.y + area.height
+      ) {
+        setIsResizing(true);
+        setResizeCorner(corner);
+        setDragStart({ x: clickX, y: clickY });
+        return;
+      }
+    }
+
+    // If not on a resize handle, start dragging
+    setIsDragging(true);
+    setDragStart({
+      x: clientX - rect.left - cropArea.x,
+      y: clientY - rect.top - cropArea.y,
+    });
+  };
+
+  const handleCropMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (
+      (!isDragging && !isResizing) ||
+      !imageDimensions.width ||
+      !imageDimensions.height
+    )
+      return;
+    e.preventDefault();
+
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
+
+    const currentX = clientX - rect.left;
+    const currentY = clientY - rect.top;
+
+    if (isDragging && !isResizing) {
+      // Move the entire crop area
+      const newX = currentX - dragStart.x;
+      const newY = currentY - dragStart.y;
+
+      // Constrain crop area within image bounds
+      setCropArea((prev) => ({
+        ...prev,
+        x: Math.max(0, Math.min(newX, imageDimensions.width - prev.width)),
+        y: Math.max(0, Math.min(newY, imageDimensions.height - prev.height)),
+      }));
+    } else if (isResizing && resizeCorner) {
+      // Resize from a corner while maintaining square aspect ratio
+      const deltaX = currentX - dragStart.x;
+      const deltaY = currentY - dragStart.y;
+
+      setCropArea((prev) => {
+        let newCrop = { ...prev };
+        const minSize = 50; // Minimum crop size
+
+        // Calculate the change in size (use the larger delta to maintain square)
+        const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
+
+        switch (resizeCorner) {
+          case "topLeft":
+            const newSizeTL = Math.max(minSize, prev.width - delta);
+            newCrop.x = prev.x + prev.width - newSizeTL;
+            newCrop.y = prev.y + prev.height - newSizeTL;
+            newCrop.width = newSizeTL;
+            newCrop.height = newSizeTL;
+            break;
+          case "topRight":
+            const newSizeTR = Math.max(minSize, prev.width + delta);
+            newCrop.y = prev.y + prev.height - newSizeTR;
+            newCrop.width = newSizeTR;
+            newCrop.height = newSizeTR;
+            break;
+          case "bottomLeft":
+            const newSizeBL = Math.max(minSize, prev.width - delta);
+            newCrop.x = prev.x + prev.width - newSizeBL;
+            newCrop.width = newSizeBL;
+            newCrop.height = newSizeBL;
+            break;
+          case "bottomRight":
+            const newSizeBR = Math.max(minSize, prev.width + delta);
+            newCrop.width = newSizeBR;
+            newCrop.height = newSizeBR;
+            break;
+        }
+
+        // Ensure crop area stays within image bounds
+        if (newCrop.x < 0) {
+          newCrop.width += newCrop.x;
+          newCrop.x = 0;
+          newCrop.height = newCrop.width; // Maintain square
+        }
+        if (newCrop.y < 0) {
+          newCrop.height += newCrop.y;
+          newCrop.y = 0;
+          newCrop.width = newCrop.height; // Maintain square
+        }
+        if (newCrop.x + newCrop.width > imageDimensions.width) {
+          newCrop.width = imageDimensions.width - newCrop.x;
+          newCrop.height = newCrop.width; // Maintain square
+        }
+        if (newCrop.y + newCrop.height > imageDimensions.height) {
+          newCrop.height = imageDimensions.height - newCrop.y;
+          newCrop.width = newCrop.height; // Maintain square
+        }
+
+        return newCrop;
+      });
+
+      setDragStart({ x: currentX, y: currentY });
+    }
+  };
+
+  const handleCropEnd = () => {
+    setIsDragging(false);
+    setIsResizing(false);
+    setResizeCorner(null);
+  };
+
+  // Cancel cropping
+  const cancelCrop = () => {
+    setIsCropping(false);
+    if (originalImageSrc) {
+      URL.revokeObjectURL(originalImageSrc);
+    }
+    setOriginalImageSrc("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // Handle crop complete - crop, compress, and upload
+  const handleCropComplete = async () => {
+    if (!imgRef.current || !canvasRef.current || !eventId) return;
+
+    setIsUploading(true);
+    try {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+      const img = imgRef.current;
+
+      if (!ctx || !img) {
+        throw new Error("Failed to get canvas context or image");
+      }
+
+      // Calculate scale between displayed image and original
+      const scaleX = img.naturalWidth / img.width;
+      const scaleY = img.naturalHeight / img.height;
+
+      // Set canvas size to 400x400 (target size)
+      canvas.width = 400;
+      canvas.height = 400;
+
+      // Draw cropped image
+      ctx.drawImage(
+        img,
+        cropArea.x * scaleX,
+        cropArea.y * scaleY,
+        cropArea.width * scaleX,
+        cropArea.height * scaleY,
+        0,
+        0,
+        400,
+        400
+      );
+
+      // Convert canvas to blob
+      canvas.toBlob(
+        async (blob) => {
+          if (!blob) {
+            toast.error("Failed to crop image. Please try again.");
+            setIsUploading(false);
+            return;
+          }
+
+          try {
+            // Convert blob to File
+            const croppedFile = new File([blob], "cropped-logo.jpg", {
+              type: "image/jpeg",
+              lastModified: Date.now(),
+            });
+
+            // Compress the cropped image
+            let finalFile = croppedFile;
+            if (croppedFile.size > 500 * 1024) {
+              // Compress if larger than 500KB
+              const compressionOptions = {
+                maxSizeMB: 0.5, // Target size: 500KB
+                maxWidthOrHeight: 400, // Already 400x400, but keep for safety
+                useWebWorker: true,
+                fileType: "image/jpeg",
+              };
+
+              finalFile = await imageCompression(croppedFile, compressionOptions);
+            }
+
+            // Upload the compressed file
+            const fd = new FormData();
+            fd.append("event[logo]", finalFile);
+
+            const response = await updateEventById(eventId, fd);
+
+            // Update the event data with new logo URL
+            setEventData((prev: any) => ({
+              ...prev,
+              attributes: {
+                ...prev.attributes,
+                logo_url: response?.data?.data?.attributes?.logo_url,
+              },
+            }));
+
+            toast.success("Logo updated successfully");
+
+            // Close cropping mode
+            setIsCropping(false);
+            if (originalImageSrc) {
+              URL.revokeObjectURL(originalImageSrc);
+            }
+            setOriginalImageSrc("");
+          } catch (error: any) {
+            console.error("Error processing image:", error);
+            toast.error(error?.response?.data?.message || "Error updating logo");
+          } finally {
+            setIsUploading(false);
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          }
+        },
+        "image/jpeg",
+        0.9 // Quality
+      );
+    } catch (error: any) {
+      console.error("Error cropping image:", error);
+      toast.error("Failed to crop image. Please try again.");
+      setIsUploading(false);
     }
   };
 
@@ -458,6 +756,146 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           />
         </div>
       </div>
+
+      {/* Cropping Modal */}
+      {isCropping && originalImageSrc && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Crop Image (Drag to adjust)
+              </h3>
+              <button
+                onClick={cancelCrop}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+                disabled={isUploading}
+              >
+                <XCircle size={24} />
+              </button>
+            </div>
+
+            <div className="mb-6">
+              <div
+                className="relative mx-auto border border-gray-300 rounded-lg overflow-hidden bg-transparent"
+                style={{
+                  maxWidth: "600px",
+                  maxHeight: "400px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                onMouseDown={handleCropStart}
+                onMouseMove={handleCropMove}
+                onMouseUp={handleCropEnd}
+                onMouseLeave={handleCropEnd}
+                onTouchStart={handleCropStart}
+                onTouchMove={handleCropMove}
+                onTouchEnd={handleCropEnd}
+              >
+                <img
+                  ref={imgRef}
+                  src={originalImageSrc}
+                  alt="Crop preview"
+                  className="max-w-full max-h-full"
+                  onLoad={handleImageLoad}
+                  draggable={false}
+                  style={{
+                    objectFit: "contain",
+                  }}
+                />
+                {imageDimensions.width > 0 && (
+                  <>
+                    {/* Crop overlay - darken outside area */}
+                    <div
+                      className="absolute inset-0 bg-black bg-opacity-40"
+                      style={{
+                        clipPath: `polygon(
+                          0% 0%, 
+                          0% 100%, 
+                          ${cropArea.x}px 100%, 
+                          ${cropArea.x}px ${cropArea.y}px, 
+                          ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
+                          ${cropArea.x + cropArea.width}px ${
+                          cropArea.y + cropArea.height
+                        }px, 
+                          ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
+                          ${cropArea.x}px 100%, 
+                          100% 100%, 
+                          100% 0%
+                        )`,
+                      }}
+                    />
+
+                    {/* Crop area border */}
+                    <div
+                      className="absolute border-2 border-white border-dashed"
+                      style={{
+                        left: `${cropArea.x}px`,
+                        top: `${cropArea.y}px`,
+                        width: `${cropArea.width}px`,
+                        height: `${cropArea.height}px`,
+                        cursor: isDragging ? "grabbing" : "grab",
+                      }}
+                    >
+                      {/* Resize handles */}
+                      <div
+                        className="absolute -top-2 -left-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nwse-resize"
+                        title="Drag to resize from top-left"
+                      />
+                      <div
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nesw-resize"
+                        title="Drag to resize from top-right"
+                      />
+                      <div
+                        className="absolute -bottom-2 -left-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nesw-resize"
+                        title="Drag to resize from bottom-left"
+                      />
+                      <div
+                        className="absolute -bottom-2 -right-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nwse-resize"
+                        title="Drag to resize from bottom-right"
+                      />
+
+                      {/* Center drag area */}
+                      <div
+                        className="absolute inset-0 cursor-move"
+                        title="Drag to move crop area"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelCrop}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={isUploading}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCropComplete}
+                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  "Crop & Upload"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hidden canvas for cropping */}
+      <canvas ref={canvasRef} className="hidden" />
+
       <ToastContainer />
     </>
   );
