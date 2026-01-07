@@ -11,20 +11,90 @@ import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTw
 import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
 import ReminderTemplateOne from "./Templates/ReminderEmailTemplate/ReminderTemplateOne";
 import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTemplateTwo";
-import { getEmailTemplatesApi, createEmailTemplateApi, updateEmailTemplateApi, deleteEmailTemplateApi } from "@/apis/apiHelpers";
+import { getEmailTemplatesApi, createEmailTemplateApi, updateEmailTemplateApi, deleteEmailTemplateApi, getShowEventData } from "@/apis/apiHelpers";
 
-const STATIC_TEMPLATES = {
-  welcome: [
-    { id: "welcome-template-1", title: "Welcome Template 1", component: <ConfirmationTemplateOne />, html: null, design: null, isStatic: true, type: "welcome", readyMadeId: "welcome-template-1" },
-  ],
-  thank_you: [
-    { id: "thank-you-template-1", title: "Thank You Template 1", component: <ThanksTemplateOne />, html: null, design: null, isStatic: true, type: "thank_you", readyMadeId: "thank-you-template-1" },
-    { id: "thank-you-template-2", title: "Thank You Template 2", component: <ThanksTemplateTwo />, html: null, design: null, isStatic: true, type: "thank_you", readyMadeId: "thank-you-template-2" },
-  ],
-  reminder: [
-    { id: "reminder-template-1", title: "Reminder Template 1", component: <ReminderTemplateOne />, html: null, design: null, isStatic: true, type: "reminder", readyMadeId: "reminder-template-1" },
-    { id: "reminder-template-2", title: "Reminder Template 2", component: <ReminderTemplateTwo />, html: null, design: null, isStatic: true, type: "reminder", readyMadeId: "reminder-template-2" },
-  ],
+// Helper function to create static templates with event data
+const createStaticTemplates = (eventData: any) => {
+  console.log("eventData in createStaticTemplates---------++++++++-------------", eventData);
+  if (!eventData) {
+    console.warn("createStaticTemplates called without eventData");
+    return { welcome: [], thank_you: [], reminder: [] };
+  }
+  
+  const eventProps = {
+    eventName: eventData?.attributes?.name || "",
+    dateFrom: eventData?.attributes?.event_date_from || undefined,
+    dateTo: eventData?.attributes?.event_date_to || undefined,
+    timeFrom: eventData?.attributes?.event_time_from 
+      ? new Date(eventData.attributes.event_time_from).toTimeString().slice(0, 5)
+      : undefined,
+    timeTo: eventData?.attributes?.event_time_to
+      ? new Date(eventData.attributes.event_time_to).toTimeString().slice(0, 5)
+      : undefined,
+    location: eventData?.attributes?.location || "",
+    logoUrl: eventData?.attributes?.logo_url || null,
+  };
+  
+  console.log("Creating templates with eventProps:", eventProps);
+
+  return {
+    welcome: [
+      { 
+        id: "welcome-template-1", 
+        title: "Welcome Template 1", 
+        component: <ConfirmationTemplateOne {...eventProps} />, 
+        html: null, 
+        design: null, 
+        isStatic: true, 
+        type: "welcome", 
+        readyMadeId: "welcome-template-1" 
+      },
+    ],
+    thank_you: [
+      { 
+        id: "thank-you-template-1", 
+        title: "Thank You Template 1", 
+        component: <ThanksTemplateOne {...eventProps} />, 
+        html: null, 
+        design: null, 
+        isStatic: true, 
+        type: "thank_you", 
+        readyMadeId: "thank-you-template-1" 
+      },
+      { 
+        id: "thank-you-template-2", 
+        title: "Thank You Template 2", 
+        component: <ThanksTemplateTwo {...eventProps} />, 
+        html: null, 
+        design: null, 
+        isStatic: true, 
+        type: "thank_you", 
+        readyMadeId: "thank-you-template-2" 
+      },
+    ],
+    reminder: [
+      { 
+        id: "reminder-template-1", 
+        title: "Reminder Template 1", 
+        component: <ReminderTemplateOne {...eventProps} />, 
+        html: null, 
+        design: null, 
+        isStatic: true, 
+        type: "reminder", 
+        readyMadeId: "reminder-template-1" 
+      },
+      { 
+        id: "reminder-template-2", 
+        title: "Reminder Template 2", 
+        component: <ReminderTemplateTwo {...eventProps} />, 
+        html: null, 
+        design: null, 
+        isStatic: true, 
+        type: "reminder", 
+        readyMadeId: "reminder-template-2" 
+      },
+    ],
+  };
 };
 
 // ---------- Helper Functions ----------
@@ -77,11 +147,11 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
   );
 };
 
-const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) => {
+const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete, eventDataKey }: any) => {
   if (!template) return null;
   const isStatic = template.isStatic;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" key={eventDataKey}>
       <div className="bg-white p-6 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
@@ -91,7 +161,7 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} className="text-gray-500" /></button>
           </div>
         </div>
-        <div className="mb-6 border rounded-lg p-4 bg-gray-50 min-h-[400px]">
+        <div className="mb-6 border rounded-lg p-4 bg-gray-50 min-h-[400px]" key={`modal-content-${eventDataKey}`}>
           {template.html ? <div dangerouslySetInnerHTML={{ __html: template.html }} /> : template.component ? template.component : <div className="flex items-center justify-center w-full h-full text-gray-400">No preview available</div>}
         </div>
         <button onClick={() => onSelect(template.id)} className="w-full bg-pink-500 text-white py-3 px-4 rounded-lg hover:bg-pink-600 transition-colors font-medium" disabled={!template.component && !template.html}>Choose this template</button>
@@ -100,11 +170,11 @@ const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete }: any) =
   );
 };
 
-const TemplateThumbnail = ({ template }: any) => {
+const TemplateThumbnail = ({ template, eventDataKey }: any) => {
   const scale = 0.5;
   const scaledWidth = `${100 / scale}%`, scaledHeight = `${100 / scale}%`;
   return (
-    <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-100 relative">
+    <div className="w-full h-48 rounded-xl overflow-hidden bg-gray-100 relative" key={eventDataKey}>
       {template.html ? (
         <div className="absolute inset-0">
           <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: scaledWidth, height: scaledHeight }}>
@@ -112,7 +182,7 @@ const TemplateThumbnail = ({ template }: any) => {
           </div>
         </div>
       ) : template.component ? (
-        <div className="absolute inset-0">
+        <div className="absolute inset-0" key={`component-${eventDataKey}`}>
           <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width: scaledWidth, height: scaledHeight }}>{template.component}</div>
         </div>
       ) : <div className="flex items-center justify-center w-full h-full text-gray-400">No preview available</div>}
@@ -139,19 +209,76 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   const [editingTemplate, setEditingTemplate] = useState<any | null>(null);
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [eventData, setEventData] = useState<any>(null);
 
   const currentFlow = flows[currentFlowIndex];
 
-  useEffect(() => { if (effectiveEventId) loadTemplatesFromAPI(); }, [effectiveEventId, currentFlowIndex]);
+  // Fetch event data when eventId is available - respond to both eventId prop and effectiveEventId changes
+  useEffect(() => {
+    const fetchEventData = async () => {
+      const currentEventId = eventId || localStorage.getItem("create_eventId");
+      if (!currentEventId) {
+        setEventData(null); // Clear event data if no eventId
+        // Reset flows when no eventId
+        setFlows([
+          { id: "welcome", label: "Welcome Email", templates: [] },
+          { id: "thank_you", label: "Thank You Email", templates: [] },
+          { id: "reminder", label: "Reminder Email", templates: [] },
+        ]);
+        return;
+      }
+      try {
+        const response = await getShowEventData(currentEventId);
+        console.log("response of get show event data", response);
+        if (response.data?.data) {
+          const newEventData = response.data.data;
+          setEventData(newEventData);
+          console.log("Event data updated:", newEventData);
+        } else {
+          setEventData(null);
+        }
+      } catch (error) {
+        console.error("Failed to fetch event data:", error);
+        setEventData(null);
+      }
+    };
+    fetchEventData();
+  }, [eventId, effectiveEventId]); // Include both eventId prop and effectiveEventId to catch all changes
+
+  // Update modal template when eventData or flows change to ensure it shows latest data
+  useEffect(() => {
+    if (modalTemplate && eventData && currentFlow) {
+      // Find the latest version of this template from flows
+      const latestTemplate = currentFlow.templates.find((t: any) => t.id === modalTemplate.id);
+      if (latestTemplate) {
+        // Only update if it's actually different (new component with updated event data)
+        setModalTemplate(latestTemplate);
+      }
+    }
+  }, [eventData, flows, currentFlowIndex, modalTemplate?.id]);
+
+  useEffect(() => { 
+    // Only load templates if we have both eventId and eventData
+    if (effectiveEventId && eventData) {
+      loadTemplatesFromAPI(); 
+    }
+  }, [effectiveEventId, currentFlowIndex, eventData]);
 
   const loadTemplatesFromAPI = async () => {
-    if (!effectiveEventId) return;
+    if (!effectiveEventId || !eventData) {
+      console.log("Skipping loadTemplatesFromAPI - missing eventId or eventData", { effectiveEventId, eventData });
+      return;
+    }
     setIsLoading(true);
     try {
+      console.log("Loading templates with eventData:", eventData);
       const response = await getEmailTemplatesApi(effectiveEventId, currentFlow.id);
       const apiTemplates = response.data.data || [];
       const convertedTemplates = convertApiTemplates(apiTemplates, currentFlow.id);
-      const staticTemplates = STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES] || [];
+      // Get static templates with LATEST event data - always recreate with current eventData
+      const staticTemplatesMap = createStaticTemplates(eventData);
+      console.log("Created static templates with eventData:", eventData?.attributes?.name);
+      const staticTemplates = staticTemplatesMap[currentFlow.id as keyof typeof staticTemplatesMap] || [];
       
       // Match ready-made templates with existing API templates
       const matchedStaticTemplates = staticTemplates.map((staticTpl: any) => {
@@ -167,11 +294,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
             return {
               ...matchedTemplate,
               readyMadeId: staticTpl.readyMadeId, // Keep the readyMadeId for reference
-              component: staticTpl.component, // Keep the component for preview
+              component: staticTpl.component, // Use the NEW component with latest event data from createStaticTemplates
             };
           }
         }
-        // If it doesn't exist, keep it as a static template
+        // If it doesn't exist, keep it as a static template (already has latest event data)
         return staticTpl;
       });
       
@@ -193,11 +320,14 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         }));
       }
       
+      // Force complete recreation of templates array to ensure React detects the change
+      const updatedTemplates = [...unmatchedStaticTemplates, ...matchedTemplates, ...otherApiTemplates];
+      console.log("Setting flows with updated templates count:", updatedTemplates.length);
       setFlows(prev => prev.map(f => 
         f.id === currentFlow.id 
           ? { 
               ...f, 
-              templates: [...unmatchedStaticTemplates, ...matchedTemplates, ...otherApiTemplates] 
+              templates: updatedTemplates // Use new array reference
             } 
           : f
       ));
@@ -208,7 +338,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     finally { setIsLoading(false); }
   };
 
-  const handleOpenModal = (template: any) => setModalTemplate(template);
+  const handleOpenModal = (template: any) => {
+    // Always get the latest template from current flows to ensure we have latest event data
+    const latestTemplate = currentFlow.templates.find((t: any) => t.id === template.id) || template;
+    setModalTemplate(latestTemplate);
+  };
   const handleCloseModal = () => setModalTemplate(null);
   // Helper function to convert React component to HTML string
   const componentToHtml = (component: React.ReactElement): Promise<string> => {
@@ -309,7 +443,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
           // Convert React component to HTML string
           let htmlString = "";
           if (selectedTemplate.component) {
-            htmlString = await componentToHtml(selectedTemplate.component);
+            // Re-render component with latest event data if available
+            const staticTemplatesMap = createStaticTemplates(eventData);
+            const flowTemplates = staticTemplatesMap[currentFlow.id as keyof typeof staticTemplatesMap] || [];
+            const updatedTemplate = flowTemplates.find((t: any) => t.id === templateId);
+            const componentToRender = updatedTemplate?.component || selectedTemplate.component;
+            htmlString = await componentToHtml(componentToRender);
           } else if (selectedTemplate.html) {
             htmlString = selectedTemplate.html;
           } else {
@@ -420,7 +559,8 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
           isStatic: false, 
           type: currentFlow.id 
         };
-        const staticTemplates = STATIC_TEMPLATES[currentFlow.id as keyof typeof STATIC_TEMPLATES] || [];
+        const staticTemplatesMap = createStaticTemplates(eventData);
+        const staticTemplates = staticTemplatesMap[currentFlow.id as keyof typeof staticTemplatesMap] || [];
         // Only one template can be selected - clear previous selection
         setFlows(prev => prev.map((f, idx) => 
           idx === currentFlowIndex 
@@ -488,12 +628,15 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
 
       {!isLoading && <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div onClick={handleCreateNewTemplate} className="border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 transition">+ New Template</div>
-        {currentFlow.templates.map((template: any) => (
-          <div key={template.id} onClick={() => handleOpenModal(template)} className={`cursor-pointer rounded-2xl border ${selectedTemplates[currentFlow.id] === template.id ? "border-pink-500" : "border-gray-200"} overflow-hidden`}>
-            <TemplateThumbnail template={template} />
-            <div className="p-2 text-center font-medium">{template.title}</div>
-          </div>
-        ))}
+        {currentFlow.templates.map((template: any) => {
+          const eventDataKey = `${effectiveEventId}-${eventData?.id || ''}-${eventData?.attributes?.name || ''}`;
+          return (
+            <div key={`${template.id}-${eventDataKey}`} onClick={() => handleOpenModal(template)} className={`cursor-pointer rounded-2xl border ${selectedTemplates[currentFlow.id] === template.id ? "border-pink-500" : "border-gray-200"} overflow-hidden`}>
+              <TemplateThumbnail template={template} eventDataKey={eventDataKey} />
+              <div className="p-2 text-center font-medium">{template.title}</div>
+            </div>
+          );
+        })}
       </div>}
 
       <div className="flex justify-between gap-4">
@@ -501,7 +644,13 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         <button onClick={handleNext} className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white">Next</button>
       </div>
 
-      <TemplateModal template={modalTemplate} onClose={handleCloseModal} onSelect={handleSelectTemplate} onEdit={handleEditTemplate} onDelete={async (tpl: any) => { 
+      <TemplateModal 
+        template={modalTemplate} 
+        eventDataKey={`${effectiveEventId}-${eventData?.id || ''}-${eventData?.attributes?.name || ''}`}
+        onClose={handleCloseModal} 
+        onSelect={handleSelectTemplate} 
+        onEdit={handleEditTemplate} 
+        onDelete={async (tpl: any) => { 
         if (!effectiveEventId || !tpl.apiId) return; 
         setIsLoading(true); 
         try { 
