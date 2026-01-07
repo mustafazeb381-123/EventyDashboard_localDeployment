@@ -515,7 +515,10 @@ const getEmailTemplateType = (flowType: string): string => {
   const map: Record<string, string> = {
     welcome: "welcome",
     "thank_you": "thank_you",
+    thanks: "thank_you", // Alias for thanks
+    confirmation: "welcome", // Map confirmation to welcome type
     reminder: "reminder",
+    rejection: "rejection", // Add rejection type
   };
   return map[flowType] || "welcome";
 };

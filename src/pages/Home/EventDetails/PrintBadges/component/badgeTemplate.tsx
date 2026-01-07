@@ -160,7 +160,7 @@ export const ExistingBadgeTemplate1: React.FC<BadgeTemplateProps> = ({ template,
         </div>
       </div>
       <div className="flex-1 flex flex-col items-center justify-center -mt-8">
-        <div className="w-16 h-16 rounded-full overflow-hidden mb-2">{user && <UserAvatar user={user} size="sm" />}</div>
+        <div className="w-16 h-16 rounded-full mb-2">{user && <UserAvatar user={user} size="sm" />}</div>
         <h2 className="text-xs font-bold">{user?.attributes?.name}</h2>
         <p className="text-[10px] text-gray-600">{user?.attributes?.user_type}</p>
       </div>
