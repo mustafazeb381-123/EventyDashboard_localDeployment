@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from "react";
 import {
   DndContext,
@@ -315,9 +314,7 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     required: false,
     unique: false,
     description: "Get notified when someones posts a comment on a posting.",
-    options: [
-      { label: "Comments", value: "comments" },
-    ],
+    options: [{ label: "Comments", value: "comments" }],
   },
   {
     id: "checkbox-candidates",
@@ -327,9 +324,7 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     required: false,
     unique: false,
     description: "Get notified when a candidate applies for a job.",
-    options: [
-      { label: "Candidates", value: "candidates" },
-    ],
+    options: [{ label: "Candidates", value: "candidates" }],
   },
   {
     id: "checkbox-offers",
@@ -339,9 +334,7 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     required: false,
     unique: false,
     description: "Get notified when a candidate accepts or rejects an offer.",
-    options: [
-      { label: "Offers", value: "offers" },
-    ],
+    options: [{ label: "Offers", value: "offers" }],
   },
   {
     id: "heading-push",
@@ -459,14 +452,20 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     ...initialTheme,
   });
 
-  // Load banner preview if initial banner is a file
+  // Load banner preview if initial banner is a file or convert to base64
   React.useEffect(() => {
     if (initialBannerImage instanceof File) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setBannerPreview(reader.result as string);
+        const base64String = reader.result as string;
+        setBannerImage(base64String); // Store as base64 string
+        setBannerPreview(base64String);
       };
       reader.readAsDataURL(initialBannerImage);
+    } else if (typeof initialBannerImage === "string") {
+      // If it's already a string (base64 or URL), use it directly
+      setBannerImage(initialBannerImage);
+      setBannerPreview(initialBannerImage);
     }
   }, [initialBannerImage]);
 
@@ -787,7 +786,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     const dataStr = JSON.stringify(
       {
         fields,
-        bannerImage: typeof bannerImage === "string" ? bannerImage : null,
+        bannerImage: bannerImage || null, // Now always a base64 string or null
         theme,
       },
       null,
@@ -830,7 +829,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     const jsonData = JSON.stringify(
       {
         fields,
-        bannerImage: typeof bannerImage === "string" ? bannerImage : null,
+        bannerImage: bannerImage || null, // Now always a base64 string or null
         theme,
       },
       null,
@@ -864,10 +863,12 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
         alert("Please select an image file");
         return;
       }
-      setBannerImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setBannerPreview(reader.result as string);
+        const base64String = reader.result as string;
+        // Store the base64 string instead of the File object
+        setBannerImage(base64String);
+        setBannerPreview(base64String);
       };
       reader.readAsDataURL(file);
     }
@@ -1443,20 +1444,6 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 };
 
 export default CustomFormBuilder;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // import React, { useState, useRef } from "react";
 // import {
@@ -2575,16 +2562,3 @@ export default CustomFormBuilder;
 // };
 
 // export default CustomFormBuilder;
-
-
-
-
-
-
-
-
-
-
-
-
-
