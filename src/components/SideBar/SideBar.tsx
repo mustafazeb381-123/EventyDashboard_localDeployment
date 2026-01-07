@@ -203,14 +203,14 @@ const SideBar = ({
         : "/galleries",
       availableForExpress: false,
     },
-    {
-      icon: UserCircle,
-      label: "User Registration",
-      path: currentEventId
-        ? `/user/registration?eventId=${currentEventId}`
-        : "/user/registration",
-      availableForExpress: true,
-    },
+    // {
+    //   icon: UserCircle,
+    //   label: "User Registration",
+    //   path: currentEventId
+    //     ? `/user/registration?eventId=${currentEventId}`
+    //     : "/user/registration",
+    //   availableForExpress: true,
+    // },
     {
       icon: Printer,
       label: "Print Badges",

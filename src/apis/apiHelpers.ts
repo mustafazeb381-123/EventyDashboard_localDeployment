@@ -508,70 +508,83 @@ export const updateAgendaApi = (eventId: string | number, agendaId: string | num
   return axiosInstance.put(`events/${eventId}/agendas/${agendaId}`, data);
 };
 
-// ---------------------- Confirmation Templates ----------------------
+// ---------------------- Email Templates (New Unified API) ----------------------
 
-const getConfirmationTypeParam = (flowType: string) => {
+// Map flow types to API template types
+const getEmailTemplateType = (flowType: string): string => {
   const map: Record<string, string> = {
-    thanks: "ConfirmationThanksTemplate",
-    confirmation: "ConfirmationRegisterTemplate",
-    reminder: "ConfirmationReminderTemplate",
-    rejection: "ConfirmationRejectionTemplate",
+    welcome: "welcome",
+    "thank_you": "thank_you",
+    thanks: "thank_you", // Alias for thanks
+    confirmation: "welcome", // Map confirmation to welcome type
+    reminder: "reminder",
+    rejection: "rejection", // Add rejection type
   };
-  return map[flowType] || "ConfirmationThanksTemplate";
+  return map[flowType] || "welcome";
 };
 
-export const getConfirmationTemplatesApi = (
+// Get all email templates for an event (optionally filtered by type)
+export const getEmailTemplatesApi = (
   eventId: string | number,
-  flowType: string
+  templateType?: string
 ) => {
-  const typeParam = getConfirmationTypeParam(flowType);
-  return axiosInstance.get(
-    `/events/${eventId}/confirmation_templates?type=${typeParam}`
-  );
+  const params = templateType ? { template_type: getEmailTemplateType(templateType) } : {};
+  return axiosInstance.get(`/events/${eventId}/email_templates`, { params });
 };
 
-export const saveConfirmationTemplateApi = (
+// Get a specific email template by ID
+export const getEmailTemplateByIdApi = (
   eventId: string | number,
-  flowType: string,
+  templateId: string | number
+) => {
+  return axiosInstance.get(`/events/${eventId}/email_templates/${templateId}`);
+};
+
+// Create a new email template
+export const createEmailTemplateApi = (
+  eventId: string | number,
+  templateType: string,
   html: string,
-  _title: string = "Custom Template"
+  name: string = "Custom Template"
 ) => {
   const payload = {
-    confirmation_template: {
-      content: html,
-      default: false,
-      type: getConfirmationTypeParam(flowType),
+    email_template: {
+      name: name,
+      template_type: getEmailTemplateType(templateType),
+      body: html,
     },
   };
-  return axiosInstance.post(
-    `/events/${eventId}/confirmation_templates`,
-    payload
-  );
+  return axiosInstance.post(`/events/${eventId}/email_templates`, payload);
 };
 
-export const updateConfirmationTemplateApi = (
+// Update an existing email template (using PUT as per API spec)
+export const updateEmailTemplateApi = (
   eventId: string | number,
   templateId: string | number,
-  flowType: string,
-  html: string
+  templateType: string,
+  html: string,
+  name: string
 ) => {
   const payload = {
-    confirmation_template: { content: html, type: getConfirmationTypeParam(flowType) },
+    email_template: {
+      name: name,
+      template_type: getEmailTemplateType(templateType),
+      body: html,
+    },
   };
-  return axiosInstance.patch(
-    `/events/${eventId}/confirmation_templates/${templateId}?type=${getConfirmationTypeParam(
-      flowType
-    )}`,
+  return axiosInstance.put(
+    `/events/${eventId}/email_templates/${templateId}`,
     payload
   );
 };
 
-export const deleteConfirmationTemplateApi = (
+// Delete an email template
+export const deleteEmailTemplateApi = (
   eventId: string | number,
   templateId: string | number
 ) => {
   return axiosInstance.delete(
-    `/events/${eventId}/confirmation_templates/${templateId}`
+    `/events/${eventId}/email_templates/${templateId}`
   );
 };
 

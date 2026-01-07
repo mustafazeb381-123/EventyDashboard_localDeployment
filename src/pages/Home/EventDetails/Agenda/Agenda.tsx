@@ -142,6 +142,7 @@ function Agenda() {
       setIsFetchingAgendas(true);
       try {
         const response = await getAgendaApi(eventId);
+        console.log('response of get api-------', response);
         if (response.status === 200) {
           const agendas = response.data.data.map((item: any) => {
             const speakers = (item.attributes.speakers || []).map((speaker: any) => ({

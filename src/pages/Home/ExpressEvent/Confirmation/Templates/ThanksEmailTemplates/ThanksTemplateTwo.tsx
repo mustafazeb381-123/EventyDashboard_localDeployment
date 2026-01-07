@@ -11,11 +11,66 @@ import {
   Twitter,
 } from "lucide-react";
 
-function ThanksTemplateTwo() {
+interface EventDataProps {
+  eventName?: string;
+  dateFrom?: string | Date;
+  dateTo?: string | Date;
+  timeFrom?: string;
+  timeTo?: string;
+  location?: string;
+  logoUrl?: string | null;
+}
+
+// Helper function to format date
+const formatDate = (date: string | Date | undefined): string => {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+};
+
+// Helper function to format time
+const formatTime = (time: string | undefined): string => {
+  if (!time) return "";
+  return time;
+};
+
+function ThanksTemplateTwo({ 
+  eventName = "event name",
+  dateFrom,
+  dateTo,
+  timeFrom,
+  timeTo,
+  location,
+  logoUrl
+}: EventDataProps) {
+  const formattedDateFrom = formatDate(dateFrom);
+  const formattedDateTo = formatDate(dateTo);
+  const formattedTimeFrom = formatTime(timeFrom);
+  const formattedTimeTo = formatTime(timeTo);
+
+  // Format date range for text
+  const dateRangeText = formattedDateFrom && formattedDateTo 
+    ? `from ${formattedDateFrom} to ${formattedDateTo}`
+    : formattedDateFrom 
+    ? `on ${formattedDateFrom}`
+    : "soon";
+
+  const timeRangeText = formattedTimeFrom && formattedTimeTo
+    ? `at ${formattedTimeFrom} - ${formattedTimeTo}`
+    : formattedTimeFrom
+    ? `at ${formattedTimeFrom}`
+    : "";
+
   return (
     <>
       <div className="w-full bg-gray-50 p-10">
-        <p>Our Logo</p>
+        {logoUrl ? (
+          <div className="flex items-center justify-center">
+            <img src={logoUrl} alt="Event Logo" style={{ maxHeight: 60, maxWidth: 200 }} />
+          </div>
+        ) : (
+          <p>Our Logo</p>
+        )}
         <div style={{ marginTop: 40 }} />
 
         <div className="p-[40px] bg-white">
@@ -27,18 +82,17 @@ function ThanksTemplateTwo() {
           </div>
           <div style={{ marginTop: 64 }} />
           <div className="flex justify-center items-center  font-bold text-[20px]">
-            <p>Thanks for applying to “event name”</p>
+            <p>Thanks for applying to "{eventName}"</p>
           </div>
           <div className="mt-[24px]">
             <p className="font-medium text-[16px] text-[#121A26]">
-              Dear [Guest’s Name],{" "}
+              Dear [Guest's Name],{" "}
             </p>
             <p className="mt-[8px] font-normal text-[16px] text-[#384860]">
               We hope you're doing well! 😊
             </p>
             <p className="mt-[24px] font-normal text-[16px] text-[#384860]">
-              Thank you for registering for our upcoming event from 2025-05-10
-              to 2025-05-30 at 14:13:00 - 17:11:00. We are thrilled to have you
+              Thank you for registering for our upcoming event {dateRangeText}{timeRangeText && ` ${timeRangeText}`}. We are thrilled to have you
               join us and look forward to seeing you there. <br />
               <br /> You will receive a confirmation email shortly with all the
               details you need to know. <br /> <br /> If you have any questions
@@ -61,12 +115,16 @@ function ThanksTemplateTwo() {
 
             <div className="flex items-center gap-3">
               <p className="font-semibold text-[16px] text-black">
-                24,Mar 2025
+                {formattedDateFrom || "24,Mar 2025"}
               </p>
-              <p className="font-semibold text-[16px] text-black">:</p>
-              <p className="font-semibold text-[16px] text-black">
-                30,Mar 2025
-              </p>
+              {formattedDateTo && (
+                <>
+                  <p className="font-semibold text-[16px] text-black">:</p>
+                  <p className="font-semibold text-[16px] text-black">
+                    {formattedDateTo}
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
