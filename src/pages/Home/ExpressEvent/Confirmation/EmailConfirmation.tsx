@@ -97,20 +97,172 @@ const createStaticTemplates = (eventData: any) => {
   };
 };
 
+// Helper function to embed design in HTML as a hidden comment
+const embedDesignInHtml = (html: string, design: any): string => {
+  if (!design) return html;
+  try {
+    const designJson = typeof design === 'string' ? design : JSON.stringify(design);
+    // Embed design as a hidden HTML comment
+    const designComment = `<!-- EMAIL_EDITOR_DESIGN:${designJson} -->`;
+    // Insert before closing </body> tag, or at the end if no body tag
+    if (html.includes('</body>')) {
+      return html.replace('</body>', `${designComment}\n</body>`);
+    } else {
+      return html + designComment;
+    }
+  } catch (e) {
+    console.error("Failed to embed design in HTML:", e);
+    return html;
+  }
+};
+
+// Helper function to extract design from HTML
+const extractDesignFromHtml = (html: string): any => {
+  if (!html) return null;
+  try {
+    // First, try to extract from embedded comment (our solution)
+    const designMatch = html.match(/<!-- EMAIL_EDITOR_DESIGN:(.+?) -->/s);
+    if (designMatch && designMatch[1]) {
+      const designJson = designMatch[1];
+      return JSON.parse(designJson);
+    }
+  } catch (e) {
+    console.error("Failed to extract design from HTML comment:", e);
+  }
+  
+  // If no embedded design, try to convert HTML to basic design structure
+  try {
+    return convertHtmlToDesign(html);
+  } catch (e) {
+    console.error("Failed to convert HTML to design:", e);
+  }
+  
+  return null;
+};
+
+// Helper function to convert HTML to a basic design object structure
+// This creates a minimal design that react-email-editor can load
+const convertHtmlToDesign = (html: string): any => {
+  if (!html) return null;
+  
+  try {
+    // Parse HTML using DOMParser
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // Get body content
+    const body = doc.body || doc.querySelector('body');
+    if (!body) return null;
+    
+    // Create a basic design structure for react-email-editor
+    // This is a minimal structure - may not preserve all formatting
+    const rows: any[] = [];
+    
+    // Process top-level elements
+    Array.from(body.children).forEach((child) => {
+      const element = child as HTMLElement;
+      const columns: any[] = [];
+      
+      // Create a column with the element's content
+      const column = {
+        contents: [{
+          type: 'text',
+          value: element.innerHTML || element.textContent || '',
+          inline: false,
+        }],
+        width: '100%',
+      };
+      
+      columns.push(column);
+      
+      // Create a row with the column
+      const row = {
+        columns: columns,
+        backgroundColor: '',
+        columnsBackgroundColor: '',
+        padding: '0px',
+        border: {},
+        borderRadius: '0px',
+      };
+      
+      rows.push(row);
+    });
+    
+    // If no rows created, create one with body's innerHTML
+    if (rows.length === 0) {
+      rows.push({
+        columns: [{
+          contents: [{
+            type: 'text',
+            value: body.innerHTML || body.textContent || '',
+            inline: false,
+          }],
+          width: '100%',
+        }],
+        backgroundColor: '',
+        columnsBackgroundColor: '',
+        padding: '0px',
+        border: {},
+        borderRadius: '0px',
+      });
+    }
+    
+    // Return minimal design structure
+    return {
+      body: {
+        id: 'body',
+        rows: rows,
+        values: {},
+      },
+      counters: {},
+      schemaVersion: 1,
+    };
+  } catch (e) {
+    console.error("Error converting HTML to design:", e);
+    return null;
+  }
+};
+
+
 // ---------- Helper Functions ----------
 const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
-  return apiTemplates.map((tpl, idx) => ({
-    id: `api-${tpl.id}`,
-    title: tpl.attributes?.name || `${flowType.charAt(0).toUpperCase() + flowType.slice(1).replace('_', ' ')} Template ${idx + 1}`,
-    component: null,
-    design: null, // New API doesn't use design, only body/html
-    html: tpl.attributes?.body || "",
-    apiId: tpl.id,
-    isStatic: false,
-    type: tpl.attributes?.template_type || flowType,
-    isSelected: tpl.attributes?.selected || tpl.attributes?.is_selected || false, // Check for selected field from API
-    readyMadeId: null, // Will be set if this matches a ready-made template
-  }));
+  return apiTemplates.map((tpl, idx) => {
+    // Try to parse design from API attributes first (primary source)
+    let design = null;
+    try {
+      if (tpl.attributes?.design) {
+        design = typeof tpl.attributes.design === 'string' 
+          ? JSON.parse(tpl.attributes.design) 
+          : tpl.attributes.design;
+        console.log("Loaded design from API attributes for template:", tpl.id);
+      }
+    } catch (e) {
+      console.warn("Failed to parse design from API attributes for template:", e);
+    }
+    
+    // Try to extract design from HTML (embedded as comment)
+    if (!design && tpl.attributes?.body) {
+      const extractedDesign = extractDesignFromHtml(tpl.attributes.body);
+      if (extractedDesign) {
+        design = extractedDesign;
+        console.log("✅ Extracted design from HTML comment for template:", tpl.id);
+      }
+    }
+    
+    
+    return {
+      id: `api-${tpl.id}`,
+      title: tpl.attributes?.name || `${flowType.charAt(0).toUpperCase() + flowType.slice(1).replace('_', ' ')} Template ${idx + 1}`,
+      component: null,
+      design: design, // Load from API or localStorage
+      html: tpl.attributes?.body || "",
+      apiId: tpl.id,
+      isStatic: false,
+      type: tpl.attributes?.template_type || flowType,
+      isSelected: tpl.attributes?.selected || tpl.attributes?.is_selected || false, // Check for selected field from API
+      readyMadeId: null, // Will be set if this matches a ready-made template
+    };
+  });
 };
 
 // Helper function to check if an API template matches a ready-made template
@@ -124,11 +276,69 @@ const matchesReadyMadeTemplate = (apiTemplate: any, readyMadeTemplate: any): boo
 };
 
 // ---------- Modals ----------
-const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
+const EmailEditorModal = ({ open, initialDesign, initialHtml, templateId, onClose, onSave }: any) => {
   const emailEditorRef = useRef<any>(null);
-  useEffect(() => { if (!open) return; setTimeout(() => initialDesign && emailEditorRef.current?.editor?.loadDesign(initialDesign), 300); }, [open, initialDesign]);
+  const [editorReady, setEditorReady] = useState(false);
+  
+  // Reset editor ready state when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setEditorReady(false);
+    }
+  }, [open]);
+  
+  // Load design when editor is ready
+  useEffect(() => { 
+    if (!open || !editorReady || !emailEditorRef.current?.editor) return;
+    
+    // Get design from props (should already be extracted from HTML)
+    let designToLoad = initialDesign;
+    
+    if (designToLoad) {
+      try {
+        console.log("Loading design into editor:", designToLoad);
+        emailEditorRef.current.editor.loadDesign(designToLoad);
+        console.log("Design loaded successfully");
+      } catch (e) {
+        console.error("Failed to load design:", e);
+        toast.error("Failed to load template design");
+      }
+    } else if (initialHtml) {
+      // If no design, try to load HTML (though this may not work in all versions)
+      console.warn("No design available, trying to load HTML");
+      try {
+        if (typeof emailEditorRef.current.editor.loadHtml === 'function') {
+          emailEditorRef.current.editor.loadHtml(initialHtml);
+        } else {
+          console.warn("Design not available and loadHtml not supported - editor will open empty");
+        }
+      } catch (e) {
+        console.error("Failed to load HTML:", e);
+      }
+    } else {
+      console.log("No design or HTML to load - opening empty editor");
+    }
+  }, [open, editorReady, initialDesign, initialHtml, templateId]);
+  
+  const handleReady = () => {
+    console.log("Email editor is ready");
+    setEditorReady(true);
+  };
+  
   if (!open) return null;
-  const handleExport = () => emailEditorRef.current?.editor?.exportHtml((data: any) => { onSave(data.design, data.html); onClose(); });
+  
+  const handleExport = () => {
+    if (!emailEditorRef.current?.editor) {
+      toast.error("Editor not ready");
+      return;
+    }
+    emailEditorRef.current.editor.exportHtml((data: any) => {
+      console.log("Exporting template:", { hasDesign: !!data.design, hasHtml: !!data.html });
+      onSave(data.design, data.html);
+      onClose();
+    });
+  };
+  
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
@@ -137,7 +347,12 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200"><X size={20} /></button>
         </div>
         <div className="flex-1">
-          <EmailEditor ref={emailEditorRef} minHeight="100%" appearance={{ theme: "dark" }} />
+          <EmailEditor 
+            ref={emailEditorRef} 
+            minHeight="100%" 
+            appearance={{ theme: "dark" }}
+            onReady={handleReady}
+          />
         </div>
         <div className="p-3 border-t flex justify-end bg-gray-100">
           <button onClick={handleExport} className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium">Save Template</button>
@@ -510,13 +725,40 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     }
   };
   const handleCreateNewTemplate = () => { setIsCreatingNew(true); setEditingTemplate(null); setIsEditorOpen(true); };
-  const handleEditTemplate = (template: any) => { 
+  const handleEditTemplate = async (template: any) => { 
     // Ready-made templates cannot be updated - check both isStatic and readyMadeId
     if (template.isStatic || template.readyMadeId) {
       toast.warning("Ready-made templates cannot be edited. Please create a custom template instead.");
       return;
     }
-    setEditingTemplate(template); 
+    
+    // Get the latest template from flows to ensure we have the most up-to-date data
+    const latestTemplate = currentFlow.templates.find((t: any) => t.id === template.id) || template;
+    
+    // Ensure we have the design loaded from localStorage if not in template
+    let templateWithDesign = { ...latestTemplate };
+    
+    // Try to extract design from HTML if not already loaded
+    if (!templateWithDesign.design && templateWithDesign.html) {
+      const extractedDesign = extractDesignFromHtml(templateWithDesign.html);
+      if (extractedDesign) {
+        templateWithDesign.design = extractedDesign;
+        console.log("✅ Extracted design from HTML for editing, templateId:", templateWithDesign.apiId);
+      } else {
+        console.warn("No design found in HTML for templateId:", templateWithDesign.apiId);
+        toast.warning("Template design not found. Editor will open empty. Please recreate the template.");
+      }
+    }
+    
+    console.log("Editing template:", {
+      id: templateWithDesign.id,
+      apiId: templateWithDesign.apiId,
+      title: templateWithDesign.title,
+      hasDesign: !!templateWithDesign.design,
+      hasHtml: !!templateWithDesign.html
+    });
+    
+    setEditingTemplate(templateWithDesign); 
     setModalTemplate(null); 
     setIsEditorOpen(true); 
   };
@@ -524,21 +766,26 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   const handleBack = () => { if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1); else onPrevious?.(); };
   const handleNext = () => { if (!selectedTemplates[currentFlow.id]) { toast.warning("Please select template"); return; } if (currentFlowIndex < flows.length - 1) setCurrentFlowIndex(currentFlowIndex + 1); else onNext?.(effectiveEventId || undefined); };
 
-  const handleSaveFromEditor = async (_design: any, html: string) => {
+  const handleSaveFromEditor = async (design: any, html: string) => {
     if (!effectiveEventId) return;
 
     if (isCreatingNew) {
       setIsLoading(true);
       try {
-        const apiResp = await createEmailTemplateApi(effectiveEventId, currentFlow.id, html, `Custom ${currentFlow.label} Template`);
+        // Embed design in HTML so it's stored in API
+        const htmlWithDesign = embedDesignInHtml(html, design);
+        const apiResp = await createEmailTemplateApi(effectiveEventId, currentFlow.id, htmlWithDesign, `Custom ${currentFlow.label} Template`, design);
         console.log("apiResp of post api", apiResp);
+        const apiId = apiResp.data.data.id;
+        console.log("✅ Design embedded in HTML and saved to API for new template, apiId:", apiId);
+        
         const newTemplate = { 
-          id: `api-${apiResp.data.data.id}`, 
+          id: `api-${apiId}`, 
           title: apiResp.data.data.attributes?.name || `Custom ${currentFlow.label} Template`, 
           component: null, 
-          design: null, 
+          design: design, // Store design object for editing
           html, 
-          apiId: apiResp.data.data.id, 
+          apiId: apiId, 
           isStatic: false, 
           type: currentFlow.id 
         };
@@ -576,22 +823,36 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       setIsLoading(true);
       try { 
         const templateName = editingTemplate.title || `Custom ${currentFlow.label} Template`;
-        await updateEmailTemplateApi(effectiveEventId, editingTemplate.apiId, currentFlow.id, html, templateName); 
-        setFlows(prev => prev.map(f => ({ 
-          ...f, 
-          templates: f.templates.map((t: any) => 
-            t.id === editingTemplate.id 
-              ? { ...t, html, design: null, title: templateName } 
-              : t
-          ) 
-        }))); 
+        console.log("Updating template:", { 
+          eventId: effectiveEventId, 
+          templateId: editingTemplate.apiId, 
+          flowType: currentFlow.id, 
+          hasDesign: !!design,
+          htmlLength: html?.length 
+        });
+        
+        // Embed design in HTML so it's stored in API
+        const htmlWithDesign = embedDesignInHtml(html, design);
+        const updateResponse = await updateEmailTemplateApi(effectiveEventId, editingTemplate.apiId, currentFlow.id, htmlWithDesign, templateName, design);
+        console.log("Update API response:", updateResponse);
+        console.log("✅ Design embedded in HTML and saved to API after update, apiId:", editingTemplate.apiId);
+        
+        // Reload templates from API to get the latest data
+        console.log("Reloading templates after update...");
+        await loadTemplatesFromAPI();
+        
         setEditingTemplate(null); 
         setIsEditorOpen(false); 
         toast.success("Template updated!"); 
       }
-      catch (e) { 
+      catch (e: any) { 
         console.error("Failed to update template:", e);
-        toast.error("Failed to update template"); 
+        console.error("Error details:", {
+          message: e?.message,
+          response: e?.response?.data,
+          status: e?.response?.status
+        });
+        toast.error(e?.response?.data?.message || "Failed to update template"); 
       } finally { setIsLoading(false); }
     }
   };
@@ -670,7 +931,14 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         } 
       }} />
 
-      <EmailEditorModal open={isEditorOpen} initialDesign={editingTemplate?.design} onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} onSave={handleSaveFromEditor} />
+      <EmailEditorModal 
+        open={isEditorOpen} 
+        initialDesign={editingTemplate?.design} 
+        initialHtml={editingTemplate?.html} 
+        templateId={editingTemplate?.apiId || (isCreatingNew ? 'new' : null)}
+        onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} 
+        onSave={handleSaveFromEditor} 
+      />
     </div>
   );
 };
