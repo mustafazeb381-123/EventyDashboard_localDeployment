@@ -1,63 +1,52 @@
 import React from "react";
+import { type Poll } from "@/apis/pollsService";
 
-const AnswersTab = ({ poll }) => {
-  const getPercentageBarColor = (percentage) => {
-    if (percentage >= 60) return "bg-emerald-500";
-    if (percentage >= 30) return "bg-blue-500";
-    return "bg-amber-500";
-  };
+interface AnswersTabProps {
+  poll: Poll;
+  totalVotes: number;
+}
 
+const AnswersTab: React.FC<AnswersTabProps> = ({ poll, totalVotes }) => {
   return (
-    <div className="space-y-6">
-      {poll.questions.map((question, index) => (
-        <div
-          key={question.id}
-          className="bg-white rounded-xl p-6 shadow-sm border border-gray-200"
-        >
-          <div className="flex items-start justify-between mb-4">
-            <div className="flex items-start gap-3">
-              <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 text-sm font-medium mt-1">
-                {index + 1}
-              </div>
-              <p className="text-lg font-normal text-gray-500">
-                {question.text}
-              </p>
-            </div>
-            <p className="text-sm font-medium text-[#737373]">
-              10 participants
-            </p>
-          </div>
-
-          {/* Answers with Percentages */}
-          <div className="space-y-3">
-            {question.answers.map((answer) => (
-              <div
-                key={answer.id}
-                className="flex items-center justify-start p-3 gap-3"
-              >
-                {/* <div className="flex-1"> */}
-                {/* <div className="flex items-center justify-between mb-2"> */}
-                <p className="text-sm font-medium text-gray-700">
-                  {answer.text}
-                </p>
-                {/* </div> */}
-                <div className="w-100 bg-gray-200 rounded-full h-2">
-                  <div
-                    className={`h-2 rounded-full transition-all duration-500 bg-black ${getPercentageBarColor(
-                      answer.percentage
-                    )}`}
-                    style={{ width: `${answer.percentage}%` }}
-                  ></div>
-                </div>
-                <p className="text-sm font-semibold text-gray-900">
-                  {answer.percentage}%
-                </p>
-              </div>
-              // </div>
-            ))}
-          </div>
+    <div className="space-y-4">
+      {/* Question Card with Results */}
+      <div className="bg-white rounded-xl p-6 shadow-sm">
+        {/* Question Header */}
+        <div className="flex items-start justify-between mb-6">
+          <p className="text-gray-800">
+            <span className="text-gray-400 mr-2">01.</span>
+            {poll.question}
+          </p>
+          <span className="text-sm text-gray-500 shrink-0 ml-4">
+            {totalVotes} {totalVotes === 1 ? "Participant" : "Participants"}
+          </span>
         </div>
-      ))}
+
+        {/* Answer Results with Progress Bars */}
+        <div className="space-y-4">
+          {(poll.poll_options || []).map((option, index) => {
+            const percentage = Number(option.percentage || 0);
+            return (
+              <div key={option.id} className="flex items-center gap-4">
+                <span className="text-sm text-gray-600 min-w-[80px]">
+                  Answer {index + 1} :
+                </span>
+                <div className="flex-1 bg-gray-100 rounded-full h-2 max-w-lg">
+                  <div
+                    className="h-2 rounded-full bg-[#1E2A4A] transition-all duration-500"
+                    style={{
+                      width: `${Math.min(Math.max(percentage, 0), 100)}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-sm font-medium text-gray-700 min-w-[45px] text-right">
+                  {percentage.toFixed(0)}%
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,189 +1,241 @@
-import React, { useState } from "react";
-import { Edit2, Plus, Trash2, X } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Plus, Trash2, Pencil } from "lucide-react";
+import { toast } from "react-toastify";
+import {
+  updateAgendaPoll,
+  type Poll,
+} from "@/apis/pollsService";
 
-const QuestionsTab = ({ poll, onAddQuestion, onRemoveQuestion }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [newQuestion, setNewQuestion] = useState("");
-  const [newAnswers, setNewAnswers] = useState([""]);
+interface QuestionsTabProps {
+  poll: Poll;
+  eventId: string;
+  agendaId: string;
+  onRefresh: () => void;
+  triggerAddQuestion?: number;
+}
+
+const QuestionsTab: React.FC<QuestionsTabProps> = ({
+  poll,
+  eventId,
+  agendaId,
+  onRefresh,
+  triggerAddQuestion,
+}) => {
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [answers, setAnswers] = useState<Array<{ id?: number; text: string }>>([
+    { text: "" },
+    { text: "" },
+  ]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Listen for external "Add New Question" button clicks
+  useEffect(() => {
+    if (triggerAddQuestion && triggerAddQuestion > 0) {
+      startAddNew();
+    }
+  }, [triggerAddQuestion]);
+
+  const startAddNew = () => {
+    setQuestion("");
+    setAnswers([{ text: "" }, { text: "" }]);
+    setIsAddingNew(true);
+    setIsEditing(false);
+  };
+
+  const startEdit = () => {
+    setQuestion(poll.question || "");
+    setAnswers(
+      poll.poll_options?.length > 0
+        ? poll.poll_options.map((opt) => ({
+            id: opt.id,
+            text: opt.option_text,
+          }))
+        : [{ text: "" }, { text: "" }]
+    );
+    setIsEditing(true);
+    setIsAddingNew(false);
+  };
+
+  const cancelEdit = () => {
+    setIsAddingNew(false);
+    setIsEditing(false);
+    setQuestion("");
+    setAnswers([{ text: "" }, { text: "" }]);
+  };
 
   const addAnswerField = () => {
-    setNewAnswers(prev => [...prev, ""]);
+    setAnswers((prev) => [...prev, { text: "" }]);
   };
 
-  const updateAnswer = (index, value) => {
-    setNewAnswers(prev => prev.map((answer, i) => i === index ? value : answer));
+  const updateAnswer = (index: number, value: string) => {
+    setAnswers((prev) =>
+      prev.map((answer, i) =>
+        i === index ? { ...answer, text: value } : answer
+      )
+    );
   };
 
-  const removeAnswer = (index) => {
-    setNewAnswers(prev => prev.filter((_, i) => i !== index));
+  const removeAnswer = (index: number) => {
+    if (answers.length > 2) {
+      setAnswers((prev) => prev.filter((_, i) => i !== index));
+    }
   };
 
-  const handleAddQuestion = () => {
-    if (newQuestion.trim() === "") return;
-    
-    onAddQuestion({
-      question: newQuestion,
-      answers: newAnswers
-    });
+  const handleSave = async () => {
+    if (!question.trim()) {
+      toast.error("Question is required");
+      return;
+    }
 
-    // Reset form and close modal
-    setNewQuestion("");
-    setNewAnswers([""]);
-    setIsModalOpen(false);
-  };
+    const trimmedAnswers = answers
+      .map((a) => ({ ...a, text: a.text.trim() }))
+      .filter((a) => a.text.length > 0);
 
-  const openModal = () => {
-    setIsModalOpen(true);
-  };
+    if (trimmedAnswers.length < 2) {
+      toast.error("Please add at least 2 answers");
+      return;
+    }
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setNewQuestion("");
-    setNewAnswers([""]);
+    setIsSaving(true);
+    try {
+      await updateAgendaPoll(eventId, agendaId, poll.id, {
+        poll: {
+          question: question.trim(),
+          poll_type: poll.poll_type,
+          active: poll.active,
+          poll_options_attributes: trimmedAnswers.map((a) => ({
+            id: a.id,
+            option_text: a.text,
+          })),
+        },
+      });
+      toast.success("Poll updated successfully");
+      setIsAddingNew(false);
+      setIsEditing(false);
+      onRefresh();
+    } catch (error: any) {
+      console.error("Error updating poll:", error);
+      toast.error(error?.response?.data?.message || "Failed to update poll");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="space-y-8">
-      <div className="flex justify-end">
-        <button
-          onClick={openModal}
-          className="bg-black  text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center gap-2"
-        >
-          {/* <Plus className="w-5 h-5" /> */}
-          Add Question
-        </button>
-      </div>
-
-      {/* Existing Questions List */}
-      <div className="space-y-6">
-        {poll.questions.map((question) => (
-          <div key={question.id} className="border-b border-gray-200 bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">{question.text}</h3>
-                
-                {/* Answers with Checkboxes */}
-                <div className="space-y-3">
-                  {question.answers.map((answer) => (
-                    <div key={answer.id} className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                      />
-                      <label className="text-gray-700">{answer.text}</label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Delete button */}
-              <div className="flex items-center">
-              <button 
-                onClick={() => onRemoveQuestion(question.id)}
-                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-4"
-              >
-                <Trash2 className="w-4 h-4" color="red" />
-              </button>
-              <button 
-                // onClick={() => onRemoveQuestion(question.id)}
-                className="text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-4"
-              >
-                <Edit2 className="w-4 h-4" color="yellow" />
-              </button>
-              </div>
-            </div>
+    <div className="space-y-4">
+      {/* Add New Question Form - Inline */}
+      {(isAddingNew || isEditing) && (
+        <div className="bg-[#F8F9FF] rounded-xl p-6 border-2 border-dashed border-[#7C3AED]">
+          {/* Question Input Row */}
+          <div className="flex items-center gap-4 mb-4">
+            <span className="text-gray-400 text-sm font-medium">01.</span>
+            <input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Type question here"
+              className="flex-1 bg-transparent border-none outline-none text-gray-800 placeholder-gray-400"
+            />
+            <button
+              onClick={handleSave}
+              disabled={isSaving || !question.trim()}
+              className="px-6 py-2 bg-[#1E2A4A] text-white rounded-lg hover:bg-[#2a3a5a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+            >
+              {isSaving ? "Saving..." : isEditing ? "Save" : "Add Question"}
+            </button>
           </div>
-        ))}
-      </div>
 
-      {/* Add Question Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Add New Question</h2>
-              <button
-                onClick={closeModal}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+          {/* Divider */}
+          <div className="border-t border-dashed border-[#7C3AED] my-4" />
 
-            {/* Modal Content */}
-            <div className="p-6 space-y-6">
-              {/* Question Input */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Question
-                </label>
+          {/* Answer Fields */}
+          <div className="space-y-3">
+            {answers.map((answer, index) => (
+              <div key={index} className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  disabled
+                  className="w-5 h-5 rounded border-gray-300 text-blue-600"
+                />
                 <input
                   type="text"
-                  value={newQuestion}
-                  onChange={(e) => setNewQuestion(e.target.value)}
-                  placeholder="Enter your question..."
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  value={answer.text}
+                  onChange={(e) => updateAnswer(index, e.target.value)}
+                  placeholder="Type answer here"
+                  className="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-400"
                 />
+                {answers.length > 2 && (
+                  <button
+                    onClick={() => removeAnswer(index)}
+                    className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
+            ))}
+          </div>
 
-              {/* Answers Input */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Answers
-                  </label>
-                  <span className="text-sm text-gray-500">{newAnswers.length} answers</span>
-                </div>
-                
-                <div className="space-y-3">
-                  {newAnswers.map((answer, index) => (
-                    <div key={index} className="flex items-center gap-3">
-                      {/* <div className="w-4 h-4 rounded border border-gray-300 flex-shrink-0"></div> */}
-                      <input
-                        type="text"
-                        value={answer}
-                        onChange={(e) => updateAnswer(index, e.target.value)}
-                        placeholder="Type answer here"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                      />
-                      {newAnswers.length > 1 && (
-                        <button
-                          onClick={() => removeAnswer(index)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Add Answer Button */}
-                <button
-                  onClick={addAnswerField}
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mt-4 font-medium text-sm"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add another answer
-                </button>
+          {/* Add Answer Button */}
+          <button
+            onClick={addAnswerField}
+            className="flex items-center gap-2 mt-4 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
+          >
+            <Plus className="w-4 h-4" />
+            Add answer
+          </button>
+        </div>
+      )}
+
+      {/* Existing Question Display */}
+      {!isEditing && (
+        <div className="bg-white rounded-xl p-6 shadow-sm">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              {/* Question */}
+              <p className="text-gray-800 mb-4">
+                <span className="text-gray-400 mr-2">01.</span>
+                {poll.question}
+              </p>
+
+              {/* Answer Options */}
+              <div className="space-y-3">
+                {(poll.poll_options || []).map((option, index) => (
+                  <div key={option.id} className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      disabled
+                      className="w-5 h-5 rounded border-gray-300"
+                    />
+                    <span className="text-gray-700">
+                      {option.option_text || `Answer ${index + 1}`}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200">
+            {/* Action Buttons */}
+            <div className="flex items-center gap-1 ml-4">
               <button
-                onClick={closeModal}
-                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                onClick={() => {
+                  if (window.confirm("Are you sure you want to delete this poll?")) {
+                    toast.info("Delete functionality handled by parent");
+                  }
+                }}
+                className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                title="Delete"
               >
-                Cancel
+                <Trash2 className="w-4 h-4" />
               </button>
               <button
-                onClick={handleAddQuestion}
-                disabled={!newQuestion.trim()}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+                onClick={startEdit}
+                className="p-2.5 text-yellow-600 bg-yellow-50 hover:bg-yellow-100 rounded-lg transition-colors"
+                title="Edit"
               >
-                Add Question
+                <Pencil className="w-4 h-4" />
               </button>
             </div>
           </div>

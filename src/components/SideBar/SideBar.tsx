@@ -198,9 +198,7 @@ const SideBar = ({
     {
       icon: Image,
       label: "Galleries",
-      path: currentEventId
-        ? `/home/${currentEventId}/galleries`
-        : "/galleries",
+      path: currentEventId ? `/home/${currentEventId}/galleries` : "/galleries",
       availableForExpress: false,
     },
     // {
@@ -257,8 +255,8 @@ const SideBar = ({
           label: "Poll",
           icon: Vote,
           path: currentEventId
-            ? `/communication/Poll?eventId=${currentEventId}`
-            : "/communication/Poll",
+            ? `/communication/poll?eventId=${currentEventId}`
+            : "/communication/poll",
           availableForExpress: false,
         },
         {
@@ -338,9 +336,11 @@ const SideBar = ({
   return (
     <>
       <aside
-        className={`fixed ${isRTL ? "right-0" : "left-0"
-          } top-0 h-screen bg-gradient-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${isExpanded ? "w-[280px]" : "w-20"
-          }`}
+        className={`fixed ${
+          isRTL ? "right-0" : "left-0"
+        } top-0 h-screen bg-linear-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${
+          isExpanded ? "w-[280px]" : "w-20"
+        }`}
       >
         {isExpanded && (
           <div className="px-4 py-4 border-b">
@@ -412,12 +412,13 @@ const SideBar = ({
                 return (
                   <div key={index}>
                     <div
-                      className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${isActive
-                        ? "bg-blue-600/30 text-white border border-blue-500/30"
-                        : isDisabled
+                      className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${
+                        isActive
+                          ? "bg-blue-600/30 text-white border border-blue-500/30"
+                          : isDisabled
                           ? "text-slate-500 cursor-not-allowed opacity-60"
                           : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                        }`}
+                      }`}
                       onClick={() => {
                         if (isDisabled) {
                           return; // Prevent click for disabled items
@@ -436,15 +437,16 @@ const SideBar = ({
                       }
                     >
                       <div className="flex items-center space-x-3">
-                        <Icon className="h-4 w-4 flex-shrink-0" />
+                        <Icon className="h-4 w-4 shrink-0" />
                         <span
-                          className={`font-medium text-sm ${isDisabled ? "line-through" : ""
-                            }`}
+                          className={`font-medium text-sm ${
+                            isDisabled ? "line-through" : ""
+                          }`}
                         >
                           {item.label}
                         </span>
                         {isDisabled && (
-                          <Lock className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                          <Lock className="h-3 w-3 text-slate-500 shrink-0" />
                         )}
                       </div>
                       {item.badge && (
@@ -464,12 +466,13 @@ const SideBar = ({
                           return (
                             <div
                               key={subIndex}
-                              className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${isSubActive
-                                ? "bg-blue-500/20 text-white border border-blue-400/30"
-                                : isSubDisabled
+                              className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                                isSubActive
+                                  ? "bg-blue-500/20 text-white border border-blue-400/30"
+                                  : isSubDisabled
                                   ? "text-slate-500 cursor-not-allowed opacity-60"
                                   : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
-                                }`}
+                              }`}
                               onClick={() => {
                                 if (isSubDisabled) {
                                   return; // Prevent click for disabled sub-items
@@ -487,13 +490,14 @@ const SideBar = ({
                             >
                               <SubIcon className="h-3.5 w-3.5" />
                               <span
-                                className={`text-sm ${isSubDisabled ? "line-through" : ""
-                                  }`}
+                                className={`text-sm ${
+                                  isSubDisabled ? "line-through" : ""
+                                }`}
                               >
                                 {subItem.label}
                               </span>
                               {isSubDisabled && (
-                                <Lock className="h-3 w-3 text-slate-500 flex-shrink-0" />
+                                <Lock className="h-3 w-3 text-slate-500 shrink-0" />
                               )}
                             </div>
                           );
@@ -511,8 +515,9 @@ const SideBar = ({
         <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
           <Button
             variant="ghost"
-            className={`w-full ${isExpanded ? "justify-start px-3" : "justify-center px-3"
-              } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
+            className={`w-full ${
+              isExpanded ? "justify-start px-3" : "justify-center px-3"
+            } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
           >
             <Settings className="h-4 w-4" />
             {isExpanded && (
@@ -524,8 +529,9 @@ const SideBar = ({
           <Button
             onClick={handleLogout}
             variant="ghost"
-            className={`w-full ${isExpanded ? "justify-start px-3" : "justify-center px-3"
-              } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
+            className={`w-full ${
+              isExpanded ? "justify-start px-3" : "justify-center px-3"
+            } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
           >
             <LogOut className="h-4 w-4" />
             {isExpanded && (
