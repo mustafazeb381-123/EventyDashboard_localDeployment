@@ -720,7 +720,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       {/* Banner Image - Full width, breaks out of padding */}
       {bannerImage && (
         <div 
-          className="w-full h-24 bg-gray-100 overflow-hidden mb-2"
+          className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
           style={{
             marginLeft: `-${paddingValue}px`,
             marginRight: `-${paddingValue}px`,

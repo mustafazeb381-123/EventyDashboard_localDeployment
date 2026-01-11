@@ -117,11 +117,31 @@ function UserRegistration() {
         if (isCustom) {
           // It's a custom form builder template
           console.log("✅ Custom form builder template detected");
+          
+          // Merge logo into theme - logo can be in theme or in attributes
+          const themeData = formTemplateData.theme || {};
+          const logoFromAttributes = defaultTemplate.attributes?.logo || null;
+          const logoFromTheme = themeData.logo || null;
+          
+          // Use logo from attributes (API response) if available, otherwise use theme logo
+          const finalTheme = {
+            ...themeData,
+            logo: logoFromAttributes || logoFromTheme || null,
+          };
+          
+          console.log("🎨 Logo setup for custom template:", {
+            logoFromAttributes,
+            logoFromTheme,
+            finalLogo: finalTheme.logo,
+            hasBannerImage: !!defaultTemplate.attributes?.banner_image,
+            themeKeys: Object.keys(finalTheme),
+          });
+          
           setCustomFormBuilderTemplate({
             formBuilderData: formTemplateData.formBuilderData || { formData: formTemplateData.fields || [] },
             bannerImage: defaultTemplate.attributes?.banner_image || null,
-            logo: defaultTemplate.attributes?.logo || null,
-            theme: formTemplateData.theme || {},
+            logo: logoFromAttributes || logoFromTheme || null,
+            theme: finalTheme, // Theme now includes logo
           });
           setTemplateData(null); // Clear old template data
         } else {
@@ -486,6 +506,14 @@ function UserRegistration() {
     // Pass eventData.data to match the structure expected by default templates
     // Default templates receive eventData where eventData.id is the event ID
     const eventDataForForm = eventData?.data || eventData;
+    
+    console.log("🎨 Passing theme to FormBuilderTemplateForm:", {
+      hasTheme: !!customFormBuilderTemplate.theme,
+      hasLogo: !!customFormBuilderTemplate.theme?.logo,
+      logo: customFormBuilderTemplate.theme?.logo,
+      hasBannerImage: !!customFormBuilderTemplate.bannerImage,
+      themeKeys: customFormBuilderTemplate.theme ? Object.keys(customFormBuilderTemplate.theme) : [],
+    });
     
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
