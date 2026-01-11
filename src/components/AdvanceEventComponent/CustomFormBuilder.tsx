@@ -43,10 +43,12 @@ interface CustomFormBuilderProps {
   initialFields?: CustomFormField[];
   initialBannerImage?: File | string | null;
   initialTheme?: Partial<FormTheme>;
+  initialTemplateName?: string;
   onSave: (
     fields: CustomFormField[],
     bannerImage?: File | string,
-    theme?: FormTheme
+    theme?: FormTheme,
+    templateName?: string
   ) => void;
   onClose: () => void;
 }
@@ -202,51 +204,6 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     unique: false,
     bootstrapClass: "col-md-6",
   },
-  {
-    id: "field-country-2",
-    type: "select",
-    label: "Country / Region",
-    name: "country2",
-    placeholder: "Enter country name",
-    required: false,
-    unique: false,
-    options: [
-      { label: "Select country...", value: "" },
-      { label: "United States", value: "us" },
-      { label: "Canada", value: "ca" },
-      { label: "United Kingdom", value: "uk" },
-    ],
-  },
-  {
-    id: "field-country-3",
-    type: "select",
-    label: "Country / Region",
-    name: "country3",
-    placeholder: "Enter country name",
-    required: false,
-    unique: false,
-    options: [
-      { label: "Select country...", value: "" },
-      { label: "United States", value: "us" },
-      { label: "Canada", value: "ca" },
-      { label: "United Kingdom", value: "uk" },
-    ],
-  },
-  {
-    id: "field-country-4",
-    type: "select",
-    label: "Country / Region",
-    name: "country4",
-    placeholder: "Enter country name",
-    required: false,
-    unique: false,
-    options: [
-      { label: "Select country...", value: "" },
-      { label: "United States", value: "us" },
-      { label: "Canada", value: "ca" },
-      { label: "United Kingdom", value: "uk" },
-    ],
-  },
   // Contact Section
   {
     id: "field-website",
@@ -305,12 +262,17 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   initialFields = [],
   initialBannerImage = null,
   initialTheme,
+  initialTemplateName = "Custom Form Builder Template",
   onSave,
   onClose,
 }) => {
   const [fields, setFields] = useState<CustomFormField[]>(
     initialFields.length > 0 ? initialFields : DEFAULT_FORM_FIELDS
   );
+  const [templateName, setTemplateName] = useState<string>(
+    initialTemplateName || "Custom Form Builder Template"
+  );
+  const [isEditingTemplateName, setIsEditingTemplateName] = useState(false);
   const [editingField, setEditingField] = useState<CustomFormField | null>(
     null
   );
@@ -840,11 +802,17 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   };
 
   const handleSave = () => {
+    console.log('buttom is clicked')
     if (fields.length === 0) {
       alert("Please add at least one field before saving.");
       return;
     }
-    onSave(fields, bannerImage || undefined, theme);
+    if (!templateName || templateName.trim() === "") {
+      alert("Please provide a template name.");
+      setIsEditingTemplateName(true);
+      return;
+    }
+    onSave(fields, bannerImage || undefined, theme, templateName.trim());
   };
 
   React.useEffect(() => {
@@ -907,8 +875,36 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
         <div className="bg-white rounded-2xl shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden">
           {/* Header */}
           <div className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between shadow-lg">
-            <div>
-              <h2 className="text-2xl font-bold">Custom Form Builder</h2>
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                {isEditingTemplateName ? (
+                  <input
+                    type="text"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    onBlur={() => setIsEditingTemplateName(false)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        setIsEditingTemplateName(false);
+                      } else if (e.key === "Escape") {
+                        setTemplateName(initialTemplateName || "Custom Form Builder Template");
+                        setIsEditingTemplateName(false);
+                      }
+                    }}
+                    className="text-2xl font-bold bg-white/20 border border-white/30 rounded px-3 py-1 outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50 min-w-[300px]"
+                    autoFocus
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <h2
+                    className="text-2xl font-bold cursor-pointer hover:bg-white/10 rounded px-2 py-1 transition-colors"
+                    onClick={() => setIsEditingTemplateName(true)}
+                    title="Click to edit template name"
+                  >
+                    {templateName}
+                  </h2>
+                )}
+              </div>
               <p className="text-blue-100 text-sm mt-0.5">
                 Design your perfect form
               </p>
@@ -1207,6 +1203,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                                       onDelete={handleDeleteField}
                                       onEditChild={handleEditField}
                                       onDeleteChild={handleDeleteField}
+                                      onUpdate={handleUpdateField}
+                                      onUpdateChild={handleUpdateField}
                                     />
                                   );
                                 }
@@ -1217,6 +1215,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                                     field={field}
                                     onEdit={handleEditField}
                                     onDelete={handleDeleteField}
+                                    onUpdate={handleUpdateField}
                                   />
                                 );
                               })}

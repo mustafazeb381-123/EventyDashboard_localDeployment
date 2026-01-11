@@ -160,6 +160,103 @@ export const getRegistrationTemplateData = (id: string | number) => {
   return axiosInstance.get(`events/${id}/registration_templates/default`);
 };
 
+// Get all registration form templates for an event
+export const getRegistrationFormTemplates = (
+  eventId: string | number,
+  params?: { name?: string; page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/registration_form_templates`,
+    { params }
+  );
+};
+
+// Get the default registration form template for an event (returns either custom or old template)
+export const getDefaultRegistrationFormTemplate = (
+  eventId: string | number
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/registration_form_templates/default_template`
+  );
+};
+
+// Create a new registration form template
+export const createRegistrationFormTemplate = (
+  eventId: string | number,
+  data: {
+    registration_form_template: {
+      name: string;
+      default?: boolean;
+      form_template_data: {
+        fields?: any[];
+        bannerImage?: string;
+        theme?: {
+          logo?: string;
+          formBackgroundImage?: string;
+          primaryColor?: string;
+          secondaryColor?: string;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+    };
+  }
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/registration_form_templates`,
+    data
+  );
+};
+
+// Update an existing registration form template
+export const updateRegistrationFormTemplate = (
+  eventId: string | number,
+  templateId: string | number,
+  data: {
+    registration_form_template: {
+      name: string;
+      default?: boolean;
+      form_template_data: {
+        fields?: any[];
+        bannerImage?: string;
+        theme?: {
+          logo?: string;
+          formBackgroundImage?: string;
+          primaryColor?: string;
+          secondaryColor?: string;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+    };
+  }
+) => {
+  return axiosInstance.put(
+    `/events/${eventId}/registration_form_templates/${templateId}`,
+    data
+  );
+};
+
+// Delete a registration form template
+export const deleteRegistrationFormTemplate = (
+  eventId: string | number,
+  templateId: string | number
+) => {
+  return axiosInstance.delete(
+    `/events/${eventId}/registration_form_templates/${templateId}`
+  );
+};
+
+// Set a registration form template as default
+export const setRegistrationFormTemplateAsDefault = (
+  eventId: string | number,
+  templateId: string | number
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/registration_form_templates/${templateId}/set_as_default`
+  );
+};
+
 export const getEventBadges = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badge_templates`);
 };

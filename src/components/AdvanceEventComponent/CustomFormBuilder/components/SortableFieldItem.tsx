@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -29,6 +29,7 @@ interface SortableFieldItemProps {
   field: CustomFormField;
   onEdit: (field: CustomFormField) => void;
   onDelete: (id: string) => void;
+  onUpdate?: (field: CustomFormField) => void;
   isInsideContainer?: boolean;
 }
 
@@ -36,6 +37,7 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
   field,
   onEdit,
   onDelete,
+  onUpdate,
   isInsideContainer = false,
 }) => {
   const {
@@ -47,11 +49,57 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
     isDragging,
   } = useSortable({ id: field.id });
 
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editedLabel, setEditedLabel] = useState(field.label);
+
+  // Sync editedLabel when field.label changes externally
+  useEffect(() => {
+    if (!isEditingLabel) {
+      setEditedLabel(field.label);
+    }
+  }, [field.label, isEditingLabel]);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
   };
+
+  const handleLabelBlur = () => {
+    if (editedLabel.trim() !== field.label && onUpdate) {
+      onUpdate({ ...field, label: editedLabel.trim() || field.label });
+    }
+    setIsEditingLabel(false);
+  };
+
+  const handleLabelKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleLabelBlur();
+    } else if (e.key === "Escape") {
+      setEditedLabel(field.label);
+      setIsEditingLabel(false);
+    }
+  };
+
+  // Only allow editing for form input fields (fields that collect data)
+  // Non-input fields like heading, paragraph, divider, spacer, button are not editable inline
+  const isEditableField = (type: FieldType): boolean => {
+    const editableTypes: FieldType[] = [
+      "text",
+      "email",
+      "number",
+      "date",
+      "textarea",
+      "select",
+      "radio",
+      "checkbox",
+      "file",
+      "image",
+    ];
+    return editableTypes.includes(type);
+  };
+
+  const canEdit = isEditableField(field.type) && !field.containerType;
 
   const getFieldIcon = (type: FieldType) => {
     const icons = {
@@ -91,11 +139,52 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
       {...attributes}
       {...listeners}
     >
-      {/* Field Name Label on Border */}
+      {/* Field Name Label on Border - Editable only for form input fields */}
       <div className="absolute -top-3 left-4 bg-white px-2">
-        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-          {field.label || field.name || "Field"}
-        </span>
+        {canEdit && isEditingLabel ? (
+          <input
+            type="text"
+            value={editedLabel}
+            onChange={(e) => setEditedLabel(e.target.value)}
+            onBlur={handleLabelBlur}
+            onKeyDown={handleLabelKeyDown}
+            className="text-xs font-semibold text-gray-700 uppercase tracking-wider bg-white border border-blue-500 rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-blue-300 min-w-[100px]"
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className={`text-xs font-semibold text-gray-700 uppercase tracking-wider ${
+              canEdit
+                ? "cursor-text hover:text-blue-600 hover:underline"
+                : "cursor-default"
+            }`}
+            onClick={
+              canEdit
+                ? (e) => {
+                    e.stopPropagation();
+                    setIsEditingLabel(true);
+                  }
+                : undefined
+            }
+            onDoubleClick={
+              canEdit
+                ? (e) => {
+                    e.stopPropagation();
+                    setIsEditingLabel(true);
+                  }
+                : undefined
+            }
+            title={
+              canEdit
+                ? "Click or double-click to edit label"
+                : "Use edit button to configure this field"
+            }
+          >
+            {field.label || field.name || "Field"}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
@@ -135,9 +224,34 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
         ) : (
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-gray-800 text-sm">
-                {field.label}
-              </span>
+              {isEditingLabel ? (
+                <input
+                  type="text"
+                  value={editedLabel}
+                  onChange={(e) => setEditedLabel(e.target.value)}
+                  onBlur={handleLabelBlur}
+                  onKeyDown={handleLabelKeyDown}
+                  className="font-semibold text-gray-800 text-sm bg-white border border-blue-500 rounded px-2 py-1 outline-none focus:ring-2 focus:ring-blue-300 flex-1 min-w-[150px]"
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <span
+                  className="font-semibold text-gray-800 text-sm cursor-text hover:text-blue-600 hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingLabel(true);
+                  }}
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    setIsEditingLabel(true);
+                  }}
+                  title="Click or double-click to edit label"
+                >
+                  {field.label}
+                </span>
+              )}
               {field.required && (
                 <span className="text-red-500 text-xs font-bold bg-red-50 px-1.5 py-0.5 rounded">
                   Required
