@@ -802,7 +802,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   };
 
   const handleSave = () => {
-    console.log('buttom is clicked')
+    console.log("buttom is clicked");
     if (fields.length === 0) {
       alert("Please add at least one field before saving.");
       return;
@@ -887,7 +887,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                       if (e.key === "Enter") {
                         setIsEditingTemplateName(false);
                       } else if (e.key === "Escape") {
-                        setTemplateName(initialTemplateName || "Custom Form Builder Template");
+                        setTemplateName(
+                          initialTemplateName || "Custom Form Builder Template"
+                        );
                         setIsEditingTemplateName(false);
                       }
                     }}
@@ -1370,15 +1372,3 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 };
 
 export default CustomFormBuilder;
-
-
-
-
-
-
-
-
-
-
-
-
