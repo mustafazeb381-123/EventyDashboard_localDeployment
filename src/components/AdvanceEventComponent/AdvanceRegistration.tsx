@@ -1074,7 +1074,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
           }}
         >
           {bannerUrl && (
-            <div className="w-full h-24 bg-gray-100 overflow-hidden mb-2">
+            <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2">
               <img
                 src={bannerUrl}
                 alt="Form banner"
@@ -1088,6 +1088,53 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
                 }}
               />
             </div>
+          )}
+
+          {/* Logo - render directly if theme has logo, otherwise FormHeader will handle it */}
+          {theme?.logo && (
+            (() => {
+              let logoUrl: string | null = null;
+              if (typeof theme.logo === "string" && theme.logo.trim() !== "") {
+                logoUrl = theme.logo;
+              } else if (theme.logo && typeof theme.logo === "object" && "size" in theme.logo && "type" in theme.logo) {
+                // It's a File or Blob
+                logoUrl = URL.createObjectURL(theme.logo as Blob);
+              }
+              
+              return logoUrl ? (
+                <div
+                  className="w-full mb-4 flex"
+                  style={{
+                    justifyContent:
+                      theme.logoPosition === "right"
+                        ? "flex-end"
+                        : theme.logoPosition === "center"
+                          ? "center"
+                          : "flex-start", // Default to left
+                    paddingLeft: theme.logoPosition === "right" || theme.logoPosition === "center" ? "0" : "16px",
+                    paddingRight: theme.logoPosition === "right" ? "16px" : "0",
+                  }}
+                >
+                  <img
+                    src={logoUrl}
+                    alt="Form logo"
+                    style={{
+                      width: theme.logoWidth || "100px",
+                      height: theme.logoHeight || "auto",
+                      maxWidth: "100%",
+                      objectFit: "contain",
+                    }}
+                    onError={(e) => {
+                      console.error("Logo image failed to load:", logoUrl);
+                      e.currentTarget.style.display = "none";
+                    }}
+                    onLoad={() => {
+                      console.log("Logo image loaded successfully:", logoUrl);
+                    }}
+                  />
+                </div>
+              ) : null;
+            })()
           )}
 
           <FormHeader theme={theme} />
@@ -3074,7 +3121,7 @@ const AdvanceRegistration = ({
                 <div
                   key={template.id}
                   className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${isSelected
-                    ? "border-blue-500 bg-blue-50"
+                    ? "border-pink-500 bg-pink-50"
                     : "border-gray-200 hover:border-blue-500"
                     }`}
                 >

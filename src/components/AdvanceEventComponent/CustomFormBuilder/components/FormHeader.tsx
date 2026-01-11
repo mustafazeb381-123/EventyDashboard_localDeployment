@@ -26,7 +26,9 @@ export function FormHeader({ theme }: FormHeaderProps) {
   const logoSrc =
     typeof theme?.logo === "string" ? theme.logo : logoObjectUrl || "";
 
-  if (!(theme?.logo || theme?.eventName || theme?.eventDescription)) {
+  // Only render if there are event details (name, description, location, date)
+  // Logo is handled separately in the form rendering to ensure it always displays
+  if (!(theme?.eventName || theme?.eventDescription || theme?.eventLocation || theme?.eventDate)) {
     return null;
   }
 
@@ -52,7 +54,7 @@ export function FormHeader({ theme }: FormHeaderProps) {
             : "left",
       }}
     >
-      {theme?.logo && (
+      {theme?.logo && logoSrc && (
         <img
           src={logoSrc}
           alt="Form logo"
@@ -61,6 +63,13 @@ export function FormHeader({ theme }: FormHeaderProps) {
             height: theme.logoHeight || "auto",
             maxWidth: "100%",
             objectFit: "contain",
+          }}
+          onError={(e) => {
+            console.error("Logo image failed to load:", logoSrc);
+            e.currentTarget.style.display = "none";
+          }}
+          onLoad={() => {
+            console.log("Logo image loaded successfully:", logoSrc);
           }}
         />
       )}
