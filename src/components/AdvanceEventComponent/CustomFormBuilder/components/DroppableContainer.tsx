@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { useSortable } from "@dnd-kit/sortable";
 import {
@@ -18,6 +18,8 @@ interface DroppableContainerProps {
   onDelete: (id: string) => void;
   onEditChild: (field: CustomFormField) => void;
   onDeleteChild: (id: string) => void;
+  onUpdate?: (field: CustomFormField) => void;
+  onUpdateChild?: (field: CustomFormField) => void;
 }
 
 export const DroppableContainer: React.FC<DroppableContainerProps> = ({
@@ -28,6 +30,8 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
   onDelete,
   onEditChild,
   onDeleteChild,
+  onUpdate,
+  onUpdateChild,
 }) => {
   const droppableId = `container:${field.id}`;
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
@@ -51,6 +55,31 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
 
   const isEmpty = childFields.length === 0;
   const containerType = field.containerType;
+  const [isEditingLabel, setIsEditingLabel] = useState(false);
+  const [editedLabel, setEditedLabel] = useState(field.label);
+
+  // Sync editedLabel when field.label changes externally
+  useEffect(() => {
+    if (!isEditingLabel) {
+      setEditedLabel(field.label);
+    }
+  }, [field.label, isEditingLabel]);
+
+  const handleLabelBlur = () => {
+    if (editedLabel.trim() !== field.label && onUpdate) {
+      onUpdate({ ...field, label: editedLabel.trim() || field.label });
+    }
+    setIsEditingLabel(false);
+  };
+
+  const handleLabelKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleLabelBlur();
+    } else if (e.key === "Escape") {
+      setEditedLabel(field.label);
+      setIsEditingLabel(false);
+    }
+  };
 
   return (
     <div
@@ -68,9 +97,34 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
       {...listeners}
     >
       <div className="absolute -top-3 left-4 bg-white px-2">
-        <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
-          {field.label || field.name || "Container"}
-        </span>
+        {isEditingLabel ? (
+          <input
+            type="text"
+            value={editedLabel}
+            onChange={(e) => setEditedLabel(e.target.value)}
+            onBlur={handleLabelBlur}
+            onKeyDown={handleLabelKeyDown}
+            className="text-xs font-semibold text-gray-700 uppercase tracking-wider bg-white border border-blue-500 rounded px-2 py-0.5 outline-none focus:ring-2 focus:ring-blue-300 min-w-[100px]"
+            autoFocus
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <span
+            className="text-xs font-semibold text-gray-700 uppercase tracking-wider cursor-text hover:text-blue-600 hover:underline"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsEditingLabel(true);
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              setIsEditingLabel(true);
+            }}
+            title="Click or double-click to edit label"
+          >
+            {field.label || field.name || "Container"}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-2 mb-3">
@@ -151,6 +205,8 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
                     onDelete={onDeleteChild}
                     onEditChild={onEditChild}
                     onDeleteChild={onDeleteChild}
+                    onUpdate={onUpdateChild}
+                    onUpdateChild={onUpdateChild}
                   />
                 );
               }
@@ -161,6 +217,7 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
                   field={childField}
                   onEdit={onEditChild}
                   onDelete={onDeleteChild}
+                  onUpdate={onUpdateChild}
                   isInsideContainer
                 />
               );

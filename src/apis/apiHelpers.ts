@@ -160,6 +160,103 @@ export const getRegistrationTemplateData = (id: string | number) => {
   return axiosInstance.get(`events/${id}/registration_templates/default`);
 };
 
+// Get all registration form templates for an event
+export const getRegistrationFormTemplates = (
+  eventId: string | number,
+  params?: { name?: string; page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/registration_form_templates`,
+    { params }
+  );
+};
+
+// Get the default registration form template for an event (returns either custom or old template)
+export const getDefaultRegistrationFormTemplate = (
+  eventId: string | number
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/registration_form_templates/default_template`
+  );
+};
+
+// Create a new registration form template
+export const createRegistrationFormTemplate = (
+  eventId: string | number,
+  data: {
+    registration_form_template: {
+      name: string;
+      default?: boolean;
+      form_template_data: {
+        fields?: any[];
+        bannerImage?: string;
+        theme?: {
+          logo?: string;
+          formBackgroundImage?: string;
+          primaryColor?: string;
+          secondaryColor?: string;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+    };
+  }
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/registration_form_templates`,
+    data
+  );
+};
+
+// Update an existing registration form template
+export const updateRegistrationFormTemplate = (
+  eventId: string | number,
+  templateId: string | number,
+  data: {
+    registration_form_template: {
+      name: string;
+      default?: boolean;
+      form_template_data: {
+        fields?: any[];
+        bannerImage?: string;
+        theme?: {
+          logo?: string;
+          formBackgroundImage?: string;
+          primaryColor?: string;
+          secondaryColor?: string;
+          [key: string]: any;
+        };
+        [key: string]: any;
+      };
+    };
+  }
+) => {
+  return axiosInstance.put(
+    `/events/${eventId}/registration_form_templates/${templateId}`,
+    data
+  );
+};
+
+// Delete a registration form template
+export const deleteRegistrationFormTemplate = (
+  eventId: string | number,
+  templateId: string | number
+) => {
+  return axiosInstance.delete(
+    `/events/${eventId}/registration_form_templates/${templateId}`
+  );
+};
+
+// Set a registration form template as default
+export const setRegistrationFormTemplateAsDefault = (
+  eventId: string | number,
+  templateId: string | number
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/registration_form_templates/${templateId}/set_as_default`
+  );
+};
+
 export const getEventBadges = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badge_templates`);
 };
@@ -545,15 +642,24 @@ export const createEmailTemplateApi = (
   eventId: string | number,
   templateType: string,
   html: string,
-  name: string = "Custom Template"
+  name: string = "Custom Template",
+  design?: any
 ) => {
-  const payload = {
+  const payload: any = {
     email_template: {
       name: name,
       template_type: getEmailTemplateType(templateType),
       body: html,
     },
   };
+  
+  // Include design if provided (store as JSON string)
+  // Note: Backend may not support this field yet, but we send it anyway
+  // If backend doesn't support it, the field will be ignored but won't cause errors
+  if (design) {
+    payload.email_template.design = typeof design === 'string' ? design : JSON.stringify(design);
+  }
+  
   return axiosInstance.post(`/events/${eventId}/email_templates`, payload);
 };
 
@@ -563,15 +669,24 @@ export const updateEmailTemplateApi = (
   templateId: string | number,
   templateType: string,
   html: string,
-  name: string
+  name: string,
+  design?: any
 ) => {
-  const payload = {
+  const payload: any = {
     email_template: {
       name: name,
       template_type: getEmailTemplateType(templateType),
       body: html,
     },
   };
+  
+  // Include design if provided (store as JSON string)
+  // Note: Backend may not support this field yet, but we send it anyway
+  // If backend doesn't support it, the field will be ignored but won't cause errors
+  if (design) {
+    payload.email_template.design = typeof design === 'string' ? design : JSON.stringify(design);
+  }
+  
   return axiosInstance.put(
     `/events/${eventId}/email_templates/${templateId}`,
     payload

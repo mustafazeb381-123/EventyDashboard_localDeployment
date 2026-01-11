@@ -613,18 +613,42 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </h3>
         );
       case "paragraph":
+        const paragraphContent = formData[field.name] || field.content || field.label || "";
         return (
-          <p
-            className="text-sm"
+          <textarea
+            value={paragraphContent}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, [field.name]: e.target.value }));
+            }}
+            className="w-full text-sm resize-y"
             style={{
               color: theme?.textColor || "#111827",
               fontSize: theme?.textFontSize || "16px",
+              backgroundColor: theme?.inputBackgroundColor || "#ffffff",
+              borderColor: theme?.inputBorderColor || "#d1d5db",
+              borderWidth: theme?.inputBorderWidth || "1px",
+              borderRadius: theme?.inputBorderRadius || "6px",
+              padding: theme?.inputPadding || "10px 16px",
+              outline: "none",
+              minHeight: "80px",
             }}
-          >
-            {replaceInlineParams(
-              field.content || field.label || "Paragraph text"
-            )}
-          </p>
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor =
+                theme?.inputFocusBorderColor || "#3b82f6";
+              e.currentTarget.style.backgroundColor =
+                theme?.inputFocusBackgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor =
+                theme?.inputBorderColor || "#d1d5db";
+              e.currentTarget.style.backgroundColor =
+                theme?.inputBackgroundColor || "#ffffff";
+            }}
+            rows={4}
+            placeholder="Enter your paragraph"
+          />
         );
       case "spacer":
         return (
@@ -685,14 +709,25 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         : "auto",
   };
 
+  const formPadding = theme?.formPadding || "24px";
+  const paddingValue = typeof formPadding === "string" ? parseInt(formPadding) || 24 : formPadding;
+
   return (
     <div
       className="w-full rounded-xl shadow-lg overflow-hidden"
       style={formLayoutStyle}
     >
-      {/* Banner Image */}
+      {/* Banner Image - Full width, breaks out of padding */}
       {bannerImage && (
-        <div className="w-full h-64 bg-gray-100 overflow-hidden">
+        <div 
+          className="w-full h-24 bg-gray-100 overflow-hidden mb-2"
+          style={{
+            marginLeft: `-${paddingValue}px`,
+            marginRight: `-${paddingValue}px`,
+            marginTop: `-${paddingValue}px`,
+            width: `calc(100% + ${paddingValue * 2}px)`,
+          }}
+        >
           <img
             src={bannerImage}
             alt="Form banner"
@@ -703,29 +738,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
       <FormHeader theme={theme} />
 
-      <div>
-        <div
-          className="mb-6 pb-4 border-b"
-          style={{ borderColor: theme?.formBorderColor || "#e5e7eb" }}
-        >
-          <h3
-            className="text-2xl font-bold mb-2"
-            style={{
-              color: theme?.headingColor || "#111827",
-              fontSize: theme?.headingFontSize || "24px",
-              fontWeight: theme?.headingFontWeight || "bold",
-            }}
-          >
-            Form Preview
-          </h3>
-          <p
-            className="text-sm"
-            style={{ color: theme?.descriptionColor || "#6b7280" }}
-          >
-            See how your form will look to users
-          </p>
-        </div>
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div 
+        style={{ 
+          backgroundColor: theme?.formBackgroundColor || "#ffffff",
+        }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-6" style={{ width: "100%" }}>
           {(() => {
             // Calculate all child field IDs once to avoid duplicate rendering
             const allChildIds = new Set(
@@ -737,6 +755,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             return fields.map((field) => {
               // Skip rendering if this field is a child of a container (it will be rendered inside its parent)
               if (allChildIds.has(field.id)) {
+                return null;
+              }
+
+              // Skip heading fields from preview
+              if (field.type === "heading") {
                 return null;
               }
 
@@ -805,7 +828,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                     }
                   >
                     {childFields.length > 0 ? (
-                      childFields.map((childField) => {
+                      childFields
+                        .filter((childField) => childField.type !== "button")
+                        .map((childField) => {
                         // Determine wrapper style/class based on container type and Bootstrap class
                         let fieldWrapperClassName = "";
                         let fieldWrapperStyle: React.CSSProperties = {};
@@ -880,6 +905,28 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                           };
                         }
 
+                        // For button and paragraph fields inside containers, don't show label
+                        if (childField.type === "button" || childField.type === "paragraph") {
+                          return (
+                            <div
+                              key={childField.id}
+                              className={fieldWrapperClassName}
+                              style={fieldWrapperStyle}
+                            >
+                              <div style={{ width: "100%" }}>
+                                {renderField(
+                                  childField,
+                                  {
+                                    ...baseInputStyle,
+                                    width: "100%",
+                                  },
+                                  theme
+                                )}
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
                           <div
                             key={childField.id}
@@ -929,6 +976,126 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                         Drop fields here
                       </div>
                     )}
+                  </div>
+                );
+              }
+
+              // For heading fields, don't show label/description wrapper - just render the heading
+              if (field.type === "heading") {
+                return (
+                  <div
+                    key={field.id}
+                    style={{
+                      margin: field.fieldStyle?.margin || undefined,
+                      padding: field.fieldStyle?.padding || undefined,
+                      width: field.fieldStyle?.width || "100%",
+                      ...(field.fieldStyle?.marginTop
+                        ? { marginTop: field.fieldStyle.marginTop }
+                        : {}),
+                      ...(field.fieldStyle?.marginRight
+                        ? { marginRight: field.fieldStyle.marginRight }
+                        : {}),
+                      ...(field.fieldStyle?.marginBottom
+                        ? { marginBottom: field.fieldStyle.marginBottom }
+                        : {}),
+                      ...(field.fieldStyle?.marginLeft
+                        ? { marginLeft: field.fieldStyle.marginLeft }
+                        : {}),
+                      ...(field.fieldStyle?.paddingTop
+                        ? { paddingTop: field.fieldStyle.paddingTop }
+                        : {}),
+                      ...(field.fieldStyle?.paddingRight
+                        ? { paddingRight: field.fieldStyle.paddingRight }
+                        : {}),
+                      ...(field.fieldStyle?.paddingBottom
+                        ? { paddingBottom: field.fieldStyle.paddingBottom }
+                        : {}),
+                      ...(field.fieldStyle?.paddingLeft
+                        ? { paddingLeft: field.fieldStyle.paddingLeft }
+                        : {}),
+                    }}
+                  >
+                    {renderField(field, baseInputStyle, theme)}
+                  </div>
+                );
+              }
+
+              // For button fields, don't show label/description wrapper - just render the button
+              if (field.type === "button") {
+                return (
+                  <div
+                    key={field.id}
+                    style={{
+                      margin: field.fieldStyle?.margin || undefined,
+                      padding: field.fieldStyle?.padding || undefined,
+                      width: field.fieldStyle?.width || "100%",
+                      ...(field.fieldStyle?.marginTop
+                        ? { marginTop: field.fieldStyle.marginTop }
+                        : {}),
+                      ...(field.fieldStyle?.marginRight
+                        ? { marginRight: field.fieldStyle.marginRight }
+                        : {}),
+                      ...(field.fieldStyle?.marginBottom
+                        ? { marginBottom: field.fieldStyle.marginBottom }
+                        : {}),
+                      ...(field.fieldStyle?.marginLeft
+                        ? { marginLeft: field.fieldStyle.marginLeft }
+                        : {}),
+                      ...(field.fieldStyle?.paddingTop
+                        ? { paddingTop: field.fieldStyle.paddingTop }
+                        : {}),
+                      ...(field.fieldStyle?.paddingRight
+                        ? { paddingRight: field.fieldStyle.paddingRight }
+                        : {}),
+                      ...(field.fieldStyle?.paddingBottom
+                        ? { paddingBottom: field.fieldStyle.paddingBottom }
+                        : {}),
+                      ...(field.fieldStyle?.paddingLeft
+                        ? { paddingLeft: field.fieldStyle.paddingLeft }
+                        : {}),
+                    }}
+                  >
+                    {renderField(field, baseInputStyle, theme)}
+                  </div>
+                );
+              }
+
+              // For paragraph fields, don't show label/description wrapper - just render the paragraph content
+              if (field.type === "paragraph") {
+                return (
+                  <div
+                    key={field.id}
+                    style={{
+                      margin: field.fieldStyle?.margin || undefined,
+                      padding: field.fieldStyle?.padding || undefined,
+                      width: field.fieldStyle?.width || "100%",
+                      ...(field.fieldStyle?.marginTop
+                        ? { marginTop: field.fieldStyle.marginTop }
+                        : {}),
+                      ...(field.fieldStyle?.marginRight
+                        ? { marginRight: field.fieldStyle.marginRight }
+                        : {}),
+                      ...(field.fieldStyle?.marginBottom
+                        ? { marginBottom: field.fieldStyle.marginBottom }
+                        : {}),
+                      ...(field.fieldStyle?.marginLeft
+                        ? { marginLeft: field.fieldStyle.marginLeft }
+                        : {}),
+                      ...(field.fieldStyle?.paddingTop
+                        ? { paddingTop: field.fieldStyle.paddingTop }
+                        : {}),
+                      ...(field.fieldStyle?.paddingRight
+                        ? { paddingRight: field.fieldStyle.paddingRight }
+                        : {}),
+                      ...(field.fieldStyle?.paddingBottom
+                        ? { paddingBottom: field.fieldStyle.paddingBottom }
+                        : {}),
+                      ...(field.fieldStyle?.paddingLeft
+                        ? { paddingLeft: field.fieldStyle.paddingLeft }
+                        : {}),
+                    }}
+                  >
+                    {renderField(field, baseInputStyle, theme)}
                   </div>
                 );
               }

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { deleteEventUser } from "@/apis/apiHelpers";
 import { updateEventUser } from "@/apis/apiHelpers";
@@ -50,7 +50,9 @@ function RegisterdUser() {
     image: "",
     name: "",
     email: "",
+    phone_number: "",
     organization: "",
+    position: "",
     user_type: "",
     printed: false,
   });
@@ -159,7 +161,7 @@ function RegisterdUser() {
       if (editForm.organization)
         formData.append("event_user[organization]", editForm.organization);
       if (editForm.printed !== undefined)
-        formData.append("event_user[printed]", editForm.printed);
+        formData.append("event_user[printed]", String(editForm.printed));
 
       // ✅ Add user_type
       if (editForm.user_type)
@@ -212,12 +214,32 @@ function RegisterdUser() {
     const searchParams = new URLSearchParams(location.search);
     const idFromQuery = searchParams.get("eventId");
 
+    console.log("🔍 URL search params:", {
+      search: location.search,
+      idFromQuery,
+      currentEventId: eventId
+    });
+
     if (idFromQuery && idFromQuery !== eventId) {
       // Event changed, reset to page 1
+      console.log("✅ Setting eventId from URL:", idFromQuery);
       setEventId(idFromQuery);
       setCurrentPage(1);
+    } else if (!idFromQuery && eventId) {
+      // If no eventId in URL but we have one in state, keep it
+      console.log("⚠️ No eventId in URL, keeping current eventId:", eventId);
+    } else if (!idFromQuery && !eventId) {
+      // Try to get from localStorage as fallback
+      const storedEventId = localStorage.getItem("create_eventId") || localStorage.getItem("edit_eventId");
+      if (storedEventId) {
+        console.log("✅ Using eventId from localStorage:", storedEventId);
+        setEventId(storedEventId);
+      } else {
+        console.log("⚠️ No eventId found in URL or localStorage");
+      }
     }
-  }, [location.search]);
+  }, [location.search, eventId]);
+
 
   // Debounce search term
   useEffect(() => {
@@ -434,7 +456,7 @@ function RegisterdUser() {
     }
   };
 
-  const handleSelectAll = (e) => {
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
       setSelectedUsers(eventUsers.map((user) => user.id));
     } else {
@@ -442,7 +464,7 @@ function RegisterdUser() {
     }
   };
 
-  const handleSelectUser = (userId) => {
+  const handleSelectUser = (userId: string) => {
     setSelectedUsers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
@@ -508,11 +530,13 @@ function RegisterdUser() {
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
-            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-              {eventUsers.length} Users
-            </span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
+              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
+                {eventUsers.length} Users
+              </span>
+            </div>
           </div>
 
           <button
@@ -815,8 +839,10 @@ function RegisterdUser() {
                                 setEditForm({
                                   name: user?.attributes?.name || "",
                                   email: user?.attributes?.email || "",
+                                  phone_number: user?.attributes?.phone_number || "",
                                   organization:
                                     user?.attributes?.organization || "",
+                                  position: user?.attributes?.position || "",
                                   image: user?.attributes?.image || "",
                                   user_type: user?.attributes?.user_type || "",
                                   printed: user?.attributes?.printed || false,

@@ -97,20 +97,172 @@ const createStaticTemplates = (eventData: any) => {
   };
 };
 
+// Helper function to embed design in HTML as a hidden comment
+const embedDesignInHtml = (html: string, design: any): string => {
+  if (!design) return html;
+  try {
+    const designJson = typeof design === 'string' ? design : JSON.stringify(design);
+    // Embed design as a hidden HTML comment
+    const designComment = `<!-- EMAIL_EDITOR_DESIGN:${designJson} -->`;
+    // Insert before closing </body> tag, or at the end if no body tag
+    if (html.includes('</body>')) {
+      return html.replace('</body>', `${designComment}\n</body>`);
+    } else {
+      return html + designComment;
+    }
+  } catch (e) {
+    console.error("Failed to embed design in HTML:", e);
+    return html;
+  }
+};
+
+// Helper function to extract design from HTML
+const extractDesignFromHtml = (html: string): any => {
+  if (!html) return null;
+  try {
+    // First, try to extract from embedded comment (our solution)
+    const designMatch = html.match(/<!-- EMAIL_EDITOR_DESIGN:(.+?) -->/s);
+    if (designMatch && designMatch[1]) {
+      const designJson = designMatch[1];
+      return JSON.parse(designJson);
+    }
+  } catch (e) {
+    console.error("Failed to extract design from HTML comment:", e);
+  }
+  
+  // If no embedded design, try to convert HTML to basic design structure
+  try {
+    return convertHtmlToDesign(html);
+  } catch (e) {
+    console.error("Failed to convert HTML to design:", e);
+  }
+  
+  return null;
+};
+
+// Helper function to convert HTML to a basic design object structure
+// This creates a minimal design that react-email-editor can load
+const convertHtmlToDesign = (html: string): any => {
+  if (!html) return null;
+  
+  try {
+    // Parse HTML using DOMParser
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    
+    // Get body content
+    const body = doc.body || doc.querySelector('body');
+    if (!body) return null;
+    
+    // Create a basic design structure for react-email-editor
+    // This is a minimal structure - may not preserve all formatting
+    const rows: any[] = [];
+    
+    // Process top-level elements
+    Array.from(body.children).forEach((child) => {
+      const element = child as HTMLElement;
+      const columns: any[] = [];
+      
+      // Create a column with the element's content
+      const column = {
+        contents: [{
+          type: 'text',
+          value: element.innerHTML || element.textContent || '',
+          inline: false,
+        }],
+        width: '100%',
+      };
+      
+      columns.push(column);
+      
+      // Create a row with the column
+      const row = {
+        columns: columns,
+        backgroundColor: '',
+        columnsBackgroundColor: '',
+        padding: '0px',
+        border: {},
+        borderRadius: '0px',
+      };
+      
+      rows.push(row);
+    });
+    
+    // If no rows created, create one with body's innerHTML
+    if (rows.length === 0) {
+      rows.push({
+        columns: [{
+          contents: [{
+            type: 'text',
+            value: body.innerHTML || body.textContent || '',
+            inline: false,
+          }],
+          width: '100%',
+        }],
+        backgroundColor: '',
+        columnsBackgroundColor: '',
+        padding: '0px',
+        border: {},
+        borderRadius: '0px',
+      });
+    }
+    
+    // Return minimal design structure
+    return {
+      body: {
+        id: 'body',
+        rows: rows,
+        values: {},
+      },
+      counters: {},
+      schemaVersion: 1,
+    };
+  } catch (e) {
+    console.error("Error converting HTML to design:", e);
+    return null;
+  }
+};
+
+
 // ---------- Helper Functions ----------
 const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
-  return apiTemplates.map((tpl, idx) => ({
-    id: `api-${tpl.id}`,
-    title: tpl.attributes?.name || `${flowType.charAt(0).toUpperCase() + flowType.slice(1).replace('_', ' ')} Template ${idx + 1}`,
-    component: null,
-    design: null, // New API doesn't use design, only body/html
-    html: tpl.attributes?.body || "",
-    apiId: tpl.id,
-    isStatic: false,
-    type: tpl.attributes?.template_type || flowType,
-    isSelected: tpl.attributes?.selected || tpl.attributes?.is_selected || false, // Check for selected field from API
-    readyMadeId: null, // Will be set if this matches a ready-made template
-  }));
+  return apiTemplates.map((tpl, idx) => {
+    // Try to parse design from API attributes first (primary source)
+    let design = null;
+    try {
+      if (tpl.attributes?.design) {
+        design = typeof tpl.attributes.design === 'string' 
+          ? JSON.parse(tpl.attributes.design) 
+          : tpl.attributes.design;
+        console.log("Loaded design from API attributes for template:", tpl.id);
+      }
+    } catch (e) {
+      console.warn("Failed to parse design from API attributes for template:", e);
+    }
+    
+    // Try to extract design from HTML (embedded as comment)
+    if (!design && tpl.attributes?.body) {
+      const extractedDesign = extractDesignFromHtml(tpl.attributes.body);
+      if (extractedDesign) {
+        design = extractedDesign;
+        console.log("✅ Extracted design from HTML comment for template:", tpl.id);
+      }
+    }
+    
+    
+    return {
+      id: `api-${tpl.id}`,
+      title: tpl.attributes?.name || `${flowType.charAt(0).toUpperCase() + flowType.slice(1).replace('_', ' ')} Template ${idx + 1}`,
+      component: null,
+      design: design, // Load from API or localStorage
+      html: tpl.attributes?.body || "",
+      apiId: tpl.id,
+      isStatic: false,
+      type: tpl.attributes?.template_type || flowType,
+      isSelected: tpl.attributes?.selected || tpl.attributes?.is_selected || false, // Check for selected field from API
+      readyMadeId: null, // Will be set if this matches a ready-made template
+    };
+  });
 };
 
 // Helper function to check if an API template matches a ready-made template
@@ -124,11 +276,69 @@ const matchesReadyMadeTemplate = (apiTemplate: any, readyMadeTemplate: any): boo
 };
 
 // ---------- Modals ----------
-const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
+const EmailEditorModal = ({ open, initialDesign, initialHtml, templateId, onClose, onSave }: any) => {
   const emailEditorRef = useRef<any>(null);
-  useEffect(() => { if (!open) return; setTimeout(() => initialDesign && emailEditorRef.current?.editor?.loadDesign(initialDesign), 300); }, [open, initialDesign]);
+  const [editorReady, setEditorReady] = useState(false);
+  
+  // Reset editor ready state when modal opens/closes
+  useEffect(() => {
+    if (open) {
+      setEditorReady(false);
+    }
+  }, [open]);
+  
+  // Load design when editor is ready
+  useEffect(() => { 
+    if (!open || !editorReady || !emailEditorRef.current?.editor) return;
+    
+    // Get design from props (should already be extracted from HTML)
+    let designToLoad = initialDesign;
+    
+    if (designToLoad) {
+      try {
+        console.log("Loading design into editor:", designToLoad);
+        emailEditorRef.current.editor.loadDesign(designToLoad);
+        console.log("Design loaded successfully");
+      } catch (e) {
+        console.error("Failed to load design:", e);
+        toast.error("Failed to load template design");
+      }
+    } else if (initialHtml) {
+      // If no design, try to load HTML (though this may not work in all versions)
+      console.warn("No design available, trying to load HTML");
+      try {
+        if (typeof emailEditorRef.current.editor.loadHtml === 'function') {
+          emailEditorRef.current.editor.loadHtml(initialHtml);
+        } else {
+          console.warn("Design not available and loadHtml not supported - editor will open empty");
+        }
+      } catch (e) {
+        console.error("Failed to load HTML:", e);
+      }
+    } else {
+      console.log("No design or HTML to load - opening empty editor");
+    }
+  }, [open, editorReady, initialDesign, initialHtml, templateId]);
+  
+  const handleReady = () => {
+    console.log("Email editor is ready");
+    setEditorReady(true);
+  };
+  
   if (!open) return null;
-  const handleExport = () => emailEditorRef.current?.editor?.exportHtml((data: any) => { onSave(data.design, data.html); onClose(); });
+  
+  const handleExport = () => {
+    if (!emailEditorRef.current?.editor) {
+      toast.error("Editor not ready");
+      return;
+    }
+    emailEditorRef.current.editor.exportHtml((data: any) => {
+      console.log("Exporting template:", { hasDesign: !!data.design, hasHtml: !!data.html });
+      onSave(data.design, data.html);
+      onClose();
+    });
+  };
+  
   return (
     <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
       <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col h-[90vh]">
@@ -137,7 +347,12 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
           <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-200"><X size={20} /></button>
         </div>
         <div className="flex-1">
-          <EmailEditor ref={emailEditorRef} minHeight="100%" appearance={{ theme: "dark" }} />
+          <EmailEditor 
+            ref={emailEditorRef} 
+            minHeight="100%" 
+            appearance={{ theme: "dark" }}
+            onReady={handleReady}
+          />
         </div>
         <div className="p-3 border-t flex justify-end bg-gray-100">
           <button onClick={handleExport} className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg font-medium">Save Template</button>
@@ -149,15 +364,16 @@ const EmailEditorModal = ({ open, initialDesign, onClose, onSave }: any) => {
 
 const TemplateModal = ({ template, onClose, onSelect, onEdit, onDelete, eventDataKey }: any) => {
   if (!template) return null;
-  const isStatic = template.isStatic;
+  // Ready-made templates are read-only - check both isStatic and readyMadeId
+  const isReadyMade = template.isStatic || template.readyMadeId;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" key={eventDataKey}>
       <div className="bg-white p-6 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <div className="flex items-center gap-3">
-            {!isStatic && template.apiId && <button onClick={() => onEdit(template)} className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"><Pencil size={14} /></button>}
-            {!isStatic && template.apiId && <button onClick={() => onDelete(template)} className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"><Trash2 size={14} /></button>}
+            {!isReadyMade && template.apiId && <button onClick={() => onEdit(template)} className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"><Pencil size={14} /></button>}
+            {!isReadyMade && template.apiId && <button onClick={() => onDelete(template)} className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"><Trash2 size={14} /></button>}
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><X size={20} className="text-gray-500" /></button>
           </div>
         </div>
@@ -280,48 +496,47 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       console.log("Created static templates with eventData:", eventData?.attributes?.name);
       const staticTemplates = staticTemplatesMap[currentFlow.id as keyof typeof staticTemplatesMap] || [];
       
-      // Match ready-made templates with existing API templates
-      const matchedStaticTemplates = staticTemplates.map((staticTpl: any) => {
-        // Check if this ready-made template already exists in API
-        const existingApiTemplate = apiTemplates.find((apiTpl: any) => 
-          matchesReadyMadeTemplate(apiTpl, staticTpl)
+      // Filter out ready-made templates from API response to avoid duplicates
+      // Only show custom templates from API, not ready-made ones
+      const customApiTemplates = convertedTemplates.filter((apiTpl: any) => {
+        // Check if this API template matches any ready-made template
+        const isReadyMade = staticTemplates.some((staticTpl: any) => 
+          matchesReadyMadeTemplate({ attributes: { name: apiTpl.title } }, staticTpl)
         );
-        
-        if (existingApiTemplate) {
-          // If it exists, use the API template instead of the static one
-          const matchedTemplate = convertedTemplates.find((t: any) => t.apiId === existingApiTemplate.id);
-          if (matchedTemplate) {
-            return {
-              ...matchedTemplate,
-              readyMadeId: staticTpl.readyMadeId, // Keep the readyMadeId for reference
-              component: staticTpl.component, // Use the NEW component with latest event data from createStaticTemplates
-            };
-          }
-        }
-        // If it doesn't exist, keep it as a static template (already has latest event data)
-        return staticTpl;
+        // Only include if it's NOT a ready-made template
+        return !isReadyMade;
       });
       
-      // Filter out static templates that were matched (to avoid duplicates)
-      const unmatchedStaticTemplates = matchedStaticTemplates.filter((t: any) => !t.apiId);
-      const matchedTemplates = matchedStaticTemplates.filter((t: any) => t.apiId);
-      
-      // Combine: unmatched static templates + matched templates (from API) + other API templates
-      const otherApiTemplates = convertedTemplates.filter((t: any) => 
-        !matchedTemplates.some((mt: any) => mt.apiId === t.apiId)
-      );
-      
-      // Find the selected template from API response
-      const selectedTemplate = [...matchedTemplates, ...otherApiTemplates].find((t: any) => t.isSelected);
-      if (selectedTemplate) {
-        setSelectedTemplates((prev: any) => ({
-          ...prev,
-          [currentFlow.id]: selectedTemplate.id,
-        }));
+      // Find the selected template from API response (check if a ready-made template is selected)
+      const selectedApiTemplate = convertedTemplates.find((t: any) => t.isSelected);
+      if (selectedApiTemplate) {
+        // Check if the selected template is a ready-made template
+        const isSelectedReadyMade = staticTemplates.some((staticTpl: any) => 
+          matchesReadyMadeTemplate({ attributes: { name: selectedApiTemplate.title } }, staticTpl)
+        );
+        
+        if (isSelectedReadyMade) {
+          // If a ready-made template is selected, select the corresponding static template
+          const matchingStaticTemplate = staticTemplates.find((staticTpl: any) => 
+            matchesReadyMadeTemplate({ attributes: { name: selectedApiTemplate.title } }, staticTpl)
+          );
+          if (matchingStaticTemplate) {
+            setSelectedTemplates((prev: any) => ({
+              ...prev,
+              [currentFlow.id]: matchingStaticTemplate.id,
+            }));
+          }
+        } else {
+          // Custom template is selected
+          setSelectedTemplates((prev: any) => ({
+            ...prev,
+            [currentFlow.id]: selectedApiTemplate.id,
+          }));
+        }
       }
       
-      // Force complete recreation of templates array to ensure React detects the change
-      const updatedTemplates = [...unmatchedStaticTemplates, ...matchedTemplates, ...otherApiTemplates];
+      // Always show static templates + only custom templates from API (no ready-made duplicates)
+      const updatedTemplates = [...staticTemplates, ...customApiTemplates];
       console.log("Setting flows with updated templates count:", updatedTemplates.length);
       setFlows(prev => prev.map(f => 
         f.id === currentFlow.id 
@@ -394,11 +609,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
       return;
     }
 
-    // If it's a static template and doesn't have an API ID, check if it already exists
-    if (selectedTemplate.isStatic && !selectedTemplate.apiId) {
+    // Ready-made templates (isStatic or readyMadeId) - check if they exist in API
+    if (selectedTemplate.isStatic || selectedTemplate.readyMadeId) {
       setIsLoading(true);
       try {
-        // First, check if this ready-made template already exists in API
+        // Check if this ready-made template already exists in API
         const response = await getEmailTemplatesApi(effectiveEventId, currentFlow.id);
         const apiTemplates = response.data.data || [];
         const existingTemplate = apiTemplates.find((apiTpl: any) => 
@@ -406,26 +621,17 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         );
 
         if (existingTemplate) {
-          // Template already exists - just select it without creating a new one
-          const existingConverted = convertApiTemplates([existingTemplate], currentFlow.id)[0];
-          const updatedTemplate = {
-            ...selectedTemplate,
-            id: existingConverted.id,
-            apiId: existingConverted.apiId,
-            html: existingConverted.html,
-            isStatic: false,
-            readyMadeId: selectedTemplate.readyMadeId,
-            component: selectedTemplate.component, // Keep component for preview
-          };
-
-          // Update the flows with the existing template
+          // Template already exists in API - just select the static template (don't replace it)
+          // Keep static template visible, just mark it as selected
           setFlows(prev =>
             prev.map(f =>
               f.id === currentFlow.id
                 ? {
                     ...f,
                     templates: f.templates.map((t: any) =>
-                      t.id === templateId ? updatedTemplate : { ...t, isSelected: false }
+                      t.id === templateId
+                        ? { ...t, isSelected: true } // Select the static template
+                        : { ...t, isSelected: false } // Deselect others
                     ),
                   }
                 : f
@@ -434,12 +640,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
 
           setSelectedTemplates({
             ...selectedTemplates,
-            [currentFlow.id]: updatedTemplate.id,
+            [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
           toast.success("Template selected!");
         } else {
-          // Template doesn't exist - create it once
+          // Template doesn't exist - create it via POST API
           // Convert React component to HTML string
           let htmlString = "";
           if (selectedTemplate.component) {
@@ -457,50 +663,42 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
             return;
           }
 
-          // Call POST API to save the static template (only once)
+          // Call POST API to save the ready-made template
           const apiResp = await createEmailTemplateApi(
             effectiveEventId,
             currentFlow.id,
             htmlString,
             selectedTemplate.title
           );
-          console.log("apiResp of post api for static template", apiResp);
+          console.log("apiResp of post api for ready-made template", apiResp);
 
-          // Update the template with API response
-          const updatedTemplate = {
-            ...selectedTemplate,
-            id: `api-${apiResp.data.data.id}`,
-            apiId: apiResp.data.data.id,
-            html: htmlString,
-            isStatic: false,
-            readyMadeId: selectedTemplate.readyMadeId,
-            component: selectedTemplate.component, // Keep component for preview
-          };
-
-          // Update the flows with the new template and remove old selection
+          // Keep the static template visible, just mark it as selected
+          // The template is saved to API but we don't replace the static template in the UI
           setFlows(prev =>
             prev.map(f =>
               f.id === currentFlow.id
                 ? {
                     ...f,
                     templates: f.templates.map((t: any) =>
-                      t.id === templateId ? updatedTemplate : { ...t, isSelected: false }
+                      t.id === templateId
+                        ? { ...t, isSelected: true } // Select the static template
+                        : { ...t, isSelected: false } // Deselect others
                     ),
                   }
                 : f
             )
           );
 
-          // Only one template can be selected at a time - set this as selected
+          // Set static template as selected
           setSelectedTemplates({
             ...selectedTemplates,
-            [currentFlow.id]: updatedTemplate.id,
+            [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
           toast.success("Template saved and selected!");
         }
       } catch (e) {
-        console.error("Failed to save/select static template:", e);
+        console.error("Failed to save/select ready-made template:", e);
         toast.error("Failed to save template");
       } finally {
         setIsLoading(false);
@@ -527,13 +725,40 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
     }
   };
   const handleCreateNewTemplate = () => { setIsCreatingNew(true); setEditingTemplate(null); setIsEditorOpen(true); };
-  const handleEditTemplate = (template: any) => { 
-    // Ready-made templates cannot be updated
-    if (template.isStatic) {
+  const handleEditTemplate = async (template: any) => { 
+    // Ready-made templates cannot be updated - check both isStatic and readyMadeId
+    if (template.isStatic || template.readyMadeId) {
       toast.warning("Ready-made templates cannot be edited. Please create a custom template instead.");
       return;
     }
-    setEditingTemplate(template); 
+    
+    // Get the latest template from flows to ensure we have the most up-to-date data
+    const latestTemplate = currentFlow.templates.find((t: any) => t.id === template.id) || template;
+    
+    // Ensure we have the design loaded from localStorage if not in template
+    let templateWithDesign = { ...latestTemplate };
+    
+    // Try to extract design from HTML if not already loaded
+    if (!templateWithDesign.design && templateWithDesign.html) {
+      const extractedDesign = extractDesignFromHtml(templateWithDesign.html);
+      if (extractedDesign) {
+        templateWithDesign.design = extractedDesign;
+        console.log("✅ Extracted design from HTML for editing, templateId:", templateWithDesign.apiId);
+      } else {
+        console.warn("No design found in HTML for templateId:", templateWithDesign.apiId);
+        toast.warning("Template design not found. Editor will open empty. Please recreate the template.");
+      }
+    }
+    
+    console.log("Editing template:", {
+      id: templateWithDesign.id,
+      apiId: templateWithDesign.apiId,
+      title: templateWithDesign.title,
+      hasDesign: !!templateWithDesign.design,
+      hasHtml: !!templateWithDesign.html
+    });
+    
+    setEditingTemplate(templateWithDesign); 
     setModalTemplate(null); 
     setIsEditorOpen(true); 
   };
@@ -541,21 +766,26 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   const handleBack = () => { if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1); else onPrevious?.(); };
   const handleNext = () => { if (!selectedTemplates[currentFlow.id]) { toast.warning("Please select template"); return; } if (currentFlowIndex < flows.length - 1) setCurrentFlowIndex(currentFlowIndex + 1); else onNext?.(effectiveEventId || undefined); };
 
-  const handleSaveFromEditor = async (_design: any, html: string) => {
+  const handleSaveFromEditor = async (design: any, html: string) => {
     if (!effectiveEventId) return;
 
     if (isCreatingNew) {
       setIsLoading(true);
       try {
-        const apiResp = await createEmailTemplateApi(effectiveEventId, currentFlow.id, html, `Custom ${currentFlow.label} Template`);
+        // Embed design in HTML so it's stored in API
+        const htmlWithDesign = embedDesignInHtml(html, design);
+        const apiResp = await createEmailTemplateApi(effectiveEventId, currentFlow.id, htmlWithDesign, `Custom ${currentFlow.label} Template`, design);
         console.log("apiResp of post api", apiResp);
+        const apiId = apiResp.data.data.id;
+        console.log("✅ Design embedded in HTML and saved to API for new template, apiId:", apiId);
+        
         const newTemplate = { 
-          id: `api-${apiResp.data.data.id}`, 
+          id: `api-${apiId}`, 
           title: apiResp.data.data.attributes?.name || `Custom ${currentFlow.label} Template`, 
           component: null, 
-          design: null, 
+          design: design, // Store design object for editing
           html, 
-          apiId: apiResp.data.data.id, 
+          apiId: apiId, 
           isStatic: false, 
           type: currentFlow.id 
         };
@@ -583,25 +813,46 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         toast.error("Failed to create template"); 
       } finally { setIsLoading(false); }
     } else if (editingTemplate) {
+      // Ready-made templates cannot be updated - check both isStatic and readyMadeId
+      if (editingTemplate.isStatic || editingTemplate.readyMadeId) {
+        toast.warning("Ready-made templates cannot be updated. Please create a custom template instead.");
+        setIsEditorOpen(false);
+        setEditingTemplate(null);
+        return;
+      }
       setIsLoading(true);
       try { 
         const templateName = editingTemplate.title || `Custom ${currentFlow.label} Template`;
-        await updateEmailTemplateApi(effectiveEventId, editingTemplate.apiId, currentFlow.id, html, templateName); 
-        setFlows(prev => prev.map(f => ({ 
-          ...f, 
-          templates: f.templates.map((t: any) => 
-            t.id === editingTemplate.id 
-              ? { ...t, html, design: null, title: templateName } 
-              : t
-          ) 
-        }))); 
+        console.log("Updating template:", { 
+          eventId: effectiveEventId, 
+          templateId: editingTemplate.apiId, 
+          flowType: currentFlow.id, 
+          hasDesign: !!design,
+          htmlLength: html?.length 
+        });
+        
+        // Embed design in HTML so it's stored in API
+        const htmlWithDesign = embedDesignInHtml(html, design);
+        const updateResponse = await updateEmailTemplateApi(effectiveEventId, editingTemplate.apiId, currentFlow.id, htmlWithDesign, templateName, design);
+        console.log("Update API response:", updateResponse);
+        console.log("✅ Design embedded in HTML and saved to API after update, apiId:", editingTemplate.apiId);
+        
+        // Reload templates from API to get the latest data
+        console.log("Reloading templates after update...");
+        await loadTemplatesFromAPI();
+        
         setEditingTemplate(null); 
         setIsEditorOpen(false); 
         toast.success("Template updated!"); 
       }
-      catch (e) { 
+      catch (e: any) { 
         console.error("Failed to update template:", e);
-        toast.error("Failed to update template"); 
+        console.error("Error details:", {
+          message: e?.message,
+          response: e?.response?.data,
+          status: e?.response?.status
+        });
+        toast.error(e?.response?.data?.message || "Failed to update template"); 
       } finally { setIsLoading(false); }
     }
   };
@@ -651,6 +902,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         onSelect={handleSelectTemplate} 
         onEdit={handleEditTemplate} 
         onDelete={async (tpl: any) => { 
+        // Ready-made templates cannot be deleted - check both isStatic and readyMadeId
+        if (tpl.isStatic || tpl.readyMadeId) {
+          toast.warning("Ready-made templates cannot be deleted.");
+          return;
+        }
         if (!effectiveEventId || !tpl.apiId) return; 
         setIsLoading(true); 
         try { 
@@ -675,7 +931,14 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         } 
       }} />
 
-      <EmailEditorModal open={isEditorOpen} initialDesign={editingTemplate?.design} onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} onSave={handleSaveFromEditor} />
+      <EmailEditorModal 
+        open={isEditorOpen} 
+        initialDesign={editingTemplate?.design} 
+        initialHtml={editingTemplate?.html} 
+        templateId={editingTemplate?.apiId || (isCreatingNew ? 'new' : null)}
+        onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} 
+        onSave={handleSaveFromEditor} 
+      />
     </div>
   );
 };
