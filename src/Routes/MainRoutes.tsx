@@ -33,10 +33,10 @@ function MainRoutes() {
     "/attendees/check-in",
     "/attendees/check-out",
     "/committees",
-    "/communication/Poll",
+    "/communication/poll",
     "/communication/QA",
     "/TicketManagement",
-    "/Onboarding"
+    "/Onboarding",
   ];
 
   // --- FIXED: use startsWith() instead of includes() ---
@@ -119,10 +119,10 @@ function MainRoutes() {
           isRTL
             ? isExpanded
               ? "mr-[280px]"
-              : "mr-[80px]"
+              : "mr-20"
             : isExpanded
             ? "ml-[280px]"
-            : "ml-[80px]"
+            : "ml-20"
         }`}
       >
         <Outlet />
