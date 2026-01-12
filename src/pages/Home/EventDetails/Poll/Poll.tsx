@@ -40,18 +40,22 @@ const normalizePoll = (poll: any): Poll => {
     // JSON:API format
     return {
       id: Number(poll.id),
-      agenda_id: poll.attributes.agenda_id || poll.relationships?.agenda?.data?.id || 0,
+      agenda_id:
+        poll.attributes.agenda_id || poll.relationships?.agenda?.data?.id || 0,
       question: poll.attributes.question || "",
       poll_type: poll.attributes.poll_type || "single_answer",
       active: poll.attributes.active ?? false,
       total_votes: poll.attributes.total_votes || 0,
-      poll_options: poll.attributes.poll_options?.data?.map((opt: any) => ({
-        id: Number(opt.id || opt.attributes?.id),
-        poll_id: Number(poll.id),
-        option_text: opt.attributes?.option_text || opt.option_text || "",
-        votes_count: opt.attributes?.votes_count || opt.votes_count || 0,
-        percentage: opt.attributes?.percentage || opt.percentage || 0,
-      })) || poll.attributes.poll_options || [],
+      poll_options:
+        poll.attributes.poll_options?.data?.map((opt: any) => ({
+          id: Number(opt.id || opt.attributes?.id),
+          poll_id: Number(poll.id),
+          option_text: opt.attributes?.option_text || opt.option_text || "",
+          votes_count: opt.attributes?.votes_count || opt.votes_count || 0,
+          percentage: opt.attributes?.percentage || opt.percentage || 0,
+        })) ||
+        poll.attributes.poll_options ||
+        [],
       created_at: poll.attributes.created_at || "",
       updated_at: poll.attributes.updated_at || "",
     };
@@ -98,7 +102,7 @@ const PollPage = () => {
       setIsLoadingAgendas(true);
       try {
         const response = await getAgendaApi(eventId);
-        console.log('response of get agenda api-------', response.data.data);
+        console.log("response of get agenda api-------", response.data.data);
         const data = response.data?.data || response.data || [];
         const agendaList: AgendaLite[] = Array.isArray(data)
           ? data.map((item: any) => ({
@@ -187,7 +191,7 @@ const PollPage = () => {
       // Handle different response structures
       const responseData = response.data;
       const pollsData = responseData?.data || responseData || [];
-      const normalizedPolls = Array.isArray(pollsData) 
+      const normalizedPolls = Array.isArray(pollsData)
         ? pollsData.map(normalizePoll)
         : [];
       setPolls(normalizedPolls);
@@ -307,7 +311,7 @@ const PollPage = () => {
   };
 
   const onToggleActive = async (poll: Poll) => {
-    console.log('poll-------', poll);
+    console.log("poll-------", poll);
     if (!eventId || !selectedAgendaId) return;
     try {
       if (poll.active) {
@@ -450,7 +454,8 @@ const PollPage = () => {
 
         {(polls || []).map((poll) => {
           const sessionName =
-            agendas.find((a) => a.id === poll.agenda_id)?.title || "Session Name";
+            agendas.find((a) => a.id === poll.agenda_id)?.title ||
+            "Session Name";
           const questionCount = poll.poll_options?.length || 0;
 
           return (
@@ -482,8 +487,16 @@ const PollPage = () => {
                   onClick={(e) => e.stopPropagation()}
                   title="Info"
                 >
-                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
                 <div

@@ -118,13 +118,13 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             })),
           },
         });
-        
+
         console.log("Create poll response:", response.data);
-        
+
         toast.success("Poll created successfully");
         setIsAddingNew(false);
         setIsEditing(false);
-        
+
         // Refresh to get the updated poll data
         // Note: After creating, you might need to navigate to the new poll's page
         // For now, we'll refresh which should work if we're viewing that poll
@@ -149,9 +149,9 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
       }
     } catch (error: any) {
       console.error("Error saving poll:", error);
-      const errorMessage = 
-        error?.response?.data?.message || 
-        error?.response?.data?.error || 
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
         "Failed to save poll";
       toast.error(errorMessage);
     } finally {
@@ -255,17 +255,25 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
               {/* Poll Type Badge */}
               <div className="mb-4">
                 <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
-                  {poll.poll_type === "single_answer" ? "Single Answer" : "Multiple Answer"}
+                  {poll.poll_type === "single_answer"
+                    ? "Single Answer"
+                    : "Multiple Answer"}
                 </span>
               </div>
 
               {/* Answer Options */}
               <div className="space-y-3">
-                <p className="text-sm text-gray-500 mb-2 font-medium">Options:</p>
+                <p className="text-sm text-gray-500 mb-2 font-medium">
+                  Options:
+                </p>
                 {(poll.poll_options || []).map((option, index) => (
                   <div key={option.id} className="flex items-center gap-3">
                     <input
-                      type={poll.poll_type === "single_answer" ? "radio" : "checkbox"}
+                      type={
+                        poll.poll_type === "single_answer"
+                          ? "radio"
+                          : "checkbox"
+                      }
                       disabled
                       className="w-5 h-5 rounded border-gray-300"
                     />
@@ -280,7 +288,9 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                   </div>
                 ))}
                 {(!poll.poll_options || poll.poll_options.length === 0) && (
-                  <p className="text-sm text-gray-400 italic">No options available</p>
+                  <p className="text-sm text-gray-400 italic">
+                    No options available
+                  </p>
                 )}
               </div>
             </div>
@@ -289,7 +299,9 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             <div className="flex items-center gap-1 ml-4">
               <button
                 onClick={() => {
-                  if (window.confirm("Are you sure you want to delete this poll?")) {
+                  if (
+                    window.confirm("Are you sure you want to delete this poll?")
+                  ) {
                     toast.info("Delete functionality handled by parent");
                   }
                 }}

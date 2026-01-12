@@ -2,11 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import {
-  ChevronLeft,
-  Loader2,
-  ArrowRight,
-} from "lucide-react";
+import { ChevronLeft, Loader2, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,7 +30,6 @@ const PollDetails = () => {
   );
   const [triggerAddQuestion, setTriggerAddQuestion] = useState(0);
 
-
   const canLoad = useMemo(
     () => Boolean(id) && Boolean(eventId) && Boolean(agendaId),
     [id, eventId, agendaId]
@@ -54,16 +49,16 @@ const PollDetails = () => {
         console.log("Direct poll endpoint failed, trying results endpoint");
         response = await getAgendaPollResults(eventId!, agendaId!, id!);
       }
-      
+
       // Handle flexible response structure including JSON:API format
       const responseData = response.data as any;
-      
+
       console.log("Poll response data:", JSON.stringify(responseData, null, 2));
-      
+
       // Handle JSON:API format: response.data.data.attributes or response.data.attributes
       let pollData: any = null;
       let pollOptions: any[] = [];
-      
+
       if (responseData?.data?.attributes) {
         // JSON:API format - nested structure
         const attributes = responseData.data.attributes;
@@ -77,11 +72,14 @@ const PollDetails = () => {
           created_at: attributes.created_at,
           updated_at: attributes.updated_at,
         };
-        
+
         console.log("Poll options from attributes:", attributes.poll_options);
-        
+
         // Handle poll_options in JSON:API format - multiple possible structures
-        if (attributes.poll_options?.data && Array.isArray(attributes.poll_options.data)) {
+        if (
+          attributes.poll_options?.data &&
+          Array.isArray(attributes.poll_options.data)
+        ) {
           // Structure: poll_options.data[].attributes.option_text
           pollOptions = attributes.poll_options.data.map((opt: any) => ({
             id: Number(opt.id),
@@ -90,7 +88,10 @@ const PollDetails = () => {
             votes_count: opt.attributes?.votes_count ?? opt.votes_count ?? 0,
             percentage: opt.attributes?.percentage ?? opt.percentage ?? 0,
           }));
-        } else if (attributes.poll_options && Array.isArray(attributes.poll_options)) {
+        } else if (
+          attributes.poll_options &&
+          Array.isArray(attributes.poll_options)
+        ) {
           // Structure: poll_options[] with direct properties
           pollOptions = attributes.poll_options.map((opt: any) => ({
             id: Number(opt.id || opt.attributes?.id),
@@ -99,11 +100,17 @@ const PollDetails = () => {
             votes_count: opt.votes_count ?? opt.attributes?.votes_count ?? 0,
             percentage: opt.percentage ?? opt.attributes?.percentage ?? 0,
           }));
-        } else if (attributes.poll_options && typeof attributes.poll_options === "object") {
+        } else if (
+          attributes.poll_options &&
+          typeof attributes.poll_options === "object"
+        ) {
           // Handle case where poll_options is an object but not an array
-          console.warn("poll_options is an object but not an array:", attributes.poll_options);
+          console.warn(
+            "poll_options is an object but not an array:",
+            attributes.poll_options
+          );
         }
-        
+
         pollData.poll_options = pollOptions;
       } else if (responseData?.poll) {
         // Standard format with poll object
@@ -135,8 +142,11 @@ const PollDetails = () => {
             created_at: attributes.created_at,
             updated_at: attributes.updated_at,
           };
-          
-          if (attributes.poll_options?.data && Array.isArray(attributes.poll_options.data)) {
+
+          if (
+            attributes.poll_options?.data &&
+            Array.isArray(attributes.poll_options.data)
+          ) {
             pollOptions = attributes.poll_options.data.map((opt: any) => ({
               id: Number(opt.id),
               poll_id: pollData.id,
@@ -144,7 +154,10 @@ const PollDetails = () => {
               votes_count: opt.attributes?.votes_count ?? opt.votes_count ?? 0,
               percentage: opt.attributes?.percentage ?? opt.percentage ?? 0,
             }));
-          } else if (attributes.poll_options && Array.isArray(attributes.poll_options)) {
+          } else if (
+            attributes.poll_options &&
+            Array.isArray(attributes.poll_options)
+          ) {
             pollOptions = attributes.poll_options.map((opt: any) => ({
               id: Number(opt.id || opt.attributes?.id),
               poll_id: pollData.id,
@@ -171,7 +184,11 @@ const PollDetails = () => {
       console.log("Parsed poll data:", pollData);
       console.log("Poll options count:", pollData?.poll_options?.length || 0);
 
-      if (pollData && typeof pollData === "object" && ("id" in pollData || pollData.id)) {
+      if (
+        pollData &&
+        typeof pollData === "object" &&
+        ("id" in pollData || pollData.id)
+      ) {
         setPoll(pollData as Poll);
         setTotalVotes(
           responseData?.total_votes ??
@@ -207,7 +224,6 @@ const PollDetails = () => {
     );
   };
 
-
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-6">
       <ToastContainer position="top-right" autoClose={4000} />
@@ -228,9 +244,7 @@ const PollDetails = () => {
         <div className="flex items-center gap-2 text-sm text-gray-500 ml-8">
           <span>Polls</span>
           <span className="text-gray-400">&gt;</span>
-          <span className="text-gray-700">
-            {poll?.question || "Poll Name"}
-          </span>
+          <span className="text-gray-700">{poll?.question || "Poll Name"}</span>
         </div>
       </div>
 
