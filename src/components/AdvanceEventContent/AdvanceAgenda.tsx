@@ -184,22 +184,75 @@ function AdvanceAgenda({
   const handleEditSession = (session: any) => {
     setEditingSession(session);
     
-    // Format date from the session data
-    const startDate = session.start_date || session.startTime.split(' ')[0];
+    // Extract date - try multiple formats
+    let startDate = "";
+    if (session.start_date) {
+      // If start_date exists, use it directly
+      startDate = session.start_date;
+    } else if (session.startTime) {
+      // Try to extract date from startTime (format: "2024-01-01 10:00:00 +0300" or "2024-01-01 10:00")
+      const dateMatch = session.startTime.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        startDate = dateMatch[1];
+      } else {
+        // Fallback: split by space and take first part
+        startDate = session.startTime.split(' ')[0];
+      }
+    }
+    
+    // Extract time from startTime - handle different formats
+    let timeFrom = "";
+    if (session.startTime) {
+      // Try to match time pattern (HH:MM or HH:MM:SS)
+      const timeMatch = session.startTime.match(/(\d{2}:\d{2})(?::\d{2})?/);
+      if (timeMatch) {
+        timeFrom = timeMatch[1]; // Get HH:MM format
+      } else {
+        // Fallback: split and get second part, then take first 5 chars
+        const parts = session.startTime.split(' ');
+        if (parts.length > 1) {
+          timeFrom = parts[1].substring(0, 5);
+        }
+      }
+    }
+    
+    // Extract time from endTime - handle different formats
+    let timeTo = "";
+    if (session.endTime) {
+      // Try to match time pattern (HH:MM or HH:MM:SS)
+      const timeMatch = session.endTime.match(/(\d{2}:\d{2})(?::\d{2})?/);
+      if (timeMatch) {
+        timeTo = timeMatch[1]; // Get HH:MM format
+      } else {
+        // Fallback: split and get second part, then take first 5 chars
+        const parts = session.endTime.split(' ');
+        if (parts.length > 1) {
+          timeTo = parts[1].substring(0, 5);
+        }
+      }
+    }
     
     // Determine payment settings
     const isPaid = session.pay_by !== "free";
     const onlinePayment = session.pay_by === "online";
     const cashPayment = session.pay_by === "cash";
     
+    console.log("Editing session:", {
+      session,
+      startDate,
+      timeFrom,
+      timeTo,
+      speaker_ids: session.speaker_ids
+    });
+    
     setNewSession({
-      title: session.title,
+      title: session.title || "",
       date: startDate,
-      timeFrom: session.startTime.split(' ')[1]?.substring(0, 5) || "",
-      timeTo: session.endTime.split(' ')[1]?.substring(0, 5) || "",
-      location: session.location,
-      display: session.display, // Set the current display status
-      requiredEnrolment: session.require_enroll,
+      timeFrom: timeFrom,
+      timeTo: timeTo,
+      location: session.location || "",
+      display: session.display !== false, // Default to true if not specified
+      requiredEnrolment: session.require_enroll || false,
       paid: isPaid,
       price: session.price || "",
       currency: session.currency || "USD",
@@ -207,13 +260,59 @@ function AdvanceAgenda({
       cashPayment: cashPayment,
     });
     
-    // Set selected speakers from the session
-    setSelectedSpeakers(session.speaker_ids?.map((id: number) => id.toString()) || []);
+    // Set selected speakers from the session - ensure they're strings
+    const speakerIds = session.speaker_ids || [];
+    setSelectedSpeakers(speakerIds.map((id: any) => String(id)));
     setEditModalOpen(true);
   };
 
   const handleUpdateSession = async () => {
     if (!editingSession) return;
+
+    // Validate required fields
+    if (!newSession.title || !newSession.title.trim()) {
+      showNotification("Please enter a title!", "error");
+      return;
+    }
+
+    if (!newSession.date) {
+      showNotification("Please select a date!", "error");
+      return;
+    }
+
+    // Validate time fields
+    if (!newSession.timeFrom || !newSession.timeFrom.trim()) {
+      showNotification("Please enter a start time!", "error");
+      return;
+    }
+
+    if (!newSession.timeTo || !newSession.timeTo.trim()) {
+      showNotification("Please enter an end time!", "error");
+      return;
+    }
+
+    // Validate time format (HH:MM)
+    const timeFormatRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeFormatRegex.test(newSession.timeFrom)) {
+      showNotification("Please enter a valid start time format (HH:MM)!", "error");
+      return;
+    }
+
+    if (!timeFormatRegex.test(newSession.timeTo)) {
+      showNotification("Please enter a valid end time format (HH:MM)!", "error");
+      return;
+    }
+
+    // Validate that end time is after start time
+    const [startHours, startMinutes] = newSession.timeFrom.split(':').map(Number);
+    const [endHours, endMinutes] = newSession.timeTo.split(':').map(Number);
+    const startTimeInMinutes = startHours * 60 + startMinutes;
+    const endTimeInMinutes = endHours * 60 + endMinutes;
+
+    if (endTimeInMinutes <= startTimeInMinutes) {
+      showNotification("End time must be after start time!", "error");
+      return;
+    }
 
     // Validation for paid sessions
     if (newSession.paid) {
@@ -260,7 +359,7 @@ function AdvanceAgenda({
       const response = await updateAgendaApi(eventId!, editingSession.id, payload);
       console.log('Update response:', response.data);
       
-      // Update local state
+      // Update local state - preserve all fields including dates
       setSessions(prev => prev.map(session => 
         session.id === editingSession.id 
           ? {
@@ -269,6 +368,8 @@ function AdvanceAgenda({
               location: newSession.location,
               startTime: `${newSession.date} ${newSession.timeFrom}:00 +0300`,
               endTime: `${newSession.date} ${newSession.timeTo}:00 +0300`,
+              start_date: newSession.date, // Preserve start_date for next edit
+              end_date: newSession.date, // Preserve end_date for next edit
               display: newSession.display, // Update display status
               require_enroll: newSession.requiredEnrolment,
               pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
@@ -284,6 +385,35 @@ function AdvanceAgenda({
       setEditModalOpen(false);
       setEditingSession(null);
       resetForm();
+      
+      // Refetch agendas to ensure we have the latest data from server
+      // This ensures dates and times are in the correct format for next edit
+      try {
+        const refreshResponse = await getAgendaApi(eventId!);
+        if (refreshResponse.status === 200) {
+          const refreshedAgendas = refreshResponse.data.data.map((item: any) => ({
+            id: item.id,
+            title: item.attributes.title,
+            startTime: item.attributes.formatted_time.start_time,
+            endTime: item.attributes.formatted_time.end_time,
+            location: item.attributes.location,
+            type: item.attributes.agenda_type,
+            sponsors: item.attributes.speakers || [],
+            display: item.attributes.display !== false,
+            require_enroll: item.attributes.require_enroll || false,
+            pay_by: item.attributes.pay_by || "free",
+            price: item.attributes.price || "",
+            currency: item.attributes.currency || "USD",
+            start_date: item.attributes.formatted_time.start_date,
+            end_date: item.attributes.formatted_time.end_date,
+            speaker_ids: item.attributes.speaker_ids || []
+          }));
+          setSessions(refreshedAgendas);
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing agendas:", refreshError);
+        // Don't show error to user since the update was successful
+      }
     } catch (error) {
       console.error("Error updating session:", error);
       showNotification("Error updating session!", "error");
@@ -293,8 +423,48 @@ function AdvanceAgenda({
   };
 
   const handleAddSession = async () => {
-    if (!newSession.title || !newSession.date || !newSession.timeFrom || !newSession.timeTo) {
-      showNotification("Please fill all required fields!", "error");
+    // Validate required fields
+    if (!newSession.title || !newSession.title.trim()) {
+      showNotification("Please enter a title!", "error");
+      return;
+    }
+
+    if (!newSession.date) {
+      showNotification("Please select a date!", "error");
+      return;
+    }
+
+    // Validate time fields
+    if (!newSession.timeFrom || !newSession.timeFrom.trim()) {
+      showNotification("Please enter a start time!", "error");
+      return;
+    }
+
+    if (!newSession.timeTo || !newSession.timeTo.trim()) {
+      showNotification("Please enter an end time!", "error");
+      return;
+    }
+
+    // Validate time format (HH:MM)
+    const timeFormatRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeFormatRegex.test(newSession.timeFrom)) {
+      showNotification("Please enter a valid start time format (HH:MM)!", "error");
+      return;
+    }
+
+    if (!timeFormatRegex.test(newSession.timeTo)) {
+      showNotification("Please enter a valid end time format (HH:MM)!", "error");
+      return;
+    }
+
+    // Validate that end time is after start time
+    const [startHours, startMinutes] = newSession.timeFrom.split(':').map(Number);
+    const [endHours, endMinutes] = newSession.timeTo.split(':').map(Number);
+    const startTimeInMinutes = startHours * 60 + startMinutes;
+    const endTimeInMinutes = endHours * 60 + endMinutes;
+
+    if (endTimeInMinutes <= startTimeInMinutes) {
+      showNotification("End time must be after start time!", "error");
       return;
     }
 
@@ -342,12 +512,14 @@ function AdvanceAgenda({
       const response = await createAgendaApi(eventId!, payload);
       console.log('Create response:', response.data);
 
-      // Add to local state
+      // Add to local state - include dates for proper editing later
       const newSessionData = {
         id: response.data.data.id,
         title: newSession.title,
         startTime: `${newSession.date} ${newSession.timeFrom}:00 +0300`,
         endTime: `${newSession.date} ${newSession.timeTo}:00 +0300`,
+        start_date: newSession.date, // Preserve for editing
+        end_date: newSession.date, // Preserve for editing
         location: newSession.location,
         type: "presentation",
         sponsors: availableSpeakers.filter(speaker => selectedSpeakers.includes(speaker.id.toString())),
@@ -407,10 +579,46 @@ function AdvanceAgenda({
     }
   };
 
+  // Format date and time for display - shows both date and time clearly
+  const formatDateTime = (dateTimeString: string) => {
+    if (!dateTimeString) return "-";
+    
+    try {
+      // Handle different formats: "2025-06-22 18:49:00 +0300" or "2025-06-22 18:49:00"
+      const dateTime = dateTimeString.replace(/\s+\+\d{4}$/, ''); // Remove timezone offset
+      const [datePart, timePart] = dateTime.split(' ');
+      
+      if (!datePart || !timePart) return dateTimeString;
+      
+      // Format date: "2025-06-22" -> "2025-06-22" (keep readable format)
+      const [year, month, day] = datePart.split('-');
+      const formattedDate = `${year}-${month}-${day}`;
+      
+      // Format time: "18:49:00" -> "06:49 PM" (12-hour format)
+      const [hours, minutes] = timePart.split(':');
+      const hour24 = parseInt(hours);
+      const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
+      const ampm = hour24 >= 12 ? 'PM' : 'AM';
+      const formattedTime = `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+      
+      // Return both date and time in a clear format
+      return (
+        <div className="flex flex-col">
+          <span className="text-gray-900 font-medium">{formattedDate}</span>
+          <span className="text-gray-600 text-xs mt-0.5">{formattedTime}</span>
+        </div>
+      );
+    } catch (error) {
+      // If parsing fails, return original string
+      return <span>{dateTimeString}</span>;
+    }
+  };
+
   const closeModals = () => {
     setAddModalOpen(false);
     setEditModalOpen(false);
     setEditingSession(null);
+    setSelectedSpeakers([]);
     resetForm();
   };
 
@@ -585,11 +793,11 @@ function AdvanceAgenda({
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {session.startTime}
+                    {formatDateTime(session.startTime)}
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {session.endTime}
+                    {formatDateTime(session.endTime)}
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
@@ -684,7 +892,7 @@ function AdvanceAgenda({
                 <div className="space-y-6">
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-1.5">
-                      Title *
+                      Title <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -693,6 +901,7 @@ function AdvanceAgenda({
                       onChange={(e) =>
                         setNewSession({ ...newSession, title: e.target.value })
                       }
+                      required
                       disabled={isAddingSession || isUpdatingSession}
                       className="w-full p-2.5 border border-gray-300 rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                     />
@@ -700,7 +909,7 @@ function AdvanceAgenda({
 
                   <div>
                     <label className="block text-base font-medium text-gray-700 mb-1.5">
-                      Date *
+                      Date <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="date"
@@ -708,6 +917,7 @@ function AdvanceAgenda({
                       onChange={(e) =>
                         setNewSession({ ...newSession, date: e.target.value })
                       }
+                      required
                       disabled={isAddingSession || isUpdatingSession}
                       className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                     />
@@ -716,7 +926,7 @@ function AdvanceAgenda({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-base font-medium text-gray-700 mb-1.5">
-                        Time from *
+                        Time from <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="time"
@@ -727,6 +937,7 @@ function AdvanceAgenda({
                             timeFrom: e.target.value,
                           })
                         }
+                        required
                         disabled={isAddingSession || isUpdatingSession}
                         className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                       />
@@ -734,7 +945,7 @@ function AdvanceAgenda({
 
                     <div>
                       <label className="block text-base font-medium text-gray-700 mb-1.5">
-                        To *
+                        To <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="time"
@@ -745,6 +956,7 @@ function AdvanceAgenda({
                             timeTo: e.target.value,
                           })
                         }
+                        required
                         disabled={isAddingSession || isUpdatingSession}
                         className="w-full p-2.5 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                       />
