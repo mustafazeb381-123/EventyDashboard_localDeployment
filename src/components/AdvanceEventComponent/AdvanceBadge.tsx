@@ -2312,7 +2312,20 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                     width: `${(template.qrCodeSize.width || 120) * multiplier}px`,
                     height: `${(template.qrCodeSize.height || 120) * multiplier
                       }px`,
-                    left: `${(template.qrCodePosition?.x || 200) * multiplier}px`,
+                    left:
+                      template.qrCodeAlignment === "left"
+                        ? `${(template.qrCodePosition?.x || 200) * multiplier}px`
+                        : template.qrCodeAlignment === "right"
+                          ? "auto"
+                          : "50%",
+                    right:
+                      template.qrCodeAlignment === "right"
+                        ? `${(template.qrCodePosition?.x || 200) * multiplier}px`
+                        : "auto",
+                    transform:
+                      template.qrCodeAlignment === "center"
+                        ? "translateX(-50%)"
+                        : "none",
                     top: `${(template.qrCodePosition?.y || 400) * multiplier}px`,
                   }}
                 >

@@ -47,6 +47,7 @@ export interface BadgeTemplate {
   hasQrCode: boolean;
   qrCodeSize: { width: number; height: number };
   qrCodePosition: { x: number; y: number };
+  qrCodeAlignment?: "left" | "center" | "right";
 }
 
 // -------------------- CUSTOM BADGE BUILDER MODAL --------------------
@@ -106,6 +107,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     hasQrCode: false,
     qrCodeSize: { width: 120, height: 120 },
     qrCodePosition: { x: 200, y: 400 },
+    qrCodeAlignment: "center",
   };
 
   // Initialize form data when template changes
@@ -147,7 +149,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   };
 
   const renderCustomBadgePreview = (template: BadgeTemplate) => {
-    const previewWidth = template.width * 40;
+    const previewWidth = template.width * 80;
 
     return (
       <div className="flex flex-col items-center justify-center p-4">
@@ -155,7 +157,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           className="relative rounded-lg shadow-md overflow-hidden border-2 border-gray-200"
           style={{
             width: `${previewWidth}px`,
-            height: `${template.height * 40}px`,
+            height: `${template.height * 80}px`,
             backgroundColor: template.hasBackground
               ? template.bgColor
               : "transparent",
@@ -177,8 +179,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   template.photoAlignment === "left"
                     ? `${(template.photoPosition?.x || 200) * 0.2}px`
                     : template.photoAlignment === "right"
-                    ? "auto"
-                    : "50%",
+                      ? "auto"
+                      : "50%",
                 right:
                   template.photoAlignment === "right"
                     ? `${(template.photoPosition?.x || 200) * 0.2}px`
@@ -199,22 +201,9 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               className="absolute"
               style={{
                 top: `${(template.nameText.position?.y || 280) * 0.2}px`,
-                left:
-                  template.nameText.alignment === "left"
-                    ? `${(template.nameText.position?.x || 200) * 0.2}px`
-                    : template.nameText.alignment === "right"
-                    ? "auto"
-                    : "50%",
-                right:
-                  template.nameText.alignment === "right"
-                    ? `${(template.nameText.position?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.nameText.alignment === "center"
-                    ? `translateX(-${
-                        (template.nameText.position?.x || 200) * 0.2
-                      }px)`
-                    : "none",
+                left: "0",
+                width: "100%",
+                transform: "none",
                 textAlign: template.nameText.alignment || "center",
               }}
             >
@@ -235,22 +224,9 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               className="absolute"
               style={{
                 top: `${(template.companyText.position?.y || 315) * 0.2}px`,
-                left:
-                  template.companyText.alignment === "left"
-                    ? `${(template.companyText.position?.x || 200) * 0.2}px`
-                    : template.companyText.alignment === "right"
-                    ? "auto"
-                    : "50%",
-                right:
-                  template.companyText.alignment === "right"
-                    ? `${(template.companyText.position?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.companyText.alignment === "center"
-                    ? `translateX(-${
-                        (template.companyText.position?.x || 200) * 0.2
-                      }px)`
-                    : "none",
+                left: "0",
+                width: "100%",
+                transform: "none",
                 textAlign: template.companyText.alignment || "center",
               }}
             >
@@ -271,22 +247,9 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               className="absolute"
               style={{
                 top: `${(template.titleText.position?.y || 350) * 0.2}px`,
-                left:
-                  template.titleText.alignment === "left"
-                    ? `${(template.titleText.position?.x || 200) * 0.2}px`
-                    : template.titleText.alignment === "right"
-                    ? "auto"
-                    : "50%",
-                right:
-                  template.titleText.alignment === "right"
-                    ? `${(template.titleText.position?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.titleText.alignment === "center"
-                    ? `translateX(-${
-                        (template.titleText.position?.x || 200) * 0.2
-                      }px)`
-                    : "none",
+                left: "0",
+                width: "100%",
+                transform: "none",
                 textAlign: template.titleText.alignment || "center",
               }}
             >
@@ -308,7 +271,20 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               style={{
                 width: `${(template.qrCodeSize.width || 120) * 0.2}px`,
                 height: `${(template.qrCodeSize.height || 120) * 0.2}px`,
-                left: `${(template.qrCodePosition?.x || 200) * 0.2}px`,
+                left:
+                  template.qrCodeAlignment === "left"
+                    ? `${(template.qrCodePosition?.x || 200) * 0.2}px`
+                    : template.qrCodeAlignment === "right"
+                      ? "auto"
+                      : "50%",
+                right:
+                  template.qrCodeAlignment === "right"
+                    ? `${(template.qrCodePosition?.x || 200) * 0.2}px`
+                    : "auto",
+                transform:
+                  template.qrCodeAlignment === "center"
+                    ? "translateX(-50%)"
+                    : "none",
                 top: `${(template.qrCodePosition?.y || 400) * 0.2}px`,
               }}
             >
@@ -346,30 +322,56 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     </div>
   );
 
-  // Position input component
-  const PositionInput = ({
+  // Generic numeric input component
+  const BadgeNumberInput = ({
     label,
     value,
     onChange,
-    type = "y",
+    step = 1,
   }: {
     label: string;
     value: number;
     onChange: (value: number) => void;
-    type?: "x" | "y";
-  }) => (
-    <div>
-      <label className="block text-sm text-gray-600 mb-1">
-        {type === "x" ? "X Position (px)" : "Y Position (px)"}
-      </label>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value) || 0)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-      />
-    </div>
-  );
+    step?: number;
+  }) => {
+    const [localValue, setLocalValue] = useState(value.toString());
+
+    useEffect(() => {
+      // Only update local value if it's different from the current numeric value
+      if (parseFloat(localValue) !== value && localValue !== "") {
+        setLocalValue(value.toString());
+      }
+    }, [value]);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newVal = e.target.value;
+      setLocalValue(newVal);
+
+      const parsed = step % 1 === 0 ? parseInt(newVal) : parseFloat(newVal);
+      if (!isNaN(parsed)) {
+        onChange(parsed);
+      } else if (newVal === "") {
+        onChange(0);
+      }
+    };
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={localValue}
+          onChange={handleChange}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+        />
+      </div>
+    );
+  };
+
 
   // Alignment buttons component
   const AlignmentButtons = ({
@@ -445,40 +447,28 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Width (inches)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editingTemplate.width}
-                    onChange={(e) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        width: parseFloat(e.target.value) || 3.5,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Height (inches)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={editingTemplate.height}
-                    onChange={(e) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        height: parseFloat(e.target.value) || 5.5,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
-                  />
-                </div>
+                <BadgeNumberInput
+                  label="Width (inches)"
+                  value={editingTemplate.width}
+                  step={0.1}
+                  onChange={(val) =>
+                    setEditingTemplate({
+                      ...editingTemplate,
+                      width: val,
+                    })
+                  }
+                />
+                <BadgeNumberInput
+                  label="Height (inches)"
+                  value={editingTemplate.height}
+                  step={0.1}
+                  onChange={(val) =>
+                    setEditingTemplate({
+                      ...editingTemplate,
+                      height: val,
+                    })
+                  }
+                />
               </div>
 
               <ToggleSwitch
@@ -571,42 +561,32 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               {editingTemplate.hasPersonalPhoto && (
                 <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Width (px)
-                      </label>
-                      <input
-                        type="number"
+                    <div className="grid grid-cols-2 gap-4">
+                      <BadgeNumberInput
+                        label="Width (px)"
                         value={editingTemplate.photoSize?.width || 200}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             photoSize: {
                               ...editingTemplate.photoSize,
-                              width: parseInt(e.target.value) || 200,
+                              width: val,
                             },
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                       />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Height (px)
-                      </label>
-                      <input
-                        type="number"
+                      <BadgeNumberInput
+                        label="Height (px)"
                         value={editingTemplate.photoSize?.height || 200}
-                        onChange={(e) =>
+                        onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             photoSize: {
                               ...editingTemplate.photoSize,
-                              height: parseInt(e.target.value) || 200,
+                              height: val,
                             },
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                       />
                     </div>
                   </div>
@@ -622,9 +602,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
+                    <BadgeNumberInput
+                      label="X Position (px)"
                       value={editingTemplate.photoPosition?.x || 200}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -636,8 +615,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                    <PositionInput
-                      label="Y Position"
+                    <BadgeNumberInput
+                      label="Y Position (px)"
                       value={editingTemplate.photoPosition?.y || 60}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -667,25 +646,19 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               {editingTemplate.hasName && (
                 <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Size (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.nameText?.size || 24}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            nameText: {
-                              ...editingTemplate.nameText,
-                              size: parseInt(e.target.value) || 24,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
+                    <BadgeNumberInput
+                      label="Size (px)"
+                      value={editingTemplate.nameText?.size || 24}
+                      onChange={(val) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          nameText: {
+                            ...editingTemplate.nameText,
+                            size: val,
+                          },
+                        })
+                      }
+                    />
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">
                         Color
@@ -721,9 +694,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
+                    <BadgeNumberInput
+                      label="X Position (px)"
                       value={editingTemplate.nameText?.position?.x || 200}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -738,8 +710,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                    <PositionInput
-                      label="Y Position"
+                    <BadgeNumberInput
+                      label="Y Position (px)"
                       value={editingTemplate.nameText?.position?.y || 280}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -772,25 +744,19 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               {editingTemplate.hasCompany && (
                 <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Size (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.companyText?.size || 18}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            companyText: {
-                              ...editingTemplate.companyText,
-                              size: parseInt(e.target.value) || 18,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
+                    <BadgeNumberInput
+                      label="Size (px)"
+                      value={editingTemplate.companyText?.size || 18}
+                      onChange={(val) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          companyText: {
+                            ...editingTemplate.companyText,
+                            size: val,
+                          },
+                        })
+                      }
+                    />
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">
                         Color
@@ -826,9 +792,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
+                    <BadgeNumberInput
+                      label="X Position (px)"
                       value={editingTemplate.companyText?.position?.x || 200}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -843,8 +808,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                    <PositionInput
-                      label="Y Position"
+                    <BadgeNumberInput
+                      label="Y Position (px)"
                       value={editingTemplate.companyText?.position?.y || 315}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -877,25 +842,19 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               {editingTemplate.hasTitle && (
                 <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Size (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.titleText?.size || 16}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            titleText: {
-                              ...editingTemplate.titleText,
-                              size: parseInt(e.target.value) || 16,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
+                    <BadgeNumberInput
+                      label="Size (px)"
+                      value={editingTemplate.titleText?.size || 16}
+                      onChange={(val) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          titleText: {
+                            ...editingTemplate.titleText,
+                            size: val,
+                          },
+                        })
+                      }
+                    />
                     <div>
                       <label className="block text-sm text-gray-600 mb-1">
                         Color
@@ -931,9 +890,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   />
 
                   <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
+                    <BadgeNumberInput
+                      label="X Position (px)"
                       value={editingTemplate.titleText?.position?.x || 200}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -948,8 +906,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                    <PositionInput
-                      label="Y Position"
+                    <BadgeNumberInput
+                      label="Y Position (px)"
                       value={editingTemplate.titleText?.position?.y || 350}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -982,50 +940,47 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               {editingTemplate.hasQrCode && (
                 <div className="space-y-4 ml-4">
                   <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Width (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.qrCodeSize?.width || 120}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            qrCodeSize: {
-                              ...editingTemplate.qrCodeSize,
-                              width: parseInt(e.target.value) || 120,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Height (px)
-                      </label>
-                      <input
-                        type="number"
-                        value={editingTemplate.qrCodeSize?.height || 120}
-                        onChange={(e) =>
-                          setEditingTemplate({
-                            ...editingTemplate,
-                            qrCodeSize: {
-                              ...editingTemplate.qrCodeSize,
-                              height: parseInt(e.target.value) || 120,
-                            },
-                          })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
+                    <BadgeNumberInput
+                      label="Width (px)"
+                      value={editingTemplate.qrCodeSize?.width || 120}
+                      onChange={(val) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          qrCodeSize: {
+                            ...editingTemplate.qrCodeSize,
+                            width: val,
+                          },
+                        })
+                      }
+                    />
+                    <BadgeNumberInput
+                      label="Height (px)"
+                      value={editingTemplate.qrCodeSize?.height || 120}
+                      onChange={(val) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          qrCodeSize: {
+                            ...editingTemplate.qrCodeSize,
+                            height: val,
+                          },
+                        })
+                      }
+                    />
                   </div>
 
+                  <AlignmentButtons
+                    value={editingTemplate.qrCodeAlignment || "center"}
+                    onChange={(alignment) =>
+                      setEditingTemplate({
+                        ...editingTemplate,
+                        qrCodeAlignment: alignment,
+                      })
+                    }
+                  />
+
                   <div className="grid grid-cols-2 gap-4">
-                    <PositionInput
-                      label="X Position"
-                      type="x"
+                    <BadgeNumberInput
+                      label="X Position (px)"
                       value={editingTemplate.qrCodePosition?.x || 200}
                       onChange={(value) =>
                         setEditingTemplate({
@@ -1037,8 +992,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                    <PositionInput
-                      label="Y Position"
+                    <BadgeNumberInput
+                      label="Y Position (px)"
                       value={editingTemplate.qrCodePosition?.y || 400}
                       onChange={(value) =>
                         setEditingTemplate({
