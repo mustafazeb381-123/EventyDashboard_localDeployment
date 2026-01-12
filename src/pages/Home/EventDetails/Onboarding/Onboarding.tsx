@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 function Onboarding() {
   const [showGateOnboarding, setShowGateOnboarding] = useState(false);
-  const [selectedArea, setSelectedArea] = useState(null);
+  const [selectedArea, setSelectedArea] = useState<any | null>(null);
   const [areasData, setAreasData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -117,7 +117,35 @@ function Onboarding() {
         {/* Table */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
           {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading Areas...</div>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50/80 border-b border-gray-200/60">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Area Name</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200/60">
+                  {[1, 2, 3, 4, 5, 6].map((index) => (
+                    <tr key={index} className="animate-pulse">
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 rounded w-12"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                          <div className="h-8 w-8 bg-gray-200 rounded-lg"></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           ) : areasData.length === 0 ? (
             <div className="text-center py-8 text-gray-500">No areas found</div>
           ) : (

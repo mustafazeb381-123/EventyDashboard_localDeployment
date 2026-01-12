@@ -404,9 +404,30 @@ const PollPage = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {isLoadingPolls && (
-          <div className="col-span-full flex items-center justify-center gap-2 text-gray-600 py-8">
-            <Loader2 className="w-5 h-5 animate-spin" /> Loading polls…
-          </div>
+          <>
+            {[1, 2, 3, 4, 5, 6].map((item) => (
+              <div
+                key={item}
+                className="bg-white rounded-xl p-5 shadow-sm animate-pulse"
+              >
+                {/* Top row: Poll Name and question count */}
+                <div className="flex items-start justify-between mb-1">
+                  <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-16"></div>
+                </div>
+
+                {/* Session Name */}
+                <div className="h-4 bg-gray-200 rounded w-32 mb-6"></div>
+
+                {/* Publish toggle */}
+                <div className="flex items-center gap-2">
+                  <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  <div className="h-4 w-4 bg-gray-200 rounded ml-auto"></div>
+                  <div className="h-6 w-12 bg-gray-200 rounded-full"></div>
+                </div>
+              </div>
+            ))}
+          </>
         )}
 
         {!isLoadingPolls &&
@@ -444,7 +465,7 @@ const PollPage = () => {
                   {poll.question || "Poll Name"}
                 </h3>
                 <span className="text-sm text-gray-400 shrink-0 ml-2">
-                  {questionCount} {questionCount === 1 ? "question" : "questions"}
+                  {questionCount} {questionCount === 1 ? "option" : "options"}
                 </span>
               </div>
 

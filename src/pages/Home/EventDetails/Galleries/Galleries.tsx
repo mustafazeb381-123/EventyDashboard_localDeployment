@@ -461,12 +461,53 @@ function Galleries() {
     </div>
   );
 
-  if (loading && !gallery) {
-    return (
-      <div className="p-6 flex justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+  // Skeleton Loader Component
+  const SkeletonLoader = () => (
+    <div className="p-6 bg-gradient-to-br from-gray-50 to-white min-h-screen animate-pulse">
+      <div className="mx-auto">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
+            <div>
+              <div className="h-7 w-48 bg-gray-200 rounded-lg mb-2"></div>
+              <div className="h-4 w-64 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          {/* Stats Skeleton */}
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="h-8 w-24 bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+
+        {/* Toolbar Skeleton */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 p-4 bg-white rounded-xl border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 bg-gray-200 rounded"></div>
+              <div className="h-5 w-20 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-32 bg-gray-200 rounded-xl"></div>
+            <div className="h-10 w-36 bg-gray-200 rounded-xl"></div>
+          </div>
+        </div>
+
+        {/* Image Grid Skeleton */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 mb-8">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((item) => (
+            <div key={item} className="relative">
+              <div className="bg-gray-200 rounded-xl aspect-square shadow-sm"></div>
+            </div>
+          ))}
+        </div>
       </div>
-    );
+    </div>
+  );
+
+  if (loading) {
+    return <SkeletonLoader />;
   }
 
   return (
