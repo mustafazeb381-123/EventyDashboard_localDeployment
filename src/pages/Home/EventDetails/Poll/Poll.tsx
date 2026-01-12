@@ -34,6 +34,36 @@ const emptyForm: PollFormState = {
   options: [{ option_text: "" }, { option_text: "" }],
 };
 
+// Helper to normalize poll data from JSON:API format
+const normalizePoll = (poll: any): Poll => {
+  if (poll.attributes) {
+    // JSON:API format
+    return {
+      id: Number(poll.id),
+      agenda_id: poll.attributes.agenda_id || poll.relationships?.agenda?.data?.id || 0,
+      question: poll.attributes.question || "",
+      poll_type: poll.attributes.poll_type || "single_answer",
+      active: poll.attributes.active ?? false,
+      total_votes: poll.attributes.total_votes || 0,
+      poll_options: poll.attributes.poll_options?.data?.map((opt: any) => ({
+        id: Number(opt.id || opt.attributes?.id),
+        poll_id: Number(poll.id),
+        option_text: opt.attributes?.option_text || opt.option_text || "",
+        votes_count: opt.attributes?.votes_count || opt.votes_count || 0,
+        percentage: opt.attributes?.percentage || opt.percentage || 0,
+      })) || poll.attributes.poll_options || [],
+      created_at: poll.attributes.created_at || "",
+      updated_at: poll.attributes.updated_at || "",
+    };
+  }
+  // Already normalized
+  return {
+    ...poll,
+    id: Number(poll.id),
+    active: poll.active ?? false,
+  };
+};
+
 const PollPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -68,6 +98,7 @@ const PollPage = () => {
       setIsLoadingAgendas(true);
       try {
         const response = await getAgendaApi(eventId);
+        console.log('response of get agenda api-------', response.data.data);
         const data = response.data?.data || response.data || [];
         const agendaList: AgendaLite[] = Array.isArray(data)
           ? data.map((item: any) => ({
@@ -121,7 +152,8 @@ const PollPage = () => {
             const responseData = response.data;
             const pollsData = responseData?.data || responseData || [];
             if (Array.isArray(pollsData)) {
-              allPolls.push(...pollsData);
+              const normalizedPolls = pollsData.map(normalizePoll);
+              allPolls.push(...normalizedPolls);
             }
           } catch (error) {
             // Continue with other agendas if one fails
@@ -155,7 +187,10 @@ const PollPage = () => {
       // Handle different response structures
       const responseData = response.data;
       const pollsData = responseData?.data || responseData || [];
-      setPolls(Array.isArray(pollsData) ? pollsData : []);
+      const normalizedPolls = Array.isArray(pollsData) 
+        ? pollsData.map(normalizePoll)
+        : [];
+      setPolls(normalizedPolls);
 
       // Handle pagination
       const pagination = responseData?.meta?.pagination;
@@ -272,6 +307,7 @@ const PollPage = () => {
   };
 
   const onToggleActive = async (poll: Poll) => {
+    console.log('poll-------', poll);
     if (!eventId || !selectedAgendaId) return;
     try {
       if (poll.active) {
@@ -437,14 +473,14 @@ const PollPage = () => {
                   }}
                 >
                   <div
-                    className={`w-12 h-6 rounded-full transition-colors ${
+                    className={`w-12 h-6 rounded-full transition-colors relative ${
                       poll.active ? "bg-[#1E2A4A]" : "bg-gray-200"
                     }`}
                   >
                     <div
-                      className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-                        poll.active ? "translate-x-6" : "translate-x-0.5"
-                      } mt-0.5`}
+                      className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 absolute top-0.5 ${
+                        poll.active ? "translate-x-[26px]" : "translate-x-0.5"
+                      }`}
                     />
                   </div>
                 </div>
@@ -511,7 +547,7 @@ const PollPage = () => {
                   </select>
                 </div>
 
-                <div className="flex items-end">
+                <div className="flex items-center self-center mt-7">
                   <label className="flex items-center gap-2 text-sm text-gray-700">
                     <input
                       type="checkbox"

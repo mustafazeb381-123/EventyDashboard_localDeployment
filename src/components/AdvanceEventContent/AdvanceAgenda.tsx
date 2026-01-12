@@ -94,6 +94,7 @@ function AdvanceAgenda({
       setIsFetchingAgendas(true);
       try {
         const response = await getAgendaApi(eventId);
+        console.log('response of get agenda api-------', response.data.data);
         const agendas = response.data.data.map((item: any) => ({
           id: item.id,
           title: item.attributes.title,
