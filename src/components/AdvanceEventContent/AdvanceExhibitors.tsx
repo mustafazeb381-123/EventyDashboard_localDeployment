@@ -23,6 +23,7 @@ interface Exhibitor {
     updated_at?: string;
     event_id?: number;
   };
+  _imageVersion?: number; // Cache-busting version for image updates
 }
 
 function AdvanceExhibitors({
@@ -84,18 +85,21 @@ function AdvanceExhibitors({
         const response = await getExhibitorsApi(eventId);
 
         if (response.status === 200) {
-          const exhibitorsData = response.data.data.map((item: any) => ({
+          const exhibitorsData = response.data.data.map((item: any, index: number) => ({
             id: item.id,
             attributes: {
               name: item.attributes.name,
               description: item.attributes.description,
               organization: item.attributes.organization,
-              image: item.attributes.image_url,
-              image_url: item.attributes.image_url,
+              // Handle both image_url and image fields from API
+              image: item.attributes.image_url || item.attributes.image || "",
+              image_url: item.attributes.image_url || item.attributes.image || "",
               created_at: item.attributes.created_at,
               updated_at: item.attributes.updated_at,
               event_id: item.attributes.event_id,
             },
+            // Use unique timestamp + index to ensure each exhibitor gets a different version
+            _imageVersion: Date.now() + index,
           }));
 
           setEventUsers(exhibitorsData);
@@ -207,6 +211,16 @@ function AdvanceExhibitors({
 
       if (response.status === 201 || response.status === 200) {
         const result = response.data;
+        console.log("✅ Create API response:", JSON.stringify(result, null, 2));
+        console.log("📸 Image attributes:", {
+          image: result.data?.attributes?.image,
+          image_url: result.data?.attributes?.image_url,
+          all_attributes: Object.keys(result.data?.attributes || {})
+        });
+        
+        // API might return 'image' or 'image_url' - handle both
+        const imageUrl = result.data.attributes.image_url || result.data.attributes.image || null;
+        console.log("🖼️ Extracted image URL:", imageUrl);
 
         const newExhibitorData: Exhibitor = {
           id: result.data.id.toString(),
@@ -214,14 +228,16 @@ function AdvanceExhibitors({
             name: result.data.attributes.name,
             description: result.data.attributes.description,
             organization: result.data.attributes.organization,
-            image: result.data.attributes.image_url,
-            image_url: result.data.attributes.image_url,
+            image: imageUrl || "",
+            image_url: imageUrl || "",
             created_at: result.data.attributes.created_at,
             updated_at: result.data.attributes.updated_at,
             event_id: result.data.attributes.event_id,
           },
+          _imageVersion: Date.now(),
         };
 
+        // Add to state immediately for optimistic update
         setEventUsers((prev) => [...prev, newExhibitorData]);
         showNotification("Exhibitor added successfully!", "success");
 
@@ -235,6 +251,32 @@ function AdvanceExhibitors({
         setSelectedImageFile(null);
         setImagePreview(null);
         setAddModalOpen(false);
+
+        // Refetch exhibitors to ensure we have the latest data with correct image URLs
+        // This ensures the image URL is properly set from the server
+        try {
+          const refreshResponse = await getExhibitorsApi(eventId);
+          if (refreshResponse.status === 200) {
+            const refreshedData = refreshResponse.data.data.map((item: any) => ({
+              id: item.id,
+              attributes: {
+                name: item.attributes.name,
+                description: item.attributes.description,
+                organization: item.attributes.organization,
+                image: item.attributes.image_url || item.attributes.image || "",
+                image_url: item.attributes.image_url || item.attributes.image || "",
+                created_at: item.attributes.created_at,
+                updated_at: item.attributes.updated_at,
+                event_id: item.attributes.event_id,
+              },
+              _imageVersion: Date.now(), // Fresh timestamp for each exhibitor
+            }));
+            setEventUsers(refreshedData);
+          }
+        } catch (refreshError) {
+          console.error("Error refreshing exhibitors:", refreshError);
+          // Don't show error to user since the creation was successful
+        }
       }
     } catch (error: any) {
       console.log("💥 Axios error", error);
@@ -278,11 +320,7 @@ function AdvanceExhibitors({
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
         
-        // Add cache-busting parameter to force image refresh
-        const imageUrl = updated.attributes.image_url 
-          ? `${updated.attributes.image_url}?t=${Date.now()}`
-          : updated.attributes.image_url;
-        
+        // Update state with new data and increment image version to force cache refresh
         setEventUsers(prev =>
           prev.map(u =>
             u.id === editingExhibitor.id
@@ -294,8 +332,11 @@ function AdvanceExhibitors({
                     description: updated.attributes.description,
                     organization: updated.attributes.organization,
                     image: updated.attributes.image_url,
-                    image_url: updated.attributes.image_url, // Keep original URL, cache-busting in display
+                    image_url: updated.attributes.image_url,
+                    updated_at: updated.attributes.updated_at || new Date().toISOString(),
                   },
+                  // Increment image version to force browser to reload the image
+                  _imageVersion: (u._imageVersion || 0) + 1,
                 }
               : u
           )
@@ -306,6 +347,31 @@ function AdvanceExhibitors({
         setEditingExhibitor(null);
         setEditSelectedImageFile(null);
         setEditImagePreview(null);
+        
+        // Refetch exhibitors to ensure we have the latest data from server
+        // This ensures the image URL is definitely updated
+        if (eventId) {
+          const refreshResponse = await getExhibitorsApi(eventId);
+          if (refreshResponse.status === 200) {
+            const refreshedData = refreshResponse.data.data.map((item: any, index: number) => ({
+              id: item.id,
+              attributes: {
+                name: item.attributes.name,
+                description: item.attributes.description,
+                organization: item.attributes.organization,
+                // Handle both image_url and image fields from API
+                image: item.attributes.image_url || item.attributes.image || "",
+                image_url: item.attributes.image_url || item.attributes.image || "",
+                created_at: item.attributes.created_at,
+                updated_at: item.attributes.updated_at,
+                event_id: item.attributes.event_id,
+              },
+              // Use unique timestamp + index to ensure each exhibitor gets a different version
+              _imageVersion: Date.now() + index,
+            }));
+            setEventUsers(refreshedData);
+          }
+        }
       }
     } catch (error: any) {
       console.error("Update exhibitor error:", error);
@@ -332,19 +398,34 @@ function AdvanceExhibitors({
 
   const UserAvatar = ({ user }: { user: Exhibitor }) => {
     const imageUrl = user.attributes.image_url || user.attributes.image;
-    // Add cache-busting parameter to force browser to reload image
-    const imageSrc = imageUrl 
-      ? `${imageUrl}${imageUrl.includes('?') ? '&' : '?'}t=${Date.now()}`
-      : "https://i.pravatar.cc/100?img=10";
+    // Use image version for cache-busting - this changes when image is updated
+    const imageVersion = user._imageVersion || 0;
+    
+    // Debug logging
+    if (!imageUrl) {
+      console.log(`Exhibitor ${user.id} (${user.attributes.name}) has no image URL`);
+    }
+    
+    const imageSrc = imageUrl && imageUrl.trim() !== ""
+      ? `${imageUrl}${imageUrl.includes('?') ? '&' : '?'}v=${imageVersion}&t=${Date.now()}`
+      : `https://i.pravatar.cc/100?img=${user.id.charCodeAt(0) % 70}`; // Different placeholder per exhibitor
     
     return (
       <img
+        key={`${user.id}-${imageVersion}-${imageUrl || 'no-image'}`} // Force re-render when version or URL changes
         src={imageSrc}
         alt={user.attributes.name}
         className="w-10 h-10 rounded-full object-cover"
         onError={(e) => {
           // Fallback to placeholder if image fails to load
-          e.currentTarget.src = "https://i.pravatar.cc/100?img=10";
+          const fallbackSrc = `https://i.pravatar.cc/100?img=${user.id.charCodeAt(0) % 70}`;
+          if (e.currentTarget.src !== fallbackSrc) {
+            console.log(`Image failed to load for exhibitor ${user.id}, using fallback`);
+            e.currentTarget.src = fallbackSrc;
+          }
+        }}
+        onLoad={() => {
+          console.log(`Image loaded successfully for exhibitor ${user.id}: ${imageUrl}`);
         }}
       />
     );
