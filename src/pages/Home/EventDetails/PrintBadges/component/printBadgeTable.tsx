@@ -115,14 +115,42 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
           </thead>
           <tbody className="divide-y divide-gray-200/60">
             {loadingUsers ? (
-              <tr>
-                <td colSpan={9} className="p-8 text-center">
-                  <div className="flex flex-col items-center justify-center py-8 text-gray-500">
-                    <div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-3"></div>
-                    <p className="text-sm">Loading users...</p>
-                  </div>
-                </td>
-              </tr>
+              <>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((index) => (
+                  <tr key={index} className="animate-pulse">
+                    <td className="p-4">
+                      <div className="w-4 h-4 bg-gray-200 rounded"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-12"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-32"></div>
+                        <div className="h-3 bg-gray-200 rounded w-24"></div>
+                      </div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-40"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-20"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-28"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-6 bg-gray-200 rounded-full w-16"></div>
+                    </td>
+                    <td className="p-4">
+                      <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                    </td>
+                  </tr>
+                ))}
+              </>
             ) : paginatedUsers.length === 0 ? (
               <tr>
                 <td colSpan={9} className="p-8 text-center">

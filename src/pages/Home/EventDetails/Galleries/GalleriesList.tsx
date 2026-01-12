@@ -242,8 +242,29 @@ export default function GalleriesList() {
 
       {/* Grid */}
       {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-pulse">
+          {[1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
+            <div
+              key={item}
+              className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden"
+            >
+              {/* Cover Image Skeleton */}
+              <div className="h-52 bg-gray-200"></div>
+              
+              {/* Content Skeleton */}
+              <div className="p-5">
+                <div className="h-6 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
+                <div className="space-y-2 mb-4">
+                  <div className="h-4 bg-gray-200 rounded w-full"></div>
+                  <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredGalleries.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-xl border border-dashed border-gray-300">

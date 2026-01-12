@@ -75,23 +75,93 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   }, [eventId]);
 
-  if (!eventData) {
-    return (
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="min-h-screen flex flex-col items-center justify-center">
-          <div className="relative">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600" />
-            <div className="absolute inset-0 h-12 w-12 border-2 border-blue-100 rounded-full"></div>
+  // Skeleton Loader Component
+  const SkeletonLoader = () => (
+    <div className="w-full px-4 sm:px-6 lg:px-8 animate-pulse">
+      {/* Event Details Skeleton */}
+      <div className="p-4 sm:p-6 lg:p-[24px] bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
+        {/* Logo and Event Name Skeleton */}
+        <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
+          {/* Logo Skeleton */}
+          <div className="h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-gray-200 rounded-2xl flex-shrink-0"></div>
+
+          {/* Text Details Skeleton */}
+          <div className="items-center text-center sm:text-left w-full sm:w-auto">
+            {/* Event Type Badge Skeleton */}
+            <div className="h-8 w-32 bg-gray-200 rounded-3xl mx-auto sm:mx-0"></div>
+
+            {/* Event Name Skeleton */}
+            <div className="mt-4 lg:mt-[16px] h-6 w-48 sm:w-64 bg-gray-200 rounded-lg mx-auto sm:mx-0"></div>
+
+            {/* Date Skeleton */}
+            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
+              <div className="h-5 w-5 bg-gray-200 rounded"></div>
+              <div className="h-4 w-48 sm:w-64 bg-gray-200 rounded"></div>
+            </div>
+
+            {/* Location Skeleton */}
+            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
+              <div className="h-5 w-5 bg-gray-200 rounded"></div>
+              <div className="h-4 w-40 sm:w-56 bg-gray-200 rounded"></div>
+            </div>
+
+            {/* Last Edit Skeleton */}
+            <div className="mt-4 lg:mt-[23px] h-4 w-32 bg-gray-200 rounded mx-auto sm:mx-0"></div>
           </div>
-          <p className="text-gray-600 text-lg font-medium mt-6">
-            Loading event details...
-          </p>
-          <p className="text-gray-400 text-sm mt-2">
-            Please wait while we fetch your event information
-          </p>
+        </div>
+
+        {/* Buttons Skeleton */}
+        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="h-10 w-full sm:w-40 bg-gray-200 rounded-2xl"></div>
+          <div className="h-10 w-full sm:w-32 bg-gray-200 rounded-2xl"></div>
         </div>
       </div>
-    );
+
+      {/* Stats Cards Skeleton */}
+      <div className="mt-6 lg:mt-[24px] gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+        {[1, 2, 3, 4].map((item) => (
+          <div
+            key={item}
+            className="bg-white flex items-center gap-3 p-4 lg:p-[16px] rounded-2xl shadow-sm"
+          >
+            {/* Icon Skeleton */}
+            <div className="p-3 lg:p-4 bg-gray-200 rounded-xl flex-shrink-0">
+              <div className="h-5 w-5 sm:h-6 sm:w-6 bg-gray-300 rounded"></div>
+            </div>
+            {/* Text Skeleton */}
+            <div className="justify-between flex flex-col min-w-0 flex-1 gap-2">
+              <div className="h-4 w-24 sm:w-32 bg-gray-200 rounded"></div>
+              <div className="h-5 w-16 sm:w-20 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Chart Skeleton */}
+      <div className="mt-6 lg:mt-[24px] bg-white rounded-2xl p-4 sm:p-6 lg:p-[24px] shadow-sm">
+        {/* Chart Title Skeleton */}
+        <div className="h-6 w-48 bg-gray-200 rounded-lg mb-4"></div>
+        
+        {/* Chart Area Skeleton */}
+        <div className="h-[320px] w-full bg-gray-100 rounded-lg flex items-center justify-center">
+          <div className="flex items-end gap-2 sm:gap-4 h-full w-full px-4 pb-4">
+            {[1, 2, 3, 4, 5, 6].map((bar) => (
+              <div
+                key={bar}
+                className="flex-1 bg-gray-200 rounded-t"
+                style={{
+                  height: `${Math.random() * 60 + 20}%`,
+                }}
+              ></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (!eventData) {
+    return <SkeletonLoader />;
   }
 
   const {

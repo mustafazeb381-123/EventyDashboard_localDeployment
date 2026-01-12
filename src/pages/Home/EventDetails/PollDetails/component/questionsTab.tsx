@@ -3,11 +3,13 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   updateAgendaPoll,
+  createAgendaPoll,
   type Poll,
+  type PollType,
 } from "@/apis/pollsService";
 
 interface QuestionsTabProps {
-  poll: Poll;
+  poll: Poll | null;
   eventId: string;
   agendaId: string;
   onRefresh: () => void;
@@ -24,6 +26,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [question, setQuestion] = useState("");
+  const [pollType, setPollType] = useState<PollType>("single_answer");
   const [answers, setAnswers] = useState<Array<{ id?: number; text: string }>>([
     { text: "" },
     { text: "" },
@@ -39,13 +42,16 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
 
   const startAddNew = () => {
     setQuestion("");
+    setPollType("single_answer");
     setAnswers([{ text: "" }, { text: "" }]);
     setIsAddingNew(true);
     setIsEditing(false);
   };
 
   const startEdit = () => {
+    if (!poll) return;
     setQuestion(poll.question || "");
+    setPollType(poll.poll_type || "single_answer");
     setAnswers(
       poll.poll_options?.length > 0
         ? poll.poll_options.map((opt) => ({
@@ -100,24 +106,54 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
 
     setIsSaving(true);
     try {
-      await updateAgendaPoll(eventId, agendaId, poll.id, {
-        poll: {
-          question: question.trim(),
-          poll_type: poll.poll_type,
-          active: poll.active,
-          poll_options_attributes: trimmedAnswers.map((a) => ({
-            id: a.id,
-            option_text: a.text,
-          })),
-        },
-      });
-      toast.success("Poll updated successfully");
-      setIsAddingNew(false);
-      setIsEditing(false);
-      onRefresh();
+      if (isAddingNew) {
+        // Create new poll
+        const response = await createAgendaPoll(eventId, agendaId, {
+          poll: {
+            question: question.trim(),
+            poll_type: pollType,
+            active: true,
+            poll_options_attributes: trimmedAnswers.map((a) => ({
+              option_text: a.text,
+            })),
+          },
+        });
+        
+        console.log("Create poll response:", response.data);
+        
+        toast.success("Poll created successfully");
+        setIsAddingNew(false);
+        setIsEditing(false);
+        
+        // Refresh to get the updated poll data
+        // Note: After creating, you might need to navigate to the new poll's page
+        // For now, we'll refresh which should work if we're viewing that poll
+        onRefresh();
+      } else if (isEditing && poll) {
+        // Update existing poll
+        await updateAgendaPoll(eventId, agendaId, poll.id, {
+          poll: {
+            question: question.trim(),
+            poll_type: poll.poll_type,
+            active: poll.active,
+            poll_options_attributes: trimmedAnswers.map((a) => ({
+              id: a.id,
+              option_text: a.text,
+            })),
+          },
+        });
+        toast.success("Poll updated successfully");
+        setIsAddingNew(false);
+        setIsEditing(false);
+        onRefresh();
+      }
     } catch (error: any) {
-      console.error("Error updating poll:", error);
-      toast.error(error?.response?.data?.message || "Failed to update poll");
+      console.error("Error saving poll:", error);
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.response?.data?.error || 
+        "Failed to save poll";
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -138,12 +174,28 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
               placeholder="Type question here"
               className="flex-1 bg-transparent border-none outline-none text-gray-800 placeholder-gray-400"
             />
+            {isAddingNew && (
+              <select
+                value={pollType}
+                onChange={(e) => setPollType(e.target.value as PollType)}
+                className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm"
+              >
+                <option value="single_answer">Single Answer</option>
+                <option value="multiple_answer">Multiple Answer</option>
+              </select>
+            )}
             <button
               onClick={handleSave}
               disabled={isSaving || !question.trim()}
               className="px-6 py-2 bg-[#1E2A4A] text-white rounded-lg hover:bg-[#2a3a5a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
             >
               {isSaving ? "Saving..." : isEditing ? "Save" : "Add Question"}
+            </button>
+            <button
+              onClick={cancelEdit}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
+            >
+              Cancel
             </button>
           </div>
 
@@ -190,30 +242,46 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
       )}
 
       {/* Existing Question Display */}
-      {!isEditing && (
+      {!isEditing && poll && (
         <div className="bg-white rounded-xl p-6 shadow-sm">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               {/* Question */}
-              <p className="text-gray-800 mb-4">
+              <p className="text-gray-800 mb-4 font-medium">
                 <span className="text-gray-400 mr-2">01.</span>
                 {poll.question}
               </p>
 
+              {/* Poll Type Badge */}
+              <div className="mb-4">
+                <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                  {poll.poll_type === "single_answer" ? "Single Answer" : "Multiple Answer"}
+                </span>
+              </div>
+
               {/* Answer Options */}
               <div className="space-y-3">
+                <p className="text-sm text-gray-500 mb-2 font-medium">Options:</p>
                 {(poll.poll_options || []).map((option, index) => (
                   <div key={option.id} className="flex items-center gap-3">
                     <input
-                      type="checkbox"
+                      type={poll.poll_type === "single_answer" ? "radio" : "checkbox"}
                       disabled
                       className="w-5 h-5 rounded border-gray-300"
                     />
                     <span className="text-gray-700">
                       {option.option_text || `Answer ${index + 1}`}
                     </span>
+                    {option.votes_count !== undefined && (
+                      <span className="text-xs text-gray-500 ml-auto">
+                        ({option.votes_count} votes)
+                      </span>
+                    )}
                   </div>
                 ))}
+                {(!poll.poll_options || poll.poll_options.length === 0) && (
+                  <p className="text-sm text-gray-400 italic">No options available</p>
+                )}
               </div>
             </div>
 
