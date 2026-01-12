@@ -359,34 +359,60 @@ function AdvanceAgenda({
       const response = await updateAgendaApi(eventId!, editingSession.id, payload);
       console.log('Update response:', response.data);
       
-      // Update local state - preserve all fields including dates
-      setSessions(prev => prev.map(session => 
-        session.id === editingSession.id 
-          ? {
-              ...session,
-              title: newSession.title,
-              location: newSession.location,
-              startTime: `${newSession.date} ${newSession.timeFrom}:00 +0300`,
-              endTime: `${newSession.date} ${newSession.timeTo}:00 +0300`,
-              start_date: newSession.date, // Preserve start_date for next edit
-              end_date: newSession.date, // Preserve end_date for next edit
-              display: newSession.display, // Update display status
-              require_enroll: newSession.requiredEnrolment,
-              pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
-              price: newSession.price,
-              currency: newSession.currency,
-              sponsors: availableSpeakers.filter(speaker => selectedSpeakers.includes(speaker.id.toString())),
-              speaker_ids: selectedSpeakers.map(id => parseInt(id))
-            }
-          : session
-      ));
+      // Check if the API response includes the updated agenda with formatted times
+      const updatedAgenda = response.data?.data;
+      if (updatedAgenda && updatedAgenda.attributes?.formatted_time) {
+        // Use the API response format directly
+        setSessions(prev => prev.map(session => 
+          session.id === editingSession.id 
+            ? {
+                ...session,
+                title: newSession.title,
+                location: newSession.location,
+                startTime: updatedAgenda.attributes.formatted_time.start_time,
+                endTime: updatedAgenda.attributes.formatted_time.end_time,
+                start_date: updatedAgenda.attributes.formatted_time.start_date,
+                end_date: updatedAgenda.attributes.formatted_time.end_date,
+                display: newSession.display,
+                require_enroll: newSession.requiredEnrolment,
+                pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
+                price: newSession.price,
+                currency: newSession.currency,
+                sponsors: availableSpeakers.filter(speaker => selectedSpeakers.includes(speaker.id.toString())),
+                speaker_ids: selectedSpeakers.map(id => parseInt(id))
+              }
+            : session
+        ));
+      } else {
+        // Fallback: Update local state with proper format
+        setSessions(prev => prev.map(session => 
+          session.id === editingSession.id 
+            ? {
+                ...session,
+                title: newSession.title,
+                location: newSession.location,
+                startTime: `${newSession.date} ${newSession.timeFrom}:00 +0300`,
+                endTime: `${newSession.date} ${newSession.timeTo}:00 +0300`,
+                start_date: newSession.date,
+                end_date: newSession.date,
+                display: newSession.display,
+                require_enroll: newSession.requiredEnrolment,
+                pay_by: newSession.paid ? (newSession.onlinePayment ? "online" : "cash") : "free",
+                price: newSession.price,
+                currency: newSession.currency,
+                sponsors: availableSpeakers.filter(speaker => selectedSpeakers.includes(speaker.id.toString())),
+                speaker_ids: selectedSpeakers.map(id => parseInt(id))
+              }
+            : session
+        ));
+      }
       
       showNotification("Session updated successfully!", "success");
       setEditModalOpen(false);
       setEditingSession(null);
       resetForm();
       
-      // Refetch agendas to ensure we have the latest data from server
+      // Always refetch agendas to ensure we have the latest data from server
       // This ensures dates and times are in the correct format for next edit
       try {
         const refreshResponse = await getAgendaApi(eventId!);
@@ -580,34 +606,68 @@ function AdvanceAgenda({
   };
 
   // Format date and time for display - shows both date and time clearly
-  const formatDateTime = (dateTimeString: string) => {
+  const formatDateTime = (dateTimeString: string, sessionDate?: string) => {
     if (!dateTimeString) return "-";
     
     try {
-      // Handle different formats: "2025-06-22 18:49:00 +0300" or "2025-06-22 18:49:00"
-      const dateTime = dateTimeString.replace(/\s+\+\d{4}$/, ''); // Remove timezone offset
-      const [datePart, timePart] = dateTime.split(' ');
+      // Handle different formats: "2025-06-22 18:49:00 +0300", "2025-06-22 18:49:00", or just "19:32"
+      let datePart = "";
+      let timePart = "";
       
-      if (!datePart || !timePart) return dateTimeString;
+      // Check if it's a full datetime string
+      if (dateTimeString.includes(' ') || dateTimeString.includes('-')) {
+        const dateTime = dateTimeString.replace(/\s+\+\d{4}$/, ''); // Remove timezone offset
+        const parts = dateTime.split(' ');
+        datePart = parts[0] || "";
+        timePart = parts[1] || "";
+      } else {
+        // If it's just time (like "19:32"), use session date if available
+        timePart = dateTimeString;
+        if (sessionDate) {
+          datePart = sessionDate;
+        }
+      }
       
-      // Format date: "2025-06-22" -> "2025-06-22" (keep readable format)
-      const [year, month, day] = datePart.split('-');
-      const formattedDate = `${year}-${month}-${day}`;
+      // If we still don't have a date part, try to extract from the original string
+      if (!datePart && dateTimeString.includes('-')) {
+        const match = dateTimeString.match(/(\d{4}-\d{2}-\d{2})/);
+        if (match) {
+          datePart = match[1];
+        }
+      }
       
-      // Format time: "18:49:00" -> "06:49 PM" (12-hour format)
-      const [hours, minutes] = timePart.split(':');
-      const hour24 = parseInt(hours);
-      const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
-      const ampm = hour24 >= 12 ? 'PM' : 'AM';
-      const formattedTime = `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+      // If we have both date and time, format them
+      if (datePart && timePart) {
+        // Format date: "2025-06-22" -> "2025-06-22" (keep readable format)
+        const [year, month, day] = datePart.split('-');
+        const formattedDate = `${year}-${month}-${day}`;
+        
+        // Format time: "18:49:00" or "19:32" -> "06:49 PM" (12-hour format)
+        const [hours, minutes] = timePart.split(':');
+        const hour24 = parseInt(hours);
+        const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        const formattedTime = `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+        
+        // Return both date and time in a clear format
+        return (
+          <div className="flex flex-col">
+            <span className="text-gray-900 font-medium">{formattedDate}</span>
+            <span className="text-gray-600 text-xs mt-0.5">{formattedTime}</span>
+          </div>
+        );
+      } else if (timePart) {
+        // If we only have time, show it but indicate date is missing
+        const [hours, minutes] = timePart.split(':');
+        const hour24 = parseInt(hours);
+        const hour12 = hour24 > 12 ? hour24 - 12 : (hour24 === 0 ? 12 : hour24);
+        const ampm = hour24 >= 12 ? 'PM' : 'AM';
+        const formattedTime = `${hour12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+        return <span className="text-gray-600">{formattedTime}</span>;
+      }
       
-      // Return both date and time in a clear format
-      return (
-        <div className="flex flex-col">
-          <span className="text-gray-900 font-medium">{formattedDate}</span>
-          <span className="text-gray-600 text-xs mt-0.5">{formattedTime}</span>
-        </div>
-      );
+      // Fallback: return original string
+      return <span>{dateTimeString}</span>;
     } catch (error) {
       // If parsing fails, return original string
       return <span>{dateTimeString}</span>;
@@ -793,11 +853,11 @@ function AdvanceAgenda({
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {formatDateTime(session.startTime)}
+                    {formatDateTime(session.startTime, session.start_date)}
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {formatDateTime(session.endTime)}
+                    {formatDateTime(session.endTime, session.end_date)}
                   </td>
 
                   <td className="px-6 py-4 text-sm text-gray-600">
