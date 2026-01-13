@@ -8,6 +8,7 @@ import {
   XCircle,
   ChevronLeft,
   Loader2,
+  Star,
 } from "lucide-react";
 import { toast, ToastContainer } from "react-toastify";
 import {
@@ -17,6 +18,14 @@ import {
   deleteBadgeType,
   addGuestType,
 } from "../../../../apis/apiHelpers";
+import {
+  getAllBadges,
+  createBadgeSimple,
+  deleteBadge,
+  setDefaultBadge,
+  updateBadge,
+  type Badge as BadgeType,
+} from "../../../../apis/badgeService";
 import CustomizeColorPicker from "@/components/CustomizeColor/CustomizeColor";
 import axios from "axios";
 
@@ -58,12 +67,14 @@ type MainFormData = {
 };
 
 type Badge = {
-  id: string;
+  id: string | number;
   type: string;
   attributes: {
     name: string;
     default: boolean;
-    // Add other badge attributes as needed
+    event_id?: number;
+    created_at?: string;
+    updated_at?: string;
   };
 };
 
@@ -89,6 +100,10 @@ const MainData = ({
   const [showEventData, setShowEventData] = useState<boolean>(false);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
+  const [deletingBadgeId, setDeletingBadgeId] = useState<
+    number | string | null
+  >(null);
+  const [setAsDefault, setSetAsDefault] = useState<boolean>(false);
   const [ticket, setTicket] = useState(true);
   const [eventguesttype, setEventguesttype] = useState<string>("");
 
@@ -674,7 +689,7 @@ const MainData = ({
     badgeId: string | number,
     index: number
   ) => {
-    console.log("=== DIRECT DELETE BADGE ===");
+    console.log("=== DELETE BADGE ===");
     console.log("Badge ID to delete:", badgeId);
     console.log("Event ID:", eventId);
 
@@ -683,55 +698,36 @@ const MainData = ({
       return;
     }
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast.error("Authentication token not found");
-      return;
-    }
-
     try {
-      // Direct DELETE API call based on your screenshot
-      const response = await fetch(
-        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/badges/${badgeId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // Set loading state for this specific badge
+      setDeletingBadgeId(badgeId);
 
-      console.log("DELETE Response status:", response.status);
+      // Use the new badge service to delete badge
+      await deleteBadge(eventId, badgeId);
+      toast.success("Badge type deleted successfully!");
 
-      if (response.status === 204) {
-        toast.success("Badge type deleted successfully!");
+      // Remove from local state
+      setBadges((prev) => prev.filter((_, i) => i !== index));
 
-        // Remove from local state
-        setBadges((prev) => prev.filter((_, i) => i !== index));
-
-        // Also remove from formData.guestTypes if it exists there
-        const badgeToDelete = badges[index];
-        if (badgeToDelete) {
-          const badgeName = badgeToDelete.attributes.name;
-          setFormData((prev) => ({
-            ...prev,
-            guestTypes: prev.guestTypes.filter((type) => type !== badgeName),
-          }));
-        }
-      } else if (response.status === 401) {
-        toast.error("Unauthorized - Please check your token");
-      } else if (response.status === 404) {
-        toast.error("Badge not found");
-      } else {
-        const errorText = await response.text();
-        console.error("DELETE Error:", errorText);
-        toast.error(`Failed to delete badge: ${response.statusText}`);
+      // Also remove from formData.guestTypes if it exists there
+      const badgeToDelete = badges[index];
+      if (badgeToDelete) {
+        const badgeName = badgeToDelete.attributes.name;
+        setFormData((prev) => ({
+          ...prev,
+          guestTypes: prev.guestTypes.filter((type) => type !== badgeName),
+        }));
       }
-    } catch (error) {
-      console.error("DELETE Network Error:", error);
-      toast.error("Network error while deleting badge");
+    } catch (error: any) {
+      console.error("DELETE Error:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to delete badge";
+      toast.error(errorMessage);
+    } finally {
+      // Clear loading state
+      setDeletingBadgeId(null);
     }
   };
 
@@ -931,10 +927,14 @@ const MainData = ({
     }
 
     try {
-      const response = await addGuestType(eventId, newGuestType.trim());
-      console.log("Guest type added:", response);
-      toast.success("Guest type added successfully!");
+      // Use the new badge service to create badge with default status
+      await createBadgeSimple(eventId, newGuestType.trim(), setAsDefault);
+      console.log("Guest type added:", newGuestType);
+      toast.success(
+        `Guest type added${setAsDefault ? " as default" : ""} successfully!`
+      );
       setNewGuestType("");
+      setSetAsDefault(false); // Reset the checkbox
       await fetchBadgeApi();
     } catch (error: any) {
       console.error("=== ADD ERROR ===", error);
@@ -970,6 +970,52 @@ const MainData = ({
   const handleHideEventDataClick = () => {
     console.log("Hide Event Data button clicked. Event ID:", eventId);
     setShowEventData(false);
+  };
+
+  // Toggle default badge
+  const handleToggleDefaultBadge = async (
+    badgeId: number | string,
+    isCurrentlyDefault: boolean
+  ) => {
+    if (!eventId) {
+      toast.error("Event ID is missing");
+      return;
+    }
+
+    try {
+      if (isCurrentlyDefault) {
+        // If already default, inform user
+        toast.info("This badge is already set as default");
+        return;
+      }
+
+      // First, unset any current default badges
+      const currentDefaultBadge = badges.find(
+        (b) => b.attributes.default && b.id !== badgeId
+      );
+      if (currentDefaultBadge) {
+        // Unset the previous default
+        await updateBadge(eventId, currentDefaultBadge.id, {
+          badge: {
+            default: false,
+          },
+        });
+      }
+
+      // Then set this badge as default
+      await setDefaultBadge(eventId, badgeId);
+      toast.success("Default badge updated successfully!");
+
+      // Refresh badges to get updated default status
+      await fetchBadgeApi();
+    } catch (error: any) {
+      console.error("Error setting default badge:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to set default badge";
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -1548,22 +1594,41 @@ const MainData = ({
             </div>
 
             {eventId ? (
-              <div className="flex flex-col sm:flex-row gap-2 mb-4">
-                <input
-                  type="text"
-                  value={newGuestType}
-                  onChange={(e) => setNewGuestType(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="e.g. Speaker, VIP"
-                  className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
-                />
-                <button
-                  onClick={handleAddUserType}
-                  className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
-                >
-                  <Plus size={16} />
-                  Add
-                </button>
+              <div className="space-y-2 mb-4">
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <input
+                    type="text"
+                    value={newGuestType}
+                    onChange={(e) => setNewGuestType(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="e.g. Speaker, VIP"
+                    className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                  />
+                  <button
+                    onClick={handleAddUserType}
+                    className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
+                  >
+                    <Plus size={16} />
+                    Add
+                  </button>
+                </div>
+                {/* Checkbox to set as default */}
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={setAsDefault}
+                    onChange={(e) => setSetAsDefault(e.target.checked)}
+                    className="w-4 h-4 text-teal-500 border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
+                  />
+                  <span className="flex items-center gap-1">
+                    <Star
+                      size={14}
+                      className="text-yellow-500"
+                      fill={setAsDefault ? "currentColor" : "none"}
+                    />
+                    Set as default badge
+                  </span>
+                </label>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2 mb-4">
@@ -1619,15 +1684,60 @@ const MainData = ({
                         key={`api-${badge.id}`}
                         className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
                       >
-                        <span className="text-sm text-gray-700 truncate pr-2">
-                          {badge.attributes.name}
-                        </span>
-                        <button
-                          onClick={() => handleDeleteBadgeType(badge.id, index)}
-                          className="text-red-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="text-sm text-gray-700 truncate pr-2">
+                            {badge.attributes.name}
+                          </span>
+                          {badge.attributes.default && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-full">
+                              <Star size={12} fill="currentColor" />
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() =>
+                              handleToggleDefaultBadge(
+                                badge.id,
+                                badge.attributes.default
+                              )
+                            }
+                            className={`p-1.5 rounded transition-colors ${
+                              badge.attributes.default
+                                ? "text-yellow-500 hover:text-yellow-600"
+                                : "text-gray-400 hover:text-yellow-500"
+                            }`}
+                            title={
+                              badge.attributes.default
+                                ? "Default badge"
+                                : "Set as default"
+                            }
+                            disabled={deletingBadgeId === badge.id}
+                          >
+                            <Star
+                              size={16}
+                              fill={
+                                badge.attributes.default
+                                  ? "currentColor"
+                                  : "none"
+                              }
+                            />
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDeleteBadgeType(badge.id, index)
+                            }
+                            className="text-red-400 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={deletingBadgeId === badge.id}
+                          >
+                            {deletingBadgeId === badge.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Trash2 size={16} />
+                            )}
+                          </button>
+                        </div>
                       </div>
                     ))}
 
