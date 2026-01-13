@@ -68,6 +68,40 @@ const compressImage = async (file: File): Promise<File> => {
   });
 };
 
+// Helper to derive user initial
+const getUserInitial = (user: any) => {
+  const nameOrEmail =
+    user?.attributes?.name ||
+    user?.attributes?.email ||
+    user?.attributes?.phone_number ||
+    "U";
+  const trimmed = typeof nameOrEmail === "string" ? nameOrEmail.trim() : "U";
+  return (trimmed.charAt(0) || "U").toUpperCase();
+};
+
+// Avatar component with image fallback
+const UserAvatar = ({ user }: { user: any }) => {
+  const [loadError, setLoadError] = useState(false);
+  const imageUrl = user?.attributes?.image; // use image from attributes
+
+  if (imageUrl && !loadError) {
+    return (
+      <img
+        src={imageUrl}
+        alt={user?.attributes?.name || "User Avatar"}
+        className="w-10 h-10 rounded-full object-cover"
+        onError={() => setLoadError(true)}
+      />
+    );
+  }
+
+  return (
+    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
+      {getUserInitial(user)}
+    </div>
+  );
+};
+
 function RegisterdUser() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
@@ -77,6 +111,7 @@ function RegisterdUser() {
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [editAvatarError, setEditAvatarError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -103,6 +138,11 @@ function RegisterdUser() {
       localStorage.setItem(storageKey, pagination.total_count.toString());
     }
   }, [pagination, eventId]);
+
+  // Reset avatar error state when switching edit target
+  useEffect(() => {
+    setEditAvatarError(false);
+  }, [editingUser]);
 
   const [editForm, setEditForm] = useState({
     image: "",
@@ -559,32 +599,35 @@ function RegisterdUser() {
     );
   };
 
+  const getUserInitial = (user: any) => {
+    const nameOrEmail =
+      user?.attributes?.name ||
+      user?.attributes?.email ||
+      user?.attributes?.phone_number ||
+      "U";
+    const trimmed =
+      typeof nameOrEmail === "string" ? nameOrEmail.trim() : "U";
+    return (trimmed.charAt(0) || "U").toUpperCase();
+  };
+
   const UserAvatar = ({ user }: { user: any }) => {
+    const [loadError, setLoadError] = useState(false);
     const imageUrl = user?.attributes?.image; // use image from attributes
 
-    if (imageUrl) {
+    if (imageUrl && !loadError) {
       return (
         <img
           src={imageUrl}
           alt={user?.attributes?.name || "User Avatar"}
           className="w-10 h-10 rounded-full object-cover"
+          onError={() => setLoadError(true)}
         />
       );
     }
 
     return (
-      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-        <svg
-          className="w-6 h-6 text-blue-500"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-            clipRule="evenodd"
-          />
-        </svg>
+      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
+        {getUserInitial(user)}
       </div>
     );
   };
@@ -1063,25 +1106,16 @@ function RegisterdUser() {
                       alt="Preview"
                       className="w-28 h-28 rounded-full object-cover mx-auto shadow-lg border-4 border-blue-100"
                     />
-                  ) : editingUser.attributes.image ? (
+                  ) : editingUser.attributes.image && !editAvatarError ? (
                     <img
                       src={editingUser.attributes.image}
                       alt="Current"
                       className="w-28 h-28 rounded-full object-cover mx-auto shadow-lg border-4 border-blue-100"
+                      onError={() => setEditAvatarError(true)}
                     />
                   ) : (
-                    <div className="w-28 h-28 rounded-full bg-blue-50 flex items-center justify-center mx-auto shadow-lg border-4 border-blue-100">
-                      <svg
-                        className="w-14 h-14 text-blue-400"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
+                    <div className="w-28 h-28 rounded-full bg-blue-50 flex items-center justify-center mx-auto shadow-lg border-4 border-blue-100 text-3xl font-semibold text-blue-500">
+                      {getUserInitial(editingUser)}
                     </div>
                   )}
 
