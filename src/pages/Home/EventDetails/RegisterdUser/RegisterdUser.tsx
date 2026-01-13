@@ -12,9 +12,61 @@ import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { Trash2, Mail, Plus, Edit, RotateCcw } from "lucide-react";
+import { Trash2, Mail, Plus, Edit, RotateCcw, X } from "lucide-react";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+
+// Image compression function
+const compressImage = async (file: File): Promise<File> => {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target?.result as string;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        const maxWidth = 1200;
+        const maxHeight = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height *= maxWidth / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width *= maxHeight / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          },
+          "image/jpeg",
+          0.8
+        );
+      };
+    };
+  });
+};
 
 function RegisterdUser() {
   const location = useLocation();
@@ -35,6 +87,9 @@ function RegisterdUser() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [sendingCredentials, setSendingCredentials] = useState(false);
+  const [sendingCredentialsUserId, setSendingCredentialsUserId] = useState<
+    string | null
+  >(null);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -131,18 +186,49 @@ function RegisterdUser() {
 
     if (!eventId || idsToSend.length === 0) return;
 
+    // Track which user(s) are sending credentials
+    const isSingleUser = userIds && userIds.length === 1;
+    if (isSingleUser) {
+      setSendingCredentialsUserId(userIds[0]);
+    }
     setSendingCredentials(true);
 
     try {
       const response = await sendCredentials(eventId, idsToSend);
       console.log("API response:", response.data);
-      toast.success("Credentials sent successfully!");
+
+      if (isSingleUser) {
+        toast.success("Credentials sent to user successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.success(
+          `Credentials sent to ${idsToSend.length} users successfully!`,
+          {
+            position: "top-right",
+            autoClose: 3000,
+          }
+        );
+      }
       setSelectedUsers([]);
     } catch (err) {
       console.error("Error sending credentials:", err);
-      toast.error("Failed to send credentials. Please try again.");
+
+      if (isSingleUser) {
+        toast.error("Failed to send credentials to user. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        toast.error("Failed to send credentials. Please try again.", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
     } finally {
       setSendingCredentials(false);
+      setSendingCredentialsUserId(null);
     }
   };
 
@@ -857,9 +943,27 @@ function RegisterdUser() {
 
                             <button
                               onClick={() => handleSendCredentials([user.id])}
-                              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                              disabled={sendingCredentialsUserId === user.id}
+                              className={`p-2 rounded-lg transition-colors ${
+                                sendingCredentialsUserId === user.id
+                                  ? "text-gray-400 cursor-not-allowed"
+                                  : "text-blue-600 hover:bg-blue-50"
+                              }`}
                             >
-                              <Mail className="w-4 h-4" />
+                              {sendingCredentialsUserId === user.id ? (
+                                <div
+                                  style={{
+                                    width: "16px",
+                                    height: "16px",
+                                    border: "2px solid #d1d5db",
+                                    borderTop: "2px solid #3b82f6",
+                                    borderRadius: "50%",
+                                    animation: "spin 1s linear infinite",
+                                  }}
+                                />
+                              ) : (
+                                <Mail className="w-4 h-4" />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -932,32 +1036,43 @@ function RegisterdUser() {
           {editingUser && (
             <div
               className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-              onClick={() => setEditingUser(null)} // Click outside closes
+              onClick={() => setEditingUser(null)}
             >
               <div
-                className="bg-white p-6 rounded-lg w-96"
-                onClick={(e) => e.stopPropagation()} // Prevent click inside modal from closing
+                className="bg-white p-8 rounded-2xl w-full max-w-md shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
               >
-                <h2 className="text-xl font-bold mb-4">Edit User</h2>
+                {/* Header */}
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900">
+                    Edit User
+                  </h2>
+                  <button
+                    onClick={() => setEditingUser(null)}
+                    className="p-1 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
 
-                <div className="relative w-24 h-24 mb-4 mx-auto">
-                  {/* Avatar */}
+                {/* Avatar Section */}
+                <div className="relative w-28 h-28 mb-6 mx-auto">
                   {selectedImageFile ? (
                     <img
                       src={URL.createObjectURL(selectedImageFile)}
                       alt="Preview"
-                      className="w-24 h-24 rounded-full object-cover mx-auto"
+                      className="w-28 h-28 rounded-full object-cover mx-auto shadow-lg border-4 border-blue-100"
                     />
                   ) : editingUser.attributes.image ? (
                     <img
                       src={editingUser.attributes.image}
                       alt="Current"
-                      className="w-24 h-24 rounded-full object-cover mx-auto"
+                      className="w-28 h-28 rounded-full object-cover mx-auto shadow-lg border-4 border-blue-100"
                     />
                   ) : (
-                    <div className="w-24 h-24 rounded-full bg-blue-100 flex items-center justify-center mx-auto">
+                    <div className="w-28 h-28 rounded-full bg-blue-50 flex items-center justify-center mx-auto shadow-lg border-4 border-blue-100">
                       <svg
-                        className="w-12 h-12 text-blue-500"
+                        className="w-14 h-14 text-blue-400"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                       >
@@ -970,96 +1085,116 @@ function RegisterdUser() {
                     </div>
                   )}
 
-                  {/* Edit Icon */}
                   <label
                     htmlFor="imageUpload"
-                    className="absolute bottom-0 right-0 w-6 h-6 bg-white rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-gray-100"
+                    className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer shadow-lg hover:bg-blue-700 transition text-white"
                   >
-                    <Edit className="w-4 h-4 text-yellow-500" />
+                    <Edit className="w-4 h-4" />
                   </label>
 
-                  {/* Hidden File Input */}
                   <input
                     id="imageUpload"
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => {
+                    onChange={async (e) => {
                       if (e.target.files && e.target.files[0]) {
-                        setSelectedImageFile(e.target.files[0]);
+                        const compressedFile = await compressImage(
+                          e.target.files[0]
+                        );
+                        setSelectedImageFile(compressedFile);
+                        toast.info("Image compressed and ready to upload");
                       }
                     }}
                   />
                 </div>
 
-                {/* Inputs */}
-                <input
-                  type="text"
-                  placeholder="Name"
-                  value={editForm.name}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, name: e.target.value })
-                  }
-                  className="w-full mb-2 p-2 border rounded"
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={editForm.email}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, email: e.target.value })
-                  }
-                  className="w-full mb-2 p-2 border rounded"
-                />
-                <input
-                  type="text"
-                  placeholder="Organization"
-                  value={editForm.organization}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, organization: e.target.value })
-                  }
-                  className="w-full mb-2 p-2 border rounded"
-                />
-                <input
-                  type="text"
-                  placeholder="User Type"
-                  value={editForm.user_type}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, user_type: e.target.value })
-                  }
-                  className="w-full mb-4 p-2 border rounded"
-                />
+                {/* Form Fields */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Full Name"
+                      value={editForm.name}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, name: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
 
-                {/* <div className="mb-4">
-  <label className="flex items-center gap-2">
-    <input
-      type="checkbox"
-      checked={editForm.printed || false}
-      onChange={(e) => {
-        const newValue = e.target.checked;
-        console.log("Printed checkbox value:", newValue); 
-        setEditForm({
-          ...editForm,
-          printed: newValue,
-        });
-      }}
-      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-    />
-    Printed
-  </label>
-</div> */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="user@example.com"
+                      value={editForm.email}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, email: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
 
-                <button
-                  onClick={handleUpdateUser}
-                  disabled={isUpdating}
-                  className={`w-full px-4 py-2 rounded text-white ${
-                    isUpdating
-                      ? "bg-blue-400 cursor-not-allowed"
-                      : "bg-blue-600 hover:bg-blue-700"
-                  }`}
-                >
-                  {isUpdating ? "...Updating" : "Update"}
-                </button>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Organization
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Organization"
+                      value={editForm.organization}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          organization: e.target.value,
+                        })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      User Type
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="User Type"
+                      value={editForm.user_type}
+                      onChange={(e) =>
+                        setEditForm({ ...editForm, user_type: e.target.value })
+                      }
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                    />
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 mt-8">
+                  <button
+                    onClick={() => setEditingUser(null)}
+                    className="flex-1 px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateUser}
+                    disabled={isUpdating}
+                    className={`flex-1 px-4 py-2 rounded-lg text-white font-medium transition ${
+                      isUpdating
+                        ? "bg-blue-400 cursor-not-allowed"
+                        : "bg-blue-600 hover:bg-blue-700"
+                    }`}
+                  >
+                    {isUpdating ? "Updating..." : "Update"}
+                  </button>
+                </div>
               </div>
             </div>
           )}
