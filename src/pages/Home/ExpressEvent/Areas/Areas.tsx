@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Trash2, Plus } from "lucide-react";
 import {
   createSessionAreaApi,
@@ -8,6 +8,7 @@ import {
 } from "@/apis/apiHelpers";
 import { Area } from "recharts";
 import { toast, ToastContainer } from "react-toastify";
+import { Skeleton } from "@/components/ui/skeleton";
 import "react-toastify/dist/ReactToastify.css";
 
 export type Area = {
@@ -51,6 +52,9 @@ export default function Areas({}) {
   const [saveLoading, setSaveLoading] = useState<string | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [badgeLoading, setBadgeLoading] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
 
   const eventId = localStorage.getItem("create_eventId");
   console.log("event id----------+++++-----------------", eventId);
@@ -181,6 +185,7 @@ export default function Areas({}) {
         newArea.type &&
         newArea.guestNumbers
       ) {
+        setAddLoading(true);
         console.log("event id in areas", eventId);
 
         const response = await createSessionAreaApi(
@@ -220,49 +225,60 @@ export default function Areas({}) {
       toast.error("Failed to add session area");
       // If add fails, refresh to get actual state from server
       await fetchSessionAreas();
+    } finally {
+      setAddLoading(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!eventId) {
-      setError("Event ID not found");
-      toast.error("Event ID not found");
+  const handleDelete = async () => {
+    if (!eventId || !areaToDelete) {
+      setError("Event ID or Area not found");
+      toast.error("Event ID or Area not found");
       return;
     }
 
-    if (window.confirm("Are you sure you want to delete this area?")) {
-      try {
-        setDeleteLoading(id);
+    try {
+      setDeleteLoading(areaToDelete.id);
 
-        console.log(`Deleting area ${id} for event ${eventId}`);
+      console.log(`Deleting area ${areaToDelete.id} for event ${eventId}`);
 
-        // Call the DELETE API
-        const response = await deleteSessionAreaApi(eventId, id);
-        console.log("DELETE API Response:", response);
-        console.log("DELETE API Status:", response.status);
-        console.log("DELETE API Data:", response.data);
+      // Call the DELETE API
+      const response = await deleteSessionAreaApi(eventId, areaToDelete.id);
+      console.log("DELETE API Response:", response);
+      console.log("DELETE API Status:", response.status);
+      console.log("DELETE API Data:", response.data);
 
-        // Check for success
-        if (response.status === 200 || response.status === 204) {
-          console.log(`Successfully deleted area with id: ${id}`);
+      // Check for success
+      if (response.status === 200 || response.status === 204) {
+        console.log(`Successfully deleted area with id: ${areaToDelete.id}`);
 
-          // Refresh data to ensure UI matches server state
-          await fetchSessionAreas();
-          toast.success("Area deleted successfully!");
-        } else {
-          throw new Error(`Delete failed with status: ${response.status}`);
-        }
-      } catch (error) {
-        console.error("Error deleting area:", error);
-        setError("Failed to delete session area");
-        toast.error("Failed to delete session area");
-
-        // Refresh to get current state
+        // Refresh data to ensure UI matches server state
         await fetchSessionAreas();
-      } finally {
-        setDeleteLoading(null);
+        toast.success("Area deleted successfully!");
+        closeDeleteModal();
+      } else {
+        throw new Error(`Delete failed with status: ${response.status}`);
       }
+    } catch (error) {
+      console.error("Error deleting area:", error);
+      setError("Failed to delete session area");
+      toast.error("Failed to delete session area");
+
+      // Refresh to get current state
+      await fetchSessionAreas();
+    } finally {
+      setDeleteLoading(null);
     }
+  };
+
+  const openDeleteModal = (area: Area) => {
+    setAreaToDelete(area);
+    setIsDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setIsDeleteModalOpen(false);
+    setAreaToDelete(null);
   };
 
   const handleEdit = (area: Area) => {
@@ -279,9 +295,6 @@ export default function Areas({}) {
 
     try {
       setSaveLoading(editData.id);
-
-      // Store previous data for rollback
-      const previousData = data;
 
       // Optimistically update UI
       setData((prevData) =>
@@ -474,15 +487,9 @@ export default function Areas({}) {
 
         {/* Loading State */}
         {loading && (
-          <div
-            style={{
-              padding: "12px",
-              textAlign: "center",
-              color: "#6b7280",
-              marginBottom: "16px",
-            }}
-          >
-            Loading session areas...
+          <div style={{ marginBottom: "16px" }}>
+            <Skeleton style={{ height: "12px", marginBottom: "8px" }} />
+            <Skeleton style={{ height: "12px", width: "60%" }} />
           </div>
         )}
 
@@ -594,6 +601,7 @@ export default function Areas({}) {
               <option value="" disabled>
                 Select User Type
               </option>
+              <option value="any">Any</option>
               {badgeLoading ? (
                 <option value="" disabled>
                   Loading badges...
@@ -651,21 +659,52 @@ export default function Areas({}) {
 
           <button
             onClick={handleAdd}
+            disabled={addLoading}
             style={{
               padding: "8px 16px",
-              backgroundColor: "#1f2937",
+              backgroundColor: addLoading ? "#9ca3af" : "#1f2937",
               color: "white",
               border: "none",
               borderRadius: "6px",
               fontSize: "14px",
               fontWeight: "500",
-              cursor: "pointer",
+              cursor: addLoading ? "not-allowed" : "pointer",
               height: "fit-content",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
             }}
-            onMouseOver={(e) => (e.target.style.backgroundColor = "#111827")}
-            onMouseOut={(e) => (e.target.style.backgroundColor = "#1f2937")}
+            onMouseOver={(e) => {
+              if (!addLoading)
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  "#111827";
+            }}
+            onMouseOut={(e) => {
+              if (!addLoading)
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  "#1f2937";
+            }}
           >
-            + Add
+            {addLoading ? (
+              <>
+                <div
+                  style={{
+                    width: "14px",
+                    height: "14px",
+                    border: "2px solid #f3f4f6",
+                    borderTop: "2px solid #ffffff",
+                    borderRadius: "50%",
+                    animation: "spin 1s linear infinite",
+                  }}
+                />
+                Adding...
+              </>
+            ) : (
+              <>
+                <Plus size={16} />
+                Add
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -704,14 +743,18 @@ export default function Areas({}) {
             >
               Areas
             </h2>
-            <span
-              style={{
-                fontSize: "14px",
-                color: "#6b7280",
-              }}
-            >
-              {data.length} areas
-            </span>
+            {loading ? (
+              <Skeleton style={{ height: "20px", width: "80px" }} />
+            ) : (
+              <span
+                style={{
+                  fontSize: "14px",
+                  color: "#6b7280",
+                }}
+              >
+                {data.length} areas
+              </span>
+            )}
           </div>
         </div>
 
@@ -818,335 +861,373 @@ export default function Areas({}) {
             </tr>
           </thead>
           <tbody>
-            {getCurrentPageData().map((area, index) => (
-              <tr
-                key={area.id}
-                style={{
-                  borderBottom:
-                    index < getCurrentPageData().length - 1
-                      ? "1px solid #f3f4f6"
-                      : "none",
-                  backgroundColor: "white",
-                }}
-                onMouseOver={(e) =>
-                  (e.currentTarget.style.backgroundColor = "#f9fafb")
-                }
-                onMouseOut={(e) =>
-                  (e.currentTarget.style.backgroundColor = "white")
-                }
-              >
-                <td
-                  style={{
-                    padding: "12px 20px",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  <div
+            {loading
+              ? Array.from({ length: 5 }).map((_, index) => (
+                  <tr
+                    key={`skeleton-${index}`}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
+                      borderBottom: "1px solid #f3f4f6",
+                      backgroundColor: "white",
                     }}
                   >
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.has(area.id)}
-                      onChange={() => toggleRowSelection(area.id)}
-                      style={{ width: "16px", height: "16px" }}
-                    />
-                  </div>
-                </td>
-                <td
-                  style={{
-                    padding: "12px 20px",
-                    fontSize: "14px",
-                    color: "#111827",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  {editingRow === area.id ? (
-                    <input
-                      type="text"
-                      value={editData?.name || ""}
-                      onChange={(e) =>
-                        setEditData((prev) =>
-                          prev ? { ...prev, name: e.target.value } : null
-                        )
-                      }
+                    <td style={{ padding: "12px 20px", textAlign: "center" }}>
+                      <Skeleton style={{ height: "16px", width: "16px" }} />
+                    </td>
+                    <td style={{ padding: "12px 20px" }}>
+                      <Skeleton style={{ height: "12px" }} />
+                    </td>
+                    <td style={{ padding: "12px 20px" }}>
+                      <Skeleton style={{ height: "12px" }} />
+                    </td>
+                    <td style={{ padding: "12px 20px" }}>
+                      <Skeleton style={{ height: "12px" }} />
+                    </td>
+                    <td style={{ padding: "12px 20px" }}>
+                      <Skeleton style={{ height: "12px" }} />
+                    </td>
+                    <td style={{ padding: "12px 20px", textAlign: "center" }}>
+                      <Skeleton style={{ height: "16px", width: "30px" }} />
+                    </td>
+                  </tr>
+                ))
+              : getCurrentPageData().map((area, index) => (
+                  <tr
+                    key={area.id}
+                    style={{
+                      borderBottom:
+                        index < getCurrentPageData().length - 1
+                          ? "1px solid #f3f4f6"
+                          : "none",
+                      backgroundColor: "white",
+                    }}
+                    onMouseOver={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f9fafb")
+                    }
+                    onMouseOut={(e) =>
+                      (e.currentTarget.style.backgroundColor = "white")
+                    }
+                  >
+                    <td
                       style={{
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        width: "100%",
-                        outline: "none",
+                        padding: "12px 20px",
                         textAlign: "center",
-                      }}
-                    />
-                  ) : (
-                    area.name
-                  )}
-                </td>
-                <td
-                  style={{
-                    padding: "12px 20px",
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  {editingRow === area.id ? (
-                    <input
-                      type="text"
-                      value={editData?.location || ""}
-                      onChange={(e) =>
-                        setEditData((prev) =>
-                          prev ? { ...prev, location: e.target.value } : null
-                        )
-                      }
-                      style={{
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        width: "100%",
-                        outline: "none",
-                        textAlign: "center",
-                      }}
-                    />
-                  ) : (
-                    area.location
-                  )}
-                </td>
-                <td
-                  style={{
-                    padding: "12px 20px",
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  {editingRow === area.id ? (
-                    <select
-                      value={editData?.type || ""}
-                      onChange={(e) =>
-                        setEditData((prev) =>
-                          prev ? { ...prev, type: e.target.value } : null
-                        )
-                      }
-                      style={{
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
-                        fontSize: "14px",
-                        width: "100%",
-                        outline: "none",
-                        textAlign: "center",
+                        verticalAlign: "middle",
                       }}
                     >
-                      {badges.map((badge) => (
-                        <option
-                          key={badge.id}
-                          value={badge.attributes.badge_type}
-                        >
-                          {badge.attributes.name}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    area.type
-                  )}
-                </td>
-                <td
-                  style={{
-                    padding: "12px 20px",
-                    fontSize: "14px",
-                    color: "#6b7280",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  {editingRow === area.id ? (
-                    <input
-                      type="number"
-                      value={editData?.guestNumbers || ""}
-                      onChange={(e) =>
-                        setEditData((prev) =>
-                          prev
-                            ? {
-                                ...prev,
-                                guestNumbers: parseInt(e.target.value) || 0,
-                              }
-                            : null
-                        )
-                      }
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.has(area.id)}
+                          onChange={() => toggleRowSelection(area.id)}
+                          style={{ width: "16px", height: "16px" }}
+                        />
+                      </div>
+                    </td>
+                    <td
                       style={{
-                        padding: "6px 8px",
-                        border: "1px solid #d1d5db",
-                        borderRadius: "4px",
+                        padding: "12px 20px",
                         fontSize: "14px",
-                        width: "100%",
-                        outline: "none",
+                        color: "#111827",
                         textAlign: "center",
+                        verticalAlign: "middle",
                       }}
-                    />
-                  ) : (
-                    area.guestNumbers
-                  )}
-                </td>
-                <td
-                  style={{
-                    padding: "12px 20px",
-                    textAlign: "center",
-                    verticalAlign: "middle",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: "8px",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    {editingRow === area.id ? (
-                      <>
-                        <button
-                          onClick={handleSaveEdit}
-                          disabled={saveLoading === area.id}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor:
-                              saveLoading === area.id ? "#9ca3af" : "#10b981",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            cursor:
-                              saveLoading === area.id
-                                ? "not-allowed"
-                                : "pointer",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "4px",
-                          }}
-                        >
-                          {saveLoading === area.id ? (
-                            <>
-                              <div
-                                style={{
-                                  width: "12px",
-                                  height: "12px",
-                                  border: "2px solid #f3f4f6",
-                                  borderTop: "2px solid #ffffff",
-                                  borderRadius: "50%",
-                                  animation: "spin 1s linear infinite",
-                                }}
-                              />
-                              Saving...
-                            </>
-                          ) : (
-                            "Save"
-                          )}
-                        </button>
-                        <button
-                          onClick={handleCancelEdit}
-                          disabled={saveLoading === area.id}
-                          style={{
-                            padding: "6px 12px",
-                            backgroundColor: "#6b7280",
-                            color: "white",
-                            border: "none",
-                            borderRadius: "4px",
-                            fontSize: "12px",
-                            cursor:
-                              saveLoading === area.id
-                                ? "not-allowed"
-                                : "pointer",
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleEdit(area)}
-                          style={{
-                            padding: "6px",
-                            backgroundColor: "transparent",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: "pointer",
-                            color: "#f59e0b",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                          onMouseOver={(e) =>
-                            (e.currentTarget.style.backgroundColor = "#fef3c7")
+                    >
+                      {editingRow === area.id ? (
+                        <input
+                          type="text"
+                          value={editData?.name || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev ? { ...prev, name: e.target.value } : null
+                            )
                           }
-                          onMouseOut={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "transparent")
-                          }
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(area.id)}
-                          disabled={deleteLoading === area.id}
                           style={{
-                            padding: "6px",
-                            backgroundColor: "transparent",
-                            border: "none",
+                            padding: "6px 8px",
+                            border: "1px solid #d1d5db",
                             borderRadius: "4px",
-                            cursor:
-                              deleteLoading === area.id
-                                ? "not-allowed"
-                                : "pointer",
-                            color:
-                              deleteLoading === area.id ? "#9ca3af" : "#ef4444",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            opacity: deleteLoading === area.id ? 0.6 : 1,
+                            fontSize: "14px",
+                            width: "100%",
+                            outline: "none",
+                            textAlign: "center",
                           }}
-                          onMouseOver={(e) => {
-                            if (deleteLoading !== area.id) {
-                              e.currentTarget.style.backgroundColor = "#fee2e2";
-                            }
-                          }}
-                          onMouseOut={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "transparent")
+                        />
+                      ) : (
+                        area.name
+                      )}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px 20px",
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {editingRow === area.id ? (
+                        <input
+                          type="text"
+                          value={editData?.location || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev
+                                ? { ...prev, location: e.target.value }
+                                : null
+                            )
                           }
+                          style={{
+                            padding: "6px 8px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            width: "100%",
+                            outline: "none",
+                            textAlign: "center",
+                          }}
+                        />
+                      ) : (
+                        area.location
+                      )}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px 20px",
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {editingRow === area.id ? (
+                        <select
+                          value={editData?.type || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev ? { ...prev, type: e.target.value } : null
+                            )
+                          }
+                          style={{
+                            padding: "6px 8px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            width: "100%",
+                            outline: "none",
+                            textAlign: "center",
+                          }}
                         >
-                          {deleteLoading === area.id ? (
-                            <div
+                          <option value="any">Any</option>
+                          {badges.map((badge) => (
+                            <option
+                              key={badge.id}
+                              value={badge.attributes.badge_type}
+                            >
+                              {badge.attributes.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        area.type
+                      )}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px 20px",
+                        fontSize: "14px",
+                        color: "#6b7280",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      {editingRow === area.id ? (
+                        <input
+                          type="number"
+                          value={editData?.guestNumbers || ""}
+                          onChange={(e) =>
+                            setEditData((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    guestNumbers: parseInt(e.target.value) || 0,
+                                  }
+                                : null
+                            )
+                          }
+                          style={{
+                            padding: "6px 8px",
+                            border: "1px solid #d1d5db",
+                            borderRadius: "4px",
+                            fontSize: "14px",
+                            width: "100%",
+                            outline: "none",
+                            textAlign: "center",
+                          }}
+                        />
+                      ) : (
+                        area.guestNumbers
+                      )}
+                    </td>
+                    <td
+                      style={{
+                        padding: "12px 20px",
+                        textAlign: "center",
+                        verticalAlign: "middle",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        {editingRow === area.id ? (
+                          <>
+                            <button
+                              onClick={handleSaveEdit}
+                              disabled={saveLoading === area.id}
                               style={{
-                                width: "16px",
-                                height: "16px",
-                                border: "2px solid #f3f4f6",
-                                borderTop: "2px solid #ef4444",
-                                borderRadius: "50%",
-                                animation: "spin 1s linear infinite",
+                                padding: "6px 12px",
+                                backgroundColor:
+                                  saveLoading === area.id
+                                    ? "#9ca3af"
+                                    : "#10b981",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                cursor:
+                                  saveLoading === area.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "4px",
                               }}
-                            />
-                          ) : (
-                            <Trash2 size={16} />
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </td>
-              </tr>
-            ))}
+                            >
+                              {saveLoading === area.id ? (
+                                <>
+                                  <div
+                                    style={{
+                                      width: "12px",
+                                      height: "12px",
+                                      border: "2px solid #f3f4f6",
+                                      borderTop: "2px solid #ffffff",
+                                      borderRadius: "50%",
+                                      animation: "spin 1s linear infinite",
+                                    }}
+                                  />
+                                  Saving...
+                                </>
+                              ) : (
+                                "Save"
+                              )}
+                            </button>
+                            <button
+                              onClick={handleCancelEdit}
+                              disabled={saveLoading === area.id}
+                              style={{
+                                padding: "6px 12px",
+                                backgroundColor: "#6b7280",
+                                color: "white",
+                                border: "none",
+                                borderRadius: "4px",
+                                fontSize: "12px",
+                                cursor:
+                                  saveLoading === area.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleEdit(area)}
+                              style={{
+                                padding: "6px",
+                                backgroundColor: "transparent",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor: "pointer",
+                                color: "#f59e0b",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                              }}
+                              onMouseOver={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "#fef3c7")
+                              }
+                              onMouseOut={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(area)}
+                              disabled={deleteLoading === area.id}
+                              style={{
+                                padding: "6px",
+                                backgroundColor: "transparent",
+                                border: "none",
+                                borderRadius: "4px",
+                                cursor:
+                                  deleteLoading === area.id
+                                    ? "not-allowed"
+                                    : "pointer",
+                                color:
+                                  deleteLoading === area.id
+                                    ? "#9ca3af"
+                                    : "#ef4444",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                opacity: deleteLoading === area.id ? 0.6 : 1,
+                              }}
+                              onMouseOver={(e) => {
+                                if (deleteLoading !== area.id) {
+                                  e.currentTarget.style.backgroundColor =
+                                    "#fee2e2";
+                                }
+                              }}
+                              onMouseOut={(e) =>
+                                (e.currentTarget.style.backgroundColor =
+                                  "transparent")
+                              }
+                            >
+                              {deleteLoading === area.id ? (
+                                <div
+                                  style={{
+                                    width: "16px",
+                                    height: "16px",
+                                    border: "2px solid #f3f4f6",
+                                    borderTop: "2px solid #ef4444",
+                                    borderRadius: "50%",
+                                    animation: "spin 1s linear infinite",
+                                  }}
+                                />
+                              ) : (
+                                <Trash2 size={16} />
+                              )}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
           </tbody>
         </table>
 
@@ -1164,75 +1245,203 @@ export default function Areas({}) {
         )}
 
         {/* Pagination */}
-        <div
-          style={{
-            padding: "16px 20px",
-            borderTop: "1px solid #e5e7eb",
-            backgroundColor: "#f9fafb",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
-          <div style={{ fontSize: "14px", color: "#6b7280" }}>
-            Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
-            {data.length} entries
-          </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-            <button
-              onClick={goToPrevious}
-              disabled={currentPage === 1}
-              style={{
-                padding: "6px 12px",
-                border: "1px solid #d1d5db",
-                backgroundColor: currentPage === 1 ? "#f3f4f6" : "white",
-                color: currentPage === 1 ? "#9ca3af" : "#374151",
-                borderRadius: "4px",
-                fontSize: "14px",
-                cursor: currentPage === 1 ? "not-allowed" : "pointer",
-              }}
-            >
-              Previous
-            </button>
-
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+        {!loading && (
+          <div
+            style={{
+              padding: "16px 20px",
+              borderTop: "1px solid #e5e7eb",
+              backgroundColor: "#f9fafb",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <div style={{ fontSize: "14px", color: "#6b7280" }}>
+              Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
+              {data.length} entries
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
               <button
-                key={page}
-                onClick={() => goToPage(page)}
+                onClick={goToPrevious}
+                disabled={currentPage === 1}
                 style={{
                   padding: "6px 12px",
                   border: "1px solid #d1d5db",
-                  backgroundColor: page === currentPage ? "#3b82f6" : "white",
-                  color: page === currentPage ? "white" : "#374151",
+                  backgroundColor: currentPage === 1 ? "#f3f4f6" : "white",
+                  color: currentPage === 1 ? "#9ca3af" : "#374151",
                   borderRadius: "4px",
                   fontSize: "14px",
-                  cursor: "pointer",
-                  minWidth: "40px",
+                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
                 }}
               >
-                {page}
+                Previous
               </button>
-            ))}
 
-            <button
-              onClick={goToNext}
-              disabled={currentPage === totalPages}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => goToPage(page)}
+                    style={{
+                      padding: "6px 12px",
+                      border: "1px solid #d1d5db",
+                      backgroundColor:
+                        page === currentPage ? "#3b82f6" : "white",
+                      color: page === currentPage ? "white" : "#374151",
+                      borderRadius: "4px",
+                      fontSize: "14px",
+                      cursor: "pointer",
+                      minWidth: "40px",
+                    }}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={goToNext}
+                disabled={currentPage === totalPages}
+                style={{
+                  padding: "6px 12px",
+                  border: "1px solid #d1d5db",
+                  backgroundColor:
+                    currentPage === totalPages ? "#f3f4f6" : "white",
+                  color: currentPage === totalPages ? "#9ca3af" : "#374151",
+                  borderRadius: "4px",
+                  fontSize: "14px",
+                  cursor:
+                    currentPage === totalPages ? "not-allowed" : "pointer",
+                }}
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={closeDeleteModal}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "8px",
+              padding: "24px",
+              maxWidth: "400px",
+              width: "90%",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
               style={{
-                padding: "6px 12px",
-                border: "1px solid #d1d5db",
-                backgroundColor:
-                  currentPage === totalPages ? "#f3f4f6" : "white",
-                color: currentPage === totalPages ? "#9ca3af" : "#374151",
-                borderRadius: "4px",
-                fontSize: "14px",
-                cursor: currentPage === totalPages ? "not-allowed" : "pointer",
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: "12px",
+                margin: 0,
               }}
             >
-              Next
-            </button>
+              Delete Area
+            </h3>
+            <p
+              style={{
+                fontSize: "14px",
+                color: "#6b7280",
+                marginBottom: "24px",
+                margin: "8px 0 24px 0",
+              }}
+            >
+              Are you sure you want to delete{" "}
+              <strong>{areaToDelete?.name}</strong>? This action cannot be
+              undone.
+            </p>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={closeDeleteModal}
+                disabled={deleteLoading === areaToDelete?.id}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    deleteLoading === areaToDelete?.id
+                      ? "not-allowed"
+                      : "pointer",
+                  opacity: deleteLoading === areaToDelete?.id ? 0.6 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteLoading === areaToDelete?.id}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor:
+                    deleteLoading === areaToDelete?.id ? "#fca5a5" : "#ef4444",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    deleteLoading === areaToDelete?.id
+                      ? "not-allowed"
+                      : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {deleteLoading === areaToDelete?.id ? (
+                  <>
+                    <div
+                      style={{
+                        width: "14px",
+                        height: "14px",
+                        border: "2px solid #fef2f2",
+                        borderTop: "2px solid #ef4444",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                      }}
+                    />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Create Event Button */}
       <button

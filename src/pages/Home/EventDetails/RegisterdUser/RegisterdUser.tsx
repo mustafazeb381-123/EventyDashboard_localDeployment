@@ -37,6 +37,9 @@ function RegisterdUser() {
   const [sendingCredentials, setSendingCredentials] = useState(false);
   const [downloadingTemplate, setDownloadingTemplate] = useState(false);
   const [uploadingTemplate, setUploadingTemplate] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   // Store event user length in localStorage whenever pagination changes
   useEffect(() => {
@@ -217,7 +220,7 @@ function RegisterdUser() {
     console.log("🔍 URL search params:", {
       search: location.search,
       idFromQuery,
-      currentEventId: eventId
+      currentEventId: eventId,
     });
 
     if (idFromQuery && idFromQuery !== eventId) {
@@ -230,7 +233,9 @@ function RegisterdUser() {
       console.log("⚠️ No eventId in URL, keeping current eventId:", eventId);
     } else if (!idFromQuery && !eventId) {
       // Try to get from localStorage as fallback
-      const storedEventId = localStorage.getItem("create_eventId") || localStorage.getItem("edit_eventId");
+      const storedEventId =
+        localStorage.getItem("create_eventId") ||
+        localStorage.getItem("edit_eventId");
       if (storedEventId) {
         console.log("✅ Using eventId from localStorage:", storedEventId);
         setEventId(storedEventId);
@@ -239,7 +244,6 @@ function RegisterdUser() {
       }
     }
   }, [location.search, eventId]);
-
 
   // Debounce search term
   useEffect(() => {
@@ -414,34 +418,29 @@ function RegisterdUser() {
     );
   };
 
-  const handleDeleteUser = async (user: any) => {
-    // Add detailed logging to debug
-    console.log("Current eventId:", eventId);
-    console.log("User to delete:", user);
+  const handleDeleteUser = (user: any) => {
+    setUserToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
 
-    if (!eventId) {
-      alert("Error: Event ID is missing. Cannot delete user.");
-      console.error("Event ID is null or undefined");
+  const confirmDeleteUser = async () => {
+    if (!eventId || !userToDelete) {
+      toast.error("Event ID is missing. Cannot delete user.");
+      setIsDeleteModalOpen(false);
+      setUserToDelete(null);
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this user?")) return;
-
     try {
-      console.log("Deleting user with:", {
-        eventId,
-        userId: user.id,
-        apiCall: `/events/${eventId}/event_users/${user.id}`,
-      });
+      setDeletingUserId(userToDelete.id);
 
-      await deleteEventUser(eventId, user.id);
+      await deleteEventUser(eventId, userToDelete.id);
 
       toast.success("User deleted successfully");
 
-      // Refresh current page
       fetchUsers(eventId, currentPage);
-
-      toast.success("User deleted successfully!");
+      setUserToDelete(null);
+      setIsDeleteModalOpen(false);
     } catch (error: any) {
       console.error("Error deleting user:", {
         message: error.message,
@@ -453,6 +452,8 @@ function RegisterdUser() {
       toast.error(
         `Failed to delete user: ${error.response?.data?.error || error.message}`
       );
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -839,7 +840,8 @@ function RegisterdUser() {
                                 setEditForm({
                                   name: user?.attributes?.name || "",
                                   email: user?.attributes?.email || "",
-                                  phone_number: user?.attributes?.phone_number || "",
+                                  phone_number:
+                                    user?.attributes?.phone_number || "",
                                   organization:
                                     user?.attributes?.organization || "",
                                   position: user?.attributes?.position || "",
@@ -880,6 +882,51 @@ function RegisterdUser() {
                 />
               )}
             </>
+          )}
+
+          {isDeleteModalOpen && userToDelete && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+              onClick={() => {
+                if (!deletingUserId) {
+                  setIsDeleteModalOpen(false);
+                  setUserToDelete(null);
+                }
+              }}
+            >
+              <div
+                className="bg-white p-6 rounded-lg w-96"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="text-xl font-bold mb-2 text-gray-900">
+                  Delete user?
+                </h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  Are you sure you want to delete{" "}
+                  {userToDelete.attributes?.name || "this user"}? This action
+                  cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setIsDeleteModalOpen(false);
+                      setUserToDelete(null);
+                    }}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                    disabled={!!deletingUserId}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteUser}
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                    disabled={!!deletingUserId}
+                  >
+                    {deletingUserId ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {editingUser && (
