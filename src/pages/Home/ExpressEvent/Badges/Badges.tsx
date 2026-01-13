@@ -1330,7 +1330,7 @@ const Badges: React.FC<BadgesProps> = ({
 
     return (
       <div
-        className="flex flex-col h-full w-48 rounded-xl border overflow-hidden"
+        className="flex flex-col w-48 rounded-xl border overflow-hidden"
         style={{ backgroundColor: secondaryColor }}
       >
         {/* Header Section */}
