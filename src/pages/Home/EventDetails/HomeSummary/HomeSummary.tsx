@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import Assets from "../../../../utils/Assets";
 import { Clock, Edit, MapPin, Loader2, Share2, XCircle } from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
@@ -22,7 +22,130 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [metrics, setMetrics] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Default chart data if none provided
+  const defaultChartData = useMemo(
+    () => [
+      { label: "Jan", registered: 45 },
+      { label: "Feb", registered: 120 },
+      { label: "Mar", registered: 155 },
+      { label: "Apr", registered: 60 },
+      { label: "May", registered: 85 },
+      { label: "Jun", registered: 200 },
+    ],
+    []
+  );
+
+  // Derive chart data from metrics API with fallbacks
+  const derivedChartData = useMemo(() => {
+    const normalizePoint = (item: any, index: number) => {
+      const rawLabel =
+        item?.label ||
+        item?.date ||
+        item?.day ||
+        item?.month ||
+        item?.period ||
+        item?.name ||
+        `Day ${index + 1}`;
+
+      // Format date-like labels to shorter month/day
+      let label = rawLabel;
+      if (typeof rawLabel === "string" && /\d{4}-\d{2}-\d{2}/.test(rawLabel)) {
+        label = new Date(rawLabel).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      const value =
+        item?.registered ??
+        item?.count ??
+        item?.total ??
+        item?.value ??
+        item?.registration ??
+        item?.registrations ??
+        item?.users ??
+        0;
+
+      return {
+        label: label || rawLabel || `Day ${index + 1}`,
+        registered: Number(value) || 0,
+      };
+    };
+
+    const metricsSeries =
+      // Common keys from API responses
+      metrics?.registrations_by_day ||
+      metrics?.registration_chart ||
+      metrics?.registration_trend ||
+      metrics?.daily_registration ||
+      metrics?.chart ||
+      // Some backends nest arrays under a generic data key
+      metrics?.data ||
+      // If the whole metrics payload is already an array, use it directly
+      (Array.isArray(metrics) ? metrics : null);
+
+    if (Array.isArray(metricsSeries) && metricsSeries.length) {
+      return metricsSeries
+        .map(normalizePoint)
+        .filter((d) => !Number.isNaN(d.registered));
+    }
+
+    // Handle object maps like { "2024-01-01": 12, "2024-01-02": 4 }
+    if (
+      metricsSeries &&
+      typeof metricsSeries === "object" &&
+      !Array.isArray(metricsSeries)
+    ) {
+      const entries = Object.entries(metricsSeries).map(([key, value], idx) =>
+        normalizePoint({ label: key, registered: value }, idx)
+      );
+
+      if (entries.length) {
+        return entries.filter((d) => !Number.isNaN(d.registered));
+      }
+    }
+
+    // If no time series is present, build a simple series from aggregate metrics
+    const hasAggregateMetrics =
+      metrics &&
+      (metrics.total_registration !== undefined ||
+        metrics.todays_registration !== undefined ||
+        metrics.approved_registration !== undefined ||
+        metrics.pending_users !== undefined);
+
+    if (hasAggregateMetrics) {
+      const aggregateSeries = [
+        {
+          label: "Total",
+          registered: Number(metrics?.total_registration) || 0,
+        },
+        {
+          label: "Today",
+          registered: Number(metrics?.todays_registration) || 0,
+        },
+        {
+          label: "Approved",
+          registered: Number(metrics?.approved_registration) || 0,
+        },
+        { label: "Pending", registered: Number(metrics?.pending_users) || 0 },
+      ];
+
+      return aggregateSeries.filter((d) => !Number.isNaN(d.registered));
+    }
+
+    if (chartData && chartData.length) {
+      return chartData
+        .map((item, index) => normalizePoint(item, index))
+        .filter((d) => !Number.isNaN(d.registered));
+    }
+
+    return defaultChartData;
+  }, [metrics, chartData, defaultChartData]);
+
   // Image cropping states
+  console.log("Derived chart data:", derivedChartData); // Light logging
+
+  const useDefaultFallback = false; // New prop to avoid dummy chart data
   const [isCropping, setIsCropping] = useState<boolean>(false);
   const [originalImageSrc, setOriginalImageSrc] = useState<string>("");
   const [cropArea, setCropArea] = useState({
@@ -45,7 +168,35 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: paramId } = useParams();
-  const eventId = location.state?.eventId || paramId;
+  const [eventId, setEventId] = useState<string | undefined>(
+    (location.state as any)?.eventId || paramId
+  );
+
+  // Keep eventId in sync with params, search, or localStorage so metrics fetch fires with a valid ID.
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const fromQuery = searchParams.get("eventId");
+    const fromState = (location.state as any)?.eventId;
+
+    if (fromQuery && fromQuery !== eventId) {
+      setEventId(fromQuery);
+      return;
+    }
+
+    if (fromState && fromState !== eventId) {
+      setEventId(fromState);
+      return;
+    }
+
+    if (!fromQuery && !fromState && !eventId) {
+      const stored =
+        localStorage.getItem("create_eventId") ||
+        localStorage.getItem("edit_eventId");
+      if (stored) {
+        setEventId(stored);
+      }
+    }
+  }, [location.search, location.state, paramId, eventId]);
 
   // Fetch event data
   const getEventDataById = async (id: string | number) => {
@@ -62,7 +213,15 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     try {
       const response = await getEventUserMetrics(id);
       console.log("Metrics response:", response.data);
-      setMetrics(response.data.metrics);
+
+      // Accept common response shapes: { metrics: ... } or { data: { metrics: ... } } or { data: [...] }
+      const metricsPayload =
+        response?.data?.metrics ||
+        response?.data?.data?.metrics ||
+        response?.data?.data ||
+        response?.data;
+
+      setMetrics(metricsPayload);
     } catch (error) {
       console.error("Error fetching event metrics:", error);
     }
@@ -79,11 +238,11 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const SkeletonLoader = () => (
     <div className="w-full px-4 sm:px-6 lg:px-8 animate-pulse">
       {/* Event Details Skeleton */}
-      <div className="p-4 sm:p-6 lg:p-[24px] bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
+      <div className="p-4 sm:p-6 lg:p-6 bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
         {/* Logo and Event Name Skeleton */}
         <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
           {/* Logo Skeleton */}
-          <div className="h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-gray-200 rounded-2xl flex-shrink-0"></div>
+          <div className="h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-gray-200 rounded-2xl shrink-0"></div>
 
           {/* Text Details Skeleton */}
           <div className="items-center text-center sm:text-left w-full sm:w-auto">
@@ -91,16 +250,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             <div className="h-8 w-32 bg-gray-200 rounded-3xl mx-auto sm:mx-0"></div>
 
             {/* Event Name Skeleton */}
-            <div className="mt-4 lg:mt-[16px] h-6 w-48 sm:w-64 bg-gray-200 rounded-lg mx-auto sm:mx-0"></div>
+            <div className="mt-4 lg:mt-4 h-6 w-48 sm:w-64 bg-gray-200 rounded-lg mx-auto sm:mx-0"></div>
 
             {/* Date Skeleton */}
-            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
+            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-4">
               <div className="h-5 w-5 bg-gray-200 rounded"></div>
               <div className="h-4 w-48 sm:w-64 bg-gray-200 rounded"></div>
             </div>
 
             {/* Location Skeleton */}
-            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
+            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-4">
               <div className="h-5 w-5 bg-gray-200 rounded"></div>
               <div className="h-4 w-40 sm:w-56 bg-gray-200 rounded"></div>
             </div>
@@ -118,14 +277,14 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       </div>
 
       {/* Stats Cards Skeleton */}
-      <div className="mt-6 lg:mt-[24px] gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+      <div className="mt-6 lg:mt-6 gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
         {[1, 2, 3, 4].map((item) => (
           <div
             key={item}
-            className="bg-white flex items-center gap-3 p-4 lg:p-[16px] rounded-2xl shadow-sm"
+            className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm"
           >
             {/* Icon Skeleton */}
-            <div className="p-3 lg:p-4 bg-gray-200 rounded-xl flex-shrink-0">
+            <div className="p-3 lg:p-4 bg-gray-200 rounded-xl shrink-0">
               <div className="h-5 w-5 sm:h-6 sm:w-6 bg-gray-300 rounded"></div>
             </div>
             {/* Text Skeleton */}
@@ -138,12 +297,12 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       </div>
 
       {/* Chart Skeleton */}
-      <div className="mt-6 lg:mt-[24px] bg-white rounded-2xl p-4 sm:p-6 lg:p-[24px] shadow-sm">
+      <div className="mt-6 lg:mt-6 bg-white rounded-2xl p-4 sm:p-6 lg:p-6 shadow-sm">
         {/* Chart Title Skeleton */}
         <div className="h-6 w-48 bg-gray-200 rounded-lg mb-4"></div>
-        
+
         {/* Chart Area Skeleton */}
-        <div className="h-[320px] w-full bg-gray-100 rounded-lg flex items-center justify-center">
+        <div className="h-80 w-full bg-gray-100 rounded-lg flex items-center justify-center">
           <div className="flex items-end gap-2 sm:gap-4 h-full w-full px-4 pb-4">
             {[1, 2, 3, 4, 5, 6].map((bar) => (
               <div
@@ -204,16 +363,6 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     },
   ];
 
-  // Default chart data if none provided
-  const defaultChartData = [
-    { month: "Jan", registered: 45 },
-    { month: "Feb", registered: 120 },
-    { month: "Mar", registered: 155 },
-    { month: "Apr", registered: 60 },
-    { month: "May", registered: 85 },
-    { month: "Jun", registered: 200 },
-  ];
-
   const handleTimeRangeChange = (newRange: string) => {
     // Call parent callback if provided
     if (onTimeRangeChange) {
@@ -234,7 +383,12 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     if (!file || !eventId) return;
 
     // File type validation
-    const allowedTypes = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
+    const allowedTypes = [
+      "image/svg+xml",
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+    ];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Invalid file type. Please upload SVG, PNG, or JPG.");
       if (fileInputRef.current) {
@@ -261,7 +415,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     try {
       // Compress SVG if needed (though SVG compression is limited)
       let fileToUpload = file;
-      
+
       if (file.size > 2 * 1024 * 1024) {
         toast.error("SVG file is too large. Maximum allowed size is 2MB.");
         setIsUploading(false);
@@ -272,7 +426,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       fd.append("event[logo]", fileToUpload);
 
       const response = await updateEventById(eventId, fd);
-      
+
       setEventData((prev: any) => ({
         ...prev,
         attributes: {
@@ -325,7 +479,12 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
     // Define resize handle areas (20px hit area)
     const handles = {
-      topLeft: { x: cropArea.x - 10, y: cropArea.y - 10, width: 20, height: 20 },
+      topLeft: {
+        x: cropArea.x - 10,
+        y: cropArea.y - 10,
+        width: 20,
+        height: 20,
+      },
       topRight: {
         x: cropArea.x + cropArea.width - 10,
         y: cropArea.y - 10,
@@ -542,7 +701,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 fileType: "image/jpeg",
               };
 
-              finalFile = await imageCompression(croppedFile, compressionOptions);
+              finalFile = await imageCompression(
+                croppedFile,
+                compressionOptions
+              );
             }
 
             // Upload the compressed file
@@ -570,7 +732,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             setOriginalImageSrc("");
           } catch (error: any) {
             console.error("Error processing image:", error);
-            toast.error(error?.response?.data?.message || "Error updating logo");
+            toast.error(
+              error?.response?.data?.message || "Error updating logo"
+            );
           } finally {
             setIsUploading(false);
             if (fileInputRef.current) {
@@ -593,10 +757,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         {/* edit event details */}
 
-        <div className="p-4 sm:p-6 lg:p-[24px] bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
+        <div className="p-4 sm:p-6 lg:p-6 bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
-            <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl flex-shrink-0">
+            <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl shrink-0">
               {/* Upload Loading Overlay */}
               {isUploading && (
                 <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
@@ -613,7 +777,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               {/* Edit button - directly triggers file selection */}
               <div
                 onClick={() => !isUploading && fileInputRef.current?.click()}
-                className={`h-[36px] w-[36px] sm:h-[40px] sm:w-[40px] lg:h-[44px] lg:w-[44px] flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white drop-shadow-2xl transition-all duration-200 z-20 ${
+                className={`h-9 w-9 sm:h-10 sm:w-10 lg:h-11 lg:w-11 flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white drop-shadow-2xl transition-all duration-200 z-20 ${
                   isUploading
                     ? "cursor-not-allowed opacity-75"
                     : "cursor-pointer hover:bg-gray-50 hover:scale-105"
@@ -650,13 +814,13 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 <img
                   src={eventData.attributes.logo_url}
                   alt="Event Logo"
-                  className={`h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] rounded-2xl transition-opacity duration-200 ${
+                  className={`h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 rounded-2xl transition-opacity duration-200 ${
                     isUploading ? "opacity-50" : "opacity-100"
                   }`}
                 />
               ) : (
                 <div
-                  className={`h-[80px] w-[74px] sm:h-[100px] sm:w-[93px] lg:h-[120px] lg:w-[111.8px] bg-gray-300 flex items-center justify-center rounded-2xl text-gray-500 text-xs font-medium transition-opacity duration-200 ${
+                  className={`h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 bg-gray-300 flex items-center justify-center rounded-2xl text-gray-500 text-xs font-medium transition-opacity duration-200 ${
                     isUploading ? "opacity-50" : "opacity-100"
                   }`}
                 >
@@ -668,23 +832,19 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             {/* text detail part */}
             <div className="items-center text-center sm:text-left w-full sm:w-auto">
               {/* express or advance event */}
-              <div className="p-3 lg:p-[12px] bg-emerald-50 rounded-3xl items-center flex gap-2 justify-center sm:justify-start w-fit mx-auto sm:mx-0">
-                <img
-                  src={Assets.icons.expressDot}
-                  className="h-[8px] w-[8px]"
-                  alt=""
-                />
+              <div className="p-3 lg:p-3 bg-emerald-50 rounded-3xl items-center flex gap-2 justify-center sm:justify-start w-fit mx-auto sm:mx-0">
+                <img src={Assets.icons.expressDot} className="h-2 w-2" alt="" />
                 <p className="text-emerald-500 text-xs sm:text-sm">
                   {event_type}
                 </p>
               </div>
 
               {/* event name */}
-              <p className="mt-4 lg:mt-[16px] text-sm sm:text-base lg:text-lg text-slate-800 font-medium">
+              <p className="mt-4 lg:mt-4 text-sm sm:text-base lg:text-lg text-slate-800 font-medium">
                 {name}
               </p>
 
-              <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-4">
                 <Clock
                   size={16}
                   className="sm:w-5 sm:h-5 lg:w-5 lg:h-5"
@@ -696,7 +856,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 </p>
               </div>
 
-              <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-[16px]">
+              <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-4">
                 <MapPin
                   size={16}
                   className="sm:w-5 sm:h-5 lg:w-5 lg:h-5"
@@ -707,7 +867,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 </p>
               </div>
 
-              <p className="mt-4 lg:mt-[23px] text-neutral-500 text-xs sm:text-sm font-normal">
+              <p className="mt-4 lg:mt-6 text-neutral-500 text-xs sm:text-sm font-normal">
                 Last edit: Before 3hr
               </p>
             </div>
@@ -727,7 +887,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     toast.error("Failed to copy link");
                   });
               }}
-              className="rounded-2xl bg-green-50 py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center flex-shrink-0"
+              className="rounded-2xl bg-green-50 py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center shrink-0"
             >
               <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600" />
               <p className="text-green-700 text-xs sm:text-sm font-normal">
@@ -776,7 +936,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   },
                 })
               }
-              className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-[10px] lg:px-[16px] flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors justify-center flex-shrink-0"
+              className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors justify-center shrink-0"
             >
               <Edit size={16} className="lg:w-5 lg:h-5" />
               <p className="text-[#202242] text-xs sm:text-sm font-normal">
@@ -787,13 +947,13 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         </div>
 
         {/* registration and user counters - Responsive Grid */}
-        <div className="mt-6 lg:mt-[24px] gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
+        <div className="mt-6 lg:mt-6 gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
           {stats.map((item, index) => (
             <div
               key={`${item.label}-${index}`}
-              className="bg-white flex items-center gap-3 p-4 lg:p-[16px] rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="p-3 lg:p-4 bg-neutral-50 rounded-xl flex-shrink-0">
+              <div className="p-3 lg:p-4 bg-neutral-50 rounded-xl shrink-0">
                 <img
                   src={item.icon}
                   alt={item.label}
@@ -813,15 +973,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         </div>
 
         {/* Registrations Activity Chart */}
-        <div className="mt-6 lg:mt-[24px]">
+        <div className="mt-6 lg:mt-6">
           <RegistrationChart
-            data={chartData || defaultChartData}
+            data={derivedChartData}
             title="Registrations Activity"
             legend="Registered"
-            highlightDataKey="Mar"
-            highlightValue={155}
+            useDefaultFallback={useDefaultFallback}
             onTimeRangeChange={handleTimeRangeChange}
             height="320px"
+            xAxisKey="label"
+            yAxisKey="registered"
             className="shadow-sm hover:shadow-md transition-shadow"
           />
         </div>

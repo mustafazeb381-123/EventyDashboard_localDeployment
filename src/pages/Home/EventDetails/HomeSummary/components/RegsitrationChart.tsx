@@ -60,11 +60,17 @@ type RegistrationChartProps = {
   highlightValue?: number | string | null;
   onTimeRangeChange?: (range: string) => void;
   className?: string;
-  chartMargin?: { top?: number; right?: number; left?: number; bottom?: number };
+  chartMargin?: {
+    top?: number;
+    right?: number;
+    left?: number;
+    bottom?: number;
+  };
   yAxisDomain?: [number, number | string];
   yAxisTicks?: number[];
   xAxisKey?: string;
   yAxisKey?: string;
+  useDefaultFallback?: boolean; // controls whether to show built-in dummy data
 };
 
 const RegistrationChart = ({
@@ -104,6 +110,7 @@ const RegistrationChart = ({
   // Data keys
   xAxisKey = "month",
   yAxisKey = "registered",
+  useDefaultFallback = true,
 }: RegistrationChartProps) => {
   const [selectedTimeRange, setSelectedTimeRange] = useState(defaultTimeRange);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -125,8 +132,8 @@ const RegistrationChart = ({
   );
 
   const chartData = useMemo(
-    () => (data.length > 0 ? data : defaultData),
-    [data, defaultData]
+    () => (data.length > 0 ? data : useDefaultFallback ? defaultData : []),
+    [data, defaultData, useDefaultFallback]
   );
 
   useEffect(() => {
