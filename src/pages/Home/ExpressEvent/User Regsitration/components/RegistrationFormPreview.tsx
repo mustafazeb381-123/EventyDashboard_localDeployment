@@ -1,5 +1,6 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createEventUser } from "@/apis/apiHelpers";
+import { getAllBadges } from "@/apis/badgeService";
 import { toast, ToastContainer } from "react-toastify";
 
 // Image compression utility
@@ -118,9 +119,37 @@ const RegistrationFormPreview = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [defaultBadgeName, setDefaultBadgeName] = useState<string | null>(null);
 
   // Refs for file inputs
   const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
+
+  // Fetch default badge on component mount
+  useEffect(() => {
+    const fetchDefaultBadge = async () => {
+      if (!eventId) return;
+
+      try {
+        const badges = await getAllBadges(eventId);
+        const defaultBadge = badges.find(
+          (badge: any) => badge.attributes?.default || badge.default
+        );
+
+        if (defaultBadge) {
+          // Get the badge name from attributes
+          const badgeName = defaultBadge.attributes?.name;
+          setDefaultBadgeName(badgeName);
+          console.log("✅ Default badge found:", badgeName);
+        } else {
+          console.warn("⚠️ No default badge found for this event");
+        }
+      } catch (error) {
+        console.error("❌ Error fetching default badge:", error);
+      }
+    };
+
+    fetchDefaultBadge();
+  }, [eventId]);
 
   const handleSubmit = async () => {
     try {
@@ -138,7 +167,12 @@ const RegistrationFormPreview = ({
 
       setLoading(true);
 
-      console.log("📤 Sending data:", { eventId, tenantUuid, formData });
+      console.log("📤 Sending data:", {
+        eventId,
+        tenantUuid,
+        formData,
+        defaultBadgeName,
+      });
 
       const formDataToSend = new FormData();
       console.log("formData", formData);
@@ -149,7 +183,18 @@ const RegistrationFormPreview = ({
       // Append user data
       formDataToSend.append("event_user[name]", formData.name);
 
-      // user_type field removed - no longer needed
+      // ✅ Automatically send default badge NAME as user_type
+      if (defaultBadgeName) {
+        formDataToSend.append("event_user[user_type]", defaultBadgeName);
+        console.log(
+          "✅ Sending default badge name as user_type:",
+          defaultBadgeName
+        );
+      } else {
+        console.warn(
+          "⚠️ No default badge name available, user_type will not be sent"
+        );
+      }
 
       formDataToSend.append("event_user[phone_number]", formData.phone_number);
       formDataToSend.append("event_user[email]", formData.email);

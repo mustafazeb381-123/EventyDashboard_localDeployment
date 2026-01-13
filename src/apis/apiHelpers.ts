@@ -652,14 +652,14 @@ export const createEmailTemplateApi = (
       body: html,
     },
   };
-  
+
   // Include design if provided (store as JSON string)
   // Note: Backend may not support this field yet, but we send it anyway
   // If backend doesn't support it, the field will be ignored but won't cause errors
   if (design) {
     payload.email_template.design = typeof design === 'string' ? design : JSON.stringify(design);
   }
-  
+
   return axiosInstance.post(`/events/${eventId}/email_templates`, payload);
 };
 
@@ -679,14 +679,14 @@ export const updateEmailTemplateApi = (
       body: html,
     },
   };
-  
+
   // Include design if provided (store as JSON string)
   // Note: Backend may not support this field yet, but we send it anyway
   // If backend doesn't support it, the field will be ignored but won't cause errors
   if (design) {
     payload.email_template.design = typeof design === 'string' ? design : JSON.stringify(design);
   }
-  
+
   return axiosInstance.put(
     `/events/${eventId}/email_templates/${templateId}`,
     payload
