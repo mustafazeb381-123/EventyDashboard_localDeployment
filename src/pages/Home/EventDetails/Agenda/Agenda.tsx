@@ -94,6 +94,10 @@ function Agenda() {
     type: "success" | "error";
   } | null>(null);
 
+  // Delete confirmation modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+
   const [formData, setFormData] = useState<FormState>({
     title: "",
     date: undefined as Date | undefined,
@@ -310,17 +314,22 @@ function Agenda() {
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this session?")) {
-      return;
-    }
+    setSessionToDelete(session);
+    setIsDeleteModalOpen(true);
+  };
 
-    setIsDeletingSession(session.id);
+  const confirmDelete = async () => {
+    if (!sessionToDelete || !eventId) return;
+
+    setIsDeletingSession(sessionToDeleteToDelete.id);
     try {
-      const response = await deleteAgendaApi(eventId, session.id);
+      const response = await deleteAgendaApi(eventId, sessionToDelete.id);
       if (response.status === 204 || response.status === 200) {
-        setSessions((prev) => prev.filter((s) => s.id !== session.id));
-        setSelectedSessions((prev) => prev.filter((id) => id !== session.id));
+        setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id));
+        setSelectedSessions((prev) => prev.filter((id) => id !== sessionToDelete.id));
         showNotification("Session deleted successfully!", "success");
+        setIsDeleteModalOpen(false);
+        setSessionToDelete(null);
       } else {
         showNotification("Failed to delete session", "error");
       }
@@ -584,9 +593,6 @@ function Agenda() {
       return (
         <div className="flex items-center gap-3">
           <SpeakerAvatar speaker={session.speakers[0]} size="w-10 h-10" />
-          <span className="text-sm font-medium text-gray-900">
-            {session.speakerName}
-          </span>
         </div>
       );
     } else {
@@ -874,6 +880,96 @@ function Agenda() {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          onClick={() => {
+            if (isDeletingSession === null) {
+              setIsDeleteModalOpen(false);
+              setSessionToDelete(null);
+            }
+          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full transform animate-in zoom-in-95 duration-200"
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Delete Session
+                </h3>
+                <button
+                  onClick={() => {
+                    if (isDeletingSession === null) {
+                      setIsDeleteModalOpen(false);
+                      setSessionToDelete(null);
+                    }
+                  }}
+                  disabled={isDeletingSession !== null}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to delete this session?
+                </p>
+                {sessionToDelete && (
+                  <div className="bg-gray-50 p-3 rounded-lg mt-3">
+                    <p className="font-medium text-gray-900">
+                      {sessionToDelete.title}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {sessionToDelete.location}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-red-600 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setSessionToDelete(null);
+                  }}
+                  disabled={isDeletingSession !== null}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeletingSession !== null}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeletingSession !== null ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (
