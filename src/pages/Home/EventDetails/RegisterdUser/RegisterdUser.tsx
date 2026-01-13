@@ -91,6 +91,8 @@ const UserAvatar = ({ user }: { user: any }) => {
         alt={user?.attributes?.name || "User Avatar"}
         className="w-10 h-10 rounded-full object-cover"
         onError={() => setLoadError(true)}
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
       />
     );
   }

@@ -73,6 +73,8 @@ const Badge7: React.FC<Badge7Props> = ({
                       src={logoUrl}
                       className="w-full h-full rounded-xl object-cover"
                       alt="Logo"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   </div>
                 )}
@@ -92,6 +94,8 @@ const Badge7: React.FC<Badge7Props> = ({
                       src={badge.userImg}
                       className="w-full h-full object-cover"
                       alt="User"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-gray-700 to-black" />

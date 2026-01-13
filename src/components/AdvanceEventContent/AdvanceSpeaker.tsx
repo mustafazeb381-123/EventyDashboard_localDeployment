@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2 } from "lucide-react";
-import { createSpeakerApi, deleteSpeakerApi, getSpeakersApi, updateSpeakerApi } from "@/apis/apiHelpers";
+import {
+  createSpeakerApi,
+  deleteSpeakerApi,
+  getSpeakersApi,
+  updateSpeakerApi,
+} from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
 interface AdvanceSpeakerProps {
@@ -34,8 +39,8 @@ function AdvanceSpeaker({
   eventId,
 }: AdvanceSpeakerProps) {
   // currentStep is passed from parent (0-3 for 4 steps)
-  console.log('-------event id---------------', eventId);
-  
+  console.log("-------event id---------------", eventId);
+
   const [eventUsers, setEventUsers] = useState<Speaker[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -43,22 +48,24 @@ function AdvanceSpeaker({
     message: string;
     type: "success" | "error";
   } | null>(null);
-  
+
   const [newSpeaker, setNewSpeaker] = useState({
     name: "",
     description: "",
     organization: "",
     image: "",
   });
-  
+
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  
+
   // Loading states
   const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
   const [isAddingSpeaker, setIsAddingSpeaker] = useState(false);
   const [isUpdatingSpeaker, setIsUpdatingSpeaker] = useState(false);
-  const [isDeletingSpeaker, setIsDeletingSpeaker] = useState<string | null>(null);
-  
+  const [isDeletingSpeaker, setIsDeletingSpeaker] = useState<string | null>(
+    null
+  );
+
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingSpeaker, setEditingSpeaker] = useState<Speaker | null>(null);
   const [editSpeakerData, setEditSpeakerData] = useState({
@@ -67,8 +74,9 @@ function AdvanceSpeaker({
     organization: "",
     image: "",
   });
-  
-  const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+
+  const [editSelectedImageFile, setEditSelectedImageFile] =
+    useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
@@ -82,7 +90,7 @@ function AdvanceSpeaker({
   useEffect(() => {
     const fetchSpeakers = async () => {
       if (!eventId) return;
-      
+
       setIsFetchingSpeakers(true);
       try {
         const response = await getSpeakersApi(eventId);
@@ -94,7 +102,7 @@ function AdvanceSpeaker({
               name: item.attributes.name,
               description: item.attributes.description,
               organization: item.attributes.organization,
-              image: item.attributes.image_url, 
+              image: item.attributes.image_url,
               image_url: item.attributes.image_url,
               created_at: item.attributes.created_at,
               updated_at: item.attributes.updated_at,
@@ -146,14 +154,15 @@ function AdvanceSpeaker({
   };
 
   const handleDeleteUser = async (user: Speaker) => {
-    if (!window.confirm("Are you sure you want to delete this speaker?")) return;
+    if (!window.confirm("Are you sure you want to delete this speaker?"))
+      return;
 
     setIsDeletingSpeaker(user.id);
     try {
       const response = await deleteSpeakerApi(eventId!, user.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers(prev => prev.filter(u => u.id !== user.id));
+        setEventUsers((prev) => prev.filter((u) => u.id !== user.id));
         showNotification("Speaker deleted successfully!", "success");
       } else {
         showNotification("Failed to delete speaker", "error");
@@ -272,12 +281,16 @@ function AdvanceSpeaker({
         formData.append("speaker[image]", editSelectedImageFile);
       }
 
-      const response = await updateSpeakerApi(eventId!, editingSpeaker.id, formData);
+      const response = await updateSpeakerApi(
+        eventId!,
+        editingSpeaker.id,
+        formData
+      );
 
       if (response.status === 200) {
         const updated = response.data.data;
-        setEventUsers(prev =>
-          prev.map(u =>
+        setEventUsers((prev) =>
+          prev.map((u) =>
             u.id === editingSpeaker.id
               ? {
                   ...u,
@@ -321,13 +334,19 @@ function AdvanceSpeaker({
     }
   };
 
-  const UserAvatar = ({ user }: { user: Speaker }) => (
-    <img
-      src={user.attributes.image || user.attributes.image_url || "https://i.pravatar.cc/100?img=10"}
-      alt={user.attributes.name}
-      className="w-10 h-10 rounded-full object-cover"
-    />
-  );
+  const UserAvatar = ({ user }: { user: Speaker }) => {
+    const src = user.attributes.image || user.attributes.image_url || "";
+    if (!src) return null; // only show actual images
+    return (
+      <img
+        src={src}
+        alt={user.attributes.name}
+        className="w-10 h-10 rounded-full object-cover"
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+      />
+    );
+  };
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm">
@@ -463,7 +482,10 @@ function AdvanceSpeaker({
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {currentSpeakers.map((user, index) => (
-                    <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
+                    <tr
+                      key={user.id}
+                      className={index % 2 ? "bg-gray-50" : "bg-white"}
+                    >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
@@ -578,7 +600,8 @@ function AdvanceSpeaker({
                 </div>
                 {selectedImageFile && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                    Selected: {selectedImageFile.name} (
+                    {(selectedImageFile.size / 1024).toFixed(0)} KB)
                   </p>
                 )}
               </div>
@@ -675,7 +698,12 @@ function AdvanceSpeaker({
                   type="text"
                   placeholder="Enter speaker name"
                   value={editSpeakerData.name}
-                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditSpeakerData({
+                      ...editSpeakerData,
+                      name: e.target.value,
+                    })
+                  }
                   disabled={isUpdatingSpeaker}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                 />
@@ -689,7 +717,12 @@ function AdvanceSpeaker({
                   type="text"
                   placeholder="Organization"
                   value={editSpeakerData.organization}
-                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, organization: e.target.value })}
+                  onChange={(e) =>
+                    setEditSpeakerData({
+                      ...editSpeakerData,
+                      organization: e.target.value,
+                    })
+                  }
                   disabled={isUpdatingSpeaker}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                 />
@@ -702,7 +735,12 @@ function AdvanceSpeaker({
                 <textarea
                   placeholder="Description"
                   value={editSpeakerData.description}
-                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, description: e.target.value })}
+                  onChange={(e) =>
+                    setEditSpeakerData({
+                      ...editSpeakerData,
+                      description: e.target.value,
+                    })
+                  }
                   rows={3}
                   disabled={isUpdatingSpeaker}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
@@ -727,7 +765,8 @@ function AdvanceSpeaker({
                 />
                 {editSelectedImageFile && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Selected: {editSelectedImageFile.name} ({(editSelectedImageFile.size / 1024).toFixed(0)} KB)
+                    Selected: {editSelectedImageFile.name} (
+                    {(editSelectedImageFile.size / 1024).toFixed(0)} KB)
                   </p>
                 )}
               </div>
