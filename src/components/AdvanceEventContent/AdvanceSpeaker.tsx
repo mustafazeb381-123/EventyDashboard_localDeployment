@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2 } from "lucide-react";
-import { createSpeakerApi, deleteSpeakerApi, getSpeakersApi, updateSpeakerApi } from "@/apis/apiHelpers";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2, X } from "lucide-react";
+import {
+  createSpeakerApi,
+  deleteSpeakerApi,
+  getSpeakersApi,
+  updateSpeakerApi,
+} from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
 interface AdvanceSpeakerProps {
@@ -34,8 +39,8 @@ function AdvanceSpeaker({
   eventId,
 }: AdvanceSpeakerProps) {
   // currentStep is passed from parent (0-3 for 4 steps)
-  console.log('-------event id---------------', eventId);
-  
+  console.log("-------event id---------------", eventId);
+
   const [eventUsers, setEventUsers] = useState<Speaker[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [addModalOpen, setAddModalOpen] = useState(false);
@@ -43,22 +48,24 @@ function AdvanceSpeaker({
     message: string;
     type: "success" | "error";
   } | null>(null);
-  
+
   const [newSpeaker, setNewSpeaker] = useState({
     name: "",
     description: "",
     organization: "",
     image: "",
   });
-  
+
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
-  
+
   // Loading states
   const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
   const [isAddingSpeaker, setIsAddingSpeaker] = useState(false);
   const [isUpdatingSpeaker, setIsUpdatingSpeaker] = useState(false);
-  const [isDeletingSpeaker, setIsDeletingSpeaker] = useState<string | null>(null);
-  
+  const [isDeletingSpeaker, setIsDeletingSpeaker] = useState<string | null>(
+    null
+  );
+
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingSpeaker, setEditingSpeaker] = useState<Speaker | null>(null);
   const [editSpeakerData, setEditSpeakerData] = useState({
@@ -67,11 +74,16 @@ function AdvanceSpeaker({
     organization: "",
     image: "",
   });
-  
-  const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+
+  const [editSelectedImageFile, setEditSelectedImageFile] =
+    useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
+
+  // Delete confirmation modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [speakerToDelete, setSpeakerToDelete] = useState<Speaker | null>(null);
 
   // Compute speakers for current page
   const currentSpeakers = eventUsers.slice(
@@ -82,7 +94,7 @@ function AdvanceSpeaker({
   useEffect(() => {
     const fetchSpeakers = async () => {
       if (!eventId) return;
-      
+
       setIsFetchingSpeakers(true);
       try {
         const response = await getSpeakersApi(eventId);
@@ -94,7 +106,7 @@ function AdvanceSpeaker({
               name: item.attributes.name,
               description: item.attributes.description,
               organization: item.attributes.organization,
-              image: item.attributes.image_url, 
+              image: item.attributes.image_url,
               image_url: item.attributes.image_url,
               created_at: item.attributes.created_at,
               updated_at: item.attributes.updated_at,
@@ -146,15 +158,22 @@ function AdvanceSpeaker({
   };
 
   const handleDeleteUser = async (user: Speaker) => {
-    if (!window.confirm("Are you sure you want to delete this speaker?")) return;
+    setSpeakerToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
 
-    setIsDeletingSpeaker(user.id);
+  const confirmDelete = async () => {
+    if (!speakerToDelete) return;
+
+    setIsDeletingSpeaker(speakerToDelete.id);
     try {
-      const response = await deleteSpeakerApi(eventId!, user.id);
+      const response = await deleteSpeakerApi(eventId!, speakerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers(prev => prev.filter(u => u.id !== user.id));
+        setEventUsers((prev) => prev.filter((u) => u.id !== speakerToDelete.id));
         showNotification("Speaker deleted successfully!", "success");
+        setIsDeleteModalOpen(false);
+        setSpeakerToDelete(null);
       } else {
         showNotification("Failed to delete speaker", "error");
       }
@@ -272,12 +291,16 @@ function AdvanceSpeaker({
         formData.append("speaker[image]", editSelectedImageFile);
       }
 
-      const response = await updateSpeakerApi(eventId!, editingSpeaker.id, formData);
+      const response = await updateSpeakerApi(
+        eventId!,
+        editingSpeaker.id,
+        formData
+      );
 
       if (response.status === 200) {
         const updated = response.data.data;
-        setEventUsers(prev =>
-          prev.map(u =>
+        setEventUsers((prev) =>
+          prev.map((u) =>
             u.id === editingSpeaker.id
               ? {
                   ...u,
@@ -321,13 +344,19 @@ function AdvanceSpeaker({
     }
   };
 
-  const UserAvatar = ({ user }: { user: Speaker }) => (
-    <img
-      src={user.attributes.image || user.attributes.image_url || "https://i.pravatar.cc/100?img=10"}
-      alt={user.attributes.name}
-      className="w-10 h-10 rounded-full object-cover"
-    />
-  );
+  const UserAvatar = ({ user }: { user: Speaker }) => {
+    const src = user.attributes.image || user.attributes.image_url || "";
+    if (!src) return null; // only show actual images
+    return (
+      <img
+        src={src}
+        alt={user.attributes.name}
+        className="w-10 h-10 rounded-full object-cover"
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
+      />
+    );
+  };
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl shadow-sm">
@@ -512,7 +541,10 @@ function AdvanceSpeaker({
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {currentSpeakers.map((user, index) => (
-                    <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
+                    <tr
+                      key={user.id}
+                      className={index % 2 ? "bg-gray-50" : "bg-white"}
+                    >
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
@@ -627,7 +659,8 @@ function AdvanceSpeaker({
                 </div>
                 {selectedImageFile && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                    Selected: {selectedImageFile.name} (
+                    {(selectedImageFile.size / 1024).toFixed(0)} KB)
                   </p>
                 )}
               </div>
@@ -724,7 +757,12 @@ function AdvanceSpeaker({
                   type="text"
                   placeholder="Enter speaker name"
                   value={editSpeakerData.name}
-                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, name: e.target.value })}
+                  onChange={(e) =>
+                    setEditSpeakerData({
+                      ...editSpeakerData,
+                      name: e.target.value,
+                    })
+                  }
                   disabled={isUpdatingSpeaker}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                 />
@@ -738,7 +776,12 @@ function AdvanceSpeaker({
                   type="text"
                   placeholder="Organization"
                   value={editSpeakerData.organization}
-                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, organization: e.target.value })}
+                  onChange={(e) =>
+                    setEditSpeakerData({
+                      ...editSpeakerData,
+                      organization: e.target.value,
+                    })
+                  }
                   disabled={isUpdatingSpeaker}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                 />
@@ -751,7 +794,12 @@ function AdvanceSpeaker({
                 <textarea
                   placeholder="Description"
                   value={editSpeakerData.description}
-                  onChange={(e) => setEditSpeakerData({ ...editSpeakerData, description: e.target.value })}
+                  onChange={(e) =>
+                    setEditSpeakerData({
+                      ...editSpeakerData,
+                      description: e.target.value,
+                    })
+                  }
                   rows={3}
                   disabled={isUpdatingSpeaker}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
@@ -776,7 +824,8 @@ function AdvanceSpeaker({
                 />
                 {editSelectedImageFile && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Selected: {editSelectedImageFile.name} ({(editSelectedImageFile.size / 1024).toFixed(0)} KB)
+                    Selected: {editSelectedImageFile.name} (
+                    {(editSelectedImageFile.size / 1024).toFixed(0)} KB)
                   </p>
                 )}
               </div>
@@ -827,6 +876,96 @@ function AdvanceSpeaker({
           Next →
         </button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          onClick={() => {
+            if (isDeletingSpeaker === null) {
+              setIsDeleteModalOpen(false);
+              setSpeakerToDelete(null);
+            }
+          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full transform animate-in zoom-in-95 duration-200"
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Delete Speaker
+                </h3>
+                <button
+                  onClick={() => {
+                    if (isDeletingSpeaker === null) {
+                      setIsDeleteModalOpen(false);
+                      setSpeakerToDelete(null);
+                    }
+                  }}
+                  disabled={isDeletingSpeaker !== null}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to delete this speaker?
+                </p>
+                {speakerToDelete && (
+                  <div className="bg-gray-50 p-3 rounded-lg mt-3">
+                    <p className="font-medium text-gray-900">
+                      {speakerToDelete.attributes.name}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {speakerToDelete.attributes.organization}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-red-600 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setSpeakerToDelete(null);
+                  }}
+                  disabled={isDeletingSpeaker !== null}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeletingSpeaker !== null}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeletingSpeaker !== null ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes slide-in {

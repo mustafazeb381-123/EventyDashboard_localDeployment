@@ -63,7 +63,7 @@ type FormState = {
 function Agenda() {
   const location = useLocation();
   const params = useParams();
-  
+
   // Get eventId from URL params or query string
   const urlParams = new URLSearchParams(location.search);
   const eventIdFromQuery = urlParams.get("eventId");
@@ -72,23 +72,31 @@ function Agenda() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
-  const [selectedSessions, setSelectedSessions] = useState<(number | string)[]>([]);
+  const [selectedSessions, setSelectedSessions] = useState<(number | string)[]>(
+    []
+  );
   const [sessions, setSessions] = useState<Session[]>([]);
   const [availableSpeakers, setAvailableSpeakers] = useState<Speaker[]>([]);
   const [selectedSpeakers, setSelectedSpeakers] = useState<number[]>([]);
-  
+
   // Loading states
   const [isFetchingAgendas, setIsFetchingAgendas] = useState(false);
   const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
   const [isAddingSession, setIsAddingSession] = useState(false);
   const [isUpdatingSession, setIsUpdatingSession] = useState(false);
-  const [isDeletingSession, setIsDeletingSession] = useState<string | number | null>(null);
-  
+  const [isDeletingSession, setIsDeletingSession] = useState<
+    string | number | null
+  >(null);
+
   // Notification state
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
   } | null>(null);
+
+  // Delete confirmation modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
 
   const [formData, setFormData] = useState<FormState>({
     title: "",
@@ -142,24 +150,32 @@ function Agenda() {
       setIsFetchingAgendas(true);
       try {
         const response = await getAgendaApi(eventId);
-        console.log('response of get api-------', response);
+        console.log("response of get api-------", response);
         if (response.status === 200) {
           const agendas = response.data.data.map((item: any) => {
-            const speakers = (item.attributes.speakers || []).map((speaker: any) => ({
-              id: speaker.id || speaker.attributes?.id,
-              name: speaker.attributes?.name || speaker.name,
-              avatar: speaker.attributes?.image_url || speaker.image_url || null,
-            }));
+            const speakers = (item.attributes.speakers || []).map(
+              (speaker: any) => ({
+                id: speaker.id || speaker.attributes?.id,
+                name: speaker.attributes?.name || speaker.name,
+                avatar:
+                  speaker.attributes?.image_url || speaker.image_url || null,
+              })
+            );
 
             return {
               id: item.id,
               title: item.attributes.title,
-              startTime: item.attributes.formatted_time?.start_time || item.attributes.start_time,
-              endTime: item.attributes.formatted_time?.end_time || item.attributes.end_time,
+              startTime:
+                item.attributes.formatted_time?.start_time ||
+                item.attributes.start_time,
+              endTime:
+                item.attributes.formatted_time?.end_time ||
+                item.attributes.end_time,
               location: item.attributes.location,
               type: item.attributes.agenda_type || "presentation",
               speakers: speakers,
-              additionalSpeakers: speakers.length > 5 ? speakers.length - 5 : undefined,
+              additionalSpeakers:
+                speakers.length > 5 ? speakers.length - 5 : undefined,
               speakerName: speakers.length === 1 ? speakers[0].name : undefined,
               display: item.attributes.display !== false,
               require_enroll: item.attributes.require_enroll || false,
@@ -255,17 +271,23 @@ function Agenda() {
   const handleEditSession = (session: Session) => {
     setEditingSession(session);
     setIsEditMode(true);
-    
+
     // Parse date from startTime
-    const startDate = session.start_date || (session.startTime ? session.startTime.split(' ')[0] : '');
-    const timeFrom = session.startTime ? session.startTime.split(' ')[1]?.substring(0, 5) || "09:00" : "09:00";
-    const timeTo = session.endTime ? session.endTime.split(' ')[1]?.substring(0, 5) || "17:00" : "17:00";
-    
+    const startDate =
+      session.start_date ||
+      (session.startTime ? session.startTime.split(" ")[0] : "");
+    const timeFrom = session.startTime
+      ? session.startTime.split(" ")[1]?.substring(0, 5) || "09:00"
+      : "09:00";
+    const timeTo = session.endTime
+      ? session.endTime.split(" ")[1]?.substring(0, 5) || "17:00"
+      : "17:00";
+
     // Determine payment settings
     const isPaid = session.pay_by !== "free";
     const onlinePayment = session.pay_by === "online";
     const cashPayment = session.pay_by === "cash";
-    
+
     setFormData({
       title: session.title,
       date: startDate ? new Date(startDate) : undefined,
@@ -281,7 +303,7 @@ function Agenda() {
       onlinePayment: onlinePayment,
       cashPayment: cashPayment,
     });
-    
+
     setSelectedSpeakers(session.speaker_ids || []);
     setIsModalOpen(true);
   };
@@ -292,17 +314,22 @@ function Agenda() {
       return;
     }
 
-    if (!window.confirm("Are you sure you want to delete this session?")) {
-      return;
-    }
+    setSessionToDelete(session);
+    setIsDeleteModalOpen(true);
+  };
 
-    setIsDeletingSession(session.id);
+  const confirmDelete = async () => {
+    if (!sessionToDelete || !eventId) return;
+
+    setIsDeletingSession(sessionToDeleteToDelete.id);
     try {
-      const response = await deleteAgendaApi(eventId, session.id);
+      const response = await deleteAgendaApi(eventId, sessionToDelete.id);
       if (response.status === 204 || response.status === 200) {
-        setSessions((prev) => prev.filter((s) => s.id !== session.id));
-        setSelectedSessions((prev) => prev.filter((id) => id !== session.id));
+        setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id));
+        setSelectedSessions((prev) => prev.filter((id) => id !== sessionToDelete.id));
         showNotification("Session deleted successfully!", "success");
+        setIsDeleteModalOpen(false);
+        setSessionToDelete(null);
       } else {
         showNotification("Failed to delete session", "error");
       }
@@ -321,7 +348,12 @@ function Agenda() {
     }
 
     // Validation
-    if (!formData.title || !formData.date || !formData.timeFrom || !formData.timeTo) {
+    if (
+      !formData.title ||
+      !formData.date ||
+      !formData.timeFrom ||
+      !formData.timeTo
+    ) {
       showNotification("Please fill all required fields!", "error");
       return;
     }
@@ -329,12 +361,18 @@ function Agenda() {
     // Validation for paid sessions
     if (formData.paid) {
       if (!formData.onlinePayment && !formData.cashPayment) {
-        showNotification("Please select a payment method for paid sessions!", "error");
+        showNotification(
+          "Please select a payment method for paid sessions!",
+          "error"
+        );
         return;
       }
       const priceNum = parseFloat(formData.price);
       if (isNaN(priceNum) || priceNum <= 0) {
-        showNotification("Price must be greater than 0 for paid sessions!", "error");
+        showNotification(
+          "Price must be greater than 0 for paid sessions!",
+          "error"
+        );
         return;
       }
       if (formData.currency !== "USD" && formData.currency !== "SAR") {
@@ -353,7 +391,11 @@ function Agenda() {
         end_time: `${dateStr} ${formData.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: formData.requiredEnrollment,
-        pay_by: formData.paid ? (formData.onlinePayment ? "online" : "cash") : "free",
+        pay_by: formData.paid
+          ? formData.onlinePayment
+            ? "online"
+            : "cash"
+          : "free",
         price: formData.paid ? formData.price : "0",
         currency: formData.currency || "USD",
         speaker_ids: selectedSpeakers,
@@ -365,28 +407,41 @@ function Agenda() {
       // Update existing session
       setIsUpdatingSession(true);
       try {
-        const response = await updateAgendaApi(eventId, editingSession.id, payload);
+        const response = await updateAgendaApi(
+          eventId,
+          editingSession.id,
+          payload
+        );
         if (response.status === 200) {
           // Refresh sessions
           const refreshResponse = await getAgendaApi(eventId);
           if (refreshResponse.status === 200) {
             const agendas = refreshResponse.data.data.map((item: any) => {
-              const speakers = (item.attributes.speakers || []).map((speaker: any) => ({
-                id: speaker.id || speaker.attributes?.id,
-                name: speaker.attributes?.name || speaker.name,
-                avatar: speaker.attributes?.image_url || speaker.image_url || null,
-              }));
+              const speakers = (item.attributes.speakers || []).map(
+                (speaker: any) => ({
+                  id: speaker.id || speaker.attributes?.id,
+                  name: speaker.attributes?.name || speaker.name,
+                  avatar:
+                    speaker.attributes?.image_url || speaker.image_url || null,
+                })
+              );
 
               return {
                 id: item.id,
                 title: item.attributes.title,
-                startTime: item.attributes.formatted_time?.start_time || item.attributes.start_time,
-                endTime: item.attributes.formatted_time?.end_time || item.attributes.end_time,
+                startTime:
+                  item.attributes.formatted_time?.start_time ||
+                  item.attributes.start_time,
+                endTime:
+                  item.attributes.formatted_time?.end_time ||
+                  item.attributes.end_time,
                 location: item.attributes.location,
                 type: item.attributes.agenda_type || "presentation",
                 speakers: speakers,
-                additionalSpeakers: speakers.length > 5 ? speakers.length - 5 : undefined,
-                speakerName: speakers.length === 1 ? speakers[0].name : undefined,
+                additionalSpeakers:
+                  speakers.length > 5 ? speakers.length - 5 : undefined,
+                speakerName:
+                  speakers.length === 1 ? speakers[0].name : undefined,
                 display: item.attributes.display !== false,
                 require_enroll: item.attributes.require_enroll || false,
                 pay_by: item.attributes.pay_by || "free",
@@ -400,7 +455,7 @@ function Agenda() {
             setSessions(agendas);
           }
           showNotification("Session updated successfully!", "success");
-    setIsModalOpen(false);
+          setIsModalOpen(false);
           resetForm();
         } else {
           showNotification("Failed to update session", "error");
@@ -421,22 +476,31 @@ function Agenda() {
           const refreshResponse = await getAgendaApi(eventId);
           if (refreshResponse.status === 200) {
             const agendas = refreshResponse.data.data.map((item: any) => {
-              const speakers = (item.attributes.speakers || []).map((speaker: any) => ({
-                id: speaker.id || speaker.attributes?.id,
-                name: speaker.attributes?.name || speaker.name,
-                avatar: speaker.attributes?.image_url || speaker.image_url || null,
-              }));
+              const speakers = (item.attributes.speakers || []).map(
+                (speaker: any) => ({
+                  id: speaker.id || speaker.attributes?.id,
+                  name: speaker.attributes?.name || speaker.name,
+                  avatar:
+                    speaker.attributes?.image_url || speaker.image_url || null,
+                })
+              );
 
               return {
                 id: item.id,
                 title: item.attributes.title,
-                startTime: item.attributes.formatted_time?.start_time || item.attributes.start_time,
-                endTime: item.attributes.formatted_time?.end_time || item.attributes.end_time,
+                startTime:
+                  item.attributes.formatted_time?.start_time ||
+                  item.attributes.start_time,
+                endTime:
+                  item.attributes.formatted_time?.end_time ||
+                  item.attributes.end_time,
                 location: item.attributes.location,
                 type: item.attributes.agenda_type || "presentation",
                 speakers: speakers,
-                additionalSpeakers: speakers.length > 5 ? speakers.length - 5 : undefined,
-                speakerName: speakers.length === 1 ? speakers[0].name : undefined,
+                additionalSpeakers:
+                  speakers.length > 5 ? speakers.length - 5 : undefined,
+                speakerName:
+                  speakers.length === 1 ? speakers[0].name : undefined,
                 display: item.attributes.display !== false,
                 require_enroll: item.attributes.require_enroll || false,
                 pay_by: item.attributes.pay_by || "free",
@@ -467,37 +531,47 @@ function Agenda() {
   const SpeakerAvatar = ({
     speaker,
     size = "w-8 h-8",
+    fallbackInitials = false,
   }: {
     speaker: Speaker;
     size?: string;
+    fallbackInitials?: boolean;
   }) => {
-    if (speaker.avatar) {
+    const [errored, setErrored] = useState(false);
+
+    const renderInitials = () => {
+      const initial =
+        (speaker.name || "?").trim().split(/\s+/)[0].charAt(0).toUpperCase() ||
+        "?";
+      return (
+        <div
+          className={`${size} rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold`}
+          title={speaker.name}
+        >
+          <span className="select-none">{initial}</span>
+        </div>
+      );
+    };
+
+    if (speaker.avatar && !errored) {
       return (
         <img
           src={speaker.avatar}
           alt={speaker.name}
           className={`${size} rounded-full object-cover`}
+          onError={() => setErrored(true)}
+          referrerPolicy="no-referrer"
+          crossOrigin="anonymous"
         />
       );
     }
 
-    return (
-      <div
-        className={`${size} rounded-full bg-blue-100 flex items-center justify-center`}
-      >
-        <svg
-          className="w-4 h-4 text-blue-500"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </div>
-    );
+    // If requested, show initials fallback for missing or failed images
+    if (fallbackInitials) {
+      return renderInitials();
+    }
+    // Otherwise, render nothing
+    return null;
   };
 
   const SpeakersDisplay = ({ session }: { session: Session }) => {
@@ -507,7 +581,7 @@ function Agenda() {
         <div className="flex items-center gap-1">
           <div className="flex -space-x-2">
             {visibleSpeakers.map((speaker, index) => (
-              <SpeakerAvatar key={index} speaker={speaker} />
+              <SpeakerAvatar key={index} speaker={speaker} fallbackInitials />
             ))}
           </div>
           <span className="text-sm text-gray-600 ml-2">
@@ -519,9 +593,6 @@ function Agenda() {
       return (
         <div className="flex items-center gap-3">
           <SpeakerAvatar speaker={session.speakers[0]} size="w-10 h-10" />
-          <span className="text-sm font-medium text-gray-900">
-            {session.speakerName}
-          </span>
         </div>
       );
     } else {
@@ -529,7 +600,7 @@ function Agenda() {
         <div className="flex items-center gap-1">
           <div className="flex -space-x-2">
             {session.speakers.map((speaker, index) => (
-              <SpeakerAvatar key={index} speaker={speaker} />
+              <SpeakerAvatar key={index} speaker={speaker} fallbackInitials />
             ))}
           </div>
           <span className="text-sm text-gray-600 ml-2">
@@ -699,84 +770,87 @@ function Agenda() {
             </div>
           ) : (
             /* Table */
-          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="w-12 px-6 py-3 text-left">
-                    <input
-                      type="checkbox"
-                      className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                      onChange={handleSelectAll}
-                        checked={sessions.length > 0 && selectedSessions.length === sessions.length}
+            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-12 px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                        onChange={handleSelectAll}
+                        checked={
+                          sessions.length > 0 &&
+                          selectedSessions.length === sessions.length
+                        }
                         disabled={isFetchingAgendas}
-                    />
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Title
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Start time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    End time
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Location
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Type
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Speakers
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Start time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      End time
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Location
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Speakers
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
                   {sessions.map((session, index) => {
                     const startTime = formatTimeDisplay(session.startTime);
                     const endTime = formatTimeDisplay(session.endTime);
                     return (
-                  <tr
-                    key={session.id}
-                    className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                  >
-                    <td className="px-6 py-4">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                        checked={selectedSessions.includes(session.id)}
-                        onChange={() => handleSelectSession(session.id)}
+                      <tr
+                        key={session.id}
+                        className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                      >
+                        <td className="px-6 py-4">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            checked={selectedSessions.includes(session.id)}
+                            onChange={() => handleSelectSession(session.id)}
                             disabled={isDeletingSession === session.id}
-                      />
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {session.title}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                          />
+                        </td>
+                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                          {session.title}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
                           <div>{startTime.date}</div>
                           <div>{startTime.time}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
                           <div>{endTime.date}</div>
                           <div>{endTime.time}</div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {session.location}
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        {session.type}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <SpeakersDisplay session={session} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-600">
+                          {session.location}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {session.type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <SpeakersDisplay session={session} />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleDeleteSession(session)}
                               disabled={isDeletingSession === session.id}
@@ -785,27 +859,117 @@ function Agenda() {
                               {isDeletingSession === session.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
-                          <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4" />
                               )}
-                        </button>
+                            </button>
                             <button
                               onClick={() => handleEditSession(session)}
                               disabled={isDeletingSession === session.id}
                               className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                              <Edit className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
                     );
                   })}
-              </tbody>
-            </table>
-          </div>
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          onClick={() => {
+            if (isDeletingSession === null) {
+              setIsDeleteModalOpen(false);
+              setSessionToDelete(null);
+            }
+          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full transform animate-in zoom-in-95 duration-200"
+          >
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Delete Session
+                </h3>
+                <button
+                  onClick={() => {
+                    if (isDeletingSession === null) {
+                      setIsDeleteModalOpen(false);
+                      setSessionToDelete(null);
+                    }
+                  }}
+                  disabled={isDeletingSession !== null}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to delete this session?
+                </p>
+                {sessionToDelete && (
+                  <div className="bg-gray-50 p-3 rounded-lg mt-3">
+                    <p className="font-medium text-gray-900">
+                      {sessionToDelete.title}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {sessionToDelete.location}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-red-600 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setSessionToDelete(null);
+                  }}
+                  disabled={isDeletingSession !== null}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeletingSession !== null}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeletingSession !== null ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal */}
       {isModalOpen && (
@@ -955,22 +1119,22 @@ function Agenda() {
                         </div>
                       ) : availableSpeakers.length > 0 ? (
                         availableSpeakers.map((speaker) => (
-                        <div
-                          key={speaker.id}
-                          className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={selectedSpeakers.includes(speaker.id)}
-                            onChange={() => handleSpeakerToggle(speaker.id)}
+                          <div
+                            key={speaker.id}
+                            className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedSpeakers.includes(speaker.id)}
+                              onChange={() => handleSpeakerToggle(speaker.id)}
                               disabled={isAddingSession || isUpdatingSession}
                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
-                          />
-                          <SpeakerAvatar speaker={speaker} size="w-10 h-10" />
-                          <span className="text-sm font-medium text-gray-900">
-                            {speaker.name}
-                          </span>
-                        </div>
+                            />
+                            <SpeakerAvatar speaker={speaker} size="w-10 h-10" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {speaker.name}
+                            </span>
+                          </div>
                         ))
                       ) : (
                         <div className="text-gray-500 text-sm">
@@ -1014,7 +1178,13 @@ function Agenda() {
                           disabled={isAddingSession || isUpdatingSession}
                           className="sr-only peer"
                         />
-                        <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                        <div
+                          className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${
+                            isAddingSession || isUpdatingSession
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        ></div>
                       </label>
                     </div>
 
@@ -1050,7 +1220,13 @@ function Agenda() {
                           disabled={isAddingSession || isUpdatingSession}
                           className="sr-only peer"
                         />
-                        <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                        <div
+                          className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${
+                            isAddingSession || isUpdatingSession
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        ></div>
                       </label>
                     </div>
 
@@ -1089,7 +1265,13 @@ function Agenda() {
                           disabled={isAddingSession || isUpdatingSession}
                           className="sr-only peer"
                         />
-                        <div className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${isAddingSession || isUpdatingSession ? 'opacity-50 cursor-not-allowed' : ''}`}></div>
+                        <div
+                          className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${
+                            isAddingSession || isUpdatingSession
+                              ? "opacity-50 cursor-not-allowed"
+                              : ""
+                          }`}
+                        ></div>
                       </label>
                     </div>
                   </div>
@@ -1097,19 +1279,22 @@ function Agenda() {
                   {/* Price */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price {formData.paid && <span className="text-red-500">*</span>}
+                      Price{" "}
+                      {formData.paid && <span className="text-red-500">*</span>}
                     </label>
                     <div className="flex gap-2">
-                    <input
+                      <input
                         type="number"
                         step="0.01"
                         min="0"
-                      placeholder="Price here"
-                      value={formData.price}
-                      onChange={(e) =>
-                        handleInputChange("price", e.target.value)
-                      }
-                        disabled={!formData.paid || isAddingSession || isUpdatingSession}
+                        placeholder="Price here"
+                        value={formData.price}
+                        onChange={(e) =>
+                          handleInputChange("price", e.target.value)
+                        }
+                        disabled={
+                          !formData.paid || isAddingSession || isUpdatingSession
+                        }
                         className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                           !formData.paid || isAddingSession || isUpdatingSession
                             ? "bg-gray-100 cursor-not-allowed"
@@ -1121,7 +1306,9 @@ function Agenda() {
                         onChange={(e) =>
                           handleInputChange("currency", e.target.value)
                         }
-                        disabled={!formData.paid || isAddingSession || isUpdatingSession}
+                        disabled={
+                          !formData.paid || isAddingSession || isUpdatingSession
+                        }
                         className={`px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
                           !formData.paid || isAddingSession || isUpdatingSession
                             ? "bg-gray-100 cursor-not-allowed"
@@ -1136,43 +1323,45 @@ function Agenda() {
 
                   {/* Payment Methods */}
                   {formData.paid && (
-                  <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">Payment Method:</p>
-                    <div className="flex items-center gap-3">
-                      <input
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-gray-700 mb-2">
+                        Payment Method:
+                      </p>
+                      <div className="flex items-center gap-3">
+                        <input
                           type="radio"
                           name="paymentMethod"
-                        checked={formData.onlinePayment}
+                          checked={formData.onlinePayment}
                           onChange={() => {
                             handleInputChange("onlinePayment", true);
                             handleInputChange("cashPayment", false);
                           }}
                           disabled={isAddingSession || isUpdatingSession}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
-                      />
-                      <CreditCard className="w-5 h-5 text-gray-600" />
-                      <span className="text-sm text-gray-700">
-                        Online payment
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <input
+                        />
+                        <CreditCard className="w-5 h-5 text-gray-600" />
+                        <span className="text-sm text-gray-700">
+                          Online payment
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <input
                           type="radio"
                           name="paymentMethod"
-                        checked={formData.cashPayment}
+                          checked={formData.cashPayment}
                           onChange={() => {
                             handleInputChange("cashPayment", true);
                             handleInputChange("onlinePayment", false);
                           }}
                           disabled={isAddingSession || isUpdatingSession}
                           className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
-                      />
-                      <DollarSign className="w-5 h-5 text-gray-600" />
-                      <span className="text-sm text-gray-700">
-                        Cash payment
-                      </span>
+                        />
+                        <DollarSign className="w-5 h-5 text-gray-600" />
+                        <span className="text-sm text-gray-700">
+                          Cash payment
+                        </span>
+                      </div>
                     </div>
-                  </div>
                   )}
                 </div>
               </div>
@@ -1191,7 +1380,7 @@ function Agenda() {
                     </>
                   ) : (
                     <>
-                  <Plus className="w-5 h-5" />
+                      <Plus className="w-5 h-5" />
                       {isEditMode ? "Update Session" : "Add Sessions"}
                     </>
                   )}

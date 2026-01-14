@@ -68,6 +68,8 @@ const Badge5: React.FC<Badge5Props> = ({
                       src={logoUrl}
                       className="w-full h-full rounded-full object-cover"
                       alt="Logo"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   </div>
                 )}
@@ -87,6 +89,8 @@ const Badge5: React.FC<Badge5Props> = ({
                       src={badge.userImg}
                       className="w-full h-full object-cover"
                       alt="User"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-blue-300 to-blue-500" />

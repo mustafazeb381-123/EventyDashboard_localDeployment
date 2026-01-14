@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2 } from "lucide-react";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, X, Loader2 } from "lucide-react";
 import {
   createSessionAreaApi,
   getSessionAreaApi,
@@ -58,6 +58,10 @@ function AdvanceArea({
   const [saveLoading, setSaveLoading] = useState<string | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [badgeLoading, setBadgeLoading] = useState(false);
+
+  // Delete confirmation modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
 
   const currentEventId = eventId || localStorage.getItem("create_eventId");
 
@@ -176,24 +180,25 @@ function AdvanceArea({
   };
 
   const handleDeleteSession = async (session: Area) => {
-    if (!window.confirm("Are you sure you want to delete this session?"))
-      return;
+    setAreaToDelete(session);
+    setIsDeleteModalOpen(true);
+  };
 
-    if (!currentEventId) {
-      showNotification("Event ID not found", "error");
-      return;
-    }
+  const confirmDelete = async () => {
+    if (!areaToDelete || !currentEventId) return;
 
     try {
-      setDeleteLoading(session.id);
+      setDeleteLoading(areaToDelete.id);
       const response = await deleteSessionAreaApi(
         currentEventId as string,
-        session.id
+        areaToDelete.id
       );
 
       if (response.status === 200 || response.status === 204) {
         await fetchSessionAreas();
         showNotification("Session deleted successfully!", "success");
+        setIsDeleteModalOpen(false);
+        setAreaToDelete(null);
       } else {
         throw new Error(`Delete failed with status: ${response.status}`);
       }
@@ -786,6 +791,93 @@ function AdvanceArea({
           Next →
         </button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          onClick={() => {
+            if (deleteLoading === null) {
+              setIsDeleteModalOpen(false);
+              setAreaToDelete(null);
+            }
+          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full transform animate-in zoom-in-95 duration-200"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Delete Area
+                </h3>
+                <button
+                  onClick={() => {
+                    if (deleteLoading === null) {
+                      setIsDeleteModalOpen(false);
+                      setAreaToDelete(null);
+                    }
+                  }}
+                  disabled={deleteLoading !== null}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to delete this area?
+                </p>
+                {areaToDelete && (
+                  <div className="bg-gray-50 p-3 rounded-lg mt-3">
+                    <p className="font-medium text-gray-900">
+                      {areaToDelete.title}
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {areaToDelete.location}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-red-600 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setAreaToDelete(null);
+                  }}
+                  disabled={deleteLoading !== null}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={deleteLoading !== null}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {deleteLoading !== null ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes slide-in {

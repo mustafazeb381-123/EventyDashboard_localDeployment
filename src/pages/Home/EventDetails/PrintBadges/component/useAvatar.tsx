@@ -27,6 +27,8 @@ const UserAvatar: React.FC<UserAvatarProps> = ({ user, size = "md" }) => {
         className={`${dimensions} rounded-full object-cover`}
         style={{ border: "none", outline: "none", boxShadow: "none" }}
         onError={() => setLoadError(true)}
+        referrerPolicy="no-referrer"
+        crossOrigin="anonymous"
       />
     );
   }

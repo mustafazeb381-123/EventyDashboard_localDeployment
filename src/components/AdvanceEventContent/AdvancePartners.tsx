@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2 } from "lucide-react";
+import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2, X } from "lucide-react";
 import { createPartnerApi, deletePartnerApi, getPartnerApi, updatePartnerApi } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
@@ -65,6 +65,10 @@ function AdvancePartners({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
   const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
+
+  // Delete confirmation modal state
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
 
   // Compute partners for current page
   const currentPartners = eventUsers.slice(
@@ -142,15 +146,22 @@ function AdvancePartners({
   };
 
   const handleDeleteUser = async (user: Partner) => {
-    if (!window.confirm("Are you sure you want to delete this partner?")) return;
+    setPartnerToDelete(user);
+    setIsDeleteModalOpen(true);
+  };
 
-    setIsDeletingPartner(user.id);
+  const confirmDelete = async () => {
+    if (!partnerToDelete) return;
+
+    setIsDeletingPartner(partnerToDelete.id);
     try {
-      const response = await deletePartnerApi(eventId!, user.id);
+      const response = await deletePartnerApi(eventId!, partnerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers(prev => prev.filter(u => u.id !== user.id));
+        setEventUsers(prev => prev.filter(u => u.id !== partnerToDelete.id));
         showNotification("Partner deleted successfully!", "success");
+        setIsDeleteModalOpen(false);
+        setPartnerToDelete(null);
       } else {
         showNotification("Failed to delete partner", "error");
       }
@@ -813,6 +824,90 @@ function AdvancePartners({
           Next →
         </button>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div
+          onClick={() => {
+            if (isDeletingPartner === null) {
+              setIsDeleteModalOpen(false);
+              setPartnerToDelete(null);
+            }
+          }}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full transform animate-in zoom-in-95 duration-200"
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Delete Partner
+                </h3>
+                <button
+                  onClick={() => {
+                    if (isDeletingPartner === null) {
+                      setIsDeleteModalOpen(false);
+                      setPartnerToDelete(null);
+                    }
+                  }}
+                  disabled={isDeletingPartner !== null}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Are you sure you want to delete this partner?
+                </p>
+                {partnerToDelete && (
+                  <div className="bg-gray-50 p-3 rounded-lg mt-3">
+                    <p className="font-medium text-gray-900">
+                      {partnerToDelete.attributes.name}
+                    </p>
+                  </div>
+                )}
+                <p className="text-sm text-red-600 mt-3">
+                  This action cannot be undone.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setIsDeleteModalOpen(false);
+                    setPartnerToDelete(null);
+                  }}
+                  disabled={isDeletingPartner !== null}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={isDeletingPartner !== null}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isDeletingPartner !== null ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-4 h-4" />
+                      Delete
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes slide-in {

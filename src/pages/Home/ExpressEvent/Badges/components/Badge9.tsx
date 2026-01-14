@@ -67,6 +67,8 @@ const Badge9: React.FC<Badge9Props> = ({
                       src={logoUrl}
                       className="w-full h-full rounded-lg object-cover"
                       alt="Logo"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   </div>
                 )}
@@ -86,6 +88,8 @@ const Badge9: React.FC<Badge9Props> = ({
                       src={badge.userImg}
                       className="w-full h-full object-cover"
                       alt="User"
+                      referrerPolicy="no-referrer"
+                      crossOrigin="anonymous"
                     />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-slate-500 to-slate-700" />
