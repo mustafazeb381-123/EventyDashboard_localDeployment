@@ -891,7 +891,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             >
               <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600" />
               <p className="text-green-700 text-xs sm:text-sm font-normal">
-                Share Registration
+                Copy Registration Link
               </p>
             </div>
             <div
