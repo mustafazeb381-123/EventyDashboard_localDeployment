@@ -326,7 +326,9 @@ function Agenda() {
       const response = await deleteAgendaApi(eventId, sessionToDelete.id);
       if (response.status === 204 || response.status === 200) {
         setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id));
-        setSelectedSessions((prev) => prev.filter((id) => id !== sessionToDelete.id));
+        setSelectedSessions((prev) =>
+          prev.filter((id) => id !== sessionToDelete.id)
+        );
         showNotification("Session deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setSessionToDelete(null);
