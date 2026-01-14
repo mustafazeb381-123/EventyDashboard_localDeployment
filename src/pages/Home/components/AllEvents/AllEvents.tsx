@@ -4,7 +4,6 @@ import { useEffect, useState, useRef } from "react";
 import { Trash2, Search, Grid3X3, List, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast, ToastContainer } from "react-toastify";
 
 // import { useNavigate } from "react-router-dom";
 
@@ -120,6 +119,12 @@ function AllEvents() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const navigate = useNavigate();
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -151,7 +156,19 @@ function AllEvents() {
     }
   };
 
-  // Only one fetch useEffect (see below)
+  // Auto-hide notification
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -411,7 +428,7 @@ function AllEvents() {
     setEventToDelete(null); // Close modal
     try {
       await deleteEvent(eventId);
-      toast.success("Event deleted successfully!");
+      showNotification("Event deleted successfully!", "success");
 
       // Refresh the events list
       if (debouncedSearch.trim()) {
@@ -550,13 +567,29 @@ function AllEvents() {
       }
     } catch (error) {
       console.error("AllEvents - Error deleting event:", error);
-      toast.error("Failed to delete event. Please try again.");
+      showNotification("Failed to delete event. Please try again.", "error");
     } finally {
       setDeletingEventId(null);
     }
   };
   return (
-    <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
+    <>
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
       <div className="flex flex-col gap-4 mb-6">
         {/* Title and Counter */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -926,8 +959,23 @@ function AllEvents() {
         </div>
       )}
 
-      <ToastContainer />
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
+    </>
   );
 }
 

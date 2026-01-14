@@ -354,26 +354,19 @@ interface CustomBadgePreviewProps {
 const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
   template,
 }) => {
-  // Convert pixels to inches if needed (if width > 50, assume it's in pixels)
-  const widthInInches = template.width > 50 ? template.width / 96 : template.width;
-  const heightInInches = template.height > 50 ? template.height / 96 : template.height;
+  // Use 96 DPI for consistency with print (standard web DPI)
+  const DPI = 96;
+  const widthInInches = template.width > 50 ? template.width / DPI : template.width;
+  const heightInInches = template.height > 50 ? template.height / DPI : template.height;
   
-  const previewWidth = widthInInches * 100;
-  const previewHeight = heightInInches * 100;
+  // Calculate preview dimensions at 96 DPI
+  const previewWidth = widthInInches * DPI;
+  const previewHeight = heightInInches * DPI;
 
-  // Scaling ratio for positioning elements (100px per inch vs base units if any)
-  // The positioning in the template seems to be based on some unit.
-  // In previous code (modal), it was * 0.4 for preview.
-  // Positions (x, y) seem to be in pixels based on a 200x? canvas or similar?
-  // Let's look at the previous render helper in CustomBadgeModal. 
-  // It used `* 0.4` for a preview of `width * 80`.
-  // Wait, `previewWidth` was `template.width * 80`.
-  // The text positions were `(template.nameText.position?.x || 200) * 0.4`.
-  // If I change `previewWidth` to `template.width * 100`, I should probably adjust the internal multiplier to `0.5`?
-  // 80 * X = 0.4 -> X = 0.4/80 = 0.005
-  // So for 100, multiplier should be 100 * 0.005 = 0.5.
-
-  const multiplier = 0.5;
+  // Positions are stored in pixels relative to a 400px wide canvas
+  const canvasWidth = 400;
+  const scaleX = previewWidth / canvasWidth;
+  const scaleY = previewHeight / (canvasWidth * (heightInInches / widthInInches));
 
   // Use the fixRedBackground function (defined in parent component)
   // For preview modal, we'll define it here too
@@ -422,23 +415,23 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                 <div
                   className="absolute rounded-full bg-gray-300 border-4 border-white flex items-center justify-center overflow-hidden"
                   style={{
-                    width: `${(template.photoSize.width || 200) * multiplier}px`,
-                    height: `${(template.photoSize.height || 200) * multiplier}px`,
+                    width: `${(template.photoSize.width || 200) * scaleX}px`,
+                    height: `${(template.photoSize.height || 200) * scaleY}px`,
                     left:
                       template.photoAlignment === "left"
-                        ? `${(template.photoPosition?.x || 200) * multiplier}px`
+                        ? `${(template.photoPosition?.x || 200) * scaleX}px`
                         : template.photoAlignment === "right"
                           ? "auto"
                           : "50%",
                     right:
                       template.photoAlignment === "right"
-                        ? `${(template.photoPosition?.x || 200) * multiplier}px`
+                        ? `${(template.photoPosition?.x || 200) * scaleX}px`
                         : "auto",
                     transform:
                       template.photoAlignment === "center"
                         ? "translateX(-50%)"
                         : "none",
-                    top: `${(template.photoPosition?.y || 60) * multiplier}px`,
+                    top: `${(template.photoPosition?.y || 60) * scaleY}px`,
                   }}
                 >
                   <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
@@ -451,7 +444,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                 <div
                   className="absolute"
                   style={{
-                    top: `${(template.nameText.position?.y || 280) * multiplier}px`,
+                    top: `${(template.nameText.position?.y || 280) * scaleY}px`,
                     left: "0",
                     width: "100%",
                     transform: "none",
@@ -461,7 +454,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   <div
                     className="font-bold px-4 whitespace-nowrap"
                     style={{
-                      fontSize: `${(template.nameText.size || 24) * multiplier}px`,
+                      fontSize: `${(template.nameText.size || 24) * scaleY}px`,
                       color: template.nameText.color || "#ffffff",
                     }}
                   >
@@ -474,8 +467,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                 <div
                   className="absolute"
                   style={{
-                    top: `${(template.companyText.position?.y || 315) * multiplier
-                      }px`,
+                    top: `${(template.companyText.position?.y || 315) * scaleY}px`,
                     left: "0",
                     width: "100%",
                     transform: "none",
@@ -485,7 +477,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   <div
                     className="px-4 whitespace-nowrap"
                     style={{
-                      fontSize: `${(template.companyText.size || 18) * multiplier}px`,
+                      fontSize: `${(template.companyText.size || 18) * scaleY}px`,
                       color: template.companyText.color || "#cccccc",
                     }}
                   >
@@ -498,7 +490,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                 <div
                   className="absolute"
                   style={{
-                    top: `${(template.titleText.position?.y || 350) * multiplier}px`,
+                    top: `${(template.titleText.position?.y || 350) * scaleY}px`,
                     left: "0",
                     width: "100%",
                     transform: "none",
@@ -508,7 +500,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   <div
                     className="px-4 whitespace-nowrap"
                     style={{
-                      fontSize: `${(template.titleText.size || 16) * multiplier}px`,
+                      fontSize: `${(template.titleText.size || 16) * scaleY}px`,
                       color: template.titleText.color || "#999999",
                     }}
                   >
@@ -521,16 +513,28 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                 <div
                   className="absolute bg-white border-4 border-gray-400 flex items-center justify-center overflow-hidden rounded-lg"
                   style={{
-                    width: `${(template.qrCodeSize.width || 120) * multiplier}px`,
-                    height: `${(template.qrCodeSize.height || 120) * multiplier
-                      }px`,
-                    left: `${(template.qrCodePosition?.x || 200) * multiplier}px`,
-                    top: `${(template.qrCodePosition?.y || 400) * multiplier}px`,
+                    width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
+                    height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
+                    left:
+                      template.qrCodeAlignment === "left"
+                        ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
+                        : template.qrCodeAlignment === "right"
+                          ? "auto"
+                          : "50%",
+                    right:
+                      template.qrCodeAlignment === "right"
+                        ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
+                        : "auto",
+                    transform:
+                      template.qrCodeAlignment === "center"
+                        ? "translateX(-50%)"
+                        : "none",
+                    top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
                   }}
                 >
                   <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
                     <QrCode
-                      size={(template.qrCodeSize.width || 120) * (multiplier * 0.5)}
+                      size={(template.qrCodeSize.width || 120) * scaleX * 0.8}
                       className="text-gray-600"
                     />
                   </div>
@@ -1067,6 +1071,29 @@ const Badges: React.FC<BadgesProps> = ({
             setSelectedTemplate(null);
           }
         }
+      } else {
+        // If no active badge, but we have a selected template, try to preserve it
+        // This handles the case where a template is edited but not set as default
+        if (selectedTemplate) {
+          const templateId = typeof selectedTemplate.id === 'string' 
+            ? (selectedTemplate.id.startsWith('custom-') 
+                ? parseInt(selectedTemplate.id.split('-').pop() || '0', 10)
+                : parseInt(selectedTemplate.id, 10))
+            : selectedTemplate.id;
+          
+          const foundTemplate = templatesData.find((item: any) => {
+            const itemId = typeof item.id === 'string' ? parseInt(item.id, 10) : item.id;
+            return itemId === templateId;
+          });
+          
+          if (foundTemplate) {
+            const transformedTemplate = transformApiToTemplate(foundTemplate) as BadgeTemplate;
+            transformedTemplate.bgColor = fixRedBackground(transformedTemplate.bgColor);
+            setSelectedTemplate(transformedTemplate);
+            setSelectedBadge(null);
+            console.log("Preserved selection for template:", transformedTemplate.name);
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to reload custom badge templates:", error);
@@ -1175,11 +1202,59 @@ const Badges: React.FC<BadgesProps> = ({
         "success"
       );
       
+      // Store the template ID and selection state before closing modal (for selection restoration)
+      const wasSelected = isEditCustomMode && editingCustomTemplate && selectedTemplate?.id === editingCustomTemplate.id;
+      const savedTemplateId = isEditCustomMode 
+        ? editingCustomTemplate?.id 
+        : response?.data?.data?.id || response?.data?.data?.id?.toString();
+      
       // Close modal after successful save
       setIsCustomModalOpen(false);
       
       // Reload templates from API to get the latest data
       await reloadCustomTemplates();
+      
+      // If the edited template was selected, restore selection after reload
+      // Use a small delay to ensure API has fully processed the update
+      if (wasSelected && savedTemplateId) {
+        setTimeout(async () => {
+          try {
+            // Fetch fresh templates to ensure we have the latest data
+            const templatesResponse = await getBadgesApi(parseInt(effectiveEventId, 10));
+            const templatesData = templatesResponse?.data?.data || [];
+            
+            // Extract numeric ID from savedTemplateId
+            let numericId: number | null = null;
+            if (typeof savedTemplateId === 'string') {
+              if (savedTemplateId.startsWith('custom-')) {
+                numericId = parseInt(savedTemplateId.split('-').pop() || '0', 10);
+              } else {
+                numericId = parseInt(savedTemplateId, 10);
+              }
+            } else {
+              numericId = savedTemplateId;
+            }
+            
+            // Find the updated template by ID
+            const updatedTemplate = templatesData.find((item: any) => {
+              const itemId = typeof item.id === 'string' ? parseInt(item.id, 10) : item.id;
+              return itemId === numericId;
+            });
+            
+            if (updatedTemplate) {
+              const transformedTemplate = transformApiToTemplate(updatedTemplate) as BadgeTemplate;
+              transformedTemplate.bgColor = fixRedBackground(transformedTemplate.bgColor);
+              setSelectedTemplate(transformedTemplate);
+              setSelectedBadge(null);
+              console.log("✅ Restored selection for edited template:", transformedTemplate.name);
+            } else {
+              console.warn("⚠️ Could not find updated template with ID:", numericId);
+            }
+          } catch (error) {
+            console.error("❌ Failed to restore template selection:", error);
+          }
+        }, 300); // Reduced delay for faster response
+      }
     } catch (error: any) {
       console.error("Failed to save badge template:", error);
       console.error("Error response:", error?.response);
@@ -1458,16 +1533,21 @@ const Badges: React.FC<BadgesProps> = ({
   };
 
   const renderCustomBadgePreview = (template: BadgeTemplate) => {
-    const previewScale = 55;
-    const internalScale = 0.275;
+    // Use 96 DPI for consistency with print (standard web DPI)
+    const DPI = 96;
+    const widthInInches = template.width > 50 ? template.width / DPI : template.width;
+    const heightInInches = template.height > 50 ? template.height / DPI : template.height;
     
-    // Convert pixels to inches if needed (if width > 50, assume it's in pixels)
-    // 1 inch = 96 pixels (standard DPI), so divide by 96 to convert
-    const widthInInches = template.width > 50 ? template.width / 96 : template.width;
-    const heightInInches = template.height > 50 ? template.height / 96 : template.height;
+    // Calculate preview dimensions at 96 DPI (scaled down for card preview)
+    const previewScale = 0.5; // Scale down for card preview
+    const previewWidth = widthInInches * DPI * previewScale;
+    const previewHeight = heightInInches * DPI * previewScale;
     
-    const previewWidth = widthInInches * previewScale;
-    const previewHeight = heightInInches * previewScale;
+    // Positions are stored in pixels relative to a 400px wide canvas
+    const canvasWidth = 400;
+    const scaleX = (previewWidth / canvasWidth);
+    const scaleY = (previewHeight / (canvasWidth * (heightInInches / widthInInches)));
+    
     const validBgColor = getValidBackgroundColor(template.bgColor);
 
     return (
@@ -1494,23 +1574,23 @@ const Badges: React.FC<BadgesProps> = ({
             <div
               className="absolute rounded-full bg-gray-300 border-2 border-white flex items-center justify-center overflow-hidden"
               style={{
-                width: `${(template.photoSize.width || 200) * internalScale}px`,
-                height: `${(template.photoSize.height || 200) * internalScale}px`,
+                width: `${(template.photoSize.width || 200) * scaleX}px`,
+                height: `${(template.photoSize.height || 200) * scaleY}px`,
                 left:
                   template.photoAlignment === "left"
-                    ? `${(template.photoPosition?.x || 200) * internalScale}px`
+                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
                     : template.photoAlignment === "right"
                       ? "auto"
                       : "50%",
                 right:
                   template.photoAlignment === "right"
-                    ? `${(template.photoPosition?.x || 200) * internalScale}px`
+                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
                     : "auto",
                 transform:
                   template.photoAlignment === "center"
                     ? "translateX(-50%)"
                     : "none",
-                top: `${(template.photoPosition?.y || 60) * internalScale}px`,
+                top: `${(template.photoPosition?.y || 60) * scaleY}px`,
               }}
             >
               <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400" />
@@ -1521,7 +1601,7 @@ const Badges: React.FC<BadgesProps> = ({
             <div
               className="absolute"
               style={{
-                top: `${(template.nameText.position?.y || 280) * internalScale}px`,
+                top: `${(template.nameText.position?.y || 280) * scaleY}px`,
                 left: "0",
                 width: "100%",
                 transform: "none",
@@ -1531,7 +1611,7 @@ const Badges: React.FC<BadgesProps> = ({
               <div
                 className="font-bold px-2 whitespace-nowrap"
                 style={{
-                  fontSize: `${(template.nameText.size || 24) * internalScale}px`,
+                  fontSize: `${(template.nameText.size || 24) * scaleY}px`,
                   color: template.nameText.color || "#ffffff",
                 }}
               >
@@ -1544,7 +1624,7 @@ const Badges: React.FC<BadgesProps> = ({
             <div
               className="absolute"
               style={{
-                top: `${(template.companyText.position?.y || 315) * internalScale}px`,
+                top: `${(template.companyText.position?.y || 315) * scaleY}px`,
                 left: "0",
                 width: "100%",
                 transform: "none",
@@ -1554,7 +1634,7 @@ const Badges: React.FC<BadgesProps> = ({
               <div
                 className="px-2 whitespace-nowrap"
                 style={{
-                  fontSize: `${(template.companyText.size || 18) * internalScale}px`,
+                  fontSize: `${(template.companyText.size || 18) * scaleY}px`,
                   color: template.companyText.color || "#cccccc",
                 }}
               >
@@ -1567,7 +1647,7 @@ const Badges: React.FC<BadgesProps> = ({
             <div
               className="absolute"
               style={{
-                top: `${(template.titleText.position?.y || 350) * internalScale}px`,
+                top: `${(template.titleText.position?.y || 350) * scaleY}px`,
                 left: "0",
                 width: "100%",
                 transform: "none",
@@ -1577,7 +1657,7 @@ const Badges: React.FC<BadgesProps> = ({
               <div
                 className="px-2 whitespace-nowrap"
                 style={{
-                  fontSize: `${(template.titleText.size || 16) * internalScale}px`,
+                  fontSize: `${(template.titleText.size || 16) * scaleY}px`,
                   color: template.titleText.color || "#999999",
                 }}
               >
@@ -1588,31 +1668,37 @@ const Badges: React.FC<BadgesProps> = ({
 
           {template.hasQrCode && template.qrCodeSize && (
             <div
-              className="absolute bg-white border-2 border-gray-300 flex items-center justify-center overflow-hidden"
+              className="absolute bg-white border-2 border-gray-300 flex items-center justify-center overflow-hidden rounded-lg"
               style={{
-                width: `${(template.qrCodeSize.width || 120) * internalScale}px`,
-                height: `${(template.qrCodeSize.height || 120) * internalScale}px`,
+                width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
+                height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
                 left:
                   template.qrCodeAlignment === "left"
-                    ? `${(template.qrCodePosition?.x || 200) * internalScale}px`
+                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
                     : template.qrCodeAlignment === "right"
                       ? "auto"
                       : "50%",
                 right:
                   template.qrCodeAlignment === "right"
-                    ? `${(template.qrCodePosition?.x || 200) * internalScale}px`
+                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
                     : "auto",
                 transform:
                   template.qrCodeAlignment === "center"
                     ? "translateX(-50%)"
                     : "none",
-                top: `${(template.qrCodePosition?.y || 400) * internalScale}px`,
+                top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
+                padding: "4px",
               }}
             >
-              <QrCode
-                size={(template.qrCodeSize.width || 120) * internalScale * 0.5}
-                className="text-gray-400"
-              />
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                <QrCode
+                  size={Math.min(
+                    (template.qrCodeSize.width || 120) * scaleX * 0.9,
+                    (template.qrCodeSize.height || 120) * scaleY * 0.9
+                  )}
+                  className="text-gray-600"
+                />
+              </div>
             </div>
           )}
         </div>

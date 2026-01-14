@@ -58,14 +58,20 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
   const templateData = template?.attributes?.template_data || {};
   const badgeColors = getBadgeColors(template, event);
 
+  // Use 96 DPI for consistency (standard web DPI)
+  const DPI = 96;
   let width = templateData.width || 3.5;
   let height = templateData.height || 5.5;
-  if (width > 50) width = width / 96;
-  if (height > 50) height = height / 96;
+  if (width > 50) width = width / DPI;
+  if (height > 50) height = height / DPI;
 
-  const widthPx = width * 96;
-  const heightPx = height * 96;
-  const scale = 0.4;
+  const widthPx = width * DPI;
+  const heightPx = height * DPI;
+  
+  // Positions are stored in pixels relative to a 400px wide canvas
+  const canvasWidth = 400;
+  const scaleX = widthPx / canvasWidth;
+  const scaleY = heightPx / (canvasWidth * (height / width));
 
   const backgroundImageUrl =
     template?.attributes?.background_image || templateData.bgImage || null;
@@ -98,18 +104,18 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             borderRadius: "50%",
             border: "4px solid white",
             overflow: "hidden",
-            width: `${(templateData.photoSize?.width || 200) * scale}px`,
-            height: `${(templateData.photoSize?.height || 200) * scale}px`,
-            top: `${(templateData.photoPosition?.y || 60) * scale}px`,
+            width: `${(templateData.photoSize?.width || 200) * scaleX}px`,
+            height: `${(templateData.photoSize?.height || 200) * scaleY}px`,
+            top: `${(templateData.photoPosition?.y || 60) * scaleY}px`,
             left:
               templateData.photoAlignment === "center"
                 ? "50%"
                 : templateData.photoAlignment === "left"
-                ? `${(templateData.photoPosition?.x || 200) * scale}px`
+                ? `${(templateData.photoPosition?.x || 200) * scaleX}px`
                 : "auto",
             right:
               templateData.photoAlignment === "right"
-                ? `${(templateData.photoPosition?.x || 200) * scale}px`
+                ? `${(templateData.photoPosition?.x || 200) * scaleX}px`
                 : "auto",
             transform:
               templateData.photoAlignment === "center"
@@ -118,9 +124,92 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
           }}
         >
           {user ? (
-            <UserAvatar user={user} size="lg" />
+            (() => {
+              const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
+              const userName = user?.attributes?.name || "User";
+              const photoWidth = (templateData.photoSize?.width || 200) * scaleX;
+              const photoHeight = (templateData.photoSize?.height || 200) * scaleY;
+              
+              if (imageUrl) {
+                return (
+                  <img
+                    src={imageUrl}
+                    alt={userName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      border: "none",
+                      outline: "none",
+                      boxShadow: "none",
+                    }}
+                    onError={(e) => {
+                      // Fallback to initials if image fails
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent && !parent.querySelector(".avatar-initials")) {
+                        const initialsDiv = document.createElement("div");
+                        initialsDiv.className = "avatar-initials";
+                        initialsDiv.style.cssText = `
+                          width: 100%;
+                          height: 100%;
+                          background-color: #4f46e5;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          color: white;
+                          font-weight: 600;
+                          font-size: ${Math.min(photoWidth, photoHeight) * 0.4}px;
+                        `;
+                        const initials = (userName || "U")
+                          .trim()
+                          .split(" ")
+                          .filter(Boolean)
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2) || "U";
+                        initialsDiv.textContent = initials;
+                        parent.appendChild(initialsDiv);
+                      }
+                    }}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                  />
+                );
+              }
+              
+              // Fallback to initials if no image
+              const initials = (userName || "U")
+                .trim()
+                .split(" ")
+                .filter(Boolean)
+                .map((n: string) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2) || "U";
+              
+              return (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "#4f46e5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: `${Math.min(photoWidth, photoHeight) * 0.4}px`,
+                  }}
+                >
+                  {initials}
+                </div>
+              );
+            })()
           ) : (
-            <div className="w-full h-full bg-gray-200" />
+            <div style={{ width: "100%", height: "100%", backgroundColor: "#e5e7eb" }} />
           )}
         </div>
       )}
@@ -130,9 +219,9 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
           style={{
             position: "absolute",
             width: "100%",
-            top: `${(templateData.nameText?.position?.y || 280) * scale}px`,
+            top: `${(templateData.nameText?.position?.y || 280) * scaleY}px`,
             textAlign: templateData.nameText?.alignment || "center",
-            fontSize: `${(templateData.nameText?.size || 24) * scale}px`,
+            fontSize: `${(templateData.nameText?.size || 24) * scaleY}px`,
             color: templateData.nameText?.color || "#000000",
             fontWeight: "bold",
             padding: "0 10px",
@@ -147,13 +236,28 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
           style={{
             position: "absolute",
             width: "100%",
-            top: `${(templateData.companyText?.position?.y || 315) * scale}px`,
+            top: `${(templateData.companyText?.position?.y || 315) * scaleY}px`,
             textAlign: templateData.companyText?.alignment || "center",
-            fontSize: `${(templateData.companyText?.size || 18) * scale}px`,
+            fontSize: `${(templateData.companyText?.size || 18) * scaleY}px`,
             color: templateData.companyText?.color || "#666666",
           }}
         >
           {user?.attributes?.organization || "Company Placeholder"}
+        </div>
+      )}
+
+      {templateData.hasTitle && (
+        <div
+          style={{
+            position: "absolute",
+            width: "100%",
+            top: `${(templateData.titleText?.position?.y || 350) * scaleY}px`,
+            textAlign: templateData.titleText?.alignment || "center",
+            fontSize: `${(templateData.titleText?.size || 16) * scaleY}px`,
+            color: templateData.titleText?.color || "#999999",
+          }}
+        >
+          {user?.attributes?.user_type || "Title Placeholder"}
         </div>
       )}
 
@@ -164,29 +268,42 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             backgroundColor: "white",
             padding: "4px",
             borderRadius: "4px",
-            width: `${(templateData.qrCodeSize?.width || 120) * scale}px`,
-            height: `${(templateData.qrCodeSize?.height || 120) * scale}px`,
-            top: `${(templateData.qrCodePosition?.y || 400) * scale}px`,
+            width: `${(templateData.qrCodeSize?.width || 120) * scaleX}px`,
+            height: `${(templateData.qrCodeSize?.height || 120) * scaleY}px`,
+            top: `${(templateData.qrCodePosition?.y || 400) * scaleY}px`,
             left:
               templateData.qrCodeAlignment === "center"
                 ? "50%"
                 : templateData.qrCodeAlignment === "left"
-                ? `${(templateData.qrCodePosition?.x || 200) * scale}px`
+                ? `${(templateData.qrCodePosition?.x || 200) * scaleX}px`
                 : "auto",
             right:
               templateData.qrCodeAlignment === "right"
-                ? `${(templateData.qrCodePosition?.x || 200) * scale}px`
+                ? `${(templateData.qrCodePosition?.x || 200) * scaleX}px`
                 : "auto",
             transform:
               templateData.qrCodeAlignment === "center"
                 ? "translateX(-50%)"
                 : "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
           }}
         >
           {user?.attributes?.token ? (
             <QRCode
               value={user.attributes.token}
-              size={(templateData.qrCodeSize?.width || 120) * scale - 8}
+              size={Math.min(
+                (templateData.qrCodeSize?.width || 120) * scaleX - 8,
+                (templateData.qrCodeSize?.height || 120) * scaleY - 8
+              )}
+              style={{
+                width: "100%",
+                height: "100%",
+                maxWidth: "100%",
+                maxHeight: "100%",
+              }}
             />
           ) : (
             <div className="w-full h-full bg-gray-100" />
