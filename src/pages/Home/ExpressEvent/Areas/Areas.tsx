@@ -55,6 +55,25 @@ export default function Areas({}) {
   const [addLoading, setAddLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  // Notification handler
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const eventId = localStorage.getItem("create_eventId");
   console.log("event id----------+++++-----------------", eventId);
@@ -254,7 +273,7 @@ export default function Areas({}) {
 
         // Refresh data to ensure UI matches server state
         await fetchSessionAreas();
-        toast.success("Area deleted successfully!");
+        showNotification("Area deleted successfully!", "success");
         closeDeleteModal();
       } else {
         throw new Error(`Delete failed with status: ${response.status}`);
@@ -262,7 +281,7 @@ export default function Areas({}) {
     } catch (error) {
       console.error("Error deleting area:", error);
       setError("Failed to delete session area");
-      toast.error("Failed to delete session area");
+      showNotification("Failed to delete session area", "error");
 
       // Refresh to get current state
       await fetchSessionAreas();
@@ -342,14 +361,14 @@ export default function Areas({}) {
         setEditingRow(null);
         setEditData(null);
         console.log(`Successfully updated area with id: ${editData.id}`);
-        toast.success("Area updated successfully!");
+        showNotification("Area updated successfully!", "success");
       } else {
         throw new Error("Update response format is invalid");
       }
     } catch (error) {
       console.error("Error updating area:", error);
       setError("Failed to update session area");
-      toast.error("Failed to update session area");
+      showNotification("Failed to update session area", "error");
 
       // Rollback on error
       await fetchSessionAreas();
@@ -429,6 +448,21 @@ export default function Areas({}) {
       }}
       className="bg-white rounded-2xl"
     >
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       {/* Toast Container */}
       <ToastContainer
         position="top-right"
@@ -1475,6 +1509,19 @@ export default function Areas({}) {
           @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+          }
+          @keyframes slide-in {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-in {
+            animation: slide-in 0.3s ease-out;
           }
         `}
       </style>

@@ -576,6 +576,10 @@ const Badges: React.FC<BadgesProps> = ({
   // Original badge state
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [activeBadgeId, setActiveBadgeId] = useState<number | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const effectiveEventId = eventId || localStorage.getItem("create_eventId");
 
@@ -685,6 +689,21 @@ const Badges: React.FC<BadgesProps> = ({
       qrCodePosition: { x: 200, y: 380 },
     },
   ];
+
+  // -------------------- NOTIFICATION HANDLER --------------------
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // -------------------- API TRANSFORMATION HELPERS --------------------
   // Transform BadgeTemplate to API format
@@ -1069,7 +1088,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   const handleSaveCustomTemplate = async (template: BadgeTemplate) => {
     if (!effectiveEventId) {
-      toast.error("Event ID not found. Cannot save template.");
+      showNotification("Event ID not found. Cannot save template.", "error");
       return;
     }
 
@@ -1105,7 +1124,7 @@ const Badges: React.FC<BadgesProps> = ({
         }
 
         if (!numericId || numericId === 0) {
-          toast.error("Invalid template ID. Cannot update template.");
+          showNotification("Invalid template ID. Cannot update template.", "error");
           setLoading(false);
           return;
         }
@@ -1151,8 +1170,9 @@ const Badges: React.FC<BadgesProps> = ({
 
       console.log("Badge template saved successfully:", response.data);
 
-      toast.success(
-        `Template ${isEditCustomMode ? "updated" : "created"} successfully!`
+      showNotification(
+        `Template ${isEditCustomMode ? "updated" : "created"} successfully!`,
+        "success"
       );
       
       // Close modal after successful save
@@ -1208,7 +1228,7 @@ const Badges: React.FC<BadgesProps> = ({
         errorMessage = error.response.data.message;
       }
       
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -1220,7 +1240,7 @@ const Badges: React.FC<BadgesProps> = ({
     }
 
     if (!effectiveEventId) {
-      toast.error("Event ID not found. Cannot delete template.");
+      showNotification("Event ID not found. Cannot delete template.", "error");
       return;
     }
 
@@ -1247,7 +1267,7 @@ const Badges: React.FC<BadgesProps> = ({
 
     // If we still don't have a valid numeric ID, we can't delete from API
     if (!numericId || numericId === 0) {
-      toast.error("Invalid template ID. Cannot delete from server.");
+      showNotification("Invalid template ID. Cannot delete from server.", "error");
       return;
     }
 
@@ -1266,14 +1286,15 @@ const Badges: React.FC<BadgesProps> = ({
         setSelectedTemplate(null);
       }
 
-      toast.success("Template deleted successfully!");
+      showNotification("Template deleted successfully!", "success");
       
       // Reload templates from API to get the latest data
       await reloadCustomTemplates();
     } catch (error: any) {
       console.error("Failed to delete badge template:", error);
-      toast.error(
-        error?.response?.data?.error || "Failed to delete template."
+      showNotification(
+        error?.response?.data?.error || "Failed to delete template.",
+        "error"
       );
     } finally {
       setLoading(false);
@@ -1984,6 +2005,21 @@ const Badges: React.FC<BadgesProps> = ({
 
   return (
     <div className="w-full mx-5 bg-white p-5 rounded-2xl">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex flex-row justify-between items-center">
         <div className="flex flex-row gap-2 items-center">
@@ -2252,6 +2288,22 @@ const Badges: React.FC<BadgesProps> = ({
       </div>
 
       <ToastContainer />
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

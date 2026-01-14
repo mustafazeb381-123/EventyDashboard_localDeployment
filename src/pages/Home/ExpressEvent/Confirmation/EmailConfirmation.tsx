@@ -426,6 +426,25 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  // Notification handler
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const currentFlow = flows[currentFlowIndex];
 
@@ -728,7 +747,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
   const handleEditTemplate = async (template: any) => { 
     // Ready-made templates cannot be updated - check both isStatic and readyMadeId
     if (template.isStatic || template.readyMadeId) {
-      toast.warning("Ready-made templates cannot be edited. Please create a custom template instead.");
+      showNotification("Ready-made templates cannot be edited. Please create a custom template instead.", "error");
       return;
     }
     
@@ -807,15 +826,15 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         setSelectedTemplates({ ...selectedTemplates, [currentFlow.id]: newTemplate.id });
         setIsCreatingNew(false); 
         setIsEditorOpen(false); 
-        toast.success("Template created!");
+        showNotification("Template created!", "success");
       } catch (e) { 
         console.error("Failed to create template:", e);
-        toast.error("Failed to create template"); 
+        showNotification("Failed to create template", "error"); 
       } finally { setIsLoading(false); }
     } else if (editingTemplate) {
       // Ready-made templates cannot be updated - check both isStatic and readyMadeId
       if (editingTemplate.isStatic || editingTemplate.readyMadeId) {
-        toast.warning("Ready-made templates cannot be updated. Please create a custom template instead.");
+        showNotification("Ready-made templates cannot be updated. Please create a custom template instead.", "error");
         setIsEditorOpen(false);
         setEditingTemplate(null);
         return;
@@ -843,7 +862,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         
         setEditingTemplate(null); 
         setIsEditorOpen(false); 
-        toast.success("Template updated!"); 
+        showNotification("Template updated!", "success"); 
       }
       catch (e: any) { 
         console.error("Failed to update template:", e);
@@ -852,13 +871,28 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
           response: e?.response?.data,
           status: e?.response?.status
         });
-        toast.error(e?.response?.data?.message || "Failed to update template"); 
+        showNotification(e?.response?.data?.message || "Failed to update template", "error"); 
       } finally { setIsLoading(false); }
     }
   };
 
   return (
     <div className="w-full max-w-full mx-auto p-4 bg-white rounded-2xl shadow-sm">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <ToastContainer position="top-right" autoClose={5000} />
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2"><ChevronLeft size={20} /> <h2 className="text-xl font-semibold">{currentFlow.label}</h2></div>
@@ -904,7 +938,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         onDelete={async (tpl: any) => { 
         // Ready-made templates cannot be deleted - check both isStatic and readyMadeId
         if (tpl.isStatic || tpl.readyMadeId) {
-          toast.warning("Ready-made templates cannot be deleted.");
+          showNotification("Ready-made templates cannot be deleted.", "error");
           return;
         }
         if (!effectiveEventId || !tpl.apiId) return; 
@@ -921,11 +955,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
               return updated;
             });
           }
-          toast.success("Template deleted"); 
+          showNotification("Template deleted", "success"); 
           handleCloseModal(); 
         } catch (e) { 
           console.error("Failed to delete template:", e); 
-          toast.error("Failed to delete template"); 
+          showNotification("Failed to delete template", "error"); 
         } finally { 
           setIsLoading(false); 
         } 
@@ -939,6 +973,22 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({ onNext, onPreviou
         onClose={() => { setIsEditorOpen(false); setEditingTemplate(null); setIsCreatingNew(false); }} 
         onSave={handleSaveFromEditor} 
       />
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

@@ -703,9 +703,125 @@ export const deleteEmailTemplateApi = (
   );
 };
 
+// ---------------------- Event Users Questions API ----------------------
 
+// Get all event user questions for an agenda (with optional status filter)
+export const getEventUserQuestionsApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  params?: {
+    status?: "all" | "pending" | "accepted" | "rejected";
+    page?: number;
+    per_page?: number;
+  }
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions`,
+    { params }
+  );
+};
 
+// Get a specific event user question by ID
+export const getEventUserQuestionByIdApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  questionId: string | number
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions/${questionId}`
+  );
+};
 
+// Create a new event user question
+export const createEventUserQuestionApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  data: {
+    event_users_question: {
+      question: string;
+      event_user_id: number;
+      display_name?: boolean;
+      privacy_status?: "public_question" | "private_question";
+    };
+  }
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions`,
+    data
+  );
+};
+
+// Update an event user question
+export const updateEventUserQuestionApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  questionId: string | number,
+  data: {
+    event_users_question: {
+      question?: string;
+      display_name?: boolean;
+      privacy_status?: "public_question" | "private_question";
+    };
+  }
+) => {
+  return axiosInstance.put(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions/${questionId}`,
+    data
+  );
+};
+
+// Delete an event user question
+export const deleteEventUserQuestionApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  questionId: string | number
+) => {
+  return axiosInstance.delete(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions/${questionId}`
+  );
+};
+
+// Update question status (accept/reject)
+export const updateEventUserQuestionStatusApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  questionId: string | number,
+  questionStatus: "pending" | "accepted" | "rejected"
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions/${questionId}/update_status`,
+    {
+      question_status: questionStatus,
+    }
+  );
+};
+
+// Bulk update question status (accept/reject multiple questions)
+export const bulkUpdateEventUserQuestionStatusApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  questionIds: (string | number)[],
+  questionStatus: "pending" | "accepted" | "rejected"
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions/bulk_update_status`,
+    {
+      question_ids: questionIds,
+      question_status: questionStatus,
+    }
+  );
+};
+
+// Like or unlike a question (toggle)
+export const likeEventUserQuestionApi = (
+  eventId: string | number,
+  agendaId: string | number,
+  questionId: string | number
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/agendas/${agendaId}/event_users_questions/${questionId}/like_question`
+  );
+};
 
 
 
