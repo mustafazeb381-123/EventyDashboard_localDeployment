@@ -247,7 +247,9 @@ function AdvanceAgenda({
         // Remove from local state
         setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id));
         // Also remove from selected users if it was selected
-        setSelectedUsers((prev) => prev.filter((id) => id !== sessionToDelete.id));
+        setSelectedUsers((prev) =>
+          prev.filter((id) => id !== sessionToDelete.id)
+        );
         showNotification("Session deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setSessionToDelete(null);

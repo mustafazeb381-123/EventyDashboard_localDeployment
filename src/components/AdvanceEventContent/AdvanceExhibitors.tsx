@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2, X } from "lucide-react";
-import { createExhibitorApi, deleteExhibitorApi, getExhibitorsApi, updateExhibitorApi } from "@/apis/apiHelpers";
+import {
+  Trash2,
+  Plus,
+  ChevronLeft,
+  Check,
+  Edit2,
+  Loader2,
+  X,
+} from "lucide-react";
+import {
+  createExhibitorApi,
+  deleteExhibitorApi,
+  getExhibitorsApi,
+  updateExhibitorApi,
+} from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
 interface AdvanceExhibitorsProps {
@@ -49,22 +62,27 @@ function AdvanceExhibitors({
   });
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   // Loading states
   const [isFetchingExhibitors, setIsFetchingExhibitors] = useState(false);
   const [isAddingExhibitor, setIsAddingExhibitor] = useState(false);
   const [isUpdatingExhibitor, setIsUpdatingExhibitor] = useState(false);
-  const [isDeletingExhibitor, setIsDeletingExhibitor] = useState<string | null>(null);
+  const [isDeletingExhibitor, setIsDeletingExhibitor] = useState<string | null>(
+    null
+  );
 
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [editingExhibitor, setEditingExhibitor] = useState<Exhibitor | null>(null);
+  const [editingExhibitor, setEditingExhibitor] = useState<Exhibitor | null>(
+    null
+  );
   const [editExhibitorData, setEditExhibitorData] = useState({
     name: "",
     description: "",
     organization: "",
     image: "",
   });
-  const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+  const [editSelectedImageFile, setEditSelectedImageFile] =
+    useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -72,7 +90,9 @@ function AdvanceExhibitors({
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [exhibitorToDelete, setExhibitorToDelete] = useState<Exhibitor | null>(null);
+  const [exhibitorToDelete, setExhibitorToDelete] = useState<Exhibitor | null>(
+    null
+  );
 
   // Compute exhibitors for current page
   const currentExhibitors = eventUsers.slice(
@@ -89,22 +109,25 @@ function AdvanceExhibitors({
         const response = await getExhibitorsApi(eventId);
 
         if (response.status === 200) {
-          const exhibitorsData = response.data.data.map((item: any, index: number) => ({
-            id: item.id,
-            attributes: {
-              name: item.attributes.name,
-              description: item.attributes.description,
-              organization: item.attributes.organization,
-              // Handle both image_url and image fields from API
-              image: item.attributes.image_url || item.attributes.image || "",
-              image_url: item.attributes.image_url || item.attributes.image || "",
-              created_at: item.attributes.created_at,
-              updated_at: item.attributes.updated_at,
-              event_id: item.attributes.event_id,
-            },
-            // Use unique timestamp + index to ensure each exhibitor gets a different version
-            _imageVersion: Date.now() + index,
-          }));
+          const exhibitorsData = response.data.data.map(
+            (item: any, index: number) => ({
+              id: item.id,
+              attributes: {
+                name: item.attributes.name,
+                description: item.attributes.description,
+                organization: item.attributes.organization,
+                // Handle both image_url and image fields from API
+                image: item.attributes.image_url || item.attributes.image || "",
+                image_url:
+                  item.attributes.image_url || item.attributes.image || "",
+                created_at: item.attributes.created_at,
+                updated_at: item.attributes.updated_at,
+                event_id: item.attributes.event_id,
+              },
+              // Use unique timestamp + index to ensure each exhibitor gets a different version
+              _imageVersion: Date.now() + index,
+            })
+          );
 
           setEventUsers(exhibitorsData);
         } else {
@@ -163,7 +186,9 @@ function AdvanceExhibitors({
       // Backend returns 200 or 204 on successful deletion
       if (response.status === 200 || response.status === 204) {
         // Remove the exhibitor from local state
-        setEventUsers(prev => prev.filter(u => u.id !== exhibitorToDelete.id));
+        setEventUsers((prev) =>
+          prev.filter((u) => u.id !== exhibitorToDelete.id)
+        );
         showNotification("Exhibitor deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setExhibitorToDelete(null);
@@ -173,7 +198,8 @@ function AdvanceExhibitors({
     } catch (error: any) {
       console.error("Delete exhibitor error:", error);
       showNotification(
-        error.response?.data?.message || "Network error: Cannot delete exhibitor",
+        error.response?.data?.message ||
+          "Network error: Cannot delete exhibitor",
         "error"
       );
     } finally {
@@ -226,11 +252,14 @@ function AdvanceExhibitors({
         console.log("📸 Image attributes:", {
           image: result.data?.attributes?.image,
           image_url: result.data?.attributes?.image_url,
-          all_attributes: Object.keys(result.data?.attributes || {})
+          all_attributes: Object.keys(result.data?.attributes || {}),
         });
-        
+
         // API might return 'image' or 'image_url' - handle both
-        const imageUrl = result.data.attributes.image_url || result.data.attributes.image || null;
+        const imageUrl =
+          result.data.attributes.image_url ||
+          result.data.attributes.image ||
+          null;
         console.log("🖼️ Extracted image URL:", imageUrl);
 
         const newExhibitorData: Exhibitor = {
@@ -268,20 +297,24 @@ function AdvanceExhibitors({
         try {
           const refreshResponse = await getExhibitorsApi(eventId);
           if (refreshResponse.status === 200) {
-            const refreshedData = refreshResponse.data.data.map((item: any) => ({
-              id: item.id,
-              attributes: {
-                name: item.attributes.name,
-                description: item.attributes.description,
-                organization: item.attributes.organization,
-                image: item.attributes.image_url || item.attributes.image || "",
-                image_url: item.attributes.image_url || item.attributes.image || "",
-                created_at: item.attributes.created_at,
-                updated_at: item.attributes.updated_at,
-                event_id: item.attributes.event_id,
-              },
-              _imageVersion: Date.now(), // Fresh timestamp for each exhibitor
-            }));
+            const refreshedData = refreshResponse.data.data.map(
+              (item: any) => ({
+                id: item.id,
+                attributes: {
+                  name: item.attributes.name,
+                  description: item.attributes.description,
+                  organization: item.attributes.organization,
+                  image:
+                    item.attributes.image_url || item.attributes.image || "",
+                  image_url:
+                    item.attributes.image_url || item.attributes.image || "",
+                  created_at: item.attributes.created_at,
+                  updated_at: item.attributes.updated_at,
+                  event_id: item.attributes.event_id,
+                },
+                _imageVersion: Date.now(), // Fresh timestamp for each exhibitor
+              })
+            );
             setEventUsers(refreshedData);
           }
         } catch (refreshError) {
@@ -318,22 +351,29 @@ function AdvanceExhibitors({
       const formData = new FormData();
       formData.append("exhibitor[name]", editExhibitorData.name);
       formData.append("exhibitor[description]", editExhibitorData.description);
-      formData.append("exhibitor[organization]", editExhibitorData.organization);
+      formData.append(
+        "exhibitor[organization]",
+        editExhibitorData.organization
+      );
 
       if (editSelectedImageFile) {
         formData.append("exhibitor[image]", editSelectedImageFile);
       }
 
-      const response = await updateExhibitorApi(eventId!, editingExhibitor.id, formData);
+      const response = await updateExhibitorApi(
+        eventId!,
+        editingExhibitor.id,
+        formData
+      );
 
       if (response.status === 200) {
         const updated = response.data.data;
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
-        
+
         // Update state with new data and increment image version to force cache refresh
-        setEventUsers(prev =>
-          prev.map(u =>
+        setEventUsers((prev) =>
+          prev.map((u) =>
             u.id === editingExhibitor.id
               ? {
                   ...u,
@@ -344,7 +384,8 @@ function AdvanceExhibitors({
                     organization: updated.attributes.organization,
                     image: updated.attributes.image_url,
                     image_url: updated.attributes.image_url,
-                    updated_at: updated.attributes.updated_at || new Date().toISOString(),
+                    updated_at:
+                      updated.attributes.updated_at || new Date().toISOString(),
                   },
                   // Increment image version to force browser to reload the image
                   _imageVersion: (u._imageVersion || 0) + 1,
@@ -358,28 +399,32 @@ function AdvanceExhibitors({
         setEditingExhibitor(null);
         setEditSelectedImageFile(null);
         setEditImagePreview(null);
-        
+
         // Refetch exhibitors to ensure we have the latest data from server
         // This ensures the image URL is definitely updated
         if (eventId) {
           const refreshResponse = await getExhibitorsApi(eventId);
           if (refreshResponse.status === 200) {
-            const refreshedData = refreshResponse.data.data.map((item: any, index: number) => ({
-              id: item.id,
-              attributes: {
-                name: item.attributes.name,
-                description: item.attributes.description,
-                organization: item.attributes.organization,
-                // Handle both image_url and image fields from API
-                image: item.attributes.image_url || item.attributes.image || "",
-                image_url: item.attributes.image_url || item.attributes.image || "",
-                created_at: item.attributes.created_at,
-                updated_at: item.attributes.updated_at,
-                event_id: item.attributes.event_id,
-              },
-              // Use unique timestamp + index to ensure each exhibitor gets a different version
-              _imageVersion: Date.now() + index,
-            }));
+            const refreshedData = refreshResponse.data.data.map(
+              (item: any, index: number) => ({
+                id: item.id,
+                attributes: {
+                  name: item.attributes.name,
+                  description: item.attributes.description,
+                  organization: item.attributes.organization,
+                  // Handle both image_url and image fields from API
+                  image:
+                    item.attributes.image_url || item.attributes.image || "",
+                  image_url:
+                    item.attributes.image_url || item.attributes.image || "",
+                  created_at: item.attributes.created_at,
+                  updated_at: item.attributes.updated_at,
+                  event_id: item.attributes.event_id,
+                },
+                // Use unique timestamp + index to ensure each exhibitor gets a different version
+                _imageVersion: Date.now() + index,
+              })
+            );
             setEventUsers(refreshedData);
           }
         }
@@ -387,7 +432,8 @@ function AdvanceExhibitors({
     } catch (error: any) {
       console.error("Update exhibitor error:", error);
       showNotification(
-        error.response?.data?.message || "Network error: Cannot update exhibitor",
+        error.response?.data?.message ||
+          "Network error: Cannot update exhibitor",
         "error"
       );
     } finally {
@@ -411,32 +457,43 @@ function AdvanceExhibitors({
     const imageUrl = user.attributes.image_url || user.attributes.image;
     // Use image version for cache-busting - this changes when image is updated
     const imageVersion = user._imageVersion || 0;
-    
+
     // Debug logging
     if (!imageUrl) {
-      console.log(`Exhibitor ${user.id} (${user.attributes.name}) has no image URL`);
+      console.log(
+        `Exhibitor ${user.id} (${user.attributes.name}) has no image URL`
+      );
     }
-    
-    const imageSrc = imageUrl && imageUrl.trim() !== ""
-      ? `${imageUrl}${imageUrl.includes('?') ? '&' : '?'}v=${imageVersion}&t=${Date.now()}`
-      : `https://i.pravatar.cc/100?img=${user.id.charCodeAt(0) % 70}`; // Different placeholder per exhibitor
-    
+
+    const imageSrc =
+      imageUrl && imageUrl.trim() !== ""
+        ? `${imageUrl}${
+            imageUrl.includes("?") ? "&" : "?"
+          }v=${imageVersion}&t=${Date.now()}`
+        : `https://i.pravatar.cc/100?img=${user.id.charCodeAt(0) % 70}`; // Different placeholder per exhibitor
+
     return (
       <img
-        key={`${user.id}-${imageVersion}-${imageUrl || 'no-image'}`} // Force re-render when version or URL changes
+        key={`${user.id}-${imageVersion}-${imageUrl || "no-image"}`} // Force re-render when version or URL changes
         src={imageSrc}
         alt={user.attributes.name}
         className="w-10 h-10 rounded-full object-cover"
         onError={(e) => {
           // Fallback to placeholder if image fails to load
-          const fallbackSrc = `https://i.pravatar.cc/100?img=${user.id.charCodeAt(0) % 70}`;
+          const fallbackSrc = `https://i.pravatar.cc/100?img=${
+            user.id.charCodeAt(0) % 70
+          }`;
           if (e.currentTarget.src !== fallbackSrc) {
-            console.log(`Image failed to load for exhibitor ${user.id}, using fallback`);
+            console.log(
+              `Image failed to load for exhibitor ${user.id}, using fallback`
+            );
             e.currentTarget.src = fallbackSrc;
           }
         }}
         onLoad={() => {
-          console.log(`Image loaded successfully for exhibitor ${user.id}: ${imageUrl}`);
+          console.log(
+            `Image loaded successfully for exhibitor ${user.id}: ${imageUrl}`
+          );
         }}
       />
     );
@@ -595,94 +652,97 @@ function AdvanceExhibitors({
           <>
             {/* Table */}
             <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <table className="min-w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="w-12 px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    onChange={handleSelectAll}
-                    checked={
-                      eventUsers.length > 0 &&
-                      selectedUsers.length === eventUsers.length
-                    }
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Description
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Organization
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentExhibitors.map((user, index) => (
-                <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => handleSelectUser(user.id)}
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <UserAvatar user={user} />
-                      <span className="text-sm font-medium text-gray-900">
-                        {user.attributes.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
-                    {user.attributes.description}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {user.attributes.organization}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        disabled={isDeletingExhibitor === user.id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isDeletingExhibitor === user.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        disabled={isDeletingExhibitor === user.id}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-12 px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        onChange={handleSelectAll}
+                        checked={
+                          eventUsers.length > 0 &&
+                          selectedUsers.length === eventUsers.length
+                        }
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Description
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Organization
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {currentExhibitors.map((user, index) => (
+                    <tr
+                      key={user.id}
+                      className={index % 2 ? "bg-gray-50" : "bg-white"}
+                    >
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => handleSelectUser(user.id)}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar user={user} />
+                          <span className="text-sm font-medium text-gray-900">
+                            {user.attributes.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600 truncate max-w-xs">
+                        {user.attributes.description}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {user.attributes.organization}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={isDeletingExhibitor === user.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isDeletingExhibitor === user.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            disabled={isDeletingExhibitor === user.id}
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page: number) => setCurrentPage(page)}
-            className="mt-4"
-          />
-        )}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page: number) => setCurrentPage(page)}
+                className="mt-4"
+              />
+            )}
           </>
         )}
 
@@ -744,7 +804,8 @@ function AdvanceExhibitors({
                   {selectedImageFile && (
                     <div className="mt-3">
                       <p className="text-xs text-gray-500 mb-2">
-                        Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                        Selected: {selectedImageFile.name} (
+                        {(selectedImageFile.size / 1024).toFixed(0)} KB)
                       </p>
                       {imagePreview && (
                         <div className="mt-2">
@@ -851,7 +912,12 @@ function AdvanceExhibitors({
                     type="text"
                     placeholder="Enter exhibitor name"
                     value={editExhibitorData.name}
-                    onChange={(e) => setEditExhibitorData({ ...editExhibitorData, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditExhibitorData({
+                        ...editExhibitorData,
+                        name: e.target.value,
+                      })
+                    }
                     disabled={isUpdatingExhibitor}
                     className="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
@@ -865,7 +931,12 @@ function AdvanceExhibitors({
                     type="text"
                     placeholder="Organization"
                     value={editExhibitorData.organization}
-                    onChange={(e) => setEditExhibitorData({ ...editExhibitorData, organization: e.target.value })}
+                    onChange={(e) =>
+                      setEditExhibitorData({
+                        ...editExhibitorData,
+                        organization: e.target.value,
+                      })
+                    }
                     disabled={isUpdatingExhibitor}
                     className="w-full p-2.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
@@ -878,7 +949,12 @@ function AdvanceExhibitors({
                   <textarea
                     placeholder="Description"
                     value={editExhibitorData.description}
-                    onChange={(e) => setEditExhibitorData({ ...editExhibitorData, description: e.target.value })}
+                    onChange={(e) =>
+                      setEditExhibitorData({
+                        ...editExhibitorData,
+                        description: e.target.value,
+                      })
+                    }
                     rows={3}
                     disabled={isUpdatingExhibitor}
                     className="w-full p-2.5 border border-gray-300 rounded-md text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
@@ -912,7 +988,11 @@ function AdvanceExhibitors({
                     {editImagePreview ? (
                       <div>
                         <p className="text-xs text-gray-500 mb-2">
-                          New: {editSelectedImageFile?.name} ({(editSelectedImageFile ? (editSelectedImageFile.size / 1024).toFixed(0) : 0)} KB)
+                          New: {editSelectedImageFile?.name} (
+                          {editSelectedImageFile
+                            ? (editSelectedImageFile.size / 1024).toFixed(0)
+                            : 0}{" "}
+                          KB)
                         </p>
                         <img
                           src={editImagePreview}
@@ -922,7 +1002,9 @@ function AdvanceExhibitors({
                       </div>
                     ) : editingExhibitor?.attributes?.image_url ? (
                       <div>
-                        <p className="text-xs text-gray-500 mb-2">Current image:</p>
+                        <p className="text-xs text-gray-500 mb-2">
+                          Current image:
+                        </p>
                         <img
                           src={editingExhibitor.attributes.image_url}
                           alt="Current"

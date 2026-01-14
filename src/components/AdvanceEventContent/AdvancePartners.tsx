@@ -1,6 +1,19 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2, X } from "lucide-react";
-import { createPartnerApi, deletePartnerApi, getPartnerApi, updatePartnerApi } from "@/apis/apiHelpers";
+import {
+  Trash2,
+  Plus,
+  ChevronLeft,
+  Check,
+  Edit2,
+  Loader2,
+  X,
+} from "lucide-react";
+import {
+  createPartnerApi,
+  deletePartnerApi,
+  getPartnerApi,
+  updatePartnerApi,
+} from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
 interface AdvancePartnersProps {
@@ -47,12 +60,14 @@ function AdvancePartners({
   });
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  
+
   // Loading states
   const [isFetchingPartners, setIsFetchingPartners] = useState(false);
   const [isAddingPartner, setIsAddingPartner] = useState(false);
   const [isUpdatingPartner, setIsUpdatingPartner] = useState(false);
-  const [isDeletingPartner, setIsDeletingPartner] = useState<string | null>(null);
+  const [isDeletingPartner, setIsDeletingPartner] = useState<string | null>(
+    null
+  );
 
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
@@ -60,7 +75,8 @@ function AdvancePartners({
     name: "",
     image: "",
   });
-  const [editSelectedImageFile, setEditSelectedImageFile] = useState<File | null>(null);
+  const [editSelectedImageFile, setEditSelectedImageFile] =
+    useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -94,7 +110,7 @@ function AdvancePartners({
               name: item.attributes.name,
               description: item.attributes.description,
               organization: item.attributes.organization,
-              image: item.attributes.image_url, 
+              image: item.attributes.image_url,
               image_url: item.attributes.image_url,
               created_at: item.attributes.created_at,
               updated_at: item.attributes.updated_at,
@@ -158,7 +174,9 @@ function AdvancePartners({
       const response = await deletePartnerApi(eventId!, partnerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers(prev => prev.filter(u => u.id !== partnerToDelete.id));
+        setEventUsers((prev) =>
+          prev.filter((u) => u.id !== partnerToDelete.id)
+        );
         showNotification("Partner deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setPartnerToDelete(null);
@@ -272,15 +290,19 @@ function AdvancePartners({
         formData.append("partner[image]", editSelectedImageFile);
       }
 
-      const response = await updatePartnerApi(eventId!, editingPartner.id, formData);
+      const response = await updatePartnerApi(
+        eventId!,
+        editingPartner.id,
+        formData
+      );
 
       if (response.status === 200) {
         const updated = response.data.data;
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
-        
-        setEventUsers(prev =>
-          prev.map(u =>
+
+        setEventUsers((prev) =>
+          prev.map((u) =>
             u.id === editingPartner.id
               ? {
                   ...u,
@@ -300,26 +322,28 @@ function AdvancePartners({
         setEditingPartner(null);
         setEditSelectedImageFile(null);
         setEditImagePreview(null);
-        
+
         // Refetch partners to ensure we have the latest data from server
         if (eventId) {
           try {
             const refreshResponse = await getPartnerApi(eventId);
             if (refreshResponse.status === 200) {
-              const partnersData = refreshResponse.data.data.map((item: any) => ({
-                id: item.id,
-                attributes: {
-                  name: item.attributes.name,
-                  description: item.attributes.description,
-                  organization: item.attributes.organization,
-                  image: item.attributes.image_url,
-                  image_url: item.attributes.image_url,
-                  created_at: item.attributes.created_at,
-                  updated_at: item.attributes.updated_at,
-                  event_id: item.attributes.event_id,
-                  agenda_ids: item.attributes.agenda_ids,
-                },
-              }));
+              const partnersData = refreshResponse.data.data.map(
+                (item: any) => ({
+                  id: item.id,
+                  attributes: {
+                    name: item.attributes.name,
+                    description: item.attributes.description,
+                    organization: item.attributes.organization,
+                    image: item.attributes.image_url,
+                    image_url: item.attributes.image_url,
+                    created_at: item.attributes.created_at,
+                    updated_at: item.attributes.updated_at,
+                    event_id: item.attributes.event_id,
+                    agenda_ids: item.attributes.agenda_ids,
+                  },
+                })
+              );
               setEventUsers(partnersData);
             }
           } catch (error) {
@@ -352,7 +376,7 @@ function AdvancePartners({
 
   const UserAvatar = ({ user }: { user: Partner }) => {
     const imageUrl = user.attributes.image_url || user.attributes.image;
-    
+
     return (
       <img
         key={imageUrl} // Force re-render when image URL changes
@@ -508,82 +532,85 @@ function AdvancePartners({
           <>
             {/* Table */}
             <div className="overflow-x-auto bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          <table className="min-w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="w-12 px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    onChange={handleSelectAll}
-                    checked={
-                      eventUsers.length > 0 &&
-                      selectedUsers.length === eventUsers.length
-                    }
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {currentPartners.map((user, index) => (
-                <tr key={user.id} className={index % 2 ? "bg-gray-50" : "bg-white"}>
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(user.id)}
-                      onChange={() => handleSelectUser(user.id)}
-                    />
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <UserAvatar user={user} />
-                      <span className="text-sm font-medium text-gray-900">
-                        {user.attributes.name}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDeleteUser(user)}
-                        disabled={isDeletingPartner === user.id}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isDeletingPartner === user.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        disabled={isDeletingPartner === user.id}
-                        className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              <table className="min-w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="w-12 px-6 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        onChange={handleSelectAll}
+                        checked={
+                          eventUsers.length > 0 &&
+                          selectedUsers.length === eventUsers.length
+                        }
+                      />
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {currentPartners.map((user, index) => (
+                    <tr
+                      key={user.id}
+                      className={index % 2 ? "bg-gray-50" : "bg-white"}
+                    >
+                      <td className="px-6 py-4">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.includes(user.id)}
+                          onChange={() => handleSelectUser(user.id)}
+                        />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <UserAvatar user={user} />
+                          <span className="text-sm font-medium text-gray-900">
+                            {user.attributes.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDeleteUser(user)}
+                            disabled={isDeletingPartner === user.id}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isDeletingPartner === user.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            disabled={isDeletingPartner === user.id}
+                            className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page: number) => setCurrentPage(page)}
-            className="mt-4"
-          />
-        )}
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={(page: number) => setCurrentPage(page)}
+                className="mt-4"
+              />
+            )}
           </>
         )}
 
@@ -645,7 +672,8 @@ function AdvancePartners({
                   {selectedImageFile && (
                     <div className="mt-3">
                       <p className="text-xs text-gray-500 mb-2">
-                        Selected: {selectedImageFile.name} ({(selectedImageFile.size / 1024).toFixed(0)} KB)
+                        Selected: {selectedImageFile.name} (
+                        {(selectedImageFile.size / 1024).toFixed(0)} KB)
                       </p>
                       {imagePreview && (
                         <div className="mt-2">
@@ -714,7 +742,12 @@ function AdvancePartners({
                     type="text"
                     placeholder="Enter partner name"
                     value={editPartnerData.name}
-                    onChange={(e) => setEditPartnerData({ ...editPartnerData, name: e.target.value })}
+                    onChange={(e) =>
+                      setEditPartnerData({
+                        ...editPartnerData,
+                        name: e.target.value,
+                      })
+                    }
                     disabled={isUpdatingPartner}
                     className="w-full p-2.5 border border-gray-300 rounded-md text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:bg-gray-100"
                   />
@@ -747,7 +780,11 @@ function AdvancePartners({
                     {editImagePreview ? (
                       <div>
                         <p className="text-xs text-gray-500 mb-2">
-                          New: {editSelectedImageFile?.name} ({(editSelectedImageFile ? (editSelectedImageFile.size / 1024).toFixed(0) : 0)} KB)
+                          New: {editSelectedImageFile?.name} (
+                          {editSelectedImageFile
+                            ? (editSelectedImageFile.size / 1024).toFixed(0)
+                            : 0}{" "}
+                          KB)
                         </p>
                         <img
                           src={editImagePreview}
@@ -757,7 +794,9 @@ function AdvancePartners({
                       </div>
                     ) : editingPartner?.attributes?.image_url ? (
                       <div>
-                        <p className="text-xs text-gray-500 mb-2">Current image:</p>
+                        <p className="text-xs text-gray-500 mb-2">
+                          Current image:
+                        </p>
                         <img
                           src={editingPartner.attributes.image_url}
                           alt="Current"

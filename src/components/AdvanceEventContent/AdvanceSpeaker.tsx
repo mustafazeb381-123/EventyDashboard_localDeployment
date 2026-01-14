@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, Loader2, X } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  ChevronLeft,
+  Check,
+  Edit2,
+  Loader2,
+  X,
+} from "lucide-react";
 import {
   createSpeakerApi,
   deleteSpeakerApi,
@@ -170,7 +178,9 @@ function AdvanceSpeaker({
       const response = await deleteSpeakerApi(eventId!, speakerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers((prev) => prev.filter((u) => u.id !== speakerToDelete.id));
+        setEventUsers((prev) =>
+          prev.filter((u) => u.id !== speakerToDelete.id)
+        );
         showNotification("Speaker deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setSpeakerToDelete(null);
