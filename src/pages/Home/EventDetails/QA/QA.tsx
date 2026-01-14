@@ -717,10 +717,13 @@ const Qa: React.FC = () => {
 
               {/* Like button + Status */}
                 <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 text-gray-500 text-sm">
-                    <ThumbsUp className="w-4 h-4" />
-                    <p>{q.likes_count}</p>
-                  </div>
+                  {/* Show like icon and count only for accepted questions */}
+                  {q.question_status === "accepted" && (
+                    <div className="flex items-center gap-1 text-gray-500 text-sm">
+                      <ThumbsUp className="w-4 h-4" />
+                      <p>{q.likes_count}</p>
+                    </div>
+                  )}
 
                   {q.question_status === "pending" ? (
                     <span className="text-xs bg-blue-50 font-medium text-blue-700 px-4 py-2 rounded-full flex items-center gap-1">
