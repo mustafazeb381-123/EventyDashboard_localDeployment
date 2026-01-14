@@ -302,6 +302,25 @@ const RegistrationForm = ({
   const [selectedTemplateName, setSelectedTemplateName] = useState<
     string | null
   >(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  // Notification handler
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const getCreateTemplateApiData = async () => {
     try {
@@ -517,7 +536,7 @@ const RegistrationForm = ({
       };
 
       const response = await createTemplatePostApi(payload, savedEventId);
-      toast.success("Event template added successfully!");
+      showNotification("Event template added successfully!", "success");
       setSelectedTemplateData(templateData);
       setConfirmedTemplate(templateId);
       setTimeout(() => {
@@ -527,14 +546,15 @@ const RegistrationForm = ({
     } catch (error: any) {
       console.error("Error creating template:", error);
       if (error.response?.status === 400) {
-        toast.error("Invalid template data. Please try again.");
+        showNotification("Invalid template data. Please try again.", "error");
       } else if (error.response?.status === 401) {
-        toast.error("Authentication failed. Please login again.");
+        showNotification("Authentication failed. Please login again.", "error");
       } else if (error.response?.status === 500) {
-        toast.error("Server error. Please try again later.");
+        showNotification("Server error. Please try again later.", "error");
       } else {
-        toast.error(
-          error.message || "Error adding template. Please try again."
+        showNotification(
+          error.message || "Error adding template. Please try again.",
+          "error"
         );
       }
     } finally {
@@ -643,16 +663,31 @@ const RegistrationForm = ({
 
     try {
       const response = await updateEventById(id, formData);
-      toast.success("Confirmation Details Updated Successfully");
+      showNotification("Confirmation Details Updated Successfully", "success");
     } catch (error) {
       console.log("Error in confirmation details:", error);
-      toast.error("Error in Confirmation data");
+      showNotification("Error in Confirmation data", "error");
       throw error;
     }
   };
 
   return (
     <>
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       {plan === "advance" ? (
         <AdvanceEvent
           onComplete={(eventId) => {
@@ -845,6 +880,22 @@ const RegistrationForm = ({
           </div>
 
           <ToastContainer />
+
+          <style>{`
+            @keyframes slide-in {
+              from {
+                transform: translateX(100%);
+                opacity: 0;
+              }
+              to {
+                transform: translateX(0);
+                opacity: 1;
+              }
+            }
+            .animate-slide-in {
+              animation: slide-in 0.3s ease-out;
+            }
+          `}</style>
         </div>
       )}
     </>

@@ -5,6 +5,7 @@ import { Lock, Check, X, User2, ThumbsUp } from "lucide-react";
 import {
   getAgendaApi,
   getEventUserQuestionsApi,
+  getEventUserQuestionByIdApi,
   updateEventUserQuestionStatusApi,
   bulkUpdateEventUserQuestionStatusApi,
 } from "@/apis/apiHelpers";
@@ -16,6 +17,7 @@ interface Agenda {
 
 interface Question {
   id: string | number;
+  agenda_id: number;
   question: string;
   question_status: "pending" | "accepted" | "rejected";
   likes_count: number;
@@ -103,10 +105,16 @@ const Qa: React.FC = () => {
   }, [eventId, agendaIdFromQuery]);
 
   // Helper function to normalize question data
-  const normalizeQuestion = (item: any): Question => {
+  const normalizeQuestion = (item: any, agendaId?: number): Question => {
     const userData = item.attributes?.user || item.user || {};
     return {
       id: item.id,
+      agenda_id:
+        agendaId ||
+        item.attributes?.agenda_id ||
+        item.relationships?.agenda?.data?.id ||
+        Number(item.agenda_id) ||
+        0,
       question: item.attributes?.question || item.question || "",
       question_status:
         item.attributes?.question_status || item.question_status || "pending",
@@ -146,9 +154,11 @@ const Qa: React.FC = () => {
               per_page: 100, // Get all questions from each session
             });
             const responseData = response.data;
-            const questionsData = responseData?.data || [];
+            const questionsData = responseData?.data || responseData || [];
             if (Array.isArray(questionsData)) {
-              const normalizedQuestions = questionsData.map(normalizeQuestion);
+              const normalizedQuestions = questionsData.map((item: any) =>
+                normalizeQuestion(item, agenda.id)
+              );
               allQuestions.push(...normalizedQuestions);
             }
           } catch (error) {
@@ -169,6 +179,13 @@ const Qa: React.FC = () => {
           );
         }
 
+        // Sort questions: Questions tab by created_at (newest first), Requests tab by created_at (oldest first)
+        // filteredQuestions.sort((a, b) => {
+        //   const dateA = new Date(a.created_at).getTime();
+        //   const dateB = new Date(b.created_at).getTime();
+        //   return activeTab === "questions" ? dateB - dateA : dateA - dateB;
+        // });
+
         setQuestions(filteredQuestions);
 
         // Count pending questions for badge (always show pending count from all questions)
@@ -187,10 +204,10 @@ const Qa: React.FC = () => {
       });
 
       const responseData = response.data;
-      const questionsData = responseData?.data || [];
+      const questionsData = responseData?.data || responseData || [];
       
       const normalizedQuestions: Question[] = Array.isArray(questionsData)
-        ? questionsData.map(normalizeQuestion)
+        ? questionsData.map((item: any) => normalizeQuestion(item, selectedAgendaId))
         : [];
 
       // Filter questions based on active tab
@@ -201,6 +218,13 @@ const Qa: React.FC = () => {
           (q) => q.question_status === "pending"
         );
       }
+
+      // Sort questions: Questions tab by created_at (newest first), Requests tab by created_at (oldest first)
+      // filteredQuestions.sort((a, b) => {
+      //   const dateA = new Date(a.created_at).getTime();
+      //   const dateB = new Date(b.created_at).getTime();
+      //   return activeTab === "questions" ? dateB - dateA : dateA - dateB;
+      // });
 
       setQuestions(filteredQuestions);
 
@@ -220,6 +244,49 @@ const Qa: React.FC = () => {
       setIsLoadingQuestions(false);
     }
   }, [eventId, selectedAgendaId, activeTab, agendas]);
+
+  // Fetch a single question by ID and update it in state
+  const fetchSingleQuestion = useCallback(
+    async (questionId: string | number, agendaId: number) => {
+      if (!eventId || !questionId || !agendaId) return;
+
+      try {
+        const response = await getEventUserQuestionByIdApi(
+          eventId,
+          agendaId,
+          questionId
+        );
+        const responseData = response.data;
+        const questionData = responseData?.data || responseData;
+
+        if (questionData) {
+          const normalizedQuestion = normalizeQuestion(questionData, agendaId);
+
+          // Update the question in the questions array and pending count
+          setQuestions((prevQuestions) => {
+            const oldQuestion = prevQuestions.find((q) => q.id === questionId);
+            const wasPending = oldQuestion?.question_status === "pending";
+            const isPending = normalizedQuestion.question_status === "pending";
+
+            // Update pending count if status changed
+            if (wasPending && !isPending) {
+              setPendingCount((prev) => Math.max(0, prev - 1));
+            } else if (!wasPending && isPending) {
+              setPendingCount((prev) => prev + 1);
+            }
+
+            // Update the question in the array
+            return prevQuestions.map((q) =>
+              q.id === questionId ? normalizedQuestion : q
+            );
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching single question:", error);
+      }
+    },
+    [eventId]
+  );
 
   // Notification handler
   const showNotification = (message: string, type: "success" | "error") => {
@@ -242,20 +309,22 @@ const Qa: React.FC = () => {
   }, [fetchQuestions]);
 
   // Handle accept question
-  const handleAcceptQuestion = async (questionId: string | number) => {
+  const handleAcceptQuestion = async (question: Question) => {
     if (!eventId) return;
 
-    if (!selectedAgendaId) {
-      showNotification("Please select a session to accept questions", "error");
+    // Use question's agenda_id if "All Sessions" is selected, otherwise use selectedAgendaId
+    const agendaId = selectedAgendaId || question.agenda_id;
+    if (!agendaId) {
+      showNotification("Unable to determine session for this question", "error");
       return;
     }
 
-    setIsAcceptingQuestion(questionId);
+    setIsAcceptingQuestion(question.id);
     try {
       await updateEventUserQuestionStatusApi(
         eventId,
-        selectedAgendaId,
-        questionId,
+        agendaId,
+        question.id,
         "accepted"
       );
       showNotification("Question has been accepted", "success");
@@ -272,20 +341,22 @@ const Qa: React.FC = () => {
   };
 
   // Handle reject question
-  const handleRejectQuestion = async (questionId: string | number) => {
+  const handleRejectQuestion = async (question: Question) => {
     if (!eventId) return;
 
-    if (!selectedAgendaId) {
-      showNotification("Please select a session to reject questions", "error");
+    // Use question's agenda_id if "All Sessions" is selected, otherwise use selectedAgendaId
+    const agendaId = selectedAgendaId || question.agenda_id;
+    if (!agendaId) {
+      showNotification("Unable to determine session for this question", "error");
       return;
     }
 
-    setIsRejectingQuestion(questionId);
+    setIsRejectingQuestion(question.id);
     try {
       await updateEventUserQuestionStatusApi(
         eventId,
-        selectedAgendaId,
-        questionId,
+        agendaId,
+        question.id,
         "rejected"
       );
       showNotification("Question has been rejected", "error");
@@ -305,11 +376,6 @@ const Qa: React.FC = () => {
   const handleAcceptAll = async () => {
     if (!eventId) return;
 
-    if (!selectedAgendaId) {
-      showNotification("Please select a specific session to accept all questions", "error");
-      return;
-    }
-
     setIsAcceptingAll(true);
     try {
       let allPendingQuestions: Question[] = [];
@@ -324,15 +390,18 @@ const Qa: React.FC = () => {
               per_page: 100,
             });
             const responseData = response.data;
-            const questionsData = responseData?.data || [];
+            const questionsData = responseData?.data || responseData || [];
             if (Array.isArray(questionsData)) {
-              const normalizedQuestions = questionsData.map(normalizeQuestion);
+              const normalizedQuestions = questionsData.map((item: any) =>
+                normalizeQuestion(item, agenda.id)
+              );
               const pending = normalizedQuestions.filter(
                 (q) => q.question_status === "pending"
               );
               allPendingQuestions.push(...pending);
             }
           } catch (error) {
+            // Continue with other agendas if one fails
             console.error(
               `Error fetching questions for agenda ${agenda.id}:`,
               error
@@ -348,10 +417,10 @@ const Qa: React.FC = () => {
         });
 
         const responseData = response.data;
-        const questionsData = responseData?.data || [];
+        const questionsData = responseData?.data || responseData || [];
         
         const allQuestions: Question[] = Array.isArray(questionsData)
-          ? questionsData.map(normalizeQuestion)
+          ? questionsData.map((item: any) => normalizeQuestion(item, selectedAgendaId))
           : [];
 
         allPendingQuestions = allQuestions.filter(
@@ -361,9 +430,9 @@ const Qa: React.FC = () => {
 
       if (allPendingQuestions.length === 0) {
         showNotification("No pending questions to accept", "error");
+        setIsAcceptingAll(false);
         return;
       }
-
 
       // If specific agenda is selected, use bulk update for that agenda
       if (selectedAgendaId) {
@@ -386,7 +455,7 @@ const Qa: React.FC = () => {
               per_page: 100,
             });
             const responseData = response.data;
-            const questionsData = responseData?.data || [];
+            const questionsData = responseData?.data || responseData || [];
             if (Array.isArray(questionsData) && questionsData.length > 0) {
               const questionIds = questionsData.map((item: any) => item.id);
               await bulkUpdateEventUserQuestionStatusApi(
@@ -398,11 +467,14 @@ const Qa: React.FC = () => {
               totalAccepted += questionIds.length;
             }
           } catch (error) {
+            // Continue with other agendas if one fails
             console.error(`Error accepting questions for agenda ${agenda.id}:`, error);
           }
         }
         if (totalAccepted > 0) {
           showNotification(`${totalAccepted} question(s) has been accepted`, "success");
+        } else {
+          showNotification("No pending questions to accept", "error");
         }
       }
 
@@ -608,30 +680,40 @@ const Qa: React.FC = () => {
             </>
           ) : questions.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              {!eventId || !selectedAgendaId
-                ? "Please select an event and session"
+              {!eventId
+                ? "Please select an event"
+                : !selectedAgendaId
+                ? "No questions found across all sessions"
                 : "No questions found"}
             </div>
           ) : (
-            questions.map((q) => (
-            <div
-              key={q.id}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row justify-between gap-3"
-            >
-                <div className="flex items-start gap-3 flex-1">
-                {/* User Icon */}
-                <div className="bg-gray-100 rounded-full p-2">
-                  <User2 className="w-5 h-5 text-gray-600" />
-                </div>
-
-                  <div className="flex-1">
-                    <div className="items-center gap-2 text-sm text-gray-600 mb-2">
-                      <p className="font-medium text-gray-800">{getDisplayName(q)}</p>
-                      <p className="text-gray-400 text-xs">{formatTimeAgo(q.created_at)}</p>
+            questions.map((q) => {
+              const sessionName =
+                agendas.find((a) => a.id === q.agenda_id)?.title ||
+                "Session Name";
+              
+              return (
+              <div
+                key={q.id}
+                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row justify-between gap-3"
+              >
+                  <div className="flex items-start gap-3 flex-1">
+                  {/* User Icon */}
+                  <div className="bg-gray-100 rounded-full p-2">
+                    <User2 className="w-5 h-5 text-gray-600" />
                   </div>
-                  <p className="text-gray-700 mt-1 text-sm">{q.question}</p>
+
+                    <div className="flex-1">
+                      <div className="items-center gap-2 text-sm text-gray-600 mb-2">
+                        <p className="font-medium text-gray-800">{getDisplayName(q)}</p>
+                        <p className="text-gray-400 text-xs">{formatTimeAgo(q.created_at)}</p>
+                    </div>
+                    <p className="text-gray-700 mt-1 text-sm">{q.question}</p>
+                    {/* {!selectedAgendaId && (
+                      <p className="text-sm text-teal-500 font-medium mt-2">{sessionName}</p>
+                    )} */}
+                  </div>
                 </div>
-              </div>
 
               {/* Like button + Status */}
                 <div className="flex items-center gap-3">
@@ -655,7 +737,8 @@ const Qa: React.FC = () => {
                 )}
                  </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
@@ -687,34 +770,44 @@ const Qa: React.FC = () => {
             </>
           ) : questions.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              {!eventId || !selectedAgendaId
-                ? "Please select an event and session"
+              {!eventId
+                ? "Please select an event"
+                : !selectedAgendaId
+                ? "No pending questions across all sessions"
                 : "No pending questions"}
             </div>
           ) : (
-            questions.map((r) => (
-            <div
-              key={r.id}
-              className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
-            >
-                <div className="flex items-start gap-3 flex-1">
-                {/* User Icon only */}
-                <div className="bg-gray-100 rounded-full p-2">
-                  <User2 className="w-5 h-5 text-gray-600" />
-                </div>
-
-                  <div className="flex-1">
-                  <div className="items-center gap-2 text-sm text-gray-600 mb-4">
-                      <p className="font-medium text-gray-800">{getDisplayName(r)}</p>
-                      <p className="text-gray-400 text-xs">{formatTimeAgo(r.created_at)}</p>
+            questions.map((r) => {
+              const sessionName =
+                agendas.find((a) => a.id === r.agenda_id)?.title ||
+                "Session Name";
+              
+              return (
+              <div
+                key={r.id}
+                className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                  <div className="flex items-start gap-3 flex-1">
+                  {/* User Icon only */}
+                  <div className="bg-gray-100 rounded-full p-2">
+                    <User2 className="w-5 h-5 text-gray-600" />
                   </div>
-                  <p className="text-gray-700 mt-1 text-sm">{r.question}</p>
+
+                    <div className="flex-1">
+                    <div className="items-center gap-2 text-sm text-gray-600 mb-4">
+                        <p className="font-medium text-gray-800">{getDisplayName(r)}</p>
+                        <p className="text-gray-400 text-xs">{formatTimeAgo(r.created_at)}</p>
+                    </div>
+                    <p className="text-gray-700 mt-1 text-sm">{r.question}</p>
+                    {/* {!selectedAgendaId && (
+                      <p className="text-sm text-teal-500 font-medium mt-2">{sessionName}</p>
+                    )} */}
+                  </div>
                 </div>
-              </div>
 
               <div className="flex gap-2">
                 <Button
-                    onClick={() => handleRejectQuestion(r.id)}
+                    onClick={() => handleRejectQuestion(r)}
                     disabled={isRejectingQuestion === r.id || isAcceptingQuestion === r.id}
                   variant="destructive"
                     className="text-sm px-4 py-2 text-red-600 border border-red-200 hover:bg-red-100 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -728,7 +821,7 @@ const Qa: React.FC = () => {
                     )}
                 </Button>
                   <Button
-                    onClick={() => handleAcceptQuestion(r.id)}
+                    onClick={() => handleAcceptQuestion(r)}
                     disabled={isAcceptingQuestion === r.id || isRejectingQuestion === r.id}
                     className="hover:bg-green-100 text-green-600 border border-green-200 text-sm px-4 py-2 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -742,7 +835,8 @@ const Qa: React.FC = () => {
                 </Button>
               </div>
             </div>
-            ))
+            );
+          })
           )}
         </div>
       )}
