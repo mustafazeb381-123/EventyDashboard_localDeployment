@@ -527,9 +527,58 @@ function AdvanceExhibitors({
 
         {/* Loading State for Exhibitors Table */}
         {isFetchingExhibitors ? (
-          <div className="flex flex-col items-center justify-center py-12 border border-gray-200 rounded-lg">
-            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mb-4" />
-            <p className="text-gray-600">Loading exhibitors...</p>
+          <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm animate-pulse">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="w-12 px-6 py-3 text-left">
+                    <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Organization
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {[1, 2, 3, 4, 5].map((index) => (
+                  <tr
+                    key={index}
+                    className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                  >
+                    <td className="px-6 py-4">
+                      <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-300 rounded-full"></div>
+                        <div className="h-4 bg-gray-300 rounded w-32"></div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-300 rounded w-48"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="h-4 bg-gray-300 rounded w-24"></div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
+                        <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         ) : eventUsers.length === 0 ? (
           <div className="text-center py-12 border border-gray-200 rounded-lg">

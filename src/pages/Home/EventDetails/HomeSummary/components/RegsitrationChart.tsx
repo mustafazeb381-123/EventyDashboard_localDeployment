@@ -332,7 +332,7 @@ const RegistrationChart = ({
         </div>
 
         {/* Time Range Selector */}
-        {showTimeRangeSelector && (
+        {/* {showTimeRangeSelector && (
           <div className="relative" ref={dropdownRef}>
             <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -365,7 +365,7 @@ const RegistrationChart = ({
               </div>
             )}
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Chart */}
