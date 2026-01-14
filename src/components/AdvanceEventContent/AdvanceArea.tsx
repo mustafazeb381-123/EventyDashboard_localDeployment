@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Trash2, Plus, ChevronLeft, Check, Edit2, X, Loader2 } from "lucide-react";
+import {
+  Trash2,
+  Plus,
+  ChevronLeft,
+  Check,
+  Edit2,
+  X,
+  Loader2,
+} from "lucide-react";
 import {
   createSessionAreaApi,
   getSessionAreaApi,
@@ -95,12 +103,17 @@ function AdvanceArea({
 
       const result = await response.json();
       const allBadges = result?.data || [];
-      
+
       // Deduplicate badges by badge_type to avoid showing duplicates
-      const uniqueBadges = allBadges.filter((badge: Badge, index: number, self: Badge[]) =>
-        index === self.findIndex((b: Badge) => b.attributes.badge_type === badge.attributes.badge_type)
+      const uniqueBadges = allBadges.filter(
+        (badge: Badge, index: number, self: Badge[]) =>
+          index ===
+          self.findIndex(
+            (b: Badge) =>
+              b.attributes.badge_type === badge.attributes.badge_type
+          )
       );
-      
+
       setBadges(uniqueBadges);
     } catch (error) {
       console.error("❌ Fetch error:", error);
@@ -259,7 +272,10 @@ function AdvanceArea({
         showNotification("Failed to add session: Invalid response", "error");
       }
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || "Failed to add session";
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to add session";
       showNotification(errorMessage, "error");
       await fetchSessionAreas();
     }
@@ -410,13 +426,11 @@ function AdvanceArea({
 
           <button
             onClick={() => setAddModalOpen(true)}
-                      className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Sessions
           </button>
-          
         </div>
 
         {/* Table */}
@@ -486,26 +500,29 @@ function AdvanceArea({
                 </>
               ) : sessions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  <td
+                    colSpan={6}
+                    className="px-4 py-8 text-center text-gray-500"
+                  >
                     No sessions found. Add your first session above.
                   </td>
                 </tr>
               ) : (
                 sessions.map((session) => (
-                <tr
-                  key={session.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selectedUsers.includes(session.id)}
-                      onChange={() => handleSelectUser(session.id)}
-                      className="w-4 h-4 rounded border-gray-300"
-                    />
-                  </td>
+                  <tr
+                    key={session.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.includes(session.id)}
+                        onChange={() => handleSelectUser(session.id)}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                    </td>
 
-                  <td className="px-4 py-3 text-sm text-gray-900">
+                    <td className="px-4 py-3 text-sm text-gray-900">
                       {editingRow === session.id ? (
                         <input
                           type="text"
@@ -520,9 +537,9 @@ function AdvanceArea({
                       ) : (
                         session.title
                       )}
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600">
                       {editingRow === session.id ? (
                         <input
                           type="text"
@@ -539,9 +556,9 @@ function AdvanceArea({
                       ) : (
                         session.location
                       )}
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600">
                       {editingRow === session.id ? (
                         <select
                           value={editData?.type || ""}
@@ -562,12 +579,13 @@ function AdvanceArea({
                           ))}
                         </select>
                       ) : (
-                        badges.find((b) => b.attributes.badge_type === session.type)
-                          ?.attributes.name || session.type
+                        badges.find(
+                          (b) => b.attributes.badge_type === session.type
+                        )?.attributes.name || session.type
                       )}
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-gray-600">
                       {editingRow === session.id ? (
                         <input
                           type="number"
@@ -587,10 +605,10 @@ function AdvanceArea({
                       ) : (
                         session.travelNumber
                       )}
-                  </td>
+                    </td>
 
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-center gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center justify-center gap-2">
                         {editingRow === session.id ? (
                           <>
                             <button
@@ -614,28 +632,28 @@ function AdvanceArea({
                           </>
                         ) : (
                           <>
-                      <button
-                        onClick={() => handleDeleteSession(session)}
+                            <button
+                              onClick={() => handleDeleteSession(session)}
                               disabled={deleteLoading === session.id}
                               className="p-1.5 text-pink-500 hover:bg-pink-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
+                            >
                               {deleteLoading === session.id ? (
                                 <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                               ) : (
-                        <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4" />
                               )}
-                      </button>
+                            </button>
                             <button
                               onClick={() => handleEdit(session)}
                               className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-md transition-colors"
                             >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
+                              <Edit2 className="w-4 h-4" />
+                            </button>
                           </>
                         )}
-                    </div>
-                  </td>
-                </tr>
+                      </div>
+                    </td>
+                  </tr>
                 ))
               )}
             </tbody>

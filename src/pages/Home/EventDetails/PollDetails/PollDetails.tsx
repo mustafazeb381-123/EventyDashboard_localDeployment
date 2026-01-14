@@ -28,7 +28,7 @@ const PollDetails = () => {
   const [activeTab, setActiveTab] = useState<"questions" | "answers">(
     "questions"
   );
-  // const [triggerAddQuestion, setTriggerAddQuestion] = useState(0);
+  const [triggerAddQuestion, setTriggerAddQuestion] = useState(0);
 
   const canLoad = useMemo(
     () => Boolean(id) && Boolean(eventId) && Boolean(agendaId),
@@ -287,7 +287,7 @@ const PollDetails = () => {
                 Answers
               </button>
             </div>
-            {/* {activeTab === "questions" && (
+            {activeTab === "questions" && (
               <Button
                 onClick={() => setTriggerAddQuestion((prev) => prev + 1)}
                 className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 px-4 py-2 font-medium"
@@ -295,7 +295,7 @@ const PollDetails = () => {
                 <Plus className="w-4 h-4 mr-2" />
                 Add New Question
               </Button>
-            )} */}
+            )}
           </div>
 
           {/* Tab Content */}

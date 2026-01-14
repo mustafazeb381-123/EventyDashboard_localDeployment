@@ -342,10 +342,12 @@ const PollPage = () => {
     }
   };
 
-  const goToDetails = (pollId: number) => {
-    if (!eventId || !selectedAgendaId) return;
+  const goToDetails = (poll: Poll) => {
+    if (!eventId) return;
+    // Use selectedAgendaId if available, otherwise use the poll's agenda_id
+    const agendaId = selectedAgendaId || poll.agenda_id;
     navigate(
-      `/communication/poll/${pollId}?eventId=${eventId}&agendaId=${selectedAgendaId}`
+      `/communication/poll/${poll.id}?eventId=${eventId}&agendaId=${agendaId}`
     );
   };
 
@@ -462,7 +464,7 @@ const PollPage = () => {
             <div
               key={poll.id}
               className="bg-white rounded-xl p-5 shadow-sm hover:shadow-md transition cursor-pointer"
-              onClick={() => goToDetails(poll.id)}
+              onClick={() => goToDetails(poll)}
             >
               {/* Top row: Poll Name and question count */}
               <div className="flex items-start justify-between mb-1">
