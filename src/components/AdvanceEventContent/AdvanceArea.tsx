@@ -449,11 +449,36 @@ function AdvanceArea({
             </thead>
             <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
-                    Loading sessions...
-                  </td>
-                </tr>
+                <>
+                  {[1, 2, 3, 4, 5].map((index) => (
+                    <tr
+                      key={index}
+                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
+                    >
+                      <td className="px-4 py-3">
+                        <div className="w-4 h-4 bg-gray-300 rounded"></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-300 rounded w-32"></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-300 rounded w-24"></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-6 bg-gray-300 rounded-full w-20"></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="h-4 bg-gray-300 rounded w-16"></div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
+                          <div className="w-8 h-8 bg-gray-300 rounded-lg"></div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </>
               ) : sessions.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
