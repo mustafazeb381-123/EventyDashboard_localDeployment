@@ -320,47 +320,143 @@ export const ExistingBadgeTemplate1: React.FC<BadgeTemplateProps> = ({
   user,
 }) => {
   const badgeColors = getBadgeColors(template, event);
+  const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
+  const secondaryColor = badgeColors.backgroundColor || "white";
+  
   return (
     <div
-      className="flex flex-col w-64 h-96 rounded-xl overflow-hidden"
-      style={{ backgroundColor: badgeColors.backgroundColor }}
+      className="flex flex-col rounded-xl overflow-hidden shadow-lg"
+      style={{
+        backgroundColor: secondaryColor,
+        width: "350px",
+        height: "550px",
+      }}
     >
-      <div className="relative flex justify-center items-center w-full min-h-[120px]">
-        <div className="absolute inset-0">
-          <CardHeader color={badgeColors.headerColor} />
+      {/* Header Section - Fixed height container */}
+      <div
+        className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+        style={{ height: "90px" }}
+      >
+        <div className="absolute inset-0 h-full w-full">
+          <CardHeader color={primaryColor} />
         </div>
-        <div className="relative z-10 flex items-center gap-2 mb-4">
-          {event?.attributes?.logo_url && (
-            <img
-              src={event.attributes.logo_url}
-              alt="Logo"
-              className="w-4 h-4"
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
-            />
+      </div>
+
+      {/* Content Section */}
+      <div className="flex flex-1 flex-col justify-center items-center p-6">
+        {/* Profile Picture */}
+        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg mb-4 flex items-center justify-center">
+          {user ? (
+            (() => {
+              const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
+              const userName = user?.attributes?.name || "User";
+              
+              if (imageUrl) {
+                return (
+                  <img
+                    src={imageUrl}
+                    alt={userName}
+                    className="w-full h-full object-cover"
+                    style={{ border: "none", outline: "none", boxShadow: "none" }}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent && !parent.querySelector(".avatar-initials")) {
+                        const initialsDiv = document.createElement("div");
+                        initialsDiv.className = "avatar-initials";
+                        initialsDiv.style.cssText = `
+                          width: 100%;
+                          height: 100%;
+                          background-color: #4f46e5;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          color: white;
+                          font-weight: 600;
+                          font-size: 32px;
+                        `;
+                        const initials = (userName || "U")
+                          .trim()
+                          .split(" ")
+                          .filter(Boolean)
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2) || "U";
+                        initialsDiv.textContent = initials;
+                        parent.appendChild(initialsDiv);
+                      }
+                    }}
+                  />
+                );
+              }
+              
+              const initials = (userName || "U")
+                .trim()
+                .split(" ")
+                .filter(Boolean)
+                .map((n: string) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2) || "U";
+              
+              return (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "#4f46e5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "32px",
+                  }}
+                >
+                  {initials}
+                </div>
+              );
+            })()
+          ) : (
+            <div className="w-full h-full bg-gray-300" />
           )}
-          <h6 className="font-semibold text-white text-[10px]">
-            {event?.attributes?.name}
-          </h6>
         </div>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center -mt-8">
-        <div className="w-16 h-16 rounded-full mb-2">
-          {user && <UserAvatar user={user} size="sm" />}
-        </div>
-        <h2 className="text-xs font-bold">{user?.attributes?.name}</h2>
-        <p className="text-[10px] text-gray-600">
-          {user?.attributes?.user_type}
+        
+        {/* Name */}
+        <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-1">
+          {user?.attributes?.name || "Name"}
+        </h2>
+        
+        {/* Title */}
+        <p className="text-gray-600 text-lg mt-1 mb-4">
+          {user?.attributes?.user_type || "Title"}
         </p>
+
+        {/* QR Code on front side */}
+        <div className="mt-2 bg-white p-3 rounded-lg shadow-md">
+          {user?.attributes?.token ? (
+            <QRCode
+              value={user.attributes.token}
+              size={96}
+              style={{ width: "96px", height: "96px" }}
+            />
+          ) : (
+            <div className="w-24 h-24 bg-gray-200" />
+          )}
+        </div>
       </div>
-      <div className="flex justify-center mb-2">
-        {user?.attributes?.token && (
-          <QRCode value={user.attributes.token} size={60} />
-        )}
-      </div>
-      <div className="relative w-full h-16">
-        <div className="absolute inset-0">
-          <CardFooter color={badgeColors.footerColor} />
+
+      {/* Footer Section - Fixed height container */}
+      <div
+        className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+        style={{ height: "41px" }}
+      >
+        <div className="absolute inset-0 h-full w-full">
+          <CardFooter color={primaryColor} />
         </div>
       </div>
     </div>
@@ -373,49 +469,143 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
   user,
 }) => {
   const badgeColors = getBadgeColors(template, event);
+  const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
+  const secondaryColor = badgeColors.backgroundColor || "white";
+  
   return (
     <div
-      className="flex flex-col w-64 h-96 rounded-xl overflow-hidden"
-      style={{ backgroundColor: badgeColors.backgroundColor }}
+      className="flex flex-col rounded-xl overflow-hidden shadow-lg"
+      style={{
+        backgroundColor: secondaryColor,
+        width: "350px",
+        height: "550px",
+      }}
     >
-      <div className="relative w-full min-h-[120px]">
-        <div className="absolute inset-0">
-          <CardHeader2 color={badgeColors.headerColor} />
+      {/* Header Section - Fixed height container */}
+      <div
+        className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+        style={{ height: "106px" }}
+      >
+        <div className="absolute inset-0 h-full w-full">
+          <CardHeader2 color={primaryColor} />
         </div>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-evenly py-2">
-        <div className="text-center">
-          <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-1">
-            {user && <UserAvatar user={user} size="sm" />}
-          </div>
-          <h2 className="text-xs font-bold">{user?.attributes?.name}</h2>
-          <p className="text-[10px] text-gray-600">
-            {user?.attributes?.user_type}
-          </p>
-        </div>
-        <div className="flex items-center gap-1">
-          {event?.attributes?.logo_url && (
-            <img
-              src={event.attributes.logo_url}
-              alt="Logo"
-              className="w-3 h-3"
-              referrerPolicy="no-referrer"
-              crossOrigin="anonymous"
-            />
+
+      {/* Content Section */}
+      <div className="flex flex-1 flex-col justify-center items-center p-6">
+        {/* Profile Picture - Square for Template 2 */}
+        <div className="w-32 h-32 rounded-lg overflow-hidden border-4 border-white shadow-lg mb-4 flex items-center justify-center">
+          {user ? (
+            (() => {
+              const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
+              const userName = user?.attributes?.name || "User";
+              
+              if (imageUrl) {
+                return (
+                  <img
+                    src={imageUrl}
+                    alt={userName}
+                    className="w-full h-full object-cover"
+                    style={{ border: "none", outline: "none", boxShadow: "none" }}
+                    referrerPolicy="no-referrer"
+                    crossOrigin="anonymous"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = "none";
+                      const parent = target.parentElement;
+                      if (parent && !parent.querySelector(".avatar-initials")) {
+                        const initialsDiv = document.createElement("div");
+                        initialsDiv.className = "avatar-initials";
+                        initialsDiv.style.cssText = `
+                          width: 100%;
+                          height: 100%;
+                          background-color: #4f46e5;
+                          display: flex;
+                          align-items: center;
+                          justify-content: center;
+                          color: white;
+                          font-weight: 600;
+                          font-size: 32px;
+                        `;
+                        const initials = (userName || "U")
+                          .trim()
+                          .split(" ")
+                          .filter(Boolean)
+                          .map((n: string) => n[0])
+                          .join("")
+                          .toUpperCase()
+                          .slice(0, 2) || "U";
+                        initialsDiv.textContent = initials;
+                        parent.appendChild(initialsDiv);
+                      }
+                    }}
+                  />
+                );
+              }
+              
+              const initials = (userName || "U")
+                .trim()
+                .split(" ")
+                .filter(Boolean)
+                .map((n: string) => n[0])
+                .join("")
+                .toUpperCase()
+                .slice(0, 2) || "U";
+              
+              return (
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    backgroundColor: "#4f46e5",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontWeight: 600,
+                    fontSize: "32px",
+                  }}
+                >
+                  {initials}
+                </div>
+              );
+            })()
+          ) : (
+            <div className="w-full h-full bg-gray-300" />
           )}
-          <h6 className="font-semibold text-[9px]">
-            {event?.attributes?.name}
-          </h6>
+        </div>
+        
+        {/* Name */}
+        <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-1">
+          {user?.attributes?.name || "Name"}
+        </h2>
+        
+        {/* Title */}
+        <p className="text-gray-600 text-lg mt-1 mb-4">
+          {user?.attributes?.user_type || "Title"}
+        </p>
+
+        {/* QR Code on front side */}
+        <div className="mt-2 bg-white p-3 rounded-lg shadow-md">
+          {user?.attributes?.token ? (
+            <QRCode
+              value={user.attributes.token}
+              size={96}
+              style={{ width: "96px", height: "96px" }}
+            />
+          ) : (
+            <div className="w-24 h-24 bg-gray-200" />
+          )}
         </div>
       </div>
-      <div className="flex justify-center mb-2">
-        {user?.attributes?.token && (
-          <QRCode value={user.attributes.token} size={60} />
-        )}
-      </div>
-      <div className="relative w-full h-16">
-        <div className="absolute inset-0">
-          <CardFooter2 color={badgeColors.footerColor} />
+
+      {/* Footer Section - Fixed height container */}
+      <div
+        className="relative flex justify-center items-center gap-2 w-full overflow-hidden"
+        style={{ height: "54px" }}
+      >
+        <div className="absolute inset-0 h-full w-full">
+          <CardFooter2 color={primaryColor} />
         </div>
       </div>
     </div>
