@@ -1,8 +1,5 @@
 import React from "react";
 import {
-  MoreVertical,
-  Eye,
-  Trash2,
   CheckCircle,
   Clock,
   AlertCircle,
@@ -40,10 +37,8 @@ interface PrintBadgesTableRowProps {
   user: any; // Consider more specific user type
   isSelected: boolean;
   onSelect: (userId: string) => void;
-  onActionClick: (userId: string) => void; // Toggles the action popup
-  activePopup: string | null; // ID of the user whose popup is active
-  onPerformAction: (action: string, userId: string) => void; // Handles preview/delete actions
-  isLoadingActions: boolean; // Indicates if an action is in progress
+  onPerformAction: (action: string, userId: string) => void; // Handles preview action
+  loadingUserId: string | null; // ID of the user whose action is in progress
   formatDate: (dateString: string) => string;
 }
 
@@ -51,10 +46,8 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
   user,
   isSelected,
   onSelect,
-  onActionClick,
-  activePopup,
   onPerformAction,
-  isLoadingActions,
+  loadingUserId,
   formatDate,
 }) => {
   return (
@@ -133,40 +126,14 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
           )}
         </div>
       </td>
-      <td className="p-4 relative">
+      <td className="p-4">
         <button
-          onClick={() => onActionClick(user.id)}
-          className="p-2 bg-gray-100 rounded-lg transition-all opacity-0 group-hover:opacity-100 hover:bg-gray-200"
-          disabled={isLoadingActions}
+          onClick={() => onPerformAction("preview", user.id)}
+          className="w-full px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+          disabled={loadingUserId === user.id}
         >
-          <MoreVertical size={16} className="text-gray-600" />
+          {loadingUserId === user.id ? "Loading..." : "Print Badge"}
         </button>
-
-        {activePopup === user.id && (
-          <div className="absolute right-0 top-12 bg-white border border-gray-200 rounded-xl shadow-xl z-20 min-w-[180px]">
-            <div className="py-2">
-              <div className="px-4 py-2 text-sm font-semibold text-gray-700 border-b border-gray-100">
-                Badge Actions
-              </div>
-
-              <button
-                onClick={() => onPerformAction("preview", user.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-600 hover:bg-blue-50 transition-colors"
-              >
-                <Eye size={16} />
-                Preview Badge
-              </button>
-
-              <button
-                onClick={() => onPerformAction("delete", user.id)}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-              >
-                <Trash2 size={16} />
-                Remove User
-              </button>
-            </div>
-          </div>
-        )}
       </td>
     </tr>
   );

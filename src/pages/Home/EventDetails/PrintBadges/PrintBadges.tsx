@@ -18,11 +18,10 @@ function PrintBadges() {
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activePopup, setActivePopup] = useState<any>(null);
   const [selectedUsers, setSelectedUsers] = useState(new Set<any>());
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [isLoadingActions, setIsLoadingActions] = useState(false);
+  const [loadingUserId, setLoadingUserId] = useState<string | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [showBadgePreviewModal, setShowBadgePreviewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -194,15 +193,8 @@ function PrintBadges() {
     return eventUsers.filter((user) => selectedUsers.has(user.id));
   }, [eventUsers, selectedUsers]);
 
-  const handleActionClick = useCallback(
-    (userId: any) => {
-      setActivePopup(activePopup === userId ? null : userId);
-    },
-    [activePopup]
-  );
-
   const handleAction = async (action: string, userId: string) => {
-    setIsLoadingActions(true);
+    setLoadingUserId(userId);
 
     const user = eventUsers.find((u) => u.id === userId);
 
@@ -216,8 +208,7 @@ function PrintBadges() {
       setShowDeleteModal(true);
     }
 
-    setActivePopup(null);
-    setIsLoadingActions(false);
+    setLoadingUserId(null);
   };
 
   const handleUserSelect = useCallback((userId: string) => {
@@ -364,10 +355,8 @@ const handlePrint = useCallback(async () => {
             selectedUsers={selectedUsers}
             handleSelectAll={handleSelectAll}
             handleUserSelect={handleUserSelect}
-            handleActionClick={handleActionClick}
-            activePopup={activePopup}
             handleAction={handleAction}
-            isLoadingActions={isLoadingActions}
+            loadingUserId={loadingUserId}
             formatDate={formatDate}
             currentPage={currentPage}
             totalPages={totalPages}
@@ -377,14 +366,6 @@ const handlePrint = useCallback(async () => {
             startIndex={startIndex}
           />
         </div>
-
-        {/* Overlay to close action popups */}
-        {activePopup && (
-          <div
-            className="fixed inset-0 z-10"
-            onClick={() => setActivePopup(null)}
-          />
-        )}
 
         {/* Badge Preview Modal */}
         <BadgePreviewModal

@@ -8,10 +8,8 @@ interface PrintBadgesTableProps {
   selectedUsers: Set<string>;
   handleSelectAll: () => void;
   handleUserSelect: (userId: string) => void;
-  handleActionClick: (userId: string) => void;
-  activePopup: string | null;
   handleAction: (action: string, userId: string) => void;
-  isLoadingActions: boolean;
+  loadingUserId: string | null;
   formatDate: (dateString: string) => string;
   currentPage: number;
   totalPages: number;
@@ -27,10 +25,8 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
   selectedUsers,
   handleSelectAll,
   handleUserSelect,
-  handleActionClick,
-  activePopup,
   handleAction,
-  isLoadingActions,
+  loadingUserId,
   formatDate,
   currentPage,
   totalPages,
@@ -167,10 +163,8 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                   user={user}
                   isSelected={selectedUsers.has(user.id)}
                   onSelect={handleUserSelect}
-                  onActionClick={handleActionClick}
-                  activePopup={activePopup}
                   onPerformAction={handleAction}
-                  isLoadingActions={isLoadingActions}
+                  loadingUserId={loadingUserId}
                   formatDate={formatDate}
                 />
               ))
@@ -178,61 +172,63 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
-        <div className="text-sm text-gray-600">
-          Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-          <span className="font-medium">
-            {Math.min(startIndex + rowsPerPage, filteredUsersCount)}
-          </span>{" "}
-          of <span className="font-medium">{filteredUsersCount}</span> users
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
-              currentPage === 1
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:text-gray-900 border border-transparent"
-            }`}
-          >
-            <ChevronLeft size={16} />
-            Previous
-          </button>
-
-          <div className="flex items-center gap-1">
-            {getPaginationNumbers().map((page, index) => (
-              <button
-                key={index}
-                onClick={() => typeof page === "number" && setCurrentPage(page)}
-                className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                  page === currentPage
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : page === "..."
-                    ? "text-gray-400 cursor-default"
-                    : "text-gray-600 hover:text-gray-900 border border-transparent"
-                }`}
-                disabled={page === "..."}
-              >
-                {page}
-              </button>
-            ))}
+      {filteredUsersCount >= 10 && (
+        <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+          <div className="text-sm text-gray-600">
+            Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+            <span className="font-medium">
+              {Math.min(startIndex + rowsPerPage, filteredUsersCount)}
+            </span>{" "}
+            of <span className="font-medium">{filteredUsersCount}</span> users
           </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+              disabled={currentPage === 1}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
+                currentPage === 1
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-600 hover:text-gray-900 border border-transparent"
+              }`}
+            >
+              <ChevronLeft size={16} />
+              Previous
+            </button>
 
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
-              currentPage === totalPages
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-gray-600 hover:text-gray-900 border border-transparent"
-            }`}
-          >
-            Next
-            <ChevronRight size={16} />
-          </button>
+            <div className="flex items-center gap-1">
+              {getPaginationNumbers().map((page, index) => (
+                <button
+                  key={index}
+                  onClick={() => typeof page === "number" && setCurrentPage(page)}
+                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                    page === currentPage
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : page === "..."
+                      ? "text-gray-400 cursor-default"
+                      : "text-gray-600 hover:text-gray-900 border border-transparent"
+                  }`}
+                  disabled={page === "..."}
+                >
+                  {page}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
+                currentPage === totalPages
+                  ? "text-gray-400 cursor-not-allowed"
+                  : "text-gray-600 hover:text-gray-900 border border-transparent"
+              }`}
+            >
+              Next
+              <ChevronRight size={16} />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
