@@ -306,8 +306,8 @@ const Template2Preview: React.FC<BadgePreviewProps> = ({
 
             <div className="flex flex-1 flex-col justify-center items-center p-6">
               <img
-                src={badge.squareUserImg}
-                className="w-32 h-32 object-cover rounded-lg border-4 border-white shadow-lg"
+                src={badge.userImg}
+                className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-lg"
                 alt="User"
               />
               <h2 className="text-2xl font-bold text-gray-900 mt-4">
@@ -607,7 +607,8 @@ const Badges: React.FC<BadgesProps> = ({
       name: "Template 2",
       frontImg: Assets.images.b3_front,
       backImg: Assets.images.b3_back,
-      squareUserImg: Assets.images.square_user_img,
+      userImg: Assets.images.user_img,
+      squareUserImg: Assets.images.user_img,
       qrImg: Assets.images.qr_img,
       cardHeader: Assets.images.card_header2,
       cardFooter: Assets.images.card_footer2,
@@ -1465,19 +1466,11 @@ const Badges: React.FC<BadgesProps> = ({
             className={`${badge.id === 3 ? "w-12 h-12 rounded-full" : "w-12 h-12 rounded-full"
               } bg-gray-300 mb-2 flex items-center justify-center overflow-hidden`}
           >
-            {badge.id === 1 ? (
-              <img
-                src={badge.userImg}
-                className="w-full h-full object-cover"
-                alt="User"
-              />
-            ) : (
-              <img
-                src={badge.squareUserImg}
-                className="w-full h-full object-cover"
-                alt="User"
-              />
-            )}
+            <img
+              src={badge.userImg}
+              className="w-full h-full object-cover"
+              alt="User"
+            />
           </div>
 
           {/* Name */}

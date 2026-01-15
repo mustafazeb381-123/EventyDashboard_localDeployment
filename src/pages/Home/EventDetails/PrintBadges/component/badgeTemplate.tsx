@@ -493,8 +493,8 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
 
       {/* Content Section */}
       <div className="flex flex-1 flex-col justify-center items-center p-6">
-        {/* Profile Picture - Square for Template 2 */}
-        <div className="w-32 h-32 rounded-lg overflow-hidden border-4 border-white shadow-lg mb-4 flex items-center justify-center">
+        {/* Profile Picture - Circular for Template 2 */}
+        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg mb-4 flex items-center justify-center">
           {user ? (
             (() => {
               const imageUrl = user?.attributes?.avatar || user?.attributes?.image;
