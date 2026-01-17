@@ -496,6 +496,36 @@ export const resetCheckInOutStatus = (
   );
 };
 
+// Event-level check-in (not session area specific)
+export const checkInUser = (
+  eventId: string | number,
+  eventUserId: string | number
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/check_user_event_statuses/check_in`,
+    {
+      check_user_event_status: {
+        event_user_id: eventUserId,
+      },
+    }
+  );
+};
+
+// Event-level check-out (not session area specific)
+export const checkOutUser = (
+  eventId: string | number,
+  eventUserId: string | number
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/check_user_event_statuses/check_out`,
+    {
+      check_user_event_status: {
+        event_user_id: eventUserId,
+      },
+    }
+  );
+};
+
 export const getBadgeApi = (eventId: string | number) => {
   return axiosInstance.get(
     `/events/${eventId}/badge_templates/default_template`

@@ -43,13 +43,13 @@ const PrintBadgesFilterAndSearch: React.FC<PrintBadgesFilterAndSearchProps> = ({
             <option value="pending">Pending</option>
             <option value="error">Error</option>
           </select>
-          <button
+          {/* <button
             onClick={onExport}
             className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
             <Download size={16} />
             Export
-          </button>
+          </button> */}
         </div>
       </div>
     </div>

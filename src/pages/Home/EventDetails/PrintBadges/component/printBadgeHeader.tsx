@@ -44,10 +44,10 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
           <Eye size={18} />
           Preview Selected ({selectedUsersCount})
         </button>
-        <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
+        {/* <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
           <Settings size={16} />
-          Settings {/* Placeholder for settings functionality */}
-        </button>
+          Settings 
+        </button> */}
       </div>
     </div>
   );
