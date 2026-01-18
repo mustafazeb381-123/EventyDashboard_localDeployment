@@ -107,20 +107,8 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             width: `${(templateData.photoSize?.width || 200) * scaleX}px`,
             height: `${(templateData.photoSize?.height || 200) * scaleY}px`,
             top: `${(templateData.photoPosition?.y || 60) * scaleY}px`,
-            left:
-              templateData.photoAlignment === "center"
-                ? "50%"
-                : templateData.photoAlignment === "left"
-                ? `${(templateData.photoPosition?.x || 200) * scaleX}px`
-                : "auto",
-            right:
-              templateData.photoAlignment === "right"
-                ? `${(templateData.photoPosition?.x || 200) * scaleX}px`
-                : "auto",
-            transform:
-              templateData.photoAlignment === "center"
-                ? "translateX(-50%)"
-                : "none",
+            left: `${((templateData.photoPosition?.x || 200) * scaleX)}px`,
+            transform: "none",
           }}
         >
           {user ? (
@@ -271,20 +259,8 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             width: `${(templateData.qrCodeSize?.width || 120) * scaleX}px`,
             height: `${(templateData.qrCodeSize?.height || 120) * scaleY}px`,
             top: `${(templateData.qrCodePosition?.y || 400) * scaleY}px`,
-            left:
-              templateData.qrCodeAlignment === "center"
-                ? "50%"
-                : templateData.qrCodeAlignment === "left"
-                ? `${(templateData.qrCodePosition?.x || 200) * scaleX}px`
-                : "auto",
-            right:
-              templateData.qrCodeAlignment === "right"
-                ? `${(templateData.qrCodePosition?.x || 200) * scaleX}px`
-                : "auto",
-            transform:
-              templateData.qrCodeAlignment === "center"
-                ? "translateX(-50%)"
-                : "none",
+            left: `${((templateData.qrCodePosition?.x || 200) * scaleX)}px`,
+            transform: "none",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

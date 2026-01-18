@@ -456,20 +456,8 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               style={{
                 width: `${(template.photoSize.width || 200) * scaleX}px`,
                 height: `${(template.photoSize.height || 200) * scaleY}px`,
-                left:
-                  template.photoAlignment === "left"
-                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                    : template.photoAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.photoAlignment === "right"
-                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                    : "auto",
-                transform:
-                  template.photoAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
+                left: `${((template.photoPosition?.x || 200) * scaleX)}px`,
+                transform: "none",
                 top: `${(template.photoPosition?.y || 60) * scaleY}px`,
               }}
             >
@@ -552,20 +540,8 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               style={{
                 width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
                 height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
-                left:
-                  template.qrCodeAlignment === "left"
-                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                    : template.qrCodeAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.qrCodeAlignment === "right"
-                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                    : "auto",
-                transform:
-                  template.qrCodeAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
+                left: `${((template.qrCodePosition?.x || 200) * scaleX)}px`,
+                transform: "none",
                 top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
                 padding: "4px",
               }}
@@ -782,7 +758,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Alignment</h5>
                     <AlignmentButtons
                       value={editingTemplate.photoAlignment}
@@ -793,7 +769,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Position</h5>
@@ -1234,7 +1210,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Alignment</h5>
                     <AlignmentButtons
                       value={editingTemplate.qrCodeAlignment || "center"}
@@ -1245,7 +1221,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Position</h5>

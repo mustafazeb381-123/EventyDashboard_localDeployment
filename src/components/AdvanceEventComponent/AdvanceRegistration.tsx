@@ -1803,6 +1803,8 @@ const TemplateModal = ({
 const AdvanceRegistration = ({
   onNext,
   onPrevious,
+  currentStep,
+  totalSteps,
   eventId,
   plan,
 }: RegistrationFormProps) => {
@@ -3037,13 +3039,45 @@ const AdvanceRegistration = ({
     <>
       <div className="w-full mx-5 bg-white p-5 rounded-2xl">
         {/* Header */}
-        <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-row justify-between items-center mb-4">
           <div className="flex flex-row gap-2 items-center">
-            <ChevronLeft />
+            <ChevronLeft onClick={onPrevious} className="cursor-pointer" />
             <p className="text-neutral-900 text-md font-poppins font-normal">
               Choose a registration form template
             </p>
           </div>
+          
+          {/* Steps */}
+          {currentStep !== undefined && totalSteps !== undefined && (
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalSteps }, (_, index) => index).map((step) => (
+                <div key={step} className="flex items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      step === currentStep
+                        ? "border-pink-500 bg-white text-pink-500"
+                        : step < currentStep
+                        ? "bg-pink-500 border-pink-500 text-white"
+                        : "border-gray-300 bg-white text-gray-400"
+                    }`}
+                  >
+                    {step < currentStep ? (
+                      <Check size={16} />
+                    ) : (
+                      <span className="text-sm font-medium">{step + 1}</span>
+                    )}
+                  </div>
+                  {step < totalSteps - 1 && (
+                    <div
+                      className={`w-8 h-0.5 mx-1 ${
+                        step < currentStep ? "bg-pink-500" : "bg-gray-300"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Templates Grid */}

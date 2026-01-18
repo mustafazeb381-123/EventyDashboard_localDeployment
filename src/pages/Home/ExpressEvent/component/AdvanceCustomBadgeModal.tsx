@@ -149,7 +149,20 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   };
 
   const renderCustomBadgePreview = (template: BadgeTemplate) => {
-    const previewWidth = template.width * 80;
+    // Use 96 DPI for consistency with print (standard web DPI)
+    const DPI = 96;
+    const widthInInches = template.width > 50 ? template.width / DPI : template.width;
+    const heightInInches = template.height > 50 ? template.height / DPI : template.height;
+    
+    // Calculate preview dimensions at 96 DPI
+    const previewWidth = widthInInches * DPI;
+    const previewHeight = heightInInches * DPI;
+    
+    // Positions are stored in pixels relative to a 400px wide canvas
+    // Scale factor: actual badge width (in pixels) / 400
+    const canvasWidth = 400; // Base canvas width for position coordinates
+    const scaleX = previewWidth / canvasWidth;
+    const scaleY = previewHeight / (canvasWidth * (heightInInches / widthInInches)); // Maintain aspect ratio
 
     return (
       <div className="flex flex-col items-center justify-center p-4">
@@ -157,7 +170,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           className="relative rounded-lg shadow-md overflow-hidden border-2 border-gray-200"
           style={{
             width: `${previewWidth}px`,
-            height: `${template.height * 80}px`,
+            height: `${previewHeight}px`,
             backgroundColor: template.hasBackground
               ? template.bgColor
               : "transparent",
@@ -173,23 +186,11 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
             <div
               className="absolute rounded-full bg-gray-300 border-2 border-white flex items-center justify-center overflow-hidden"
               style={{
-                width: `${(template.photoSize.width || 200) * 0.2}px`,
-                height: `${(template.photoSize.height || 200) * 0.2}px`,
-                left:
-                  template.photoAlignment === "left"
-                    ? `${(template.photoPosition?.x || 200) * 0.2}px`
-                    : template.photoAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.photoAlignment === "right"
-                    ? `${(template.photoPosition?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.photoAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
-                top: `${(template.photoPosition?.y || 60) * 0.2}px`,
+                width: `${(template.photoSize.width || 200) * scaleX}px`,
+                height: `${(template.photoSize.height || 200) * scaleY}px`,
+                left: `${((template.photoPosition?.x || 200) * scaleX)}px`,
+                transform: "none",
+                top: `${(template.photoPosition?.y || 60) * scaleY}px`,
               }}
             >
               <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400" />
@@ -200,7 +201,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
             <div
               className="absolute"
               style={{
-                top: `${(template.nameText.position?.y || 280) * 0.2}px`,
+                top: `${(template.nameText.position?.y || 280) * scaleY}px`,
                 left: "0",
                 width: "100%",
                 transform: "none",
@@ -210,7 +211,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               <div
                 className="font-bold px-2 whitespace-nowrap"
                 style={{
-                  fontSize: `${(template.nameText.size || 24) * 0.2}px`,
+                  fontSize: `${(template.nameText.size || 24) * scaleY}px`,
                   color: template.nameText.color || "#ffffff",
                 }}
               >
@@ -223,7 +224,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
             <div
               className="absolute"
               style={{
-                top: `${(template.companyText.position?.y || 315) * 0.2}px`,
+                top: `${(template.companyText.position?.y || 315) * scaleY}px`,
                 left: "0",
                 width: "100%",
                 transform: "none",
@@ -233,7 +234,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               <div
                 className="px-2 whitespace-nowrap"
                 style={{
-                  fontSize: `${(template.companyText.size || 18) * 0.2}px`,
+                  fontSize: `${(template.companyText.size || 18) * scaleY}px`,
                   color: template.companyText.color || "#cccccc",
                 }}
               >
@@ -246,7 +247,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
             <div
               className="absolute"
               style={{
-                top: `${(template.titleText.position?.y || 350) * 0.2}px`,
+                top: `${(template.titleText.position?.y || 350) * scaleY}px`,
                 left: "0",
                 width: "100%",
                 transform: "none",
@@ -256,7 +257,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               <div
                 className="px-2 whitespace-nowrap"
                 style={{
-                  fontSize: `${(template.titleText.size || 16) * 0.2}px`,
+                  fontSize: `${(template.titleText.size || 16) * scaleY}px`,
                   color: template.titleText.color || "#999999",
                 }}
               >
@@ -267,31 +268,25 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
           {template.hasQrCode && template.qrCodeSize && (
             <div
-              className="absolute bg-white border-2 border-gray-300 flex items-center justify-center overflow-hidden"
+              className="absolute bg-white border-2 border-gray-300 flex items-center justify-center overflow-hidden rounded-lg"
               style={{
-                width: `${(template.qrCodeSize.width || 120) * 0.2}px`,
-                height: `${(template.qrCodeSize.height || 120) * 0.2}px`,
-                left:
-                  template.qrCodeAlignment === "left"
-                    ? `${(template.qrCodePosition?.x || 200) * 0.2}px`
-                    : template.qrCodeAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.qrCodeAlignment === "right"
-                    ? `${(template.qrCodePosition?.x || 200) * 0.2}px`
-                    : "auto",
-                transform:
-                  template.qrCodeAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
-                top: `${(template.qrCodePosition?.y || 400) * 0.2}px`,
+                width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
+                height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
+                left: `${((template.qrCodePosition?.x || 200) * scaleX)}px`,
+                transform: "none",
+                top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
+                padding: "4px",
               }}
             >
-              <QrCode
-                size={(template.qrCodeSize.width || 120) * 0.1}
-                className="text-gray-400"
-              />
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-300 flex items-center justify-center">
+                <QrCode
+                  size={Math.min(
+                    (template.qrCodeSize.width || 120) * scaleX * 0.9,
+                    (template.qrCodeSize.height || 120) * scaleY * 0.9
+                  )}
+                  className="text-gray-600"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -328,11 +323,13 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     value,
     onChange,
     step = 1,
+    disabled = false,
   }: {
     label: string;
     value: number;
     onChange: (value: number) => void;
     step?: number;
+    disabled?: boolean;
   }) => {
     const [localValue, setLocalValue] = useState(value.toString());
 
@@ -366,8 +363,166 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           pattern="[0-9]*"
           value={localValue}
           onChange={handleChange}
-          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+          disabled={disabled}
+          className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 ${
+            disabled ? "bg-gray-100 cursor-not-allowed opacity-60" : ""
+          }`}
         />
+      </div>
+    );
+  };
+
+  // Slider component for QR code positioning and sizing
+  const BadgeSlider = ({
+    label,
+    value,
+    onChange,
+    min = 0,
+    max = 1000,
+    step = 1,
+    unit = "px",
+  }: {
+    label: string;
+    value: number;
+    onChange: (value: number) => void;
+    min?: number;
+    max?: number;
+    step?: number;
+    unit?: string;
+  }) => {
+    const percentage = ((value - min) / (max - min)) * 100;
+    
+    return (
+      <div>
+        <div className="flex justify-between items-center mb-2">
+          <label className="block text-sm font-medium text-gray-700">
+            {label}
+          </label>
+          <span className="text-sm text-pink-600 font-semibold bg-pink-50 px-2 py-1 rounded">
+            {value} {unit}
+          </span>
+        </div>
+        <div className="relative">
+          <input
+            type="range"
+            min={min}
+            max={max}
+            step={step}
+            value={value}
+            onChange={(e) => onChange(parseInt(e.target.value))}
+            className="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer slider-thumb"
+            style={{
+              background: `linear-gradient(to right, #ec4899 0%, #ec4899 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`,
+            }}
+          />
+          <style>{`
+            .slider-thumb::-webkit-slider-thumb {
+              appearance: none;
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: #ec4899;
+              cursor: pointer;
+              border: 3px solid white;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              transition: all 0.2s;
+            }
+            .slider-thumb::-webkit-slider-thumb:hover {
+              background: #db2777;
+              transform: scale(1.1);
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            }
+            .slider-thumb::-moz-range-thumb {
+              width: 20px;
+              height: 20px;
+              border-radius: 50%;
+              background: #ec4899;
+              cursor: pointer;
+              border: 3px solid white;
+              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+              transition: all 0.2s;
+            }
+            .slider-thumb::-moz-range-thumb:hover {
+              background: #db2777;
+              transform: scale(1.1);
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            }
+          `}</style>
+        </div>
+      </div>
+    );
+  };
+
+  // Combined Slider + Input component for all fields
+  const SliderWithInput = ({
+    label,
+    value,
+    onChange,
+    min = 0,
+    max = 1000,
+    step = 1,
+    unit = "px",
+  }: {
+    label: string;
+    value: number;
+    onChange: (value: number) => void;
+    min?: number;
+    max?: number;
+    step?: number;
+    unit?: string;
+  }) => {
+    const [inputValue, setInputValue] = useState(value.toString());
+
+    useEffect(() => {
+      setInputValue(value.toString());
+    }, [value]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newVal = e.target.value;
+      setInputValue(newVal);
+      const parsed = step % 1 === 0 ? parseInt(newVal) : parseFloat(newVal);
+      if (!isNaN(parsed) && parsed >= min && parsed <= max) {
+        onChange(parsed);
+      }
+    };
+
+    const handleInputBlur = () => {
+      const parsed = step % 1 === 0 ? parseInt(inputValue) : parseFloat(inputValue);
+      if (isNaN(parsed) || parsed < min) {
+        onChange(min);
+      } else if (parsed > max) {
+        onChange(max);
+      } else {
+        onChange(parsed);
+      }
+    };
+
+    return (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+        <div className="space-y-2">
+          <BadgeSlider
+            label=""
+            value={value}
+            onChange={onChange}
+            min={min}
+            max={max}
+            step={step}
+            unit={unit}
+          />
+          <input
+            type="number"
+            min={min}
+            max={max}
+            step={step}
+            value={inputValue}
+            onChange={handleInputChange}
+            onBlur={handleInputBlur}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+          />
+        </div>
       </div>
     );
   };
@@ -409,8 +564,8 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   if (!isOpen || !editingTemplate) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-6xl rounded-2xl shadow-lg overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 bg-white flex flex-col">
+      <div className="bg-white w-full h-full overflow-hidden flex flex-col">
         <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold text-gray-800">
@@ -559,12 +714,16 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasPersonalPhoto && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-6 ml-4">
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Size</h5>
                     <div className="grid grid-cols-2 gap-4">
-                      <BadgeNumberInput
-                        label="Width (px)"
+                      <SliderWithInput
+                        label="Width"
                         value={editingTemplate.photoSize?.width || 200}
+                        min={50}
+                        max={600}
+                        step={5}
                         onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
@@ -575,9 +734,12 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                           })
                         }
                       />
-                      <BadgeNumberInput
-                        label="Height (px)"
+                      <SliderWithInput
+                        label="Height"
                         value={editingTemplate.photoSize?.height || 200}
+                        min={50}
+                        max={800}
+                        step={5}
                         onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
@@ -591,43 +753,55 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <AlignmentButtons
-                    value={editingTemplate.photoAlignment}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        photoAlignment: alignment,
-                      })
-                    }
-                  />
+                  {/* <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Alignment</h5>
+                    <AlignmentButtons
+                      value={editingTemplate.photoAlignment}
+                      onChange={(alignment) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          photoAlignment: alignment,
+                        })
+                      }
+                    />
+                  </div> */}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="X Position (px)"
-                      value={editingTemplate.photoPosition?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          photoPosition: {
-                            ...editingTemplate.photoPosition,
-                            x: value,
-                          },
-                        })
-                      }
-                    />
-                    <BadgeNumberInput
-                      label="Y Position (px)"
-                      value={editingTemplate.photoPosition?.y || 60}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          photoPosition: {
-                            ...editingTemplate.photoPosition,
-                            y: value,
-                          },
-                        })
-                      }
-                    />
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Position</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="X Position (Horizontal)"
+                        value={editingTemplate.photoPosition?.x || 200}
+                        min={0}
+                        max={400}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            photoPosition: {
+                              ...editingTemplate.photoPosition,
+                              x: value,
+                            },
+                          })
+                        }
+                      />
+                      <SliderWithInput
+                        label="Y Position (Vertical)"
+                        value={editingTemplate.photoPosition?.y || 60}
+                        min={0}
+                        max={800}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            photoPosition: {
+                              ...editingTemplate.photoPosition,
+                              y: value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -644,88 +818,106 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasName && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="Size (px)"
-                      value={editingTemplate.nameText?.size || 24}
-                      onChange={(val) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          nameText: {
-                            ...editingTemplate.nameText,
-                            size: val,
-                          },
-                        })
-                      }
-                    />
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={editingTemplate.nameText?.color || "#ffffff"}
-                        onChange={(e) =>
+                <div className="space-y-6 ml-4">
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Name Text Size & Color</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="Size"
+                        value={editingTemplate.nameText?.size || 24}
+                        min={8}
+                        max={72}
+                        step={1}
+                        onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             nameText: {
                               ...editingTemplate.nameText,
-                              color: e.target.value,
+                              size: val,
                             },
                           })
                         }
-                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
                       />
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={editingTemplate.nameText?.color || "#ffffff"}
+                          onChange={(e) =>
+                            setEditingTemplate({
+                              ...editingTemplate,
+                              nameText: {
+                                ...editingTemplate.nameText,
+                                color: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <AlignmentButtons
-                    value={editingTemplate.nameText?.alignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        nameText: {
-                          ...editingTemplate.nameText,
-                          alignment: alignment,
-                        },
-                      })
-                    }
-                  />
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Name Text Alignment</h5>
+                    <AlignmentButtons
+                      value={editingTemplate.nameText?.alignment || "center"}
+                      onChange={(alignment) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          nameText: {
+                            ...editingTemplate.nameText,
+                            alignment: alignment,
+                          },
+                        })
+                      }
+                    />
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="X Position (px)"
-                      value={editingTemplate.nameText?.position?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          nameText: {
-                            ...editingTemplate.nameText,
-                            position: {
-                              ...editingTemplate.nameText?.position,
-                              x: value,
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Name Text Position</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="X Position (Horizontal)"
+                        value={editingTemplate.nameText?.position?.x || 200}
+                        min={0}
+                        max={400}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            nameText: {
+                              ...editingTemplate.nameText,
+                              position: {
+                                ...editingTemplate.nameText?.position,
+                                x: value,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
-                    <BadgeNumberInput
-                      label="Y Position (px)"
-                      value={editingTemplate.nameText?.position?.y || 280}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          nameText: {
-                            ...editingTemplate.nameText,
-                            position: {
-                              ...editingTemplate.nameText?.position,
-                              y: value,
+                          })
+                        }
+                      />
+                      <SliderWithInput
+                        label="Y Position (Vertical)"
+                        value={editingTemplate.nameText?.position?.y || 280}
+                        min={0}
+                        max={800}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            nameText: {
+                              ...editingTemplate.nameText,
+                              position: {
+                                ...editingTemplate.nameText?.position,
+                                y: value,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -742,88 +934,106 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasCompany && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="Size (px)"
-                      value={editingTemplate.companyText?.size || 18}
-                      onChange={(val) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          companyText: {
-                            ...editingTemplate.companyText,
-                            size: val,
-                          },
-                        })
-                      }
-                    />
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={editingTemplate.companyText?.color || "#cccccc"}
-                        onChange={(e) =>
+                <div className="space-y-6 ml-4">
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Company Text Size & Color</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="Size"
+                        value={editingTemplate.companyText?.size || 18}
+                        min={8}
+                        max={72}
+                        step={1}
+                        onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             companyText: {
                               ...editingTemplate.companyText,
-                              color: e.target.value,
+                              size: val,
                             },
                           })
                         }
-                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
                       />
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={editingTemplate.companyText?.color || "#cccccc"}
+                          onChange={(e) =>
+                            setEditingTemplate({
+                              ...editingTemplate,
+                              companyText: {
+                                ...editingTemplate.companyText,
+                                color: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <AlignmentButtons
-                    value={editingTemplate.companyText?.alignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        companyText: {
-                          ...editingTemplate.companyText,
-                          alignment: alignment,
-                        },
-                      })
-                    }
-                  />
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Company Text Alignment</h5>
+                    <AlignmentButtons
+                      value={editingTemplate.companyText?.alignment || "center"}
+                      onChange={(alignment) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          companyText: {
+                            ...editingTemplate.companyText,
+                            alignment: alignment,
+                          },
+                        })
+                      }
+                    />
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="X Position (px)"
-                      value={editingTemplate.companyText?.position?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          companyText: {
-                            ...editingTemplate.companyText,
-                            position: {
-                              ...editingTemplate.companyText?.position,
-                              x: value,
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Company Text Position</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="X Position (Horizontal)"
+                        value={editingTemplate.companyText?.position?.x || 200}
+                        min={0}
+                        max={400}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            companyText: {
+                              ...editingTemplate.companyText,
+                              position: {
+                                ...editingTemplate.companyText?.position,
+                                x: value,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
-                    <BadgeNumberInput
-                      label="Y Position (px)"
-                      value={editingTemplate.companyText?.position?.y || 315}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          companyText: {
-                            ...editingTemplate.companyText,
-                            position: {
-                              ...editingTemplate.companyText?.position,
-                              y: value,
+                          })
+                        }
+                      />
+                      <SliderWithInput
+                        label="Y Position (Vertical)"
+                        value={editingTemplate.companyText?.position?.y || 315}
+                        min={0}
+                        max={800}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            companyText: {
+                              ...editingTemplate.companyText,
+                              position: {
+                                ...editingTemplate.companyText?.position,
+                                y: value,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -840,88 +1050,106 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasTitle && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="Size (px)"
-                      value={editingTemplate.titleText?.size || 16}
-                      onChange={(val) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          titleText: {
-                            ...editingTemplate.titleText,
-                            size: val,
-                          },
-                        })
-                      }
-                    />
-                    <div>
-                      <label className="block text-sm text-gray-600 mb-1">
-                        Color
-                      </label>
-                      <input
-                        type="color"
-                        value={editingTemplate.titleText?.color || "#999999"}
-                        onChange={(e) =>
+                <div className="space-y-6 ml-4">
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Title Text Size & Color</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="Size"
+                        value={editingTemplate.titleText?.size || 16}
+                        min={8}
+                        max={72}
+                        step={1}
+                        onChange={(val) =>
                           setEditingTemplate({
                             ...editingTemplate,
                             titleText: {
                               ...editingTemplate.titleText,
-                              color: e.target.value,
+                              size: val,
                             },
                           })
                         }
-                        className="w-full h-10 rounded border border-gray-300 cursor-pointer"
                       />
+                      <div>
+                        <label className="block text-sm text-gray-600 mb-1">
+                          Color
+                        </label>
+                        <input
+                          type="color"
+                          value={editingTemplate.titleText?.color || "#999999"}
+                          onChange={(e) =>
+                            setEditingTemplate({
+                              ...editingTemplate,
+                              titleText: {
+                                ...editingTemplate.titleText,
+                                color: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full h-10 rounded border border-gray-300 cursor-pointer"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <AlignmentButtons
-                    value={editingTemplate.titleText?.alignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        titleText: {
-                          ...editingTemplate.titleText,
-                          alignment: alignment,
-                        },
-                      })
-                    }
-                  />
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Title Text Alignment</h5>
+                    <AlignmentButtons
+                      value={editingTemplate.titleText?.alignment || "center"}
+                      onChange={(alignment) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          titleText: {
+                            ...editingTemplate.titleText,
+                            alignment: alignment,
+                          },
+                        })
+                      }
+                    />
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="X Position (px)"
-                      value={editingTemplate.titleText?.position?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          titleText: {
-                            ...editingTemplate.titleText,
-                            position: {
-                              ...editingTemplate.titleText?.position,
-                              x: value,
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Title Text Position</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="X Position (Horizontal)"
+                        value={editingTemplate.titleText?.position?.x || 200}
+                        min={0}
+                        max={400}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            titleText: {
+                              ...editingTemplate.titleText,
+                              position: {
+                                ...editingTemplate.titleText?.position,
+                                x: value,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
-                    <BadgeNumberInput
-                      label="Y Position (px)"
-                      value={editingTemplate.titleText?.position?.y || 350}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          titleText: {
-                            ...editingTemplate.titleText,
-                            position: {
-                              ...editingTemplate.titleText?.position,
-                              y: value,
+                          })
+                        }
+                      />
+                      <SliderWithInput
+                        label="Y Position (Vertical)"
+                        value={editingTemplate.titleText?.position?.y || 350}
+                        min={0}
+                        max={800}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            titleText: {
+                              ...editingTemplate.titleText,
+                              position: {
+                                ...editingTemplate.titleText?.position,
+                                y: value,
+                              },
                             },
-                          },
-                        })
-                      }
-                    />
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}
@@ -938,80 +1166,101 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               />
 
               {editingTemplate.hasQrCode && (
-                <div className="space-y-4 ml-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="Width (px)"
-                      value={editingTemplate.qrCodeSize?.width || 120}
-                      onChange={(val) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          qrCodeSize: {
-                            ...editingTemplate.qrCodeSize,
-                            width: val,
-                          },
-                        })
-                      }
-                    />
-                    <BadgeNumberInput
-                      label="Height (px)"
-                      value={editingTemplate.qrCodeSize?.height || 120}
-                      onChange={(val) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          qrCodeSize: {
-                            ...editingTemplate.qrCodeSize,
-                            height: val,
-                          },
-                        })
-                      }
-                    />
+                <div className="space-y-6 ml-4">
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Size</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="Width"
+                        value={editingTemplate.qrCodeSize?.width || 120}
+                        min={50}
+                        max={300}
+                        step={5}
+                        onChange={(val) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            qrCodeSize: {
+                              ...editingTemplate.qrCodeSize,
+                              width: val,
+                            },
+                          })
+                        }
+                      />
+                      <SliderWithInput
+                        label="Height"
+                        value={editingTemplate.qrCodeSize?.height || 120}
+                        min={50}
+                        max={300}
+                        step={5}
+                        onChange={(val) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            qrCodeSize: {
+                              ...editingTemplate.qrCodeSize,
+                              height: val,
+                            },
+                          })
+                        }
+                      />
+                    </div>
                   </div>
 
-                  <AlignmentButtons
-                    value={editingTemplate.qrCodeAlignment || "center"}
-                    onChange={(alignment) =>
-                      setEditingTemplate({
-                        ...editingTemplate,
-                        qrCodeAlignment: alignment,
-                      })
-                    }
-                  />
+                  {/* <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Alignment</h5>
+                    <AlignmentButtons
+                      value={editingTemplate.qrCodeAlignment || "center"}
+                      onChange={(alignment) =>
+                        setEditingTemplate({
+                          ...editingTemplate,
+                          qrCodeAlignment: alignment,
+                        })
+                      }
+                    />
+                  </div> */}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <BadgeNumberInput
-                      label="X Position (px)"
-                      value={editingTemplate.qrCodePosition?.x || 200}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          qrCodePosition: {
-                            ...editingTemplate.qrCodePosition,
-                            x: value,
-                          },
-                        })
-                      }
-                    />
-                    <BadgeNumberInput
-                      label="Y Position (px)"
-                      value={editingTemplate.qrCodePosition?.y || 400}
-                      onChange={(value) =>
-                        setEditingTemplate({
-                          ...editingTemplate,
-                          qrCodePosition: {
-                            ...editingTemplate.qrCodePosition,
-                            y: value,
-                          },
-                        })
-                      }
-                    />
+                  <div>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Position</h5>
+                    <div className="grid grid-cols-2 gap-4">
+                      <SliderWithInput
+                        label="X Position (Horizontal)"
+                        value={editingTemplate.qrCodePosition?.x || 200}
+                        min={0}
+                        max={400}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            qrCodePosition: {
+                              ...editingTemplate.qrCodePosition,
+                              x: value,
+                            },
+                          })
+                        }
+                      />
+                      <SliderWithInput
+                        label="Y Position (Vertical)"
+                        value={editingTemplate.qrCodePosition?.y || 400}
+                        min={0}
+                        max={800}
+                        step={5}
+                        onChange={(value) =>
+                          setEditingTemplate({
+                            ...editingTemplate,
+                            qrCodePosition: {
+                              ...editingTemplate.qrCodePosition,
+                              y: value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="w-96 border-l border-gray-200 p-6 overflow-auto bg-gray-50">
+          <div className="w-[500px] border-l border-gray-200 p-6 overflow-auto bg-gray-50">
             <h4 className="font-semibold text-gray-800 mb-4 text-center">
               Badge Preview
             </h4>
