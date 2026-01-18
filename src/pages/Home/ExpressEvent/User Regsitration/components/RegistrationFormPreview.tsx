@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { createEventUser } from "@/apis/apiHelpers";
 import { getAllBadges } from "@/apis/badgeService";
-import { toast, ToastContainer } from "react-toastify";
 
 // Image compression utility
 const compressImage = (
@@ -121,6 +120,25 @@ const RegistrationFormPreview = ({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [defaultBadgeName, setDefaultBadgeName] = useState<string | null>(null);
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
+
   // Refs for file inputs
   const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
 
@@ -161,7 +179,7 @@ const RegistrationFormPreview = ({
 
       if (missingFields.length > 0) {
         const fieldNames = missingFields.map((f) => f.label).join(", ");
-        toast.error(`Please fill in required fields: ${fieldNames}`);
+        showNotification(`Please fill in required fields: ${fieldNames}`, "error");
         return;
       }
 
@@ -212,7 +230,7 @@ const RegistrationFormPreview = ({
 
       const response = await createEventUser(eventId, formDataToSend);
 
-      toast.success("Registration successfull");
+      showNotification("Registration successfull", "success");
       console.log("✅ User created:", response);
 
       // Reset form data and errors
@@ -279,20 +297,22 @@ const RegistrationFormPreview = ({
             errorMessages.length === 1
               ? errorMessages[0]
               : `Validation failed: ${errorMessages.join(", ")}`;
-          toast.error(errorSummary);
+          showNotification(errorSummary, "error");
         } else {
-          toast.error(
+          showNotification(
             error.response?.data?.data?.message ||
-              "Validation failed. Please check the form."
+              "Validation failed. Please check the form.",
+            "error"
           );
         }
       } else {
         // Handle other errors
-        toast.error(
+        showNotification(
           error.response?.data?.message ||
             error.response?.data?.data?.message ||
             error.message ||
-            "Registration failed. Please try again."
+            "Registration failed. Please try again.",
+          "error"
         );
         setFieldErrors({});
       }
@@ -405,14 +425,15 @@ const RegistrationFormPreview = ({
                   // Check if it's an image file
                   if (file.type.startsWith("image/")) {
                     try {
-                      toast.info("Compressing image...");
+                      showNotification("Compressing image...", "info");
                       const compressedFile = await compressImage(file);
                       handleInputChange(field.name, compressedFile);
-                      toast.success(`Image compressed and ready to upload`);
+                      showNotification(`Image compressed and ready to upload`, "success");
                     } catch (error) {
                       console.error("Error compressing image:", error);
-                      toast.warning(
-                        "Could not compress image, uploading original"
+                      showNotification(
+                        "Could not compress image, uploading original",
+                        "warning"
                       );
                       // Fallback to original file if compression fails
                       handleInputChange(field.name, file);
@@ -480,7 +501,39 @@ const RegistrationFormPreview = ({
       >
         {loading ? "Submitting..." : submitButtonText}
       </button>
-      <ToastContainer />
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

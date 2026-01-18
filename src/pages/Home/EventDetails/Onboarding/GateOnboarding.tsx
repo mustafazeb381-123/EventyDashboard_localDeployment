@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
-import { toast } from "react-toastify";
 import { Html5Qrcode } from "html5-qrcode";
 import Search from "@/components/Search";
 import Pagination from "@/components/Pagination";
@@ -56,6 +55,10 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
     const [showInput, setShowInput] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [notification, setNotification] = useState<{
+        message: string;
+        type: "success" | "error" | "warning" | "info";
+    } | null>(null);
 
     const notCheckedInUsers = enrolledUsers.filter(user => !user.attributes.check_in);
 
@@ -81,6 +84,19 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     const currentUsers = filteredUsers.slice(startIndex, startIndex + usersPerPage);
 
     useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => {
+                setNotification(null);
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+        setNotification({ message, type });
+    };
+
+    useEffect(() => {
         const fetchUsers = async () => {
             if (!eventId || !sessionAreaId) return;
             setLoading(true);
@@ -100,7 +116,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 console.log("📦 Users fetched:", response?.data);
             } catch (err) {
                 console.error("Error fetching users:", err);
-                toast.error("Failed to fetch users.");
+                showNotification("Failed to fetch users.", "error");
             } finally {
                 setLoading(false);
             }
@@ -111,19 +127,19 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
     const handleAreaCheckIn = async (userIds: (string | number)[], userName?: string) => {
         if (!eventId || !sessionAreaId) {
-            toast.error("Missing event or session area ID.");
+            showNotification("Missing event or session area ID.", "error");
             return;
         }
 
         if (userIds.length === 0) {
-            toast.warn("No users selected.");
+            showNotification("No users selected.", "warning");
             return;
         }
 
         console.log("🚀 Area check-in payload:", userIds);
 
         try {
-            toast.info(`Checking in ${userIds.length} user${userIds.length > 1 ? "s" : ""}...`);
+            showNotification(`Checking in ${userIds.length} user${userIds.length > 1 ? "s" : ""}...`, "info");
 
             // Run all check-ins concurrently
             await Promise.all(
@@ -132,10 +148,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 )
             );
 
-            toast.success(
+            showNotification(
                 userIds.length > 1
                     ? `✅ Checked in ${userIds.length} users successfully!`
-                    : `✅ ${userName || "User"} checked in successfully!`
+                    : `✅ ${userName || "User"} checked in successfully!`,
+                "success"
             );
 
             // ✅ Remove checked-in users
@@ -143,13 +160,13 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             setSelectedUsers([]);
         } catch (err) {
             console.error("❌ Area check-in failed:", err);
-            toast.error("Failed to check in some users.");
+            showNotification("Failed to check in some users.", "error");
         }
     };
 
     const handleQRCodeScan = async (qrData: string) => {
         if (!eventId || !sessionAreaId) {
-            toast.error("Missing event or session area ID.");
+            showNotification("Missing event or session area ID.", "error");
             return;
         }
 
@@ -157,7 +174,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             if (view === "registered_users") {
                 // ✅ Area Token Check-In
                 await QRCheckIn(eventId, sessionAreaId, qrData);
-                toast.success("User checked in to area successfully!");
+                showNotification("User checked in to area successfully!", "success");
 
                 // 🔄 Refresh users after check-in
                 const updatedUsers = await getCheckIns(eventId, sessionAreaId);
@@ -182,9 +199,9 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 );
 
                 if (!userStillExists) {
-                    toast.success("User checked out from area successfully!");
+                    showNotification("User checked out from area successfully!", "success");
                 } else {
-                    toast.error("Failed to check out user from area.");
+                    showNotification("Failed to check out user from area.", "error");
                 }
 
                 setEnrolledUsers(updatedUsers.data.data || []);
@@ -197,25 +214,25 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 error?.response?.data?.message ||
                 error?.message ||
                 `Failed to ${view === "registered_users" ? "check in" : "check out"} user.`;
-            toast.error(errorMessage);
+            showNotification(errorMessage, "error");
         }
     };
 
     const handleAreaCheckOut = async (userIds: (string | number)[], userName?: string) => {
         if (!eventId || !sessionAreaId) {
-            toast.error("Missing event or session area ID.");
+            showNotification("Missing event or session area ID.", "error");
             return;
         }
 
         if (userIds.length === 0) {
-            toast.warn("No users selected.");
+            showNotification("No users selected.", "warning");
             return;
         }
 
         console.log("🚀 Area check-out payload:", userIds);
 
         try {
-            toast.info(`Checking out ${userIds.length} user${userIds.length > 1 ? "s" : ""}...`);
+            showNotification(`Checking out ${userIds.length} user${userIds.length > 1 ? "s" : ""}...`, "info");
 
             // Run all check-outs concurrently
             await Promise.all(
@@ -224,10 +241,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 )
             );
 
-            toast.success(
+            showNotification(
                 userIds.length > 1
                     ? `✅ Checked out ${userIds.length} users successfully!`
-                    : `✅ ${userName || "User"} checked out successfully!`
+                    : `✅ ${userName || "User"} checked out successfully!`,
+                "success"
             );
 
             // ✅ Remove checked-out users from the list
@@ -235,7 +253,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             setSelectedUsers([]);
         } catch (err) {
             console.error("❌ Area check-out failed:", err);
-            toast.error("Failed to check out some users.");
+            showNotification("Failed to check out some users.", "error");
         }
     };
 
@@ -278,17 +296,17 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     const startCamera = async () => {
         const cameraElement = document.getElementById("camera-container");
         if (!cameraElement) {
-            toast.error("Camera container not rendered yet.");
+            showNotification("Camera container not rendered yet.", "error");
             return;
         }
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            toast.error("Camera not supported by this browser.");
+            showNotification("Camera not supported by this browser.", "error");
             return;
         }
 
         if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
-            toast.error("Camera requires HTTPS or localhost.");
+            showNotification("Camera requires HTTPS or localhost.", "error");
             return;
         }
 
@@ -302,7 +320,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 (decodedText) => {
                     console.log("✅ QR Code scanned:", decodedText);
                     setScannedData(decodedText);
-                    toast.success(`Scanned: ${decodedText}`);
+                    showNotification(`Scanned: ${decodedText}`, "success");
                     handleQRCodeScan(decodedText);
                     stopCamera();
                 },
@@ -317,7 +335,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             console.log("📷 Camera Open");
         } catch (err: any) {
             console.error("❌ Camera start failed:", err);
-            toast.error("Failed to start camera.");
+            showNotification("Failed to start camera.", "error");
             setIsCameraActive(false);
         }
     };
@@ -479,7 +497,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                             handleQRCodeScan(token);
                                             inputRef.current!.value = "";
                                         } else {
-                                            toast.warn("Please enter a token first.");
+                                            showNotification("Please enter a token first.", "warning");
                                         }
                                     }}
                                 >

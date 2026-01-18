@@ -10,7 +10,6 @@ import {
   Loader2,
   Star,
 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
 import {
   eventPostAPi,
   getShowEventData,
@@ -106,6 +105,10 @@ const MainData = ({
   const [setAsDefault, setSetAsDefault] = useState<boolean>(false);
   const [ticket, setTicket] = useState(true);
   const [eventguesttype, setEventguesttype] = useState<string>("");
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
 
   // Image cropping states
   const [isCropping, setIsCropping] = useState<boolean>(false);
@@ -201,6 +204,19 @@ const MainData = ({
     return Object.keys(errors).length === 0;
   };
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "info") => {
+    setNotification({ message, type });
+  };
+
   // Handle crop completion
   const handleCropComplete = async () => {
     if (imgRef.current && canvasRef.current) {
@@ -238,7 +254,7 @@ const MainData = ({
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              toast.error("Failed to crop image. Please try again.");
+              showNotification("Failed to crop image. Please try again.", "error");
               return;
             }
 
@@ -259,14 +275,14 @@ const MainData = ({
             setIsCropping(false);
             setOriginalImageSrc("");
 
-            toast.success("Image cropped and uploaded successfully!");
+            showNotification("Image cropped and uploaded successfully!", "success");
           },
           "image/jpeg",
           0.95 // Quality
         );
       } catch (error) {
         console.error("Error cropping image:", error);
-        toast.error("Failed to crop image. Please try again.");
+        showNotification("Failed to crop image. Please try again.", "error");
       }
     }
   };
@@ -395,7 +411,7 @@ const MainData = ({
         (type) => type.toLowerCase() === trimmedType.toLowerCase()
       )
     ) {
-      toast.error("This guest type already exists");
+      showNotification("This guest type already exists", "error");
       return;
     }
 
@@ -480,7 +496,7 @@ const MainData = ({
     console.log("Next button clicked. Current Event ID:", eventId);
 
     if (!validateForm()) {
-      toast.error("Please fill in all required fields");
+      showNotification("Please fill in all required fields", "error");
       return;
     }
 
@@ -596,7 +612,7 @@ const MainData = ({
         console.log("Updating existing event with ID:", eventId);
         response = await updateEventById(eventId, fd);
         console.log("Event updated successfully:", response.data);
-        toast.success("Event updated successfully");
+        showNotification("Event updated successfully", "success");
       } else {
         console.log("Creating new event");
         response = await eventPostAPi(fd);
@@ -608,13 +624,13 @@ const MainData = ({
             onEventCreated(String(response.data.data.id));
           }
         }
-        toast.success("Event created successfully");
+        showNotification("Event created successfully", "success");
       }
 
       return response;
     } catch (error: any) {
       console.error("API Error:", error);
-      toast.error(error?.response?.data?.message || "Error saving event data");
+      showNotification(error?.response?.data?.message || "Error saving event data", "error");
       throw error;
     }
   };
@@ -694,7 +710,7 @@ const MainData = ({
     console.log("Event ID:", eventId);
 
     if (!eventId) {
-      toast.error("Event ID is missing");
+      showNotification("Event ID is missing", "error");
       return;
     }
 
@@ -704,7 +720,7 @@ const MainData = ({
 
       // Use the new badge service to delete badge
       await deleteBadge(eventId, badgeId);
-      toast.success("Badge type deleted successfully!");
+      showNotification("Badge type deleted successfully!", "success");
 
       // Remove from local state
       setBadges((prev) => prev.filter((_, i) => i !== index));
@@ -724,7 +740,7 @@ const MainData = ({
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         "Failed to delete badge";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       // Clear loading state
       setDeletingBadgeId(null);
@@ -861,7 +877,7 @@ const MainData = ({
 
   const handleEventType = () => {
     if (!eventguesttype.trim()) {
-      toast.error("Guest type name required");
+      showNotification("Guest type name required", "error");
       return;
     }
 
@@ -872,7 +888,7 @@ const MainData = ({
     );
 
     if (isDuplicate) {
-      toast.error("This guest type already exists!");
+      showNotification("This guest type already exists!", "error");
       return;
     }
 
@@ -892,17 +908,17 @@ const MainData = ({
       }));
     }
 
-    toast.success("Guest type added!");
+    showNotification("Guest type added!", "success");
   };
 
   const handleAddUserType = async () => {
     if (!eventId) {
-      toast.error("Event ID is missing");
+      showNotification("Event ID is missing", "error");
       return;
     }
 
     if (!newGuestType) {
-      toast.error("Guest type name required");
+      showNotification("Guest type name required", "error");
       return;
     }
 
@@ -922,7 +938,7 @@ const MainData = ({
     );
 
     if (isDuplicate) {
-      toast.error("This guest type already exists!");
+      showNotification("This guest type already exists!", "error");
       return;
     }
 
@@ -930,8 +946,9 @@ const MainData = ({
       // Use the new badge service to create badge with default status
       await createBadgeSimple(eventId, newGuestType.trim(), setAsDefault);
       console.log("Guest type added:", newGuestType);
-      toast.success(
-        `Guest type added${setAsDefault ? " as default" : ""} successfully!`
+      showNotification(
+        `Guest type added${setAsDefault ? " as default" : ""} successfully!`,
+        "success"
       );
       setNewGuestType("");
       setSetAsDefault(false); // Reset the checkbox
@@ -943,7 +960,7 @@ const MainData = ({
         error?.response?.data?.error ||
         error?.message ||
         "Failed to add guest type.";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     }
   };
 
@@ -978,14 +995,14 @@ const MainData = ({
     isCurrentlyDefault: boolean
   ) => {
     if (!eventId) {
-      toast.error("Event ID is missing");
+      showNotification("Event ID is missing", "error");
       return;
     }
 
     try {
       if (isCurrentlyDefault) {
         // If already default, inform user
-        toast.info("This badge is already set as default");
+        showNotification("This badge is already set as default", "info");
         return;
       }
 
@@ -1004,7 +1021,7 @@ const MainData = ({
 
       // Then set this badge as default
       await setDefaultBadge(eventId, badgeId);
-      toast.success("Default badge updated successfully!");
+      showNotification("Default badge updated successfully!", "success");
 
       // Refresh badges to get updated default status
       await fetchBadgeApi();
@@ -1014,7 +1031,7 @@ const MainData = ({
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         "Failed to set default badge";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     }
   };
 
@@ -1852,7 +1869,38 @@ const MainData = ({
           <ChevronLeft className="rotate-90" size={14} />
         </button>
       </div>
-      <ToastContainer />
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

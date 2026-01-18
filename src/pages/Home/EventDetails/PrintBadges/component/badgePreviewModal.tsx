@@ -1,9 +1,8 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { X, Download, Printer } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import jsPDF from "jspdf";
 import domtoimage from "dom-to-image-more";
-import { toast } from "react-toastify";
 import { renderBadgeTemplate } from "./badgeTemplate";
 
 interface BadgePreviewModalProps {
@@ -29,6 +28,24 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
 }) => {
   const badgeRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const printComponentRef = useRef<HTMLDivElement>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "info") => {
+    setNotification({ message, type });
+  };
 
   // ✅ New react-to-print Logic
   const handlePrint = useReactToPrint({
@@ -44,7 +61,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   const downloadPdf = async () => {
     if (usersToPreview.length === 0) return;
     try {
-      toast.info("Preparing PDF...");
+      showNotification("Preparing PDF...", "info");
       const pdf = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
       const scale = Math.max(3, window.devicePixelRatio || 1);
 
@@ -141,16 +158,33 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   pdf.addImage(dataUrl, "PNG", x, y, finalW, finalH);
 }
 
-pdf.save(`badges-${new Date().toISOString().slice(0, 19)}.pdf`);
-toast.success("PDF downloaded successfully!");
-} catch (err) {
-console.error("PDF generation failed", err);
-toast.error("Failed to create PDF.");
-}
-};
+      pdf.save(`badges-${new Date().toISOString().slice(0, 19)}.pdf`);
+      showNotification("PDF downloaded successfully!", "success");
+    } catch (err) {
+      console.error("PDF generation failed", err);
+      showNotification("Failed to create PDF.", "error");
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[101] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh] flex flex-col">
         
         {/* Header Actions */}
@@ -214,6 +248,22 @@ toast.error("Failed to create PDF.");
         </div>
 
       </div>
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

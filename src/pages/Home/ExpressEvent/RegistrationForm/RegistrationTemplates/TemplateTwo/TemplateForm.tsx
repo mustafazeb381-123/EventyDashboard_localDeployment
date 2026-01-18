@@ -13,7 +13,6 @@ import {
   createRegistrationFieldApi,
   deleteRegistrationFieldApi,
 } from "@/apis/apiHelpers";
-import { toast } from "react-toastify";
 import { Plus, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -59,6 +58,10 @@ function TemplateFormTwo({
     required: false,
     full_width: true,
   });
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Image cropping states
@@ -296,6 +299,19 @@ function TemplateFormTwo({
     setFieldActiveStates(newActiveStates);
   }, [formFields]);
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
   const handleToggleField = async (fieldId: any, setLoading: any) => {
     if (!effectiveEventId) return;
     setLoading((prev: any) => ({ ...prev, [fieldId]: true }));
@@ -310,10 +326,10 @@ function TemplateFormTwo({
         ...prev,
         [fieldId]: newActive,
       }));
-      toast.success(`Field ${newActive ? "enabled" : "disabled"} successfully`);
+      showNotification(`Field ${newActive ? "enabled" : "disabled"} successfully`, "success");
     } catch (error) {
       console.error("Failed to toggle field:", error);
-      toast.error("Failed to toggle field");
+      showNotification("Failed to toggle field", "error");
     }
     setLoading((prev: any) => ({ ...prev, [fieldId]: false }));
   };
@@ -329,7 +345,7 @@ function TemplateFormTwo({
         : targetFieldId;
 
     if (isNaN(fieldIdNum) || isNaN(targetFieldIdNum)) {
-      toast.error("Invalid field IDs");
+      showNotification("Invalid field IDs", "error");
       return;
     }
 
@@ -351,14 +367,14 @@ function TemplateFormTwo({
       });
 
       setApiFormData([...sortedFields]);
-      toast.success("Field order updated successfully");
+      showNotification("Field order updated successfully", "success");
     } catch (error: any) {
       console.error("Failed to reorder field:", error);
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
         "Failed to reorder field";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       setReorderLoading((prev: any) => ({ ...prev, [fieldId]: false }));
     }
@@ -379,12 +395,12 @@ function TemplateFormTwo({
   // Handle create custom field
   const handleCreateField = async () => {
     if (!effectiveEventId) {
-      toast.error("Event ID not found");
+      showNotification("Event ID not found", "error");
       return;
     }
 
     if (!newFieldData.name.trim()) {
-      toast.error("Field name is required");
+      showNotification("Field name is required", "error");
       return;
     }
 
@@ -418,7 +434,7 @@ function TemplateFormTwo({
       });
 
       setApiFormData([...sortedFields]);
-      toast.success("Custom field created successfully");
+      showNotification("Custom field created successfully", "success");
 
       setNewFieldData({
         name: "",
@@ -434,7 +450,7 @@ function TemplateFormTwo({
         error.response?.data?.error ||
         error.message ||
         "Failed to create field";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       setIsCreatingField(false);
     }
@@ -443,7 +459,7 @@ function TemplateFormTwo({
   // Handle delete field
   const handleDeleteField = async (fieldId: any) => {
     if (!effectiveEventId) {
-      toast.error("Event ID not found");
+      showNotification("Event ID not found", "error");
       return;
     }
 
@@ -451,7 +467,7 @@ function TemplateFormTwo({
       typeof fieldId === "string" ? parseInt(fieldId, 10) : fieldId;
 
     if (isNaN(fieldIdNum)) {
-      toast.error("Invalid field ID");
+      showNotification("Invalid field ID", "error");
       return;
     }
 
@@ -469,14 +485,14 @@ function TemplateFormTwo({
       });
 
       setApiFormData([...sortedFields]);
-      toast.success("Field deleted successfully");
+      showNotification("Field deleted successfully", "success");
     } catch (error: any) {
       console.error("Failed to delete field:", error);
       const errorMessage =
         error.response?.data?.error ||
         error.message ||
         "Failed to delete field";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       setDeleteLoading((prev: any) => ({ ...prev, [fieldId]: false }));
     }
@@ -1257,6 +1273,36 @@ function TemplateFormTwo({
           </div>
         </div>
       )}
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

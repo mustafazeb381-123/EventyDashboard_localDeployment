@@ -27,7 +27,6 @@ import {
   updateEventById,
   getEventbyId,
 } from "@/apis/apiHelpers";
-import { toast, ToastContainer } from "react-toastify";
 // import AdvacedTicket from "@/components/AdvanceTicket/AdvanceTickt";
 import AdvanceEvent from "../component/AdvanceEvent";
 
@@ -225,6 +224,25 @@ const RegistrationForm = ({
   const [eventData, setEventData] = useState<any>(null);
   const [isLoadingEventData, setIsLoadingEventData] = useState(false);
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
+
   // Fetch event data once and cache it - memoized to prevent unnecessary calls
   const fetchEventData = useCallback(async () => {
     if (!effectiveEventId) return;
@@ -288,7 +306,7 @@ const RegistrationForm = ({
       setConfirmedTemplate(nameOfTemplate);
       setGetTemplatesData(templateData);
     } catch (error) {
-      toast.error("Failed to fetch template data");
+      showNotification("Failed to fetch template data", "error");
       setGetTemplatesData([]);
     }
   }, [effectiveEventId]);
@@ -304,7 +322,7 @@ const RegistrationForm = ({
       const response = await getRegistrationFieldApi(id);
       setFormData(response.data.data);
     } catch (error) {
-      toast.error("Failed to load form data");
+      showNotification("Failed to load form data", "error");
     } finally {
       setIsLoadingFormData(false);
     }
@@ -525,7 +543,7 @@ const RegistrationForm = ({
         };
 
         const response = await createTemplatePostApi(payload, savedEventId);
-        toast.success("Event template added successfully!");
+        showNotification("Event template added successfully!", "success");
         setSelectedTemplateData(templateData);
         setConfirmedTemplate(templateId);
         setTimeout(() => {
@@ -535,14 +553,15 @@ const RegistrationForm = ({
       } catch (error: any) {
         console.error("Error creating template:", error);
         if (error.response?.status === 400) {
-          toast.error("Invalid template data. Please try again.");
+          showNotification("Invalid template data. Please try again.", "error");
         } else if (error.response?.status === 401) {
-          toast.error("Authentication failed. Please login again.");
+          showNotification("Authentication failed. Please login again.", "error");
         } else if (error.response?.status === 500) {
-          toast.error("Server error. Please try again later.");
+          showNotification("Server error. Please try again later.", "error");
         } else {
-          toast.error(
-            error.message || "Error adding template. Please try again."
+          showNotification(
+            error.message || "Error adding template. Please try again.",
+            "error"
           );
         }
       } finally {
@@ -563,7 +582,7 @@ const RegistrationForm = ({
     const id = effectiveEventId;
 
     if (!id) {
-      toast.error("Event ID not found");
+      showNotification("Event ID not found", "error");
       throw new Error("Event ID not found");
     }
 
@@ -586,10 +605,10 @@ const RegistrationForm = ({
 
     try {
       const response = await updateEventById(id, formData);
-      toast.success("Confirmation Details Updated Successfully");
+      showNotification("Confirmation Details Updated Successfully", "success");
     } catch (error) {
       console.log("Error in confirmation details:", error);
-      toast.error("Error in Confirmation data");
+      showNotification("Error in Confirmation data", "error");
       throw error;
     }
   }, [effectiveEventId, confirmationToggleStates]);
@@ -604,7 +623,7 @@ const RegistrationForm = ({
       if (effectiveEventId && onNext) {
         onNext(effectiveEventId, plan);
       } else {
-        toast.error("Cannot proceed without event ID");
+        showNotification("Cannot proceed without event ID", "error");
       }
     } catch (error) {
       console.error("Failed to update confirmation details:", error);
@@ -633,7 +652,7 @@ const RegistrationForm = ({
   const handleNextClick = useCallback(() => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
-        toast.warning("Please select a template before proceeding");
+        showNotification("Please select a template before proceeding", "warning");
         return;
       } else {
         setInternalStep(1);
@@ -855,7 +874,38 @@ const RegistrationForm = ({
             </button>
           </div>
 
-          <ToastContainer />
+          {notification && (
+            <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+              <div
+                className={`px-6 py-3 rounded-lg shadow-lg ${
+                  notification.type === "success"
+                    ? "bg-green-500 text-white"
+                    : notification.type === "error"
+                    ? "bg-red-500 text-white"
+                    : notification.type === "warning"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
+                }`}
+              >
+                {notification.message}
+              </div>
+            </div>
+          )}
+          <style>{`
+            @keyframes slide-in {
+              from {
+                transform: translateX(100%);
+                opacity: 0;
+              }
+              to {
+                transform: translateX(0);
+                opacity: 1;
+              }
+            }
+            .animate-slide-in {
+              animation: slide-in 0.3s ease-out;
+            }
+          `}</style>
         </div>
       )}
     </>

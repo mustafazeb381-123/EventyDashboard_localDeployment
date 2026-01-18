@@ -7,7 +7,6 @@ import {
   AlignRight,
   QrCode,
 } from "lucide-react";
-import { toast } from "react-toastify";
 
 // -------------------- TYPES --------------------
 export interface BadgeTemplate {
@@ -70,6 +69,25 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     null
   );
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
+
   const defaultTemplate: BadgeTemplate = {
     id: "",
     name: "New Custom Badge",
@@ -126,7 +144,7 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     if (!editingTemplate) return;
 
     if (editingTemplate.name.trim() === "") {
-      toast.warning("Please enter a template name");
+      showNotification("Please enter a template name", "warning");
       return;
     }
 
@@ -1283,6 +1301,39 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           </button>
         </div>
       </div>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

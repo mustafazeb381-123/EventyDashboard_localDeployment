@@ -8,8 +8,6 @@ import AdvanceExhibitors from "@/components/AdvanceEventContent/AdvanceExhibitor
 import AdvancePartners from "@/components/AdvanceEventContent/AdvancePartners";
 import AdvanceSpeaker from "@/components/AdvanceEventContent/AdvanceSpeaker";
 import React, { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 interface AdvanceEventProps {
   onComplete?: (eventId?: string | number) => void;
@@ -73,19 +71,6 @@ const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
 
   return (
     <div className="w-full">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
       <CurrentComponent
         onNext={handleNext}
         onPrevious={handlePrevious}

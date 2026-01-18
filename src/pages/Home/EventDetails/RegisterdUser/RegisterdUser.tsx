@@ -13,8 +13,6 @@ import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { Trash2, Mail, Plus, Edit, RotateCcw, X } from "lucide-react";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 // Image compression function
 const compressImage = async (file: File): Promise<File> => {
@@ -132,6 +130,10 @@ function RegisterdUser() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
 
   // Store event user length in localStorage whenever pagination changes
   useEffect(() => {
@@ -145,6 +147,20 @@ function RegisterdUser() {
   useEffect(() => {
     setEditAvatarError(false);
   }, [editingUser]);
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "info") => {
+    setNotification({ message, type });
+  };
 
   const [editForm, setEditForm] = useState({
     image: "",
@@ -180,25 +196,31 @@ function RegisterdUser() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      toast.success("Template downloaded successfully!");
+      showNotification("Template downloaded successfully!", "success");
     } catch (error) {
       console.error("Error downloading template:", error);
-      toast.error("Failed to download template.");
+      showNotification("Failed to download template.", "error");
     } finally {
       setDownloadingTemplate(false); // stop loader
     }
   };
 
   const handleUploadTemplate = async () => {
-    if (!uploadFile) return toast.error("Please select a file!");
-    if (!eventId) return toast.error("Event ID is required!");
+    if (!uploadFile) {
+      showNotification("Please select a file!", "error");
+      return;
+    }
+    if (!eventId) {
+      showNotification("Event ID is required!", "error");
+      return;
+    }
 
     setUploadingTemplate(true); // start loader
 
     try {
       const response = await uploadEventUserTemplate(eventId, uploadFile);
       console.log("Import response:", response.data);
-      toast.success("Users imported successfully!");
+      showNotification("Users imported successfully!", "success");
 
       fetchUsers(eventId, currentPage); // refresh user list
 
@@ -212,11 +234,12 @@ function RegisterdUser() {
 
       if (err.response) {
         console.error("Server response data:", err.response.data);
-        toast.error(
-          `Import failed: ${err.response.data?.message || "Validation error"}`
+        showNotification(
+          `Import failed: ${err.response.data?.message || "Validation error"}`,
+          "error"
         );
       } else {
-        toast.error("Failed to import users. Check the file and try again.");
+        showNotification("Failed to import users. Check the file and try again.", "error");
       }
     } finally {
       setUploadingTemplate(false); // stop loader
@@ -240,17 +263,11 @@ function RegisterdUser() {
       console.log("API response:", response.data);
 
       if (isSingleUser) {
-        toast.success("Credentials sent to user successfully!", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        showNotification("Credentials sent to user successfully!", "success");
       } else {
-        toast.success(
+        showNotification(
           `Credentials sent to ${idsToSend.length} users successfully!`,
-          {
-            position: "top-right",
-            autoClose: 3000,
-          }
+          "success"
         );
       }
       setSelectedUsers([]);
@@ -258,15 +275,9 @@ function RegisterdUser() {
       console.error("Error sending credentials:", err);
 
       if (isSingleUser) {
-        toast.error("Failed to send credentials to user. Please try again.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        showNotification("Failed to send credentials to user. Please try again.", "error");
       } else {
-        toast.error("Failed to send credentials. Please try again.", {
-          position: "top-right",
-          autoClose: 3000,
-        });
+        showNotification("Failed to send credentials. Please try again.", "error");
       }
     } finally {
       setSendingCredentials(false);
@@ -326,7 +337,7 @@ function RegisterdUser() {
         )
       );
 
-      toast.success("User updated successfully!");
+      showNotification("User updated successfully!", "success");
       setEditingUser(null);
       setSelectedImageFile(null);
 
@@ -334,7 +345,7 @@ function RegisterdUser() {
       fetchUsers(eventId, currentPage);
     } catch (error) {
       console.error("Error updating user:", error);
-      toast.error("Failed to update user. Please try again.");
+      showNotification("Failed to update user. Please try again.", "error");
     } finally {
       setIsUpdating(false);
     }
@@ -428,7 +439,7 @@ function RegisterdUser() {
       }
     } catch (error) {
       console.error("Error fetching event users:", error);
-      toast.error("Failed to load users");
+      showNotification("Failed to load users", "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -514,7 +525,7 @@ function RegisterdUser() {
       });
     } catch (error) {
       console.error("Error searching users:", error);
-      toast.error("Failed to search users");
+      showNotification("Failed to search users", "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -553,7 +564,7 @@ function RegisterdUser() {
 
   const confirmDeleteUser = async () => {
     if (!eventId || !userToDelete) {
-      toast.error("Event ID is missing. Cannot delete user.");
+      showNotification("Event ID is missing. Cannot delete user.", "error");
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
       return;
@@ -564,7 +575,7 @@ function RegisterdUser() {
 
       await deleteEventUser(eventId, userToDelete.id);
 
-      toast.success("User deleted successfully");
+      showNotification("User deleted successfully", "success");
 
       fetchUsers(eventId, currentPage);
       setUserToDelete(null);
@@ -577,8 +588,9 @@ function RegisterdUser() {
         requestUrl: error.config?.url,
       });
 
-      toast.error(
-        `Failed to delete user: ${error.response?.data?.error || error.message}`
+      showNotification(
+        `Failed to delete user: ${error.response?.data?.error || error.message}`,
+        "error"
       );
     } finally {
       setDeletingUserId(null);
@@ -635,7 +647,10 @@ function RegisterdUser() {
   };
 
   const handleResetCheckInOut = async (userId: string) => {
-    if (!eventId) return toast.error("Event ID is missing.");
+    if (!eventId) {
+      showNotification("Event ID is missing.", "error");
+      return;
+    }
 
     if (
       !window.confirm(
@@ -648,15 +663,32 @@ function RegisterdUser() {
       const response = await resetCheckInOutStatus(eventId, userId);
       console.log("Reset response:", response.data);
 
-      toast.success("Check-in/out status reset successfully!");
+      showNotification("Check-in/out status reset successfully!", "success");
     } catch (error: any) {
       console.error("Error resetting status:", error);
-      toast.error("Failed to reset check-in/out status.");
+      showNotification("Failed to reset check-in/out status.", "error");
     }
   };
 
   return (
     <div className="bg-white min-h-screen p-6">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-8xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
 
@@ -1139,7 +1171,7 @@ function RegisterdUser() {
                           e.target.files[0]
                         );
                         setSelectedImageFile(compressedFile);
-                        toast.info("Image compressed and ready to upload");
+                        showNotification("Image compressed and ready to upload", "info");
                       }
                     }}
                   />
@@ -1236,6 +1268,22 @@ function RegisterdUser() {
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

@@ -14,7 +14,6 @@ import {
   QrCode,
 } from "lucide-react";
 import Assets from "@/utils/Assets";
-import { toast, ToastContainer } from "react-toastify";
 import { getEventbyId, postBadgesApi, getBadgesApi, deleteBadgeTemplateApi, updateBadgeTemplateApi, updateEventById } from "@/apis/apiHelpers";
 import type { ToggleStates } from "@/pages/Home/ExpressEvent/ExpressEvent";
 import AdvanceCustomBadgeModal from "@/pages/Home/ExpressEvent/component/AdvanceCustomBadgeModal";
@@ -1357,12 +1356,12 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
     // If clicking the same template that's already selected, deselect it
     if (selectedTemplate?.id === template.id) {
       setSelectedTemplate(null);
-      toast.success("Template deselected!");
+      showNotification("Template deselected!", "success");
     } else {
       // Select new template and deselect any existing badge
       setSelectedTemplate(template);
       setSelectedBadge(null);
-      toast.success("Template selected!");
+      showNotification("Template selected!", "success");
     }
   };
 
@@ -1786,7 +1785,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
 
   const selectBadgeAndContinue = async () => {
     if (!selectedBadge && !selectedTemplate) {
-      toast.error("Please select a badge template first!");
+      showNotification("Please select a badge template first!", "error");
       return;
     }
 
@@ -1875,7 +1874,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
             console.log(`Updated ready-made badge template ${numericId} to default`);
             console.log("Template bgColor:", fullTemplateData.bgColor);
           }
-          toast.success("Template selected!");
+          showNotification("Template selected!", "success");
           setActiveBadgeId(selectedBadge.id);
           
           // Update event's active_badge_id in API for cross-device visibility
@@ -1895,7 +1894,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
             selectedBadge.id,
             selectedBadge.name
           );
-          toast.success("Template selected!");
+          showNotification("Template selected!", "success");
           setActiveBadgeId(selectedBadge.id);
           
           // Update event's active_badge_id in API for cross-device visibility
@@ -2024,7 +2023,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
           }
         }
 
-        toast.success("Custom template selected!");
+        showNotification("Custom template selected!", "success");
       }
 
       setTimeout(() => {
@@ -2035,7 +2034,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
         }
       }, 1000);
     } catch (error) {
-      toast.error("Failed to select template.");
+      showNotification("Failed to select template.", "error");
       console.error("Template selection error:", error);
     } finally {
       setLoading(false);
@@ -2362,8 +2361,6 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
           )}
         </button>
       </div>
-
-      <ToastContainer />
 
       <style>{`
         @keyframes slide-in {

@@ -12,7 +12,6 @@ import {
   Eye,
   Maximize2,
 } from "lucide-react";
-import { toast } from "react-toastify";
 import imageCompression from "browser-image-compression";
 import {
   getGalleryApi,
@@ -130,7 +129,7 @@ function Galleries() {
       }
     } catch (error) {
       console.error("Error fetching gallery:", error);
-      toast.error("Failed to load gallery details");
+      showNotification("Failed to load gallery details", "error");
     } finally {
       setLoading(false);
     }
@@ -139,6 +138,19 @@ function Galleries() {
   useEffect(() => {
     fetchGallery();
   }, [eventId, galleryId]);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   // Derived State for Pagination
   const totalPages = Math.ceil(images.length / imagesPerPage);
@@ -266,7 +278,7 @@ function Galleries() {
                 : upload
             )
           );
-          toast.error(`Failed to compress ${file.name}. File is too large.`);
+          showNotification(`Failed to compress ${file.name}. File is too large.`, "error");
         }
       }
     });
@@ -314,7 +326,7 @@ function Galleries() {
       const galleryData = responseData?.gallery || responseData?.data;
       const uploadedImages = galleryData?.images || responseData?.images || [];
 
-      toast.success("Images uploaded successfully");
+      showNotification("Images uploaded successfully", "success");
       setUploadingFiles([]); // Clear uploads on success
 
       // If response includes images, update state immediately, then refresh
@@ -347,7 +359,7 @@ function Galleries() {
         errorMessage = error.message;
       }
 
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
       setUploadingFiles((prev) =>
         prev.map((f) => ({ ...f, status: "failed" }))
       );
@@ -378,7 +390,7 @@ function Galleries() {
 
     try {
       await deleteGalleryImageApi(eventId, galleryId, imageToDelete.id);
-      toast.success("Image deleted successfully");
+      showNotification("Image deleted successfully", "success");
       setShowDeleteModal(false);
       setImageToDelete(null);
       // Remove locally to avoid full underlying re-fetch flicker if desired, or just fetch
@@ -405,7 +417,7 @@ function Galleries() {
       console.error("Delete failed", error);
       console.error("Delete failed", error?.data);
 
-      toast.error(error?.data?.errors?.[0]?.detail || "Failed to delete image");
+      showNotification(error?.data?.errors?.[0]?.detail || "Failed to delete image", "error");
     }
   };
 
@@ -879,6 +891,36 @@ function Galleries() {
           </div>
         )}
       </div>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

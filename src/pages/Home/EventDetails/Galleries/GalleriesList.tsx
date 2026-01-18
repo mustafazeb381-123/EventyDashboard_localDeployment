@@ -18,7 +18,6 @@ import {
   deleteGalleryApi,
   updateGalleryApi,
 } from "@/apis/galleryService";
-import { toast } from "react-toastify";
 
 // Types
 interface GalleryImage {
@@ -67,6 +66,10 @@ export default function GalleriesList() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedGallery, setSelectedGallery] = useState<Gallery | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -114,7 +117,7 @@ export default function GalleriesList() {
       );
     } catch (error) {
       console.error("Error fetching galleries:", error);
-      toast.error("Failed to load galleries");
+      showNotification("Failed to load galleries", "error");
     } finally {
       setLoading(false);
     }
@@ -123,6 +126,19 @@ export default function GalleriesList() {
   useEffect(() => {
     fetchGalleries();
   }, [eventId, page]);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,13 +149,13 @@ export default function GalleriesList() {
       await createGalleryApi(eventId, {
         gallery: { ...formData, event_id: eventId },
       });
-      toast.success("Gallery created successfully");
+      showNotification("Gallery created successfully", "success");
       setIsCreateModalOpen(false);
       setFormData({ title: "", description: "", public: true });
       fetchGalleries();
     } catch (error) {
       console.error("Error creating gallery:", error);
-      toast.error("Failed to create gallery");
+      showNotification("Failed to create gallery", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -154,14 +170,14 @@ export default function GalleriesList() {
       await updateGalleryApi(eventId, selectedGallery.id, {
         gallery: formData,
       });
-      toast.success("Gallery updated successfully");
+      showNotification("Gallery updated successfully", "success");
       setIsEditModalOpen(false);
       setSelectedGallery(null);
       setFormData({ title: "", description: "", public: true });
       fetchGalleries();
     } catch (error) {
       console.error("Error updating gallery:", error);
-      toast.error("Failed to update gallery");
+      showNotification("Failed to update gallery", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -183,13 +199,13 @@ export default function GalleriesList() {
     try {
       setIsSubmitting(true);
       await deleteGalleryApi(eventId, selectedGallery.id);
-      toast.success("Gallery deleted successfully");
+      showNotification("Gallery deleted successfully", "success");
       setIsDeleteModalOpen(false);
       setSelectedGallery(null);
       fetchGalleries();
     } catch (error) {
       console.error("Error deleting gallery:", error);
-      toast.error("Failed to delete gallery");
+      showNotification("Failed to delete gallery", "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -648,6 +664,36 @@ export default function GalleriesList() {
           </div>
         </div>
       )}
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

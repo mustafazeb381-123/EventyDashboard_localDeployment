@@ -9,7 +9,6 @@ import {
   Trash2,
   Edit,
 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
 import {
   createTemplatePostApi,
   getRegistrationFieldApi,
@@ -604,7 +603,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
     if (!isUserRegistration) {
       // If not user registration, just log (for preview/admin mode)
     console.log("Custom form submitted:", formData);
-      toast.success("Form submitted successfully!");
+      showNotification("Form submitted successfully!", "success");
       return;
     }
 
@@ -626,7 +625,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
         localStorageCreate: typeof window !== "undefined" ? localStorage.getItem("create_eventId") : null,
         localStorageEdit: typeof window !== "undefined" ? localStorage.getItem("edit_eventId") : null,
       });
-      toast.error("Event ID not found. Cannot submit registration.");
+      showNotification("Event ID not found. Cannot submit registration.", "error");
       return;
     }
 
@@ -642,7 +641,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       // Double-check eventId before submission
       if (!actualEventId) {
         console.error("❌ CRITICAL: actualEventId is missing at submission time!");
-        toast.error("Event ID is missing. Please refresh the page.");
+        showNotification("Event ID is missing. Please refresh the page.", "error");
         setIsSubmitting(false);
         return;
       }
@@ -661,7 +660,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
 
       if (missingFields.length > 0) {
         const fieldNames = missingFields.map((f) => f.label || f.name).join(", ");
-        toast.error(`Please fill in required fields: ${fieldNames}`);
+        showNotification(`Please fill in required fields: ${fieldNames}`, "error");
         setIsSubmitting(false);
         return;
       }
@@ -676,7 +675,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
           eventDataDataId: eventData?.data?.id,
           effectiveEventId,
         });
-        toast.error("Event ID not found. Please refresh the page and try again.");
+        showNotification("Event ID not found. Please refresh the page and try again.", "error");
         setIsSubmitting(false);
         return;
       }
@@ -873,7 +872,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       const response = await createEventUser(String(actualEventId), formDataToSend);
       
       console.log("✅ Registration successful:", response);
-    toast.success("Registration submitted successfully!");
+    showNotification("Registration submitted successfully!", "success");
 
       // Reset form
       setFormData({});
@@ -999,10 +998,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
           : `Event not found (ID: ${eventIdUsed}).\n\nPlease verify:\n1. The event ID is correct\n2. The event exists\n3. You have access to this event\n\nAPI URL: ${fullUrl || requestedUrl}`;
       }
       
-      toast.error(errorMessage, {
-        autoClose: 5000,
-        style: { whiteSpace: "pre-line" },
-      });
+      showNotification(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -1592,7 +1588,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
 
   const handleFormSubmit = (formValues: Record<string, any>) => {
     console.log("Form submitted:", formValues);
-    toast.success("Registration submitted successfully!");
+    showNotification("Registration submitted successfully!", "success");
   };
 
   const reusableFormFields = formFields.map((field) => ({
@@ -1847,6 +1843,25 @@ const AdvanceRegistration = ({
   const [isDeleteFormBuilderModalOpen, setIsDeleteFormBuilderModalOpen] =
     useState(false);
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
+
   // -------------------- HELPER FUNCTIONS FOR FORM BUILDER --------------------
   // Helper function to validate and convert form builder data
   const convertFormBuilderToFieldsForValidation = (
@@ -1934,7 +1949,7 @@ const AdvanceRegistration = ({
       // It will check both systems and set the correct default
       setGetTemplatesData(templateData);
     } catch (error) {
-      toast.error("Failed to fetch template data");
+      showNotification("Failed to fetch template data", "error");
     }
   };
 
@@ -2155,7 +2170,7 @@ const AdvanceRegistration = ({
       await checkAndSetDefaultTemplate();
     } catch (error: any) {
       console.error("Error loading form builder templates:", error);
-      toast.error("Failed to load form templates. Please try again.");
+      showNotification("Failed to load form templates. Please try again.", "error");
           setFormBuilderTemplates([]);
     } finally {
       setIsLoadingFormData(false);
@@ -2357,7 +2372,7 @@ const AdvanceRegistration = ({
       setIsEditFormBuilderMode(false);
     } catch (error: any) {
       console.error("Error in handleSaveCustomForm:", error);
-      toast.error(error?.message || "Failed to save form. Please try again.");
+      showNotification(error?.message || "Failed to save form. Please try again.", "error");
     }
   };
 
@@ -2370,7 +2385,7 @@ const AdvanceRegistration = ({
       // It's a custom form builder template
       handleOpenCustomFormBuilder(template);
     } else {
-      toast.info("Legacy form templates cannot be edited. Please create a new Custom Form Template.");
+      showNotification("Legacy form templates cannot be edited. Please create a new Custom Form Template.", "info");
     }
   };
 
@@ -2379,7 +2394,7 @@ const AdvanceRegistration = ({
   ) => {
     try {
       if (!effectiveEventId) {
-        toast.error("Event ID not found");
+        showNotification("Event ID not found", "error");
         return;
       }
 
@@ -2569,9 +2584,10 @@ const AdvanceRegistration = ({
         }
       }
 
-      toast.success(
+      showNotification(
         `Form Builder template ${isEditFormBuilderMode ? "updated" : "saved"
-        } successfully!`
+        } successfully!`,
+        "success"
       );
     } catch (error: any) {
       console.error("Error saving form builder template:", error);
@@ -2665,10 +2681,7 @@ const AdvanceRegistration = ({
         errorMessage = `Error: ${error.message}`;
       }
       
-      toast.error(errorMessage, {
-        autoClose: 5000,
-        style: { whiteSpace: "pre-line" },
-      });
+      showNotification(errorMessage, "error");
     }
   };
 
@@ -2694,7 +2707,7 @@ const AdvanceRegistration = ({
     
     try {
       if (!effectiveEventId) {
-        toast.error("Event ID not found");
+        showNotification("Event ID not found", "error");
         cancelDeleteFormBuilderTemplate();
         return;
       }
@@ -2715,7 +2728,7 @@ const AdvanceRegistration = ({
       // Reload templates from API to ensure consistency
       await loadFormBuilderTemplates();
 
-    toast.success("Template deleted successfully!");
+    showNotification("Template deleted successfully!", "success");
     } catch (error: any) {
       console.error("Error deleting template:", error);
       
@@ -2732,7 +2745,7 @@ const AdvanceRegistration = ({
         errorMessage = `Error: ${error.message}`;
       }
       
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
     cancelDeleteFormBuilderTemplate();
     }
@@ -2793,7 +2806,7 @@ const AdvanceRegistration = ({
       // Set confirmedTemplate immediately (optimistic update)
       setConfirmedTemplate(templateId);
       
-      toast.success("Custom template applied successfully");
+      showNotification("Custom template applied successfully", "success");
       
       // Close modal
       setIsFormBuilderPreviewModalOpen(false);
@@ -2897,10 +2910,7 @@ const AdvanceRegistration = ({
         errorMessage = `Error: ${error.message}`;
       }
       
-      toast.error(errorMessage, {
-        autoClose: 5000,
-        style: { whiteSpace: "pre-line" },
-      });
+      showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -2983,7 +2993,7 @@ const AdvanceRegistration = ({
       // Set confirmedTemplate immediately (optimistic update)
       setConfirmedTemplate(templateId);
       
-      toast.success("Default template applied successfully!");
+      showNotification("Default template applied successfully!", "success");
       
       // Close modal
       handleCloseModal();
@@ -3006,7 +3016,7 @@ const AdvanceRegistration = ({
       console.log("✅ Final confirmedTemplate set to default:", templateId);
     } catch (error: any) {
       console.error("Error applying default template:", error);
-      toast.error("Error applying template. Please try again.");
+      showNotification("Error applying template. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -3018,7 +3028,7 @@ const AdvanceRegistration = ({
       const response = await getRegistrationFieldApi(id);
       setFormData(response.data.data);
     } catch (error) {
-      toast.error("Failed to load form data");
+      showNotification("Failed to load form data", "error");
     } finally {
       setIsLoadingFormData(false);
     }
@@ -3026,7 +3036,7 @@ const AdvanceRegistration = ({
 
   const handleNextClick = () => {
     if (!confirmedTemplate) {
-      toast.warning("Please select a template before proceeding");
+      showNotification("Please select a template before proceeding", "warning");
       return;
     }
     if (onNext) onNext(effectiveEventId, plan);
@@ -3446,7 +3456,38 @@ const AdvanceRegistration = ({
           </button>
         </div>
 
-        <ToastContainer />
+        {notification && (
+          <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+            <div
+              className={`px-6 py-3 rounded-lg shadow-lg ${
+                notification.type === "success"
+                  ? "bg-green-500 text-white"
+                  : notification.type === "error"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-blue-500 text-white"
+              }`}
+            >
+              {notification.message}
+            </div>
+          </div>
+        )}
+        <style>{`
+          @keyframes slide-in {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-in {
+            animation: slide-in 0.3s ease-out;
+          }
+        `}</style>
       </div>
     </>
   );

@@ -7,7 +7,6 @@ import {
   QrCode,
   Calendar,
 } from "lucide-react";
-import { ToastContainer } from "react-toastify";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -292,8 +291,6 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
           Next →
         </button>
       </div>
-
-      <ToastContainer />
     </div>
   );
 };

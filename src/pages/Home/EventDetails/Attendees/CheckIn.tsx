@@ -6,8 +6,6 @@ import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CheckCircle } from "lucide-react";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 // Helper to derive user initial
 const getUserInitial = (user: any) => {
@@ -59,6 +57,23 @@ function CheckIn() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [checkingInUserId, setCheckingInUserId] = useState<string | null>(null);
   const [checkingInUsers, setCheckingInUsers] = useState<string[]>([]);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   // Handle event ID change from URL
   useEffect(() => {
@@ -141,7 +156,7 @@ function CheckIn() {
       }
     } catch (error) {
       console.error("Error fetching event users:", error);
-      toast.error("Failed to load users");
+      showNotification("Failed to load users", "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -233,19 +248,22 @@ function CheckIn() {
       });
     } catch (error) {
       console.error("Error searching users:", error);
-      toast.error("Failed to search users");
+      showNotification("Failed to search users", "error");
     } finally {
       setLoadingUsers(false);
     }
   };
 
   const handleCheckIn = async (userId: string) => {
-    if (!eventId) return toast.error("Event ID is missing.");
+    if (!eventId) {
+      showNotification("Event ID is missing.", "error");
+      return;
+    }
 
     setCheckingInUserId(userId);
     try {
       await checkInUser(eventId, userId);
-      toast.success("User checked in successfully!");
+      showNotification("User checked in successfully!", "success");
 
       // Refresh the user list
       if (debouncedSearchTerm) {
@@ -255,8 +273,9 @@ function CheckIn() {
       }
     } catch (error: any) {
       console.error("Error checking in user:", error);
-      toast.error(
-        `Failed to check in user: ${error.response?.data?.error || error.message}`
+      showNotification(
+        `Failed to check in user: ${error.response?.data?.error || error.message}`,
+        "error"
       );
     } finally {
       setCheckingInUserId(null);
@@ -273,8 +292,9 @@ function CheckIn() {
         selectedUsers.map((userId) => checkInUser(eventId, userId))
       );
 
-      toast.success(
-        `${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""} checked in successfully!`
+      showNotification(
+        `${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""} checked in successfully!`,
+        "success"
       );
       setSelectedUsers([]);
 
@@ -286,7 +306,7 @@ function CheckIn() {
       }
     } catch (error: any) {
       console.error("Error checking in users:", error);
-      toast.error("Failed to check in some users.");
+      showNotification("Failed to check in some users.", "error");
     } finally {
       setCheckingInUsers([]);
     }
@@ -558,6 +578,36 @@ function CheckIn() {
           )}
         </div>
       </div>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

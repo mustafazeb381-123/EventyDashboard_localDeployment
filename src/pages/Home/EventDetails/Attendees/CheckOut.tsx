@@ -6,8 +6,6 @@ import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Clock } from "lucide-react";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 // Helper to derive user initial
 const getUserInitial = (user: any) => {
@@ -59,6 +57,10 @@ function CheckOut() {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [checkingOutUserId, setCheckingOutUserId] = useState<string | null>(null);
   const [checkingOutUsers, setCheckingOutUsers] = useState<string[]>([]);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Handle event ID change from URL
   useEffect(() => {
@@ -101,6 +103,20 @@ function CheckOut() {
       }
     }
   }, [eventId, currentPage, debouncedSearchTerm]);
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   const fetchUsers = async (id: string, page: number = 1) => {
     setLoadingUsers(true);
@@ -146,7 +162,7 @@ function CheckOut() {
       }
     } catch (error) {
       console.error("Error fetching event users:", error);
-      toast.error("Failed to load users");
+      showNotification("Failed to load users", "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -242,7 +258,7 @@ function CheckOut() {
       });
     } catch (error) {
       console.error("Error searching users:", error);
-      toast.error("Failed to search users");
+      showNotification("Failed to search users", "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -286,12 +302,15 @@ function CheckOut() {
   };
 
   const handleCheckOut = async (userId: string) => {
-    if (!eventId) return toast.error("Event ID is missing.");
+    if (!eventId) {
+      showNotification("Event ID is missing.", "error");
+      return;
+    }
 
     setCheckingOutUserId(userId);
     try {
       await checkOutUser(eventId, userId);
-      toast.success("User checked out successfully!");
+      showNotification("User checked out successfully!", "success");
 
       // Refresh the user list
       if (debouncedSearchTerm) {
@@ -301,8 +320,9 @@ function CheckOut() {
       }
     } catch (error: any) {
       console.error("Error checking out user:", error);
-      toast.error(
-        `Failed to check out user: ${error.response?.data?.error || error.message}`
+      showNotification(
+        `Failed to check out user: ${error.response?.data?.error || error.message}`,
+        "error"
       );
     } finally {
       setCheckingOutUserId(null);
@@ -319,8 +339,9 @@ function CheckOut() {
         selectedUsers.map((userId) => checkOutUser(eventId, userId))
       );
 
-      toast.success(
-        `${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""} checked out successfully!`
+      showNotification(
+        `${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""} checked out successfully!`,
+        "success"
       );
       setSelectedUsers([]);
 
@@ -332,7 +353,7 @@ function CheckOut() {
       }
     } catch (error: any) {
       console.error("Error checking out users:", error);
-      toast.error("Failed to check out some users.");
+      showNotification("Failed to check out some users.", "error");
     } finally {
       setCheckingOutUsers([]);
     }
@@ -356,6 +377,21 @@ function CheckOut() {
 
   return (
     <div className="bg-white min-h-screen p-6">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div className="max-w-8xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
 
@@ -616,6 +652,22 @@ function CheckOut() {
           )}
         </div>
       </div>
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

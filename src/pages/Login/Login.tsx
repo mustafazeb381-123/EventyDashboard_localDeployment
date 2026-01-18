@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import Assets from "../../utils/Assets";
 import { Button } from "@/components/ui/button";
@@ -6,8 +6,6 @@ import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { Eye, EyeOff } from "lucide-react";
 import { loginApi } from "@/apis/apiHelpers";
 
@@ -23,6 +21,10 @@ function Login() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -44,10 +46,24 @@ function Login() {
     }
 
     if (wasLoggedOut) {
-      toast.info("You have been logged out.");
+      setNotification({ message: "You have been logged out.", type: "info" });
       localStorage.removeItem("loggedOut");
     }
   }, [navigate]);
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "info") => {
+    setNotification({ message, type });
+  };
 
   const validate = () => {
     const newErrors: typeof errors = {};
@@ -94,13 +110,13 @@ function Login() {
         localStorage.removeItem("rememberedPassword");
       }
 
-      toast.success("Logged in successfully!");
+      showNotification("Logged in successfully!", "success");
       setTimeout(() => {
         navigate("/");
       }, 1000);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error", error);
-      toast.error(error?.response?.data?.error || "Login failed");
+      showNotification(error?.response?.data?.error || "Login failed", "error");
     } finally {
       setLoading(false);
     }
@@ -108,6 +124,23 @@ function Login() {
 
   return (
     <div className="p-10">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           background:
@@ -185,7 +218,7 @@ function Login() {
               <Checkbox
                 id="remember-me"
                 checked={rememberMe}
-                onCheckedChange={setRememberMe}
+                onCheckedChange={(checked) => setRememberMe(checked === true)}
               />
               <Label
                 htmlFor="remember-me"
@@ -233,7 +266,22 @@ function Login() {
           />
         </div>
       </div>
-      <ToastContainer />
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

@@ -1,9 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 import AppAssets from "@/utils/Assets";
 import { Input } from "@/components/ui/input";
@@ -31,6 +29,10 @@ function Signup() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const validationSchema = yup.object({
     name: yup.string().trim().required(t("errorMessages.nameRequired")),
@@ -59,6 +61,19 @@ function Signup() {
     resolver: yupResolver(validationSchema),
   });
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
   const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
     try {
       const payload = {
@@ -81,7 +96,7 @@ function Signup() {
       //   localStorage.setItem("token", token);
       // }
 
-      toast.success(response?.data?.message || "Signup successful!");
+      showNotification(response?.data?.message || "Signup successful!", "success");
       setTimeout(() => navigate("/login"), 1000);
     } catch (error: any) {
       console.error("Signup error:", error);
@@ -97,9 +112,9 @@ function Signup() {
           }
         );
       } else if (error?.response?.data?.error) {
-        toast.error(error.response.data.error);
+        showNotification(error.response.data.error, "error");
       } else {
-        toast.error("Signup failed. Please try again.");
+        showNotification("Signup failed. Please try again.", "error");
       }
     }
   };
@@ -222,7 +237,35 @@ function Signup() {
         </div>
       </div>
 
-      <ToastContainer />
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

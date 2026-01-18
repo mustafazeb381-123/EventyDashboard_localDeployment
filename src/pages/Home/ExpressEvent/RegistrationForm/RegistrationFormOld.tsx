@@ -25,7 +25,6 @@ import {
   postRegistrationTemplateFieldApi,
   updateEventById,
 } from "@/apis/apiHelpers";
-import { toast, ToastContainer } from "react-toastify";
 // import AdvacedTicket from "@/components/AdvanceTicket/AdvanceTickt";
 import AdvanceEvent from "../component/AdvanceEvent";
 
@@ -304,11 +303,11 @@ const RegistrationForm = ({
   >(null);
   const [notification, setNotification] = useState<{
     message: string;
-    type: "success" | "error";
+    type: "success" | "error" | "warning" | "info";
   } | null>(null);
 
   // Notification handler
-  const showNotification = (message: string, type: "success" | "error") => {
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
     setNotification({ message, type });
   };
 
@@ -352,7 +351,7 @@ const RegistrationForm = ({
       setGetTemplatesData(templateData);
     } catch (error) {
       console.error("Failed to fetch template data:", error);
-      toast.error("Failed to fetch template data");
+      showNotification("Failed to fetch template data", "error");
       setGetTemplatesData([]);
     }
   };
@@ -579,7 +578,7 @@ const RegistrationForm = ({
         );
         onNext(effectiveEventId, plan); // ADD plan parameter here
       } else {
-        toast.error("Cannot proceed without event ID");
+        showNotification("Cannot proceed without event ID", "error");
       }
     } catch (error) {
       console.error("Failed to update confirmation details:", error);
@@ -610,7 +609,7 @@ const RegistrationForm = ({
       setFormData(response.data.data);
     } catch (error) {
       console.error("Failed to get registration field:", error);
-      toast.error("Failed to load form data");
+      showNotification("Failed to load form data", "error");
     } finally {
       setIsLoadingFormData(false);
     }
@@ -621,7 +620,7 @@ const RegistrationForm = ({
   const handleNextClick = () => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
-        toast.warning("Please select a template before proceeding");
+        showNotification("Please select a template before proceeding", "warning");
         return;
       } else {
         setInternalStep(1);
@@ -640,7 +639,7 @@ const RegistrationForm = ({
     const id = effectiveEventId;
 
     if (!id) {
-      toast.error("Event ID not found");
+      showNotification("Event ID not found", "error");
       throw new Error("Event ID not found");
     }
 
@@ -680,7 +679,11 @@ const RegistrationForm = ({
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
                 ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -879,7 +882,6 @@ const RegistrationForm = ({
             </button>
           </div>
 
-          <ToastContainer />
 
           <style>{`
             @keyframes slide-in {

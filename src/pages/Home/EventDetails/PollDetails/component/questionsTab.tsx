@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
-import { toast } from "react-toastify";
 import {
   updateAgendaPoll,
   createAgendaPoll,
@@ -32,6 +31,25 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
     { text: "" },
   ]);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
 
   // Listen for external "Add New Question" button clicks
   useEffect(() => {
@@ -91,7 +109,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
 
   const handleSave = async () => {
     if (!question.trim()) {
-      toast.error("Question is required");
+      showNotification("Question is required", "error");
       return;
     }
 
@@ -100,7 +118,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
       .filter((a) => a.text.length > 0);
 
     if (trimmedAnswers.length < 2) {
-      toast.error("Please add at least 2 answers");
+      showNotification("Please add at least 2 answers", "error");
       return;
     }
 
@@ -121,7 +139,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
 
         console.log("Create poll response:", response.data);
 
-        toast.success("Poll created successfully");
+        showNotification("Poll created successfully", "success");
         setIsAddingNew(false);
         setIsEditing(false);
 
@@ -142,7 +160,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             })),
           },
         });
-        toast.success("Poll updated successfully");
+        showNotification("Poll updated successfully", "success");
         setIsAddingNew(false);
         setIsEditing(false);
         onRefresh();
@@ -153,7 +171,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         "Failed to save poll";
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
       setIsSaving(false);
     }
@@ -302,7 +320,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                   if (
                     window.confirm("Are you sure you want to delete this poll?")
                   ) {
-                    toast.info("Delete functionality handled by parent");
+                    showNotification("Delete functionality handled by parent", "info");
                   }
                 }}
                 className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
@@ -321,6 +339,39 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
           </div>
         </div>
       )}
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

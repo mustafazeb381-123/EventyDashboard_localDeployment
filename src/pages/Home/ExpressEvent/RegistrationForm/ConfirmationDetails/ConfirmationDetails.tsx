@@ -9,7 +9,6 @@ import {
   Clock,
   Users,
 } from "lucide-react";
-import { ToastContainer } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { getEventbyId } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -455,8 +454,6 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
           Next
         </button>
       </div> */}
-
-      <ToastContainer />
     </div>
   );
 };
