@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import {
   X,
   GripVertical,
@@ -621,8 +621,8 @@ function renderHtml(design: EmailTemplateDesign) {
             b.align === "left"
               ? "flex-start"
               : b.align === "right"
-              ? "flex-end"
-              : "center";
+                ? "flex-end"
+                : "center";
           return `<div style="display:flex;justify-content:${wrapperAlign};margin:0 0 12px 0;">${img}</div>`;
         }
         case "button": {
@@ -631,8 +631,8 @@ function renderHtml(design: EmailTemplateDesign) {
             b.align === "left"
               ? "flex-start"
               : b.align === "right"
-              ? "flex-end"
-              : "center";
+                ? "flex-end"
+                : "center";
           return `<div style="display:flex;justify-content:${wrapperAlign};margin:16px 0;"><a href="${escapeHtmlAttr(
             b.href
           )}" style="background:${b.backgroundColor};color:${
@@ -651,8 +651,8 @@ function renderHtml(design: EmailTemplateDesign) {
             b.align === "left"
               ? "flex-start"
               : b.align === "right"
-              ? "flex-end"
-              : "center";
+                ? "flex-end"
+                : "center";
           const iconsHtml = b.icons
             .map((icon) => {
               const iconColors: Record<string, string> = {
@@ -701,8 +701,8 @@ function renderHtml(design: EmailTemplateDesign) {
             b.align === "left"
               ? "flex-start"
               : b.align === "right"
-              ? "flex-end"
-              : "center";
+                ? "flex-end"
+                : "center";
           const bg = b.backgroundColor.replace("#", "%23");
           const fg = b.foregroundColor.replace("#", "%23");
           const qrPlaceholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='${b.size}' height='${b.size}'%3E%3Crect fill='${bg}' width='100' height='100'/%3E%3Crect fill='${fg}' x='10' y='10' width='25' height='25'/%3E%3Crect fill='${bg}' x='15' y='15' width='15' height='15'/%3E%3Crect fill='${fg}' x='18' y='18' width='9' height='9'/%3E%3Crect fill='${fg}' x='65' y='10' width='25' height='25'/%3E%3Crect fill='${bg}' x='70' y='15' width='15' height='15'/%3E%3Crect fill='${fg}' x='73' y='18' width='9' height='9'/%3E%3Crect fill='${fg}' x='10' y='65' width='25' height='25'/%3E%3Crect fill='${bg}' x='15' y='70' width='15' height='15'/%3E%3Crect fill='${fg}' x='18' y='73' width='9' height='9'/%3E%3Crect fill='${fg}' x='40' y='40' width='20' height='20'/%3E%3Crect fill='${fg}' x='45' y='65' width='10' height='10'/%3E%3Crect fill='${fg}' x='65' y='45' width='10' height='10'/%3E%3Crect fill='${fg}' x='75' y='55' width='10' height='10'/%3E%3Crect fill='${fg}' x='65' y='65' width='25' height='10'/%3E%3Crect fill='${fg}' x='65' y='80' width='10' height='10'/%3E%3Crect fill='${fg}' x='80' y='75' width='10' height='15'/%3E%3C/svg%3E`;
@@ -715,6 +715,302 @@ function renderHtml(design: EmailTemplateDesign) {
     .join("");
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/></head><body style="margin:0;padding:0;background:${gs.backgroundColor};font-family:${gs.fontFamily};"><div style="max-width:${gs.contentWidth}px;margin:0 auto;background:#ffffff;padding:${gs.paddingY}px ${gs.paddingX}px;">${bodyInner}</div></body></html>`;
+}
+
+function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
+  switch (block.type) {
+    case "heading": {
+      const b = block as HeadingBlock;
+      return (
+        <h2
+          style={{
+            margin: 0,
+            textAlign: b.align,
+            color: b.color,
+            fontSize: `${b.fontSize}px`,
+            fontWeight: 700,
+            fontFamily: gs.fontFamily,
+          }}
+        >
+          {b.text}
+        </h2>
+      );
+    }
+    case "paragraph": {
+      const b = block as ParagraphBlock;
+      return (
+        <div
+          style={{
+            margin: 0,
+            textAlign: b.align,
+            color: b.color,
+            fontSize: `${b.fontSize}px`,
+            lineHeight: b.lineHeight,
+            fontFamily: gs.fontFamily,
+          }}
+          dangerouslySetInnerHTML={{ __html: b.html }}
+        />
+      );
+    }
+    case "image": {
+      const b = block as ImageBlock;
+      const justify =
+        b.align === "left"
+          ? "flex-start"
+          : b.align === "right"
+            ? "flex-end"
+            : "center";
+      return (
+        <div style={{ display: "flex", justifyContent: justify }}>
+          <img
+            src={b.src}
+            alt={b.alt || "Image"}
+            style={{
+              width: `${b.width}px`,
+              maxWidth: "100%",
+              height: "auto",
+              borderRadius: `${b.borderRadius}px`,
+              display: "block",
+              objectFit: "cover",
+            }}
+          />
+        </div>
+      );
+    }
+    case "button": {
+      const b = block as ButtonBlock;
+      const justify =
+        b.align === "left"
+          ? "flex-start"
+          : b.align === "right"
+            ? "flex-end"
+            : "center";
+      return (
+        <div style={{ display: "flex", justifyContent: justify }}>
+          <a
+            href={b.href || "#"}
+            style={{
+              background: b.backgroundColor,
+              color: b.textColor,
+              textDecoration: "none",
+              padding: "12px 18px",
+              borderRadius: `${b.borderRadius}px`,
+              fontFamily: gs.fontFamily,
+              fontWeight: 600,
+              display: "inline-block",
+            }}
+          >
+            {b.text}
+          </a>
+        </div>
+      );
+    }
+    case "social": {
+      const b = block as SocialBlock;
+      const justify =
+        b.align === "left"
+          ? "flex-start"
+          : b.align === "right"
+            ? "flex-end"
+            : "center";
+      const iconColors: Record<string, string> = {
+        facebook: "#1877f2",
+        twitter: "#1da1f2",
+        instagram: "#e4405f",
+        linkedin: "#0077b5",
+        youtube: "#ff0000",
+        email: "#ea4335",
+        website: "#6366f1",
+      };
+      return (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: justify,
+            gap: `${b.spacing}px`,
+            flexWrap: "wrap",
+          }}
+        >
+          {b.icons.map((icon, idx) => (
+            <div
+              key={`${icon.platform}-${idx}`}
+              style={{
+                width: `${b.iconSize}px`,
+                height: `${b.iconSize}px`,
+                borderRadius: "9999px",
+                background: iconColors[icon.platform] || gs.primaryColor,
+                display: "grid",
+                placeItems: "center",
+                color: "white",
+              }}
+              title={icon.url}
+            >
+              {getSocialIcon(icon.platform)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    case "columns": {
+      const b = block as ColumnsBlock;
+      const columns = b.columnCount === 2 ? "1fr 1fr" : "1fr 1fr 1fr";
+      return (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: columns,
+            gap: `${b.gap}px`,
+            width: "100%",
+          }}
+        >
+          {b.content.slice(0, b.columnCount).map((html, idx) => (
+            <div
+              key={idx}
+              style={{
+                fontFamily: gs.fontFamily,
+                fontSize: "14px",
+                color: gs.textColor,
+              }}
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ))}
+        </div>
+      );
+    }
+    case "divider": {
+      const b = block as DividerBlock;
+      return (
+        <div style={{ padding: `${b.paddingY}px 0` }}>
+          <div
+            style={{
+              height: `${b.thickness}px`,
+              background: b.color,
+              width: "100%",
+            }}
+          />
+        </div>
+      );
+    }
+    case "spacer": {
+      const b = block as SpacerBlock;
+      return <div style={{ height: `${b.height}px` }} />;
+    }
+    case "qrcode": {
+      const b = block as QRCodeBlock;
+      const justify =
+        b.align === "left"
+          ? "flex-start"
+          : b.align === "right"
+            ? "flex-end"
+            : "center";
+      return (
+        <div style={{ display: "flex", justifyContent: justify }}>
+          <QRCodeSVG
+            value="{{user.qrcode}}"
+            size={b.size}
+            bgColor={b.backgroundColor}
+            fgColor={b.foregroundColor}
+          />
+        </div>
+      );
+    }
+    default:
+      return null;
+  }
+}
+
+function SortablePreviewBlock({
+  block,
+  gs,
+  selected,
+  onSelect,
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: {
+  block: EmailBlock;
+  gs: GlobalStyles;
+  selected: boolean;
+  onSelect: (blockId: string) => void;
+  onEdit: (blockId: string) => void;
+  onDuplicate: (blockId: string) => void;
+  onDelete: (blockId: string) => void;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: block.id });
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="mb-3">
+      <div
+        className={`relative group rounded-xl border bg-white px-4 py-4 transition-all ${
+          selected
+            ? "border-pink-400 ring-2 ring-pink-200 shadow-lg"
+            : "border-gray-200 shadow-sm hover:border-pink-200 hover:shadow-md"
+        } ${isDragging ? "opacity-70" : "opacity-100"}`}
+        onClick={() => onSelect(block.id)}
+      >
+        <div className="absolute inset-0 rounded-xl pointer-events-none transition-all group-hover:border group-hover:border-pink-100" />
+        <div className="absolute top-2 right-2 flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+          <button
+            type="button"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-pink-300 hover:text-pink-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(block.id);
+            }}
+          >
+            <Type size={12} />
+            Edit
+          </button>
+          <button
+            type="button"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-blue-300 hover:text-blue-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicate(block.id);
+            }}
+          >
+            <Copy size={12} />
+            Duplicate
+          </button>
+          <button
+            type="button"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-red-300 hover:text-red-600"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(block.id);
+            }}
+          >
+            <Trash2 size={12} />
+            Delete
+          </button>
+          <button
+            type="button"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-gray-300"
+            {...attributes}
+            {...listeners}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical size={12} />
+            Drag
+          </button>
+        </div>
+
+        <div className="space-y-2">{renderPreviewContent(block, gs)}</div>
+      </div>
+    </div>
+  );
 }
 
 function RichTextEditor({
@@ -1585,17 +1881,31 @@ export function EmailTemplateBuilderModal({
     }));
   };
 
+  const removeBlock = (blockId: string) => {
+    setDesign((prev) => {
+      const removedIndex = prev.blocks.findIndex((b) => b.id === blockId);
+      const remaining = prev.blocks.filter((b) => b.id !== blockId);
+      const fallbackBlocks = remaining.length
+        ? remaining
+        : defaultDesignFromHtml().blocks;
+      const nextIndex = Math.min(
+        Math.max(0, removedIndex - 1),
+        fallbackBlocks.length - 1
+      );
+      const nextSelectedId =
+        blockId === selectedId
+          ? fallbackBlocks[nextIndex]?.id
+          : selectedId && fallbackBlocks.some((b) => b.id === selectedId)
+            ? selectedId
+            : fallbackBlocks[0]?.id;
+      setSelectedId(nextSelectedId);
+      return { ...prev, blocks: fallbackBlocks };
+    });
+  };
+
   const removeSelected = () => {
     if (!selectedBlock) return;
-    setDesign((prev) => {
-      const nextBlocks = prev.blocks.filter((b) => b.id !== selectedBlock.id);
-      const nextSelected = nextBlocks[0]?.id;
-      setSelectedId(nextSelected);
-      return {
-        ...prev,
-        blocks: nextBlocks.length ? nextBlocks : defaultDesignFromHtml().blocks,
-      };
-    });
+    removeBlock(selectedBlock.id);
   };
 
   const save = () => {
@@ -1858,7 +2168,6 @@ export function EmailTemplateBuilderModal({
                   Live Preview
                 </span>
               </div>
-              {/* Desktop/Mobile Toggle */}
               <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
                 <button
                   type="button"
@@ -1886,31 +2195,76 @@ export function EmailTemplateBuilderModal({
                 </button>
               </div>
             </div>
+
             <div
-              className={`bg-white border border-gray-200 rounded-xl overflow-hidden shadow-lg mx-auto transition-all duration-300 ${
-                previewMode === "mobile" ? "max-w-sm" : "max-w-2xl"
-              }`}
-            >
-              <div
-                className={`${
+              className="transition-all duration-300 mx-auto"
+              style={{
+                maxWidth:
                   previewMode === "mobile"
-                    ? "bg-gray-800 p-2 flex items-center justify-center"
-                    : "hidden"
-                }`}
+                    ? 460
+                    : design.globalStyles.contentWidth +
+                      design.globalStyles.paddingX * 2 +
+                      60,
+              }}
+            >
+              {previewMode === "mobile" ? (
+                <div className="bg-gray-800 p-2 flex items-center justify-center rounded-t-2xl">
+                  <div className="w-20 h-1 bg-gray-600 rounded-full" />
+                </div>
+              ) : null}
+
+              <div
+                className="border border-gray-200 rounded-2xl shadow-lg overflow-hidden"
+                style={{ background: design.globalStyles.backgroundColor }}
               >
-                <div className="w-20 h-1 bg-gray-600 rounded-full"></div>
+                <div
+                  className="max-h-[calc(100vh-220px)] overflow-auto px-4 py-6 sm:px-6"
+                  style={{ background: design.globalStyles.backgroundColor }}
+                >
+                  <div
+                    className="mx-auto"
+                    style={{ maxWidth: design.globalStyles.contentWidth }}
+                  >
+                    <div
+                      className="bg-white rounded-xl border border-gray-200 shadow-sm"
+                      style={{
+                        padding: `${design.globalStyles.paddingY}px ${design.globalStyles.paddingX}px`,
+                      }}
+                    >
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext
+                          items={design.blocks.map((b) => b.id)}
+                          strategy={verticalListSortingStrategy}
+                        >
+                          {design.blocks.length === 0 ? (
+                            <div className="text-sm text-gray-400 text-center py-12">
+                              Add blocks from the left to start building your
+                              email.
+                            </div>
+                          ) : (
+                            design.blocks.map((block) => (
+                              <SortablePreviewBlock
+                                key={block.id}
+                                block={block}
+                                gs={design.globalStyles}
+                                selected={block.id === selectedId}
+                                onSelect={(id) => setSelectedId(id)}
+                                onEdit={(id) => setSelectedId(id)}
+                                onDuplicate={duplicateBlock}
+                                onDelete={removeBlock}
+                              />
+                            ))
+                          )}
+                        </SortableContext>
+                      </DndContext>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <iframe
-                title="email-preview"
-                className="w-full bg-white"
-                style={{
-                  height:
-                    previewMode === "mobile"
-                      ? "calc(100vh - 240px)"
-                      : "calc(100vh - 180px)",
-                }}
-                srcDoc={previewHtml}
-              />
             </div>
           </div>
 

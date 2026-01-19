@@ -546,7 +546,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
       // Filter out ready-made templates from API response to avoid duplicates
       // Only show custom templates from API, not ready-made ones
-      const customApiTemplates = convertedTemplates.filter((apiTpl: any) => {
+      const customApiTemplates = templatesWithSingleSelection.filter((apiTpl: any) => {
         // Check if this API template matches any ready-made template
         const isReadyMade = staticTemplates.some((staticTpl: any) =>
           matchesReadyMadeTemplate(
@@ -559,9 +559,22 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       });
 
       // Find the selected template from API response (check if a ready-made template is selected)
+      // IMPORTANT: Only ONE template should be selected per flow type
       const selectedApiTemplate = convertedTemplates.find(
         (t: any) => t.isSelected
       );
+      
+      // Ensure only ONE template is selected - deselect all others
+      const templatesWithSingleSelection = convertedTemplates.map((t: any, index: number) => {
+        // If this is the first selected template, keep it selected
+        // Otherwise, deselect it
+        if (t.isSelected && selectedApiTemplate && t.id === selectedApiTemplate.id) {
+          return t; // Keep selected
+        } else {
+          return { ...t, isSelected: false }; // Deselect
+        }
+      });
+      
       if (selectedApiTemplate) {
         // Check if the selected template is a ready-made template
         const isSelectedReadyMade = staticTemplates.some((staticTpl: any) =>
