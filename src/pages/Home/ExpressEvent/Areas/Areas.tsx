@@ -8,6 +8,7 @@ import {
 } from "@/apis/apiHelpers";
 import { Area } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
+import Pagination from "@/components/Pagination";
 
 export type Area = {
   id: string;
@@ -27,7 +28,6 @@ export type Badge = {
 
 export default function Areas({}) {
   const [data, setData] = useState<Area[]>([]);
-  const [editingRow, setEditingRow] = useState<string | null>(null);
   const [editData, setEditData] = useState<Area | null>(null);
   const [newArea, setNewArea] = useState({
     name: "",
@@ -36,7 +36,8 @@ export default function Areas({}) {
     guestNumbers: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5);
+  const [itemsPerPage] = useState(10);
+  const [pagination, setPagination] = useState<any>(null);
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [validationErrors, setValidationErrors] = useState({
     name: "",
@@ -53,6 +54,14 @@ export default function Areas({}) {
   const [addLoading, setAddLoading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [areaToEdit, setAreaToEdit] = useState<Area | null>(null);
+  const [editValidationErrors, setEditValidationErrors] = useState({
+    name: "",
+    location: "",
+    type: "",
+    guestNumbers: "",
+  });
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "warning" | "info";
@@ -140,16 +149,16 @@ export default function Areas({}) {
     }
   }, [eventId]);
 
-  // Fetch session areas on component mount
+  // Fetch session areas on component mount and when page changes
   useEffect(() => {
-    if (eventId) {
+    if (eventId && currentPage > 0) {
       console.log("event id---", eventId);
-      fetchSessionAreas();
+      fetchSessionAreas(eventId, currentPage);
     }
-  }, [eventId]);
+  }, [eventId, currentPage]);
 
-  const fetchSessionAreas = async () => {
-    if (!eventId) {
+  const fetchSessionAreas = async (id: string, page: number = 1) => {
+    if (!id) {
       console.log("No event ID found");
       return;
     }
@@ -158,7 +167,10 @@ export default function Areas({}) {
     setError(null);
 
     try {
-      const response = await getSessionAreaApi(eventId);
+      const response = await getSessionAreaApi(id, {
+        page,
+        per_page: itemsPerPage,
+      });
       console.log("GET API Response:", response);
 
       if (response?.data?.data) {
@@ -172,13 +184,22 @@ export default function Areas({}) {
         }));
 
         setData(areas);
+
+        // Set pagination metadata
+        const paginationMeta =
+          response.data?.meta?.pagination || response.data?.pagination;
+        if (paginationMeta) {
+          setPagination(paginationMeta);
+        }
       } else {
         setData([]);
+        setPagination(null);
       }
     } catch (error) {
       console.error("Error fetching session areas:", error);
       setError("Failed to fetch session areas");
       setData([]);
+      setPagination(null);
     } finally {
       setLoading(false);
     }
@@ -256,7 +277,9 @@ export default function Areas({}) {
       setError("Failed to add session area");
       showNotification("Failed to add session area", "error");
       // If add fails, refresh to get actual state from server
-      await fetchSessionAreas();
+      if (eventId) {
+        await fetchSessionAreas(eventId, currentPage);
+      }
     } finally {
       setAddLoading(false);
     }
@@ -285,7 +308,9 @@ export default function Areas({}) {
         console.log(`Successfully deleted area with id: ${areaToDelete.id}`);
 
         // Refresh data to ensure UI matches server state
-        await fetchSessionAreas();
+        if (eventId) {
+          await fetchSessionAreas(eventId, currentPage);
+        }
         showNotification("Area deleted successfully!", "success");
         closeDeleteModal();
       } else {
@@ -297,7 +322,9 @@ export default function Areas({}) {
       showNotification("Failed to delete session area", "error");
 
       // Refresh to get current state
-      await fetchSessionAreas();
+      if (eventId) {
+        await fetchSessionAreas(eventId, currentPage);
+      }
     } finally {
       setDeleteLoading(null);
     }
@@ -313,15 +340,54 @@ export default function Areas({}) {
     setAreaToDelete(null);
   };
 
-  const handleEdit = (area: Area) => {
-    setEditingRow(area.id);
+  const openEditModal = (area: Area) => {
+    setAreaToEdit({ ...area });
     setEditData({ ...area });
+    setEditValidationErrors({
+      name: "",
+      location: "",
+      type: "",
+      guestNumbers: "",
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setAreaToEdit(null);
+    setEditData(null);
+    setEditValidationErrors({
+      name: "",
+      location: "",
+      type: "",
+      guestNumbers: "",
+    });
+  };
+
+  const handleEdit = (area: Area) => {
+    openEditModal(area);
   };
 
   const handleSaveEdit = async () => {
     if (!editData || !eventId) {
       setError("Edit data or Event ID not found");
       showNotification("Edit data or Event ID not found", "error");
+      return;
+    }
+
+    // Validate form fields
+    const errors = {
+      name: editData.name ? "" : "Name is required",
+      location: editData.location ? "" : "Location is required",
+      type: editData.type ? "" : "Type is required",
+      guestNumbers: editData.guestNumbers ? "" : "Guest numbers are required",
+    };
+
+    setEditValidationErrors(errors);
+    const hasError = Object.values(errors).some((err) => err !== "");
+    if (hasError) {
+      console.log("Validation failed");
+      showNotification("Please fill all required fields", "error");
       return;
     }
 
@@ -371,10 +437,10 @@ export default function Areas({}) {
           )
         );
 
-        setEditingRow(null);
         setEditData(null);
         console.log(`Successfully updated area with id: ${editData.id}`);
         showNotification("Area updated successfully!", "success");
+        closeEditModal();
       } else {
         throw new Error("Update response format is invalid");
       }
@@ -384,16 +450,14 @@ export default function Areas({}) {
       showNotification("Failed to update session area", "error");
 
       // Rollback on error
-      await fetchSessionAreas();
+      if (eventId) {
+        await fetchSessionAreas(eventId, currentPage);
+      }
     } finally {
       setSaveLoading(null);
     }
   };
 
-  const handleCancelEdit = () => {
-    setEditingRow(null);
-    setEditData(null);
-  };
 
   const toggleRowSelection = (id: string) => {
     const newSelection = new Set(selectedRows);
@@ -406,8 +470,7 @@ export default function Areas({}) {
   };
 
   const toggleAllSelection = () => {
-    const currentPageData = getCurrentPageData();
-    const currentPageIds = currentPageData.map((area) => area.id);
+    const currentPageIds = data.map((area) => area.id);
     const allCurrentSelected = currentPageIds.every((id) =>
       selectedRows.has(id)
     );
@@ -424,31 +487,6 @@ export default function Areas({}) {
         currentPageIds.forEach((id) => newSet.add(id));
         return newSet;
       });
-    }
-  };
-
-  // Pagination logic
-  const totalPages = Math.ceil(data.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-
-  const getCurrentPageData = () => {
-    return data.slice(startIndex, endIndex);
-  };
-
-  const goToPage = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  const goToPrevious = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const goToNext = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
     }
   };
 
@@ -790,7 +828,7 @@ export default function Areas({}) {
                   color: "#6b7280",
                 }}
               >
-                {data.length} areas
+                {pagination?.total_count || data.length} areas
               </span>
             )}
           </div>
@@ -826,10 +864,8 @@ export default function Areas({}) {
                   <input
                     type="checkbox"
                     checked={
-                      getCurrentPageData().length > 0 &&
-                      getCurrentPageData().every((area) =>
-                        selectedRows.has(area.id)
-                      )
+                      data.length > 0 &&
+                      data.every((area) => selectedRows.has(area.id))
                     }
                     onChange={toggleAllSelection}
                     style={{ width: "16px", height: "16px" }}
@@ -928,12 +964,12 @@ export default function Areas({}) {
                     </td>
                   </tr>
                 ))
-              : getCurrentPageData().map((area, index) => (
+              : data.map((area, index) => (
                   <tr
                     key={area.id}
                     style={{
                       borderBottom:
-                        index < getCurrentPageData().length - 1
+                        index < data.length - 1
                           ? "1px solid #f3f4f6"
                           : "none",
                       backgroundColor: "white",
@@ -976,28 +1012,7 @@ export default function Areas({}) {
                         verticalAlign: "middle",
                       }}
                     >
-                      {editingRow === area.id ? (
-                        <input
-                          type="text"
-                          value={editData?.name || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev ? { ...prev, name: e.target.value } : null
-                            )
-                          }
-                          style={{
-                            padding: "6px 8px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            width: "100%",
-                            outline: "none",
-                            textAlign: "center",
-                          }}
-                        />
-                      ) : (
-                        area.name
-                      )}
+                      {area.name}
                     </td>
                     <td
                       style={{
@@ -1008,30 +1023,7 @@ export default function Areas({}) {
                         verticalAlign: "middle",
                       }}
                     >
-                      {editingRow === area.id ? (
-                        <input
-                          type="text"
-                          value={editData?.location || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev
-                                ? { ...prev, location: e.target.value }
-                                : null
-                            )
-                          }
-                          style={{
-                            padding: "6px 8px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            width: "100%",
-                            outline: "none",
-                            textAlign: "center",
-                          }}
-                        />
-                      ) : (
-                        area.location
-                      )}
+                      {area.location}
                     </td>
                     <td
                       style={{
@@ -1042,37 +1034,7 @@ export default function Areas({}) {
                         verticalAlign: "middle",
                       }}
                     >
-                      {editingRow === area.id ? (
-                        <select
-                          value={editData?.type || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev ? { ...prev, type: e.target.value } : null
-                            )
-                          }
-                          style={{
-                            padding: "6px 8px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            width: "100%",
-                            outline: "none",
-                            textAlign: "center",
-                          }}
-                        >
-                          <option value="any">Any</option>
-                          {badges.map((badge) => (
-                            <option
-                              key={badge.id}
-                              value={badge.attributes.name}
-                            >
-                              {badge.attributes.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        area.type
-                      )}
+                      {area.type}
                     </td>
                     <td
                       style={{
@@ -1083,33 +1045,7 @@ export default function Areas({}) {
                         verticalAlign: "middle",
                       }}
                     >
-                      {editingRow === area.id ? (
-                        <input
-                          type="number"
-                          value={editData?.guestNumbers || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    guestNumbers: parseInt(e.target.value) || 0,
-                                  }
-                                : null
-                            )
-                          }
-                          style={{
-                            padding: "6px 8px",
-                            border: "1px solid #d1d5db",
-                            borderRadius: "4px",
-                            fontSize: "14px",
-                            width: "100%",
-                            outline: "none",
-                            textAlign: "center",
-                          }}
-                        />
-                      ) : (
-                        area.guestNumbers
-                      )}
+                      {area.guestNumbers}
                     </td>
                     <td
                       style={{
@@ -1126,142 +1062,77 @@ export default function Areas({}) {
                           justifyContent: "center",
                         }}
                       >
-                        {editingRow === area.id ? (
-                          <>
-                            <button
-                              onClick={handleSaveEdit}
-                              disabled={saveLoading === area.id}
+                        <button
+                          onClick={() => handleEdit(area)}
+                          style={{
+                            padding: "6px",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor: "pointer",
+                            color: "#f59e0b",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                          onMouseOver={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "#fef3c7")
+                          }
+                          onMouseOut={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => openDeleteModal(area)}
+                          disabled={deleteLoading === area.id}
+                          style={{
+                            padding: "6px",
+                            backgroundColor: "transparent",
+                            border: "none",
+                            borderRadius: "4px",
+                            cursor:
+                              deleteLoading === area.id
+                                ? "not-allowed"
+                                : "pointer",
+                            color:
+                              deleteLoading === area.id
+                                ? "#9ca3af"
+                                : "#ef4444",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            opacity: deleteLoading === area.id ? 0.6 : 1,
+                          }}
+                          onMouseOver={(e) => {
+                            if (deleteLoading !== area.id) {
+                              e.currentTarget.style.backgroundColor =
+                                "#fee2e2";
+                            }
+                          }}
+                          onMouseOut={(e) =>
+                            (e.currentTarget.style.backgroundColor =
+                              "transparent")
+                          }
+                        >
+                          {deleteLoading === area.id ? (
+                            <div
                               style={{
-                                padding: "6px 12px",
-                                backgroundColor:
-                                  saveLoading === area.id
-                                    ? "#9ca3af"
-                                    : "#10b981",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                fontSize: "12px",
-                                cursor:
-                                  saveLoading === area.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
+                                width: "16px",
+                                height: "16px",
+                                border: "2px solid #f3f4f6",
+                                borderTop: "2px solid #ef4444",
+                                borderRadius: "50%",
+                                animation: "spin 1s linear infinite",
                               }}
-                            >
-                              {saveLoading === area.id ? (
-                                <>
-                                  <div
-                                    style={{
-                                      width: "12px",
-                                      height: "12px",
-                                      border: "2px solid #f3f4f6",
-                                      borderTop: "2px solid #ffffff",
-                                      borderRadius: "50%",
-                                      animation: "spin 1s linear infinite",
-                                    }}
-                                  />
-                                  Saving...
-                                </>
-                              ) : (
-                                "Save"
-                              )}
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              disabled={saveLoading === area.id}
-                              style={{
-                                padding: "6px 12px",
-                                backgroundColor: "#6b7280",
-                                color: "white",
-                                border: "none",
-                                borderRadius: "4px",
-                                fontSize: "12px",
-                                cursor:
-                                  saveLoading === area.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                              }}
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleEdit(area)}
-                              style={{
-                                padding: "6px",
-                                backgroundColor: "transparent",
-                                border: "none",
-                                borderRadius: "4px",
-                                cursor: "pointer",
-                                color: "#f59e0b",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                              }}
-                              onMouseOver={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "#fef3c7")
-                              }
-                              onMouseOut={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "transparent")
-                              }
-                            >
-                              <Edit size={16} />
-                            </button>
-                            <button
-                              onClick={() => openDeleteModal(area)}
-                              disabled={deleteLoading === area.id}
-                              style={{
-                                padding: "6px",
-                                backgroundColor: "transparent",
-                                border: "none",
-                                borderRadius: "4px",
-                                cursor:
-                                  deleteLoading === area.id
-                                    ? "not-allowed"
-                                    : "pointer",
-                                color:
-                                  deleteLoading === area.id
-                                    ? "#9ca3af"
-                                    : "#ef4444",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                opacity: deleteLoading === area.id ? 0.6 : 1,
-                              }}
-                              onMouseOver={(e) => {
-                                if (deleteLoading !== area.id) {
-                                  e.currentTarget.style.backgroundColor =
-                                    "#fee2e2";
-                                }
-                              }}
-                              onMouseOut={(e) =>
-                                (e.currentTarget.style.backgroundColor =
-                                  "transparent")
-                              }
-                            >
-                              {deleteLoading === area.id ? (
-                                <div
-                                  style={{
-                                    width: "16px",
-                                    height: "16px",
-                                    border: "2px solid #f3f4f6",
-                                    borderTop: "2px solid #ef4444",
-                                    borderRadius: "50%",
-                                    animation: "spin 1s linear infinite",
-                                  }}
-                                />
-                              ) : (
-                                <Trash2 size={16} />
-                              )}
-                            </button>
-                          </>
-                        )}
+                            />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -1269,7 +1140,7 @@ export default function Areas({}) {
           </tbody>
         </table>
 
-        {getCurrentPageData().length === 0 && !loading && (
+        {data.length === 0 && !loading && (
           <div
             style={{
               padding: "40px",
@@ -1283,78 +1154,23 @@ export default function Areas({}) {
         )}
 
         {/* Pagination */}
-        {!loading && (
+        {pagination && pagination.total_pages > 1 && (
           <div
             style={{
               padding: "16px 20px",
               borderTop: "1px solid #e5e7eb",
               backgroundColor: "#f9fafb",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
             }}
           >
-            <div style={{ fontSize: "14px", color: "#6b7280" }}>
-              Showing {startIndex + 1} to {Math.min(endIndex, data.length)} of{" "}
-              {data.length} entries
-            </div>
-            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-              <button
-                onClick={goToPrevious}
-                disabled={currentPage === 1}
-                style={{
-                  padding: "6px 12px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor: currentPage === 1 ? "#f3f4f6" : "white",
-                  color: currentPage === 1 ? "#9ca3af" : "#374151",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                }}
-              >
-                Previous
-              </button>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => goToPage(page)}
-                    style={{
-                      padding: "6px 12px",
-                      border: "1px solid #d1d5db",
-                      backgroundColor:
-                        page === currentPage ? "#3b82f6" : "white",
-                      color: page === currentPage ? "white" : "#374151",
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      cursor: "pointer",
-                      minWidth: "40px",
-                    }}
-                  >
-                    {page}
-                  </button>
-                )
-              )}
-
-              <button
-                onClick={goToNext}
-                disabled={currentPage === totalPages}
-                style={{
-                  padding: "6px 12px",
-                  border: "1px solid #d1d5db",
-                  backgroundColor:
-                    currentPage === totalPages ? "#f3f4f6" : "white",
-                  color: currentPage === totalPages ? "#9ca3af" : "#374151",
-                  borderRadius: "4px",
-                  fontSize: "14px",
-                  cursor:
-                    currentPage === totalPages ? "not-allowed" : "pointer",
-                }}
-              >
-                Next
-              </button>
-            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.total_pages || 1}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                // Scroll to top when page changes
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            />
           </div>
         )}
       </div>
@@ -1474,6 +1290,311 @@ export default function Areas({}) {
                   </>
                 ) : (
                   "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Area Modal */}
+      {isEditModalOpen && areaToEdit && editData && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+          onClick={closeEditModal}
+        >
+          <div
+            style={{
+              backgroundColor: "white",
+              borderRadius: "8px",
+              padding: "24px",
+              maxWidth: "500px",
+              width: "90%",
+              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1)",
+              maxHeight: "90vh",
+              overflowY: "auto",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3
+              style={{
+                fontSize: "18px",
+                fontWeight: "600",
+                color: "#111827",
+                marginBottom: "20px",
+                margin: 0,
+              }}
+            >
+              Edit Area
+            </h3>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Area Name */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Area Name <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter area name"
+                  value={editData.name}
+                  onChange={(e) =>
+                    setEditData((prev) =>
+                      prev ? { ...prev, name: e.target.value } : null
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: editValidationErrors.name
+                      ? "1px solid #ef4444"
+                      : "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    backgroundColor: "white",
+                    outline: "none",
+                  }}
+                />
+                {editValidationErrors.name && (
+                  <div
+                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                  >
+                    {editValidationErrors.name}
+                  </div>
+                )}
+              </div>
+
+              {/* Area Location */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Area Location <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter area location"
+                  value={editData.location}
+                  onChange={(e) =>
+                    setEditData((prev) =>
+                      prev ? { ...prev, location: e.target.value } : null
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: editValidationErrors.location
+                      ? "1px solid #ef4444"
+                      : "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    backgroundColor: "white",
+                    outline: "none",
+                  }}
+                />
+                {editValidationErrors.location && (
+                  <div
+                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                  >
+                    {editValidationErrors.location}
+                  </div>
+                )}
+              </div>
+
+              {/* User Type */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    marginBottom: "6px",
+                  }}
+                >
+                  User Type <span style={{ color: "red" }}>*</span>
+                </label>
+                <select
+                  value={editData.type}
+                  onChange={(e) =>
+                    setEditData((prev) =>
+                      prev ? { ...prev, type: e.target.value } : null
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: editValidationErrors.type
+                      ? "1px solid #ef4444"
+                      : "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    backgroundColor: "white",
+                    outline: "none",
+                    color: editData.type ? "#000" : "#9ca3af",
+                  }}
+                >
+                  <option value="" disabled>
+                    Select User Type
+                  </option>
+                  <option value="any">Any</option>
+                  {badgeLoading ? (
+                    <option value="" disabled>
+                      Loading badges...
+                    </option>
+                  ) : (
+                    badges.map((badge) => (
+                      <option key={badge.id} value={badge.attributes.name}>
+                        {badge.attributes.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {editValidationErrors.type && (
+                  <div
+                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                  >
+                    {editValidationErrors.type}
+                  </div>
+                )}
+              </div>
+
+              {/* Guest Numbers */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "14px",
+                    fontWeight: "500",
+                    color: "#374151",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Guest Numbers <span style={{ color: "red" }}>*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter guest numbers"
+                  value={editData.guestNumbers}
+                  onChange={(e) =>
+                    setEditData((prev) =>
+                      prev
+                        ? {
+                            ...prev,
+                            guestNumbers: parseInt(e.target.value) || 0,
+                          }
+                        : null
+                    )
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "8px 12px",
+                    border: editValidationErrors.guestNumbers
+                      ? "1px solid #ef4444"
+                      : "1px solid #d1d5db",
+                    borderRadius: "6px",
+                    fontSize: "14px",
+                    backgroundColor: "white",
+                    outline: "none",
+                  }}
+                />
+                {editValidationErrors.guestNumbers && (
+                  <div
+                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                  >
+                    {editValidationErrors.guestNumbers}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "flex-end",
+                marginTop: "24px",
+              }}
+            >
+              <button
+                onClick={closeEditModal}
+                disabled={saveLoading === editData.id}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor: "#e5e7eb",
+                  color: "#111827",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    saveLoading === editData.id ? "not-allowed" : "pointer",
+                  opacity: saveLoading === editData.id ? 0.6 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={saveLoading === editData.id}
+                style={{
+                  padding: "8px 16px",
+                  backgroundColor:
+                    saveLoading === editData.id ? "#9ca3af" : "#10b981",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "6px",
+                  fontSize: "14px",
+                  fontWeight: "500",
+                  cursor:
+                    saveLoading === editData.id ? "not-allowed" : "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                {saveLoading === editData.id ? (
+                  <>
+                    <div
+                      style={{
+                        width: "14px",
+                        height: "14px",
+                        border: "2px solid #f3f4f6",
+                        borderTop: "2px solid #ffffff",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                      }}
+                    />
+                    Saving...
+                  </>
+                ) : (
+                  "Save Changes"
                 )}
               </button>
             </div>

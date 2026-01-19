@@ -81,6 +81,12 @@ function Galleries() {
     }>
   >([]);
 
+  // Notification
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
   // Fetch Gallery Data
   const fetchGallery = async () => {
     if (!eventId || !galleryId) return;
