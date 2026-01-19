@@ -275,7 +275,7 @@ const SideBar = ({
     {
       icon: CheckCircle,
       label: "Attendees",
-      availableForExpress: false,
+      availableForExpress: true,
       submenu: [
         {
           label: "Check In",
@@ -283,7 +283,7 @@ const SideBar = ({
           path: currentEventId
             ? `/attendees/check-in?eventId=${currentEventId}`
             : "/attendees/check-in",
-          availableForExpress: false,
+          availableForExpress: true,
         },
         {
           label: "Check Out",
@@ -291,7 +291,7 @@ const SideBar = ({
           path: currentEventId
             ? `/attendees/check-out?eventId=${currentEventId}`
             : "/attendees/check-out",
-          availableForExpress: false,
+          availableForExpress: true,
         },
       ],
     },

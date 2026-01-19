@@ -160,7 +160,7 @@ const renderCustomField = (
             setFormData({ ...formData, [field.name]: e.target.value })
           }
           style={fieldInputStyle}
-          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
         />
       );
     case "textarea":
@@ -172,7 +172,7 @@ const renderCustomField = (
             setFormData({ ...formData, [field.name]: e.target.value })
           }
           style={fieldInputStyle}
-          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500 resize-y"
           rows={4}
         />
       );
@@ -185,7 +185,7 @@ const renderCustomField = (
             setFormData({ ...formData, [field.name]: e.target.value })
           }
           style={fieldInputStyle}
-          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
         >
           <option value="">Select an option...</option>
           {field.options?.map((opt) => (
@@ -211,7 +211,7 @@ const renderCustomField = (
                 onChange={(e) =>
                   setFormData({ ...formData, [field.name]: e.target.value })
                 }
-                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
               />
               <span className="text-gray-700">{opt.label}</span>
             </label>
@@ -237,7 +237,7 @@ const renderCustomField = (
                     : current.filter((v: string) => v !== opt.value);
                   setFormData({ ...formData, [field.name]: updated });
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
               />
               <span className="text-gray-700">{opt.label}</span>
             </label>
@@ -409,7 +409,7 @@ const renderCustomField = (
           onChange={(e) =>
             setFormData({ ...formData, [field.name]: e.target.value })
           }
-          className="w-full text-sm resize-y transition-all outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full text-sm resize-y transition-all outline-none focus:ring-2 focus:ring-pink-500"
           style={{
             ...fieldInputStyle,
             color: theme?.textColor || "#111827",
@@ -3106,15 +3106,15 @@ const AdvanceRegistration = ({
             {/* Custom Form Builder Card (First Position - Recommended) */}
             <div
               onClick={() => handleOpenCustomFormBuilder()}
-              className="border-2 border-dashed border-green-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-green-500 hover:bg-green-50 flex flex-col items-center justify-center aspect-square relative"
+              className="border-2 border-dashed border-pink-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square relative"
             >
-              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+              <div className="absolute top-2 right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
                 NEW
               </div>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <Plus className="text-green-600" size={32} />
+              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-4">
+                <Plus className="text-pink-600" size={32} />
               </div>
-              <h3 className="text-lg font-medium mb-2 text-center text-green-600">
+              <h3 className="text-lg font-medium mb-2 text-center text-pink-600">
                 Custom Form Builder
               </h3>
               <p className="text-sm text-gray-500 text-center">
@@ -3166,7 +3166,7 @@ const AdvanceRegistration = ({
                   key={template.id}
                   className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${isSelected
                     ? "border-pink-500 bg-pink-50"
-                    : "border-gray-200 hover:border-blue-500"
+                    : "border-gray-200 hover:border-pink-500"
                     }`}
                 >
                   {/* Edit/Delete buttons */}
@@ -3176,7 +3176,7 @@ const AdvanceRegistration = ({
                         e.stopPropagation();
                         handleEditFormBuilderTemplate(template);
                       }}
-                      className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500 hover:bg-blue-50 transition-colors"
+                      className="p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
                       title="Edit template"
                     >
                       <Edit size={14} />
@@ -3228,8 +3228,8 @@ const AdvanceRegistration = ({
                   {/* Selected Indicator */}
                   {isSelected && (
                     <div className="mt-2 flex items-center justify-center">
-                      <Check size={16} className="text-blue-500 mr-1" />
-                      <span className="text-sm text-blue-500 font-medium">
+                      <Check size={16} className="text-pink-500 mr-1" />
+                      <span className="text-sm text-pink-500 font-medium">
                         Selected
                       </span>
                     </div>
@@ -3395,7 +3395,7 @@ const AdvanceRegistration = ({
                     disabled={isLoading}
                     className={`px-4 py-2 rounded-lg text-sm font-medium ${isLoading
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                      : "bg-pink-500 hover:bg-pink-600 text-white"
                       }`}
                   >
                     {isLoading ? "Saving..." : "Use This Template"}
@@ -3461,12 +3461,12 @@ const AdvanceRegistration = ({
             <div
               className={`px-6 py-3 rounded-lg shadow-lg ${
                 notification.type === "success"
-                  ? "bg-green-500 text-white"
+                  ? "bg-pink-500 text-white"
                   : notification.type === "error"
                   ? "bg-red-500 text-white"
                   : notification.type === "warning"
                   ? "bg-yellow-500 text-white"
-                  : "bg-blue-500 text-white"
+                  : "bg-pink-500 text-white"
               }`}
             >
               {notification.message}

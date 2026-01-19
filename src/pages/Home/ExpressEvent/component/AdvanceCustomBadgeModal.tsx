@@ -584,9 +584,9 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col">
       <div className="bg-white w-full h-full overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
+        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-pink-500 via-pink-600 to-purple-600 text-white">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-semibold text-white">
               {isEditMode
                 ? "Edit Custom Badge"
                 : "Create Custom Badge Template"}
@@ -600,13 +600,13 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   name: e.target.value,
                 })
               }
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="px-3 py-2 border border-white/30 rounded-md bg-white/20 text-white placeholder:text-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50"
               placeholder="Template name"
             />
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200"
+            className="p-2 rounded-full hover:bg-white/20 text-white"
           >
             <X size={20} />
           </button>
@@ -1307,12 +1307,12 @@ const AdvanceCustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           <div
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
-                ? "bg-green-500 text-white"
+                ? "bg-pink-500 text-white"
                 : notification.type === "error"
                 ? "bg-red-500 text-white"
                 : notification.type === "warning"
                 ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                : "bg-pink-500 text-white"
             }`}
           >
             {notification.message}
