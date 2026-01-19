@@ -49,22 +49,11 @@ interface CustomFormBuilderProps {
     bannerImage?: File | string,
     theme?: FormTheme,
     templateName?: string
-  ) => void;
+  ) => void | Promise<void>;
   onClose: () => void;
 }
 
 const DEFAULT_FORM_FIELDS: CustomFormField[] = [
-  // Heading
-  {
-    id: "heading-1",
-    type: "heading",
-    label: "Complex Master Form",
-    name: "heading-1",
-    required: false,
-    unique: false,
-    content: "Complex Master Form",
-    description: "Use a permanent address where you can receive mail.",
-  },
   // Personal Information Section - Row Container
   {
     id: "container-personal-info",
@@ -109,6 +98,16 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     required: true,
     unique: false,
   },
+  // Organization field
+  {
+    id: "field-organization",
+    type: "text",
+    label: "Organization",
+    name: "organization",
+    placeholder: "Enter organization",
+    required: false,
+    unique: false,
+  },
   {
     id: "field-country-1",
     type: "select",
@@ -123,17 +122,6 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
       { label: "Canada", value: "ca" },
       { label: "United Kingdom", value: "uk" },
     ],
-  },
-  // Subheader
-  {
-    id: "heading-2",
-    type: "heading",
-    label: "Subheader inside the form",
-    name: "heading-2",
-    required: false,
-    unique: false,
-    content: "Subheader inside the form",
-    description: "Use a permanent address where you can receive mail.",
   },
   // Address Section - Row Container
   {
@@ -219,18 +207,9 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     type: "textarea",
     label: "About",
     name: "about",
-    placeholder: "you@example.com",
+    placeholder: "Description...",
     required: false,
     unique: false,
-  },
-  {
-    id: "paragraph-1",
-    type: "paragraph",
-    label: "Description",
-    name: "paragraph-1",
-    required: false,
-    unique: false,
-    content: "Brief description for your profile. URLs are hyperlinked.",
   },
   // Photo Upload
   {
@@ -295,6 +274,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   // Logo states
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  
+  // Loading state for save button
+  const [isSaving, setIsSaving] = useState(false);
 
   const [theme, setTheme] = useState<FormTheme>({
     formBackgroundColor: "#ffffff",
@@ -801,8 +783,18 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     }));
   };
 
-  const handleSave = () => {
-    console.log("buttom is clicked");
+  const handleSave = async () => {
+    console.log("💾 Save button clicked");
+    
+    // Debug: Check if title field is in fields before saving
+    const hasTitleField = fields.some(f => f.name === "title" || f.label === "Title");
+    console.log("🔍 Fields before save:", {
+      totalFields: fields.length,
+      hasTitleField,
+      titleField: fields.find(f => f.name === "title" || f.label === "Title"),
+      allFieldNames: fields.map(f => ({ name: f.name, label: f.label, type: f.type })),
+    });
+    
     if (fields.length === 0) {
       alert("Please add at least one field before saving.");
       return;
@@ -812,7 +804,23 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       setIsEditingTemplateName(true);
       return;
     }
-    onSave(fields, bannerImage || undefined, theme, templateName.trim());
+    
+    setIsSaving(true);
+    try {
+      // Ensure all fields are included (no filtering)
+      const fieldsToSave = [...fields]; // Make a copy to ensure all fields are saved
+      
+      console.log("💾 Saving fields:", {
+        fieldsCount: fieldsToSave.length,
+        hasTitleField: fieldsToSave.some(f => f.name === "title" || f.label === "Title"),
+      });
+      
+      await onSave(fieldsToSave, bannerImage || undefined, theme, templateName.trim());
+    } catch (error) {
+      console.error("Error saving form:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   React.useEffect(() => {
@@ -977,10 +985,13 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-5 py-2.5 bg-pink-500 hover:bg-pink-600 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                disabled={isSaving}
+                className={`flex items-center gap-2 px-5 py-2.5 bg-pink-500 hover:bg-pink-600 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all ${
+                  isSaving ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
                 <Save size={18} />
-                Save Form
+                {isSaving ? "Saving..." : "Save Form"}
               </button>
               <button
                 onClick={onClose}

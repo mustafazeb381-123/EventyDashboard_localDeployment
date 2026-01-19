@@ -91,6 +91,9 @@ const PollPage = () => {
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [isDeletePollModalOpen, setIsDeletePollModalOpen] = useState(false);
+  const [pollToDelete, setPollToDelete] = useState<Poll | null>(null);
+  const [isDeletingPoll, setIsDeletingPoll] = useState(false);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -344,17 +347,26 @@ const PollPage = () => {
     }
   };
 
-  const onDelete = async (poll: Poll) => {
-    if (!eventId || !selectedAgendaId) return;
-    if (!window.confirm("Delete this poll?")) return;
+  const onDelete = (poll: Poll) => {
+    setPollToDelete(poll);
+    setIsDeletePollModalOpen(true);
+  };
 
+  const confirmDeletePoll = async () => {
+    if (!eventId || !selectedAgendaId || !pollToDelete) return;
+
+    setIsDeletingPoll(true);
     try {
-      await deleteAgendaPoll(eventId, selectedAgendaId, poll.id);
+      await deleteAgendaPoll(eventId, selectedAgendaId, pollToDelete.id);
       showNotification("Poll deleted", "success");
       await fetchPolls();
+      setIsDeletePollModalOpen(false);
+      setPollToDelete(null);
     } catch (error) {
       console.error("Delete poll error:", error);
       showNotification("Failed to delete poll", "error");
+    } finally {
+      setIsDeletingPoll(false);
     }
   };
 
@@ -702,6 +714,54 @@ const PollPage = () => {
                   "Create"
                 )}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Poll Confirmation Modal */}
+      {isDeletePollModalOpen && pollToDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => {
+            if (!isDeletingPoll) {
+              setIsDeletePollModalOpen(false);
+              setPollToDelete(null);
+            }
+          }}
+        >
+          <div
+            className="bg-white p-6 rounded-lg w-96"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-2 text-gray-900">
+              Delete poll?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">
+                "{pollToDelete.question || "this poll"}"
+              </span>
+              ? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsDeletePollModalOpen(false);
+                  setPollToDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isDeletingPoll}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeletePoll}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isDeletingPoll}
+              >
+                {isDeletingPoll ? "Deleting..." : "Delete"}
+              </button>
             </div>
           </div>
         </div>

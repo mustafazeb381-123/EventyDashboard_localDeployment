@@ -130,6 +130,9 @@ function RegisterdUser() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [userToReset, setUserToReset] = useState<any | null>(null);
+  const [resettingUserId, setResettingUserId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -300,14 +303,16 @@ function RegisterdUser() {
       if (editForm.email) formData.append("event_user[email]", editForm.email);
       if (editForm.position)
         formData.append("event_user[position]", editForm.position);
-      if (editForm.organization)
-        formData.append("event_user[organization]", editForm.organization);
       if (editForm.printed !== undefined)
         formData.append("event_user[printed]", String(editForm.printed));
 
       // ✅ Add user_type
       if (editForm.user_type)
         formData.append("event_user[user_type]", editForm.user_type);
+
+      // ✅ Save organization to custom_fields.title instead of event_user[organization]
+      if (editForm.organization)
+        formData.append("event_user[custom_fields][title]", editForm.organization);
 
       // Append image if provided
       if (selectedImageFile)
@@ -327,6 +332,10 @@ function RegisterdUser() {
                 attributes: {
                   ...u.attributes,
                   ...editForm, // includes user_type now
+                  custom_fields: {
+                    ...u.attributes?.custom_fields,
+                    title: editForm.organization, // Update title in custom_fields with organization value
+                  },
                   image: updatedUser?.attributes?.image
                     ? `${updatedUser.attributes.image}?t=${Date.now()}`
                     : u.attributes.image,
@@ -492,12 +501,15 @@ function RegisterdUser() {
             user.attributes?.organization?.toLowerCase() || "";
           const phoneNumber =
             user.attributes?.phone_number?.toLowerCase() || "";
+          // Include title from custom_fields in search
+          const title = user.attributes?.custom_fields?.title?.toLowerCase() || "";
 
           return (
             name.includes(searchLower) ||
             email.includes(searchLower) ||
             organization.includes(searchLower) ||
-            phoneNumber.includes(searchLower)
+            phoneNumber.includes(searchLower) ||
+            title.includes(searchLower)
           );
         });
 
@@ -646,27 +658,32 @@ function RegisterdUser() {
     );
   };
 
-  const handleResetCheckInOut = async (userId: string) => {
-    if (!eventId) {
+  const handleResetCheckInOut = (user: any) => {
+    setUserToReset(user);
+    setIsResetModalOpen(true);
+  };
+
+  const confirmResetCheckInOut = async () => {
+    if (!eventId || !userToReset) {
       showNotification("Event ID is missing.", "error");
+      setIsResetModalOpen(false);
+      setUserToReset(null);
       return;
     }
 
-    if (
-      !window.confirm(
-        "Are you sure you want to reset this user's check-in/out status?"
-      )
-    )
-      return;
-
+    setResettingUserId(userToReset.id);
     try {
-      const response = await resetCheckInOutStatus(eventId, userId);
+      const response = await resetCheckInOutStatus(eventId, userToReset.id);
       console.log("Reset response:", response.data);
 
       showNotification("Check-in/out status reset successfully!", "success");
+      setIsResetModalOpen(false);
+      setUserToReset(null);
     } catch (error: any) {
       console.error("Error resetting status:", error);
       showNotification("Failed to reset check-in/out status.", "error");
+    } finally {
+      setResettingUserId(null);
     }
   };
 
@@ -681,7 +698,7 @@ function RegisterdUser() {
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
                 ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
+                : "bg-green-500 text-white"
             }`}
           >
             {notification.message}
@@ -967,7 +984,7 @@ function RegisterdUser() {
                         </td>
 
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {user?.attributes?.organization}
+                          {user?.attributes?.custom_fields?.title || user?.attributes?.organization || "-"}
                         </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -984,7 +1001,7 @@ function RegisterdUser() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleResetCheckInOut(user.id)}
+                              onClick={() => handleResetCheckInOut(user)}
                               className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             >
                               <RotateCcw className="w-4 h-4" />
@@ -1006,7 +1023,7 @@ function RegisterdUser() {
                                   phone_number:
                                     user?.attributes?.phone_number || "",
                                   organization:
-                                    user?.attributes?.organization || "",
+                                    user?.attributes?.custom_fields?.title || user?.attributes?.organization || "", // Load title from custom_fields into organization field
                                   position: user?.attributes?.position || "",
                                   image: user?.attributes?.image || "",
                                   user_type: user?.attributes?.user_type || "",
@@ -1100,10 +1117,57 @@ function RegisterdUser() {
                   </button>
                   <button
                     onClick={confirmDeleteUser}
-                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                    className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!!deletingUserId}
                   >
                     {deletingUserId ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isResetModalOpen && userToReset && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+              onClick={() => {
+                if (!resettingUserId) {
+                  setIsResetModalOpen(false);
+                  setUserToReset(null);
+                }
+              }}
+            >
+              <div
+                className="bg-white p-6 rounded-lg w-96"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="text-xl font-bold mb-2 text-gray-900">
+                  Reset check-in/out status?
+                </h2>
+                <p className="text-sm text-gray-600 mb-6">
+                  Are you sure you want to reset the check-in/out status for{" "}
+                  <span className="font-semibold">
+                    {userToReset.attributes?.name || "this user"}
+                  </span>
+                  ? This action cannot be undone.
+                </p>
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => {
+                      setIsResetModalOpen(false);
+                      setUserToReset(null);
+                    }}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!!resettingUserId}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmResetCheckInOut}
+                    className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!!resettingUserId}
+                  >
+                    {resettingUserId ? "Resetting..." : "Reset"}
                   </button>
                 </div>
               </div>

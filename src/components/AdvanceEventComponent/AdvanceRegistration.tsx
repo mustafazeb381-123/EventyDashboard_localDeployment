@@ -317,20 +317,7 @@ const renderCustomField = (
               </button>
             )}
           </div>
-          {/* Show image preview for image fields */}
-          {field.type === "image" && imagePreviewUrl && (
-            <div className="mt-2">
-              <img
-                src={imagePreviewUrl}
-                alt="Preview"
-                className="max-w-full h-auto max-h-48 rounded-lg border border-gray-200 object-contain"
-                onLoad={() => {
-                  // Clean up the object URL when component unmounts or image changes
-                  // Note: We'll clean this up in useEffect
-                }}
-              />
-            </div>
-          )}
+          {/* Image preview removed - don't show uploaded images */}
           {fileValue instanceof File && (
             <p className="text-xs text-gray-500 pl-1">
               File: {fileName} ({(fileValue.size / 1024).toFixed(2)} KB)
@@ -443,6 +430,8 @@ interface FormBuilderTemplateFormProps {
   formBuilderData?: any;
   bannerImage?: File | string | null;
   theme?: FormTheme;
+  onRegistrationSuccess?: (message: string) => void;
+  onRegistrationError?: (message: string) => void;
 }
 
 export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = ({
@@ -452,7 +441,9 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
   theme,
   eventId,
   eventData,
-}) => {
+  onRegistrationSuccess,
+  onRegistrationError,
+}: FormBuilderTemplateFormProps) => {
   // State declarations - must be before useEffects that use them
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -708,7 +699,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
         phone: "event_user[phone_number]",
         phoneNumber: "event_user[phone_number]", // Map phoneNumber to phone_number
         position: "event_user[position]",
-        organization: "event_user[organization]",
+        // Note: organization field will be saved to custom_fields.title (handled below)
         company: "event_user[organization]", // Map company to organization
       };
 
@@ -751,9 +742,19 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
         formDataToSend.append("event_user[position]", String(formData["position"]));
       }
       
-      const orgValue = formData["organization"] || formData["company"];
+      // ✅ Save organization field to both custom_fields.title AND event_user[organization]
+      const orgValue = formData["organization"];
       if (orgValue) {
+        // Save to custom_fields.title (for display in registered users table)
+        formDataToSend.append("event_user[custom_fields][title]", String(orgValue));
+        // Also save to event_user[organization] (standard field)
         formDataToSend.append("event_user[organization]", String(orgValue));
+      }
+      
+      // Handle company field separately (if it exists, save to event_user[organization])
+      const companyValue = formData["company"];
+      if (companyValue && !orgValue) { // Only if organization wasn't already set
+        formDataToSend.append("event_user[organization]", String(companyValue));
       }
 
       // ✅ Handle image/file upload (same as RegistrationFormPreview)
@@ -829,7 +830,8 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
         const value = formData[fieldName];
 
         // Skip if already handled by standard fields (including "image" field)
-        if (fieldMapping[fieldName] || fieldName === "image") {
+        // Also skip "organization" field as it's handled separately (saved to both custom_fields.title and event_user[organization])
+        if (fieldMapping[fieldName] || fieldName === "image" || fieldName === "organization") {
           return;
         }
 
@@ -872,7 +874,13 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       const response = await createEventUser(String(actualEventId), formDataToSend);
       
       console.log("✅ Registration successful:", response);
-    showNotification("Registration submitted successfully!", "success");
+      
+      // Call success callback if provided (for hard toast in UserRegistration)
+      if (onRegistrationSuccess) {
+        onRegistrationSuccess("Registration submitted successfully!");
+      } else {
+        showNotification("Registration submitted successfully!", "success");
+      }
 
       // Reset form
       setFormData({});
@@ -998,7 +1006,12 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
           : `Event not found (ID: ${eventIdUsed}).\n\nPlease verify:\n1. The event ID is correct\n2. The event exists\n3. You have access to this event\n\nAPI URL: ${fullUrl || requestedUrl}`;
       }
       
-      showNotification(errorMessage, "error");
+      // Call error callback if provided (for hard toast in UserRegistration)
+      if (onRegistrationError) {
+        onRegistrationError(errorMessage);
+      } else {
+        showNotification(errorMessage, "error");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -1006,7 +1019,19 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
 
   // Render custom form builder template (exactly like preview)
   if (isCustomFormBuilder) {
-    const customFields = getUniqueFields(formBuilderData.formData as CustomFormField[]);
+    const allFields = formBuilderData.formData as CustomFormField[] || [];
+    const customFields = getUniqueFields(allFields);
+    
+    // Debug: Log fields before and after getUniqueFields
+    console.log("🔍 FormBuilderTemplateForm - Field Processing:", {
+      totalFieldsBefore: allFields.length,
+      totalFieldsAfter: customFields.length,
+      hasTitleFieldBefore: allFields.some(f => f.name === "title" || f.label === "Title"),
+      hasTitleFieldAfter: customFields.some(f => f.name === "title" || f.label === "Title"),
+      titleFieldBefore: allFields.find(f => f.name === "title" || f.label === "Title"),
+      titleFieldAfter: customFields.find(f => f.name === "title" || f.label === "Title"),
+      allFieldNames: customFields.map(f => ({ name: f.name, label: f.label, type: f.type })),
+    });
 
     const bannerUrl = bannerImage
       ? typeof bannerImage === "string" && bannerImage.trim() !== ""
@@ -1148,13 +1173,26 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
                 // Track rendered field IDs to prevent duplicates
                 const renderedFieldIds = new Set<string>();
 
+                // Debug: Log all fields before rendering
+                console.log("🔍 Rendering custom form fields:", {
+                  totalFields: customFields.length,
+                  fields: customFields.map(f => ({
+                    id: f.id,
+                    name: f.name,
+                    type: f.type,
+                    label: f.label,
+                    isChild: allChildIds.has(f.id),
+                    isHeading: f.type === "heading",
+                  })),
+                });
+
                 return customFields.map((field) => {
                   // Skip rendering if this field is a child of a container (it will be rendered inside its parent)
                   if (allChildIds.has(field.id)) {
                     return null;
                   }
 
-                  // Skip heading fields from rendering
+                  // Skip heading fields from rendering (but allow other text fields like "title")
                   if (field.type === "heading") {
                     return null;
                   }
@@ -1166,6 +1204,16 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
 
                   // Mark this field as rendered
                   renderedFieldIds.add(field.id);
+                  
+                  // Debug: Log when rendering title field
+                  if (field.name === "title" || field.label === "Title") {
+                    console.log("✅ Rendering title field:", {
+                      id: field.id,
+                      name: field.name,
+                      type: field.type,
+                      label: field.label,
+                    });
+                  }
 
                   // Render containers with their children
                   if (field.containerType) {
@@ -1842,6 +1890,7 @@ const AdvanceRegistration = ({
     useState<CustomFormTemplate | null>(null);
   const [isDeleteFormBuilderModalOpen, setIsDeleteFormBuilderModalOpen] =
     useState(false);
+  const [isDeletingFormBuilder, setIsDeletingFormBuilder] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -2467,6 +2516,14 @@ const AdvanceRegistration = ({
             ? template.data  // Fallback to simplified FormField[] if formBuilderData doesn't exist
             : [];
       
+      // Debug: Log fields being saved, especially check for title field
+      console.log("💾 Saving form fields:", {
+        totalFields: fields.length,
+        hasTitleField: fields.some(f => f.name === "title" || f.label === "Title"),
+        titleField: fields.find(f => f.name === "title" || f.label === "Title"),
+        allFieldNames: fields.map(f => ({ name: f.name, label: f.label, type: f.type })),
+      });
+      
       // Clean theme object - only include string values, exclude File objects and null
       const cleanTheme: any = {};
       if (normalizedTheme) {
@@ -2705,9 +2762,11 @@ const AdvanceRegistration = ({
 
     const templateId = deleteFormBuilderCandidate.id;
     
+    setIsDeletingFormBuilder(true);
     try {
       if (!effectiveEventId) {
         showNotification("Event ID not found", "error");
+        setIsDeletingFormBuilder(false);
         cancelDeleteFormBuilderTemplate();
         return;
       }
@@ -2747,6 +2806,7 @@ const AdvanceRegistration = ({
       
       showNotification(errorMessage, "error");
     } finally {
+      setIsDeletingFormBuilder(false);
     cancelDeleteFormBuilderTemplate();
     }
   };
@@ -3337,15 +3397,17 @@ const AdvanceRegistration = ({
               <div className="p-4 border-t flex items-center justify-end gap-3">
                 <button
                   onClick={cancelDeleteFormBuilderTemplate}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  disabled={isDeletingFormBuilder}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDeleteFormBuilderTemplate}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                  disabled={isDeletingFormBuilder}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Delete
+                  {isDeletingFormBuilder ? "Deleting..." : "Delete"}
                 </button>
               </div>
             </div>
@@ -3461,12 +3523,12 @@ const AdvanceRegistration = ({
             <div
               className={`px-6 py-3 rounded-lg shadow-lg ${
                 notification.type === "success"
-                  ? "bg-pink-500 text-white"
+                  ? "bg-green-500 text-white"
                   : notification.type === "error"
                   ? "bg-red-500 text-white"
                   : notification.type === "warning"
                   ? "bg-yellow-500 text-white"
-                  : "bg-pink-500 text-white"
+                  : "bg-green-500 text-white"
               }`}
             >
               {notification.message}

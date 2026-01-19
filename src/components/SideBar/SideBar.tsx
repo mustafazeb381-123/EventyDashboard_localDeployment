@@ -39,7 +39,13 @@ const SideBar = ({
   canToggle = true,
   currentEventId,
 }: SideBarProps) => {
-  const [activeItem, setActiveItem] = useState("Registered Users");
+  // Initialize activeItem from localStorage or default
+  const getInitialActiveItem = () => {
+    const stored = localStorage.getItem("sidebar_active_item");
+    return stored || "Registered Users";
+  };
+
+  const [activeItem, setActiveItem] = useState(getInitialActiveItem);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
     {}
   );
@@ -51,6 +57,12 @@ const SideBar = ({
   } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Helper function to update activeItem and persist it
+  const updateActiveItem = (item: string) => {
+    setActiveItem(item);
+    localStorage.setItem("sidebar_active_item", item);
+  };
 
   // Debug log to track sidebar state
   console.log("SideBar props:", {
@@ -99,43 +111,95 @@ const SideBar = ({
     }
   };
 
+  // Function to determine active item from current path
+  const getActiveItemFromPath = (pathname: string) => {
+    // Remove query parameters for matching
+    const path = pathname.split("?")[0];
+
+    // Check submenu routes first (more specific)
+    if (path.includes("/invitation/user")) {
+      return "Users";
+    }
+    if (path.includes("/invitation/VipUsers")) {
+      return "VIP Users";
+    }
+    if (path.includes("/attendees/check-in")) {
+      return "Check In";
+    }
+    if (path.includes("/attendees/check-out")) {
+      return "Check Out";
+    }
+    if (path.includes("/communication/poll")) {
+      return "Poll";
+    }
+    if (path.includes("/communication/QA")) {
+      return "Q & A";
+    }
+
+    // Check main menu routes
+    if (
+      (path.startsWith("/home/") || path.startsWith("/express-event/")) &&
+      currentEventId &&
+      !path.includes("/galleries")
+    ) {
+      return "Home summary";
+    }
+    if (path === "/regesterd_user" || path.startsWith("/regesterd_user")) {
+      return "Registered Users";
+    }
+    if (path === "/agenda" || path.startsWith("/agenda")) {
+      return "Agenda";
+    }
+    if (path.includes("/galleries")) {
+      return "Galleries";
+    }
+    if (path === "/user/registration" || path.startsWith("/user/registration")) {
+      return "User Registration";
+    }
+    if (path === "/print_badges" || path.startsWith("/print_badges")) {
+      return "Print Badges";
+    }
+    if (path.startsWith("/invitation")) {
+      return "Inviation";
+    }
+    if (path.startsWith("/attendees")) {
+      return "Attendees";
+    }
+    if (path.startsWith("/communication")) {
+      return "Communications";
+    }
+    if (path === "/committees" || path.startsWith("/committees")) {
+      return "Committees";
+    }
+    if (path === "/Onboarding" || path.startsWith("/Onboarding")) {
+      return "Onboarding";
+    }
+    if (path === "/TicketManagement" || path.startsWith("/TicketManagement")) {
+      return "Ticket Management";
+    }
+
+    // Default fallback
+    return null;
+  };
+
   // Set active item based on current route
   useEffect(() => {
     const currentPath = location.pathname;
+    const activeItemFromPath = getActiveItemFromPath(currentPath);
 
-    if (
-      (currentPath.startsWith("/home/") ||
-        currentPath.startsWith("/express-event/")) &&
-      currentEventId
-    ) {
-      setActiveItem("Home summary");
-    } else if (currentPath === "/regesterd_user") {
-      setActiveItem("Registered Users");
-    } else if (currentPath === "/agenda") {
-      setActiveItem("Agenda");
-    } else if (currentPath.includes("/galleries")) {
-      setActiveItem("Galleries");
-    } else if (currentPath === "/user/registration") {
-      setActiveItem("User Registration");
-    } else if (currentPath === "/print_badges") {
-      setActiveItem("Print Badges");
-    } else if (currentPath.startsWith("/invitation")) {
-      setActiveItem("Inviation");
-      // Expand the Invitation submenu if we're on a submenu page
-      if (currentPath.includes("/user") || currentPath.includes("/vip")) {
-        setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
-      }
-    } else if (currentPath.startsWith("/attendees")) {
-      setActiveItem("Attendees");
-      // Expand the Attendees submenu if we're on a submenu page
-      if (
-        currentPath.includes("/check-in") ||
-        currentPath.includes("/check-out")
-      ) {
-        setExpandedMenus((prev) => ({ ...prev, Attendees: true }));
-      }
-    } else if (currentPath === "/committees") {
-      setActiveItem("Committees");
+    if (activeItemFromPath) {
+      updateActiveItem(activeItemFromPath);
+    }
+
+    // Expand submenus based on current path
+    if (currentPath.includes("/invitation/user") || currentPath.includes("/invitation/VipUsers")) {
+      setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
+    }
+    if (currentPath.includes("/attendees/check-in") || currentPath.includes("/attendees/check-out")) {
+      setExpandedMenus((prev) => ({ ...prev, Attendees: true }));
+    }
+    if (currentPath.includes("/communication/poll") || currentPath.includes("/communication/QA")) {
+      setExpandedMenus((prev) => ({ ...prev, Communications: true }));
     }
 
     // Get registered users count when route or eventId changes
@@ -442,7 +506,7 @@ const SideBar = ({
                         if (hasSubmenu) {
                           toggleSubmenu(item.label);
                         } else {
-                          setActiveItem(item.label);
+                          updateActiveItem(item.label);
                           if (item.path) {
                             navigate(item.path);
                           }
@@ -493,7 +557,7 @@ const SideBar = ({
                                 if (isSubDisabled) {
                                   return; // Prevent click for disabled sub-items
                                 }
-                                setActiveItem(subItem.label);
+                                updateActiveItem(subItem.label);
                                 if (subItem.path) {
                                   navigate(subItem.path);
                                 }

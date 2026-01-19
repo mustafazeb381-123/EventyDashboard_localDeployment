@@ -31,6 +31,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
     { text: "" },
   ]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeletePollModalOpen, setIsDeletePollModalOpen] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -316,13 +317,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             {/* Action Buttons */}
             <div className="flex items-center gap-1 ml-4">
               <button
-                onClick={() => {
-                  if (
-                    window.confirm("Are you sure you want to delete this poll?")
-                  ) {
-                    showNotification("Delete functionality handled by parent", "info");
-                  }
-                }}
+                onClick={() => setIsDeletePollModalOpen(true)}
                 className="p-2.5 text-red-500 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                 title="Delete"
               >
@@ -350,13 +345,52 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                 ? "bg-red-500 text-white"
                 : notification.type === "warning"
                 ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                : "bg-green-500 text-white"
             }`}
           >
             {notification.message}
           </div>
         </div>
       )}
+
+      {/* Delete Poll Confirmation Modal */}
+      {isDeletePollModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => setIsDeletePollModalOpen(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-lg w-96"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-2 text-gray-900">
+              Delete poll?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this poll? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsDeletePollModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  showNotification("Delete functionality handled by parent", "info");
+                  setIsDeletePollModalOpen(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         @keyframes slide-in {
           from {

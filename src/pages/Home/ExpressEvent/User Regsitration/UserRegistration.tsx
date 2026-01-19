@@ -65,6 +65,24 @@ function UserRegistration() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [customFormBuilderTemplate, setCustomFormBuilderTemplate] = useState<any>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "info") => {
+    setNotification({ message, type });
+  };
 
   // Get effective event ID
   const effectiveEventId =
@@ -75,7 +93,8 @@ function UserRegistration() {
 
   const getTemplateData = async () => {
     if (!effectiveEventId) {
-      setError("No event ID found");
+      const errorMsg = "No event ID found";
+      setError(errorMsg);
       setIsLoading(false);
       return;
     }
@@ -137,8 +156,50 @@ function UserRegistration() {
             themeKeys: Object.keys(finalTheme),
           });
           
+          // Transform form data to update "about" field placeholder
+          const formDataArray = formTemplateData.formBuilderData?.formData || formTemplateData.fields || [];
+          const transformedFormData = formDataArray
+            .filter((field: any) => {
+              // Remove paragraph fields with unwanted content
+              if (field.type === "paragraph") {
+                const content = String(field.content || "").toLowerCase();
+                if (content.includes("urls are hyperlinked")) {
+                  return false;
+                }
+              }
+              
+              // Remove fields with unwanted description
+              const description = String(field.description || "").toLowerCase();
+              if (description.includes("urls are hyperlinked")) {
+                return false;
+              }
+              
+              return true;
+            })
+            .map((field: any) => {
+              // Update placeholder for "about" field
+              if (field.name === "about" && field.type === "textarea") {
+                const updatedField = { ...field };
+                
+                // Remove description completely
+                delete updatedField.description;
+                
+                // Clear any defaultValue
+                delete updatedField.defaultValue;
+                
+                // Set placeholder to "Description..."
+                updatedField.placeholder = "Description...";
+                
+                return updatedField;
+              }
+              return field;
+            });
+          
           setCustomFormBuilderTemplate({
-            formBuilderData: formTemplateData.formBuilderData || { formData: formTemplateData.fields || [] },
+            formBuilderData: {
+              ...(formTemplateData.formBuilderData || {}),
+              formData: transformedFormData
+            },
             bannerImage: defaultTemplate.attributes?.banner_image || null,
             logo: logoFromAttributes || logoFromTheme || null,
             theme: finalTheme, // Theme now includes logo
@@ -175,9 +236,10 @@ function UserRegistration() {
           setError("No template data found");
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       console.log("error getting template api", error);
-      setError("Failed to fetch template data");
+      const errorMsg = error?.response?.data?.message || error?.message || "Failed to fetch template data";
+      setError(errorMsg);
     }
   };
 
@@ -191,7 +253,7 @@ function UserRegistration() {
         response
       );
       setEventData(response?.data);
-    } catch (error) {
+    } catch (error: any) {
       console.log("error in event data by id in registration form ", error);
     }
   };
@@ -210,7 +272,7 @@ function UserRegistration() {
         return orderA - orderB;
       });
       setRegistrationFields(sortedFields);
-    } catch (error) {
+    } catch (error: any) {
       console.log("error fetching all registration fields:", error);
       setRegistrationFields([]);
     }
@@ -219,12 +281,17 @@ function UserRegistration() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      await Promise.all([
-        getTemplateData(),
-        getEventDataById(),
-        getAllRegistrationFields(),
-      ]);
-      setIsLoading(false);
+      try {
+        await Promise.all([
+          getTemplateData(),
+          getEventDataById(),
+          getAllRegistrationFields(),
+        ]);
+      } catch (err: any) {
+        console.error("Error loading registration form:", err);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     fetchData();
@@ -515,8 +582,34 @@ function UserRegistration() {
       themeKeys: customFormBuilderTemplate.theme ? Object.keys(customFormBuilderTemplate.theme) : [],
     });
     
+    // Log registration readiness
+    console.log("🔍 Custom Form Registration Readiness:", {
+      hasFormBuilderData: !!customFormBuilderTemplate.formBuilderData,
+      hasFields: !!(customFormBuilderTemplate.formBuilderData?.formData?.length > 0),
+      eventId: actualEventId,
+      eventIdType: typeof actualEventId,
+      hasEventData: !!eventDataForForm,
+      isUserRegistration: true,
+    });
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+        {/* Notification Toast - Only shows on submit */}
+        {notification && (
+          <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+            <div
+              className={`px-6 py-3 rounded-lg shadow-lg ${
+                notification.type === "success"
+                  ? "bg-green-500 text-white"
+                  : notification.type === "error"
+                  ? "bg-red-500 text-white"
+                  : "bg-blue-500 text-white"
+              }`}
+            >
+              {notification.message}
+            </div>
+          </div>
+        )}
         <div className="w-full max-w-4xl mx-auto">
           <FormBuilderTemplateForm
             isUserRegistration={true}
@@ -525,13 +618,15 @@ function UserRegistration() {
             theme={customFormBuilderTemplate.theme}
             eventId={actualEventId} // Use actual event ID from API response (NOT route ID)
             eventData={eventDataForForm} // Pass the data part to match default template structure
+            onRegistrationSuccess={(message) => showNotification(message, "success")}
+            onRegistrationError={(message) => showNotification(message, "error")}
           />
         </div>
       </div>
     );
   }
 
-  if (!templateData) {
+  if (!templateData && !customFormBuilderTemplate) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
@@ -545,8 +640,40 @@ function UserRegistration() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      {/* Notification Toast - Only shows on submit */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-green-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
       {/* Registration Form Template - No extra banner, templates handle their own event info */}
       <div className="w-full max-w-4xl mx-auto">{renderTemplate()}</div>
+      
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

@@ -2985,7 +2985,7 @@ const DEFAULT_FORM_FIELDS: CustomFormField[] = [
     required: false,
     unique: false,
     placeholder: "you@example.com",
-    description: "Brief description for your profile. URLs are hyperlinked.",
+    description: "",
     fieldStyle: { marginBottom: "16px" },
   },
   {
@@ -3127,6 +3127,9 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     null
   );
   const [showPreview, setShowPreview] = useState(false);
+  const [isDeleteFieldModalOpen, setIsDeleteFieldModalOpen] = useState(false);
+  const [fieldToDelete, setFieldToDelete] = useState<string | null>(null);
+  const [isClearAllModalOpen, setIsClearAllModalOpen] = useState(false);
   const [showThemePanel, setShowThemePanel] = useState(false);
   const [showJsonEditor, setShowJsonEditor] = useState(false);
   const [jsonEditorContent, setJsonEditorContent] = useState("");
@@ -3523,22 +3526,30 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   };
 
   const handleDeleteField = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this field?")) {
-      setFields((prev) => {
-        // Remove the field and also remove it from any container's children
-        return prev
-          .filter((field) => field.id !== id)
-          .map((field) => {
-            if (field.containerType && field.children?.includes(id)) {
-              return {
-                ...field,
-                children: field.children.filter((childId) => childId !== id),
-              };
-            }
-            return field;
-          });
-      });
-    }
+    setFieldToDelete(id);
+    setIsDeleteFieldModalOpen(true);
+  };
+
+  const confirmDeleteField = () => {
+    if (!fieldToDelete) return;
+
+    setFields((prev) => {
+      // Remove the field and also remove it from any container's children
+      return prev
+        .filter((field) => field.id !== fieldToDelete)
+        .map((field) => {
+          if (field.containerType && field.children?.includes(fieldToDelete)) {
+            return {
+              ...field,
+              children: field.children.filter((childId) => childId !== fieldToDelete),
+            };
+          }
+          return field;
+        });
+    });
+
+    setIsDeleteFieldModalOpen(false);
+    setFieldToDelete(null);
   };
 
   const handleBannerImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -4047,11 +4058,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                     </h3>
                     {fields.length > 0 && (
                       <button
-                        onClick={() => {
-                          if (window.confirm("Clear all fields?")) {
-                            setFields([]);
-                          }
-                        }}
+                        onClick={() => setIsClearAllModalOpen(true)}
                         className="text-xs text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded"
                       >
                         Clear All
@@ -4303,6 +4310,85 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                 className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 Apply Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Field Confirmation Modal */}
+      {isDeleteFieldModalOpen && fieldToDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200"
+          onClick={() => {
+            setIsDeleteFieldModalOpen(false);
+            setFieldToDelete(null);
+          }}
+        >
+          <div
+            className="bg-white p-6 rounded-lg w-96"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-2 text-gray-900">
+              Delete field?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this field? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsDeleteFieldModalOpen(false);
+                  setFieldToDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteField}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Fields Confirmation Modal */}
+      {isClearAllModalOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200"
+          onClick={() => setIsClearAllModalOpen(false)}
+        >
+          <div
+            className="bg-white p-6 rounded-lg w-96"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-2 text-gray-900">
+              Clear all fields?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to clear all fields? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsClearAllModalOpen(false)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  setFields([]);
+                  setIsClearAllModalOpen(false);
+                }}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Clear All
               </button>
             </div>
           </div>
@@ -5932,6 +6018,47 @@ const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
         )}
       </div>
+
+      {/* Delete Field Confirmation Modal */}
+      {isDeleteFieldModalOpen && fieldToDelete && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-in fade-in duration-200"
+          onClick={() => {
+            setIsDeleteFieldModalOpen(false);
+            setFieldToDelete(null);
+          }}
+        >
+          <div
+            className="bg-white p-6 rounded-lg w-96"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-2 text-gray-900">
+              Delete field?
+            </h2>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this field? This action cannot be
+              undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setIsDeleteFieldModalOpen(false);
+                  setFieldToDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteField}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
