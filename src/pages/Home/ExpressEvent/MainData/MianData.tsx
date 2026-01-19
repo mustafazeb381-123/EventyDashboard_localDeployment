@@ -103,7 +103,6 @@ const MainData = ({
   const [deletingBadgeId, setDeletingBadgeId] = useState<
     number | string | null
   >(null);
-  const [setAsDefault, setSetAsDefault] = useState<boolean>(false);
   const [ticket, setTicket] = useState(true);
   const [eventguesttype, setEventguesttype] = useState<string>("");
 
@@ -927,14 +926,11 @@ const MainData = ({
     }
 
     try {
-      // Use the new badge service to create badge with default status
-      await createBadgeSimple(eventId, newGuestType.trim(), setAsDefault);
+      // Create badge without default flag here; default can be set later from badge list
+      await createBadgeSimple(eventId, newGuestType.trim(), false);
       console.log("Guest type added:", newGuestType);
-      toast.success(
-        `Guest type added${setAsDefault ? " as default" : ""} successfully!`
-      );
+      toast.success("Guest type added successfully!");
       setNewGuestType("");
-      setSetAsDefault(false); // Reset the checkbox
       await fetchBadgeApi();
     } catch (error: any) {
       console.error("=== ADD ERROR ===", error);
@@ -989,17 +985,19 @@ const MainData = ({
         return;
       }
 
-      // First, unset any current default badges
-      const currentDefaultBadge = badges.find(
+      // First, unset any current default badges (there should only be one, but guard against multiples)
+      const currentDefaultBadges = badges.filter(
         (b) => b.attributes.default && b.id !== badgeId
       );
-      if (currentDefaultBadge) {
-        // Unset the previous default
-        await updateBadge(eventId, currentDefaultBadge.id, {
-          badge: {
-            default: false,
-          },
-        });
+      if (currentDefaultBadges.length) {
+        // Unset all other defaults to enforce single default badge
+        await Promise.all(
+          currentDefaultBadges.map((b) =>
+            updateBadge(eventId, b.id, {
+              badge: { default: false },
+            })
+          )
+        );
       }
 
       // Then set this badge as default
@@ -1612,23 +1610,6 @@ const MainData = ({
                     Add
                   </button>
                 </div>
-                {/* Checkbox to set as default */}
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={setAsDefault}
-                    onChange={(e) => setSetAsDefault(e.target.checked)}
-                    className="w-4 h-4 text-teal-500 border-gray-300 rounded focus:ring-2 focus:ring-teal-500"
-                  />
-                  <span className="flex items-center gap-1">
-                    <Star
-                      size={14}
-                      className="text-yellow-500"
-                      fill={setAsDefault ? "currentColor" : "none"}
-                    />
-                    Set as default badge
-                  </span>
-                </label>
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-2 mb-4">
