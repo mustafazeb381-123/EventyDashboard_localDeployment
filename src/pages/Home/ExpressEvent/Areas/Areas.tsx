@@ -21,7 +21,7 @@ export type Badge = {
   id: string;
   attributes: {
     name: string;
-    badge_type: string;
+    default?: boolean;
   };
 };
 
@@ -111,7 +111,17 @@ export default function Areas({}) {
 
       const result = await response.json();
       console.log("✅ Badges fetched successfully:", result);
-      setBadges(result?.data || []);
+      console.log("✅ Badge names in API:", result?.data?.map((b: Badge) => b.attributes.name));
+      
+      // Only set badges that are actually in the API response
+      if (result?.data && Array.isArray(result.data)) {
+        setBadges(result.data);
+        console.log("✅ Set badges count:", result.data.length);
+      } else {
+        // Clear badges if API returns empty or invalid data
+        setBadges([]);
+        console.log("⚠️ No badges in API response, cleared badges");
+      }
     } catch (error) {
       console.error("❌ Fetch error:", error);
     } finally {
@@ -121,7 +131,12 @@ export default function Areas({}) {
 
   useEffect(() => {
     if (eventId) {
+      // Clear badges before fetching to avoid showing stale data
+      setBadges([]);
       fetchBadgeApi();
+    } else {
+      // Clear badges if no eventId
+      setBadges([]);
     }
   }, [eventId]);
 
@@ -631,7 +646,7 @@ export default function Areas({}) {
                 </option>
               ) : (
                 badges.map((badge) => (
-                  <option key={badge.id} value={badge.attributes.badge_type}>
+                  <option key={badge.id} value={badge.attributes.name}>
                     {badge.attributes.name}
                   </option>
                 ))
@@ -1049,7 +1064,7 @@ export default function Areas({}) {
                           {badges.map((badge) => (
                             <option
                               key={badge.id}
-                              value={badge.attributes.badge_type}
+                              value={badge.attributes.name}
                             >
                               {badge.attributes.name}
                             </option>

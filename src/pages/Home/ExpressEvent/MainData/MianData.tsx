@@ -407,21 +407,7 @@ const MainData = ({
   const addGuestTypeLun = () => {
     if (!newGuestType.trim()) return;
 
-    // Check if the guest type already exists (in both local and API badges)
     const trimmedType = newGuestType.trim();
-    const allGuestTypes = [
-      ...formData.guestTypes,
-      ...badges.map((badge) => badge.attributes.name),
-    ];
-
-    if (
-      allGuestTypes.some(
-        (type) => type.toLowerCase() === trimmedType.toLowerCase()
-      )
-    ) {
-      showNotification("This guest type already exists", "error");
-      return;
-    }
 
     setFormData((prev) => ({
       ...prev,
@@ -681,12 +667,12 @@ const MainData = ({
 
       const result = await response.json();
       console.log("✅ Raw badges fetched:", result?.data);
+      console.log("✅ All badge names:", result?.data?.map((b: Badge) => b.attributes.name));
 
-      // 👇 REMOVE DUPLICATES FROM API RESPONSE
+      // 👇 SHOW ALL BADGES INCLUDING DUPLICATES (same as Areas.tsx)
       if (result?.data && Array.isArray(result.data)) {
-        const uniqueBadges = removeDuplicateBadges(result.data);
-        console.log("✅ Unique badges after deduplication:", uniqueBadges);
-        setBadges(uniqueBadges);
+        setBadges(result.data);
+        console.log("✅ All badges set (including duplicates):", result.data);
       } else {
         setBadges([]);
       }
@@ -697,19 +683,6 @@ const MainData = ({
     }
   };
 
-  // 👇 NEW FUNCTION: Remove duplicate badges by name
-  const removeDuplicateBadges = (badges: Badge[]) => {
-    const seen = new Set();
-    return badges.filter((badge) => {
-      const name = badge.attributes.name;
-      if (seen.has(name)) {
-        console.log(`Removing duplicate badge: ${name}`);
-        return false;
-      }
-      seen.add(name);
-      return true;
-    });
-  };
 
   // 👇 DIRECT DELETE API CALL FUNCTION
   const handleDeleteBadgeTypeDirect = async (
@@ -892,16 +865,7 @@ const MainData = ({
       return;
     }
 
-    // Check if the guest type already exists (case-insensitive)
     const trimmedType = eventguesttype.trim();
-    const isDuplicate = formData.guestTypes.some(
-      (type) => type.toLowerCase() === trimmedType.toLowerCase()
-    );
-
-    if (isDuplicate) {
-      showNotification("This guest type already exists!", "error");
-      return;
-    }
 
     // Add to local guest types for new event creation
     setFormData((prev) => ({
@@ -933,32 +897,12 @@ const MainData = ({
       return;
     }
 
-    // Normalize spaces and lowercase for comparison
-    const normalize = (str: string) =>
-      str.trim().replace(/\s+/g, " ").toLowerCase();
-
-    const normalizedNewType = normalize(newGuestType);
-
-    const allGuestTypes = [
-      ...formData.guestTypes,
-      ...badges.map((badge) => badge.attributes.name),
-    ];
-
-    const isDuplicate = allGuestTypes.some(
-      (type) => normalize(type) === normalizedNewType
-    );
-
-    if (isDuplicate) {
-      showNotification("This guest type already exists!", "error");
-      return;
-    }
-
     try {
       // Create badge without default flag here; default can be set later from badge list
       await createBadgeSimple(eventId, newGuestType.trim(), false);
       console.log("Guest type added:", newGuestType);
       showNotification(
-        `Guest type added${setAsDefault ? " as default" : ""} successfully!`,
+        "Guest type added successfully!",
         "success"
       );
       setNewGuestType("");
