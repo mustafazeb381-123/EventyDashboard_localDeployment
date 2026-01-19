@@ -529,6 +529,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         effectiveEventId,
         currentFlow.id
       );
+      
+      // Validate response structure
+      if (!response || !response.data) {
+        throw new Error("Invalid API response structure");
+      }
+      
       const apiTemplates = response.data.data || [];
       const convertedTemplates = convertApiTemplates(
         apiTemplates,
@@ -544,6 +550,23 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         staticTemplatesMap[currentFlow.id as keyof typeof staticTemplatesMap] ||
         [];
 
+      // Find the selected template from API response (check if a ready-made template is selected)
+      // IMPORTANT: Only ONE template should be selected per flow type
+      const selectedApiTemplate = convertedTemplates.find(
+        (t: any) => t.isSelected
+      );
+      
+      // Ensure only ONE template is selected - deselect all others
+      const templatesWithSingleSelection = convertedTemplates.map((t: any) => {
+        // If this is the first selected template, keep it selected
+        // Otherwise, deselect it
+        if (t.isSelected && selectedApiTemplate && t.id === selectedApiTemplate.id) {
+          return t; // Keep selected
+        } else {
+          return { ...t, isSelected: false }; // Deselect
+        }
+      });
+
       // Filter out ready-made templates from API response to avoid duplicates
       // Only show custom templates from API, not ready-made ones
       const customApiTemplates = templatesWithSingleSelection.filter((apiTpl: any) => {
@@ -556,23 +579,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         );
         // Only include if it's NOT a ready-made template
         return !isReadyMade;
-      });
-
-      // Find the selected template from API response (check if a ready-made template is selected)
-      // IMPORTANT: Only ONE template should be selected per flow type
-      const selectedApiTemplate = convertedTemplates.find(
-        (t: any) => t.isSelected
-      );
-      
-      // Ensure only ONE template is selected - deselect all others
-      const templatesWithSingleSelection = convertedTemplates.map((t: any, index: number) => {
-        // If this is the first selected template, keep it selected
-        // Otherwise, deselect it
-        if (t.isSelected && selectedApiTemplate && t.id === selectedApiTemplate.id) {
-          return t; // Keep selected
-        } else {
-          return { ...t, isSelected: false }; // Deselect
-        }
       });
       
       if (selectedApiTemplate) {
@@ -624,9 +630,13 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             : f
         )
       );
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to load templates:", e);
-      showNotification("Failed to load templates", "error");
+      const errorMessage = 
+        e?.response?.data?.message || 
+        e?.message || 
+        "Failed to load templates. Please try again.";
+      showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
