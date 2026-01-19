@@ -14,7 +14,6 @@ import {
   QrCode,
 } from "lucide-react";
 import Assets from "@/utils/Assets";
-import { toast, ToastContainer } from "react-toastify";
 import { getEventbyId, postBadgesApi, getBadgesApi, deleteBadgeTemplateApi, updateBadgeTemplateApi, updateEventById } from "@/apis/apiHelpers";
 import type { ToggleStates } from "../ExpressEvent";
 import CustomBadgeModal from "./components/CustomBadgeModal";
@@ -239,7 +238,7 @@ const Template1Preview: React.FC<BadgePreviewProps> = ({
               <p className="text-gray-600 text-lg mt-1">
                 Software Engineer
               </p>
-
+              
               {/* QR Code on front side */}
               <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
                 <img
@@ -316,7 +315,7 @@ const Template2Preview: React.FC<BadgePreviewProps> = ({
               <p className="text-gray-600 text-lg mt-1">
                 Software Engineer
               </p>
-
+              
               {/* QR Code on front side */}
               <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
                 <img
@@ -417,20 +416,8 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   style={{
                     width: `${(template.photoSize.width || 200) * scaleX}px`,
                     height: `${(template.photoSize.height || 200) * scaleY}px`,
-                    left:
-                      template.photoAlignment === "left"
-                        ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                        : template.photoAlignment === "right"
-                          ? "auto"
-                          : "50%",
-                    right:
-                      template.photoAlignment === "right"
-                        ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                        : "auto",
-                    transform:
-                      template.photoAlignment === "center"
-                        ? "translateX(-50%)"
-                        : "none",
+                    left: `${((template.photoPosition?.x || 200) * scaleX)}px`,
+                    transform: "none",
                     top: `${(template.photoPosition?.y || 60) * scaleY}px`,
                   }}
                 >
@@ -515,20 +502,8 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   style={{
                     width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
                     height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
-                    left:
-                      template.qrCodeAlignment === "left"
-                        ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                        : template.qrCodeAlignment === "right"
-                          ? "auto"
-                          : "50%",
-                    right:
-                      template.qrCodeAlignment === "right"
-                        ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                        : "auto",
-                    transform:
-                      template.qrCodeAlignment === "center"
-                        ? "translateX(-50%)"
-                        : "none",
+                    left: `${((template.qrCodePosition?.x || 200) * scaleX)}px`,
+                    transform: "none",
                     top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
                   }}
                 >
@@ -696,7 +671,7 @@ const Badges: React.FC<BadgesProps> = ({
   ];
 
   // -------------------- NOTIFICATION HANDLER --------------------
-  const showNotification = (message: string, type: "success" | "error") => {
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
     setNotification({ message, type });
   };
 
@@ -1382,12 +1357,12 @@ const Badges: React.FC<BadgesProps> = ({
     if (selectedTemplate?.id === template.id) {
       setSelectedTemplate(null);
       setSelectedBadge(null); // Also clear badge selection
-      toast.success("Template deselected!");
+      showNotification("Template deselected!", "success");
     } else {
       // Select new template and deselect any existing badge
       setSelectedTemplate(template);
       setSelectedBadge(null); // Ensure existing badge is cleared
-      toast.success("Template selected!");
+      showNotification("Template selected!", "success");
     }
   };
 
@@ -1569,20 +1544,8 @@ const Badges: React.FC<BadgesProps> = ({
               style={{
                 width: `${(template.photoSize.width || 200) * scaleX}px`,
                 height: `${(template.photoSize.height || 200) * scaleY}px`,
-                left:
-                  template.photoAlignment === "left"
-                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                    : template.photoAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.photoAlignment === "right"
-                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                    : "auto",
-                transform:
-                  template.photoAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
+                left: `${((template.photoPosition?.x || 200) * scaleX)}px`,
+                transform: "none",
                 top: `${(template.photoPosition?.y || 60) * scaleY}px`,
               }}
             >
@@ -1608,7 +1571,7 @@ const Badges: React.FC<BadgesProps> = ({
                   color: template.nameText.color || "#ffffff",
                 }}
               >
-                Name
+                John Doe
               </div>
             </div>
           )}
@@ -1631,7 +1594,7 @@ const Badges: React.FC<BadgesProps> = ({
                   color: template.companyText.color || "#cccccc",
                 }}
               >
-                Company
+                Tech Company
               </div>
             </div>
           )}
@@ -1654,7 +1617,7 @@ const Badges: React.FC<BadgesProps> = ({
                   color: template.titleText.color || "#999999",
                 }}
               >
-                Title
+                Software Engineer
               </div>
             </div>
           )}
@@ -1665,20 +1628,8 @@ const Badges: React.FC<BadgesProps> = ({
               style={{
                 width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
                 height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
-                left:
-                  template.qrCodeAlignment === "left"
-                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                    : template.qrCodeAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.qrCodeAlignment === "right"
-                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                    : "auto",
-                transform:
-                  template.qrCodeAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
+                left: `${((template.qrCodePosition?.x || 200) * scaleX)}px`,
+                transform: "none",
                 top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
                 padding: "4px",
               }}
@@ -1826,7 +1777,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   const selectBadgeAndContinue = async () => {
     if (!selectedBadge && !selectedTemplate) {
-      toast.error("Please select a badge template first!");
+      showNotification("Please select a badge template first!", "error");
       return;
     }
 
@@ -1915,7 +1866,7 @@ const Badges: React.FC<BadgesProps> = ({
             console.log(`Updated ready-made badge template ${numericId} to default`);
             console.log("Template bgColor:", fullTemplateData.bgColor);
           }
-          toast.success("Template selected!");
+          showNotification("Template selected!", "success");
           setActiveBadgeId(selectedBadge.id);
           
           // Update event's active_badge_id in API for cross-device visibility
@@ -1935,7 +1886,7 @@ const Badges: React.FC<BadgesProps> = ({
             selectedBadge.id,
             selectedBadge.name
           );
-          toast.success("Template selected!");
+          showNotification("Template selected!", "success");
           setActiveBadgeId(selectedBadge.id);
           
           // Update event's active_badge_id in API for cross-device visibility
@@ -2064,7 +2015,7 @@ const Badges: React.FC<BadgesProps> = ({
           }
         }
 
-        toast.success("Custom template selected!");
+        showNotification("Custom template selected!", "success");
       }
 
       setTimeout(() => {
@@ -2075,7 +2026,7 @@ const Badges: React.FC<BadgesProps> = ({
         }
       }, 1000);
     } catch (error) {
-      toast.error("Failed to select template.");
+      showNotification("Failed to select template.", "error");
       console.error("Template selection error:", error);
     } finally {
       setLoading(false);
@@ -2091,7 +2042,11 @@ const Badges: React.FC<BadgesProps> = ({
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
                 ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -2365,8 +2320,6 @@ const Badges: React.FC<BadgesProps> = ({
           )}
         </button>
       </div>
-
-      <ToastContainer />
 
       <style>{`
         @keyframes slide-in {

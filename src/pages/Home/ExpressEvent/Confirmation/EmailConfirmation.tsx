@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Check, ChevronLeft, X, Pencil, Trash2 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -443,11 +441,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   const [customTemplateName, setCustomTemplateName] = useState("");
   const [notification, setNotification] = useState<{
     message: string;
-    type: "success" | "error";
+    type: "success" | "error" | "warning";
   } | null>(null);
 
   // Notification handler
-  const showNotification = (message: string, type: "success" | "error") => {
+  const showNotification = (message: string, type: "success" | "error" | "warning") => {
     setNotification({ message, type });
   };
 
@@ -628,7 +626,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       );
     } catch (e) {
       console.error("Failed to load templates:", e);
-      toast.error("Failed to load templates");
+      showNotification("Failed to load templates", "error");
     } finally {
       setIsLoading(false);
     }
@@ -680,7 +678,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   const handleSelectTemplate = async (templateId: string) => {
     if (!effectiveEventId) {
-      toast.error("Event ID is missing");
+      showNotification("Event ID is missing", "error");
       return;
     }
 
@@ -689,7 +687,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       (t: any) => t.id === templateId
     );
     if (!selectedTemplate) {
-      toast.error("Template not found");
+      showNotification("Template not found", "error");
       return;
     }
 
@@ -731,7 +729,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
-          toast.success("Template selected!");
+          showNotification("Template selected!", "success");
         } else {
           // Template doesn't exist - create it via POST API
           // Convert React component to HTML string
@@ -752,7 +750,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
           } else if (selectedTemplate.html) {
             htmlString = selectedTemplate.html;
           } else {
-            toast.error("Template content not available");
+            showNotification("Template content not available", "error");
             setIsLoading(false);
             return;
           }
@@ -790,11 +788,11 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
-          toast.success("Template saved and selected!");
+          showNotification("Template saved and selected!", "success");
         }
       } catch (e) {
         console.error("Failed to save/select ready-made template:", e);
-        toast.error("Failed to save template");
+        showNotification("Failed to save template", "error");
       } finally {
         setIsLoading(false);
       }
@@ -821,7 +819,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         [currentFlow.id]: templateId,
       });
       setModalTemplate(null);
-      toast.success("Template selected!");
+      showNotification("Template selected!", "success");
     }
   };
   const handleCreateNewTemplate = () => {
@@ -831,7 +829,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   const handleStartCreatingTemplate = () => {
     if (!customTemplateName.trim()) {
-      toast.warning("Please enter a template name");
+      showNotification("Please enter a template name", "warning");
       return;
     }
     setShowNameDialog(false);
@@ -871,8 +869,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
           "No design found in HTML for templateId:",
           templateWithDesign.apiId
         );
-        toast.warning(
-          "Template design not found. Editor will open empty. Please recreate the template."
+        showNotification(
+          "Template design not found. Editor will open empty. Please recreate the template.",
+          "warning"
         );
       }
     }
@@ -896,7 +895,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   };
   const handleNext = () => {
     if (!selectedTemplates[currentFlow.id]) {
-      toast.warning("Please select template");
+      showNotification("Please select template", "warning");
       return;
     }
     if (currentFlowIndex < flows.length - 1)
@@ -1045,7 +1044,9 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
                 ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-yellow-500 text-white"
             }`}
           >
             {notification.message}
@@ -1053,7 +1054,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         </div>
       )}
 
-      <ToastContainer position="top-right" autoClose={5000} />
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft size={20} />{" "}

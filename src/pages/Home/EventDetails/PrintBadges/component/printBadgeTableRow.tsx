@@ -3,6 +3,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
+  Printer,
 } from "lucide-react";
 import UserAvatar from "./useAvatar";
 
@@ -127,13 +128,29 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
         </div>
       </td>
       <td className="p-4">
-        <button
+        {/* <button
           onClick={() => onPerformAction("preview", user.id)}
           className="w-full px-4 py-2 text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
           disabled={loadingUserId === user.id}
         >
           {loadingUserId === user.id ? "Loading..." : "Print Badge"}
-        </button>
+        </button> */}
+        <button
+  onClick={() => onPerformAction("preview", user.id)}
+  className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm text-white
+             bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors
+             disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+  disabled={loadingUserId === user.id}
+>
+  {loadingUserId === user.id ? (
+    "Loading..."
+  ) : (
+    <>
+      <Printer size={16} />
+      {/* Print Badge */}
+    </>
+  )}
+</button>
       </td>
     </tr>
   );

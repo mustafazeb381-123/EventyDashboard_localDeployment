@@ -7,7 +7,6 @@ import {
   QrCode,
   Calendar,
 } from "lucide-react";
-import { ToastContainer } from "react-toastify";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -151,7 +150,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
 
         {/* Steps */}
         <div className="flex items-center gap-2">
-          {[0, 1, 2, 3].map((step) => (
+          {Array.from({ length: totalSteps }, (_, index) => index).map((step) => (
             <div key={step} className="flex items-center">
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
@@ -168,7 +167,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                   <span className="text-sm font-medium">{step + 1}</span>
                 )}
               </div>
-              {step < 3 && (
+              {step < totalSteps - 1 && (
                 <div
                   className={`w-8 h-0.5 mx-1 ${
                     step < currentStep ? "bg-pink-500" : "bg-gray-300"
@@ -292,8 +291,6 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
           Next →
         </button>
       </div>
-
-      <ToastContainer />
     </div>
   );
 };

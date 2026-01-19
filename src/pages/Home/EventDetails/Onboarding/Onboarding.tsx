@@ -3,8 +3,6 @@ import { useLocation } from "react-router-dom";
 import GateOnboarding from "./GateOnboarding";
 import { ArrowRight, Clipboard } from "lucide-react";
 import { getSessionAreaApi } from "@/apis/apiHelpers";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 function Onboarding() {
   const [showGateOnboarding, setShowGateOnboarding] = useState(false);
@@ -12,6 +10,25 @@ function Onboarding() {
   const [areasData, setAreasData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
 
   const location = useLocation();
 
@@ -32,7 +49,7 @@ function Onboarding() {
         setAreasData(response.data.data);
       } catch (err) {
         console.error("Error fetching areas:", err);
-        toast.error("Failed to fetch areas");
+        showNotification("Failed to fetch areas", "error");
       } finally {
         setLoading(false);
       }
@@ -60,14 +77,17 @@ function Onboarding() {
   };
 
   const handleCopyLink = (area: any) => {
-    if (!eventId) return toast.error("Event ID not found");
+    if (!eventId) {
+      showNotification("Event ID not found", "error");
+      return;
+    }
 
     const link = `${window.location.origin}/gate-onboarding?eventId=${eventId}&areaId=${area.id}`;
 
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(link)
-        .then(() => toast.success("Link copied to clipboard!"))
-        .catch(() => toast.error("Failed to copy link"));
+        .then(() => showNotification("Link copied to clipboard!", "success"))
+        .catch(() => showNotification("Failed to copy link", "error"));
     } else {
       const textArea = document.createElement("textarea");
       textArea.value = link;
@@ -76,9 +96,9 @@ function Onboarding() {
       textArea.select();
       try {
         document.execCommand("copy");
-        toast.success("Link copied (fallback)!");
+        showNotification("Link copied (fallback)!", "success");
       } catch (err) {
-        toast.error("Failed to copy link");
+        showNotification("Failed to copy link", "error");
       }
       document.body.removeChild(textArea);
     }
@@ -200,6 +220,39 @@ function Onboarding() {
           )}
         </div>
       </div>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }

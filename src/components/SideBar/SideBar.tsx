@@ -20,7 +20,6 @@ import {
   IdCard,
   Lock,
 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
 import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
 import { getEventbyId } from "@/apis/apiHelpers";
@@ -46,6 +45,10 @@ const SideBar = ({
   );
   const [registeredUsersCount, setRegisteredUsersCount] = useState<string>("0");
   const [eventType, setEventType] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -272,7 +275,7 @@ const SideBar = ({
     {
       icon: CheckCircle,
       label: "Attendees",
-      availableForExpress: false,
+      availableForExpress: true,
       submenu: [
         {
           label: "Check In",
@@ -280,7 +283,7 @@ const SideBar = ({
           path: currentEventId
             ? `/attendees/check-in?eventId=${currentEventId}`
             : "/attendees/check-in",
-          availableForExpress: false,
+          availableForExpress: true,
         },
         {
           label: "Check Out",
@@ -288,7 +291,7 @@ const SideBar = ({
           path: currentEventId
             ? `/attendees/check-out?eventId=${currentEventId}`
             : "/attendees/check-out",
-          availableForExpress: false,
+          availableForExpress: true,
         },
       ],
     },
@@ -321,10 +324,23 @@ const SideBar = ({
   // Show all menu items, but mark unavailable ones for express events
   const menuItems = allMenuItems;
 
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
   const handleLogout = async () => {
     try {
       await localStorage.removeItem("token");
-      toast.success("Logout Successful");
+      showNotification("Logout Successful", "success");
       setTimeout(() => {
         navigate("/login");
       }, 4000);
@@ -570,6 +586,36 @@ const SideBar = ({
 
         .thin-scrollbar::-webkit-scrollbar-thumb:hover {
           background-color: rgba(148, 163, 184, 0.5);
+        }
+      `}</style>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
         }
       `}</style>
     </>

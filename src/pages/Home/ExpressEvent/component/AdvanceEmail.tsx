@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Check, ChevronLeft, X, Pencil, Trash2 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -437,6 +435,10 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
 
   const currentFlow = flows[currentFlowIndex];
 
@@ -492,6 +494,19 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       loadTemplatesFromAPI();
     }
   }, [effectiveEventId, currentFlowIndex, eventData]);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
 
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId || !eventData) {
@@ -592,7 +607,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       );
     } catch (e) {
       console.error("Failed to load templates:", e);
-      toast.error("Failed to load templates");
+      showNotification("Failed to load templates", "error");
     } finally {
       setIsLoading(false);
     }
@@ -645,7 +660,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
   const handleSelectTemplate = async (templateId: string) => {
     if (!effectiveEventId) {
-      toast.error("Event ID is missing");
+      showNotification("Event ID is missing", "error");
       return;
     }
 
@@ -654,7 +669,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       (t: any) => t.id === templateId
     );
     if (!selectedTemplate) {
-      toast.error("Template not found");
+      showNotification("Template not found", "error");
       return;
     }
 
@@ -696,7 +711,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
-          toast.success("Template selected!");
+          showNotification("Template selected!", "success");
         } else {
           // Template doesn't exist - create it via POST API
           // Convert React component to HTML string
@@ -717,7 +732,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           } else if (selectedTemplate.html) {
             htmlString = selectedTemplate.html;
           } else {
-            toast.error("Template content not available");
+            showNotification("Template content not available", "error");
             setIsLoading(false);
             return;
           }
@@ -755,11 +770,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
-          toast.success("Template saved and selected!");
+          showNotification("Template saved and selected!", "success");
         }
       } catch (e) {
         console.error("Failed to save/select ready-made template:", e);
-        toast.error("Failed to save template");
+        showNotification("Failed to save template", "error");
       } finally {
         setIsLoading(false);
       }
@@ -786,7 +801,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         [currentFlow.id]: templateId,
       });
       setModalTemplate(null);
-      toast.success("Template selected!");
+      showNotification("Template selected!", "success");
     }
   };
 
@@ -798,8 +813,9 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   const handleEditTemplate = async (template: any) => {
     // Ready-made templates cannot be updated - check both isStatic and readyMadeId
     if (template.isStatic || template.readyMadeId) {
-      toast.warning(
-        "Ready-made templates cannot be edited. Please create a custom template instead."
+      showNotification(
+        "Ready-made templates cannot be edited. Please create a custom template instead.",
+        "warning"
       );
       return;
     }
@@ -825,8 +841,9 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           "No design found in HTML for templateId:",
           templateWithDesign.apiId
         );
-        toast.warning(
-          "Template design not found. Editor will open empty. Please recreate the template."
+        showNotification(
+          "Template design not found. Editor will open empty. Please recreate the template.",
+          "warning"
         );
       }
     }
@@ -850,7 +867,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   };
   const handleNext = () => {
     if (!selectedTemplates[currentFlow.id]) {
-      toast.warning("Please select template");
+      showNotification("Please select template", "warning");
       return;
     }
     if (currentFlowIndex < flows.length - 1)
@@ -920,18 +937,19 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         });
         setIsCreatingNew(false);
         setIsEditorOpen(false);
-        toast.success("Template created!");
+        showNotification("Template created!", "success");
       } catch (e) {
         console.error("Failed to create template:", e);
-        toast.error("Failed to create template");
+        showNotification("Failed to create template", "error");
       } finally {
         setIsLoading(false);
       }
     } else if (editingTemplate) {
       // Ready-made templates cannot be updated - check both isStatic and readyMadeId
       if (editingTemplate.isStatic || editingTemplate.readyMadeId) {
-        toast.warning(
-          "Ready-made templates cannot be updated. Please create a custom template instead."
+        showNotification(
+          "Ready-made templates cannot be updated. Please create a custom template instead.",
+          "warning"
         );
         setIsEditorOpen(false);
         setEditingTemplate(null);
@@ -971,7 +989,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
         setEditingTemplate(null);
         setIsEditorOpen(false);
-        toast.success("Template updated!");
+        showNotification("Template updated!", "success");
       } catch (e: any) {
         console.error("Failed to update template:", e);
         console.error("Error details:", {
@@ -979,7 +997,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           response: e?.response?.data,
           status: e?.response?.status,
         });
-        toast.error(e?.response?.data?.message || "Failed to update template");
+        showNotification(e?.response?.data?.message || "Failed to update template", "error");
       } finally {
         setIsLoading(false);
       }
@@ -988,7 +1006,6 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
   return (
     <div className="w-full max-w-full mx-auto p-4 bg-white rounded-2xl shadow-sm">
-      <ToastContainer position="top-right" autoClose={5000} />
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft size={20} />{" "}
@@ -1096,7 +1113,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         onDelete={async (tpl: any) => {
           // Ready-made templates cannot be deleted - check both isStatic and readyMadeId
           if (tpl.isStatic || tpl.readyMadeId) {
-            toast.warning("Ready-made templates cannot be deleted.");
+            showNotification("Ready-made templates cannot be deleted.", "warning");
             return;
           }
           if (!effectiveEventId || !tpl.apiId) return;
@@ -1118,11 +1135,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                 return updated;
               });
             }
-            toast.success("Template deleted");
+            showNotification("Template deleted", "success");
             handleCloseModal();
           } catch (e) {
             console.error("Failed to delete template:", e);
-            toast.error("Failed to delete template");
+            showNotification("Failed to delete template", "error");
           } finally {
             setIsLoading(false);
           }
@@ -1141,6 +1158,40 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         }}
         onSave={handleSaveFromEditor}
       />
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

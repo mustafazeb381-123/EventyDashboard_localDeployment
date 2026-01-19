@@ -3,8 +3,6 @@ import AdvanceConfirmation from "@/components/AdvanceEventComponent/AdvanceConfi
 import AdvanceRegistration from "@/components/AdvanceEventComponent/AdvanceRegistration";
 import AdvanceTicket from "@/components/AdvanceEventComponent/AdvanceTickt";
 import React, { useState } from "react";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 interface AdvanceEventProps {
   onComplete?: (eventId?: string | number) => void;
@@ -63,19 +61,6 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
 
   return (
     <div className="w-full">
-      <ToastContainer
-        position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
-
       <CurrentComponent
         onNext={handleNext} // UPDATED: Pass the updated handleNext
         onPrevious={handlePrevious}

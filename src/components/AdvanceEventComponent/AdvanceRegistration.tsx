@@ -9,7 +9,6 @@ import {
   Trash2,
   Edit,
 } from "lucide-react";
-import { toast, ToastContainer } from "react-toastify";
 import {
   createTemplatePostApi,
   getRegistrationFieldApi,
@@ -161,7 +160,7 @@ const renderCustomField = (
             setFormData({ ...formData, [field.name]: e.target.value })
           }
           style={fieldInputStyle}
-          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
         />
       );
     case "textarea":
@@ -173,7 +172,7 @@ const renderCustomField = (
             setFormData({ ...formData, [field.name]: e.target.value })
           }
           style={fieldInputStyle}
-          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500 resize-y"
           rows={4}
         />
       );
@@ -186,7 +185,7 @@ const renderCustomField = (
             setFormData({ ...formData, [field.name]: e.target.value })
           }
           style={fieldInputStyle}
-          className="w-full transition-all outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
         >
           <option value="">Select an option...</option>
           {field.options?.map((opt) => (
@@ -212,7 +211,7 @@ const renderCustomField = (
                 onChange={(e) =>
                   setFormData({ ...formData, [field.name]: e.target.value })
                 }
-                className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
               />
               <span className="text-gray-700">{opt.label}</span>
             </label>
@@ -238,7 +237,7 @@ const renderCustomField = (
                     : current.filter((v: string) => v !== opt.value);
                   setFormData({ ...formData, [field.name]: updated });
                 }}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
               />
               <span className="text-gray-700">{opt.label}</span>
             </label>
@@ -410,7 +409,7 @@ const renderCustomField = (
           onChange={(e) =>
             setFormData({ ...formData, [field.name]: e.target.value })
           }
-          className="w-full text-sm resize-y transition-all outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full text-sm resize-y transition-all outline-none focus:ring-2 focus:ring-pink-500"
           style={{
             ...fieldInputStyle,
             color: theme?.textColor || "#111827",
@@ -604,7 +603,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
     if (!isUserRegistration) {
       // If not user registration, just log (for preview/admin mode)
     console.log("Custom form submitted:", formData);
-      toast.success("Form submitted successfully!");
+      showNotification("Form submitted successfully!", "success");
       return;
     }
 
@@ -626,7 +625,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
         localStorageCreate: typeof window !== "undefined" ? localStorage.getItem("create_eventId") : null,
         localStorageEdit: typeof window !== "undefined" ? localStorage.getItem("edit_eventId") : null,
       });
-      toast.error("Event ID not found. Cannot submit registration.");
+      showNotification("Event ID not found. Cannot submit registration.", "error");
       return;
     }
 
@@ -642,7 +641,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       // Double-check eventId before submission
       if (!actualEventId) {
         console.error("❌ CRITICAL: actualEventId is missing at submission time!");
-        toast.error("Event ID is missing. Please refresh the page.");
+        showNotification("Event ID is missing. Please refresh the page.", "error");
         setIsSubmitting(false);
         return;
       }
@@ -661,7 +660,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
 
       if (missingFields.length > 0) {
         const fieldNames = missingFields.map((f) => f.label || f.name).join(", ");
-        toast.error(`Please fill in required fields: ${fieldNames}`);
+        showNotification(`Please fill in required fields: ${fieldNames}`, "error");
         setIsSubmitting(false);
         return;
       }
@@ -676,7 +675,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
           eventDataDataId: eventData?.data?.id,
           effectiveEventId,
         });
-        toast.error("Event ID not found. Please refresh the page and try again.");
+        showNotification("Event ID not found. Please refresh the page and try again.", "error");
         setIsSubmitting(false);
         return;
       }
@@ -873,7 +872,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       const response = await createEventUser(String(actualEventId), formDataToSend);
       
       console.log("✅ Registration successful:", response);
-    toast.success("Registration submitted successfully!");
+    showNotification("Registration submitted successfully!", "success");
 
       // Reset form
       setFormData({});
@@ -999,10 +998,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
           : `Event not found (ID: ${eventIdUsed}).\n\nPlease verify:\n1. The event ID is correct\n2. The event exists\n3. You have access to this event\n\nAPI URL: ${fullUrl || requestedUrl}`;
       }
       
-      toast.error(errorMessage, {
-        autoClose: 5000,
-        style: { whiteSpace: "pre-line" },
-      });
+      showNotification(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -1592,7 +1588,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
 
   const handleFormSubmit = (formValues: Record<string, any>) => {
     console.log("Form submitted:", formValues);
-    toast.success("Registration submitted successfully!");
+    showNotification("Registration submitted successfully!", "success");
   };
 
   const reusableFormFields = formFields.map((field) => ({
@@ -1803,6 +1799,8 @@ const TemplateModal = ({
 const AdvanceRegistration = ({
   onNext,
   onPrevious,
+  currentStep,
+  totalSteps,
   eventId,
   plan,
 }: RegistrationFormProps) => {
@@ -1844,6 +1842,25 @@ const AdvanceRegistration = ({
     useState<CustomFormTemplate | null>(null);
   const [isDeleteFormBuilderModalOpen, setIsDeleteFormBuilderModalOpen] =
     useState(false);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
 
   // -------------------- HELPER FUNCTIONS FOR FORM BUILDER --------------------
   // Helper function to validate and convert form builder data
@@ -1932,7 +1949,7 @@ const AdvanceRegistration = ({
       // It will check both systems and set the correct default
       setGetTemplatesData(templateData);
     } catch (error) {
-      toast.error("Failed to fetch template data");
+      showNotification("Failed to fetch template data", "error");
     }
   };
 
@@ -2153,7 +2170,7 @@ const AdvanceRegistration = ({
       await checkAndSetDefaultTemplate();
     } catch (error: any) {
       console.error("Error loading form builder templates:", error);
-      toast.error("Failed to load form templates. Please try again.");
+      showNotification("Failed to load form templates. Please try again.", "error");
           setFormBuilderTemplates([]);
     } finally {
       setIsLoadingFormData(false);
@@ -2355,7 +2372,7 @@ const AdvanceRegistration = ({
       setIsEditFormBuilderMode(false);
     } catch (error: any) {
       console.error("Error in handleSaveCustomForm:", error);
-      toast.error(error?.message || "Failed to save form. Please try again.");
+      showNotification(error?.message || "Failed to save form. Please try again.", "error");
     }
   };
 
@@ -2368,7 +2385,7 @@ const AdvanceRegistration = ({
       // It's a custom form builder template
       handleOpenCustomFormBuilder(template);
     } else {
-      toast.info("Legacy form templates cannot be edited. Please create a new Custom Form Template.");
+      showNotification("Legacy form templates cannot be edited. Please create a new Custom Form Template.", "info");
     }
   };
 
@@ -2377,7 +2394,7 @@ const AdvanceRegistration = ({
   ) => {
     try {
       if (!effectiveEventId) {
-        toast.error("Event ID not found");
+        showNotification("Event ID not found", "error");
         return;
       }
 
@@ -2567,9 +2584,10 @@ const AdvanceRegistration = ({
         }
       }
 
-      toast.success(
+      showNotification(
         `Form Builder template ${isEditFormBuilderMode ? "updated" : "saved"
-        } successfully!`
+        } successfully!`,
+        "success"
       );
     } catch (error: any) {
       console.error("Error saving form builder template:", error);
@@ -2663,10 +2681,7 @@ const AdvanceRegistration = ({
         errorMessage = `Error: ${error.message}`;
       }
       
-      toast.error(errorMessage, {
-        autoClose: 5000,
-        style: { whiteSpace: "pre-line" },
-      });
+      showNotification(errorMessage, "error");
     }
   };
 
@@ -2692,7 +2707,7 @@ const AdvanceRegistration = ({
     
     try {
       if (!effectiveEventId) {
-        toast.error("Event ID not found");
+        showNotification("Event ID not found", "error");
         cancelDeleteFormBuilderTemplate();
         return;
       }
@@ -2713,7 +2728,7 @@ const AdvanceRegistration = ({
       // Reload templates from API to ensure consistency
       await loadFormBuilderTemplates();
 
-    toast.success("Template deleted successfully!");
+    showNotification("Template deleted successfully!", "success");
     } catch (error: any) {
       console.error("Error deleting template:", error);
       
@@ -2730,7 +2745,7 @@ const AdvanceRegistration = ({
         errorMessage = `Error: ${error.message}`;
       }
       
-      toast.error(errorMessage);
+      showNotification(errorMessage, "error");
     } finally {
     cancelDeleteFormBuilderTemplate();
     }
@@ -2791,7 +2806,7 @@ const AdvanceRegistration = ({
       // Set confirmedTemplate immediately (optimistic update)
       setConfirmedTemplate(templateId);
       
-      toast.success("Custom template applied successfully");
+      showNotification("Custom template applied successfully", "success");
       
       // Close modal
       setIsFormBuilderPreviewModalOpen(false);
@@ -2895,10 +2910,7 @@ const AdvanceRegistration = ({
         errorMessage = `Error: ${error.message}`;
       }
       
-      toast.error(errorMessage, {
-        autoClose: 5000,
-        style: { whiteSpace: "pre-line" },
-      });
+      showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
     }
@@ -2981,7 +2993,7 @@ const AdvanceRegistration = ({
       // Set confirmedTemplate immediately (optimistic update)
       setConfirmedTemplate(templateId);
       
-      toast.success("Default template applied successfully!");
+      showNotification("Default template applied successfully!", "success");
       
       // Close modal
       handleCloseModal();
@@ -3004,7 +3016,7 @@ const AdvanceRegistration = ({
       console.log("✅ Final confirmedTemplate set to default:", templateId);
     } catch (error: any) {
       console.error("Error applying default template:", error);
-      toast.error("Error applying template. Please try again.");
+      showNotification("Error applying template. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
@@ -3016,7 +3028,7 @@ const AdvanceRegistration = ({
       const response = await getRegistrationFieldApi(id);
       setFormData(response.data.data);
     } catch (error) {
-      toast.error("Failed to load form data");
+      showNotification("Failed to load form data", "error");
     } finally {
       setIsLoadingFormData(false);
     }
@@ -3024,7 +3036,7 @@ const AdvanceRegistration = ({
 
   const handleNextClick = () => {
     if (!confirmedTemplate) {
-      toast.warning("Please select a template before proceeding");
+      showNotification("Please select a template before proceeding", "warning");
       return;
     }
     if (onNext) onNext(effectiveEventId, plan);
@@ -3037,13 +3049,45 @@ const AdvanceRegistration = ({
     <>
       <div className="w-full mx-5 bg-white p-5 rounded-2xl">
         {/* Header */}
-        <div className="flex flex-row justify-between items-center">
+        <div className="flex flex-row justify-between items-center mb-4">
           <div className="flex flex-row gap-2 items-center">
-            <ChevronLeft />
+            <ChevronLeft onClick={onPrevious} className="cursor-pointer" />
             <p className="text-neutral-900 text-md font-poppins font-normal">
               Choose a registration form template
             </p>
           </div>
+          
+          {/* Steps */}
+          {currentStep !== undefined && totalSteps !== undefined && (
+            <div className="flex items-center gap-2">
+              {Array.from({ length: totalSteps }, (_, index) => index).map((step) => (
+                <div key={step} className="flex items-center">
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                      step === currentStep
+                        ? "border-pink-500 bg-white text-pink-500"
+                        : step < currentStep
+                        ? "bg-pink-500 border-pink-500 text-white"
+                        : "border-gray-300 bg-white text-gray-400"
+                    }`}
+                  >
+                    {step < currentStep ? (
+                      <Check size={16} />
+                    ) : (
+                      <span className="text-sm font-medium">{step + 1}</span>
+                    )}
+                  </div>
+                  {step < totalSteps - 1 && (
+                    <div
+                      className={`w-8 h-0.5 mx-1 ${
+                        step < currentStep ? "bg-pink-500" : "bg-gray-300"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Templates Grid */}
@@ -3062,15 +3106,15 @@ const AdvanceRegistration = ({
             {/* Custom Form Builder Card (First Position - Recommended) */}
             <div
               onClick={() => handleOpenCustomFormBuilder()}
-              className="border-2 border-dashed border-green-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-green-500 hover:bg-green-50 flex flex-col items-center justify-center aspect-square relative"
+              className="border-2 border-dashed border-pink-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square relative"
             >
-              <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full">
+              <div className="absolute top-2 right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
                 NEW
               </div>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                <Plus className="text-green-600" size={32} />
+              <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-4">
+                <Plus className="text-pink-600" size={32} />
               </div>
-              <h3 className="text-lg font-medium mb-2 text-center text-green-600">
+              <h3 className="text-lg font-medium mb-2 text-center text-pink-600">
                 Custom Form Builder
               </h3>
               <p className="text-sm text-gray-500 text-center">
@@ -3122,7 +3166,7 @@ const AdvanceRegistration = ({
                   key={template.id}
                   className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${isSelected
                     ? "border-pink-500 bg-pink-50"
-                    : "border-gray-200 hover:border-blue-500"
+                    : "border-gray-200 hover:border-pink-500"
                     }`}
                 >
                   {/* Edit/Delete buttons */}
@@ -3132,7 +3176,7 @@ const AdvanceRegistration = ({
                         e.stopPropagation();
                         handleEditFormBuilderTemplate(template);
                       }}
-                      className="p-1.5 bg-white rounded-lg shadow-sm text-blue-500 hover:bg-blue-50 transition-colors"
+                      className="p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
                       title="Edit template"
                     >
                       <Edit size={14} />
@@ -3184,8 +3228,8 @@ const AdvanceRegistration = ({
                   {/* Selected Indicator */}
                   {isSelected && (
                     <div className="mt-2 flex items-center justify-center">
-                      <Check size={16} className="text-blue-500 mr-1" />
-                      <span className="text-sm text-blue-500 font-medium">
+                      <Check size={16} className="text-pink-500 mr-1" />
+                      <span className="text-sm text-pink-500 font-medium">
                         Selected
                       </span>
                     </div>
@@ -3351,7 +3395,7 @@ const AdvanceRegistration = ({
                     disabled={isLoading}
                     className={`px-4 py-2 rounded-lg text-sm font-medium ${isLoading
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                      : "bg-blue-500 hover:bg-blue-600 text-white"
+                      : "bg-pink-500 hover:bg-pink-600 text-white"
                       }`}
                   >
                     {isLoading ? "Saving..." : "Use This Template"}
@@ -3412,7 +3456,38 @@ const AdvanceRegistration = ({
           </button>
         </div>
 
-        <ToastContainer />
+        {notification && (
+          <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+            <div
+              className={`px-6 py-3 rounded-lg shadow-lg ${
+                notification.type === "success"
+                  ? "bg-pink-500 text-white"
+                  : notification.type === "error"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                  ? "bg-yellow-500 text-white"
+                  : "bg-pink-500 text-white"
+              }`}
+            >
+              {notification.message}
+            </div>
+          </div>
+        )}
+        <style>{`
+          @keyframes slide-in {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+          .animate-slide-in {
+            animation: slide-in 0.3s ease-out;
+          }
+        `}</style>
       </div>
     </>
   );

@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { ChevronLeft, Loader2, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -29,11 +27,29 @@ const PollDetails = () => {
     "questions"
   );
   const [triggerAddQuestion, setTriggerAddQuestion] = useState(0);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   const canLoad = useMemo(
     () => Boolean(id) && Boolean(eventId) && Boolean(agendaId),
     [id, eventId, agendaId]
   );
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   const refresh = async () => {
     if (!canLoad) return;
@@ -198,15 +214,15 @@ const PollDetails = () => {
         );
       } else {
         console.error("Invalid poll response structure:", responseData);
-        toast.error("Invalid poll data received");
+        showNotification("Invalid poll data received", "error");
       }
     } catch (error: any) {
       console.error("Error fetching poll details:", error);
       if (error?.response?.status === 404) {
-        toast.error("Poll not found");
+        showNotification("Poll not found", "error");
         handleBack();
       } else {
-        toast.error("Failed to load poll");
+        showNotification("Failed to load poll", "error");
       }
     } finally {
       setIsLoading(false);
@@ -226,7 +242,20 @@ const PollDetails = () => {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB] p-6">
-      <ToastContainer position="top-right" autoClose={4000} />
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
 
       {/* Header with back button and breadcrumb */}
       <div className="mb-6">
@@ -326,6 +355,22 @@ const PollDetails = () => {
           </Button>
         </div>
       )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

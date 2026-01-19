@@ -24,6 +24,8 @@ import Qa from "@/pages/Home/EventDetails/QA/QA";
 import TicketManagement from "@/pages/Home/EventDetails/TicketManagement/TicketManagement";
 import VipUsers from "@/pages/Home/EventDetails/Invitation/VipUsers";
 import Onboarding from "@/pages/Home/EventDetails/Onboarding/Onboarding";
+import CheckIn from "@/pages/Home/EventDetails/Attendees/CheckIn";
+import CheckOut from "@/pages/Home/EventDetails/Attendees/CheckOut";
 
 const router = createBrowserRouter([
   {
@@ -81,6 +83,19 @@ const router = createBrowserRouter([
           {
             path: "Onboarding",
             element: <Onboarding />,
+          },
+          {
+            path: "attendees",
+            children: [
+              {
+                path: "check-in",
+                element: <CheckIn />,
+              },
+              {
+                path: "check-out",
+                element: <CheckOut />,
+              },
+            ],
           },
           {
             path: "communication",

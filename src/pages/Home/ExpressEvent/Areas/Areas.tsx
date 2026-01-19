@@ -7,9 +7,7 @@ import {
   updateSessionAreaApi,
 } from "@/apis/apiHelpers";
 import { Area } from "recharts";
-import { toast, ToastContainer } from "react-toastify";
 import { Skeleton } from "@/components/ui/skeleton";
-import "react-toastify/dist/ReactToastify.css";
 
 export type Area = {
   id: string;
@@ -57,11 +55,11 @@ export default function Areas({}) {
   const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
-    type: "success" | "error";
+    type: "success" | "error" | "warning" | "info";
   } | null>(null);
 
   // Notification handler
-  const showNotification = (message: string, type: "success" | "error") => {
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
     setNotification({ message, type });
   };
 
@@ -193,7 +191,7 @@ export default function Areas({}) {
     const hasError = Object.values(errors).some((err) => err !== "");
     if (hasError) {
       console.log("Validation failed");
-      toast.error("Please fill all required fields");
+      showNotification("Please fill all required fields", "error");
       return;
     }
 
@@ -232,16 +230,16 @@ export default function Areas({}) {
             guestNumbers: "",
           });
 
-          toast.success("Area added successfully!");
+          showNotification("Area added successfully!", "success");
         }
       } else {
         console.log("Please fill all fields before adding area");
-        toast.error("Please fill all fields before adding area");
+        showNotification("Please fill all fields before adding area", "error");
       }
     } catch (error) {
       console.log("Error in adding area:", error);
       setError("Failed to add session area");
-      toast.error("Failed to add session area");
+      showNotification("Failed to add session area", "error");
       // If add fails, refresh to get actual state from server
       await fetchSessionAreas();
     } finally {
@@ -252,7 +250,7 @@ export default function Areas({}) {
   const handleDelete = async () => {
     if (!eventId || !areaToDelete) {
       setError("Event ID or Area not found");
-      toast.error("Event ID or Area not found");
+      showNotification("Event ID or Area not found", "error");
       return;
     }
 
@@ -308,7 +306,7 @@ export default function Areas({}) {
   const handleSaveEdit = async () => {
     if (!editData || !eventId) {
       setError("Edit data or Event ID not found");
-      toast.error("Edit data or Event ID not found");
+      showNotification("Edit data or Event ID not found", "error");
       return;
     }
 
@@ -455,7 +453,11 @@ export default function Areas({}) {
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
                 ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -463,19 +465,6 @@ export default function Areas({}) {
         </div>
       )}
 
-      {/* Toast Container */}
-      <ToastContainer
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme="light"
-      />
 
       {/* Header with Add Form */}
       <div style={{ marginBottom: "32px" }}>

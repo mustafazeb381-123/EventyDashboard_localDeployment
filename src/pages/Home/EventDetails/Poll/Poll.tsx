@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { Loader2, Plus, Trash2, Pencil, BarChart3, Power } from "lucide-react";
 
 import Pagination from "@/components/Pagination";
@@ -89,6 +87,24 @@ const PollPage = () => {
   const [editingPoll, setEditingPoll] = useState<Poll | null>(null);
   const [form, setForm] = useState<PollFormState>(emptyForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
 
   // Fetch agendas when eventId changes
   useEffect(() => {
@@ -122,7 +138,7 @@ const PollPage = () => {
         }
       } catch (error) {
         console.error("Error fetching agendas:", error);
-        toast.error("Failed to load sessions");
+        showNotification("Failed to load sessions", "error");
         setAgendas([]);
         setSelectedAgendaId(null);
       } finally {
@@ -209,7 +225,7 @@ const PollPage = () => {
       console.error("Error fetching polls:", error);
       // Don't show error toast for 404 (no polls yet)
       if (error?.response?.status !== 404) {
-        toast.error("Failed to load polls");
+        showNotification("Failed to load polls", "error");
       }
       setPolls([]);
       setTotalCount(0);
@@ -255,7 +271,7 @@ const PollPage = () => {
 
   const submitForm = async () => {
     if (!eventId || !selectedAgendaId) {
-      toast.error("Missing event/agenda context");
+      showNotification("Missing event/agenda context", "error");
       return;
     }
 
@@ -264,11 +280,11 @@ const PollPage = () => {
       .filter((o) => o.option_text.length > 0);
 
     if (!form.question.trim()) {
-      toast.error("Question is required");
+      showNotification("Question is required", "error");
       return;
     }
     if (trimmedOptions.length < 2) {
-      toast.error("Please add at least 2 options");
+      showNotification("Please add at least 2 options", "error");
       return;
     }
 
@@ -290,10 +306,10 @@ const PollPage = () => {
           editingPoll.id,
           payload
         );
-        toast.success("Poll updated");
+        showNotification("Poll updated", "success");
       } else {
         await createAgendaPoll(eventId, selectedAgendaId, payload);
-        toast.success("Poll created");
+        showNotification("Poll created", "success");
       }
 
       closeModal();
@@ -304,7 +320,7 @@ const PollPage = () => {
         error?.response?.data?.error ||
         error?.response?.data?.message ||
         "Failed to save poll";
-      toast.error(message);
+      showNotification(message, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -316,15 +332,15 @@ const PollPage = () => {
     try {
       if (poll.active) {
         await deactivateAgendaPoll(eventId, selectedAgendaId, poll.id);
-        toast.success("Poll deactivated");
+        showNotification("Poll deactivated", "success");
       } else {
         await activateAgendaPoll(eventId, selectedAgendaId, poll.id);
-        toast.success("Poll activated");
+        showNotification("Poll activated", "success");
       }
       await fetchPolls();
     } catch (error) {
       console.error("Toggle active error:", error);
-      toast.error("Failed to update poll status");
+      showNotification("Failed to update poll status", "error");
     }
   };
 
@@ -334,11 +350,11 @@ const PollPage = () => {
 
     try {
       await deleteAgendaPoll(eventId, selectedAgendaId, poll.id);
-      toast.success("Poll deleted");
+      showNotification("Poll deleted", "success");
       await fetchPolls();
     } catch (error) {
       console.error("Delete poll error:", error);
-      toast.error("Failed to delete poll");
+      showNotification("Failed to delete poll", "error");
     }
   };
 
@@ -353,7 +369,20 @@ const PollPage = () => {
 
   return (
     <div className="bg-[#F9FAFB] p-6 min-h-screen">
-      <ToastContainer position="top-right" autoClose={4000} />
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
 
       {/* Page Title */}
       <h1 className="text-2xl font-semibold text-gray-800 mb-6">Polls</h1>
@@ -677,6 +706,22 @@ const PollPage = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

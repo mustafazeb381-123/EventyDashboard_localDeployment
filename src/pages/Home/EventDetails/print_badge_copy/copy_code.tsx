@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
 import { deleteEventUser, getBadgesApi, getEventUsers, updateEventUser, getEventbyId, getBadgeApi } from "@/apis/apiHelpers";
-import { toast, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 // Import refactored components and hooks using relative paths as per your structure
 import PrintBadgesHeader from "./component/printBadgeHeader";
@@ -32,6 +30,25 @@ function PrintBadges() {
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
   const [updatingPrintStatus, setUpdatingPrintStatus] = useState(false);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
 
   const rowsPerPage = 8;
 
@@ -87,11 +104,11 @@ function PrintBadges() {
           setSelectedBadgeTemplate(defaultTemplate);
           console.log("Fallback: Found default template from all templates");
         } else {
-          toast.error("No default badge template found");
+          showNotification("No default badge template found", "error");
         }
       } catch (fallbackError) {
         console.error("Fallback also failed:", fallbackError);
-        toast.error("Failed to load badge template");
+        showNotification("Failed to load badge template", "error");
       }
     }
   };
@@ -111,7 +128,7 @@ function PrintBadges() {
       setUsers(usersWithPrintStatus);
     } catch (error) {
       console.error("Error fetching event users:", error);
-      toast.error("Failed to load users");
+      showNotification("Failed to load users", "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -121,7 +138,7 @@ function PrintBadges() {
   // --- Update Print Status API Call ---
   const updatePrintStatus = async (userIds: string[]) => {
     if (!eventId) {
-      toast.error("Event ID is missing");
+      showNotification("Event ID is missing", "error");
       return false;
     }
 
@@ -160,7 +177,7 @@ function PrintBadges() {
       return true;
     } catch (error) {
       console.error("Error updating print status:", error);
-      toast.error("Failed to update print status");
+      showNotification("Failed to update print status", "error");
       return false;
     } finally {
       setUpdatingPrintStatus(false);
@@ -243,14 +260,14 @@ function PrintBadges() {
   const handleDelete = async () => {
     if (!userToDelete || !eventId) {
       console.error("Missing user or event ID for deletion");
-      toast.error("Cannot delete user: Missing information");
+      showNotification("Cannot delete user: Missing information", "error");
       return;
     }
 
     try {
       await deleteEventUser(eventId, userToDelete?.id);
       setUsers((prev) => prev.filter((u) => u.id !== userToDelete.id));
-      toast.success("User deleted successfully");
+      showNotification("User deleted successfully", "success");
       setSelectedUsers((prev) => {
         const newSelected = new Set(prev);
         newSelected.delete(userToDelete.id);
@@ -263,8 +280,9 @@ function PrintBadges() {
         status: error.response?.status,
         requestUrl: error.config?.url,
       });
-      toast.error(
-        `Failed to delete user: ${error.response?.data?.error || error.message}`
+      showNotification(
+        `Failed to delete user: ${error.response?.data?.error || error.message}`,
+        "error"
       );
     }
     setShowDeleteModal(false);
@@ -293,7 +311,7 @@ function PrintBadges() {
   // Direct Browser Print Functionality
 const handlePrint = useCallback(async () => {
   if (usersInPreviewModal.length === 0) {
-    toast.warning("No badges to print.");
+    showNotification("No badges to print.", "warning");
     return;
   }
 
@@ -304,7 +322,7 @@ const handlePrint = useCallback(async () => {
   const updateSuccess = await updatePrintStatus(userIdsToUpdate);
   
   if (!updateSuccess) {
-    toast.error("Failed to update print status. Printing cancelled.");
+    showNotification("Failed to update print status. Printing cancelled.", "error");
     return;
   }
 
@@ -315,20 +333,6 @@ const handlePrint = useCallback(async () => {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        {/* Toast notifications container */}
-        <ToastContainer
-          position="top-right"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-
         <div className="p-8">
           {/* Header Section */}
           <PrintBadgesHeader
@@ -337,7 +341,7 @@ const handlePrint = useCallback(async () => {
             searchTerm={searchTerm}
             onPreviewSelected={() => {
               if (selectedUsers.size === 0) {
-                toast.warning("Please select at least one user to preview");
+                showNotification("Please select at least one user to preview", "warning");
                 return;
               }
               setSelectedUserForPreview(null);
@@ -353,7 +357,7 @@ const handlePrint = useCallback(async () => {
             statusFilter={statusFilter}
             onStatusFilterChange={setStatusFilter}
             onExport={() =>
-              toast.info("Export functionality not implemented yet.")
+              showNotification("Export functionality not implemented yet.", "info")
             }
           />
 
@@ -536,12 +540,11 @@ export const usePrintStyles = (printAreaId: string, enabled: boolean) => {
 };
 
 
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { X, Download, Printer } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
 import jsPDF from "jspdf";
 import domtoimage from "dom-to-image-more";
-import { toast } from "react-toastify";
 import { renderBadgeTemplate } from "./badgeTemplate";
 
 interface BadgePreviewModalProps {
@@ -568,6 +571,25 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   const badgeRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const printComponentRef = useRef<HTMLDivElement>(null);
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
+
   // ✅ New react-to-print Logic
   const handlePrint = useReactToPrint({
     contentRef: printComponentRef,
@@ -582,7 +604,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   const downloadPdf = async () => {
     if (usersToPreview.length === 0) return;
     try {
-      toast.info("Preparing PDF...");
+      showNotification("Preparing PDF...", "info");
       const pdf = new jsPDF({ orientation: "p", unit: "pt", format: "a4" });
       const scale = Math.max(3, window.devicePixelRatio || 1);
 
@@ -680,10 +702,10 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
 }
 
 pdf.save(`badges-${new Date().toISOString().slice(0, 19)}.pdf`);
-toast.success("PDF downloaded successfully!");
+showNotification("PDF downloaded successfully!", "success");
 } catch (err) {
 console.error("PDF generation failed", err);
-toast.error("Failed to create PDF.");
+showNotification("Failed to create PDF.", "error");
 }
 };
 
@@ -752,6 +774,39 @@ toast.error("Failed to create PDF.");
         </div>
 
       </div>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };

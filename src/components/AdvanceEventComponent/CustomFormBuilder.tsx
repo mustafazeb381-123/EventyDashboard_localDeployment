@@ -396,13 +396,13 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
     document.body.style.cursor = "";
     document.querySelectorAll("[data-field-id]").forEach((el) => {
-      el.classList.remove("ring-2", "ring-blue-400");
+      el.classList.remove("ring-2", "ring-pink-400");
     });
     document.querySelectorAll("[data-container-id]").forEach((el) => {
       el.classList.remove("ring-2", "ring-purple-400", "bg-purple-100");
     });
     document.querySelectorAll("[data-drop-zone]").forEach((el) => {
-      el.classList.remove("ring-2", "ring-blue-400", "bg-blue-50");
+      el.classList.remove("ring-2", "ring-pink-400", "bg-pink-50");
     });
 
     if (!over) {
@@ -841,7 +841,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
           : rawOverId;
         if (overId) {
           document.querySelectorAll("[data-drop-zone]").forEach((el) => {
-            el.classList.remove("ring-2", "ring-blue-400", "bg-blue-50");
+            el.classList.remove("ring-2", "ring-pink-400", "bg-pink-50");
           });
           document.querySelectorAll("[data-container-id]").forEach((el) => {
             el.classList.remove("ring-2", "ring-purple-400", "bg-purple-100");
@@ -857,8 +857,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
           if (dropZone) {
             (dropZone as HTMLElement).classList.add(
               "ring-2",
-              "ring-blue-400",
-              "bg-blue-50"
+              "ring-pink-400",
+              "bg-pink-50"
             );
           }
           if (container) {
@@ -874,7 +874,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       <div className="fixed inset-0 bg-gray-900/70 backdrop-blur-sm z-40 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full h-[95vh] flex flex-col overflow-hidden">
           {/* Header */}
-          <div className="bg-linear-to-r from-blue-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between shadow-lg">
+          <div className="bg-linear-to-r from-pink-600 to-pink-600 text-white px-6 py-4 flex items-center justify-between shadow-lg">
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 {isEditingTemplateName ? (
@@ -907,7 +907,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                   </h2>
                 )}
               </div>
-              <p className="text-blue-100 text-sm mt-0.5">
+              <p className="text-pink-100 text-sm mt-0.5">
                 Design your perfect form
               </p>
             </div>
@@ -977,7 +977,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               </button>
               <button
                 onClick={handleSave}
-                className="flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-600 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 bg-pink-500 hover:bg-pink-600 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all"
               >
                 <Save size={18} />
                 Save Form
@@ -997,7 +997,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
             {/* Left Sidebar - Field Palette */}
             <div className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto p-4">
               <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <PaletteIcon size={18} className="text-blue-600" />
+                <PaletteIcon size={18} className="text-pink-600" />
                 Form Elements
               </h3>
               <FieldPalette onAddField={handleAddField} />
@@ -1034,7 +1034,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                         />
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all">
+                      <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all">
                         <ImageIcon className="w-12 h-12 text-gray-400 mb-2" />
                         <span className="text-sm font-medium text-gray-600">
                           Click to upload banner image
@@ -1055,10 +1055,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
                   {/* Logo Section */}
                   <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                    <div className="p-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                    <div className="p-4 bg-linear-to-r from-pink-50 to-pink-50 border-b border-gray-200">
                       <div className="flex items-center justify-between">
                         <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                          <ImageIcon size={18} className="text-blue-600" />
+                          <ImageIcon size={18} className="text-pink-600" />
                           Logo
                         </h3>
                         {logoPreview && (
@@ -1143,7 +1143,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                           </div>
                         </div>
                       ) : (
-                        <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all rounded-lg">
+                        <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all rounded-lg">
                           <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
                           <span className="text-sm font-medium text-gray-600">
                             Click to upload logo
@@ -1243,7 +1243,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       {/* Drag Overlay */}
       <DragOverlay>
         {activeId && draggedPreset ? (
-          <div className="bg-white border-2 border-blue-500 rounded-lg p-3 shadow-2xl opacity-90">
+          <div className="bg-white border-2 border-pink-500 rounded-lg p-3 shadow-2xl opacity-90">
             <div className="flex items-center gap-2">
               {draggedPreset.icon}
               <span className="font-medium">{draggedPreset.label}</span>
@@ -1359,7 +1359,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               </button>
               <button
                 onClick={handleApplyJson}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                className="px-4 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700"
               >
                 Apply Changes
               </button>

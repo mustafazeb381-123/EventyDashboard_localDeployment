@@ -8,7 +8,6 @@ import {
   X,
   AlertTriangle,
 } from "lucide-react";
-import { toast } from "react-toastify";
 import {
   DndContext,
   closestCenter,

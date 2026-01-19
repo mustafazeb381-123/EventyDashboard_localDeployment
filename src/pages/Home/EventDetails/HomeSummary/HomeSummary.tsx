@@ -8,7 +8,6 @@ import {
   updateEventById,
   getEventUserMetrics,
 } from "@/apis/apiHelpers";
-import { toast, ToastContainer } from "react-toastify";
 import imageCompression from "browser-image-compression";
 
 type HomeSummaryProps = {
@@ -21,6 +20,25 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
 
   // Default chart data if none provided
   const defaultChartData = useMemo(
@@ -390,7 +408,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       "image/jpg",
     ];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Invalid file type. Please upload SVG, PNG, or JPG.");
+      showNotification("Invalid file type. Please upload SVG, PNG, or JPG.", "error");
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -417,7 +435,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       let fileToUpload = file;
 
       if (file.size > 2 * 1024 * 1024) {
-        toast.error("SVG file is too large. Maximum allowed size is 2MB.");
+        showNotification("SVG file is too large. Maximum allowed size is 2MB.", "error");
         setIsUploading(false);
         return;
       }
@@ -435,9 +453,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         },
       }));
 
-      toast.success("Logo updated successfully");
+      showNotification("Logo updated successfully", "success");
     } catch (error: any) {
-      toast.error(error?.response?.data?.message || "Error updating logo");
+      showNotification(error?.response?.data?.message || "Error updating logo", "error");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -678,7 +696,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       canvas.toBlob(
         async (blob) => {
           if (!blob) {
-            toast.error("Failed to crop image. Please try again.");
+            showNotification("Failed to crop image. Please try again.", "error");
             setIsUploading(false);
             return;
           }
@@ -722,7 +740,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               },
             }));
 
-            toast.success("Logo updated successfully");
+            showNotification("Logo updated successfully", "success");
 
             // Close cropping mode
             setIsCropping(false);
@@ -732,8 +750,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             setOriginalImageSrc("");
           } catch (error: any) {
             console.error("Error processing image:", error);
-            toast.error(
-              error?.response?.data?.message || "Error updating logo"
+            showNotification(
+              error?.response?.data?.message || "Error updating logo",
+              "error"
             );
           } finally {
             setIsUploading(false);
@@ -747,7 +766,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       );
     } catch (error: any) {
       console.error("Error cropping image:", error);
-      toast.error("Failed to crop image. Please try again.");
+      showNotification("Failed to crop image. Please try again.", "error");
       setIsUploading(false);
     }
   };
@@ -881,10 +900,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 navigator.clipboard
                   .writeText(registrationUrl)
                   .then(() => {
-                    toast.success("Registration link copied to clipboard!");
+                    showNotification("Registration link copied to clipboard!", "success");
                   })
                   .catch(() => {
-                    toast.error("Failed to copy link");
+                    showNotification("Failed to copy link", "error");
                   });
               }}
               className="rounded-2xl bg-green-50 py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center shrink-0"
@@ -1127,7 +1146,38 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       {/* Hidden canvas for cropping */}
       <canvas ref={canvasRef} className="hidden" />
 
-      <ToastContainer />
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-blue-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </>
   );
 }

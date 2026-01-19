@@ -7,7 +7,6 @@ import {
   AlignRight,
   QrCode,
 } from "lucide-react";
-import { toast } from "react-toastify";
 
 // -------------------- TYPES --------------------
 export interface BadgeTemplate {
@@ -336,6 +335,25 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     null
   );
 
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+    setNotification({ message, type });
+  };
+
   const defaultTemplate: BadgeTemplate = {
     id: "",
     name: "New Custom Badge",
@@ -392,7 +410,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     if (!editingTemplate) return;
 
     if (editingTemplate.name.trim() === "") {
-      toast.warning("Please enter a template name");
+      showNotification("Please enter a template name", "warning");
       return;
     }
     console.log("Saved Badge Template JSON:");
@@ -456,20 +474,8 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               style={{
                 width: `${(template.photoSize.width || 200) * scaleX}px`,
                 height: `${(template.photoSize.height || 200) * scaleY}px`,
-                left:
-                  template.photoAlignment === "left"
-                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                    : template.photoAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.photoAlignment === "right"
-                    ? `${(template.photoPosition?.x || 200) * scaleX}px`
-                    : "auto",
-                transform:
-                  template.photoAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
+                left: `${((template.photoPosition?.x || 200) * scaleX)}px`,
+                transform: "none",
                 top: `${(template.photoPosition?.y || 60) * scaleY}px`,
               }}
             >
@@ -552,20 +558,8 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
               style={{
                 width: `${(template.qrCodeSize.width || 120) * scaleX}px`,
                 height: `${(template.qrCodeSize.height || 120) * scaleY}px`,
-                left:
-                  template.qrCodeAlignment === "left"
-                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                    : template.qrCodeAlignment === "right"
-                      ? "auto"
-                      : "50%",
-                right:
-                  template.qrCodeAlignment === "right"
-                    ? `${(template.qrCodePosition?.x || 200) * scaleX}px`
-                    : "auto",
-                transform:
-                  template.qrCodeAlignment === "center"
-                    ? "translateX(-50%)"
-                    : "none",
+                left: `${((template.qrCodePosition?.x || 200) * scaleX)}px`,
+                transform: "none",
                 top: `${(template.qrCodePosition?.y || 400) * scaleY}px`,
                 padding: "4px",
               }}
@@ -591,9 +585,9 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col">
       <div className="bg-white w-full h-full overflow-hidden flex flex-col">
-        <div className="flex justify-between items-center px-6 py-4 border-b bg-gray-100">
+        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-pink-500 via-pink-600 to-purple-600 text-white">
           <div className="flex items-center gap-4">
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className="text-lg font-semibold text-white">
               {isEditMode
                 ? "Edit Custom Badge"
                 : "Create Custom Badge Template"}
@@ -607,13 +601,13 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   name: e.target.value,
                 })
               }
-              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500"
+              className="px-3 py-2 border border-white/30 rounded-md bg-white/20 text-white placeholder:text-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50"
               placeholder="Template name"
             />
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-200"
+            className="p-2 rounded-full hover:bg-white/20 text-white"
           >
             <X size={20} />
           </button>
@@ -782,7 +776,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Alignment</h5>
                     <AlignmentButtons
                       value={editingTemplate.photoAlignment}
@@ -793,7 +787,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Position</h5>
@@ -1234,7 +1228,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     </div>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Alignment</h5>
                     <AlignmentButtons
                       value={editingTemplate.qrCodeAlignment || "center"}
@@ -1245,7 +1239,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         })
                       }
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Position</h5>
@@ -1312,6 +1306,39 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           </button>
         </div>
       </div>
+
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-pink-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : notification.type === "warning"
+                ? "bg-yellow-500 text-white"
+                : "bg-pink-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
