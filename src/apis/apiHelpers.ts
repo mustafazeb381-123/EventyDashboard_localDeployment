@@ -267,11 +267,8 @@ export const getBadgeType = (id: string | number) => {
 
 // Create a new user for a specific event, with optional tenant UUID and image upload
 export const createEventUser = (eventId: string, formData: FormData) => {
-  return axiosInstance.post(`/events/${eventId}/event_users`, formData, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // Don't set Content-Type manually - axios will set it automatically with boundary for FormData
+  return axiosInstance.post(`/events/${eventId}/event_users`, formData);
 };
 
 // Get all users for a specific event with pagination
