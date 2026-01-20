@@ -259,7 +259,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             <div className="flex gap-2">
               <select
                 value={countryValue}
-                onChange={(e) => handleChange(`${field.name}_country`, e.target.value)}
+                onChange={(e) =>
+                  handleChange(`${field.name}_country`, e.target.value)
+                }
                 style={{
                   ...fieldInputStyle,
                   width: "140px",
@@ -578,8 +580,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           fileValue instanceof File
             ? fileValue.name
             : typeof fileValue === "string"
-            ? fileValue.split("/").pop() || fileValue
-            : "";
+              ? fileValue.split("/").pop() || fileValue
+              : "";
 
         return (
           <div className="space-y-2">
@@ -744,12 +746,16 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </h3>
         );
       case "paragraph":
-        const paragraphContent = formData[field.name] || field.content || field.label || "";
+        const paragraphContent =
+          formData[field.name] || field.content || field.label || "";
         return (
           <textarea
             value={paragraphContent}
             onChange={(e) => {
-              setFormData((prev) => ({ ...prev, [field.name]: e.target.value }));
+              setFormData((prev) => ({
+                ...prev,
+                [field.name]: e.target.value,
+              }));
             }}
             className="w-full text-sm resize-y"
             style={{
@@ -785,9 +791,16 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         return (
           <div
             style={{
-              color: field.fieldStyle?.textColor || theme?.descriptionColor || "#6b7280",
-              fontSize: field.fieldStyle?.fontSize || theme?.descriptionFontSize || "12px",
-              backgroundColor: field.fieldStyle?.backgroundColor || "transparent",
+              color:
+                field.fieldStyle?.textColor ||
+                theme?.descriptionColor ||
+                "#6b7280",
+              fontSize:
+                field.fieldStyle?.fontSize ||
+                theme?.descriptionFontSize ||
+                "12px",
+              backgroundColor:
+                field.fieldStyle?.backgroundColor || "transparent",
               borderColor: field.fieldStyle?.borderColor || "transparent",
               borderWidth: field.fieldStyle?.borderWidth || undefined,
               borderRadius: field.fieldStyle?.borderRadius || undefined,
@@ -849,8 +862,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       ? typeof theme.formBackgroundImage === "string"
         ? `url(${theme.formBackgroundImage})`
         : backgroundImagePreview
-        ? `url(${backgroundImagePreview})`
-        : undefined
+          ? `url(${backgroundImagePreview})`
+          : undefined
       : undefined,
     backgroundSize: theme?.formBackgroundImage ? "cover" : undefined,
     backgroundPosition: theme?.formBackgroundImage ? "center" : undefined,
@@ -878,18 +891,19 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       theme?.formAlignment === "left"
         ? "0"
         : theme?.formAlignment === "right"
-        ? "auto"
-        : "auto",
+          ? "auto"
+          : "auto",
     marginRight:
       theme?.formAlignment === "left"
         ? "auto"
         : theme?.formAlignment === "right"
-        ? "0"
-        : "auto",
+          ? "0"
+          : "auto",
   };
 
   const formPadding = theme?.formPadding || "24px";
-  const paddingValue = typeof formPadding === "string" ? parseInt(formPadding) || 24 : formPadding;
+  const paddingValue =
+    typeof formPadding === "string" ? parseInt(formPadding) || 24 : formPadding;
 
   return (
     <div
@@ -898,7 +912,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     >
       {/* Banner Image - Full width, breaks out of padding */}
       {bannerImage && (
-        <div 
+        <div
           className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
           style={{
             marginLeft: `-${paddingValue}px`,
@@ -917,12 +931,16 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
       <FormHeader theme={theme} />
 
-      <div 
-        style={{ 
+      <div
+        style={{
           backgroundColor: theme?.formBackgroundColor || "#ffffff",
         }}
       >
-        <form onSubmit={handleSubmit} className="space-y-6" style={{ width: "100%" }}>
+        <form
+          onSubmit={handleSubmit}
+          className="space-y-6"
+          style={{ width: "100%" }}
+        >
           {(() => {
             // Calculate all child field IDs once to avoid duplicate rendering
             const allChildIds = new Set(
@@ -1010,92 +1028,144 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                       childFields
                         .filter((childField) => childField.type !== "button")
                         .map((childField) => {
-                        // Determine wrapper style/class based on container type and Bootstrap class
-                        let fieldWrapperClassName = "";
-                        let fieldWrapperStyle: React.CSSProperties = {};
+                          // Determine wrapper style/class based on container type and Bootstrap class
+                          let fieldWrapperClassName = "";
+                          let fieldWrapperStyle: React.CSSProperties = {};
 
-                        // Apply per-field spacing so custom margins/paddings are respected
-                        const fieldSpacing: React.CSSProperties = {
-                          margin: childField.fieldStyle?.margin || undefined,
-                          padding: childField.fieldStyle?.padding || undefined,
-                          width: childField.fieldStyle?.width || "100%",
-                          ...(childField.fieldStyle?.marginTop
-                            ? { marginTop: childField.fieldStyle.marginTop }
-                            : {}),
-                          ...(childField.fieldStyle?.marginRight
-                            ? { marginRight: childField.fieldStyle.marginRight }
-                            : {}),
-                          ...(childField.fieldStyle?.marginBottom
-                            ? {
-                                marginBottom:
-                                  childField.fieldStyle.marginBottom,
-                              }
-                            : {}),
-                          ...(childField.fieldStyle?.marginLeft
-                            ? { marginLeft: childField.fieldStyle.marginLeft }
-                            : {}),
-                          ...(childField.fieldStyle?.paddingTop
-                            ? { paddingTop: childField.fieldStyle.paddingTop }
-                            : {}),
-                          ...(childField.fieldStyle?.paddingRight
-                            ? {
-                                paddingRight:
-                                  childField.fieldStyle.paddingRight,
-                              }
-                            : {}),
-                          ...(childField.fieldStyle?.paddingBottom
-                            ? {
-                                paddingBottom:
-                                  childField.fieldStyle.paddingBottom,
-                              }
-                            : {}),
-                          ...(childField.fieldStyle?.paddingLeft
-                            ? { paddingLeft: childField.fieldStyle.paddingLeft }
-                            : {}),
-                        };
+                          // Apply per-field spacing so custom margins/paddings are respected
+                          const fieldSpacing: React.CSSProperties = {
+                            margin: childField.fieldStyle?.margin || undefined,
+                            padding:
+                              childField.fieldStyle?.padding || undefined,
+                            width: childField.fieldStyle?.width || "100%",
+                            ...(childField.fieldStyle?.marginTop
+                              ? { marginTop: childField.fieldStyle.marginTop }
+                              : {}),
+                            ...(childField.fieldStyle?.marginRight
+                              ? {
+                                  marginRight:
+                                    childField.fieldStyle.marginRight,
+                                }
+                              : {}),
+                            ...(childField.fieldStyle?.marginBottom
+                              ? {
+                                  marginBottom:
+                                    childField.fieldStyle.marginBottom,
+                                }
+                              : {}),
+                            ...(childField.fieldStyle?.marginLeft
+                              ? { marginLeft: childField.fieldStyle.marginLeft }
+                              : {}),
+                            ...(childField.fieldStyle?.paddingTop
+                              ? { paddingTop: childField.fieldStyle.paddingTop }
+                              : {}),
+                            ...(childField.fieldStyle?.paddingRight
+                              ? {
+                                  paddingRight:
+                                    childField.fieldStyle.paddingRight,
+                                }
+                              : {}),
+                            ...(childField.fieldStyle?.paddingBottom
+                              ? {
+                                  paddingBottom:
+                                    childField.fieldStyle.paddingBottom,
+                                }
+                              : {}),
+                            ...(childField.fieldStyle?.paddingLeft
+                              ? {
+                                  paddingLeft:
+                                    childField.fieldStyle.paddingLeft,
+                                }
+                              : {}),
+                          };
 
-                        if (isColumnContainer && childField.bootstrapClass) {
-                          // Use Bootstrap class
-                          fieldWrapperClassName = childField.bootstrapClass;
-                          fieldWrapperStyle = {
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                            ...fieldSpacing,
-                          };
-                        } else if (isRowLayout) {
-                          // For row layouts without Bootstrap, use flex equal width
-                          fieldWrapperStyle = {
-                            flex: "1 1 0%",
-                            minWidth: "0",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                            ...fieldSpacing,
-                          };
-                        } else {
-                          // Default column layout
-                          fieldWrapperStyle = {
-                            width: "100%",
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: "4px",
-                            ...fieldSpacing,
-                          };
-                        }
+                          if (isColumnContainer && childField.bootstrapClass) {
+                            // Use Bootstrap class
+                            fieldWrapperClassName = childField.bootstrapClass;
+                            fieldWrapperStyle = {
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "4px",
+                              ...fieldSpacing,
+                            };
+                          } else if (isRowLayout) {
+                            // For row layouts without Bootstrap, use flex equal width
+                            fieldWrapperStyle = {
+                              flex: "1 1 0%",
+                              minWidth: "0",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "4px",
+                              ...fieldSpacing,
+                            };
+                          } else {
+                            // Default column layout
+                            fieldWrapperStyle = {
+                              width: "100%",
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "4px",
+                              ...fieldSpacing,
+                            };
+                          }
 
-                        // For static/button fields inside containers, don't show label
-                        if (
-                          childField.type === "button" ||
-                          childField.type === "paragraph" ||
-                          childField.type === "helperText"
-                        ) {
+                          // For static/button fields inside containers, don't show label
+                          if (
+                            childField.type === "button" ||
+                            childField.type === "paragraph" ||
+                            childField.type === "helperText"
+                          ) {
+                            return (
+                              <div
+                                key={childField.id}
+                                className={fieldWrapperClassName}
+                                style={fieldWrapperStyle}
+                              >
+                                <div style={{ width: "100%" }}>
+                                  {renderField(
+                                    childField,
+                                    {
+                                      ...baseInputStyle,
+                                      width: "100%",
+                                    },
+                                    theme
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          }
+
                           return (
                             <div
                               key={childField.id}
                               className={fieldWrapperClassName}
                               style={fieldWrapperStyle}
                             >
+                              <label
+                                className="block font-semibold text-sm mb-1"
+                                style={{
+                                  color:
+                                    childField.fieldStyle?.labelColor ||
+                                    theme?.labelColor ||
+                                    "#374151",
+                                  fontSize: theme?.labelFontSize || "14px",
+                                  fontWeight: theme?.labelFontWeight || "600",
+                                }}
+                              >
+                                {replaceInlineParams(childField.label)}
+                                {childField.required && (
+                                  <span
+                                    style={{
+                                      color:
+                                        theme?.requiredIndicatorColor ||
+                                        "#ef4444",
+                                      marginLeft: "4px",
+                                    }}
+                                  >
+                                    *
+                                  </span>
+                                )}
+                              </label>
                               <div style={{ width: "100%" }}>
                                 {renderField(
                                   childField,
@@ -1108,52 +1178,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                               </div>
                             </div>
                           );
-                        }
-
-                        return (
-                          <div
-                            key={childField.id}
-                            className={fieldWrapperClassName}
-                            style={fieldWrapperStyle}
-                          >
-                            <label
-                              className="block font-semibold text-sm mb-1"
-                              style={{
-                                color:
-                                  childField.fieldStyle?.labelColor ||
-                                  theme?.labelColor ||
-                                  "#374151",
-                                fontSize: theme?.labelFontSize || "14px",
-                                fontWeight: theme?.labelFontWeight || "600",
-                              }}
-                            >
-                              {replaceInlineParams(childField.label)}
-                              {childField.required && (
-                                <span
-                                  style={{
-                                    color:
-                                      theme?.requiredIndicatorColor ||
-                                      "#ef4444",
-                                    marginLeft: "4px",
-                                  }}
-                                >
-                                  *
-                                </span>
-                              )}
-                            </label>
-                            <div style={{ width: "100%" }}>
-                              {renderField(
-                                childField,
-                                {
-                                  ...baseInputStyle,
-                                  width: "100%",
-                                },
-                                theme
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
+                        })
                     ) : (
                       <div className="text-center py-8 text-gray-400 text-sm italic w-full">
                         Drop fields here

@@ -50,7 +50,9 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
   const [config, setConfig] = useState<CustomFormField>(field);
 
   const handleLabelChange = (nextLabel: string) => {
-    setConfig((prev) => updateFieldLabelWithAutoProps(prev, nextLabel, allFields));
+    setConfig((prev) =>
+      updateFieldLabelWithAutoProps(prev, nextLabel, allFields)
+    );
   };
 
   const getFieldIcon = (type: FieldType) => {
@@ -1228,8 +1230,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     ...config,
                     fieldStyle: {
                       ...config.fieldStyle,
-                      textAlign:
-                        (e.target.value as any) || undefined,
+                      textAlign: (e.target.value as any) || undefined,
                     },
                   })
                 }

@@ -381,53 +381,53 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       const autoPlaceholder = makeAutoPlaceholderFromLabel(type, finalLabel);
 
       return {
-      id: `${type}-${Date.now()}`,
-      type,
-      label: finalLabel,
-      name: defaultName || autoName,
-      required: false,
-      unique: false,
-      placeholder:
-        defaultPlaceholder ||
-        (type === "email"
-          ? "example@email.com"
-          : type === "number"
-          ? "Enter a number"
-          : autoPlaceholder),
-      ...(type === "select" || type === "radio" || type === "checkbox"
-        ? preset.id === "country"
-          ? { optionsSource: "countries" }
-          : {
-              options: [
-                { label: "Option 1", value: "option_1" },
-                { label: "Option 2", value: "option_2" },
-              ],
+        id: `${type}-${Date.now()}`,
+        type,
+        label: finalLabel,
+        name: defaultName || autoName,
+        required: false,
+        unique: false,
+        placeholder:
+          defaultPlaceholder ||
+          (type === "email"
+            ? "example@email.com"
+            : type === "number"
+              ? "Enter a number"
+              : autoPlaceholder),
+        ...(type === "select" || type === "radio" || type === "checkbox"
+          ? preset.id === "country"
+            ? { optionsSource: "countries" }
+            : {
+                options: [
+                  { label: "Option 1", value: "option_1" },
+                  { label: "Option 2", value: "option_2" },
+                ],
+              }
+          : {}),
+        ...(preset.id === "phone" ? { inputVariant: "phone" } : {}),
+        ...(type === "button"
+          ? { buttonText: "Submit", buttonType: "submit" }
+          : {}),
+        ...(type === "image" ? { accept: "image/*" } : {}),
+        ...(type === "file" ? { accept: ".pdf,.doc,.docx" } : {}),
+        ...(type === "table"
+          ? {
+              tableData: {
+                columns: [
+                  { header: "Column 1", key: "col1" },
+                  { header: "Column 2", key: "col2" },
+                ],
+                rows: [
+                  { col1: "Row 1, Col 1", col2: "Row 1, Col 2" },
+                  { col1: "Row 2, Col 1", col2: "Row 2, Col 2" },
+                ],
+              },
             }
-        : {}),
-      ...(preset.id === "phone" ? { inputVariant: "phone" } : {}),
-      ...(type === "button"
-        ? { buttonText: "Submit", buttonType: "submit" }
-        : {}),
-      ...(type === "image" ? { accept: "image/*" } : {}),
-      ...(type === "file" ? { accept: ".pdf,.doc,.docx" } : {}),
-      ...(type === "table"
-        ? {
-            tableData: {
-              columns: [
-                { header: "Column 1", key: "col1" },
-                { header: "Column 2", key: "col2" },
-              ],
-              rows: [
-                { col1: "Row 1, Col 1", col2: "Row 1, Col 2" },
-                { col1: "Row 2, Col 1", col2: "Row 2, Col 2" },
-              ],
-            },
-          }
-        : {}),
-      ...(type === "heading" || type === "paragraph" || type === "helperText"
-        ? { content: defaultPlaceholder || "Enter text here" }
-        : {}),
-      ...(type === "spacer" ? { height: "20px" } : {}),
+          : {}),
+        ...(type === "heading" || type === "paragraph" || type === "helperText"
+          ? { content: defaultPlaceholder || "Enter text here" }
+          : {}),
+        ...(type === "spacer" ? { height: "20px" } : {}),
       };
     };
 
@@ -662,8 +662,8 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
             {activeCategory === "basic"
               ? "Fields"
               : activeCategory === "personal"
-              ? "Personal Information"
-              : "Professional Options"}
+                ? "Personal Information"
+                : "Professional Options"}
           </h4>
           {filteredPresets.length === 0 ? (
             <div className="text-center py-4 text-gray-500 text-xs">

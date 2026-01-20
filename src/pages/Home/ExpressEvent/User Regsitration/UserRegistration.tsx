@@ -64,7 +64,8 @@ function UserRegistration() {
   const [registrationFields, setRegistrationFields] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [customFormBuilderTemplate, setCustomFormBuilderTemplate] = useState<any>(null);
+  const [customFormBuilderTemplate, setCustomFormBuilderTemplate] =
+    useState<any>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -80,7 +81,10 @@ function UserRegistration() {
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info"
+  ) => {
     setNotification({ message, type });
   };
 
@@ -101,28 +105,46 @@ function UserRegistration() {
 
     try {
       // First, try to get the default template (which could be custom or old system)
-      const defaultTemplateResponse = await getDefaultRegistrationFormTemplate(effectiveEventId);
-      console.log("📋 Default template response:", defaultTemplateResponse?.data);
-      
+      const defaultTemplateResponse =
+        await getDefaultRegistrationFormTemplate(effectiveEventId);
+      console.log(
+        "📋 Default template response:",
+        defaultTemplateResponse?.data
+      );
+
       const defaultTemplate = defaultTemplateResponse?.data?.data;
-      
+
       if (defaultTemplate) {
-        const formTemplateData = defaultTemplate.attributes?.form_template_data || {};
+        const formTemplateData =
+          defaultTemplate.attributes?.form_template_data || {};
         const hasFormBuilderData = !!formTemplateData.formBuilderData;
-        const hasFieldsArray = Array.isArray(formTemplateData.fields) && formTemplateData.fields.length > 0;
-        
+        const hasFieldsArray =
+          Array.isArray(formTemplateData.fields) &&
+          formTemplateData.fields.length > 0;
+
         // Check if fields array contains custom form builder fields
-        const hasCustomFields = hasFieldsArray && formTemplateData.fields.some((field: any) => 
-          field.name && (field.type === 'heading' || field.type === 'container' || field.containerType || field.fieldStyle)
-        );
-        
+        const hasCustomFields =
+          hasFieldsArray &&
+          formTemplateData.fields.some(
+            (field: any) =>
+              field.name &&
+              (field.type === "heading" ||
+                field.type === "container" ||
+                field.containerType ||
+                field.fieldStyle)
+          );
+
         // Check if template name indicates it's not a default template
         const templateName = defaultTemplate.attributes?.name || "";
-        const isCustomName = !templateName.startsWith("template-") && templateName !== "";
-        
+        const isCustomName =
+          !templateName.startsWith("template-") && templateName !== "";
+
         // Determine if it's custom
-        const isCustom = hasFormBuilderData || hasCustomFields || (hasFieldsArray && isCustomName);
-        
+        const isCustom =
+          hasFormBuilderData ||
+          hasCustomFields ||
+          (hasFieldsArray && isCustomName);
+
         console.log("🔍 Template detection:", {
           id: defaultTemplate.id,
           name: templateName,
@@ -130,13 +152,13 @@ function UserRegistration() {
           hasFieldsArray,
           hasCustomFields,
           isCustomName,
-          isCustom
+          isCustom,
         });
-        
+
         if (isCustom) {
           // It's a custom form builder template
           console.log("✅ Custom form builder template detected");
-          
+
           // Merge logo into theme - logo can be in theme or in attributes
           const themeData = formTemplateData.theme || {};
           const logoFromAttributes = defaultTemplate.attributes?.logo || null;
@@ -147,15 +169,17 @@ function UserRegistration() {
             formTemplateData.bannerImage ||
             formTemplateData.banner_image ||
             null;
-          const bannerFromAttributes = defaultTemplate.attributes?.banner_image || null;
-          const finalBannerImage = bannerFromTemplateData || bannerFromAttributes || null;
-          
+          const bannerFromAttributes =
+            defaultTemplate.attributes?.banner_image || null;
+          const finalBannerImage =
+            bannerFromTemplateData || bannerFromAttributes || null;
+
           // Use logo from attributes (API response) if available, otherwise use theme logo
           const finalTheme = {
             ...themeData,
             logo: logoFromAttributes || logoFromTheme || null,
           };
-          
+
           console.log("🎨 Logo setup for custom template:", {
             logoFromAttributes,
             logoFromTheme,
@@ -163,9 +187,12 @@ function UserRegistration() {
             hasBannerImage: !!defaultTemplate.attributes?.banner_image,
             themeKeys: Object.keys(finalTheme),
           });
-          
+
           // Transform form data to update "about" field placeholder
-          const formDataArray = formTemplateData.formBuilderData?.formData || formTemplateData.fields || [];
+          const formDataArray =
+            formTemplateData.formBuilderData?.formData ||
+            formTemplateData.fields ||
+            [];
           const transformedFormData = formDataArray
             .filter((field: any) => {
               // Remove paragraph fields with unwanted content
@@ -175,38 +202,38 @@ function UserRegistration() {
                   return false;
                 }
               }
-              
+
               // Remove fields with unwanted description
               const description = String(field.description || "").toLowerCase();
               if (description.includes("urls are hyperlinked")) {
                 return false;
               }
-              
+
               return true;
             })
             .map((field: any) => {
               // Update placeholder for "about" field
               if (field.name === "about" && field.type === "textarea") {
                 const updatedField = { ...field };
-                
+
                 // Remove description completely
                 delete updatedField.description;
-                
+
                 // Clear any defaultValue
                 delete updatedField.defaultValue;
-                
+
                 // Set placeholder to "Description..."
                 updatedField.placeholder = "Description...";
-                
+
                 return updatedField;
               }
               return field;
             });
-          
+
           setCustomFormBuilderTemplate({
             formBuilderData: {
               ...(formTemplateData.formBuilderData || {}),
-              formData: transformedFormData
+              formData: transformedFormData,
             },
             bannerImage: finalBannerImage,
             logo: logoFromAttributes || logoFromTheme || null,
@@ -217,7 +244,8 @@ function UserRegistration() {
           // It's an old system template, fetch it using the old API
           console.log("✅ Old system template detected, fetching details...");
           try {
-            const oldTemplateResponse = await getRegistrationTemplateData(effectiveEventId);
+            const oldTemplateResponse =
+              await getRegistrationTemplateData(effectiveEventId);
             const templateInfo = oldTemplateResponse?.data?.data;
             if (templateInfo) {
               setTemplateData(templateInfo);
@@ -246,7 +274,10 @@ function UserRegistration() {
       }
     } catch (error: any) {
       console.log("error getting template api", error);
-      const errorMsg = error?.response?.data?.message || error?.message || "Failed to fetch template data";
+      const errorMsg =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to fetch template data";
       setError(errorMsg);
     }
   };
@@ -507,12 +538,12 @@ function UserRegistration() {
       customFormBuilderTemplate,
       effectiveEventId,
       eventData,
-      routeId
+      routeId,
     });
-    
+
     // Ensure eventId is passed correctly - prioritize routeId from URL params
     const eventIdToPass = routeId || effectiveEventId;
-    
+
     console.log("🔍 Event ID resolution for custom template:", {
       routeId,
       effectiveEventId,
@@ -520,14 +551,16 @@ function UserRegistration() {
       eventDataId: eventData?.data?.id,
       eventDataAttributesId: eventData?.data?.attributes?.id,
     });
-    
+
     if (!eventIdToPass) {
       return (
         <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
               <p className="font-medium">Error: Event ID not found</p>
-              <p className="text-sm mt-1">Please check the URL and try again.</p>
+              <p className="text-sm mt-1">
+                Please check the URL and try again.
+              </p>
               <p className="text-xs mt-2 text-gray-600">
                 Expected URL format: /register/[eventId]
               </p>
@@ -536,27 +569,33 @@ function UserRegistration() {
         </div>
       );
     }
-    
+
     // Use the actual event ID from eventData - match the pattern used by default templates
     // Default templates use eventData?.id where eventData is the data part of the response
     // So we need to use eventData?.data?.id (since eventData here is the full response)
     // The EventData interface has: { data: { id: string, ... } }
     // CRITICAL: Always use eventData ID, not route ID, as route ID might not match database ID
     const actualEventId = eventData?.data?.id;
-    
+
     if (!actualEventId) {
-      console.error("❌ CRITICAL: No event ID found in eventData. Cannot render form.", {
-        eventData,
-        eventDataData: eventData?.data,
-        routeId,
-        eventIdToPass,
-      });
+      console.error(
+        "❌ CRITICAL: No event ID found in eventData. Cannot render form.",
+        {
+          eventData,
+          eventDataData: eventData?.data,
+          routeId,
+          eventIdToPass,
+        }
+      );
       return (
         <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
               <p className="font-medium">Error: Event ID not found</p>
-              <p className="text-sm mt-1">The event data could not be loaded. Please check the URL and try again.</p>
+              <p className="text-sm mt-1">
+                The event data could not be loaded. Please check the URL and try
+                again.
+              </p>
               <p className="text-xs mt-2 text-gray-600">
                 Expected URL format: /register/[eventId]
               </p>
@@ -565,7 +604,7 @@ function UserRegistration() {
         </div>
       );
     }
-    
+
     console.log("🔍 Final Event ID resolution for custom template:", {
       routeId,
       eventIdToPass,
@@ -574,32 +613,41 @@ function UserRegistration() {
       actualEventId,
       actualEventIdType: typeof actualEventId,
       eventDataStructure: eventData ? Object.keys(eventData) : null,
-      eventDataDataStructure: eventData?.data ? Object.keys(eventData.data) : null,
-      warning: actualEventId !== eventIdToPass ? `⚠️ Using eventData ID (${actualEventId}) instead of route ID (${eventIdToPass})` : "✅ Event ID matches route ID",
+      eventDataDataStructure: eventData?.data
+        ? Object.keys(eventData.data)
+        : null,
+      warning:
+        actualEventId !== eventIdToPass
+          ? `⚠️ Using eventData ID (${actualEventId}) instead of route ID (${eventIdToPass})`
+          : "✅ Event ID matches route ID",
     });
-    
+
     // Pass eventData.data to match the structure expected by default templates
     // Default templates receive eventData where eventData.id is the event ID
     const eventDataForForm = eventData?.data || eventData;
-    
+
     console.log("🎨 Passing theme to FormBuilderTemplateForm:", {
       hasTheme: !!customFormBuilderTemplate.theme,
       hasLogo: !!customFormBuilderTemplate.theme?.logo,
       logo: customFormBuilderTemplate.theme?.logo,
       hasBannerImage: !!customFormBuilderTemplate.bannerImage,
-      themeKeys: customFormBuilderTemplate.theme ? Object.keys(customFormBuilderTemplate.theme) : [],
+      themeKeys: customFormBuilderTemplate.theme
+        ? Object.keys(customFormBuilderTemplate.theme)
+        : [],
     });
-    
+
     // Log registration readiness
     console.log("🔍 Custom Form Registration Readiness:", {
       hasFormBuilderData: !!customFormBuilderTemplate.formBuilderData,
-      hasFields: !!(customFormBuilderTemplate.formBuilderData?.formData?.length > 0),
+      hasFields: !!(
+        customFormBuilderTemplate.formBuilderData?.formData?.length > 0
+      ),
       eventId: actualEventId,
       eventIdType: typeof actualEventId,
       hasEventData: !!eventDataForForm,
       isUserRegistration: true,
     });
-    
+
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
         {/* Notification Toast - Only shows on submit */}
@@ -610,8 +658,8 @@ function UserRegistration() {
                 notification.type === "success"
                   ? "bg-green-500 text-white"
                   : notification.type === "error"
-                  ? "bg-red-500 text-white"
-                  : "bg-blue-500 text-white"
+                    ? "bg-red-500 text-white"
+                    : "bg-blue-500 text-white"
               }`}
             >
               {notification.message}
@@ -626,8 +674,12 @@ function UserRegistration() {
             theme={customFormBuilderTemplate.theme}
             eventId={actualEventId} // Use actual event ID from API response (NOT route ID)
             eventData={eventDataForForm} // Pass the data part to match default template structure
-            onRegistrationSuccess={(message) => showNotification(message, "success")}
-            onRegistrationError={(message) => showNotification(message, "error")}
+            onRegistrationSuccess={(message) =>
+              showNotification(message, "success")
+            }
+            onRegistrationError={(message) =>
+              showNotification(message, "error")
+            }
           />
         </div>
       </div>
@@ -656,8 +708,8 @@ function UserRegistration() {
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-green-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : "bg-green-500 text-white"
             }`}
           >
             {notification.message}
@@ -666,7 +718,7 @@ function UserRegistration() {
       )}
       {/* Registration Form Template - No extra banner, templates handle their own event info */}
       <div className="w-full max-w-4xl mx-auto">{renderTemplate()}</div>
-      
+
       <style>{`
         @keyframes slide-in {
           from {

@@ -279,7 +279,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   // Logo states
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
 
@@ -618,7 +618,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
           ? makeAutoPlaceholderFromLabel(field.type, label)
           : field.placeholder;
 
-      return [...prev, { ...field, name: uniqueName, placeholder: desiredPlaceholder }];
+      return [
+        ...prev,
+        { ...field, name: uniqueName, placeholder: desiredPlaceholder },
+      ];
     });
   };
 
@@ -810,16 +813,22 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
   const handleSave = async () => {
     console.log("💾 Save button clicked");
-    
+
     // Debug: Check if title field is in fields before saving
-    const hasTitleField = fields.some(f => f.name === "title" || f.label === "Title");
+    const hasTitleField = fields.some(
+      (f) => f.name === "title" || f.label === "Title"
+    );
     console.log("🔍 Fields before save:", {
       totalFields: fields.length,
       hasTitleField,
-      titleField: fields.find(f => f.name === "title" || f.label === "Title"),
-      allFieldNames: fields.map(f => ({ name: f.name, label: f.label, type: f.type })),
+      titleField: fields.find((f) => f.name === "title" || f.label === "Title"),
+      allFieldNames: fields.map((f) => ({
+        name: f.name,
+        label: f.label,
+        type: f.type,
+      })),
     });
-    
+
     if (fields.length === 0) {
       alert("Please add at least one field before saving.");
       return;
@@ -829,18 +838,25 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       setIsEditingTemplateName(true);
       return;
     }
-    
+
     setIsSaving(true);
     try {
       // Ensure all fields are included (no filtering)
       const fieldsToSave = [...fields]; // Make a copy to ensure all fields are saved
-      
+
       console.log("💾 Saving fields:", {
         fieldsCount: fieldsToSave.length,
-        hasTitleField: fieldsToSave.some(f => f.name === "title" || f.label === "Title"),
+        hasTitleField: fieldsToSave.some(
+          (f) => f.name === "title" || f.label === "Title"
+        ),
       });
-      
-      await onSave(fieldsToSave, bannerImage || undefined, theme, templateName.trim());
+
+      await onSave(
+        fieldsToSave,
+        bannerImage || undefined,
+        theme,
+        templateName.trim()
+      );
     } catch (error) {
       console.error("Error saving form:", error);
     } finally {
