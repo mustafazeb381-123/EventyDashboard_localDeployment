@@ -311,7 +311,7 @@ const TemplateModal = ({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       key={eventDataKey}
     >
-      <div className="bg-white p-6 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white p-6 rounded-2xl max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <div className="flex items-center gap-3">
@@ -340,13 +340,50 @@ const TemplateModal = ({
           </div>
         </div>
         <div
-          className="mb-6 border rounded-lg p-4 bg-gray-50 min-h-[400px]"
+          className="mb-6 border rounded-lg p-2 bg-gray-50 w-full overflow-x-hidden"
           key={`modal-content-${eventDataKey}`}
         >
+          <style>{`
+            .template-preview-content * {
+              max-width: 100% !important;
+              box-sizing: border-box;
+            }
+            .template-preview-content img {
+              max-width: 100% !important;
+              height: auto !important;
+            }
+            .template-preview-content div {
+              max-width: 100% !important;
+              width: 100% !important;
+            }
+            .template-preview-content table {
+              max-width: 100% !important;
+              table-layout: fixed;
+            }
+          `}</style>
           {template.html ? (
-            <div dangerouslySetInnerHTML={{ __html: template.html }} />
+            <div 
+              className="template-preview-content w-full"
+              style={{ 
+                maxWidth: "100%",
+                width: "100%",
+                overflowX: "hidden"
+              }}
+              dangerouslySetInnerHTML={{ 
+                __html: template.html.replace(/max-width:\s*\d+px/gi, "max-width: 100%")
+                  .replace(/width:\s*\d+px/gi, (match: string) => {
+                    // Only replace width if it's not already percentage or auto
+                    if (!match.includes("%") && !match.includes("auto")) {
+                      return "max-width: 100%";
+                    }
+                    return match;
+                  })
+              }} 
+            />
           ) : template.component ? (
-            template.component
+            <div className="template-preview-content w-full" style={{ maxWidth: "100%", width: "100%" }}>
+              {template.component}
+            </div>
           ) : (
             <div className="flex items-center justify-center w-full h-full text-gray-400">
               No preview available

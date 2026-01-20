@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
 import {
-  ChevronLeft,
   Check,
   MapPin,
   Info,
   QrCode,
   Calendar,
   Clock,
-  Users,
 } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { getEventbyId } from "@/apis/apiHelpers";
@@ -32,7 +30,6 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   onToggleStatesChange,
   eventId: propEventId,
   onNext,
-  onPrevious,
 }) => {
   // Get effective event ID
   const { id: routeId } = useParams();
@@ -53,10 +50,43 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   const [isLoading, setIsLoading] = useState(true);
   const [eventName, setEventName] = useState<string>("");
+  const [eventData, setEventData] = useState<any>(null);
 
   useEffect(() => {
     onToggleStatesChange?.(toggleStates);
   }, [toggleStates, onToggleStatesChange]);
+
+  // Helper function to format date from ISO string to readable format
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return "";
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "";
+    }
+  };
+
+  // Helper function to format time from ISO string to HH:MM AM/PM
+  const formatTime = (timeString: string | undefined): string => {
+    if (!timeString) return "";
+    try {
+      const date = new Date(timeString);
+      return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+      });
+    } catch (error) {
+      console.error("Error formatting time:", error);
+      return "";
+    }
+  };
 
   // Fetch event data and set initial toggle states
   useEffect(() => {
@@ -69,20 +99,23 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
       try {
         setIsLoading(true);
         const response = await getEventbyId(effectiveEventId);
-        const eventData = response.data.data;
+        const fetchedEventData = response.data.data;
 
-        console.log("ConfirmationDetails - Fetched event data:", eventData);
+        console.log("ConfirmationDetails - Fetched event data:", fetchedEventData);
+
+        // Store full event data
+        setEventData(fetchedEventData);
 
         // Map API fields to toggle states
         const newToggleStates: ToggleStates = {
           confirmationMsg:
-            eventData.attributes?.display_confirmation_message || false,
-          userQRCode: eventData.attributes?.print_qr || false,
-          location: eventData.attributes?.display_location || false,
-          eventDetails: eventData.attributes?.display_event_details || false,
+            fetchedEventData.attributes?.display_confirmation_message || false,
+          userQRCode: fetchedEventData.attributes?.print_qr || false,
+          location: fetchedEventData.attributes?.display_location || false,
+          eventDetails: fetchedEventData.attributes?.display_event_details || false,
         };
 
-        setEventName(eventData.attributes?.name || "");
+        setEventName(fetchedEventData.attributes?.name || "");
         setToggleStates(newToggleStates);
       } catch (error) {
         console.error("Failed to fetch event data:", error);
@@ -96,18 +129,6 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   const updateToggle = (key: keyof ToggleStates, value: boolean) => {
     setToggleStates((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleNextClick = () => {
-    if (effectiveEventId && onNext) {
-      console.log(
-        "ConfirmationDetails - Sending eventId to parent:",
-        effectiveEventId
-      );
-      onNext(effectiveEventId);
-    } else {
-      console.error("ConfirmationDetails - No eventId available to send");
-    }
   };
 
   const StatusCard = ({
@@ -292,26 +313,43 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1.5">
                     <Calendar size={16} className="text-gray-400" />
-                    <span>June 23, 2024 - June 05, 2025</span>
+                    <span>
+                      {eventData?.attributes?.event_date_from
+                        ? formatDate(eventData.attributes.event_date_from)
+                        : ""}
+                      {eventData?.attributes?.event_date_to &&
+                      eventData.attributes.event_date_to !==
+                        eventData.attributes.event_date_from
+                        ? ` - ${formatDate(eventData.attributes.event_date_to)}`
+                        : ""}
+                    </span>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <Users size={16} className="text-gray-400" />
-                    <span>2 Guests</span>
-                  </div>
+                  {eventData?.attributes?.event_time_from && (
+                    <div className="flex items-center gap-1.5">
+                      <Clock size={16} className="text-gray-400" />
+                      <span>
+                        {formatTime(eventData.attributes.event_time_from)}
+                        {eventData?.attributes?.event_time_to
+                          ? ` - ${formatTime(eventData.attributes.event_time_to)}`
+                          : ""}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-5">
                 {/* About Section */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-2 font-poppins">
-                    About Event
-                  </h3>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    Join us for an exciting event featuring industry leaders,
-                    networking opportunities, and insightful sessions...
-                  </p>
-                </div>
+                {eventData?.attributes?.about && (
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <h3 className="font-semibold text-gray-900 mb-2 font-poppins">
+                      About Event
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {eventData.attributes.about}
+                    </p>
+                  </div>
+                )}
 
                 {/* Success Badge */}
                 <div className="flex items-center justify-center py-6">
@@ -373,7 +411,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 )}
 
                 {/* Location */}
-                {toggleStates.location && (
+                {toggleStates.location && eventData?.attributes?.location && (
                   <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
                     <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
                       <MapPin
@@ -387,7 +425,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                         Event Location
                       </p>
                       <p className="text-xs text-orange-600 mt-0.5">
-                        Main Conference Hall, 123 Event Street
+                        {eventData.attributes.location}
                       </p>
                     </div>
                   </div>
@@ -399,34 +437,59 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                     <div className="flex items-center justify-center gap-2 mb-4">
                       <Info size={18} className="text-purple-600" />
                       <span className="text-sm font-semibold text-purple-800 font-poppins">
-                        Event Schedule
+                        Event Details
                       </span>
                     </div>
                     <div className="space-y-2.5">
-                      <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
-                        <Clock size={16} className="text-purple-500" />
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-purple-900">
-                            9:00 AM - Registration & Welcome
-                          </p>
+                      {eventData?.attributes?.event_date_from && (
+                        <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                          <Calendar size={16} className="text-purple-500" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-purple-900">
+                              <span className="font-semibold">Start Date: </span>
+                              {formatDate(eventData.attributes.event_date_from)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
-                        <Clock size={16} className="text-purple-500" />
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-purple-900">
-                            10:00 AM - Opening Keynote
-                          </p>
+                      )}
+                      {eventData?.attributes?.event_date_to &&
+                        eventData.attributes.event_date_to !==
+                          eventData.attributes.event_date_from && (
+                          <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                            <Calendar size={16} className="text-purple-500" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-purple-900">
+                                <span className="font-semibold">End Date: </span>
+                                {formatDate(eventData.attributes.event_date_to)}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      {eventData?.attributes?.event_time_from && (
+                        <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                          <Clock size={16} className="text-purple-500" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-purple-900">
+                              <span className="font-semibold">Time: </span>
+                              {formatTime(eventData.attributes.event_time_from)}
+                              {eventData?.attributes?.event_time_to
+                                ? ` - ${formatTime(eventData.attributes.event_time_to)}`
+                                : ""}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
-                        <Clock size={16} className="text-purple-500" />
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-purple-900">
-                            12:00 PM - Networking Lunch
-                          </p>
+                      )}
+                      {eventData?.attributes?.location && (
+                        <div className="flex items-center gap-3 bg-white/60 rounded-lg p-2.5">
+                          <MapPin size={16} className="text-purple-500" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium text-purple-900">
+                              <span className="font-semibold">Location: </span>
+                              {eventData.attributes.location}
+                            </p>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </div>
                 )}
