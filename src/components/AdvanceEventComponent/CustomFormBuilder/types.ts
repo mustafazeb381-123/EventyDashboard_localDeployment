@@ -15,6 +15,7 @@ export type FieldType =
   | "divider"
   | "heading"
   | "paragraph"
+  | "helperText"
   | "spacer";
 
 export interface CustomFormField {
@@ -35,6 +36,10 @@ export interface CustomFormField {
     maxLength?: number;
   };
   options?: Array<{ label: string; value: string }>; // For select, radio, checkbox
+  // Dynamic option source (e.g., auto-populate countries)
+  optionsSource?: "countries" | "dialCodes";
+  // Input variant for specialized rendering (e.g., phone with country code)
+  inputVariant?: "phone";
   accept?: string; // For file/image
   buttonText?: string; // For button
   buttonType?: "button" | "submit" | "reset";
@@ -73,6 +78,7 @@ export interface CustomFormField {
     marginLeft?: string;
     textColor?: string;
     labelColor?: string;
+    textAlign?: "left" | "center" | "right" | "justify";
     fontSize?: string;
     height?: string;
     width?: string;

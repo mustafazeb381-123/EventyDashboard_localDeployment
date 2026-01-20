@@ -39,6 +39,7 @@ import CustomFormBuilder from "./CustomFormBuilder";
 import type { CustomFormField, FormTheme } from "./CustomFormBuilder/types";
 import { FormHeader } from "./CustomFormBuilder/components/FormHeader";
 import { FormButtonField } from "./CustomFormBuilder/components/FormButtonField";
+import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
 
 
 
@@ -147,7 +148,70 @@ const renderCustomField = (
   };
 
   switch (field.type) {
-    case "text":
+    case "text": {
+      const isPhoneVariant =
+        field.inputVariant === "phone" ||
+        /phone/i.test(field.label || "") ||
+        /phone/i.test(field.name || "");
+
+      if (isPhoneVariant) {
+        const dialCodeKey = `${field.name}_country`;
+        const countryValue = formData[dialCodeKey] || "";
+        const phoneValue = formData[field.name] || "";
+
+        return (
+          <div className="flex gap-2">
+            <select
+              value={countryValue}
+              onChange={(e) =>
+                setFormData({ ...formData, [dialCodeKey]: e.target.value })
+              }
+              style={{
+                ...fieldInputStyle,
+                width: "140px",
+                outline: "none",
+              }}
+              className="transition-all bg-white outline-none focus:ring-2 focus:ring-pink-500"
+            >
+              <option value="">Code</option>
+              {COUNTRY_DIAL_CODES.map((c) => (
+                <option key={`${c.code}-${c.dialCode}`} value={c.dialCode}>
+                  {c.name} ({c.dialCode})
+                </option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              {...commonProps}
+              value={phoneValue}
+              onChange={(e) =>
+                setFormData({ ...formData, [field.name]: e.target.value })
+              }
+              placeholder={field.placeholder || "+1 (555) 000-0000"}
+              style={{
+                ...fieldInputStyle,
+                flex: 1,
+                outline: "none",
+              }}
+              className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
+            />
+          </div>
+        );
+      }
+
+      return (
+        <input
+          type="text"
+          {...commonProps}
+          value={formData[field.name] || ""}
+          onChange={(e) =>
+            setFormData({ ...formData, [field.name]: e.target.value })
+          }
+          style={fieldInputStyle}
+          className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
+        />
+      );
+    }
     case "email":
     case "number":
     case "date":
@@ -177,6 +241,12 @@ const renderCustomField = (
         />
       );
     case "select":
+      const selectOptions =
+        field.optionsSource === "countries" ||
+        /country/i.test(field.label || "") ||
+        /country/i.test(field.name || "")
+          ? COUNTRIES.map((c) => ({ label: c.name, value: c.code }))
+          : field.options || [];
       return (
         <select
           {...commonProps}
@@ -187,8 +257,8 @@ const renderCustomField = (
           style={fieldInputStyle}
           className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
         >
-          <option value="">Select an option...</option>
-          {field.options?.map((opt) => (
+          <option value="">{field.placeholder || "Select an option..."}</option>
+          {selectOptions.map((opt) => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>
@@ -256,10 +326,14 @@ const renderCustomField = (
       
       // For image fields, show preview if it's a File object
       // Use the preview URL from state (managed by useEffect for proper cleanup)
-      const imagePreviewUrl = 
-        field.type === "image" && fileValue instanceof File
-          ? imagePreviewUrls[field.name] || URL.createObjectURL(fileValue)
-          : null;
+      const imagePreviewUrl =
+        field.type !== "image"
+          ? null
+          : fileValue instanceof File
+            ? imagePreviewUrls?.[field.name] || null
+            : typeof fileValue === "string" && fileValue.trim() !== ""
+              ? fileValue
+              : null;
 
       return (
         <div className="space-y-2">
@@ -388,6 +462,30 @@ const renderCustomField = (
           {field.content || field.label || "Heading"}
         </h3>
       );
+    case "helperText":
+      return (
+        <div
+          style={{
+            backgroundColor: field.fieldStyle?.backgroundColor || "transparent",
+            color:
+              field.fieldStyle?.textColor || theme?.textColor || "#111827",
+            borderColor: field.fieldStyle?.borderColor || "transparent",
+            borderWidth: field.fieldStyle?.borderWidth || "0px",
+            borderStyle: "solid",
+            borderRadius: field.fieldStyle?.borderRadius || "0px",
+            padding: field.fieldStyle?.padding || "0px",
+            marginTop: field.fieldStyle?.marginTop || "0px",
+            marginRight: field.fieldStyle?.marginRight || "0px",
+            marginBottom: field.fieldStyle?.marginBottom || "0px",
+            marginLeft: field.fieldStyle?.marginLeft || "0px",
+            textAlign: field.fieldStyle?.textAlign || "left",
+            whiteSpace: "pre-wrap",
+            width: field.fieldStyle?.width || "100%",
+          }}
+        >
+          {field.content || ""}
+        </div>
+      );
       case "paragraph":
       const paragraphContent = formData[field.name] || field.content || field.label || "";
       return (
@@ -448,49 +546,105 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<Record<string, string>>({});
-  const imagePreviewUrlsRef = useRef<Record<string, string>>({});
+  const imagePreviewMapRef = useRef<Map<string, { file: File; url: string }>>(new Map());
+
+  const [bannerBlobUrl, setBannerBlobUrl] = useState<string | null>(null);
+  const [backgroundBlobUrl, setBackgroundBlobUrl] = useState<string | null>(null);
+  const [logoBlobUrl, setLogoBlobUrl] = useState<string | null>(null);
+
+  const [bannerLoadError, setBannerLoadError] = useState(false);
+  const [logoLoadError, setLogoLoadError] = useState(false);
   
-  // Update ref when imagePreviewUrls changes
+  // Maintain stable object URLs for image fields (no revoke-before-render race)
   useEffect(() => {
-    imagePreviewUrlsRef.current = imagePreviewUrls;
-  }, [imagePreviewUrls]);
-  
-  // Update preview URLs when formData changes
-  useEffect(() => {
-    const newPreviewUrls: Record<string, string> = {};
-    const customFields = getUniqueFields(formBuilderData?.formData as CustomFormField[] || []);
-    
-    customFields.forEach((field) => {
-      if (field.type === "image" && formData[field.name] instanceof File) {
-        const file = formData[field.name] as File;
-        // Revoke old URL if it exists
-        if (imagePreviewUrls[field.name]) {
-          URL.revokeObjectURL(imagePreviewUrls[field.name]);
+    const customFields = getUniqueFields(
+      (formBuilderData?.formData as CustomFormField[]) || []
+    );
+    const imageFieldNames = new Set(
+      customFields.filter((f) => f.type === "image").map((f) => f.name)
+    );
+
+    const map = imagePreviewMapRef.current;
+    const nextUrls: Record<string, string> = {};
+
+    // Update / create URLs for current image fields
+    for (const field of customFields) {
+      if (field.type !== "image") continue;
+
+      const value = formData[field.name];
+      if (value instanceof File) {
+        const existing = map.get(field.name);
+        if (existing && existing.file === value) {
+          nextUrls[field.name] = existing.url;
+        } else {
+          if (existing) {
+            URL.revokeObjectURL(existing.url);
+          }
+          const url = URL.createObjectURL(value);
+          map.set(field.name, { file: value, url });
+          nextUrls[field.name] = url;
         }
-        // Create new URL
-        newPreviewUrls[field.name] = URL.createObjectURL(file);
+      } else {
+        const existing = map.get(field.name);
+        if (existing) {
+          URL.revokeObjectURL(existing.url);
+          map.delete(field.name);
+        }
       }
-    });
-    
-    // Clean up URLs that are no longer needed
-    Object.keys(imagePreviewUrls).forEach((key) => {
-      if (!newPreviewUrls[key] && imagePreviewUrls[key]) {
-        URL.revokeObjectURL(imagePreviewUrls[key]);
+    }
+
+    // Cleanup URLs for removed image fields
+    for (const [fieldName, entry] of Array.from(map.entries())) {
+      if (!imageFieldNames.has(fieldName)) {
+        URL.revokeObjectURL(entry.url);
+        map.delete(fieldName);
       }
-    });
-    
-    setImagePreviewUrls(newPreviewUrls);
+    }
+
+    setImagePreviewUrls(nextUrls);
   }, [formData, formBuilderData]);
-  
-  // Cleanup object URLs for image previews on unmount
+
+  // Cleanup all image preview URLs on unmount
   useEffect(() => {
     return () => {
-      // Cleanup all object URLs when component unmounts
-      Object.values(imagePreviewUrlsRef.current).forEach((url) => {
+      for (const { url } of imagePreviewMapRef.current.values()) {
         URL.revokeObjectURL(url);
-      });
+      }
+      imagePreviewMapRef.current.clear();
     };
   }, []);
+
+  // Stable object URL for banner image (if a Blob/File is passed)
+  useEffect(() => {
+    if (bannerImage instanceof Blob) {
+      const url = URL.createObjectURL(bannerImage);
+      setBannerBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setBannerBlobUrl(null);
+  }, [bannerImage]);
+
+  // Stable object URL for background image (if a File is passed)
+  useEffect(() => {
+    const bg = theme?.formBackgroundImage;
+    if (bg instanceof Blob) {
+      const url = URL.createObjectURL(bg);
+      setBackgroundBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setBackgroundBlobUrl(null);
+  }, [theme?.formBackgroundImage]);
+
+  // Stable object URL for logo (if a Blob/File is passed)
+  useEffect(() => {
+    const logo = theme?.logo;
+    if (logo instanceof Blob) {
+      const url = URL.createObjectURL(logo);
+      setLogoBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setLogoBlobUrl(null);
+  }, [theme?.logo]);
 
   // Check if this is a custom form builder template (has CustomFormField array)
   const isCustomFormBuilder =
@@ -734,8 +888,38 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       formDataToSend.append("event_user[email]", emailValue && typeof emailValue === "string" ? emailValue : "");
 
       // ✅ Always append phone_number (even if empty) - CRITICAL for API
-      const phoneValue = formData["phone_number"] || formData["phone"] || formData["phoneNumber"];
-      formDataToSend.append("event_user[phone_number]", phoneValue && typeof phoneValue === "string" ? phoneValue : "");
+      const phoneFieldCandidates = ["phone_number", "phone", "phoneNumber"] as const;
+      let phoneKeyUsed: (typeof phoneFieldCandidates)[number] | null = null;
+      let phoneRawValue = "";
+      for (const k of phoneFieldCandidates) {
+        const v = formData[k];
+        if (typeof v === "string" && v.trim() !== "") {
+          phoneKeyUsed = k;
+          phoneRawValue = v.trim();
+          break;
+        }
+        if (typeof v === "number") {
+          phoneKeyUsed = k;
+          phoneRawValue = String(v);
+          break;
+        }
+      }
+
+      const phoneCountryCodeKeyToSkip = phoneKeyUsed ? `${phoneKeyUsed}_country` : null;
+      const dialCodeValue =
+        phoneCountryCodeKeyToSkip && typeof formData[phoneCountryCodeKeyToSkip] === "string"
+          ? String(formData[phoneCountryCodeKeyToSkip]).trim()
+          : "";
+
+      const phoneCombined =
+        dialCodeValue && phoneRawValue && !/^\+/.test(phoneRawValue)
+          ? `${dialCodeValue} ${phoneRawValue}`
+          : phoneRawValue;
+
+      formDataToSend.append(
+        "event_user[phone_number]",
+        phoneCombined ? String(phoneCombined) : ""
+      );
 
       // ✅ Append optional standard fields if they have values
       if (formData["position"]) {
@@ -822,12 +1006,26 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       // ✅ Append any other custom fields that don't match standard fields
       // These will be stored as custom field data
       customFields.forEach((field) => {
-        if (field.containerType || field.type === "heading" || field.type === "paragraph" || field.type === "divider" || field.type === "spacer" || field.type === "button") {
+        if (
+          field.containerType ||
+          field.type === "heading" ||
+          field.type === "paragraph" ||
+          field.type === "divider" ||
+          field.type === "spacer" ||
+          field.type === "button" ||
+          field.type === "helperText" ||
+          field.type === "table"
+        ) {
           return; // Skip non-input fields
         }
 
         const fieldName = field.name;
         const value = formData[fieldName];
+
+        // Skip phone dial-code helper field when we already combined it
+        if (phoneCountryCodeKeyToSkip && fieldName === phoneCountryCodeKeyToSkip) {
+          return;
+        }
 
         // Skip if already handled by standard fields (including "image" field)
         // Also skip "organization" field as it's handled separately (saved to both custom_fields.title and event_user[organization])
@@ -1033,21 +1231,30 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
       allFieldNames: customFields.map(f => ({ name: f.name, label: f.label, type: f.type })),
     });
 
-    const bannerUrl = bannerImage
-      ? typeof bannerImage === "string" && bannerImage.trim() !== ""
+    const bannerUrl =
+      bannerImage && typeof bannerImage === "string" && bannerImage.trim() !== ""
         ? bannerImage
-        : bannerImage instanceof File || bannerImage instanceof Blob
-          ? URL.createObjectURL(bannerImage)
-          : null
-      : null;
+        : bannerBlobUrl;
 
-    const backgroundImageUrl = theme?.formBackgroundImage
-      ? typeof theme.formBackgroundImage === "string" && theme.formBackgroundImage.trim() !== ""
+    const backgroundImageUrl =
+      theme?.formBackgroundImage &&
+      typeof theme.formBackgroundImage === "string" &&
+      theme.formBackgroundImage.trim() !== ""
         ? theme.formBackgroundImage
-        : theme.formBackgroundImage instanceof File
-          ? URL.createObjectURL(theme.formBackgroundImage)
-          : null
-      : null;
+        : backgroundBlobUrl;
+
+    const logoUrl =
+      theme?.logo && typeof theme.logo === "string" && theme.logo.trim() !== ""
+        ? theme.logo
+        : logoBlobUrl;
+
+    // If the src changes, allow the image to render again
+    useEffect(() => {
+      setBannerLoadError(false);
+    }, [bannerUrl]);
+    useEffect(() => {
+      setLogoLoadError(false);
+    }, [logoUrl]);
 
     const formContainerStyle: React.CSSProperties = {
       backgroundColor: theme?.formBackgroundColor || "#ffffff",
@@ -1094,7 +1301,7 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
                   : "auto",
           }}
         >
-          {bannerUrl && (
+          {bannerUrl && !bannerLoadError && (
             <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2">
               <img
                 src={bannerUrl}
@@ -1102,60 +1309,65 @@ export const FormBuilderTemplateForm: React.FC<FormBuilderTemplateFormProps> = (
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   console.error("Banner image failed to load:", bannerUrl);
-                  e.currentTarget.style.display = "none";
+                  setBannerLoadError(true);
                 }}
                 onLoad={() => {
                   console.log("Banner image loaded successfully:", bannerUrl);
+                  setBannerLoadError(false);
                 }}
               />
             </div>
           )}
 
+          {bannerUrl && bannerLoadError && (
+            <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2 flex items-center justify-center">
+              <span className="text-sm text-gray-500">Banner failed to load</span>
+            </div>
+          )}
+
           {/* Logo - render directly if theme has logo, otherwise FormHeader will handle it */}
-          {theme?.logo && (
-            (() => {
-              let logoUrl: string | null = null;
-              if (typeof theme.logo === "string" && theme.logo.trim() !== "") {
-                logoUrl = theme.logo;
-              } else if (theme.logo && typeof theme.logo === "object" && "size" in theme.logo && "type" in theme.logo) {
-                // It's a File or Blob
-                logoUrl = URL.createObjectURL(theme.logo as Blob);
-              }
-              
-              return logoUrl ? (
-                <div
-                  className="w-full mb-4 flex"
-                  style={{
-                    justifyContent:
-                      theme.logoPosition === "right"
-                        ? "flex-end"
-                        : theme.logoPosition === "center"
-                          ? "center"
-                          : "flex-start", // Default to left
-                    paddingLeft: theme.logoPosition === "right" || theme.logoPosition === "center" ? "0" : "16px",
-                    paddingRight: theme.logoPosition === "right" ? "16px" : "0",
-                  }}
-                >
-                  <img
-                    src={logoUrl}
-                    alt="Form logo"
-                    style={{
-                      width: theme.logoWidth || "100px",
-                      height: theme.logoHeight || "auto",
-                      maxWidth: "100%",
-                      objectFit: "contain",
-                    }}
-                    onError={(e) => {
-                      console.error("Logo image failed to load:", logoUrl);
-                      e.currentTarget.style.display = "none";
-                    }}
-                    onLoad={() => {
-                      console.log("Logo image loaded successfully:", logoUrl);
-                    }}
-                  />
-                </div>
-              ) : null;
-            })()
+          {logoUrl && !logoLoadError && (
+            <div
+              className="w-full mb-4 flex"
+              style={{
+                justifyContent:
+                  theme?.logoPosition === "right"
+                    ? "flex-end"
+                    : theme?.logoPosition === "center"
+                      ? "center"
+                      : "flex-start",
+                paddingLeft:
+                  theme?.logoPosition === "right" || theme?.logoPosition === "center"
+                    ? "0"
+                    : "16px",
+                paddingRight: theme?.logoPosition === "right" ? "16px" : "0",
+              }}
+            >
+              <img
+                src={logoUrl}
+                alt="Form logo"
+                style={{
+                  width: theme?.logoWidth || "100px",
+                  height: theme?.logoHeight || "auto",
+                  maxWidth: "100%",
+                  objectFit: "contain",
+                }}
+                onError={() => {
+                  console.error("Logo image failed to load:", logoUrl);
+                  setLogoLoadError(true);
+                }}
+                onLoad={() => {
+                  console.log("Logo image loaded successfully:", logoUrl);
+                  setLogoLoadError(false);
+                }}
+              />
+            </div>
+          )}
+
+          {logoUrl && logoLoadError && (
+            <div className="w-full mb-4 flex items-center justify-center">
+              <span className="text-sm text-gray-500">Logo failed to load</span>
+            </div>
           )}
 
           <FormHeader theme={theme} />
@@ -3519,7 +3731,7 @@ const AdvanceRegistration = ({
         </div>
 
         {notification && (
-          <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div className="fixed top-4 right-4 z-100 animate-slide-in">
             <div
               className={`px-6 py-3 rounded-lg shadow-lg ${
                 notification.type === "success"

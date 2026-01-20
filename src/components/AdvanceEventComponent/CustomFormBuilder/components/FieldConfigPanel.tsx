@@ -16,6 +16,7 @@ import {
   Heading,
   AlignLeft,
   Space,
+  Info,
   LayoutGrid,
   Columns2,
   Trash2,
@@ -26,6 +27,10 @@ import {
   Code,
 } from "lucide-react";
 import type { CustomFormField, FieldType } from "../types";
+import {
+  makeFieldNameFromLabel,
+  updateFieldLabelWithAutoProps,
+} from "../utils/fieldAuto";
 
 interface FieldConfigProps {
   field: CustomFormField | null;
@@ -44,6 +49,10 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
   const [config, setConfig] = useState<CustomFormField>(field);
 
+  const handleLabelChange = (nextLabel: string) => {
+    setConfig((prev) => updateFieldLabelWithAutoProps(prev, nextLabel, allFields));
+  };
+
   const getFieldIcon = (type: FieldType) => {
     const icons = {
       text: <Type size={18} />,
@@ -61,6 +70,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
       divider: <Minus size={18} />,
       heading: <Heading size={18} />,
       paragraph: <AlignLeft size={18} />,
+      helperText: <Info size={18} />,
       spacer: <Space size={18} />,
       container: <LayoutGrid size={18} />,
     };
@@ -178,6 +188,32 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           </div>
         )}
 
+        {/* HELPER TEXT: Static text block */}
+        {config.type === "helperText" && (
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+              Content
+            </h4>
+            <div>
+              <label className="block text-sm font-medium mb-2 text-gray-700">
+                Helper Text
+              </label>
+              <textarea
+                value={config.content || ""}
+                onChange={(e) =>
+                  setConfig({ ...config, content: e.target.value })
+                }
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
+                rows={3}
+                placeholder="Enter helper text"
+              />
+              <p className="text-xs text-gray-500 mt-1.5">
+                Static text shown in the form (not an input).
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* SPACER: Just height */}
         {config.type === "spacer" && (
           <div className="space-y-4">
@@ -252,9 +288,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               <input
                 type="text"
                 value={config.label}
-                onChange={(e) =>
-                  setConfig({ ...config, label: e.target.value })
-                }
+                onChange={(e) => handleLabelChange(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 placeholder="Enter field label"
               />
@@ -270,7 +304,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 onChange={(e) =>
                   setConfig({
                     ...config,
-                    name: e.target.value.toLowerCase().replace(/\s+/g, "_"),
+                    name: makeFieldNameFromLabel(e.target.value),
                   })
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono text-sm"
@@ -344,9 +378,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 <input
                   type="text"
                   value={config.label}
-                  onChange={(e) =>
-                    setConfig({ ...config, label: e.target.value })
-                  }
+                  onChange={(e) => handleLabelChange(e.target.value)}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   placeholder="Enter field label"
                 />
@@ -362,7 +394,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   onChange={(e) =>
                     setConfig({
                       ...config,
-                      name: e.target.value.toLowerCase().replace(/\s+/g, "_"),
+                      name: makeFieldNameFromLabel(e.target.value),
                     })
                   }
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono text-sm"
@@ -464,9 +496,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               <input
                 type="text"
                 value={config.label}
-                onChange={(e) =>
-                  setConfig({ ...config, label: e.target.value })
-                }
+                onChange={(e) => handleLabelChange(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                 placeholder="Enter field label"
               />
@@ -482,7 +512,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 onChange={(e) =>
                   setConfig({
                     ...config,
-                    name: e.target.value.toLowerCase().replace(/\s+/g, "_"),
+                    name: makeFieldNameFromLabel(e.target.value),
                   })
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all font-mono text-sm"
@@ -1185,6 +1215,32 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   placeholder="8px"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-600">
+                Text Align
+              </label>
+              <select
+                value={config.fieldStyle?.textAlign || ""}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    fieldStyle: {
+                      ...config.fieldStyle,
+                      textAlign:
+                        (e.target.value as any) || undefined,
+                    },
+                  })
+                }
+                className="w-full px-2 py-1.5 border rounded text-sm bg-white"
+              >
+                <option value="">Default</option>
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+                <option value="justify">Justify</option>
+              </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

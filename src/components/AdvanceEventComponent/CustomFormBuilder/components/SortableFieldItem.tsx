@@ -17,6 +17,7 @@ import {
   Heading,
   AlignLeft,
   Space,
+  Info,
   LayoutGrid,
   Columns2,
   Square,
@@ -24,6 +25,7 @@ import {
   Trash2,
 } from "lucide-react";
 import type { CustomFormField, FieldType } from "../types";
+import { updateFieldLabelWithAutoProps } from "../utils/fieldAuto";
 
 interface SortableFieldItemProps {
   field: CustomFormField;
@@ -67,7 +69,8 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
 
   const handleLabelBlur = () => {
     if (editedLabel.trim() !== field.label && onUpdate) {
-      onUpdate({ ...field, label: editedLabel.trim() || field.label });
+      const nextLabel = editedLabel.trim() || field.label;
+      onUpdate(updateFieldLabelWithAutoProps(field, nextLabel));
     }
     setIsEditingLabel(false);
   };
@@ -118,6 +121,7 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
       divider: <Minus size={16} />,
       heading: <Heading size={16} />,
       paragraph: <AlignLeft size={16} />,
+      helperText: <Info size={16} />,
       spacer: <Space size={16} />,
       container: <LayoutGrid size={16} />,
     };

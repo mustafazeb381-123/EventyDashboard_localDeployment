@@ -3,6 +3,7 @@ import { AlertCircle, X, FileText, Image as ImageIcon } from "lucide-react";
 import type { CustomFormField, FormTheme } from "../types";
 import { FormHeader } from "./FormHeader";
 import { FormButtonField } from "./FormButtonField";
+import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
 
 interface FormPreviewProps {
   fields: CustomFormField[];
@@ -245,7 +246,132 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     };
 
     switch (field.type) {
-      case "text":
+      case "text": {
+        const isPhoneVariant =
+          field.inputVariant === "phone" ||
+          /phone/i.test(field.label || "") ||
+          /phone/i.test(field.name || "");
+
+        if (isPhoneVariant) {
+          const countryValue = formData[`${field.name}_country`] || "";
+          const phoneValue = formData[field.name] || "";
+          return (
+            <div className="flex gap-2">
+              <select
+                value={countryValue}
+                onChange={(e) => handleChange(`${field.name}_country`, e.target.value)}
+                style={{
+                  ...fieldInputStyle,
+                  width: "140px",
+                  outline: "none",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor =
+                    theme?.inputFocusBorderColor || "#3b82f6";
+                  e.currentTarget.style.backgroundColor =
+                    theme?.inputFocusBackgroundColor ||
+                    field.fieldStyle?.backgroundColor ||
+                    theme?.inputBackgroundColor ||
+                    "#ffffff";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor =
+                    field.fieldStyle?.borderColor ||
+                    theme?.inputBorderColor ||
+                    "#d1d5db";
+                  e.currentTarget.style.backgroundColor =
+                    field.fieldStyle?.backgroundColor ||
+                    theme?.inputBackgroundColor ||
+                    "#ffffff";
+                }}
+                className="transition-all bg-white"
+              >
+                <option value="">Code</option>
+                {COUNTRY_DIAL_CODES.map((c) => (
+                  <option key={`${c.code}-${c.dialCode}`} value={c.dialCode}>
+                    {c.name} ({c.dialCode})
+                  </option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                {...commonProps}
+                value={phoneValue}
+                onChange={(e) => handleChange(field.name, e.target.value)}
+                placeholder={displayPlaceholder || "+1 (555) 000-0000"}
+                style={{
+                  ...fieldInputStyle,
+                  flex: 1,
+                  outline: "none",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor =
+                    theme?.inputFocusBorderColor || "#3b82f6";
+                  e.currentTarget.style.backgroundColor =
+                    theme?.inputFocusBackgroundColor ||
+                    field.fieldStyle?.backgroundColor ||
+                    theme?.inputBackgroundColor ||
+                    "#ffffff";
+                  executeEventHandler(field.events?.onFocus, field.name);
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor =
+                    field.fieldStyle?.borderColor ||
+                    theme?.inputBorderColor ||
+                    "#d1d5db";
+                  e.currentTarget.style.backgroundColor =
+                    field.fieldStyle?.backgroundColor ||
+                    theme?.inputBackgroundColor ||
+                    "#ffffff";
+                  executeEventHandler(field.events?.onBlur, field.name);
+                }}
+                onClick={() =>
+                  executeEventHandler(field.events?.onClick, field.name)
+                }
+                className="w-full transition-all"
+              />
+            </div>
+          );
+        }
+        return (
+          <input
+            type="text"
+            {...commonProps}
+            value={formData[field.name] || ""}
+            onChange={(e) => handleChange(field.name, e.target.value)}
+            style={{
+              ...fieldInputStyle,
+              width: field.fieldStyle?.width || "100%",
+              outline: "none",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor =
+                theme?.inputFocusBorderColor || "#3b82f6";
+              e.currentTarget.style.backgroundColor =
+                theme?.inputFocusBackgroundColor ||
+                field.fieldStyle?.backgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+              executeEventHandler(field.events?.onFocus, field.name);
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor =
+                field.fieldStyle?.borderColor ||
+                theme?.inputBorderColor ||
+                "#d1d5db";
+              e.currentTarget.style.backgroundColor =
+                field.fieldStyle?.backgroundColor ||
+                theme?.inputBackgroundColor ||
+                "#ffffff";
+              executeEventHandler(field.events?.onBlur, field.name);
+            }}
+            onClick={() =>
+              executeEventHandler(field.events?.onClick, field.name)
+            }
+            className="w-full transition-all"
+          />
+        );
+      }
       case "email":
       case "number":
       case "date":
@@ -364,7 +490,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             <option value="">
               {displayPlaceholder || "Select an option..."}
             </option>
-            {field.options?.map((opt) => (
+            {(field.optionsSource === "countries" ||
+            /country/i.test(field.label || "") ||
+            /country/i.test(field.name || "")
+              ? COUNTRIES.map((c) => ({ label: c.name, value: c.code }))
+              : field.options || []
+            ).map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {replaceInlineParams(opt.label)}
               </option>
@@ -650,6 +781,54 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             placeholder="Enter your paragraph"
           />
         );
+      case "helperText":
+        return (
+          <div
+            style={{
+              color: field.fieldStyle?.textColor || theme?.descriptionColor || "#6b7280",
+              fontSize: field.fieldStyle?.fontSize || theme?.descriptionFontSize || "12px",
+              backgroundColor: field.fieldStyle?.backgroundColor || "transparent",
+              borderColor: field.fieldStyle?.borderColor || "transparent",
+              borderWidth: field.fieldStyle?.borderWidth || undefined,
+              borderRadius: field.fieldStyle?.borderRadius || undefined,
+              borderStyle:
+                field.fieldStyle?.borderColor || field.fieldStyle?.borderWidth
+                  ? "solid"
+                  : undefined,
+              padding: field.fieldStyle?.padding || undefined,
+              margin: field.fieldStyle?.margin || undefined,
+              textAlign: field.fieldStyle?.textAlign || undefined,
+              whiteSpace: "pre-wrap",
+              width: field.fieldStyle?.width || "100%",
+              ...(field.fieldStyle?.paddingTop
+                ? { paddingTop: field.fieldStyle.paddingTop }
+                : {}),
+              ...(field.fieldStyle?.paddingRight
+                ? { paddingRight: field.fieldStyle.paddingRight }
+                : {}),
+              ...(field.fieldStyle?.paddingBottom
+                ? { paddingBottom: field.fieldStyle.paddingBottom }
+                : {}),
+              ...(field.fieldStyle?.paddingLeft
+                ? { paddingLeft: field.fieldStyle.paddingLeft }
+                : {}),
+              ...(field.fieldStyle?.marginTop
+                ? { marginTop: field.fieldStyle.marginTop }
+                : {}),
+              ...(field.fieldStyle?.marginRight
+                ? { marginRight: field.fieldStyle.marginRight }
+                : {}),
+              ...(field.fieldStyle?.marginBottom
+                ? { marginBottom: field.fieldStyle.marginBottom }
+                : {}),
+              ...(field.fieldStyle?.marginLeft
+                ? { marginLeft: field.fieldStyle.marginLeft }
+                : {}),
+            }}
+          >
+            {replaceInlineParams(field.content || field.label || "")}
+          </div>
+        );
       case "spacer":
         return (
           <div
@@ -905,8 +1084,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                           };
                         }
 
-                        // For button and paragraph fields inside containers, don't show label
-                        if (childField.type === "button" || childField.type === "paragraph") {
+                        // For static/button fields inside containers, don't show label
+                        if (
+                          childField.type === "button" ||
+                          childField.type === "paragraph" ||
+                          childField.type === "helperText"
+                        ) {
                           return (
                             <div
                               key={childField.id}
@@ -1060,8 +1243,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 );
               }
 
-              // For paragraph fields, don't show label/description wrapper - just render the paragraph content
-              if (field.type === "paragraph") {
+              // For static text fields, don't show label/description wrapper
+              if (field.type === "paragraph" || field.type === "helperText") {
                 return (
                   <div
                     key={field.id}

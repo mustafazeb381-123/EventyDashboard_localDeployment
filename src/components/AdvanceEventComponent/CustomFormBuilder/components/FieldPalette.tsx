@@ -17,6 +17,7 @@ import {
   Heading,
   AlignLeft,
   Space,
+  Info,
   User,
   Phone,
   Badge,
@@ -28,6 +29,10 @@ import {
   Square,
 } from "lucide-react";
 import type { CustomFormField, FieldType } from "../types";
+import {
+  makeAutoPlaceholderFromLabel,
+  makeFieldNameFromLabel,
+} from "../utils/fieldAuto";
 
 interface FieldPaletteProps {
   onAddField: (field: CustomFormField) => void;
@@ -203,7 +208,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
     },
     {
       id: "phone",
-      type: "text", // Using text for phone to allow formatting
+      type: "text", // Will render with country code
       label: "Phone Number",
       icon: <Phone size={18} />,
       description: "Contact phone",
@@ -212,6 +217,18 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       defaultLabel: "Phone Number",
       defaultName: "phone_number",
       defaultPlaceholder: "+1 (555) 000-0000",
+    },
+    {
+      id: "country",
+      type: "select",
+      label: "Country",
+      icon: <List size={18} />,
+      description: "Country selector",
+      color: "pink",
+      category: "personal",
+      defaultLabel: "Country",
+      defaultName: "country",
+      defaultPlaceholder: "Select country",
     },
     {
       id: "id_number",
@@ -312,6 +329,18 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       defaultPlaceholder: "Enter paragraph text",
     },
     {
+      id: "helper_text",
+      type: "helperText",
+      label: "Helper Text",
+      icon: <Info size={18} />,
+      description: "Static helper text (non-input)",
+      color: "gray",
+      category: "basic",
+      defaultLabel: "Helper Text",
+      defaultName: "helper_text",
+      defaultPlaceholder: "This is a helper text",
+    },
+    {
       id: "spacer",
       type: "spacer",
       label: "Spacer",
@@ -346,11 +375,16 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       defaultPlaceholder,
     } = preset;
 
-    const createField = (): CustomFormField => ({
+    const createField = (): CustomFormField => {
+      const finalLabel = defaultLabel || label;
+      const autoName = makeFieldNameFromLabel(finalLabel);
+      const autoPlaceholder = makeAutoPlaceholderFromLabel(type, finalLabel);
+
+      return {
       id: `${type}-${Date.now()}`,
       type,
-      label: defaultLabel || label,
-      name: defaultName || `${type}_${Date.now()}`,
+      label: finalLabel,
+      name: defaultName || autoName,
       required: false,
       unique: false,
       placeholder:
@@ -359,15 +393,18 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
           ? "example@email.com"
           : type === "number"
           ? "Enter a number"
-          : `Enter ${label.toLowerCase()}`),
+          : autoPlaceholder),
       ...(type === "select" || type === "radio" || type === "checkbox"
-        ? {
-            options: [
-              { label: "Option 1", value: "option_1" },
-              { label: "Option 2", value: "option_2" },
-            ],
-          }
+        ? preset.id === "country"
+          ? { optionsSource: "countries" }
+          : {
+              options: [
+                { label: "Option 1", value: "option_1" },
+                { label: "Option 2", value: "option_2" },
+              ],
+            }
         : {}),
+      ...(preset.id === "phone" ? { inputVariant: "phone" } : {}),
       ...(type === "button"
         ? { buttonText: "Submit", buttonType: "submit" }
         : {}),
@@ -387,11 +424,12 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
             },
           }
         : {}),
-      ...(type === "heading" || type === "paragraph"
+      ...(type === "heading" || type === "paragraph" || type === "helperText"
         ? { content: defaultPlaceholder || "Enter text here" }
         : {}),
       ...(type === "spacer" ? { height: "20px" } : {}),
-    });
+      };
+    };
 
     const dragId = `palette-${preset.id}`;
     const { attributes, listeners, setNodeRef, transform, isDragging } =

@@ -141,6 +141,14 @@ function UserRegistration() {
           const themeData = formTemplateData.theme || {};
           const logoFromAttributes = defaultTemplate.attributes?.logo || null;
           const logoFromTheme = themeData.logo || null;
+
+          // Banner can be stored either on attributes (older) or inside form_template_data (newer/custom builder)
+          const bannerFromTemplateData =
+            formTemplateData.bannerImage ||
+            formTemplateData.banner_image ||
+            null;
+          const bannerFromAttributes = defaultTemplate.attributes?.banner_image || null;
+          const finalBannerImage = bannerFromTemplateData || bannerFromAttributes || null;
           
           // Use logo from attributes (API response) if available, otherwise use theme logo
           const finalTheme = {
@@ -200,7 +208,7 @@ function UserRegistration() {
               ...(formTemplateData.formBuilderData || {}),
               formData: transformedFormData
             },
-            bannerImage: defaultTemplate.attributes?.banner_image || null,
+            bannerImage: finalBannerImage,
             logo: logoFromAttributes || logoFromTheme || null,
             theme: finalTheme, // Theme now includes logo
           });
@@ -466,7 +474,7 @@ function UserRegistration() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
           <p className="text-gray-600 text-lg font-medium">
@@ -482,7 +490,7 @@ function UserRegistration() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
             <p className="font-medium">Error loading registration form</p>
@@ -515,7 +523,7 @@ function UserRegistration() {
     
     if (!eventIdToPass) {
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
               <p className="font-medium">Error: Event ID not found</p>
@@ -544,7 +552,7 @@ function UserRegistration() {
         eventIdToPass,
       });
       return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
               <p className="font-medium">Error: Event ID not found</p>
@@ -593,10 +601,10 @@ function UserRegistration() {
     });
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
         {/* Notification Toast - Only shows on submit */}
         {notification && (
-          <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div className="fixed top-4 right-4 z-100 animate-slide-in">
             <div
               className={`px-6 py-3 rounded-lg shadow-lg ${
                 notification.type === "success"
@@ -628,7 +636,7 @@ function UserRegistration() {
 
   if (!templateData && !customFormBuilderTemplate) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <p className="text-gray-600">
             No registration template found for this event.
@@ -639,10 +647,10 @@ function UserRegistration() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
+    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
       {/* Notification Toast - Only shows on submit */}
       {notification && (
-        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+        <div className="fixed top-4 right-4 z-100 animate-slide-in">
           <div
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
