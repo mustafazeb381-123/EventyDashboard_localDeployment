@@ -55,6 +55,7 @@ const SideBar = ({
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -153,7 +154,10 @@ const SideBar = ({
     if (path.includes("/galleries")) {
       return "Galleries";
     }
-    if (path === "/user/registration" || path.startsWith("/user/registration")) {
+    if (
+      path === "/user/registration" ||
+      path.startsWith("/user/registration")
+    ) {
       return "User Registration";
     }
     if (path === "/print_badges" || path.startsWith("/print_badges")) {
@@ -192,13 +196,22 @@ const SideBar = ({
     }
 
     // Expand submenus based on current path
-    if (currentPath.includes("/invitation/user") || currentPath.includes("/invitation/VipUsers")) {
+    if (
+      currentPath.includes("/invitation/user") ||
+      currentPath.includes("/invitation/VipUsers")
+    ) {
       setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
     }
-    if (currentPath.includes("/attendees/check-in") || currentPath.includes("/attendees/check-out")) {
+    if (
+      currentPath.includes("/attendees/check-in") ||
+      currentPath.includes("/attendees/check-out")
+    ) {
       setExpandedMenus((prev) => ({ ...prev, Attendees: true }));
     }
-    if (currentPath.includes("/communication/poll") || currentPath.includes("/communication/QA")) {
+    if (
+      currentPath.includes("/communication/poll") ||
+      currentPath.includes("/communication/QA")
+    ) {
       setExpandedMenus((prev) => ({ ...prev, Communications: true }));
     }
 
@@ -401,16 +414,25 @@ const SideBar = ({
     setNotification({ message, type });
   };
 
-  const handleLogout = async () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleLogoutConfirm = async () => {
     try {
       await localStorage.removeItem("token");
+      setShowLogoutModal(false);
       showNotification("Logout Successful", "success");
       setTimeout(() => {
         navigate("/login");
-      }, 4000);
+      }, 1500);
     } catch (error) {
       console.log("error", error);
     }
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutModal(false);
   };
 
   return (
@@ -496,8 +518,8 @@ const SideBar = ({
                         isActive
                           ? "bg-blue-600/30 text-white border border-blue-500/30"
                           : isDisabled
-                          ? "text-slate-500 cursor-not-allowed opacity-60"
-                          : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                            ? "text-slate-500 cursor-not-allowed opacity-60"
+                            : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
                       }`}
                       onClick={() => {
                         if (isDisabled) {
@@ -550,8 +572,8 @@ const SideBar = ({
                                 isSubActive
                                   ? "bg-blue-500/20 text-white border border-blue-400/30"
                                   : isSubDisabled
-                                  ? "text-slate-500 cursor-not-allowed opacity-60"
-                                  : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
+                                    ? "text-slate-500 cursor-not-allowed opacity-60"
+                                    : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
                               }`}
                               onClick={() => {
                                 if (isSubDisabled) {
@@ -607,7 +629,7 @@ const SideBar = ({
           {/* <ToastContainer /> */}
 
           <Button
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
             variant="ghost"
             className={`w-full ${
               isExpanded ? "justify-start px-3" : "justify-center px-3"
@@ -620,6 +642,44 @@ const SideBar = ({
           </Button>
         </div>
       </aside>
+
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div
+            className="absolute inset-0 backdrop-blur-sm bg-white/30"
+            onClick={handleLogoutCancel}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 animate-fade-in">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <LogOut className="h-8 w-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Confirm Logout
+              </h3>
+              <p className="text-gray-500 mb-6">
+                Are you sure you want to log out of your account?
+              </p>
+              <div className="flex gap-3 w-full">
+                <Button
+                  onClick={handleLogoutCancel}
+                  variant="outline"
+                  className="flex-1 py-2.5 rounded-xl border-gray-300 text-gray-700 hover:bg-gray-100"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleLogoutConfirm}
+                  className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white"
+                >
+                  Log Out
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isExpanded && (
         <div
@@ -680,6 +740,19 @@ const SideBar = ({
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
+        }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        .animate-fade-in {
+          animation: fade-in 0.2s ease-out;
         }
       `}</style>
     </>
