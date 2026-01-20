@@ -10,6 +10,9 @@ import { myButtonClass, myButtonVariants } from "@/components/ui/myButton";
 import { Text } from "@/components/ui/text";
 
 import { signupApi } from "@/apis/apiHelpers";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import * as yup from "yup";
 
 interface SignupFormData {
   name: string;
@@ -74,7 +77,7 @@ function Signup() {
     setNotification({ message, type });
   };
 
-  const onSubmit: SubmitHandler<SignupFormData> = async (data) => {
+  const onSubmit = async (data: SignupFormData) => {
     try {
       const payload = {
         name: data.name.trim(),
@@ -96,7 +99,10 @@ function Signup() {
       //   localStorage.setItem("token", token);
       // }
 
-      showNotification(response?.data?.message || "Signup successful!", "success");
+      showNotification(
+        response?.data?.message || "Signup successful!",
+        "success"
+      );
       setTimeout(() => navigate("/login"), 1000);
     } catch (error: any) {
       console.error("Signup error:", error);
