@@ -416,14 +416,80 @@ export const getGateById = (gateId: string | number) => {
 
 // -------------------------------------------- Areas -----------------------------------------------------
 
-// ✅ Get Check-Ins
-export const getCheckIns = (eventId: string | number, sessionAreaId: string | number) => {
-  return axiosInstance.get(`/events/${eventId}/session_areas/${sessionAreaId}/need_check_in`);
+// ✅ Get Check-Ins (users who need to check in)
+export const getCheckIns = (
+  eventId: string | number,
+  options?: { page?: number; per_page?: number }
+) => {
+  const params = new URLSearchParams();
+  if (options?.page) params.append("page", options.page.toString());
+  if (options?.per_page) params.append("per_page", options.per_page.toString());
+
+  const url = `/events/${eventId}/check_user_event_statuses/need_check_in${
+    params.toString() ? `?${params.toString()}` : ""
+  }`;
+
+  console.log("🔵 GET Check-Ins API Called:", {
+    eventId,
+    options,
+    url,
+  });
+  return axiosInstance
+    .get(url)
+    .then((response) => {
+      console.log("✅ GET Check-Ins API Response:", {
+        eventId,
+        data: response.data,
+        status: response.status,
+      });
+      return response;
+    })
+    .catch((error) => {
+      console.error("❌ GET Check-Ins API Error:", {
+        eventId,
+        error: error.response?.data || error.message,
+        status: error.response?.status,
+      });
+      throw error;
+    });
 };
 
-// ✅ Get Check-Outs
-export const getCheckOuts = (eventId: string | number, sessionAreaId: string | number) => {
-  return axiosInstance.get(`/events/${eventId}/session_areas/${sessionAreaId}/need_check_out`);
+// ✅ Get Check-Outs (users who need to check out)
+export const getCheckOuts = (
+  eventId: string | number,
+  options?: { page?: number; per_page?: number }
+) => {
+  const params = new URLSearchParams();
+  if (options?.page) params.append("page", options.page.toString());
+  if (options?.per_page) params.append("per_page", options.per_page.toString());
+
+  const url = `/events/${eventId}/check_user_event_statuses/need_check_out${
+    params.toString() ? `?${params.toString()}` : ""
+  }`;
+
+  console.log("🔵 GET Check-Outs API Called:", {
+    eventId,
+    options,
+    url,
+  });
+  return axiosInstance
+    .get(url)
+    .then((response) => {
+      console.log("✅ GET Check-Outs API Response:", {
+        eventId,
+        data: response.data,
+        status: response.status,
+      });
+      return response;
+    })
+    .catch((error) => {
+      console.error("❌ GET Check-Outs API Error:", {
+        eventId,
+        error: error.response?.data || error.message,
+        status: error.response?.status,
+      });
+      throw error;
+    });
 };
 
 // ✅ Post Check-Ins
@@ -502,7 +568,7 @@ export const checkInUser = (
   eventUserId: string | number
 ) => {
   return axiosInstance.post(
-    `/events/${eventId}/check_user_event_statuses/check_in`,
+    `/events/${eventId}/check_user_event_statuses/checked_in_users`,
     {
       check_user_event_status: {
         event_user_id: eventUserId,

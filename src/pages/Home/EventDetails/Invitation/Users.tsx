@@ -2,22 +2,16 @@ import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Plus,
-  Eye,
-  RotateCcw,
-  ChevronLeft,
-  ChevronRight,
   X,
   ChevronDown,
   Mail,
-  MessageSquare,
   Search,
-  Filter,
-  MoreVertical,
   Users as UsersIcon,
   Upload,
 } from "lucide-react";
-import { getEventUsers, createEventUser, getEventbyId } from "@/apis/apiHelpers";
+import { getEventUsers, createEventUser, getEventbyId, sendCredentials } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
+import Pagination from "@/components/Pagination";
 
 // Helper to derive user initial
 const getUserInitial = (user: any) => {
@@ -57,14 +51,10 @@ const UserAvatar = ({ user }: { user: any }) => {
 
 function Users() {
   const location = useLocation();
-  const [showModal, setShowModal] = useState(false);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
-  const [selectedType, setSelectedType] = useState("email");
-  const [title, setTitle] = useState("");
-  const [sendTo, setSendTo] = useState("All users Registered");
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [filterType, setFilterType] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [eventId, setEventId] = useState<string | null>(null);
   const [actualEventId, setActualEventId] = useState<string | null>(null);
@@ -72,6 +62,7 @@ function Users() {
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [pagination, setPagination] = useState<any>(null);
+  const [sendingCredentialsUserId, setSendingCredentialsUserId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -190,24 +181,14 @@ function Users() {
         ? responseData
         : responseData?.data || [];
 
-      // Filter out VIP users - keep only normal users (user_type is not "VIP" or "vip")
-      const normalUsers = allUsers.filter((user: any) => {
-        const userType = user?.attributes?.user_type?.toLowerCase() || "";
-        return userType !== "vip" && userType !== "VIP";
-      });
-
-      setUsers(normalUsers);
+      // Show all users (both normal and VIP)
+      setUsers(allUsers);
 
       // Set pagination metadata
       const paginationMeta =
         response.data?.meta?.pagination || response.data?.pagination;
       if (paginationMeta) {
-        // Adjust total_count to reflect filtered users
-        setPagination({
-          ...paginationMeta,
-          total_count: normalUsers.length,
-          total_pages: Math.ceil(normalUsers.length / itemsPerPage),
-        });
+        setPagination(paginationMeta);
       }
     } catch (error) {
       console.error("Error fetching event users:", error);
@@ -219,32 +200,92 @@ function Users() {
     }
   };
 
-  // Filter users by search term
+  // Filter users by type and search term
   const filteredUsers = users.filter((user: any) => {
-    const name = user?.attributes?.name?.toLowerCase() || "";
-    const email = user?.attributes?.email?.toLowerCase() || "";
-    const searchLower = searchTerm.toLowerCase();
-    return name.includes(searchLower) || email.includes(searchLower);
+    // Filter by type
+    if (filterType !== "all") {
+      const userType = user?.attributes?.user_type?.toLowerCase() || "";
+      if (userType !== filterType.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Filter by search term
+    if (searchTerm.trim() === "") {
+      return true;
+    }
+
+    const searchLower = searchTerm.toLowerCase().trim();
+    const name = (user?.attributes?.name || "").toLowerCase();
+    const email = (user?.attributes?.email || "").toLowerCase();
+    const phone = (user?.attributes?.phone_number || "").toLowerCase();
+    const organization = (user?.attributes?.organization || "").toLowerCase();
+    const position = (user?.attributes?.position || "").toLowerCase();
+    const userType = (user?.attributes?.user_type || "").toLowerCase();
+
+    return (
+      name.includes(searchLower) ||
+      email.includes(searchLower) ||
+      phone.includes(searchLower) ||
+      organization.includes(searchLower) ||
+      position.includes(searchLower) ||
+      userType.includes(searchLower)
+    );
   });
 
-  const totalPages = pagination?.total_pages || Math.ceil(filteredUsers.length / itemsPerPage);
-
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
-
-  const getPaginationNumbers = () => {
-    let pages = [];
-    const maxPages = Math.min(totalPages, 10); // Show max 10 page numbers
-    for (let i = 1; i <= maxPages; i++) {
-      pages.push(i);
-    }
-    return pages;
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handlePageChange = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
+  const handleSendInvitation = async (userIds?: string[]) => {
+    const idToUse = actualEventId || eventId;
+    if (!idToUse) {
+      showNotification("Event ID is missing. Cannot send invitation.", "error");
+      return;
+    }
+
+    const idsToSend: string[] = userIds || Array.from(selectedUsers).map(id => String(id));
+    if (idsToSend.length === 0) {
+      showNotification("Please select at least one user to send invitation.", "error");
+      return;
+    }
+
+    // Track which user(s) are sending invitations
+    const isSingleUser = userIds && userIds.length === 1;
+    if (isSingleUser) {
+      setSendingCredentialsUserId(userIds[0]);
+    }
+
+    try {
+      const response = await sendCredentials(String(idToUse), idsToSend);
+      console.log("Invitation sent response:", response.data);
+
+      if (isSingleUser) {
+        showNotification("Invitation sent to user successfully!", "success");
+      } else {
+        showNotification(
+          `Invitation sent to ${idsToSend.length} users successfully!`,
+          "success"
+        );
+      }
+      setSelectedUsers(new Set());
+    } catch (err: any) {
+      console.error("Error sending invitation:", err);
+      const errorMessage = 
+        err?.response?.data?.message || 
+        err?.response?.data?.error ||
+        err?.message ||
+        "Failed to send invitation. Please try again.";
+
+      if (isSingleUser) {
+        showNotification("Failed to send invitation to user. Please try again.", "error");
+      } else {
+        showNotification(errorMessage, "error");
+      }
+    } finally {
+      setSendingCredentialsUserId(null);
     }
   };
 
@@ -421,15 +462,6 @@ function Users() {
     }
   };
 
-  const handleNewInvitation = async () => {
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("New invitation:", { title, sendTo, type: selectedType });
-    setIsLoading(false);
-    setShowModal(false);
-    setTitle("");
-  };
-
   const handleUserSelect = (userId: string) => {
     const newSelected = new Set(selectedUsers);
     if (newSelected.has(userId)) {
@@ -477,7 +509,7 @@ function Users() {
               </div>
               <div>
                 <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                  Users
+                  Invitation Users
                 </h1>
                 <p className="text-gray-600 mt-1">
                   {pagination?.total_count || users.length} total users • {selectedUsers.size} selected
@@ -495,16 +527,6 @@ function Users() {
                 <Plus size={18} />
                 Add User
               </button>
-              <button
-                onClick={() => setShowModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700
-                 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-blue-600/25 
-                 hover:shadow-xl hover:shadow-blue-600/30 transition-all
-                  duration-200 transform hover:-translate-y-0.5 cursor-pointer"
-              >
-                <Plus size={18} />
-                New Invitation
-              </button>
             </div>
           </div>
 
@@ -520,14 +542,33 @@ function Users() {
                   type="text"
                   placeholder="Search users..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1); // Reset to page 1 when search changes
+                  }}
                   className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 />
               </div>
-              <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors">
-                <Filter size={16} />
-                Filter
-              </button>
+              <div className="relative">
+                <select
+                  value={filterType}
+                  onChange={(e) => {
+                    setFilterType(e.target.value);
+                    setCurrentPage(1); // Reset to page 1 when filter changes
+                  }}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10"
+                >
+                  <option value="all">All Types</option>
+                  <option value="guest">Guest</option>
+                  <option value="speaker">Speaker</option>
+                  <option value="vip">VIP</option>
+                  <option value="VIP">VIP (uppercase)</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={20}
+                />
+              </div>
             </div>
           </div>
 
@@ -556,9 +597,6 @@ function Users() {
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Created
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Users
                     </th>
                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Status
@@ -598,9 +636,6 @@ function Users() {
                           <Skeleton className="h-4 w-24" />
                         </td>
                         <td className="px-6 py-4">
-                          <Skeleton className="h-4 w-20" />
-                        </td>
-                        <td className="px-6 py-4">
                           <Skeleton className="h-6 w-16 rounded-full" />
                         </td>
                         <td className="px-6 py-4">
@@ -612,14 +647,20 @@ function Users() {
                         </td>
                       </tr>
                     ))
-                  ) : paginatedUsers.length === 0 ? (
+                  ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-gray-500">
-                        {searchTerm ? `No users found matching "${searchTerm}"` : "No users found"}
+                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                        {searchTerm.trim() !== "" && filterType !== "all"
+                          ? `No users found matching "${searchTerm}" with type "${filterType}"`
+                          : searchTerm.trim() !== ""
+                          ? `No users found matching "${searchTerm}"`
+                          : filterType !== "all"
+                          ? `No users found with type "${filterType}"`
+                          : "No users found"}
                       </td>
                     </tr>
                   ) : (
-                    paginatedUsers.map((user, index) => (
+                    filteredUsers.map((user, index) => (
                       <tr
                         key={user.id}
                         className="hover:bg-gray-50/50 transition-colors group"
@@ -661,29 +702,39 @@ function Users() {
                           {formatDate(user?.attributes?.created_at)}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                            <span className="text-sm font-medium text-gray-900">
-                              {user?.attributes?.organization || "-"}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200">
                             <div className="w-2 h-2 rounded-full mr-2 bg-emerald-500"></div>
                             Active
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
-                              <Eye size={16} />
-                            </button>
-                            <button className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
-                              <RotateCcw size={16} />
-                            </button>
-                            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                              <MoreVertical size={16} />
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleSendInvitation([user.id])}
+                              disabled={sendingCredentialsUserId === user.id}
+                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                sendingCredentialsUserId === user.id
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "bg-blue-600 text-white hover:bg-blue-700"
+                              }`}
+                            >
+                              {sendingCredentialsUserId === user.id ? (
+                                <span className="flex items-center gap-2">
+                                  <div
+                                    style={{
+                                      width: "14px",
+                                      height: "14px",
+                                      border: "2px solid #d1d5db",
+                                      borderTop: "2px solid #9333ea",
+                                      borderRadius: "50%",
+                                      animation: "spin 1s linear infinite",
+                                    }}
+                                  />
+                                  Sending...
+                                </span>
+                              ) : (
+                                "Invitation"
+                              )}
                             </button>
                           </div>
                         </td>
@@ -697,221 +748,35 @@ function Users() {
             {/* Pagination */}
             <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
               <div className="text-sm text-gray-600">
-                Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
-                <span className="font-medium">
-                  {Math.min(endIndex, pagination?.total_count || filteredUsers.length)}
-                </span>{" "}
-                of <span className="font-medium">{pagination?.total_count || filteredUsers.length}</span>{" "}
-                users
-                {searchTerm && (
-                  <span className="ml-2 text-blue-600">• Filtered results</span>
+                {pagination ? (
+                  <>
+                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * itemsPerPage, pagination.total_count)}
+                    </span>{" "}
+                    of <span className="font-medium">{pagination.total_count}</span> users
+                    {filterType !== "all" && (
+                      <span className="ml-2 text-blue-600">
+                        • Filtered: {filteredUsers.length} {filterType} user{filteredUsers.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>Loading...</>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors border ${
-                    currentPage === 1
-                      ? "text-gray-400 cursor-not-allowed border-transparent"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white border-transparent hover:border-gray-200"
-                  }`}
-                  disabled={currentPage === 1}
-                  onClick={() => handlePageChange(currentPage - 1)}
-                >
-                  <ChevronLeft size={16} />
-                  Previous
-                </button>
-                <div className="flex items-center gap-1">
-                  {getPaginationNumbers().map((page, index) => (
-                    <button
-                      key={index}
-                      onClick={() =>
-                        typeof page === "number" && handlePageChange(page)
-                      }
-                      className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                        page === currentPage
-                          ? "bg-blue-600 text-white shadow-sm"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-white border border-transparent hover:border-gray-200"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors border ${
-                    currentPage === totalPages
-                      ? "text-gray-400 cursor-not-allowed border-transparent"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-white border-transparent hover:border-gray-200"
-                  }`}
-                  disabled={currentPage === totalPages}
-                  onClick={() => handlePageChange(currentPage + 1)}
-                >
-                  Next
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+              {pagination && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={pagination.total_pages || 1}
+                  onPageChange={handlePageChange}
+                  className=""
+                />
+              )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Modal (unchanged) */}
-      {showModal && (
-        <div
-          onClick={() => setShowModal(false)}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-        >
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  New Invitation
-                </h2>
-                <p className="text-gray-600 mt-1">
-                  Send invitations to your users
-                </p>
-              </div>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer"
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Invitation Title
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter invitation title..."
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                />
-              </div>
-
-              {/* Send to */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
-                  Send To
-                </label>
-                <div className="relative">
-                  <select
-                    value={sendTo}
-                    onChange={(e) => setSendTo(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white"
-                  >
-                    <option>All users Registered</option>
-                    <option>Selected Users Only</option>
-                    <option>Active Users</option>
-                    <option>Premium Members</option>
-                  </select>
-                  <ChevronDown
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                    size={20}
-                  />
-                </div>
-              </div>
-
-              {/* Invitation type */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-4">
-                  Delivery Method
-                </label>
-                <div className="grid grid-cols-2 gap-4">
-                  <label
-                    className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                      selectedType === "email"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="invitationType"
-                      value="email"
-                      checked={selectedType === "email"}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <Mail className="text-blue-600" size={20} />
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">Email</div>
-                        <div className="text-sm text-gray-500">
-                          Send invitation via email
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-
-                  <label
-                    className={`flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                      selectedType === "sms"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="invitationType"
-                      value="sms"
-                      checked={selectedType === "sms"}
-                      onChange={(e) => setSelectedType(e.target.value)}
-                      className="text-blue-600 focus:ring-blue-500"
-                    />
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <MessageSquare className="text-green-600" size={20} />
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">SMS</div>
-                        <div className="text-sm text-gray-500">
-                          Send invitation via SMS
-                        </div>
-                      </div>
-                    </div>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200/60">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleNewInvitation}
-                disabled={isLoading}
-                className={` flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isLoading ? "animate-pulse" : ""
-                }`}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={18} />
-                    Send Invitation
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Add User Modal */}
       {showAddUserModal && (
@@ -1024,15 +889,19 @@ function Users() {
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     User Type
                   </label>
-                  <input
-                    type="text"
-                    placeholder="e.g., guest, speaker"
+                  <select
                     value={addUserForm.user_type}
                     onChange={(e) =>
                       setAddUserForm({ ...addUserForm, user_type: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                  />
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white"
+                  >
+                    <option value="">Select user type</option>
+                    <option value="guest">Guest</option>
+                    <option value="speaker">Speaker</option>
+                    <option value="VIP">VIP</option>
+                    <option value="vip">vip</option>
+                  </select>
                 </div>
 
                 <div>
@@ -1141,6 +1010,14 @@ function Users() {
           to {
             transform: translateX(0);
             opacity: 1;
+          }
+        }
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
           }
         }
         .animate-slide-in {

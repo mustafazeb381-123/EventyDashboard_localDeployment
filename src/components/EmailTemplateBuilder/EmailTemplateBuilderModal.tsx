@@ -1,4 +1,5 @@
-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
   X,
   GripVertical,
@@ -27,7 +28,6 @@ import {
   FileText,
   Square,
   LayoutGrid,
-  Eye,
   Facebook,
   Twitter,
   Instagram,
@@ -37,9 +37,7 @@ import {
   Globe,
   Columns,
   Sparkles,
-  Palette,
   Save,
-  Download,
   Settings,
 } from "lucide-react";
 import {
@@ -717,6 +715,158 @@ function renderHtml(design: EmailTemplateDesign) {
   return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/></head><body style="margin:0;padding:0;background:${gs.backgroundColor};font-family:${gs.fontFamily};"><div style="max-width:${gs.contentWidth}px;margin:0 auto;background:#ffffff;padding:${gs.paddingY}px ${gs.paddingX}px;">${bodyInner}</div></body></html>`;
 }
 
+function renderHtmlForPreview(design: EmailTemplateDesign) {
+  const gs = design.globalStyles;
+
+  const bodyInner = design.blocks
+    .map((block) => {
+      switch (block.type) {
+        case "heading": {
+          const b = block as HeadingBlock;
+          return `<h1 style="margin:0 0 12px 0;text-align:${b.align};color:${
+            b.color
+          };font-size:${b.fontSize}px;font-weight:700;font-family:${
+            gs.fontFamily
+          };">${escapeHtmlAttr(b.text)}</h1>`;
+        }
+        case "paragraph": {
+          const b = block as ParagraphBlock;
+          return `<div style="margin:0 0 12px 0;text-align:${b.align};color:${b.color};font-size:${b.fontSize}px;line-height:${b.lineHeight};font-family:${gs.fontFamily};">${b.html}</div>`;
+        }
+        case "image": {
+          const b = block as ImageBlock;
+          const img = `<img src="${escapeHtmlAttr(
+            b.src
+          )}" alt="${escapeHtmlAttr(b.alt)}" style="max-width:100%;width:auto;height:auto;border-radius:${
+            b.borderRadius
+          }px;display:block;" />`;
+          const wrapperAlign =
+            b.align === "left"
+              ? "flex-start"
+              : b.align === "right"
+                ? "flex-end"
+                : "center";
+          return `<div style="display:flex;justify-content:${wrapperAlign};margin:0 0 12px 0;width:100%;">${img}</div>`;
+        }
+        case "button": {
+          const b = block as ButtonBlock;
+          const wrapperAlign =
+            b.align === "left"
+              ? "flex-start"
+              : b.align === "right"
+                ? "flex-end"
+                : "center";
+          return `<div style="display:flex;justify-content:${wrapperAlign};margin:16px 0;"><a href="${escapeHtmlAttr(
+            b.href
+          )}" style="background:${b.backgroundColor};color:${
+            b.textColor
+          };text-decoration:none;padding:12px 18px;border-radius:${
+            b.borderRadius
+          }px;font-family:${
+            gs.fontFamily
+          };font-weight:600;display:inline-block;">${escapeHtmlAttr(
+            b.text
+          )}</a></div>`;
+        }
+        case "social": {
+          const b = block as SocialBlock;
+          const wrapperAlign =
+            b.align === "left"
+              ? "flex-start"
+              : b.align === "right"
+                ? "flex-end"
+                : "center";
+          const iconsHtml = b.icons
+            .map((icon) => {
+              const iconColors: Record<string, string> = {
+                facebook: "#1877f2",
+                twitter: "#1da1f2",
+                instagram: "#e4405f",
+                linkedin: "#0077b5",
+                youtube: "#ff0000",
+                email: "#ea4335",
+                website: "#6366f1",
+              };
+              const color = iconColors[icon.platform] || "#6366f1";
+              return `<a href="${escapeHtmlAttr(
+                icon.url
+              )}" style="display:inline-block;margin:0 ${Math.floor(
+                b.spacing / 2
+              )}px;"><div style="width:${b.iconSize}px;height:${
+                b.iconSize
+              }px;background:${color};border-radius:50%;"></div></a>`;
+            })
+            .join("");
+          return `<div style="display:flex;justify-content:${wrapperAlign};margin:16px 0;">${iconsHtml}</div>`;
+        }
+        case "columns": {
+          const b = block as ColumnsBlock;
+          const colWidth = b.columnCount === 2 ? "48%" : "31%";
+          const columnsHtml = b.content
+            .map(
+              (html) =>
+                `<div style="width:${colWidth};display:inline-block;vertical-align:top;font-family:${gs.fontFamily};font-size:14px;color:${gs.textColor};">${html}</div>`
+            )
+            .join(`<div style="width:${b.gap}px;display:inline-block;"></div>`);
+          return `<div style="margin:16px 0;">${columnsHtml}</div>`;
+        }
+        case "divider": {
+          const b = block as DividerBlock;
+          return `<div style="padding:${b.paddingY}px 0;"><div style="height:${b.thickness}px;background:${b.color};width:100%;"></div></div>`;
+        }
+        case "spacer": {
+          const b = block as SpacerBlock;
+          return `<div style="height:${b.height}px;line-height:${b.height}px;">&nbsp;</div>`;
+        }
+        case "qrcode": {
+          const b = block as QRCodeBlock;
+          const wrapperAlign =
+            b.align === "left"
+              ? "flex-start"
+              : b.align === "right"
+                ? "flex-end"
+                : "center";
+          const bg = b.backgroundColor.replace("#", "%23");
+          const fg = b.foregroundColor.replace("#", "%23");
+          const qrPlaceholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' width='${b.size}' height='${b.size}'%3E%3Crect fill='${bg}' width='100' height='100'/%3E%3Crect fill='${fg}' x='10' y='10' width='25' height='25'/%3E%3Crect fill='${bg}' x='15' y='15' width='15' height='15'/%3E%3Crect fill='${fg}' x='18' y='18' width='9' height='9'/%3E%3Crect fill='${fg}' x='65' y='10' width='25' height='25'/%3E%3Crect fill='${bg}' x='70' y='15' width='15' height='15'/%3E%3Crect fill='${fg}' x='73' y='18' width='9' height='9'/%3E%3Crect fill='${fg}' x='10' y='65' width='25' height='25'/%3E%3Crect fill='${bg}' x='15' y='70' width='15' height='15'/%3E%3Crect fill='${fg}' x='18' y='73' width='9' height='9'/%3E%3Crect fill='${fg}' x='40' y='40' width='20' height='20'/%3E%3Crect fill='${fg}' x='45' y='65' width='10' height='10'/%3E%3Crect fill='${fg}' x='65' y='45' width='10' height='10'/%3E%3Crect fill='${fg}' x='75' y='55' width='10' height='10'/%3E%3Crect fill='${fg}' x='65' y='65' width='25' height='10'/%3E%3Crect fill='${fg}' x='65' y='80' width='10' height='10'/%3E%3Crect fill='${fg}' x='80' y='75' width='10' height='15'/%3E%3C/svg%3E`;
+          return `<div style="display:flex;justify-content:${wrapperAlign};margin:16px 0;"><img src="${qrPlaceholderSvg}" alt="QR Code Preview" style="width:${b.size}px;height:${b.size}px;display:block;" /></div>`;
+        }
+        default:
+          return "";
+      }
+    })
+    .join("");
+
+  // Preview version: full width, no max-width constraint, responsive
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><style>
+    * { box-sizing: border-box; }
+    body { 
+      margin: 0; 
+      padding: 0; 
+      overflow-x: hidden;
+      width: 100%;
+    } 
+    body > div { 
+      max-width: 100% !important; 
+      width: 100% !important; 
+      overflow-x: hidden;
+    }
+    img { 
+      max-width: 100% !important; 
+      height: auto !important; 
+    }
+    div { 
+      max-width: 100% !important; 
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+    }
+    table { 
+      max-width: 100% !important; 
+      table-layout: fixed;
+    }
+  </style></head><body style="margin:0;padding:0;background:${gs.backgroundColor};font-family:${gs.fontFamily};overflow-x:hidden;"><div style="width:100%;max-width:100%;background:#ffffff;padding:${gs.paddingY}px ${gs.paddingX}px;overflow-x:hidden;">${bodyInner}</div></body></html>`;
+}
+
 function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
   switch (block.type) {
     case "heading": {
@@ -724,12 +874,13 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
       return (
         <h2
           style={{
-            margin: 0,
+            margin: "0 0 12px 0",
             textAlign: b.align,
             color: b.color,
             fontSize: `${b.fontSize}px`,
             fontWeight: 700,
             fontFamily: gs.fontFamily,
+            lineHeight: 1.3,
           }}
         >
           {b.text}
@@ -741,7 +892,7 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
       return (
         <div
           style={{
-            margin: 0,
+            margin: "0 0 12px 0",
             textAlign: b.align,
             color: b.color,
             fontSize: `${b.fontSize}px`,
@@ -761,7 +912,7 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
             ? "flex-end"
             : "center";
       return (
-        <div style={{ display: "flex", justifyContent: justify }}>
+        <div style={{ display: "flex", justifyContent: justify, margin: "0 0 12px 0" }}>
           <img
             src={b.src}
             alt={b.alt || "Image"}
@@ -772,6 +923,10 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
               borderRadius: `${b.borderRadius}px`,
               display: "block",
               objectFit: "cover",
+            }}
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = "none";
             }}
           />
         </div>
@@ -786,7 +941,7 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
             ? "flex-end"
             : "center";
       return (
-        <div style={{ display: "flex", justifyContent: justify }}>
+        <div style={{ display: "flex", justifyContent: justify, margin: "16px 0" }}>
           <a
             href={b.href || "#"}
             style={{
@@ -904,13 +1059,18 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
             ? "flex-end"
             : "center";
       return (
-        <div style={{ display: "flex", justifyContent: justify }}>
-          <QRCodeSVG
-            value="{{user.qrcode}}"
-            size={b.size}
-            bgColor={b.backgroundColor}
-            fgColor={b.foregroundColor}
-          />
+        <div style={{ display: "flex", justifyContent: justify, margin: "16px 0" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+            <QRCodeSVG
+              value="{{user.qrcode}}"
+              size={b.size}
+              bgColor={b.backgroundColor}
+              fgColor={b.foregroundColor}
+            />
+            <span style={{ fontSize: "11px", color: "#6b7280", fontFamily: gs.fontFamily }}>
+              QR Code will be generated for each recipient
+            </span>
+          </div>
         </div>
       );
     }
@@ -951,63 +1111,78 @@ function SortablePreviewBlock({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="mb-3">
+    <div ref={setNodeRef} style={style} className="mb-2">
       <div
-        className={`relative group rounded-xl border bg-white px-4 py-4 transition-all ${
+        className={`relative group rounded-lg border transition-all cursor-pointer ${
           selected
-            ? "border-pink-400 ring-2 ring-pink-200 shadow-lg"
-            : "border-gray-200 shadow-sm hover:border-pink-200 hover:shadow-md"
-        } ${isDragging ? "opacity-70" : "opacity-100"}`}
+            ? "border-pink-500 ring-2 ring-pink-200 ring-offset-2 shadow-lg bg-pink-50/30"
+            : "border-gray-300 bg-white hover:border-pink-300 hover:shadow-md"
+        } ${isDragging ? "opacity-50 scale-95" : "opacity-100"}`}
         onClick={() => onSelect(block.id)}
+        style={{
+          padding: block.type === "spacer" ? "8px 12px" : "12px 16px",
+        }}
       >
-        <div className="absolute inset-0 rounded-xl pointer-events-none transition-all group-hover:border group-hover:border-pink-100" />
-        <div className="absolute top-2 right-2 flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        {/* Selection indicator */}
+        {selected && (
+          <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-pink-500 rounded-full" />
+        )}
+        
+        {/* Block actions - shown on hover */}
+        <div className="absolute top-2 right-2 flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
           <button
             type="button"
-            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-pink-300 hover:text-pink-600"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white text-gray-700 text-xs border border-gray-300 shadow-md hover:border-pink-400 hover:text-pink-600 hover:bg-pink-50 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onEdit(block.id);
             }}
+            title="Edit block"
           >
-            <Type size={12} />
-            Edit
+            <Type size={11} />
+            <span className="hidden sm:inline">Edit</span>
           </button>
           <button
             type="button"
-            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-blue-300 hover:text-blue-600"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white text-gray-700 text-xs border border-gray-300 shadow-md hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onDuplicate(block.id);
             }}
+            title="Duplicate block"
           >
-            <Copy size={12} />
-            Duplicate
+            <Copy size={11} />
+            <span className="hidden sm:inline">Copy</span>
           </button>
           <button
             type="button"
-            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-red-300 hover:text-red-600"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white text-gray-700 text-xs border border-gray-300 shadow-md hover:border-red-400 hover:text-red-600 hover:bg-red-50 transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(block.id);
             }}
+            title="Delete block"
           >
-            <Trash2 size={12} />
-            Delete
+            <Trash2 size={11} />
+            <span className="hidden sm:inline">Delete</span>
           </button>
           <button
             type="button"
-            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white/90 text-gray-700 text-xs border border-gray-200 shadow-sm hover:border-gray-300"
+            className="pointer-events-auto flex items-center gap-1 px-2 py-1 rounded-md bg-white text-gray-700 text-xs border border-gray-300 shadow-md hover:border-gray-400 transition-colors cursor-grab active:cursor-grabbing"
             {...attributes}
             {...listeners}
             onClick={(e) => e.stopPropagation()}
+            title="Drag to reorder"
           >
-            <GripVertical size={12} />
-            Drag
+            <GripVertical size={11} />
+            <span className="hidden sm:inline">Drag</span>
           </button>
         </div>
 
-        <div className="space-y-2">{renderPreviewContent(block, gs)}</div>
+        {/* Block content */}
+        <div className="pr-20">
+          {renderPreviewContent(block, gs)}
+        </div>
       </div>
     </div>
   );
@@ -1831,9 +2006,11 @@ export function EmailTemplateBuilderModal({
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">(
     "desktop"
   );
+  const [previewType, setPreviewType] = useState<"builder" | "html">("builder");
 
   const selectedBlock = design.blocks.find((b) => b.id === selectedId);
   const previewHtml = useMemo(() => renderHtml(design), [design]);
+  const previewHtmlFullWidth = useMemo(() => renderHtmlForPreview(design), [design]);
 
   if (!open) return null;
 
@@ -1917,26 +2094,40 @@ export function EmailTemplateBuilderModal({
     <div className="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center">
       <div className="bg-white w-full h-full flex flex-col">
         {/* Enhanced Header */}
-        <div className="flex justify-between items-center px-6 py-3 border-b bg-gradient-to-r from-pink-500 via-pink-600 to-purple-600 text-white">
+        <div className="flex justify-between items-center px-6 py-4 border-b bg-gradient-to-r from-pink-500 via-pink-600 to-purple-600 text-white shadow-lg">
           <div className="flex items-center gap-4">
-            <h3 className="text-xl font-semibold">
-              {title || "Email Template Builder"}
-            </h3>
-            <div className="hidden sm:flex items-center gap-2 bg-white/20 rounded-full px-3 py-1">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <FileText size={20} />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold">
+                  {title || "Email Template Builder"}
+                </h3>
+                <p className="text-xs text-pink-100 mt-0.5">
+                  Design your email template
+                </p>
+              </div>
+            </div>
+            <div className="hidden lg:flex items-center gap-2 bg-white/20 rounded-full px-4 py-1.5 backdrop-blur-sm">
               <LayoutGrid size={14} />
-              <span className="text-sm">{design.blocks.length} blocks</span>
+              <span className="text-sm font-medium">
+                {design.blocks.length} {design.blocks.length === 1 ? "block" : "blocks"}
+              </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={save}
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white text-pink-600 rounded-lg font-medium text-sm hover:bg-gray-100 transition-colors shadow-sm"
+              className="hidden sm:flex items-center gap-2 px-5 py-2.5 bg-white text-pink-600 rounded-lg font-semibold text-sm hover:bg-gray-50 transition-all shadow-md hover:shadow-lg"
             >
+              <Save size={16} />
               Save Template
             </button>
             <button
               onClick={onClose}
-              className="p-2 rounded-full hover:bg-white/20 transition-colors"
+              className="p-2 rounded-lg hover:bg-white/20 transition-colors"
+              title="Close editor"
             >
               <X size={22} />
             </button>
@@ -1945,70 +2136,83 @@ export function EmailTemplateBuilderModal({
 
         <div className="flex-1 grid grid-cols-12 gap-0 min-h-0">
           {/* Left: Blocks */}
-          <div className="col-span-2 border-r bg-gray-50 p-4 overflow-auto">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Add Content
+          <div className="col-span-2 border-r bg-gradient-to-b from-gray-50 to-white p-4 overflow-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles size={16} className="text-pink-500" />
+              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                Add Content
+              </div>
             </div>
-            <div className="grid grid-cols-2 gap-2 mb-6">
+            <div className="grid grid-cols-2 gap-2.5 mb-6">
               {(
                 [
                   {
                     type: "heading",
                     label: "Heading",
-                    icon: <Type size={18} />,
+                    icon: <Heading1 size={18} />,
+                    color: "text-blue-600",
                   },
                   {
                     type: "paragraph",
                     label: "Text",
-                    icon: <Type size={18} className="opacity-60" />,
+                    icon: <FileText size={18} />,
+                    color: "text-gray-600",
                   },
                   {
                     type: "image",
                     label: "Image",
                     icon: <ImageIcon size={18} />,
+                    color: "text-purple-600",
                   },
                   {
                     type: "qrcode",
                     label: "QR Code",
                     icon: <QrCode size={18} />,
+                    color: "text-green-600",
                   },
                   {
                     type: "button",
                     label: "Button",
                     icon: <MousePointerClick size={18} />,
+                    color: "text-pink-600",
                   },
                   {
                     type: "social",
                     label: "Social",
                     icon: <Globe size={18} />,
+                    color: "text-indigo-600",
                   },
                   {
                     type: "columns",
                     label: "Columns",
                     icon: <Columns size={18} />,
+                    color: "text-orange-600",
                   },
                   {
                     type: "divider",
                     label: "Divider",
                     icon: <Minus size={18} />,
+                    color: "text-gray-500",
                   },
                   {
                     type: "spacer",
                     label: "Spacer",
                     icon: <MoveVertical size={18} />,
+                    color: "text-gray-400",
                   },
                 ] as const
               ).map((item) => (
                 <button
                   key={item.type}
                   type="button"
-                  className="flex flex-col items-center gap-1.5 p-3 rounded-lg border border-gray-200 bg-white hover:border-pink-300 hover:bg-pink-50 transition-colors group shadow-sm"
+                  className="flex flex-col items-center gap-2 p-3.5 rounded-xl border-2 border-gray-200 bg-white hover:border-pink-400 hover:bg-gradient-to-br hover:from-pink-50 hover:to-pink-100 transition-all group shadow-sm hover:shadow-md"
                   onClick={() => setDesign((prev) => addBlock(prev, item.type))}
+                  title={`Add ${item.label}`}
                 >
-                  <span className="text-gray-500 group-hover:text-pink-600">
+                  <span className={`${item.color} group-hover:scale-110 transition-transform`}>
                     {item.icon}
                   </span>
-                  <span className="text-xs font-medium text-gray-600 group-hover:text-pink-700">
+                  <span className="text-xs font-semibold text-gray-700 group-hover:text-pink-700">
                     {item.label}
                   </span>
                 </button>
@@ -2103,8 +2307,11 @@ export function EmailTemplateBuilderModal({
               </div>
             </div>
 
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Layer Order
+            <div className="flex items-center gap-2 mb-3 mt-6 pt-4 border-t border-gray-200">
+              <MoveVertical size={14} className="text-gray-500" />
+              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                Layer Order
+              </div>
             </div>
             <DndContext
               sensors={sensors}
@@ -2160,13 +2367,42 @@ export function EmailTemplateBuilderModal({
           </div>
 
           {/* Middle: Preview */}
-          <div className="col-span-7 bg-gray-100 p-6 overflow-auto">
+          <div className="col-span-7 bg-gradient-to-br from-gray-50 to-gray-100 p-4 sm:p-6 overflow-auto">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Eye size={16} className="text-gray-500" />
-                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <div className="flex items-center gap-3">
+                {/* <Eye size={18} className="text-pink-500" />
+                <span className="text-sm font-semibold text-gray-700">
                   Live Preview
-                </span>
+                </span> */}
+                <div className="h-4 w-px bg-gray-300" />
+                <div className="flex items-center gap-1 bg-white rounded-lg p-0.5 border border-gray-200 shadow-sm">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewType("builder")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      previewType === "builder"
+                        ? "bg-pink-500 text-white shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                    title="Builder View"
+                  >
+                    <LayoutGrid size={13} />
+                    Builder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewType("html")}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-medium transition-all ${
+                      previewType === "html"
+                        ? "bg-pink-500 text-white shadow-sm"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                    title="HTML Preview"
+                  >
+                    <FileText size={13} />
+                    HTML
+                  </button>
+                </div>
               </div>
               <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 shadow-sm">
                 <button
@@ -2196,86 +2432,125 @@ export function EmailTemplateBuilderModal({
               </div>
             </div>
 
-            <div
-              className="transition-all duration-300 mx-auto"
-              style={{
-                maxWidth:
-                  previewMode === "mobile"
-                    ? 460
-                    : design.globalStyles.contentWidth +
-                      design.globalStyles.paddingX * 2 +
-                      60,
-              }}
-            >
+            <div className="w-full">
               {previewMode === "mobile" ? (
-                <div className="bg-gray-800 p-2 flex items-center justify-center rounded-t-2xl">
+                <div className="bg-gray-800 p-2 flex items-center justify-center rounded-t-2xl mb-0 max-w-[460px] mx-auto">
                   <div className="w-20 h-1 bg-gray-600 rounded-full" />
                 </div>
               ) : null}
 
               <div
-                className="border border-gray-200 rounded-2xl shadow-lg overflow-hidden"
-                style={{ background: design.globalStyles.backgroundColor }}
+                className="border-2 border-gray-300 rounded-2xl shadow-2xl overflow-hidden bg-white w-full transition-all"
+                style={{ 
+                  background: design.globalStyles.backgroundColor,
+                  maxWidth: previewMode === "mobile" ? "460px" : "100%",
+                  margin: previewMode === "mobile" ? "0 auto" : "0",
+                }}
               >
-                <div
-                  className="max-h-[calc(100vh-220px)] overflow-auto px-4 py-6 sm:px-6"
-                  style={{ background: design.globalStyles.backgroundColor }}
-                >
+                {previewType === "html" ? (
                   <div
-                    className="mx-auto"
-                    style={{ maxWidth: design.globalStyles.contentWidth }}
+                    className="max-h-[calc(100vh-240px)] overflow-y-auto overflow-x-hidden w-full"
+                    style={{ background: design.globalStyles.backgroundColor }}
+                  >
+                    <iframe
+                      key={previewHtmlFullWidth} // Force re-render when HTML changes
+                      srcDoc={previewHtmlFullWidth}
+                      className="w-full border-0"
+                      style={{
+                        minHeight: "600px",
+                        width: "100%",
+                        maxWidth: "100%",
+                        background: design.globalStyles.backgroundColor,
+                        display: "block",
+                        overflow: "hidden",
+                      }}
+                      title="Email HTML Preview"
+                      sandbox="allow-same-origin"
+                      scrolling="no"
+                    />
+                  </div>
+                ) : (
+                  <div
+                    className="max-h-[calc(100vh-240px)] overflow-auto w-full py-6"
+                    style={{ background: design.globalStyles.backgroundColor }}
                   >
                     <div
-                      className="bg-white rounded-xl border border-gray-200 shadow-sm"
-                      style={{
-                        padding: `${design.globalStyles.paddingY}px ${design.globalStyles.paddingX}px`,
+                      className="w-full"
+                      style={{ 
+                        width: "100%",
+                        margin: "0 auto",
+                        padding: `0 ${previewMode === "mobile" ? "16px" : "8px"}`,
                       }}
                     >
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
+                      <div
+                        className="bg-white rounded-xl border border-gray-200 shadow-sm w-full"
+                        style={{
+                          padding: `${design.globalStyles.paddingY}px ${design.globalStyles.paddingX}px`,
+                          width: "100%",
+                        }}
                       >
-                        <SortableContext
-                          items={design.blocks.map((b) => b.id)}
-                          strategy={verticalListSortingStrategy}
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
                         >
-                          {design.blocks.length === 0 ? (
-                            <div className="text-sm text-gray-400 text-center py-12">
-                              Add blocks from the left to start building your
-                              email.
-                            </div>
-                          ) : (
-                            design.blocks.map((block) => (
-                              <SortablePreviewBlock
-                                key={block.id}
-                                block={block}
-                                gs={design.globalStyles}
-                                selected={block.id === selectedId}
-                                onSelect={(id) => setSelectedId(id)}
-                                onEdit={(id) => setSelectedId(id)}
-                                onDuplicate={duplicateBlock}
-                                onDelete={removeBlock}
-                              />
-                            ))
-                          )}
-                        </SortableContext>
-                      </DndContext>
+                          <SortableContext
+                            items={design.blocks.map((b) => b.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            {design.blocks.length === 0 ? (
+                              <div className="text-sm text-gray-400 text-center py-16">
+                                <LayoutGrid size={48} className="mx-auto mb-4 text-gray-300" />
+                                <p className="font-medium text-gray-500 mb-1">
+                                  No blocks yet
+                                </p>
+                                <p className="text-xs text-gray-400">
+                                  Add blocks from the left panel to start building your email
+                                </p>
+                              </div>
+                            ) : (
+                              design.blocks.map((block) => (
+                                <SortablePreviewBlock
+                                  key={block.id}
+                                  block={block}
+                                  gs={design.globalStyles}
+                                  selected={block.id === selectedId}
+                                  onSelect={(id) => setSelectedId(id)}
+                                  onEdit={(id) => setSelectedId(id)}
+                                  onDuplicate={duplicateBlock}
+                                  onDelete={removeBlock}
+                                />
+                              ))
+                            )}
+                          </SortableContext>
+                        </DndContext>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Right: Settings */}
-          <div className="col-span-3 border-l bg-white p-4 overflow-auto">
-            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-              Block Settings
+          <div className="col-span-3 border-l bg-white p-5 overflow-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <Settings size={16} className="text-pink-500" />
+              <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                Block Settings
+              </div>
             </div>
             {!selectedBlock ? (
-              <div className="text-sm text-gray-400 italic">
-                Select a block to edit its properties.
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="p-4 bg-gray-100 rounded-full mb-3">
+                  <Settings size={24} className="text-gray-400" />
+                </div>
+                <p className="text-sm font-medium text-gray-500 mb-1">
+                  No block selected
+                </p>
+                <p className="text-xs text-gray-400">
+                  Click on a block in the preview to edit its properties
+                </p>
               </div>
             ) : selectedBlock.type === "heading" ? (
               <div className="space-y-4">
@@ -2928,44 +3203,48 @@ export function EmailTemplateBuilderModal({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t flex items-center justify-between bg-gray-50">
-          <div className="text-xs text-gray-500">
-            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+        <div className="p-4 border-t flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-gradient-to-r from-gray-50 to-white">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+            <span className="font-medium text-gray-600">Shortcuts:</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-300 rounded-md text-gray-700 font-mono shadow-sm">
               Ctrl
-            </kbd>{" "}
-            +{" "}
-            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+            </kbd>
+            <span>+</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-300 rounded-md text-gray-700 font-mono shadow-sm">
               B
-            </kbd>{" "}
-            Bold &nbsp;|&nbsp;
-            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+            </kbd>
+            <span className="text-gray-400">Bold</span>
+            <span className="text-gray-300">|</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-300 rounded-md text-gray-700 font-mono shadow-sm">
               Ctrl
-            </kbd>{" "}
-            +{" "}
-            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+            </kbd>
+            <span>+</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-300 rounded-md text-gray-700 font-mono shadow-sm">
               I
-            </kbd>{" "}
-            Italic &nbsp;|&nbsp;
-            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+            </kbd>
+            <span className="text-gray-400">Italic</span>
+            <span className="text-gray-300">|</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-300 rounded-md text-gray-700 font-mono shadow-sm">
               Ctrl
-            </kbd>{" "}
-            +{" "}
-            <kbd className="px-1.5 py-0.5 bg-gray-200 rounded text-gray-600">
+            </kbd>
+            <span>+</span>
+            <kbd className="px-2 py-1 bg-white border border-gray-300 rounded-md text-gray-700 font-mono shadow-sm">
               U
-            </kbd>{" "}
-            Underline
+            </kbd>
+            <span className="text-gray-400">Underline</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 rounded-lg border border-gray-300 hover:bg-gray-100 font-medium text-gray-700 transition-colors"
+              className="flex-1 sm:flex-none px-5 py-2.5 rounded-lg border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 font-semibold text-gray-700 transition-all"
             >
               Cancel
             </button>
             <button
               onClick={save}
-              className="bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-md hover:shadow-lg"
+              className="flex-1 sm:flex-none bg-gradient-to-r from-pink-500 to-pink-600 hover:from-pink-600 hover:to-pink-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2"
             >
+              <Save size={16} />
               Save Template
             </button>
           </div>

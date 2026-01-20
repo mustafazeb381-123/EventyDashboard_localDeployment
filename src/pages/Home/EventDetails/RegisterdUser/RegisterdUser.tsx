@@ -12,7 +12,7 @@ import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { Trash2, Mail, Plus, Edit, RotateCcw, X } from "lucide-react";
+import { Trash2, Mail, Plus, Edit, RotateCcw, X, ChevronDown } from "lucide-react";
 
 // Image compression function
 const compressImage = async (file: File): Promise<File> => {
@@ -114,6 +114,7 @@ function RegisterdUser() {
   const [editAvatarError, setEditAvatarError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [filterType, setFilterType] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -403,16 +404,16 @@ function RegisterdUser() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch users when eventId, currentPage, or search term changes
+  // Fetch users when eventId, currentPage, search term, or filter type changes
   useEffect(() => {
     if (eventId && currentPage > 0) {
       if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm);
+        searchUsersAcrossPages(eventId, debouncedSearchTerm, filterType);
       } else {
         fetchUsers(eventId, currentPage);
       }
     }
-  }, [eventId, currentPage, debouncedSearchTerm]);
+  }, [eventId, currentPage, debouncedSearchTerm, filterType]);
 
   const fetchUsers = async (id: string, page: number = 1) => {
     setLoadingUsers(true);
@@ -455,7 +456,7 @@ function RegisterdUser() {
   };
 
   // Search users across all pages
-  const searchUsersAcrossPages = async (id: string, searchQuery: string) => {
+  const searchUsersAcrossPages = async (id: string, searchQuery: string, typeFilter: string = "all") => {
     setLoadingUsers(true);
     setIsSearching(true);
     try {
@@ -495,6 +496,15 @@ function RegisterdUser() {
           : responseData?.data || [];
 
         const matchingUsers = users.filter((user: any) => {
+          // Filter by type first
+          if (typeFilter !== "all") {
+            const userType = (user?.attributes?.user_type || "").toLowerCase();
+            if (userType !== typeFilter.toLowerCase()) {
+              return false;
+            }
+          }
+
+          // Then filter by search term
           const name = user.attributes?.name?.toLowerCase() || "";
           const email = user.attributes?.email?.toLowerCase() || "";
           const organization =
@@ -503,13 +513,15 @@ function RegisterdUser() {
             user.attributes?.phone_number?.toLowerCase() || "";
           // Include title from custom_fields in search
           const title = user.attributes?.custom_fields?.title?.toLowerCase() || "";
+          const userType = (user?.attributes?.user_type || "").toLowerCase();
 
           return (
             name.includes(searchLower) ||
             email.includes(searchLower) ||
             organization.includes(searchLower) ||
             phoneNumber.includes(searchLower) ||
-            title.includes(searchLower)
+            title.includes(searchLower) ||
+            userType.includes(searchLower)
           );
         });
 
@@ -542,6 +554,40 @@ function RegisterdUser() {
       setLoadingUsers(false);
     }
   };
+
+  // Filter users by type and search term (client-side filtering)
+  const filteredUsers = eventUsers.filter((user: any) => {
+    // Filter by type
+    if (filterType !== "all") {
+      const userType = (user?.attributes?.user_type || "").toLowerCase();
+      if (userType !== filterType.toLowerCase()) {
+        return false;
+      }
+    }
+
+    // Filter by search term (if searching, the server-side search already filtered)
+    // But we still apply client-side filtering for the current page results
+    if (debouncedSearchTerm.trim() !== "") {
+      const searchLower = debouncedSearchTerm.toLowerCase().trim();
+      const name = (user?.attributes?.name || "").toLowerCase();
+      const email = (user?.attributes?.email || "").toLowerCase();
+      const phone = (user?.attributes?.phone_number || "").toLowerCase();
+      const organization = (user?.attributes?.organization || "").toLowerCase();
+      const title = (user?.attributes?.custom_fields?.title || "").toLowerCase();
+      const userType = (user?.attributes?.user_type || "").toLowerCase();
+
+      return (
+        name.includes(searchLower) ||
+        email.includes(searchLower) ||
+        phone.includes(searchLower) ||
+        organization.includes(searchLower) ||
+        title.includes(searchLower) ||
+        userType.includes(searchLower)
+      );
+    }
+
+    return true;
+  });
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "-";
@@ -611,7 +657,7 @@ function RegisterdUser() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedUsers(eventUsers.map((user) => user.id));
+      setSelectedUsers(filteredUsers.map((user) => user.id));
     } else {
       setSelectedUsers([]);
     }
@@ -625,38 +671,6 @@ function RegisterdUser() {
     );
   };
 
-  const getUserInitial = (user: any) => {
-    const nameOrEmail =
-      user?.attributes?.name ||
-      user?.attributes?.email ||
-      user?.attributes?.phone_number ||
-      "U";
-    const trimmed =
-      typeof nameOrEmail === "string" ? nameOrEmail.trim() : "U";
-    return (trimmed.charAt(0) || "U").toUpperCase();
-  };
-
-  const UserAvatar = ({ user }: { user: any }) => {
-    const [loadError, setLoadError] = useState(false);
-    const imageUrl = user?.attributes?.image; // use image from attributes
-
-    if (imageUrl && !loadError) {
-      return (
-        <img
-          src={imageUrl}
-          alt={user?.attributes?.name || "User Avatar"}
-          className="w-10 h-10 rounded-full object-cover"
-          onError={() => setLoadError(true)}
-        />
-      );
-    }
-
-    return (
-      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-700">
-        {getUserInitial(user)}
-      </div>
-    );
-  };
 
   const handleResetCheckInOut = (user: any) => {
     setUserToReset(user);
@@ -688,6 +702,7 @@ function RegisterdUser() {
   };
 
   return (
+    <>
     <div className="bg-white min-h-screen p-6">
       {/* Notification Toast */}
       {notification && (
@@ -715,7 +730,9 @@ function RegisterdUser() {
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-                {eventUsers.length} Users
+                {filterType !== "all" || debouncedSearchTerm.trim() !== ""
+                  ? `${filteredUsers.length} Users`
+                  : `${pagination?.total_count || eventUsers.length} Users`}
               </span>
             </div>
           </div>
@@ -790,37 +807,46 @@ function RegisterdUser() {
           </div>
         )}
 
-        <div className="flex justify-between mb-4">
-          <div className="relative w-1/3">
-            <Search
-              value={searchTerm}
-              onChange={(val) => {
-                setSearchTerm(val);
-              }}
-              placeholder="Search users across all pages..."
-            />
-          </div>
-          <div>
-            <span className="text-gray-600 text-sm">
-              {pagination ? (
-                <>
-                  Showing {(currentPage - 1) * itemsPerPage + 1} to{" "}
-                  {Math.min(currentPage * itemsPerPage, pagination.total_count)}{" "}
-                  of {pagination.total_count} users
-                </>
-              ) : (
-                <>Loading...</>
-              )}
-            </span>
+        <div className="flex flex-col lg:flex-row justify-between gap-4 mb-4">
+          <div className="flex flex-col lg:flex-row gap-4 flex-1">
+            <div className="relative flex-1 lg:w-1/3">
+              <Search
+                value={searchTerm}
+                onChange={(val) => {
+                  setSearchTerm(val);
+                }}
+                placeholder="Search users across all pages..."
+              />
+            </div>
+            <div className="relative lg:w-48">
+              <select
+                value={filterType}
+                onChange={(e) => {
+                  setFilterType(e.target.value);
+                  setCurrentPage(1); // Reset to page 1 when filter changes
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
+              >
+                <option value="all">All Types</option>
+                <option value="guest">Guest</option>
+                <option value="speaker">Speaker</option>
+                <option value="vip">VIP</option>
+                <option value="VIP">VIP (uppercase)</option>
+              </select>
+              <ChevronDown
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                size={20}
+              />
+            </div>
           </div>
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          {loadingUsers ? (
-            <div className="p-6">
-              <table className="min-w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+          <div className="overflow-x-auto">
+            {loadingUsers ? (
+              <table className="w-full">
+                <thead className="bg-gray-50/80 border-b border-gray-200/60">
                   <tr>
                     <th className="w-12 px-6 py-3 text-left">
                       <Skeleton className="w-4 h-4" />
@@ -896,11 +922,9 @@ function RegisterdUser() {
                   ))}
                 </tbody>
               </table>
-            </div>
-          ) : (
-            <>
-              <table className="min-w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50/80 border-b border-gray-200/60">
                   <tr>
                     <th className="w-12 px-6 py-3 text-left">
                       <input
@@ -908,8 +932,9 @@ function RegisterdUser() {
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                         onChange={handleSelectAll}
                         checked={
-                          eventUsers.length > 0 &&
-                          selectedUsers.length === eventUsers.length
+                          filteredUsers.length > 0 &&
+                          selectedUsers.length === filteredUsers.length &&
+                          filteredUsers.every((user) => selectedUsers.includes(user.id))
                         }
                       />
                     </th>
@@ -942,20 +967,24 @@ function RegisterdUser() {
                   </tr>
                 </thead>
 
-                <tbody className="divide-y divide-gray-200">
-                  {eventUsers.length === 0 && !loadingUsers ? (
+                <tbody className="divide-y divide-gray-200/60">
+                  {filteredUsers.length === 0 && !loadingUsers ? (
                     <tr>
                       <td
                         colSpan={9}
                         className="px-6 py-8 text-center text-gray-500"
                       >
-                        {isSearching && debouncedSearchTerm
+                        {debouncedSearchTerm.trim() !== "" && filterType !== "all"
+                          ? `No users found matching "${debouncedSearchTerm}" with type "${filterType}"`
+                          : debouncedSearchTerm.trim() !== ""
                           ? `No users found matching "${debouncedSearchTerm}"`
+                          : filterType !== "all"
+                          ? `No users found with type "${filterType}"`
                           : "No users found"}
                       </td>
                     </tr>
                   ) : (
-                    eventUsers.map((user, index) => (
+                    filteredUsers.map((user, index) => (
                       <tr
                         key={user.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
@@ -1066,7 +1095,30 @@ function RegisterdUser() {
                   )}
                 </tbody>
               </table>
+            )}
+          </div>
 
+          {/* Pagination */}
+          {!loadingUsers && (
+            <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+              <div className="text-sm text-gray-600">
+                {pagination ? (
+                  <>
+                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * itemsPerPage, pagination.total_count)}
+                    </span>{" "}
+                    of <span className="font-medium">{pagination.total_count}</span> users
+                    {filterType !== "all" && (
+                      <span className="ml-2 text-blue-600">
+                        • Filtered: {filteredUsers.length} {filterType} user{filteredUsers.length !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>Loading...</>
+                )}
+              </div>
               {pagination && (
                 <Pagination
                   currentPage={currentPage}
@@ -1076,11 +1128,12 @@ function RegisterdUser() {
                     // Scroll to top when page changes
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
-                  className="m-2"
+                  className=""
                 />
               )}
-            </>
+            </div>
           )}
+        </div>
 
           {isDeleteModalOpen && userToDelete && (
             <div
@@ -1348,7 +1401,7 @@ function RegisterdUser() {
           animation: slide-in 0.3s ease-out;
         }
       `}</style>
-    </div>
+    </>
   );
 }
 

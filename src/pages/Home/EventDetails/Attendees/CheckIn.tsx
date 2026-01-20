@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { getEventUsers } from "@/apis/apiHelpers";
-import { checkInUser } from "@/apis/apiHelpers";
+import { getCheckIns } from "@/apis/apiHelpers";
 import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CheckCircle } from "lucide-react";
 
 // Helper to derive user initial
 const getUserInitial = (user: any) => {
@@ -47,7 +45,6 @@ function CheckIn() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,8 +52,6 @@ function CheckIn() {
   const [isSearching, setIsSearching] = useState(false);
   const itemsPerPage = 10;
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [checkingInUserId, setCheckingInUserId] = useState<string | null>(null);
-  const [checkingInUsers, setCheckingInUsers] = useState<string[]>([]);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
@@ -121,7 +116,7 @@ function CheckIn() {
     setLoadingUsers(true);
     setIsSearching(false);
     try {
-      const response = await getEventUsers(id, {
+      const response = await getCheckIns(id, {
         page,
         per_page: itemsPerPage,
       });
@@ -132,30 +127,16 @@ function CheckIn() {
         ? responseData
         : responseData?.data || [];
 
-      // Filter users who haven't checked in
-      // Check if user has check_in field null/empty or check_user_event_statuses is empty/null
-      const notCheckedInUsers = users.filter((user: any) => {
-        const checkIn = user?.attributes?.check_in;
-        const eventStatuses = user?.attributes?.check_user_event_statuses;
-        // User hasn't checked in if check_in is null/empty and no event statuses
-        return !checkIn && (!eventStatuses || eventStatuses.length === 0);
-      });
-
-      setUsers(notCheckedInUsers);
+      setUsers(users);
 
       // Set pagination metadata
       const paginationMeta =
         response.data?.meta?.pagination || response.data?.pagination;
       if (paginationMeta) {
-        // Adjust total count for filtered results
-        setPagination({
-          ...paginationMeta,
-          total_count: notCheckedInUsers.length,
-          total_pages: Math.ceil(notCheckedInUsers.length / itemsPerPage),
-        });
+        setPagination(paginationMeta);
       }
     } catch (error) {
-      console.error("Error fetching event users:", error);
+      console.error("Error fetching users who need to check in:", error);
       showNotification("Failed to load users", "error");
     } finally {
       setLoadingUsers(false);
@@ -168,7 +149,7 @@ function CheckIn() {
     setIsSearching(true);
     try {
       // First, get the first page to know total pages
-      const firstPageResponse = await getEventUsers(id, {
+      const firstPageResponse = await getCheckIns(id, {
         page: 1,
         per_page: itemsPerPage,
       });
@@ -186,7 +167,7 @@ function CheckIn() {
       const pagePromises = [];
       for (let page = 1; page <= totalPages; page++) {
         pagePromises.push(
-          getEventUsers(id, {
+          getCheckIns(id, {
             page,
             per_page: itemsPerPage,
           })
@@ -216,12 +197,7 @@ function CheckIn() {
             organization.includes(searchLower) ||
             phoneNumber.includes(searchLower);
 
-          // Also filter for not checked in
-          const checkIn = user?.attributes?.check_in;
-          const eventStatuses = user?.attributes?.check_user_event_statuses;
-          const notCheckedIn = !checkIn && (!eventStatuses || eventStatuses.length === 0);
-
-          return matchesSearch && notCheckedIn;
+          return matchesSearch;
         });
 
         allMatchingUsers.push(...matchingUsers);
@@ -254,79 +230,6 @@ function CheckIn() {
     }
   };
 
-  const handleCheckIn = async (userId: string) => {
-    if (!eventId) {
-      showNotification("Event ID is missing.", "error");
-      return;
-    }
-
-    setCheckingInUserId(userId);
-    try {
-      await checkInUser(eventId, userId);
-      showNotification("User checked in successfully!", "success");
-
-      // Refresh the user list
-      if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm);
-      } else {
-        fetchUsers(eventId, currentPage);
-      }
-    } catch (error: any) {
-      console.error("Error checking in user:", error);
-      showNotification(
-        `Failed to check in user: ${error.response?.data?.error || error.message}`,
-        "error"
-      );
-    } finally {
-      setCheckingInUserId(null);
-    }
-  };
-
-  const handleBulkCheckIn = async () => {
-    if (!eventId || selectedUsers.length === 0) return;
-
-    setCheckingInUsers(selectedUsers);
-    try {
-      // Check in all selected users
-      await Promise.all(
-        selectedUsers.map((userId) => checkInUser(eventId, userId))
-      );
-
-      showNotification(
-        `${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""} checked in successfully!`,
-        "success"
-      );
-      setSelectedUsers([]);
-
-      // Refresh the user list
-      if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm);
-      } else {
-        fetchUsers(eventId, currentPage);
-      }
-    } catch (error: any) {
-      console.error("Error checking in users:", error);
-      showNotification("Failed to check in some users.", "error");
-    } finally {
-      setCheckingInUsers([]);
-    }
-  };
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedUsers(eventUsers.map((user) => user.id));
-    } else {
-      setSelectedUsers([]);
-    }
-  };
-
-  const handleSelectUser = (userId: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
-  };
 
   return (
     <div className="bg-white min-h-screen p-6">
@@ -345,25 +248,6 @@ function CheckIn() {
           </div>
         </div>
 
-        {selectedUsers.length > 0 && (
-          <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-blue-700 font-medium">
-              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
-              selected
-            </p>
-
-            <button
-              onClick={handleBulkCheckIn}
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              disabled={checkingInUsers.length > 0}
-            >
-              <CheckCircle className="w-4 h-4" />
-              {checkingInUsers.length > 0
-                ? "...Checking In"
-                : "Check-In Selected"}
-            </button>
-          </div>
-        )}
 
         <div className="flex justify-between mb-4">
           <div className="relative w-1/3">
@@ -397,9 +281,6 @@ function CheckIn() {
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="w-12 px-6 py-3 text-left">
-                      <Skeleton className="w-4 h-4" />
-                    </th>
                     <th className="px-6 py-3 text-left">
                       <Skeleton className="h-4 w-12" />
                     </th>
@@ -426,9 +307,6 @@ function CheckIn() {
                       key={index}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
-                      <td className="px-6 py-4">
-                        <Skeleton className="w-4 h-4" />
-                      </td>
                       <td className="px-6 py-4">
                         <Skeleton className="h-4 w-12" />
                       </td>
@@ -460,17 +338,6 @@ function CheckIn() {
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="w-12 px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                        onChange={handleSelectAll}
-                        checked={
-                          eventUsers.length > 0 &&
-                          selectedUsers.length === eventUsers.length
-                        }
-                      />
-                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       ID
                     </th>
@@ -486,9 +353,6 @@ function CheckIn() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
-                    </th>
                   </tr>
                 </thead>
 
@@ -496,7 +360,7 @@ function CheckIn() {
                   {eventUsers.length === 0 && !loadingUsers ? (
                     <tr>
                       <td
-                        colSpan={7}
+                        colSpan={5}
                         className="px-6 py-8 text-center text-gray-500"
                       >
                         {isSearching && debouncedSearchTerm
@@ -510,14 +374,6 @@ function CheckIn() {
                         key={user.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
-                        <td className="px-6 py-4">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            checked={selectedUsers.includes(user.id)}
-                            onChange={() => handleSelectUser(user.id)}
-                          />
-                        </td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
                           {user.id}
                         </td>
@@ -541,21 +397,6 @@ function CheckIn() {
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                             Not Checked In
                           </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleCheckIn(user.id)}
-                            disabled={checkingInUserId === user.id}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                              checkingInUserId === user.id
-                                ? "bg-gray-400 text-white cursor-not-allowed"
-                                : "bg-green-600 hover:bg-green-700 text-white"
-                            }`}
-                          >
-                            {checkingInUserId === user.id
-                              ? "Checking In..."
-                              : "Check-In"}
-                          </button>
                         </td>
                       </tr>
                     ))

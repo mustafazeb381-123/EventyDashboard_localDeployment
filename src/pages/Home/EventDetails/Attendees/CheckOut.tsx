@@ -1,11 +1,9 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { getEventUsers } from "@/apis/apiHelpers";
-import { checkOutUser } from "@/apis/apiHelpers";
+import { getCheckOuts } from "@/apis/apiHelpers";
 import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Clock } from "lucide-react";
 
 // Helper to derive user initial
 const getUserInitial = (user: any) => {
@@ -47,7 +45,6 @@ function CheckOut() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -55,8 +52,6 @@ function CheckOut() {
   const [isSearching, setIsSearching] = useState(false);
   const itemsPerPage = 10;
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [checkingOutUserId, setCheckingOutUserId] = useState<string | null>(null);
-  const [checkingOutUsers, setCheckingOutUsers] = useState<string[]>([]);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
@@ -122,7 +117,7 @@ function CheckOut() {
     setLoadingUsers(true);
     setIsSearching(false);
     try {
-      const response = await getEventUsers(id, {
+      const response = await getCheckOuts(id, {
         page,
         per_page: itemsPerPage,
       });
@@ -133,35 +128,16 @@ function CheckOut() {
         ? responseData
         : responseData?.data || [];
 
-      // Filter users who have checked in
-      // Check if user has check_in field set or check_user_event_statuses has check_in
-      const checkedInUsers = users.filter((user: any) => {
-        const checkIn = user?.attributes?.check_in;
-        const eventStatuses = user?.attributes?.check_user_event_statuses;
-        // User has checked in if check_in exists or event statuses have check_in
-        return (
-          checkIn ||
-          (eventStatuses &&
-            eventStatuses.length > 0 &&
-            eventStatuses.some((status: any) => status.check_in))
-        );
-      });
-
-      setUsers(checkedInUsers);
+      setUsers(users);
 
       // Set pagination metadata
       const paginationMeta =
         response.data?.meta?.pagination || response.data?.pagination;
       if (paginationMeta) {
-        // Adjust total count for filtered results
-        setPagination({
-          ...paginationMeta,
-          total_count: checkedInUsers.length,
-          total_pages: Math.ceil(checkedInUsers.length / itemsPerPage),
-        });
+        setPagination(paginationMeta);
       }
     } catch (error) {
-      console.error("Error fetching event users:", error);
+      console.error("Error fetching users who need to check out:", error);
       showNotification("Failed to load users", "error");
     } finally {
       setLoadingUsers(false);
@@ -174,7 +150,7 @@ function CheckOut() {
     setIsSearching(true);
     try {
       // First, get the first page to know total pages
-      const firstPageResponse = await getEventUsers(id, {
+      const firstPageResponse = await getCheckOuts(id, {
         page: 1,
         per_page: itemsPerPage,
       });
@@ -192,7 +168,7 @@ function CheckOut() {
       const pagePromises = [];
       for (let page = 1; page <= totalPages; page++) {
         pagePromises.push(
-          getEventUsers(id, {
+          getCheckOuts(id, {
             page,
             per_page: itemsPerPage,
           })
@@ -222,16 +198,7 @@ function CheckOut() {
             organization.includes(searchLower) ||
             phoneNumber.includes(searchLower);
 
-          // Also filter for checked in users
-          const checkIn = user?.attributes?.check_in;
-          const eventStatuses = user?.attributes?.check_user_event_statuses;
-          const hasCheckedIn =
-            checkIn ||
-            (eventStatuses &&
-              eventStatuses.length > 0 &&
-              eventStatuses.some((status: any) => status.check_in));
-
-          return matchesSearch && hasCheckedIn;
+          return matchesSearch;
         });
 
         allMatchingUsers.push(...matchingUsers);
@@ -264,116 +231,6 @@ function CheckOut() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "-";
-
-    const date = new Date(dateString);
-    const formattedDate = date.toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-
-    const formattedTime = date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-    return `${formattedDate} ${formattedTime}`;
-  };
-
-  const getCheckInTime = (user: any) => {
-    const checkIn = user?.attributes?.check_in;
-    const eventStatuses = user?.attributes?.check_user_event_statuses;
-    
-    if (checkIn) {
-      return formatDate(checkIn);
-    }
-    
-    if (eventStatuses && eventStatuses.length > 0) {
-      const statusWithCheckIn = eventStatuses.find((status: any) => status.check_in);
-      if (statusWithCheckIn?.check_in) {
-        return formatDate(statusWithCheckIn.check_in);
-      }
-    }
-    
-    return "-";
-  };
-
-  const handleCheckOut = async (userId: string) => {
-    if (!eventId) {
-      showNotification("Event ID is missing.", "error");
-      return;
-    }
-
-    setCheckingOutUserId(userId);
-    try {
-      await checkOutUser(eventId, userId);
-      showNotification("User checked out successfully!", "success");
-
-      // Refresh the user list
-      if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm);
-      } else {
-        fetchUsers(eventId, currentPage);
-      }
-    } catch (error: any) {
-      console.error("Error checking out user:", error);
-      showNotification(
-        `Failed to check out user: ${error.response?.data?.error || error.message}`,
-        "error"
-      );
-    } finally {
-      setCheckingOutUserId(null);
-    }
-  };
-
-  const handleBulkCheckOut = async () => {
-    if (!eventId || selectedUsers.length === 0) return;
-
-    setCheckingOutUsers(selectedUsers);
-    try {
-      // Check out all selected users
-      await Promise.all(
-        selectedUsers.map((userId) => checkOutUser(eventId, userId))
-      );
-
-      showNotification(
-        `${selectedUsers.length} user${selectedUsers.length > 1 ? "s" : ""} checked out successfully!`,
-        "success"
-      );
-      setSelectedUsers([]);
-
-      // Refresh the user list
-      if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm);
-      } else {
-        fetchUsers(eventId, currentPage);
-      }
-    } catch (error: any) {
-      console.error("Error checking out users:", error);
-      showNotification("Failed to check out some users.", "error");
-    } finally {
-      setCheckingOutUsers([]);
-    }
-  };
-
-  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.checked) {
-      setSelectedUsers(eventUsers.map((user) => user.id));
-    } else {
-      setSelectedUsers([]);
-    }
-  };
-
-  const handleSelectUser = (userId: string) => {
-    setSelectedUsers((prev) =>
-      prev.includes(userId)
-        ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
-  };
 
   return (
     <div className="bg-white min-h-screen p-6">
@@ -407,25 +264,6 @@ function CheckOut() {
           </div>
         </div>
 
-        {selectedUsers.length > 0 && (
-          <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-blue-700 font-medium">
-              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
-              selected
-            </p>
-
-            <button
-              onClick={handleBulkCheckOut}
-              className="flex items-center gap-2 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              disabled={checkingOutUsers.length > 0}
-            >
-              <Clock className="w-4 h-4" />
-              {checkingOutUsers.length > 0
-                ? "...Checking Out"
-                : "Check-Out Selected"}
-            </button>
-          </div>
-        )}
 
         <div className="flex justify-between mb-4">
           <div className="relative w-1/3">
@@ -459,9 +297,6 @@ function CheckOut() {
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="w-12 px-6 py-3 text-left">
-                      <Skeleton className="w-4 h-4" />
-                    </th>
                     <th className="px-6 py-3 text-left">
                       <Skeleton className="h-4 w-12" />
                     </th>
@@ -477,12 +312,6 @@ function CheckOut() {
                     <th className="px-6 py-3 text-left">
                       <Skeleton className="h-4 w-20" />
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-24" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-24" />
-                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -491,9 +320,6 @@ function CheckOut() {
                       key={index}
                       className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                     >
-                      <td className="px-6 py-4">
-                        <Skeleton className="w-4 h-4" />
-                      </td>
                       <td className="px-6 py-4">
                         <Skeleton className="h-4 w-12" />
                       </td>
@@ -512,12 +338,6 @@ function CheckOut() {
                       <td className="px-6 py-4">
                         <Skeleton className="h-6 w-24 rounded-full" />
                       </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-32" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-8 w-24 rounded-lg" />
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -528,17 +348,6 @@ function CheckOut() {
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="w-12 px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                        onChange={handleSelectAll}
-                        checked={
-                          eventUsers.length > 0 &&
-                          selectedUsers.length === eventUsers.length
-                        }
-                      />
-                    </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       ID
                     </th>
@@ -554,12 +363,6 @@ function CheckOut() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Checked In
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Action
-                    </th>
                   </tr>
                 </thead>
 
@@ -567,7 +370,7 @@ function CheckOut() {
                   {eventUsers.length === 0 && !loadingUsers ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={5}
                         className="px-6 py-8 text-center text-gray-500"
                       >
                         {isSearching && debouncedSearchTerm
@@ -581,14 +384,6 @@ function CheckOut() {
                         key={user.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
-                        <td className="px-6 py-4">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            checked={selectedUsers.includes(user.id)}
-                            onChange={() => handleSelectUser(user.id)}
-                          />
-                        </td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
                           {user.id}
                         </td>
@@ -612,24 +407,6 @@ function CheckOut() {
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             Checked In
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {getCheckInTime(user)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleCheckOut(user.id)}
-                            disabled={checkingOutUserId === user.id}
-                            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                              checkingOutUserId === user.id
-                                ? "bg-gray-400 text-white cursor-not-allowed"
-                                : "bg-orange-600 hover:bg-orange-700 text-white"
-                            }`}
-                          >
-                            {checkingOutUserId === user.id
-                              ? "Checking Out..."
-                              : "Check-Out"}
-                          </button>
                         </td>
                       </tr>
                     ))
