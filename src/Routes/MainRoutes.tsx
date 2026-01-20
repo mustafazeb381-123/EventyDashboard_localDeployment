@@ -28,8 +28,6 @@ function MainRoutes() {
     "/user/registration",
     "/print_badges",
     "/invitation",
-    "/invitation/user",
-    "/invitation/VipUsers",
     "/attendees/check-in",
     "/attendees/check-out",
     "/committees",

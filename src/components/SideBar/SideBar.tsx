@@ -7,12 +7,10 @@ import {
   LogOut,
   CheckCircle,
   Clock,
-  UserPlus,
   HomeIcon,
   Image,
   NotepadText,
   Printer,
-  UserCircle,
   MessagesSquare,
   Vote,
   BarChart3,
@@ -117,12 +115,9 @@ const SideBar = ({
     // Remove query parameters for matching
     const path = pathname.split("?")[0];
 
-    // Check submenu routes first (more specific)
-    if (path.includes("/invitation/user")) {
-      return "Users";
-    }
-    if (path.includes("/invitation/VipUsers")) {
-      return "VIP Users";
+    // Check invitation route
+    if (path.includes("/invitation")) {
+      return "Invitation";
     }
     if (path.includes("/attendees/check-in")) {
       return "Check In";
@@ -196,10 +191,7 @@ const SideBar = ({
     }
 
     // Expand submenus based on current path
-    if (
-      currentPath.includes("/invitation/user") ||
-      currentPath.includes("/invitation/VipUsers")
-    ) {
+    if (currentPath.includes("/invitation")) {
       setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
     }
     if (
@@ -299,29 +291,11 @@ const SideBar = ({
     },
     {
       icon: UserCheck,
-      label: "Inviation",
+      label: "Invitation",
       path: currentEventId
         ? `/invitation?eventId=${currentEventId}`
         : "/invitation",
       availableForExpress: false,
-      submenu: [
-        {
-          label: "Users",
-          icon: Users,
-          path: currentEventId
-            ? `/invitation/user?eventId=${currentEventId}`
-            : "/invitation/user",
-          availableForExpress: false,
-        },
-        {
-          label: "VIP Users",
-          icon: UserPlus,
-          path: currentEventId
-            ? `/invitation/VipUsers?eventId=${currentEventId}`
-            : "/invitation/VipUsers",
-          availableForExpress: false,
-        },
-      ],
     },
     {
       icon: MessagesSquare,
