@@ -552,10 +552,8 @@ export const FormBuilderTemplateForm: React.FC<
   const [backgroundBlobUrl, setBackgroundBlobUrl] = useState<string | null>(
     null
   );
-  const [logoBlobUrl, setLogoBlobUrl] = useState<string | null>(null);
 
   const [bannerLoadError, setBannerLoadError] = useState(false);
-  const [logoLoadError, setLogoLoadError] = useState(false);
 
   // Maintain stable object URLs for image fields (no revoke-before-render race)
   useEffect(() => {
@@ -637,16 +635,6 @@ export const FormBuilderTemplateForm: React.FC<
     setBackgroundBlobUrl(null);
   }, [theme?.formBackgroundImage]);
 
-  // Stable object URL for logo (if a Blob/File is passed)
-  useEffect(() => {
-    const logo = theme?.logo;
-    if (logo instanceof Blob) {
-      const url = URL.createObjectURL(logo);
-      setLogoBlobUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-    setLogoBlobUrl(null);
-  }, [theme?.logo]);
 
   // Check if this is a custom form builder template (has CustomFormField array)
   const isCustomFormBuilder =
@@ -1399,18 +1387,10 @@ export const FormBuilderTemplateForm: React.FC<
         ? theme.formBackgroundImage
         : backgroundBlobUrl;
 
-    const logoUrl =
-      theme?.logo && typeof theme.logo === "string" && theme.logo.trim() !== ""
-        ? theme.logo
-        : logoBlobUrl;
-
     // If the src changes, allow the image to render again
     useEffect(() => {
       setBannerLoadError(false);
     }, [bannerUrl]);
-    useEffect(() => {
-      setLogoLoadError(false);
-    }, [logoUrl]);
 
     const formContainerStyle: React.CSSProperties = {
       backgroundColor: theme?.formBackgroundColor || "#ffffff",
@@ -1480,52 +1460,6 @@ export const FormBuilderTemplateForm: React.FC<
               <span className="text-sm text-gray-500">
                 Banner failed to load
               </span>
-            </div>
-          )}
-
-          {/* Logo - render directly if theme has logo, otherwise FormHeader will handle it */}
-          {logoUrl && !logoLoadError && (
-            <div
-              className="w-full mb-4 flex"
-              style={{
-                justifyContent:
-                  theme?.logoPosition === "right"
-                    ? "flex-end"
-                    : theme?.logoPosition === "center"
-                      ? "center"
-                      : "flex-start",
-                paddingLeft:
-                  theme?.logoPosition === "right" ||
-                  theme?.logoPosition === "center"
-                    ? "0"
-                    : "16px",
-                paddingRight: theme?.logoPosition === "right" ? "16px" : "0",
-              }}
-            >
-              <img
-                src={logoUrl}
-                alt="Form logo"
-                style={{
-                  width: theme?.logoWidth || "100px",
-                  height: theme?.logoHeight || "auto",
-                  maxWidth: "100%",
-                  objectFit: "contain",
-                }}
-                onError={() => {
-                  console.error("Logo image failed to load:", logoUrl);
-                  setLogoLoadError(true);
-                }}
-                onLoad={() => {
-                  console.log("Logo image loaded successfully:", logoUrl);
-                  setLogoLoadError(false);
-                }}
-              />
-            </div>
-          )}
-
-          {logoUrl && logoLoadError && (
-            <div className="w-full mb-4 flex items-center justify-center">
-              <span className="text-sm text-gray-500">Logo failed to load</span>
             </div>
           )}
 
@@ -2087,47 +2021,6 @@ export const FormBuilderTemplateForm: React.FC<
         </div>
       )}
 
-      {/* Logo */}
-      {theme?.logo && (
-        <div
-          className="w-full mb-6 flex"
-          style={{
-            justifyContent:
-              theme.logoPosition === "left"
-                ? "flex-start"
-                : theme.logoPosition === "right"
-                  ? "flex-end"
-                  : "center",
-            paddingLeft: theme.logoPosition === "left" ? "16px" : "0",
-            paddingRight: theme.logoPosition === "right" ? "16px" : "0",
-          }}
-        >
-          <img
-            src={
-              typeof theme.logo === "string" && theme.logo.trim() !== ""
-                ? theme.logo
-                : theme.logo instanceof File || theme.logo instanceof Blob
-                  ? URL.createObjectURL(theme.logo)
-                  : ""
-            }
-            alt="Form logo"
-            style={{
-              width: theme.logoWidth || "100px",
-              height: theme.logoHeight || "auto",
-              maxWidth: "100%",
-              objectFit: "contain",
-            }}
-            onError={(e) => {
-              console.error("Logo image failed to load:", theme.logo);
-              e.currentTarget.style.display = "none";
-            }}
-            onLoad={() => {
-              console.log("Logo image loaded successfully:", theme.logo);
-            }}
-          />
-        </div>
-      )}
-
       <div className="rounded-lg" style={formContainerStyle}>
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
           Please fill in the registration information.
@@ -2402,7 +2295,6 @@ const AdvanceRegistration = ({
     const theme: FormTheme = {
       ...themeFromFormData,
       // Always prefer URLs from API attributes (ActiveStorage URLs are the source of truth)
-      logo: attrs.logo || null,
       formBackgroundImage: attrs.form_background_image || null,
     };
 
@@ -2411,7 +2303,6 @@ const AdvanceRegistration = ({
       id: apiTemplate.id,
       name: attrs.name,
       banner_image: attrs.banner_image,
-      logo: attrs.logo,
       form_background_image: attrs.form_background_image,
       hasFormData: !!formData,
     });
@@ -2918,7 +2809,6 @@ const AdvanceRegistration = ({
       const normalizedTheme: FormTheme | undefined = template.theme
         ? {
             ...template.theme,
-            logo: await normalizeImageValue(template.theme.logo),
             formBackgroundImage: await normalizeImageValue(
               template.theme.formBackgroundImage
             ),
@@ -2963,10 +2853,6 @@ const AdvanceRegistration = ({
       // Clean theme object - only include string values, exclude File objects and null
       const cleanTheme: any = {};
       if (normalizedTheme) {
-        // Only include logo if it's a base64 string (not File or null)
-        if (normalizedTheme.logo && typeof normalizedTheme.logo === "string") {
-          cleanTheme.logo = normalizedTheme.logo;
-        }
         // Only include formBackgroundImage if it's a base64 string (not File or null)
         if (
           normalizedTheme.formBackgroundImage &&

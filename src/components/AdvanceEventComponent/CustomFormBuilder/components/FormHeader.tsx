@@ -1,5 +1,3 @@
-import { useEffect, useState } from "react";
-
 import type { FormTheme } from "../types";
 
 type FormHeaderProps = {
@@ -7,73 +5,18 @@ type FormHeaderProps = {
 };
 
 export function FormHeader({ theme }: FormHeaderProps) {
-  const [logoObjectUrl, setLogoObjectUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!theme?.logo || typeof theme.logo === "string") {
-      setLogoObjectUrl(null);
-      return;
-    }
-
-    const url = URL.createObjectURL(theme.logo);
-    setLogoObjectUrl(url);
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [theme?.logo]);
-
-  const logoSrc =
-    typeof theme?.logo === "string" ? theme.logo : logoObjectUrl || "";
-
   // Only render if there are event details (name, description, location, date)
-  // Logo is handled separately in the form rendering to ensure it always displays
   if (!(theme?.eventName || theme?.eventDescription || theme?.eventLocation || theme?.eventDate)) {
     return null;
   }
 
   return (
     <div
-      className={`w-full py-6 px-6 flex gap-6 items-center ${
-        theme?.logoPosition === "center" ? "flex-col text-center" : ""
-      }`}
+      className="w-full py-6 px-6"
       style={{
-        flexDirection:
-          theme?.logoPosition === "right"
-            ? "row-reverse"
-            : theme?.logoPosition === "center"
-            ? "column"
-            : "row",
-        justifyContent:
-          theme?.logoPosition === "center" ? "center" : "flex-start",
-        textAlign:
-          theme?.logoPosition === "center"
-            ? "center"
-            : theme?.logoPosition === "right"
-            ? "right"
-            : "left",
+        textAlign: theme?.eventDetailsAlignment || "left",
       }}
     >
-      {theme?.logo && logoSrc && (
-        <img
-          src={logoSrc}
-          alt="Form logo"
-          style={{
-            width: theme.logoWidth || "100px",
-            height: theme.logoHeight || "auto",
-            maxWidth: "100%",
-            objectFit: "contain",
-          }}
-          onError={(e) => {
-            console.error("Logo image failed to load:", logoSrc);
-            e.currentTarget.style.display = "none";
-          }}
-          onLoad={() => {
-            console.log("Logo image loaded successfully:", logoSrc);
-          }}
-        />
-      )}
-
       {(theme?.eventName ||
         theme?.eventDescription ||
         theme?.eventLocation ||
@@ -102,9 +45,9 @@ export function FormHeader({ theme }: FormHeaderProps) {
               className="flex gap-4 text-sm font-medium opacity-80"
               style={{
                 justifyContent:
-                  theme?.logoPosition === "center"
+                  theme?.eventDetailsAlignment === "center"
                     ? "center"
-                    : theme?.logoPosition === "right"
+                    : theme?.eventDetailsAlignment === "right"
                     ? "flex-end"
                     : "flex-start",
               }}

@@ -15,16 +15,12 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 }) => {
   const [localTheme, setLocalTheme] = useState<FormTheme>(theme);
   const backgroundImageInputRef = useRef<HTMLInputElement>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
     string | null
   >(
     typeof theme.formBackgroundImage === "string"
       ? theme.formBackgroundImage
       : null
-  );
-  const [logoPreview, setLogoPreview] = useState<string | null>(
-    typeof theme.logo === "string" ? theme.logo : null
   );
 
   React.useEffect(() => {
@@ -43,19 +39,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
     } else {
       setBackgroundImagePreview(null);
     }
-
-    if (theme.logo instanceof File) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-      };
-      reader.readAsDataURL(theme.logo);
-    } else if (typeof theme.logo === "string") {
-      setLogoPreview(theme.logo);
-    } else {
-      setLogoPreview(null);
-    }
-  }, [theme.formBackgroundImage, theme.logo]);
+  }, [theme.formBackgroundImage]);
 
   const handleUpdate = (updates: Partial<FormTheme>) => {
     const newTheme = { ...localTheme, ...updates };
@@ -82,36 +66,11 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
     reader.readAsDataURL(file);
   };
 
-  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      setLogoPreview(dataUrl);
-      handleUpdate({ logo: dataUrl });
-    };
-    reader.readAsDataURL(file);
-  };
-
   const handleRemoveBackgroundImage = () => {
     handleUpdate({ formBackgroundImage: null });
     setBackgroundImagePreview(null);
     if (backgroundImageInputRef.current) {
       backgroundImageInputRef.current.value = "";
-    }
-  };
-
-  const handleRemoveLogo = () => {
-    handleUpdate({ logo: null });
-    setLogoPreview(null);
-    if (logoInputRef.current) {
-      logoInputRef.current.value = "";
     }
   };
 
@@ -290,103 +249,6 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
                   handleUpdate({ formBorderColor: e.target.value })
                 }
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Logo Configuration */}
-        <div className="space-y-4 pt-4 border-t">
-          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Logo
-          </h4>
-
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">
-              Upload Logo
-            </label>
-            {logoPreview ? (
-              <div className="relative">
-                <div className="w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50 flex items-center justify-center p-2">
-                  <img
-                    src={logoPreview}
-                    alt="Logo preview"
-                    className="max-w-full max-h-full object-contain"
-                  />
-                </div>
-                <button
-                  onClick={handleRemoveLogo}
-                  className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
-                  title="Remove logo"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            ) : (
-              <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
-                <div className="flex flex-col items-center justify-center pt-3 pb-2">
-                  <ImageIcon className="w-8 h-8 mb-1 text-gray-400" />
-                  <p className="text-xs text-gray-500">Click to upload logo</p>
-                </div>
-                <input
-                  ref={logoInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleLogoChange}
-                  className="hidden"
-                />
-              </label>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-2 text-gray-700">
-              Position
-            </label>
-            <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
-              {["left", "center", "right"].map((pos) => (
-                <button
-                  key={pos}
-                  onClick={() =>
-                    handleUpdate({
-                      logoPosition: pos as "left" | "center" | "right",
-                    })
-                  }
-                  className={`flex-1 py-1.5 rounded-md text-sm font-medium transition-all ${
-                    (localTheme.logoPosition || "left") === pos
-                      ? "bg-white shadow text-blue-600"
-                      : "text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  {pos.charAt(0).toUpperCase() + pos.slice(1)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">
-                Width
-              </label>
-              <input
-                type="text"
-                value={localTheme.logoWidth || "100px"}
-                onChange={(e) => handleUpdate({ logoWidth: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="100px"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2 text-gray-700">
-                Height
-              </label>
-              <input
-                type="text"
-                value={localTheme.logoHeight || "auto"}
-                onChange={(e) => handleUpdate({ logoHeight: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                placeholder="auto"
               />
             </div>
           </div>

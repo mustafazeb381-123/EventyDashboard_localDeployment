@@ -276,10 +276,6 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   );
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
-  // Logo states
-  const [logoPreview, setLogoPreview] = useState<string | null>(null);
-  const logoInputRef = useRef<HTMLInputElement>(null);
-
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
 
@@ -344,15 +340,6 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       setBannerPreview(initialBannerImage);
     }
   }, [initialBannerImage]);
-
-  // Load logo preview from initial theme (string/logo data URL)
-  React.useEffect(() => {
-    if (typeof theme.logo === "string") {
-      setLogoPreview(theme.logo);
-    } else if (!theme.logo) {
-      setLogoPreview(null);
-    }
-  }, [theme.logo]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -781,36 +768,6 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     }
   };
 
-  const handleLogoImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith("image/")) {
-        alert("Please select an image file");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setLogoPreview(reader.result as string);
-        setTheme((prev) => ({
-          ...prev,
-          logo: reader.result as string,
-        }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleRemoveLogo = () => {
-    setLogoPreview(null);
-    if (logoInputRef.current) {
-      logoInputRef.current.value = "";
-    }
-    setTheme((prev) => ({
-      ...prev,
-      logo: null,
-    }));
-  };
-
   const handleSave = async () => {
     console.log("💾 Save button clicked");
 
@@ -1103,116 +1060,6 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                         />
                       </label>
                     )}
-                  </div>
-
-                  {/* Logo Section */}
-                  <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                    <div className="p-4 bg-linear-to-r from-pink-50 to-pink-50 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-                          <ImageIcon size={18} className="text-pink-600" />
-                          Logo
-                        </h3>
-                        {logoPreview && (
-                          <button
-                            onClick={handleRemoveLogo}
-                            className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                          >
-                            Remove
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      {logoPreview ? (
-                        <div className="flex items-start gap-4">
-                          <div className="w-32 h-32 border-2 border-gray-200 rounded-lg overflow-hidden bg-gray-50 flex items-center justify-center">
-                            <img
-                              src={logoPreview}
-                              alt="Logo preview"
-                              className="max-w-full max-h-full object-contain"
-                            />
-                          </div>
-                          <div className="flex-1 space-y-3">
-                            <div>
-                              <label className="block text-sm font-medium mb-1">
-                                Position
-                              </label>
-                              <select
-                                value={theme.logoPosition || "center"}
-                                onChange={(e) =>
-                                  setTheme({
-                                    ...theme,
-                                    logoPosition: e.target.value as
-                                      | "left"
-                                      | "center"
-                                      | "right",
-                                  })
-                                }
-                                className="w-full px-3 py-2 border rounded-lg"
-                              >
-                                <option value="left">Left</option>
-                                <option value="center">Center</option>
-                                <option value="right">Right</option>
-                              </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Width
-                                </label>
-                                <input
-                                  type="text"
-                                  value={theme.logoWidth || "100px"}
-                                  onChange={(e) =>
-                                    setTheme({
-                                      ...theme,
-                                      logoWidth: e.target.value,
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                  placeholder="100px"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">
-                                  Height
-                                </label>
-                                <input
-                                  type="text"
-                                  value={theme.logoHeight || "auto"}
-                                  onChange={(e) =>
-                                    setTheme({
-                                      ...theme,
-                                      logoHeight: e.target.value,
-                                    })
-                                  }
-                                  className="w-full px-3 py-2 border rounded-lg"
-                                  placeholder="auto"
-                                />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <label className="flex flex-col items-center justify-center h-32 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all rounded-lg">
-                          <ImageIcon className="w-8 h-8 text-gray-400 mb-2" />
-                          <span className="text-sm font-medium text-gray-600">
-                            Click to upload logo
-                          </span>
-                          <span className="text-xs text-gray-500 mt-1">
-                            PNG, SVG, or JPG
-                          </span>
-                          <input
-                            ref={logoInputRef}
-                            type="file"
-                            accept="image/*"
-                            onChange={handleLogoImageChange}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
                   </div>
 
                   {/* Form Fields */}
