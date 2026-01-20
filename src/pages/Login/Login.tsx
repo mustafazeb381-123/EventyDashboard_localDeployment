@@ -61,7 +61,10 @@ function Login() {
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info"
+  ) => {
     setNotification({ message, type });
   };
 
@@ -123,7 +126,7 @@ function Login() {
   };
 
   return (
-    <div className="p-10">
+    <div className="min-h-screen w-screen p-4 overflow-hidden bg-white">
       {/* Notification Toast */}
       {notification && (
         <div className="fixed top-4 right-4 z-[100] animate-slide-in">
@@ -132,8 +135,8 @@ function Login() {
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -141,127 +144,133 @@ function Login() {
         </div>
       )}
 
+      {/* Main Container with Gradient */}
       <div
+        className="w-full h-[calc(100vh-2rem)] flex flex-col md:flex-row rounded-2xl overflow-hidden"
         style={{
           background:
-            "linear-gradient(150deg,rgba(228, 230, 238, 1) 1%, rgba(255, 255, 255, 1) 29%)",
+            "linear-gradient(150deg, rgba(228, 230, 238, 1) 1%, rgba(255, 255, 255, 1) 29%)",
         }}
-        className="w-full flex flex-col md:flex-row justify-evenly min-h-[calc(100vh-5rem)]  rounded-2xl"
       >
-        {/* Left Section (Form) */}
-        <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-4 py-8">
-          <img
-            src={Assets.images.eventyLoginLogo}
-            width="186"
-            height="80"
-            alt="Logo"
-          />
-
-          <p
-            style={{ fontSize: 48 }}
-            className="mt-10 font-poppins font-semibold text-gray-900"
-          >
-            Welcome 👋
-          </p>
-          <div className="mt-10 w-full max-w-sm space-y-4">
-            {/* Email Field */}
-            <Input
-              className="font-light font-poppins text-gray-400"
-              style={{ fontSize: 12, borderRadius: 12, height: 40 }}
-              type="email"
-              placeholder={t("Enter your email")}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+        {/* Left Half - Login Form */}
+        <div className="w-full md:w-1/2 flex flex-col items-center justify-center px-8 py-12">
+          <div className="w-full max-w-md flex flex-col items-center">
+            {/* Logo */}
+            <img
+              src={Assets.images.eventyLoginLogo}
+              width="186"
+              height="80"
+              alt="Logo"
+              className="mb-8 animate-float"
             />
-            {errors.email && (
-              <p className="text-red-500 text-xs font-poppins">
-                {errors.email}
-              </p>
-            )}
 
-            {/* Password Field + Show/Hide */}
-            <div className="relative">
-              <Input
-                className="font-light font-poppins text-gray-400 pr-10"
-                style={{ fontSize: 12, borderRadius: 12, height: 40 }}
-                type={showPassword ? "text" : "password"}
-                placeholder={t("Enter your password")}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-3 flex items-center"
+            {/* Welcome Text */}
+            <h1 className="text-5xl font-poppins font-semibold text-gray-900 mb-10 text-center">
+              Welcome 👋
+            </h1>
+
+            <div className="space-y-4 w-full">
+              {/* Email Field */}
+              <div>
+                <Input
+                  className="font-light font-poppins text-gray-400"
+                  style={{ fontSize: 12, borderRadius: 12, height: 40 }}
+                  type="email"
+                  placeholder={t("Enter your email")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-xs font-poppins mt-1">
+                    {errors.email}
+                  </p>
+                )}
+              </div>
+
+              {/* Password Field + Show/Hide */}
+              <div className="relative">
+                <Input
+                  className="font-light font-poppins text-gray-400 pr-10"
+                  style={{ fontSize: 12, borderRadius: 12, height: 40 }}
+                  type={showPassword ? "text" : "password"}
+                  placeholder={t("Enter your password")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-3 flex items-center"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+                {errors.password && (
+                  <p className="text-red-500 text-xs font-poppins mt-1">
+                    {errors.password}
+                  </p>
+                )}
+              </div>
+
+              {/* Forgot password */}
+              <div className="flex gap-1">
+                <p className="text-sm text-gray-900 font-poppins font-light">
+                  {t("Forget password?")}
+                </p>
+                <p className="text-sm font-poppins font-semibold text-[#3563E9] underline cursor-pointer">
+                  {t("Reset the password")}
+                </p>
+              </div>
+
+              {/* Remember Me */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="remember-me"
+                  checked={rememberMe}
+                  onCheckedChange={(checked) => setRememberMe(checked === true)}
+                />
+                <Label
+                  htmlFor="remember-me"
+                  className="text-sm font-poppins text-gray-700"
+                >
+                  {t("Remember me")}
+                </Label>
+              </div>
+
+              {/* Signin Button */}
+              <Button
+                onClick={handleSignIn}
+                style={{ backgroundColor: "#1A1F58", borderRadius: 20 }}
+                className="w-full mt-4"
+                disabled={loading}
               >
-                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-red-500 text-xs font-poppins">
-                {errors.password}
-              </p>
-            )}
+                {loading ? (
+                  <p className="text-white">...Loading</p>
+                ) : (
+                  <span className="text-white">{t("signin")}</span>
+                )}
+              </Button>
 
-            {/* Forgot password */}
-            <div className="flex gap-1">
-              <p className="text-sm text-gray-900 font-poppins font-light">
-                {t("Forget password?")}
-              </p>
-              <p className="text-sm font-poppins font-semibold text-[#3563E9] underline cursor-pointer">
-                {t("Reset the password")}
-              </p>
-            </div>
-
-            {/* Remember Me */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="remember-me"
-                checked={rememberMe}
-                onCheckedChange={(checked) => setRememberMe(checked === true)}
-              />
-              <Label
-                htmlFor="remember-me"
-                className="text-sm font-poppins text-gray-700"
-              >
-                {t("Remember me")}
-              </Label>
-            </div>
-
-            {/* Signin Button */}
-            <Button
-              onClick={handleSignIn}
-              style={{ backgroundColor: "#1A1F58", borderRadius: 20 }}
-              className="w-full mt-4"
-              disabled={loading}
-            >
-              {loading ? (
-                <p className="text-white">...Loading</p>
-              ) : (
-                <span className="text-white">{t("signin")}</span>
-              )}
-            </Button>
-
-            {/* Signup Redirect */}
-            <div className="mt-4 flex justify-center gap-1">
-              <p className="text-sm text-gray-900 font-poppins font-light">
-                {t("Don't have an account?")}
-              </p>
-              <p
-                className="text-sm font-poppins font-light text-[#3563E9] underline cursor-pointer"
-                onClick={() => navigate("/signup")}
-              >
-                {t("signup")}
-              </p>
+              {/* Signup Redirect */}
+              <div className="mt-4 flex justify-center gap-1">
+                <p className="text-sm text-gray-900 font-poppins font-light">
+                  {t("Don't have an account?")}
+                </p>
+                <p
+                  className="text-sm font-poppins font-light text-[#3563E9] underline cursor-pointer"
+                  onClick={() => navigate("/signup")}
+                >
+                  {t("signup")}
+                </p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Section (Image) */}
-        <div className="hidden md:flex justify-center items-center w-1/2">
+        {/* Right Half - Image */}
+        <div className="hidden md:block md:w-1/2 p-6">
           <img
             src={Assets.images.loginRightImage}
-            className=" w-2/3 max-w-md h-auto object-cover rounded-lg"
+            className="w-full h-full object-cover rounded-2xl"
             alt="login visual"
           />
         </div>
@@ -280,6 +289,17 @@ function Login() {
         }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
+        }
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
         }
       `}</style>
     </div>
