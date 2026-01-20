@@ -545,7 +545,50 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                         )}
 
                         {loading ? (
-                            <div className="text-center py-8 text-gray-500">Loading users...</div>
+                            <div className="border border-gray-200 rounded-lg overflow-hidden">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 border-b border-gray-200">
+                                        <tr>
+                                            <th className="px-4 py-3">
+                                                <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                                            </th>
+                                            <th className="px-4 py-3 text-left">ID</th>
+                                            <th className="px-4 py-3 text-left">Name</th>
+                                            <th className="px-4 py-3 text-left">Email</th>
+                                            <th className="px-4 py-3 text-left">User type</th>
+                                            <th className="px-4 py-3 text-left">Status</th>
+                                            <th className="px-4 py-3 text-left">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200">
+                                        {[1, 2, 3, 4, 5].map((index) => (
+                                            <tr key={index} className="animate-pulse">
+                                                <td className="px-4 py-3 text-center">
+                                                    <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="h-4 bg-gray-200 rounded w-32"></div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="h-4 bg-gray-200 rounded w-40"></div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="h-6 bg-gray-200 rounded-full w-28"></div>
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    <div className="h-8 bg-gray-200 rounded-lg w-20"></div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         ) : (
                             <div className="border border-gray-200 rounded-lg overflow-hidden">
                                 <table className="w-full">
