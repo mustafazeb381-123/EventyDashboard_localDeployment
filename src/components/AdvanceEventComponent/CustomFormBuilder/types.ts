@@ -21,13 +21,26 @@ export type FieldType =
 export interface CustomFormField {
   id: string;
   type: FieldType;
-  label: string;
+  label: string; // Keep for backward compatibility
   name: string;
-  placeholder?: string;
+  placeholder?: string; // Keep for backward compatibility
   required: boolean;
   unique: boolean;
   defaultValue?: string;
-  description?: string;
+  description?: string; // Keep for backward compatibility
+  // Multilingual support for input fields
+  labelTranslations?: {
+    en?: string;
+    ar?: string;
+  };
+  placeholderTranslations?: {
+    en?: string;
+    ar?: string;
+  };
+  descriptionTranslations?: {
+    en?: string;
+    ar?: string;
+  };
   validation?: {
     min?: number;
     max?: number;
@@ -35,7 +48,7 @@ export interface CustomFormField {
     minLength?: number;
     maxLength?: number;
   };
-  options?: Array<{ label: string; value: string }>; // For select, radio, checkbox
+  options?: Array<{ label: string; value: string; labelTranslations?: { en?: string; ar?: string } }>; // For select, radio, checkbox
   // Dynamic option source (e.g., auto-populate countries)
   optionsSource?: "countries" | "dialCodes";
   // Input variant for specialized rendering (e.g., phone with country code)

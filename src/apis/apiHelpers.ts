@@ -257,6 +257,22 @@ export const setRegistrationFormTemplateAsDefault = (
   );
 };
 
+// Update an image attachment for a registration form template
+export const updateRegistrationFormTemplateImage = (
+  eventId: string | number,
+  templateId: string | number,
+  imageName: "banner_image" | "logo" | "form_background_image",
+  base64Data: string
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/registration_form_templates/${templateId}/update_image`,
+    {
+      image_name: imageName,
+      base64_data: base64Data,
+    }
+  );
+};
+
 export const getEventBadges = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badge_templates`);
 };

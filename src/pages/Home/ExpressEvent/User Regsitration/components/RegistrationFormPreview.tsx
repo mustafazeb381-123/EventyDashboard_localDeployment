@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { createEventUser } from "@/apis/apiHelpers";
 import { getAllBadges } from "@/apis/badgeService";
@@ -116,7 +116,108 @@ const RegistrationFormPreview = ({
   eventId,
   tenantUuid,
 }: RegistrationFormPreviewProps) => {
-  const { t } = useTranslation("registration");
+  const { t, i18n } = useTranslation("registration");
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
+
+  // Listen to language changes to force re-render
+  useEffect(() => {
+    // Update immediately when component mounts
+    const initialLang = i18n.language || "en";
+    setCurrentLanguage(initialLang);
+    console.log("🌐 RegistrationFormPreview initialized with language:", initialLang);
+    
+    const handleLanguageChange = (lng: string) => {
+      console.log("🌐 Language changed to:", lng);
+      setCurrentLanguage(lng);
+      // Force a small delay to ensure i18n is ready
+      setTimeout(() => {
+        setCurrentLanguage(lng);
+      }, 100);
+    };
+
+    i18n.on("languageChanged", handleLanguageChange);
+
+    return () => {
+      i18n.off("languageChanged", handleLanguageChange);
+    };
+  }, [i18n]);
+  
+  // Helper function to get translated field label
+  // Use useCallback to ensure it updates when language changes
+  const getTranslatedLabel = useCallback((field: FormField): string => {
+    // Normalize field name and label
+    const fieldName = field.name.toLowerCase().trim();
+    const fieldLabel = field.label.toLowerCase().trim();
+    
+    // Try multiple possible field name variations
+    const possibleNames = [
+      fieldName.replace(/[^a-z0-9]/g, "_"),
+      fieldName.replace(/[^a-z0-9]/g, ""),
+      fieldName.replace(/\s+/g, "_"),
+      fieldName.replace(/\s+/g, ""),
+      fieldLabel.replace(/[^a-z0-9]/g, "_"),
+      fieldLabel.replace(/[^a-z0-9]/g, ""),
+      fieldLabel.replace(/\s+/g, "_"),
+      fieldLabel.replace(/\s+/g, ""),
+      // Also try exact label match (for cases like "First name", "Last name")
+      fieldLabel,
+    ];
+    
+    // Remove duplicates and empty strings
+    const uniqueNames = [...new Set(possibleNames)].filter(n => n);
+    
+    for (const name of uniqueNames) {
+      const translationKey = `registrationForm.fieldLabels.${name}`;
+      const translated = t(translationKey);
+      // Check if translation exists (not the same as key and not empty)
+      if (translated && translated !== translationKey && translated.trim() !== "") {
+        console.log(`✅ Found translation for ${field.label}: ${translated} (key: ${translationKey}, lang: ${currentLanguage})`);
+        return translated;
+      }
+    }
+    console.log(`⚠️ No translation found for ${field.label} (field: ${field.name}, lang: ${currentLanguage}, tried keys: ${uniqueNames.join(", ")})`);
+    // Fallback to original label
+    return field.label;
+  }, [currentLanguage, t]);
+
+  // Helper function to get translated placeholder
+  // Use useCallback to ensure it updates when language changes
+  const getTranslatedPlaceholder = useCallback((field: FormField): string | undefined => {
+    if (!field.placeholder) return undefined;
+    
+    // Normalize field name and label
+    const fieldName = field.name.toLowerCase().trim();
+    const fieldLabel = field.label.toLowerCase().trim();
+    
+    // Try multiple possible field name variations
+    const possibleNames = [
+      fieldName.replace(/[^a-z0-9]/g, "_"),
+      fieldName.replace(/[^a-z0-9]/g, ""),
+      fieldName.replace(/\s+/g, "_"),
+      fieldName.replace(/\s+/g, ""),
+      fieldLabel.replace(/[^a-z0-9]/g, "_"),
+      fieldLabel.replace(/[^a-z0-9]/g, ""),
+      fieldLabel.replace(/\s+/g, "_"),
+      fieldLabel.replace(/\s+/g, ""),
+      // Also try exact label match (for cases like "First name", "Last name")
+      fieldLabel,
+    ];
+    
+    // Remove duplicates and empty strings
+    const uniqueNames = [...new Set(possibleNames)].filter(n => n);
+    
+    for (const name of uniqueNames) {
+      const translationKey = `registrationForm.fieldPlaceholders.${name}`;
+      const translated = t(translationKey);
+      // Check if translation exists (not the same as key and not empty)
+      if (translated && translated !== translationKey && translated.trim() !== "") {
+        return translated;
+      }
+    }
+    // Fallback to original placeholder
+    return field.placeholder;
+  }, [currentLanguage, t]);
+  
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -338,7 +439,7 @@ const RegistrationFormPreview = ({
     }
   };
 
-  const renderField = (field: FormField) => {
+  const renderField = (field: FormField & { translatedLabel?: string; translatedPlaceholder?: string }) => {
     const hasError = fieldErrors[field.name];
     const commonInputClasses = `w-full px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none transition-colors bg-white ${
       hasError
@@ -354,10 +455,11 @@ const RegistrationFormPreview = ({
           <div>
             <input
               type={field.type}
-              placeholder={field.placeholder}
+              placeholder={field.translatedPlaceholder || getTranslatedPlaceholder(field)}
               value={formData[field.name] || ""}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
               className={commonInputClasses}
+              dir={currentLanguage === "ar" ? "rtl" : "ltr"}
             />
             {fieldErrors[field.name] && (
               <p className="mt-1 text-sm text-red-600">
@@ -371,11 +473,12 @@ const RegistrationFormPreview = ({
         return (
           <div>
             <textarea
-              placeholder={field.placeholder}
+              placeholder={field.translatedPlaceholder || getTranslatedPlaceholder(field)}
               value={formData[field.name] || ""}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
               rows={field.rows || 3}
               className={commonInputClasses}
+              dir={currentLanguage === "ar" ? "rtl" : "ltr"}
             />
             {fieldErrors[field.name] && (
               <p className="mt-1 text-sm text-red-600">
@@ -392,9 +495,10 @@ const RegistrationFormPreview = ({
               value={formData[field.name] || ""}
               onChange={(e) => handleInputChange(field.name, e.target.value)}
               className={commonInputClasses}
+              dir={currentLanguage === "ar" ? "rtl" : "ltr"}
             >
             <option value="">
-              {field.placeholder || `${t("registrationForm.selectField")} ${field.label}`}
+              {(field.translatedPlaceholder || getTranslatedPlaceholder(field)) || `${t("registrationForm.selectField")} ${field.translatedLabel || getTranslatedLabel(field)}`}
             </option>
               {field.options?.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -470,7 +574,7 @@ const RegistrationFormPreview = ({
               onChange={(e) => handleInputChange(field.name, e.target.checked)}
               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label className="text-sm text-gray-700">
+            <label className="text-sm text-gray-700" dir={currentLanguage === "ar" ? "rtl" : "ltr"}>
               {field.checkboxLabel}
             </label>
           </div>
@@ -481,14 +585,30 @@ const RegistrationFormPreview = ({
     }
   };
 
+  // Force re-render when language changes by using currentLanguage in the key
+  // Use useMemo to recalculate translations when language changes
+  const translatedFields = useMemo(() => {
+    console.log("🔄 Recalculating translations for language:", currentLanguage, "i18n.language:", i18n.language);
+    return formFields.map((field) => {
+      const translatedLabel = getTranslatedLabel(field);
+      const translatedPlaceholder = getTranslatedPlaceholder(field);
+      console.log(`Field: ${field.name}, Label: "${field.label}" -> "${translatedLabel}", Placeholder: "${field.placeholder}" -> "${translatedPlaceholder}"`);
+      return {
+        ...field,
+        translatedLabel,
+        translatedPlaceholder,
+      };
+    });
+  }, [formFields, currentLanguage, getTranslatedLabel, getTranslatedPlaceholder, i18n.language]);
+
   return (
-    <div className="space-y-6">
-      {formFields.map((field) => (
-        <div key={field.name} className={field.fullWidth ? "w-full" : ""}>
+    <div className="space-y-6" key={`form-${currentLanguage}-${formFields.length}`}>
+      {translatedFields.map((field) => (
+        <div key={`${field.name}-${currentLanguage}`} className={field.fullWidth ? "w-full" : ""}>
           {field.type !== "checkbox" && (
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              {field.label}
-              {field.required && <span className="text-red-500 ml-1">*</span>}
+            <label className="block text-sm font-medium text-gray-700 mb-2" dir={currentLanguage === "ar" ? "rtl" : "ltr"}>
+              {field.translatedLabel}
+              {field.required && <span className="text-red-500 ml-1 rtl:mr-1 rtl:ml-0">*</span>}
             </label>
           )}
           {renderField(field)}

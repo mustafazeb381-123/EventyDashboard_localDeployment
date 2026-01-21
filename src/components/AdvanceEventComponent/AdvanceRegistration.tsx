@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
   ChevronLeft,
@@ -16,6 +16,7 @@ import {
   getRegistrationFormTemplates,
   createRegistrationFormTemplate,
   updateRegistrationFormTemplate,
+  updateRegistrationFormTemplateImage,
   deleteRegistrationFormTemplate,
   setRegistrationFormTemplateAsDefault,
   createEventUser,
@@ -40,6 +41,13 @@ import type { CustomFormField, FormTheme } from "./CustomFormBuilder/types";
 import { FormHeader } from "./CustomFormBuilder/components/FormHeader";
 import { FormButtonField } from "./CustomFormBuilder/components/FormButtonField";
 import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
+import { useTranslation } from "react-i18next";
+import {
+  getTranslatedLabel,
+  getTranslatedPlaceholder,
+  getTranslatedDescription,
+  getTranslatedOptionLabel,
+} from "./CustomFormBuilder/utils/fieldTranslations";
 
 // -------------------- TYPES --------------------
 interface FormField {
@@ -103,8 +111,14 @@ const renderCustomField = (
   theme: FormTheme | undefined,
   formData: Record<string, any>,
   setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>,
-  imagePreviewUrls?: Record<string, string>
+  imagePreviewUrls?: Record<string, string>,
+  currentLanguage?: string
 ) => {
+  const lang = currentLanguage || "en";
+  const isRTL = lang === "ar";
+  const fieldLabel = getTranslatedLabel(field, lang);
+  const fieldPlaceholder = getTranslatedPlaceholder(field, lang);
+  const fieldDescription = getTranslatedDescription(field, lang);
   const fieldInputStyle: React.CSSProperties = {
     ...inputStyle,
     backgroundColor:
@@ -137,7 +151,7 @@ const renderCustomField = (
   const commonProps = {
     id: field.id,
     name: field.name,
-    placeholder: field.placeholder,
+    placeholder: fieldPlaceholder,
     required: field.required,
   };
 
@@ -145,7 +159,7 @@ const renderCustomField = (
     case "text": {
       const isPhoneVariant =
         field.inputVariant === "phone" ||
-        /phone/i.test(field.label || "") ||
+        /phone/i.test(fieldLabel || "") ||
         /phone/i.test(field.name || "");
 
       if (isPhoneVariant) {
@@ -166,6 +180,7 @@ const renderCustomField = (
                 outline: "none",
               }}
               className="transition-all bg-white outline-none focus:ring-2 focus:ring-pink-500"
+              dir={isRTL ? "rtl" : "ltr"}
             >
               <option value="">Code</option>
               {COUNTRY_DIAL_CODES.map((c) => (
@@ -181,13 +196,14 @@ const renderCustomField = (
               onChange={(e) =>
                 setFormData({ ...formData, [field.name]: e.target.value })
               }
-              placeholder={field.placeholder || "+1 (555) 000-0000"}
+              placeholder={fieldPlaceholder || "+1 (555) 000-0000"}
               style={{
                 ...fieldInputStyle,
                 flex: 1,
                 outline: "none",
               }}
               className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
+              dir={isRTL ? "rtl" : "ltr"}
             />
           </div>
         );
@@ -203,6 +219,7 @@ const renderCustomField = (
           }
           style={fieldInputStyle}
           className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
+          dir={isRTL ? "rtl" : "ltr"}
         />
       );
     }
@@ -219,6 +236,7 @@ const renderCustomField = (
           }
           style={fieldInputStyle}
           className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
+          dir={isRTL ? "rtl" : "ltr"}
         />
       );
     case "textarea":
@@ -232,12 +250,13 @@ const renderCustomField = (
           style={fieldInputStyle}
           className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500 resize-y"
           rows={4}
+          dir={isRTL ? "rtl" : "ltr"}
         />
       );
     case "select":
       const selectOptions =
         field.optionsSource === "countries" ||
-        /country/i.test(field.label || "") ||
+        /country/i.test(fieldLabel || "") ||
         /country/i.test(field.name || "")
           ? COUNTRIES.map((c) => ({ label: c.name, value: c.code }))
           : field.options || [];
@@ -250,62 +269,74 @@ const renderCustomField = (
           }
           style={fieldInputStyle}
           className="w-full transition-all outline-none focus:ring-2 focus:ring-pink-500"
+          dir={isRTL ? "rtl" : "ltr"}
         >
-          <option value="">{field.placeholder || "Select an option..."}</option>
-          {selectOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
+          <option value="">{fieldPlaceholder || "Select an option..."}</option>
+          {selectOptions.map((opt) => {
+            const translatedOptLabel = getTranslatedOptionLabel(opt, lang);
+            return (
+              <option key={opt.value} value={opt.value}>
+                {translatedOptLabel}
+              </option>
+            );
+          })}
         </select>
       );
     case "radio":
       return (
-        <div className="space-y-3">
-          {field.options?.map((opt) => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-            >
-              <input
-                type="radio"
-                name={field.name}
-                value={opt.value}
-                checked={formData[field.name] === opt.value}
-                onChange={(e) =>
-                  setFormData({ ...formData, [field.name]: e.target.value })
-                }
-                className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
-              />
-              <span className="text-gray-700">{opt.label}</span>
-            </label>
-          ))}
+        <div className="space-y-3" dir={isRTL ? "rtl" : "ltr"}>
+          {field.options?.map((opt) => {
+            const translatedOptLabel = getTranslatedOptionLabel(opt, lang);
+            return (
+              <label
+                key={opt.value}
+                className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                dir={isRTL ? "rtl" : "ltr"}
+              >
+                <input
+                  type="radio"
+                  name={field.name}
+                  value={opt.value}
+                  checked={formData[field.name] === opt.value}
+                  onChange={(e) =>
+                    setFormData({ ...formData, [field.name]: e.target.value })
+                  }
+                  className="w-4 h-4 text-pink-600 border-gray-300 focus:ring-pink-500"
+                />
+                <span className="text-gray-700">{translatedOptLabel}</span>
+              </label>
+            );
+          })}
         </div>
       );
     case "checkbox":
       return (
-        <div className="space-y-3">
-          {field.options?.map((opt) => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-            >
-              <input
-                type="checkbox"
-                value={opt.value}
-                checked={formData[field.name]?.includes(opt.value) || false}
-                onChange={(e) => {
-                  const current = formData[field.name] || [];
-                  const updated = e.target.checked
-                    ? [...current, opt.value]
-                    : current.filter((v: string) => v !== opt.value);
-                  setFormData({ ...formData, [field.name]: updated });
-                }}
-                className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
-              />
-              <span className="text-gray-700">{opt.label}</span>
-            </label>
-          ))}
+        <div className="space-y-3" dir={isRTL ? "rtl" : "ltr"}>
+          {field.options?.map((opt) => {
+            const translatedOptLabel = getTranslatedOptionLabel(opt, lang);
+            return (
+              <label
+                key={opt.value}
+                className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                dir={isRTL ? "rtl" : "ltr"}
+              >
+                <input
+                  type="checkbox"
+                  value={opt.value}
+                  checked={formData[field.name]?.includes(opt.value) || false}
+                  onChange={(e) => {
+                    const current = formData[field.name] || [];
+                    const updated = e.target.checked
+                      ? [...current, opt.value]
+                      : current.filter((v: string) => v !== opt.value);
+                    setFormData({ ...formData, [field.name]: updated });
+                  }}
+                  className="w-4 h-4 text-pink-600 border-gray-300 rounded focus:ring-pink-500"
+                />
+                <span className="text-gray-700">{translatedOptLabel}</span>
+              </label>
+            );
+          })}
         </div>
       );
     case "file":
@@ -453,7 +484,7 @@ const renderCustomField = (
             fontWeight: theme?.headingFontWeight || "bold",
           }}
         >
-          {field.content || field.label || "Heading"}
+          {field.content || fieldLabel || "Heading"}
         </h3>
       );
     case "helperText":
@@ -481,7 +512,7 @@ const renderCustomField = (
       );
     case "paragraph":
       const paragraphContent =
-        formData[field.name] || field.content || field.label || "";
+        formData[field.name] || field.content || fieldLabel || "";
       return (
         <textarea
           value={paragraphContent}
@@ -538,6 +569,27 @@ export const FormBuilderTemplateForm: React.FC<
   onRegistrationSuccess,
   onRegistrationError,
 }: FormBuilderTemplateFormProps) => {
+  const { i18n } = useTranslation();
+  const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
+
+  // Listen to language changes to force re-render
+  useEffect(() => {
+    // Update immediately when component mounts
+    setCurrentLanguage(i18n.language || "en");
+    
+    const handleLanguageChange = (lng: string) => {
+      console.log("🌐 FormBuilderTemplateForm: Language changed to:", lng);
+      console.log("🌐 Current i18n.language:", i18n.language);
+      setCurrentLanguage(lng || i18n.language || "en");
+    };
+
+    i18n.on("languageChanged", handleLanguageChange);
+
+    return () => {
+      i18n.off("languageChanged", handleLanguageChange);
+    };
+  }, [i18n]);
+
   // State declarations - must be before useEffects that use them
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1368,12 +1420,25 @@ export const FormBuilderTemplateForm: React.FC<
   // Render custom form builder template (exactly like preview)
   if (isCustomFormBuilder) {
     const allFields = (formBuilderData.formData as CustomFormField[]) || [];
-    const customFields = getUniqueFields(allFields);
+    
+    // Memoize fields calculation to ensure re-render when language changes
+    const customFields = useMemo(() => {
+      const fields = getUniqueFields(allFields);
+      return fields;
+    }, [allFields, currentLanguage]);
 
-    // Debug: Log fields before and after getUniqueFields
+    // Debug: Log fields and language state
     console.log("🔍 FormBuilderTemplateForm - Field Processing:", {
+      currentLanguage,
+      i18nLanguage: i18n.language,
       totalFieldsBefore: allFields.length,
       totalFieldsAfter: customFields.length,
+      sampleField: customFields[0] ? {
+        name: customFields[0].name,
+        label: customFields[0].label,
+        hasLabelTranslations: !!customFields[0].labelTranslations,
+        labelTranslations: customFields[0].labelTranslations,
+      } : null,
       hasTitleFieldBefore: allFields.some(
         (f) => f.name === "title" || f.label === "Title"
       ),
@@ -1487,8 +1552,9 @@ export const FormBuilderTemplateForm: React.FC<
 
           <div
             style={{ backgroundColor: theme?.formBackgroundColor || "#ffffff" }}
+            dir={currentLanguage === "ar" ? "rtl" : "ltr"}
           >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" key={`form-${currentLanguage}`} dir={currentLanguage === "ar" ? "rtl" : "ltr"}>
               {(() => {
                 // Calculate all child field IDs once to avoid duplicate rendering
                 const allChildIds = new Set(
@@ -1597,7 +1663,7 @@ export const FormBuilderTemplateForm: React.FC<
 
                     return (
                       <div
-                        key={field.id}
+                        key={`${field.id}-${currentLanguage}`}
                         className={`w-full ${containerClassName}`}
                         style={
                           shouldApplyContainerStyle ? containerStyle : undefined
@@ -1699,7 +1765,7 @@ export const FormBuilderTemplateForm: React.FC<
 
                             return (
                               <div
-                                key={childField.id}
+                                key={`${childField.id}-${currentLanguage}`}
                                 className={fieldWrapperClassName}
                                 style={fieldWrapperStyle}
                               >
@@ -1710,6 +1776,7 @@ export const FormBuilderTemplateForm: React.FC<
                                   childField.type !== "paragraph" &&
                                   childField.type !== "button" && (
                                     <label
+                                      key={`child-label-${childField.id}-${currentLanguage}`}
                                       className="block font-semibold text-sm mb-1"
                                       style={{
                                         color:
@@ -1721,15 +1788,17 @@ export const FormBuilderTemplateForm: React.FC<
                                         fontWeight:
                                           theme?.labelFontWeight || "600",
                                       }}
+                                      dir={currentLanguage === "ar" ? "rtl" : "ltr"}
                                     >
-                                      {childField.label}
+                                      {getTranslatedLabel(childField, currentLanguage)}
                                       {childField.required && (
                                         <span
                                           style={{
                                             color:
                                               theme?.requiredIndicatorColor ||
                                               "#ef4444",
-                                            marginLeft: "4px",
+                                            marginLeft: currentLanguage === "ar" ? "0" : "4px",
+                                            marginRight: currentLanguage === "ar" ? "4px" : "0",
                                           }}
                                         >
                                           *
@@ -1744,7 +1813,8 @@ export const FormBuilderTemplateForm: React.FC<
                                     theme,
                                     formData,
                                     setFormData,
-                                    imagePreviewUrls
+                                    imagePreviewUrls,
+                                    currentLanguage
                                   )}
                                 </div>
                               </div>
@@ -1762,7 +1832,7 @@ export const FormBuilderTemplateForm: React.FC<
                   // Render regular fields
                   return (
                     <div
-                      key={field.id}
+                      key={`${field.id}-${currentLanguage}`}
                       className="space-y-2"
                       style={{
                         margin: field.fieldStyle?.margin || undefined,
@@ -1801,6 +1871,7 @@ export const FormBuilderTemplateForm: React.FC<
                         field.type !== "paragraph" &&
                         field.type !== "button" && (
                           <label
+                            key={`label-${field.id}-${currentLanguage}`}
                             className="block font-semibold"
                             style={{
                               color:
@@ -1810,14 +1881,16 @@ export const FormBuilderTemplateForm: React.FC<
                               fontSize: theme?.labelFontSize || "14px",
                               fontWeight: theme?.labelFontWeight || "600",
                             }}
+                            dir={currentLanguage === "ar" ? "rtl" : "ltr"}
                           >
-                            {field.label}
+                            {getTranslatedLabel(field, currentLanguage)}
                             {field.required && (
                               <span
                                 style={{
                                   color:
                                     theme?.requiredIndicatorColor || "#ef4444",
-                                  marginLeft: "4px",
+                                  marginLeft: currentLanguage === "ar" ? "0" : "4px",
+                                  marginRight: currentLanguage === "ar" ? "4px" : "0",
                                 }}
                               >
                                 *
@@ -1825,15 +1898,17 @@ export const FormBuilderTemplateForm: React.FC<
                             )}
                           </label>
                         )}
-                      {field.description && (
+                      {getTranslatedDescription(field, currentLanguage) && (
                         <p
+                          key={`desc-${field.id}-${currentLanguage}`}
                           className="text-xs mb-2 italic"
                           style={{
                             color: theme?.descriptionColor || "#6b7280",
                             fontSize: theme?.descriptionFontSize || "12px",
                           }}
+                          dir={currentLanguage === "ar" ? "rtl" : "ltr"}
                         >
-                          {field.description}
+                          {getTranslatedDescription(field, currentLanguage)}
                         </p>
                       )}
                       {/* Render fields based on type */}
@@ -1843,7 +1918,8 @@ export const FormBuilderTemplateForm: React.FC<
                         theme,
                         formData,
                         setFormData,
-                        imagePreviewUrls
+                        imagePreviewUrls,
+                        currentLanguage
                       )}
                     </div>
                   );
@@ -2679,11 +2755,39 @@ const AdvanceRegistration = ({
     templateName?: string
   ) => {
     try {
+      // Check if banner image is unchanged when editing
+      const originalBannerImage = isEditFormBuilderMode && editingFormBuilderTemplate
+        ? (editingFormBuilderTemplate.bannerImage || 
+           editingFormBuilderTemplate.formBuilderData?.bannerImage)
+        : null;
+      
+      const isBannerUnchanged = isEditFormBuilderMode && 
+        originalBannerImage && 
+        bannerImage === originalBannerImage;
+      
+      console.log("💾 Banner image check:", {
+        isEditMode: isEditFormBuilderMode,
+        hasOriginalBanner: !!originalBannerImage,
+        hasBannerImage: !!bannerImage,
+        isUnchanged: isBannerUnchanged,
+        bannerImageType: typeof bannerImage,
+        originalBannerType: typeof originalBannerImage,
+      });
+
       // Convert File to base64 string if needed
       let normalizedBannerImage: string | null = null;
+      let shouldUpdateBannerImage = false; // Flag to track if we need to update banner via API
+      
       if (bannerImage) {
-        if (bannerImage instanceof File) {
-          // Convert File to base64 string
+        // If banner is unchanged (still the original URL), preserve it and skip conversion
+        if (isBannerUnchanged) {
+          console.log("✅ Banner image unchanged - will preserve existing banner (no conversion needed)");
+          // Don't update banner - it's already there
+          normalizedBannerImage = null;
+          shouldUpdateBannerImage = false;
+        } else if (bannerImage instanceof File) {
+          // New file uploaded - convert to base64
+          shouldUpdateBannerImage = true;
           normalizedBannerImage = await new Promise<string>(
             (resolve, reject) => {
               const reader = new FileReader();
@@ -2708,10 +2812,63 @@ const AdvanceRegistration = ({
             );
           }
         } else if (typeof bannerImage === "string") {
-          normalizedBannerImage = bannerImage;
+          // Check if it's a URL (starts with http:// or https://)
+          const isUrl = bannerImage.startsWith("http://") || bannerImage.startsWith("https://");
+          
+          if (isUrl) {
+            // Different URL or new URL - fetch and convert to base64
+            shouldUpdateBannerImage = true;
+            console.log("Converting banner image URL to base64:", bannerImage);
+            try {
+              // Get authentication token from localStorage
+              const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+              
+              // Prepare headers with authentication if token exists
+              const headers: HeadersInit = {};
+              if (token) {
+                headers.Authorization = `Bearer ${token}`;
+              }
+              
+              const response = await fetch(bannerImage, {
+                headers,
+                credentials: 'include',
+                mode: 'cors',
+              });
+              
+              if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+              }
+              
+              const blob = await response.blob();
+              
+              // Check if the blob is actually an image
+              if (!blob.type.startsWith("image/")) {
+                throw new Error(`Invalid image type: ${blob.type}`);
+              }
+              
+              normalizedBannerImage = await new Promise<string>(
+                (resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.onerror = () =>
+                    reject(new Error("Failed to convert image to base64"));
+                  reader.readAsDataURL(blob);
+                }
+              );
+              console.log("✅ Banner image URL converted to base64");
+            } catch (error: any) {
+              console.error("❌ Error converting banner image URL to base64:", error);
+              // If URL fetch fails, throw error to prevent saving with invalid data
+              throw new Error(`Failed to load banner image: ${error.message}`);
+            }
+          } else {
+            // Already base64 (starts with data:image) - new base64 image
+            shouldUpdateBannerImage = true;
+            normalizedBannerImage = bannerImage;
+          }
 
           // Compress if larger than 500KB
-          if (normalizedBannerImage.length > 500 * 1024) {
+          if (normalizedBannerImage && normalizedBannerImage.length > 500 * 1024) {
             console.log("Compressing existing banner image...");
             normalizedBannerImage = await compressImageIfNeeded(
               normalizedBannerImage,
@@ -2724,6 +2881,11 @@ const AdvanceRegistration = ({
             );
           }
         }
+      } else if (bannerImage === null && isEditFormBuilderMode) {
+        // User explicitly removed the banner
+        shouldUpdateBannerImage = true;
+        normalizedBannerImage = null;
+        console.log("Banner image removed by user");
       }
 
       // Convert CustomFormField to FormField format (for backward compatibility)
@@ -2763,6 +2925,10 @@ const AdvanceRegistration = ({
         updatedAt: new Date().toISOString(),
         isCustom: true,
       };
+
+      // Store flag to indicate if banner should be updated
+      // We'll check this in handleSaveFormBuilderTemplate
+      (templateData as any)._shouldUpdateBannerImage = shouldUpdateBannerImage;
 
       await handleSaveFormBuilderTemplate(templateData);
       setIsCustomFormBuilderOpen(false);
@@ -2945,15 +3111,24 @@ const AdvanceRegistration = ({
             fields: fields, // Complete CustomFormField[] with all properties (id, type, label, name, placeholder, required, fieldStyle, layoutProps, etc.)
             formBuilderData: {
               formData: fields, // Store complete field data with all properties
-              bannerImage: normalizedBannerImage || null,
+              // Only include bannerImage when creating (not when updating)
+              ...(isEditFormBuilderMode
+                ? {}
+                : normalizedBannerImage &&
+                  typeof normalizedBannerImage === "string" &&
+                  normalizedBannerImage.trim() !== ""
+                  ? { bannerImage: normalizedBannerImage }
+                  : {}),
               theme: cleanTheme,
             },
-            // Only include bannerImage if it's a base64 string (not null or empty)
-            ...(normalizedBannerImage &&
-            typeof normalizedBannerImage === "string" &&
-            normalizedBannerImage.trim() !== ""
-              ? { bannerImage: normalizedBannerImage }
-              : {}),
+            // Only include bannerImage when creating (not when updating)
+            ...(isEditFormBuilderMode
+              ? {}
+              : normalizedBannerImage &&
+                typeof normalizedBannerImage === "string" &&
+                normalizedBannerImage.trim() !== ""
+                ? { bannerImage: normalizedBannerImage }
+                : {}),
             theme: cleanTheme,
           },
         },
@@ -3016,6 +3191,69 @@ const AdvanceRegistration = ({
           payload
         );
         console.log("Template updated successfully:", response);
+
+        // Check if banner image should be updated
+        // If _shouldUpdateBannerImage is false, banner is unchanged - skip update and preserve existing
+        const shouldUpdateBanner = (template as any)._shouldUpdateBannerImage !== false;
+        
+        console.log("Banner update check:", {
+          shouldUpdateBanner,
+          flagValue: (template as any)._shouldUpdateBannerImage,
+          hasNormalizedBanner: !!normalizedBannerImage,
+        });
+        
+        if (shouldUpdateBanner) {
+          if (
+            normalizedBannerImage &&
+            typeof normalizedBannerImage === "string" &&
+            normalizedBannerImage.trim() !== ""
+          ) {
+            try {
+              console.log("Updating banner image using update_image endpoint");
+              await updateRegistrationFormTemplateImage(
+                effectiveEventId,
+                editingFormBuilderTemplate.id,
+                "banner_image",
+                normalizedBannerImage
+              );
+              console.log("✅ Banner image updated successfully");
+            } catch (imageError: any) {
+              console.error("❌ Error updating banner image:", imageError);
+              // Don't fail the entire save if image update fails
+              showNotification(
+                "Template updated, but banner image update failed. Please try updating the image separately.",
+                "warning"
+              );
+            }
+          } else if (normalizedBannerImage === null) {
+            // User removed the banner - we might want to handle this case
+            // For now, we'll skip updating (banner remains as is)
+            console.log("Banner image was removed - skipping update (banner will remain)");
+          }
+        } else {
+          console.log("✅ Banner image unchanged - preserving existing banner (no API call needed)");
+        }
+
+        // Update form background image if it exists in theme
+        if (
+          cleanTheme.formBackgroundImage &&
+          typeof cleanTheme.formBackgroundImage === "string" &&
+          cleanTheme.formBackgroundImage.trim() !== ""
+        ) {
+          try {
+            console.log("Updating form background image using update_image endpoint");
+            await updateRegistrationFormTemplateImage(
+              effectiveEventId,
+              editingFormBuilderTemplate.id,
+              "form_background_image",
+              cleanTheme.formBackgroundImage
+            );
+            console.log("✅ Form background image updated successfully");
+          } catch (imageError: any) {
+            console.error("❌ Error updating form background image:", imageError);
+            // Don't fail the entire save if image update fails
+          }
+        }
       } else {
         // Create new template
         response = await createRegistrationFormTemplate(

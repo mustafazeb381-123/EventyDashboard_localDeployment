@@ -35,7 +35,6 @@ import { ThemeConfigPanel } from "./CustomFormBuilder/components/ThemeConfigPane
 import { FormPreview } from "./CustomFormBuilder/components/FormPreview";
 import { DroppableContainer } from "./CustomFormBuilder/components/DroppableContainer";
 import { MainDropZone } from "./CustomFormBuilder/components/MainDropZone";
-import { LanguageSwitcher } from "./CustomFormBuilder/components/LanguageSwitcher";
 import { RTLWrapper } from "./CustomFormBuilder/components/RTLWrapper";
 
 // Import i18n
@@ -925,9 +924,6 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               </p>
             </div>
             <div className="flex items-center gap-3">
-              {/* Language Switcher */}
-              <LanguageSwitcher />
-
               {/* JSON Menu */}
               <div className="relative json-menu-container">
                 <button

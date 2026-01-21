@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import {
   X,
@@ -26,6 +26,8 @@ import {
   Palette,
   Zap,
   Code,
+  Globe,
+  ChevronDown,
 } from "lucide-react";
 import type { CustomFormField, FieldType } from "../types";
 import {
@@ -50,11 +52,130 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
   if (!field) return null;
 
   const [config, setConfig] = useState<CustomFormField>(field);
+  const [fieldLanguage, setFieldLanguage] = useState<"en" | "ar">("en");
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+
+    if (isLangDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isLangDropdownOpen]);
+
+  // Check if field is an input field that supports multilingual
+  const isInputField = [
+    "text",
+    "email",
+    "number",
+    "date",
+    "textarea",
+    "select",
+    "radio",
+    "checkbox",
+    "file",
+    "image",
+  ].includes(config.type);
+
+  // Helper to get current language value with fallback
+  const getLabelValue = (lang: "en" | "ar") => {
+    if (lang === "en") {
+      return config.labelTranslations?.en || config.label || "";
+    } else {
+      return config.labelTranslations?.ar || "";
+    }
+  };
+
+  const getPlaceholderValue = (lang: "en" | "ar") => {
+    if (lang === "en") {
+      return config.placeholderTranslations?.en || config.placeholder || "";
+    } else {
+      return config.placeholderTranslations?.ar || "";
+    }
+  };
+
+  const getDescriptionValue = (lang: "en" | "ar") => {
+    if (lang === "en") {
+      return config.descriptionTranslations?.en || config.description || "";
+    } else {
+      return config.descriptionTranslations?.ar || "";
+    }
+  };
+
+  // Helper to update translations
+  const updateLabelTranslation = (lang: "en" | "ar", value: string) => {
+    const translations = config.labelTranslations || {};
+    if (lang === "en") {
+      // Update both translation and main label for backward compatibility
+      setConfig({
+        ...config,
+        label: value,
+        labelTranslations: { ...translations, en: value },
+      });
+    } else {
+      setConfig({
+        ...config,
+        labelTranslations: { ...translations, ar: value },
+      });
+    }
+  };
+
+  const updatePlaceholderTranslation = (lang: "en" | "ar", value: string) => {
+    const translations = config.placeholderTranslations || {};
+    if (lang === "en") {
+      // Update both translation and main placeholder for backward compatibility
+      setConfig({
+        ...config,
+        placeholder: value,
+        placeholderTranslations: { ...translations, en: value },
+      });
+    } else {
+      setConfig({
+        ...config,
+        placeholderTranslations: { ...translations, ar: value },
+      });
+    }
+  };
+
+  const updateDescriptionTranslation = (lang: "en" | "ar", value: string) => {
+    const translations = config.descriptionTranslations || {};
+    if (lang === "en") {
+      // Update both translation and main description for backward compatibility
+      setConfig({
+        ...config,
+        description: value,
+        descriptionTranslations: { ...translations, en: value },
+      });
+    } else {
+      setConfig({
+        ...config,
+        descriptionTranslations: { ...translations, ar: value },
+      });
+    }
+  };
 
   const handleLabelChange = (nextLabel: string) => {
-    setConfig((prev) =>
-      updateFieldLabelWithAutoProps(prev, nextLabel, allFields)
-    );
+    setConfig((prev) => {
+      const updated = updateFieldLabelWithAutoProps(prev, nextLabel, allFields);
+      // Also update English translation
+      return {
+        ...updated,
+        labelTranslations: {
+          ...updated.labelTranslations,
+          en: nextLabel,
+        },
+      };
+    });
   };
 
   const getFieldIcon = (type: FieldType) => {
@@ -282,19 +403,84 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           config.type === "date" ||
           config.type === "textarea") && (
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              {t("fieldConfig.basicSettings")}
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                {t("fieldConfig.basicSettings")}
+              </h4>
+              {/* Language Dropdown */}
+              <div className="relative" ref={langDropdownRef}>
+                <button
+                  onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
+                  title="Select Language"
+                >
+                  <Globe size={14} />
+                  <span className="font-medium">
+                    {fieldLanguage === "en" ? "🇬🇧 English" : "🇸🇦 العربية"}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    className={`transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {isLangDropdownOpen && (
+                  <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-1 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px] border border-gray-200">
+                    <button
+                      onClick={() => {
+                        setFieldLanguage("en");
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-2 transition-colors text-sm ${
+                        fieldLanguage === "en" ? "bg-blue-50 text-blue-600" : ""
+                      }`}
+                    >
+                      <span>🇬🇧</span>
+                      <span className="flex-1">English</span>
+                      {fieldLanguage === "en" && <span className="text-blue-600">✓</span>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFieldLanguage("ar");
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-2 transition-colors text-sm ${
+                        fieldLanguage === "ar" ? "bg-blue-50 text-blue-600" : ""
+                      }`}
+                    >
+                      <span>🇸🇦</span>
+                      <span className="flex-1">العربية</span>
+                      {fieldLanguage === "ar" && <span className="text-blue-600">✓</span>}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
                 {t("fieldConfig.fieldLabel")} <span className="text-red-500">*</span>
+                {fieldLanguage === "ar" && (
+                  <span className="ml-2 text-xs text-gray-500">(Arabic)</span>
+                )}
               </label>
               <input
                 type="text"
-                value={config.label}
-                onChange={(e) => handleLabelChange(e.target.value)}
+                value={getLabelValue(fieldLanguage)}
+                onChange={(e) => {
+                  if (fieldLanguage === "en") {
+                    handleLabelChange(e.target.value);
+                  } else {
+                    updateLabelTranslation("ar", e.target.value);
+                  }
+                }}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder={t("fieldConfig.enterFieldLabel")}
+                placeholder={
+                  fieldLanguage === "en"
+                    ? t("fieldConfig.enterFieldLabel")
+                    : "أدخل تسمية الحقل"
+                }
+                dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
               />
             </div>
 
@@ -322,30 +508,42 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
                 {t("fieldConfig.placeholder")}
+                {fieldLanguage === "ar" && (
+                  <span className="ml-2 text-xs text-gray-500">(Arabic)</span>
+                )}
               </label>
               <input
                 type="text"
-                value={config.placeholder || ""}
-                onChange={(e) =>
-                  setConfig({ ...config, placeholder: e.target.value })
-                }
+                value={getPlaceholderValue(fieldLanguage)}
+                onChange={(e) => updatePlaceholderTranslation(fieldLanguage, e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder={t("fieldConfig.enterPlaceholder")}
+                placeholder={
+                  fieldLanguage === "en"
+                    ? t("fieldConfig.enterPlaceholder")
+                    : "أدخل النص التوضيحي"
+                }
+                dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
                 {t("fieldConfig.description")}
+                {fieldLanguage === "ar" && (
+                  <span className="ml-2 text-xs text-gray-500">(Arabic)</span>
+                )}
               </label>
               <textarea
-                value={config.description || ""}
-                onChange={(e) =>
-                  setConfig({ ...config, description: e.target.value })
-                }
+                value={getDescriptionValue(fieldLanguage)}
+                onChange={(e) => updateDescriptionTranslation(fieldLanguage, e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                 rows={3}
-                placeholder={t("fieldConfig.helpTextForUsers")}
+                placeholder={
+                  fieldLanguage === "en"
+                    ? t("fieldConfig.helpTextForUsers")
+                    : "نص المساعدة للمستخدمين"
+                }
+                dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
               />
             </div>
 
@@ -372,19 +570,84 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           config.type === "checkbox") && (
           <>
             <div className="space-y-4">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                {t("fieldConfig.basicSettings")}
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  {t("fieldConfig.basicSettings")}
+                </h4>
+                {/* Language Dropdown */}
+                <div className="relative" ref={langDropdownRef}>
+                  <button
+                    onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
+                    title="Select Language"
+                  >
+                    <Globe size={14} />
+                    <span className="font-medium">
+                      {fieldLanguage === "en" ? "🇬🇧 English" : "🇸🇦 العربية"}
+                    </span>
+                    <ChevronDown
+                      size={12}
+                      className={`transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {isLangDropdownOpen && (
+                    <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-1 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px] border border-gray-200">
+                      <button
+                        onClick={() => {
+                          setFieldLanguage("en");
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-2 transition-colors text-sm ${
+                          fieldLanguage === "en" ? "bg-blue-50 text-blue-600" : ""
+                        }`}
+                      >
+                        <span>🇬🇧</span>
+                        <span className="flex-1">English</span>
+                        {fieldLanguage === "en" && <span className="text-blue-600">✓</span>}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFieldLanguage("ar");
+                          setIsLangDropdownOpen(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-2 transition-colors text-sm ${
+                          fieldLanguage === "ar" ? "bg-blue-50 text-blue-600" : ""
+                        }`}
+                      >
+                        <span>🇸🇦</span>
+                        <span className="flex-1">العربية</span>
+                        {fieldLanguage === "ar" && <span className="text-blue-600">✓</span>}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
                   {t("fieldConfig.fieldLabel")} <span className="text-red-500">*</span>
+                  {fieldLanguage === "ar" && (
+                    <span className="ml-2 text-xs text-gray-500">(Arabic)</span>
+                  )}
                 </label>
                 <input
                   type="text"
-                  value={config.label}
-                  onChange={(e) => handleLabelChange(e.target.value)}
+                  value={getLabelValue(fieldLanguage)}
+                  onChange={(e) => {
+                    if (fieldLanguage === "en") {
+                      handleLabelChange(e.target.value);
+                    } else {
+                      updateLabelTranslation("ar", e.target.value);
+                    }
+                  }}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder={t("fieldConfig.enterFieldLabel")}
+                  placeholder={
+                    fieldLanguage === "en"
+                      ? t("fieldConfig.enterFieldLabel")
+                      : "أدخل تسمية الحقل"
+                  }
+                  dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
                 />
               </div>
 
@@ -409,70 +672,111 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
                   {t("fieldConfig.description")}
+                  {fieldLanguage === "ar" && (
+                    <span className="ml-2 text-xs text-gray-500">(Arabic)</span>
+                  )}
                 </label>
                 <textarea
-                  value={config.description || ""}
-                  onChange={(e) =>
-                    setConfig({ ...config, description: e.target.value })
-                  }
+                  value={getDescriptionValue(fieldLanguage)}
+                  onChange={(e) => updateDescriptionTranslation(fieldLanguage, e.target.value)}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                   rows={2}
-                  placeholder={t("fieldConfig.helpTextForUsers")}
+                  placeholder={
+                    fieldLanguage === "en"
+                      ? t("fieldConfig.helpTextForUsers")
+                      : "نص المساعدة للمستخدمين"
+                  }
+                  dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
                 />
               </div>
             </div>
 
             <div className="pt-2 border-t">
-              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                {t("fieldConfig.options")}
-              </h4>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                  {t("fieldConfig.options")}
+                </h4>
+                {/* Language indicator for options */}
+                <span className="text-xs text-gray-500">
+                  {fieldLanguage === "en" ? "🇬🇧 English" : "🇸🇦 العربية"}
+                </span>
+              </div>
               <div className="space-y-2">
-                {(config.options || []).map((option, index) => (
-                  <div
-                    key={index}
-                    className="flex gap-2 items-center p-2 bg-gray-50 rounded-lg border border-gray-200"
-                  >
-                    <span className="text-xs text-gray-500 font-mono w-6 text-center">
-                      {index + 1}
-                    </span>
-                    <input
-                      type="text"
-                      value={option.label}
-                      onChange={(e) => {
-                        const newOptions = [...(config.options || [])];
-                        newOptions[index] = {
-                          ...option,
-                          label: e.target.value,
-                          value: e.target.value
-                            .toLowerCase()
-                            .replace(/\s+/g, "_"),
-                        };
-                        setConfig({ ...config, options: newOptions });
-                      }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      placeholder={t("fieldConfig.optionLabel")}
-                    />
-                    <button
-                      onClick={() => {
-                        const newOptions = config.options?.filter(
-                          (_, i) => i !== index
-                        );
-                        setConfig({ ...config, options: newOptions || [] });
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title={t("fieldConfig.removeOption")}
+                {(config.options || []).map((option, index) => {
+                  const getOptionLabel = (lang: "en" | "ar") => {
+                    if (lang === "en") {
+                      return option.labelTranslations?.en || option.label || "";
+                    } else {
+                      return option.labelTranslations?.ar || "";
+                    }
+                  };
+
+                  const updateOptionLabel = (lang: "en" | "ar", value: string) => {
+                    const newOptions = [...(config.options || [])];
+                    const translations = option.labelTranslations || {};
+                    if (lang === "en") {
+                      newOptions[index] = {
+                        ...option,
+                        label: value,
+                        value: value.toLowerCase().replace(/\s+/g, "_"),
+                        labelTranslations: { ...translations, en: value },
+                      };
+                    } else {
+                      newOptions[index] = {
+                        ...option,
+                        labelTranslations: { ...translations, ar: value },
+                      };
+                    }
+                    setConfig({ ...config, options: newOptions });
+                  };
+
+                  return (
+                    <div
+                      key={index}
+                      className="flex gap-2 items-center p-2 bg-gray-50 rounded-lg border border-gray-200"
                     >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))}
+                      <span className="text-xs text-gray-500 font-mono w-6 text-center">
+                        {index + 1}
+                      </span>
+                      <input
+                        type="text"
+                        value={getOptionLabel(fieldLanguage)}
+                        onChange={(e) => updateOptionLabel(fieldLanguage, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
+                        placeholder={
+                          fieldLanguage === "en"
+                            ? t("fieldConfig.optionLabel")
+                            : "أدخل تسمية الخيار"
+                        }
+                        dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
+                      />
+                      <button
+                        onClick={() => {
+                          const newOptions = config.options?.filter(
+                            (_, i) => i !== index
+                          );
+                          setConfig({ ...config, options: newOptions || [] });
+                        }}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title={t("fieldConfig.removeOption")}
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  );
+                })}
                 <button
                   onClick={() => {
+                    const optionNumber = (config.options?.length || 0) + 1;
                     const newOptions = [
                       ...(config.options || []),
                       {
-                        label: `Option ${(config.options?.length || 0) + 1}`,
-                        value: `option_${(config.options?.length || 0) + 1}`,
+                        label: `Option ${optionNumber}`,
+                        value: `option_${optionNumber}`,
+                        labelTranslations: {
+                          en: `Option ${optionNumber}`,
+                          ar: "",
+                        },
                       },
                     ];
                     setConfig({ ...config, options: newOptions });
@@ -490,19 +794,84 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {/* FILE/IMAGE: Minimal configuration */}
         {(config.type === "file" || config.type === "image") && (
           <div className="space-y-4">
-            <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              {t("fieldConfig.basicSettings")}
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+                {t("fieldConfig.basicSettings")}
+              </h4>
+              {/* Language Dropdown */}
+              <div className="relative" ref={langDropdownRef}>
+                <button
+                  onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm"
+                  title="Select Language"
+                >
+                  <Globe size={14} />
+                  <span className="font-medium">
+                    {fieldLanguage === "en" ? "🇬🇧 English" : "🇸🇦 العربية"}
+                  </span>
+                  <ChevronDown
+                    size={12}
+                    className={`transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {isLangDropdownOpen && (
+                  <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-1 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[140px] border border-gray-200">
+                    <button
+                      onClick={() => {
+                        setFieldLanguage("en");
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-2 transition-colors text-sm ${
+                        fieldLanguage === "en" ? "bg-blue-50 text-blue-600" : ""
+                      }`}
+                    >
+                      <span>🇬🇧</span>
+                      <span className="flex-1">English</span>
+                      {fieldLanguage === "en" && <span className="text-blue-600">✓</span>}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setFieldLanguage("ar");
+                        setIsLangDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-2 transition-colors text-sm ${
+                        fieldLanguage === "ar" ? "bg-blue-50 text-blue-600" : ""
+                      }`}
+                    >
+                      <span>🇸🇦</span>
+                      <span className="flex-1">العربية</span>
+                      {fieldLanguage === "ar" && <span className="text-blue-600">✓</span>}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
                 {t("fieldConfig.fieldLabel")} <span className="text-red-500">*</span>
+                {fieldLanguage === "ar" && (
+                  <span className="ml-2 text-xs text-gray-500">(Arabic)</span>
+                )}
               </label>
               <input
                 type="text"
-                value={config.label}
-                onChange={(e) => handleLabelChange(e.target.value)}
+                value={getLabelValue(fieldLanguage)}
+                onChange={(e) => {
+                  if (fieldLanguage === "en") {
+                    handleLabelChange(e.target.value);
+                  } else {
+                    updateLabelTranslation("ar", e.target.value);
+                  }
+                }}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder={t("fieldConfig.enterFieldLabel")}
+                placeholder={
+                  fieldLanguage === "en"
+                    ? t("fieldConfig.enterFieldLabel")
+                    : "أدخل تسمية الحقل"
+                }
+                dir={fieldLanguage === "ar" ? "rtl" : "ltr"}
               />
             </div>
 

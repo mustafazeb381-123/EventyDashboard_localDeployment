@@ -1,9 +1,16 @@
 import React, { useState } from "react";
 import { AlertCircle, X, FileText, Image as ImageIcon } from "lucide-react";
-import type { CustomFormField, FormTheme } from "../types";
+import { useTranslation } from "react-i18next";
+import type { CustomFormField, FormTheme, FieldType } from "../types";
 import { FormHeader } from "./FormHeader";
 import { FormButtonField } from "./FormButtonField";
 import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
+import {
+  getTranslatedLabel,
+  getTranslatedPlaceholder,
+  getTranslatedDescription,
+  getTranslatedOptionLabel,
+} from "../utils/fieldTranslations";
 
 interface FormPreviewProps {
   fields: CustomFormField[];
@@ -16,6 +23,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   bannerImage,
   theme,
 }) => {
+  const { i18n } = useTranslation();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
     string | null
@@ -222,8 +230,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         ? { paddingLeft: field.fieldStyle.paddingLeft }
         : {}),
     };
+    // Get translated values based on current language
+    const currentLang = i18n.language || "en";
+    const translatedPlaceholder = getTranslatedPlaceholder(field, currentLang);
+    
     // Replace inline parameters
-    const displayPlaceholder = replaceInlineParams(field.placeholder);
+    const displayPlaceholder = replaceInlineParams(translatedPlaceholder || "");
 
     const handleChange = (name: string, value: any) => {
       setFormData((prev) => ({ ...prev, [name]: value }));
@@ -247,9 +259,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
     switch (field.type) {
       case "text": {
+        const currentLang = i18n.language || "en";
+        const translatedLabel = getTranslatedLabel(field, currentLang);
         const isPhoneVariant =
           field.inputVariant === "phone" ||
-          /phone/i.test(field.label || "") ||
+          /phone/i.test(translatedLabel || "") ||
           /phone/i.test(field.name || "");
 
         if (isPhoneVariant) {
@@ -493,84 +507,93 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               {displayPlaceholder || "Select an option..."}
             </option>
             {(field.optionsSource === "countries" ||
-            /country/i.test(field.label || "") ||
+            /country/i.test(getTranslatedLabel(field, i18n.language || "en") || "") ||
             /country/i.test(field.name || "")
               ? COUNTRIES.map((c) => ({ label: c.name, value: c.code }))
               : field.options || []
-            ).map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {replaceInlineParams(opt.label)}
-              </option>
-            ))}
+            ).map((opt) => {
+              const translatedOptLabel = getTranslatedOptionLabel(opt, i18n.language || "en");
+              return (
+                <option key={opt.value} value={opt.value}>
+                  {replaceInlineParams(translatedOptLabel)}
+                </option>
+              );
+            })}
           </select>
         );
       case "radio":
         return (
           <div className="space-y-3">
-            {field.options?.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <input
-                  type="radio"
-                  name={field.name}
-                  value={opt.value}
-                  checked={formData[field.name] === opt.value}
-                  onChange={(e) => handleChange(field.name, e.target.value)}
-                  onFocus={() =>
-                    executeEventHandler(field.events?.onFocus, field.name)
-                  }
-                  onBlur={() =>
-                    executeEventHandler(field.events?.onBlur, field.name)
-                  }
-                  onClick={() =>
-                    executeEventHandler(field.events?.onClick, field.name)
-                  }
-                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                />
-                <span className="text-gray-700">
-                  {replaceInlineParams(opt.label)}
-                </span>
-              </label>
-            ))}
+            {field.options?.map((opt) => {
+              const translatedOptLabel = getTranslatedOptionLabel(opt, i18n.language || "en");
+              return (
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <input
+                    type="radio"
+                    name={field.name}
+                    value={opt.value}
+                    checked={formData[field.name] === opt.value}
+                    onChange={(e) => handleChange(field.name, e.target.value)}
+                    onFocus={() =>
+                      executeEventHandler(field.events?.onFocus, field.name)
+                    }
+                    onBlur={() =>
+                      executeEventHandler(field.events?.onBlur, field.name)
+                    }
+                    onClick={() =>
+                      executeEventHandler(field.events?.onClick, field.name)
+                    }
+                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700">
+                    {replaceInlineParams(translatedOptLabel)}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         );
       case "checkbox":
         return (
           <div className="space-y-3">
-            {field.options?.map((opt) => (
-              <label
-                key={opt.value}
-                className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  value={opt.value}
-                  checked={formData[field.name]?.includes(opt.value) || false}
-                  onChange={(e) => {
-                    const current = formData[field.name] || [];
-                    const updated = e.target.checked
-                      ? [...current, opt.value]
-                      : current.filter((v: string) => v !== opt.value);
-                    handleChange(field.name, updated);
-                  }}
-                  onFocus={() =>
-                    executeEventHandler(field.events?.onFocus, field.name)
-                  }
-                  onBlur={() =>
-                    executeEventHandler(field.events?.onBlur, field.name)
-                  }
-                  onClick={() =>
-                    executeEventHandler(field.events?.onClick, field.name)
-                  }
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <span className="text-gray-700">
-                  {replaceInlineParams(opt.label)}
-                </span>
-              </label>
-            ))}
+            {field.options?.map((opt) => {
+              const translatedOptLabel = getTranslatedOptionLabel(opt, i18n.language || "en");
+              return (
+                <label
+                  key={opt.value}
+                  className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    value={opt.value}
+                    checked={formData[field.name]?.includes(opt.value) || false}
+                    onChange={(e) => {
+                      const current = formData[field.name] || [];
+                      const updated = e.target.checked
+                        ? [...current, opt.value]
+                        : current.filter((v: string) => v !== opt.value);
+                      handleChange(field.name, updated);
+                    }}
+                    onFocus={() =>
+                      executeEventHandler(field.events?.onFocus, field.name)
+                    }
+                    onBlur={() =>
+                      executeEventHandler(field.events?.onBlur, field.name)
+                    }
+                    onClick={() =>
+                      executeEventHandler(field.events?.onClick, field.name)
+                    }
+                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700">
+                    {replaceInlineParams(translatedOptLabel)}
+                  </span>
+                </label>
+              );
+            })}
           </div>
         );
       case "file":
@@ -742,12 +765,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               fontWeight: theme?.headingFontWeight || "bold",
             }}
           >
-            {replaceInlineParams(field.content || field.label || "Heading")}
+            {replaceInlineParams(field.content || getTranslatedLabel(field, i18n.language || "en") || "Heading")}
           </h3>
         );
       case "paragraph":
         const paragraphContent =
-          formData[field.name] || field.content || field.label || "";
+          formData[field.name] || field.content || getTranslatedLabel(field, i18n.language || "en") || "";
         return (
           <textarea
             value={paragraphContent}
@@ -839,7 +862,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 : {}),
             }}
           >
-            {replaceInlineParams(field.content || field.label || "")}
+            {replaceInlineParams(field.content || getTranslatedLabel(field, i18n.language || "en") || "")}
           </div>
         );
       case "spacer":
@@ -1189,7 +1212,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               }
 
               // For heading fields, don't show label/description wrapper - just render the heading
-              if (field.type === "heading") {
+              if ((field.type as string) === "heading") {
                 return (
                   <div
                     key={field.id}
@@ -1353,7 +1376,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                       fontWeight: theme?.labelFontWeight || "600",
                     }}
                   >
-                    {replaceInlineParams(field.label)}
+                    {replaceInlineParams(getTranslatedLabel(field, i18n.language || "en"))}
                     {field.required && (
                       <span
                         style={{
@@ -1373,7 +1396,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                       </span>
                     )}
                   </label>
-                  {field.description && (
+                  {getTranslatedDescription(field, i18n.language || "en") && (
                     <p
                       className="text-xs mb-2 italic"
                       style={{
@@ -1381,7 +1404,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                         fontSize: theme?.descriptionFontSize || "12px",
                       }}
                     >
-                      {field.description}
+                      {replaceInlineParams(getTranslatedDescription(field, i18n.language || "en") || "")}
                     </p>
                   )}
                   {renderField(field, baseInputStyle, theme)}

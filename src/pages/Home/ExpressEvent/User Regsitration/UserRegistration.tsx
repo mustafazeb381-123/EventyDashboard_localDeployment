@@ -4,9 +4,10 @@ import {
   getRegistrationFieldApi,
   getDefaultRegistrationFormTemplate,
 } from "@/apis/apiHelpers";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Globe, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Import user registration templates (without admin functionality)
 import TemplateFormOne from "./TemplateFormOne";
@@ -58,6 +59,10 @@ interface EventData {
 
 function UserRegistration() {
   const { id: routeId } = useParams();
+  const { i18n } = useTranslation();
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
+  const langDropdownRef = useRef<HTMLDivElement>(null);
+  
   console.log("routeId", routeId);
   const [templateData, setTemplateData] = useState<TemplateData | null>(null);
   const [eventData, setEventData] = useState<EventData | null>(null);
@@ -70,6 +75,44 @@ function UserRegistration() {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+
+  const languages = [
+    { code: "en", name: "English", flag: "🇬🇧" },
+    { code: "ar", name: "العربية", flag: "🇸🇦" },
+  ];
+
+  const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
+
+  const changeLanguage = (langCode: string) => {
+    console.log("🔄 Changing language to:", langCode);
+    i18n.changeLanguage(langCode).then(() => {
+      console.log("✅ Language changed successfully to:", langCode);
+      // Force a small delay to ensure all components update
+      setTimeout(() => {
+        console.log("🔄 Language change complete, current language:", i18n.language);
+      }, 100);
+    }).catch((err) => {
+      console.error("❌ Error changing language:", err);
+    });
+    setIsLangDropdownOpen(false);
+  };
+
+  // Close language dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+    };
+
+    if (isLangDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isLangDropdownOpen]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -666,6 +709,47 @@ function UserRegistration() {
             </div>
           </div>
         )}
+        
+        {/* Language Switcher */}
+        <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
+          <div className="relative" ref={langDropdownRef}>
+            <button
+              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg shadow-md transition-colors border border-gray-200"
+              title="Change Language"
+            >
+              <Globe size={18} className="text-gray-600" />
+              <span className="text-sm font-medium text-gray-700">
+                {currentLanguage.flag} {currentLanguage.name}
+              </span>
+              <ChevronDown
+                size={16}
+                className={`text-gray-600 transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {isLangDropdownOpen && (
+              <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-2 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px] border border-gray-200">
+                {languages.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => changeLanguage(lang.code)}
+                    className={`w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors ${
+                      i18n.language === lang.code ? "bg-blue-50 text-blue-600" : ""
+                    }`}
+                  >
+                    <span className="text-lg">{lang.flag}</span>
+                    <span className="text-sm font-medium flex-1">{lang.name}</span>
+                    {i18n.language === lang.code && (
+                      <span className="text-blue-600 rtl:order-first">✓</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="w-full max-w-4xl mx-auto">
           <FormBuilderTemplateForm
             isUserRegistration={true}
@@ -716,6 +800,47 @@ function UserRegistration() {
           </div>
         </div>
       )}
+      
+      {/* Language Switcher */}
+      <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
+        <div className="relative" ref={langDropdownRef}>
+          <button
+            onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+            className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg shadow-md transition-colors border border-gray-200"
+            title="Change Language"
+          >
+            <Globe size={18} className="text-gray-600" />
+            <span className="text-sm font-medium text-gray-700">
+              {currentLanguage.flag} {currentLanguage.name}
+            </span>
+            <ChevronDown
+              size={16}
+              className={`text-gray-600 transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {isLangDropdownOpen && (
+            <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-2 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px] border border-gray-200">
+              {languages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => changeLanguage(lang.code)}
+                  className={`w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors ${
+                    i18n.language === lang.code ? "bg-blue-50 text-blue-600" : ""
+                  }`}
+                >
+                  <span className="text-lg">{lang.flag}</span>
+                  <span className="text-sm font-medium flex-1">{lang.name}</span>
+                  {i18n.language === lang.code && (
+                    <span className="text-blue-600 rtl:order-first">✓</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Registration Form Template - No extra banner, templates handle their own event info */}
       <div className="w-full max-w-4xl mx-auto">{renderTemplate()}</div>
 
