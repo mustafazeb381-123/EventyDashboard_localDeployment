@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { getCheckOuts } from "@/apis/apiHelpers";
+import { getCheckOuts, getSessionAreaApi } from "@/apis/apiHelpers";
 import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -44,12 +44,13 @@ const UserAvatar = ({ user }: { user: any }) => {
 function CheckOut() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
-  const [eventUsers, setUsers] = useState<any[]>([]);
+  const [sessionAreaId, setSessionAreaId] = useState<string | number | null>(null);
+  const [allUsers, setAllUsers] = useState<any[]>([]); // Store all users
+  const [eventUsers, setUsers] = useState<any[]>([]); // Displayed users (paginated)
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const itemsPerPage = 10;
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [notification, setNotification] = useState<{
@@ -78,6 +79,27 @@ function CheckOut() {
     }
   }, [location.search, eventId]);
 
+  // Fetch session areas and set the first one as default
+  useEffect(() => {
+    const fetchSessionAreas = async () => {
+      if (!eventId) return;
+      try {
+        const response = await getSessionAreaApi(eventId);
+        const areas = response?.data?.data || [];
+        if (areas.length > 0) {
+          // Use the first session area
+          setSessionAreaId(areas[0].id);
+        } else {
+          showNotification("No session areas found for this event", "error");
+        }
+      } catch (error) {
+        console.error("Error fetching session areas:", error);
+        showNotification("Failed to load session areas", "error");
+      }
+    };
+    fetchSessionAreas();
+  }, [eventId]);
+
   // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -88,16 +110,53 @@ function CheckOut() {
     return () => clearTimeout(timer);
   }, [searchTerm]);
 
-  // Fetch users when eventId, currentPage, or search term changes
+  // Fetch users when eventId or sessionAreaId changes
   useEffect(() => {
-    if (eventId && currentPage > 0) {
-      if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm);
-      } else {
-        fetchUsers(eventId, currentPage);
-      }
+    if (eventId && sessionAreaId) {
+      fetchUsers(eventId, sessionAreaId);
     }
-  }, [eventId, currentPage, debouncedSearchTerm]);
+  }, [eventId, sessionAreaId]);
+
+  // Filter and paginate users when search term or page changes
+  useEffect(() => {
+    if (allUsers.length === 0) {
+      setUsers([]);
+      setPagination(null);
+      return;
+    }
+
+    // Filter users by search term
+    let filteredUsers = allUsers;
+    if (debouncedSearchTerm) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      filteredUsers = allUsers.filter((user: any) => {
+        const name = user.attributes?.name?.toLowerCase() || "";
+        const email = user.attributes?.email?.toLowerCase() || "";
+        const organization = user.attributes?.organization?.toLowerCase() || "";
+        const phoneNumber = user.attributes?.phone_number?.toLowerCase() || "";
+
+        return (
+          name.includes(searchLower) ||
+          email.includes(searchLower) ||
+          organization.includes(searchLower) ||
+          phoneNumber.includes(searchLower)
+        );
+      });
+    }
+
+    // Paginate filtered users
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = filteredUsers.slice(startIndex, endIndex);
+
+    setUsers(paginatedUsers);
+    setPagination({
+      current_page: currentPage,
+      total_pages: Math.ceil(filteredUsers.length / itemsPerPage),
+      total_count: filteredUsers.length,
+      per_page: itemsPerPage,
+    });
+  }, [allUsers, debouncedSearchTerm, currentPage]);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -113,119 +172,20 @@ function CheckOut() {
     setNotification({ message, type });
   };
 
-  const fetchUsers = async (id: string, page: number = 1) => {
+  const fetchUsers = async (id: string, areaId: string | number) => {
     setLoadingUsers(true);
-    setIsSearching(false);
     try {
-      const response = await getCheckOuts(id, {
-        page,
-        per_page: itemsPerPage,
-      });
+      // Use getCheckOuts the same way as GateOnboarding.tsx
+      const response = await getCheckOuts(id, areaId);
 
-      // Handle JSON:API response structure
-      const responseData = response.data?.data || response.data;
-      const users = Array.isArray(responseData)
-        ? responseData
-        : responseData?.data || [];
-
-      setUsers(users);
-
-      // Set pagination metadata
-      const paginationMeta =
-        response.data?.meta?.pagination || response.data?.pagination;
-      if (paginationMeta) {
-        setPagination(paginationMeta);
-      }
+      // Handle JSON:API response structure (same as GateOnboarding.tsx)
+      const users = response?.data?.data || [];
+      setAllUsers(users); // Store all users
+      setCurrentPage(1); // Reset to first page when fetching new data
     } catch (error) {
       console.error("Error fetching users who need to check out:", error);
       showNotification("Failed to load users", "error");
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
-  // Search users across all pages
-  const searchUsersAcrossPages = async (id: string, searchQuery: string) => {
-    setLoadingUsers(true);
-    setIsSearching(true);
-    try {
-      // First, get the first page to know total pages
-      const firstPageResponse = await getCheckOuts(id, {
-        page: 1,
-        per_page: itemsPerPage,
-      });
-
-      const paginationMeta =
-        firstPageResponse.data?.meta?.pagination ||
-        firstPageResponse.data?.pagination;
-      const totalPages = paginationMeta?.total_pages || 1;
-
-      // Search through all pages
-      const allMatchingUsers: any[] = [];
-      const searchLower = searchQuery.toLowerCase();
-
-      // Fetch all pages and filter
-      const pagePromises = [];
-      for (let page = 1; page <= totalPages; page++) {
-        pagePromises.push(
-          getCheckOuts(id, {
-            page,
-            per_page: itemsPerPage,
-          })
-        );
-      }
-
-      const allPagesResponses = await Promise.all(pagePromises);
-
-      // Filter users from all pages
-      allPagesResponses.forEach((response) => {
-        const responseData = response.data?.data || response.data;
-        const users = Array.isArray(responseData)
-          ? responseData
-          : responseData?.data || [];
-
-        const matchingUsers = users.filter((user: any) => {
-          const name = user.attributes?.name?.toLowerCase() || "";
-          const email = user.attributes?.email?.toLowerCase() || "";
-          const organization =
-            user.attributes?.organization?.toLowerCase() || "";
-          const phoneNumber =
-            user.attributes?.phone_number?.toLowerCase() || "";
-
-          const matchesSearch =
-            name.includes(searchLower) ||
-            email.includes(searchLower) ||
-            organization.includes(searchLower) ||
-            phoneNumber.includes(searchLower);
-
-          return matchesSearch;
-        });
-
-        allMatchingUsers.push(...matchingUsers);
-      });
-
-      // Paginate the search results
-      const startIndex = (currentPage - 1) * itemsPerPage;
-      const endIndex = startIndex + itemsPerPage;
-      const paginatedResults = allMatchingUsers.slice(startIndex, endIndex);
-
-      setUsers(paginatedResults);
-
-      // Set pagination metadata for search results
-      setPagination({
-        current_page: currentPage,
-        total_pages: Math.ceil(allMatchingUsers.length / itemsPerPage),
-        total_count: allMatchingUsers.length,
-        per_page: itemsPerPage,
-        next_page:
-          currentPage < Math.ceil(allMatchingUsers.length / itemsPerPage)
-            ? currentPage + 1
-            : null,
-        prev_page: currentPage > 1 ? currentPage - 1 : null,
-      });
-    } catch (error) {
-      console.error("Error searching users:", error);
-      showNotification("Failed to search users", "error");
+      setAllUsers([]);
     } finally {
       setLoadingUsers(false);
     }
@@ -258,7 +218,7 @@ function CheckOut() {
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-                {pagination?.total_count || eventUsers.length} Users
+                {pagination?.total_count || allUsers.length} Users
               </span>
             </div>
           </div>
@@ -291,8 +251,13 @@ function CheckOut() {
         </div>
 
         {/* Table */}
-        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
-          {loadingUsers ? (
+        {!sessionAreaId ? (
+          <div className="border border-gray-200 rounded-lg p-8 text-center text-gray-500">
+            Loading session area...
+          </div>
+        ) : (
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+            {loadingUsers ? (
             <div className="p-6">
               <table className="min-w-full">
                 <thead className="bg-gray-50 border-b border-gray-200">
@@ -373,7 +338,7 @@ function CheckOut() {
                         colSpan={5}
                         className="px-6 py-8 text-center text-gray-500"
                       >
-                        {isSearching && debouncedSearchTerm
+                        {debouncedSearchTerm
                           ? `No users found matching "${debouncedSearchTerm}"`
                           : "No users found"}
                       </td>
@@ -427,7 +392,8 @@ function CheckOut() {
               )}
             </>
           )}
-        </div>
+          </div>
+        )}
       </div>
 
       <style>{`
