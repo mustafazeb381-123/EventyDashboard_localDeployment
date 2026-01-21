@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import {
@@ -39,6 +40,7 @@ interface FieldPaletteProps {
 }
 
 export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
+  const { t } = useTranslation("formBuilder");
   const [activeCategory, setActiveCategory] = useState<
     "basic" | "personal" | "professional" | "all" | "layout"
   >("layout");
@@ -368,7 +370,6 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       type,
       label,
       icon,
-      description,
       color,
       defaultLabel,
       defaultName,
@@ -512,7 +513,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
         />
         <input
           type="text"
-          placeholder="Search..."
+          placeholder={t("fieldPalette.search")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-7 pr-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
@@ -529,7 +530,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
-          Layout
+          {t("fieldPalette.layout")}
         </button>
         <button
           onClick={() => setActiveCategory("basic")}
@@ -539,7 +540,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
-          Fields
+          {t("fieldPalette.fields")}
         </button>
         <button
           onClick={() => setActiveCategory("personal")}
@@ -549,7 +550,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
-          Personal
+          {t("fieldPalette.personal")}
         </button>
         <button
           onClick={() => setActiveCategory("professional")}
@@ -559,7 +560,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
               : "border-transparent text-gray-600 hover:text-gray-900"
           }`}
         >
-          Professional
+          {t("fieldPalette.professional")}
         </button>
       </div>
 
@@ -567,7 +568,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
       {activeCategory === "layout" && (
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-            Structure
+            {t("fieldPalette.structure")}
           </h4>
           <div className="grid grid-cols-2 gap-2">
             <button
@@ -595,7 +596,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
             >
               <Square className="text-purple-600" size={16} />
               <span className="text-xs font-medium text-gray-700">
-                Container
+                {t("fieldPalette.container")}
               </span>
             </button>
             <button
@@ -623,7 +624,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
               className="flex flex-col items-center gap-1.5 p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-blue-400 transition-all text-center group"
             >
               <LayoutGrid className="text-blue-600" size={16} />
-              <span className="text-xs font-medium text-gray-700">Row</span>
+              <span className="text-xs font-medium text-gray-700">{t("fieldPalette.row")}</span>
             </button>
             <button
               onClick={() => {
@@ -649,7 +650,7 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
               className="flex flex-col items-center gap-1.5 p-2 bg-white border border-gray-200 rounded hover:bg-gray-50 hover:border-indigo-400 transition-all text-center group"
             >
               <Columns2 className="text-indigo-600" size={16} />
-              <span className="text-xs font-medium text-gray-700">Column</span>
+              <span className="text-xs font-medium text-gray-700">{t("fieldPalette.column")}</span>
             </button>
           </div>
         </div>
@@ -660,14 +661,14 @@ export const FieldPalette: React.FC<FieldPaletteProps> = ({ onAddField }) => {
         <div className="space-y-2">
           <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
             {activeCategory === "basic"
-              ? "Fields"
+              ? t("fieldPalette.fields")
               : activeCategory === "personal"
-                ? "Personal Information"
-                : "Professional Options"}
+                ? t("fieldPalette.personalInformation")
+                : t("fieldPalette.professionalOptions")}
           </h4>
           {filteredPresets.length === 0 ? (
             <div className="text-center py-4 text-gray-500 text-xs">
-              <p>No fields found</p>
+              <p>{t("fieldPalette.noFieldsFound")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-1.5">

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { createEventUser } from "@/apis/apiHelpers";
 import { getAllBadges } from "@/apis/badgeService";
 
@@ -115,6 +116,7 @@ const RegistrationFormPreview = ({
   eventId,
   tenantUuid,
 }: RegistrationFormPreviewProps) => {
+  const { t } = useTranslation("registration");
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -179,7 +181,7 @@ const RegistrationFormPreview = ({
 
       if (missingFields.length > 0) {
         const fieldNames = missingFields.map((f) => f.label).join(", ");
-        showNotification(`Please fill in required fields: ${fieldNames}`, "error");
+        showNotification(`${t("registrationForm.requiredFields")}: ${fieldNames}`, "error");
         return;
       }
 
@@ -230,7 +232,7 @@ const RegistrationFormPreview = ({
 
       const response = await createEventUser(eventId, formDataToSend);
 
-      showNotification("Registration successfull", "success");
+      showNotification(t("registrationForm.registrationSuccess"), "success");
       console.log("✅ User created:", response);
 
       // Reset form data and errors
@@ -271,17 +273,17 @@ const RegistrationFormPreview = ({
               // Customize message based on field
               const fieldLabel =
                 err.field === "email"
-                  ? "Email"
+                  ? t("registrationForm.emailTaken")
                   : err.field === "phone_number"
-                  ? "Phone number"
+                  ? t("registrationForm.phoneTaken")
                   : err.field === "name"
-                  ? "Name"
+                  ? t("registrationForm.nameTaken")
                   : err.field === "position"
-                  ? "Position"
+                  ? t("registrationForm.positionTaken")
                   : err.field === "organization"
-                  ? "Organization"
-                  : err.field;
-              errorMessage = `${fieldLabel} is already taken`;
+                  ? t("registrationForm.organizationTaken")
+                  : `${err.field} ${t("registrationForm.fieldTaken")}`;
+              errorMessage = fieldLabel;
             }
 
             errors[formFieldName] = errorMessage;
@@ -296,12 +298,12 @@ const RegistrationFormPreview = ({
           const errorSummary =
             errorMessages.length === 1
               ? errorMessages[0]
-              : `Validation failed: ${errorMessages.join(", ")}`;
+              : `${t("registrationForm.validationFailed")}: ${errorMessages.join(", ")}`;
           showNotification(errorSummary, "error");
         } else {
           showNotification(
             error.response?.data?.data?.message ||
-              "Validation failed. Please check the form.",
+              t("registrationForm.validationFailed"),
             "error"
           );
         }
@@ -311,7 +313,7 @@ const RegistrationFormPreview = ({
           error.response?.data?.message ||
             error.response?.data?.data?.message ||
             error.message ||
-            "Registration failed. Please try again.",
+            t("registrationForm.registrationFailed"),
           "error"
         );
         setFieldErrors({});
@@ -391,9 +393,9 @@ const RegistrationFormPreview = ({
               onChange={(e) => handleInputChange(field.name, e.target.value)}
               className={commonInputClasses}
             >
-              <option value="">
-                {field.placeholder || `Select ${field.label}`}
-              </option>
+            <option value="">
+              {field.placeholder || `${t("registrationForm.selectField")} ${field.label}`}
+            </option>
               {field.options?.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
@@ -425,14 +427,14 @@ const RegistrationFormPreview = ({
                   // Check if it's an image file
                   if (file.type.startsWith("image/")) {
                     try {
-                      showNotification("Compressing image...", "info");
+                      showNotification(t("registrationForm.compressingImage"), "info");
                       const compressedFile = await compressImage(file);
                       handleInputChange(field.name, compressedFile);
-                      showNotification(`Image compressed and ready to upload`, "success");
+                      showNotification(t("registrationForm.imageCompressed"), "success");
                     } catch (error) {
                       console.error("Error compressing image:", error);
                       showNotification(
-                        "Could not compress image, uploading original",
+                        t("registrationForm.compressionError"),
                         "warning"
                       );
                       // Fallback to original file if compression fails
@@ -499,7 +501,7 @@ const RegistrationFormPreview = ({
         onClick={handleSubmit}
         className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? "Submitting..." : submitButtonText}
+        {loading ? t("registrationForm.submitting") : submitButtonText}
       </button>
 
       {notification && (

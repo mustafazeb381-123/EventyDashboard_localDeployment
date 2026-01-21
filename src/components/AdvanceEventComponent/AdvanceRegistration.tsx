@@ -554,6 +554,34 @@ export const FormBuilderTemplateForm: React.FC<
   );
 
   const [bannerLoadError, setBannerLoadError] = useState(false);
+  
+  // Local notification state for preview mode
+  const [localNotification, setLocalNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "warning" | "info";
+  } | null>(null);
+
+  useEffect(() => {
+    if (localNotification) {
+      const timer = setTimeout(() => {
+        setLocalNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [localNotification]);
+
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info"
+  ) => {
+    if (onRegistrationSuccess && type === "success") {
+      onRegistrationSuccess(message);
+    } else if (onRegistrationError && type === "error") {
+      onRegistrationError(message);
+    } else {
+      setLocalNotification({ message, type });
+    }
+  };
 
   // Maintain stable object URLs for image fields (no revoke-before-render race)
   useEffect(() => {
@@ -761,7 +789,7 @@ export const FormBuilderTemplateForm: React.FC<
     if (!isUserRegistration) {
       // If not user registration, just log (for preview/admin mode)
       console.log("Custom form submitted:", formData);
-      showNotification("Form submitted successfully!", "success");
+      showNotification("Registration successful!", "success");
       return;
     }
 
@@ -790,7 +818,7 @@ export const FormBuilderTemplateForm: React.FC<
             : null,
       });
       showNotification(
-        "Event ID not found. Cannot submit registration.",
+        "No event ID found",
         "error"
       );
       return;
@@ -812,7 +840,7 @@ export const FormBuilderTemplateForm: React.FC<
           "❌ CRITICAL: actualEventId is missing at submission time!"
         );
         showNotification(
-          "Event ID is missing. Please refresh the page.",
+          "No event ID found",
           "error"
         );
         setIsSubmitting(false);
@@ -838,7 +866,7 @@ export const FormBuilderTemplateForm: React.FC<
           .map((f) => f.label || f.name)
           .join(", ");
         showNotification(
-          `Please fill in required fields: ${fieldNames}`,
+          `Required fields: ${fieldNames}`,
           "error"
         );
         setIsSubmitting(false);
@@ -862,7 +890,7 @@ export const FormBuilderTemplateForm: React.FC<
           }
         );
         showNotification(
-          "Event ID not found. Please refresh the page and try again.",
+          "No event ID found",
           "error"
         );
         setIsSubmitting(false);
@@ -1198,11 +1226,7 @@ export const FormBuilderTemplateForm: React.FC<
       console.log("✅ Registration successful:", response);
 
       // Call success callback if provided (for hard toast in UserRegistration)
-      if (onRegistrationSuccess) {
-        onRegistrationSuccess("Registration submitted successfully!");
-      } else {
-        showNotification("Registration submitted successfully!", "success");
-      }
+      showNotification("Registration successful!", "success");
 
       // Reset form
       setFormData({});
@@ -1229,7 +1253,7 @@ export const FormBuilderTemplateForm: React.FC<
         code: error?.code,
       });
 
-      let errorMessage = "Failed to submit registration. Please try again.";
+      let errorMessage = "Registration failed";
 
       // Handle network errors (no response received)
       if (error?.request && !error?.response) {
@@ -1335,11 +1359,7 @@ export const FormBuilderTemplateForm: React.FC<
       }
 
       // Call error callback if provided (for hard toast in UserRegistration)
-      if (onRegistrationError) {
-        onRegistrationError(errorMessage);
-      } else {
-        showNotification(errorMessage, "error");
-      }
+      showNotification(errorMessage, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -1458,7 +1478,7 @@ export const FormBuilderTemplateForm: React.FC<
           {bannerUrl && bannerLoadError && (
             <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2 flex items-center justify-center">
               <span className="text-sm text-gray-500">
-                Banner failed to load
+                Failed to load banner image
               </span>
             </div>
           )}
@@ -1849,11 +1869,30 @@ export const FormBuilderTemplateForm: React.FC<
                       padding: theme?.buttonPadding || "12px 24px",
                     }}
                   >
-                    {isSubmitting ? "Submitting..." : "Submit Registration"}
+                    {isSubmitting ? "Submitting..." : "Register"}
                   </button>
                 </div>
               )}
             </form>
+
+            {/* Local notification for preview mode */}
+            {localNotification && (
+              <div className="fixed top-4 right-4 z-100 animate-slide-in">
+                <div
+                  className={`px-6 py-3 rounded-lg shadow-lg ${
+                    localNotification.type === "success"
+                      ? "bg-green-500 text-white"
+                      : localNotification.type === "error"
+                        ? "bg-red-500 text-white"
+                        : localNotification.type === "warning"
+                          ? "bg-yellow-500 text-white"
+                          : "bg-blue-500 text-white"
+                  }`}
+                >
+                  {localNotification.message}
+                </div>
+              </div>
+            )}
 
             {theme?.footerEnabled && theme?.footerText && (
               <div
@@ -1943,7 +1982,7 @@ export const FormBuilderTemplateForm: React.FC<
 
   const handleFormSubmit = (formValues: Record<string, any>) => {
     console.log("Form submitted:", formValues);
-    showNotification("Registration submitted successfully!", "success");
+    showNotification("Registration successful!", "success");
   };
 
   const reusableFormFields = formFields.map((field) => ({
@@ -2023,7 +2062,7 @@ export const FormBuilderTemplateForm: React.FC<
 
       <div className="rounded-lg" style={formContainerStyle}>
         <h3 className="text-lg font-semibold text-gray-900 mb-6">
-          Please fill in the registration information.
+          Please fill name and contact information of attendees.
         </h3>
 
         {reusableFormFields.length > 0 ? (
@@ -2064,7 +2103,7 @@ const TemplateModal = ({
             Loading template...
           </p>
           <p className="text-slate-500 text-sm mt-2">
-            Preparing template data for preview
+            Preparing registration form
           </p>
         </div>
       );
@@ -2998,9 +3037,9 @@ const AdvanceRegistration = ({
       }
 
       showNotification(
-        `Form Builder template ${
-          isEditFormBuilderMode ? "updated" : "saved"
-        } successfully!`,
+        isEditFormBuilderMode
+          ? "Template updated successfully"
+          : "Template saved successfully",
         "success"
       );
     } catch (error: any) {
@@ -3149,12 +3188,12 @@ const AdvanceRegistration = ({
       // Reload templates from API to ensure consistency
       await loadFormBuilderTemplates();
 
-      showNotification("Template deleted successfully!", "success");
+      showNotification("Template deleted successfully", "success");
     } catch (error: any) {
       console.error("Error deleting template:", error);
 
       // Extract error message
-      let errorMessage = "Failed to delete template. Please try again.";
+      let errorMessage = "Failed to delete template";
       if (error?.response) {
         const apiError = error.response.data;
         if (apiError?.error) {
@@ -3231,7 +3270,7 @@ const AdvanceRegistration = ({
       // Set confirmedTemplate immediately (optimistic update)
       setConfirmedTemplate(templateId);
 
-      showNotification("Custom template applied successfully", "success");
+      showNotification("Template applied successfully", "success");
 
       // Close modal
       setIsFormBuilderPreviewModalOpen(false);
@@ -3435,7 +3474,7 @@ const AdvanceRegistration = ({
       // Set confirmedTemplate immediately (optimistic update)
       setConfirmedTemplate(templateId);
 
-      showNotification("Default template applied successfully!", "success");
+      showNotification("Default template applied successfully", "success");
 
       // Close modal
       handleCloseModal();
@@ -3458,7 +3497,7 @@ const AdvanceRegistration = ({
       console.log("✅ Final confirmedTemplate set to default:", templateId);
     } catch (error: any) {
       console.error("Error applying default template:", error);
-      showNotification("Error applying template. Please try again.", "error");
+      showNotification("Failed to apply template", "error");
     } finally {
       setIsLoading(false);
     }
@@ -3470,7 +3509,7 @@ const AdvanceRegistration = ({
       const response = await getRegistrationFieldApi(id);
       setFormData(response.data.data);
     } catch (error) {
-      showNotification("Failed to load form data", "error");
+      showNotification("Failed to load template", "error");
     } finally {
       setIsLoadingFormData(false);
     }
@@ -3478,7 +3517,7 @@ const AdvanceRegistration = ({
 
   const handleNextClick = () => {
     if (!confirmedTemplate) {
-      showNotification("Please select a template before proceeding", "warning");
+      showNotification("Please select a template", "warning");
       return;
     }
     if (onNext) onNext(effectiveEventId, plan);
@@ -3542,7 +3581,7 @@ const AdvanceRegistration = ({
               Loading templates...
             </p>
             <p className="text-slate-500 text-sm mt-2">
-              Please wait while we prepare your registration forms
+              Preparing registration forms
             </p>
           </div>
         ) : (
@@ -3553,7 +3592,7 @@ const AdvanceRegistration = ({
               className="border-2 border-dashed border-pink-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center aspect-square relative"
             >
               <div className="absolute top-2 right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
-                NEW
+                New
               </div>
               <div className="w-16 h-16 bg-pink-100 rounded-full flex items-center justify-center mb-4">
                 <Plus className="text-pink-600" size={32} />
@@ -3562,8 +3601,7 @@ const AdvanceRegistration = ({
                 Custom Form Builder
               </h3>
               <p className="text-sm text-gray-500 text-center">
-                Fully customizable with drag & drop, conditions, validation &
-                more
+                Fully customizable with drag and drop, conditions, validation and more
               </p>
             </div>
 
@@ -3621,7 +3659,7 @@ const AdvanceRegistration = ({
                         handleEditFormBuilderTemplate(template);
                       }}
                       className="p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
-                      title="Edit template"
+                      title="Edit Template"
                     >
                       <Edit size={14} />
                     </button>
@@ -3631,7 +3669,7 @@ const AdvanceRegistration = ({
                         handleDeleteFormBuilderTemplate(template.id);
                       }}
                       className="p-1.5 bg-white rounded-lg shadow-sm text-red-500 hover:bg-red-50 transition-colors"
-                      title="Delete template"
+                      title="Delete Template"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -3906,7 +3944,7 @@ const AdvanceRegistration = ({
                 Loading...
               </>
             ) : (
-              "Next →"
+              `Next →`
             )}
           </button>
         </div>

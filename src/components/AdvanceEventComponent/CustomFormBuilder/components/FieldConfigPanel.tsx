@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Type,
@@ -45,6 +46,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
   onUpdate,
   onClose,
 }) => {
+  const { t } = useTranslation("formBuilder");
   if (!field) return null;
 
   const [config, setConfig] = useState<CustomFormField>(field);
@@ -85,21 +87,21 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
   };
 
   return (
-    <div className="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl z-50 overflow-y-auto border-l border-gray-200">
+    <div className="fixed right-0 rtl:left-0 rtl:right-auto top-0 h-full w-96 bg-white shadow-2xl z-50 overflow-y-auto border-l rtl:border-r rtl:border-l-0 border-gray-200 field-config-panel">
       <div className="p-5 border-b sticky top-0 bg-linear-to-r from-gray-50 to-white z-10 shadow-sm">
         <div className="flex justify-between items-center">
           <div>
             <h3 className="text-lg font-semibold text-gray-800">
-              Field Configuration
+              {t("fieldConfig.title")}
             </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Customize field settings
+              {t("fieldConfig.subtitle")}
             </p>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            title="Close configuration"
+            title={t("fieldConfig.close")}
           >
             <X size={20} className="text-gray-500" />
           </button>
@@ -112,10 +114,10 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           {getFieldIcon(config.type)}
           <div>
             <p className="text-sm font-semibold text-gray-800">
-              {config.type.charAt(0).toUpperCase() + config.type.slice(1)} Field
+              {t("fieldConfig.fieldType", { type: config.type.charAt(0).toUpperCase() + config.type.slice(1) })}
             </p>
             <p className="text-xs text-gray-600">
-              Configure this field's properties
+              {t("fieldConfig.configureProperties")}
             </p>
           </div>
         </div>
@@ -124,11 +126,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {config.type === "heading" && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Content
+              {t("fieldConfig.content")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Heading Text <span className="text-red-500">*</span>
+                {t("fieldConfig.headingText")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -137,12 +139,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   setConfig({ ...config, label: e.target.value })
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter heading text"
+                placeholder={t("fieldConfig.enterHeading")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Font Size
+                {t("fieldConfig.fontSize")}
               </label>
               <select
                 value={config.fieldStyle?.fontSize || "24px"}
@@ -157,11 +159,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg"
               >
-                <option value="16px">Small (16px)</option>
-                <option value="20px">Medium (20px)</option>
-                <option value="24px">Large (24px)</option>
-                <option value="28px">Extra Large (28px)</option>
-                <option value="32px">Huge (32px)</option>
+                <option value="16px">{t("fieldConfig.small")} (16px)</option>
+                <option value="20px">{t("fieldConfig.medium")} (20px)</option>
+                <option value="24px">{t("fieldConfig.large")} (24px)</option>
+                <option value="28px">{t("fieldConfig.extraLarge")} (28px)</option>
+                <option value="32px">{t("fieldConfig.huge")} (32px)</option>
               </select>
             </div>
           </div>
@@ -171,11 +173,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {config.type === "paragraph" && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Content
+              {t("fieldConfig.content")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Paragraph Text <span className="text-red-500">*</span>
+                {t("fieldConfig.paragraphText")} <span className="text-red-500">*</span>
               </label>
               <textarea
                 value={config.label}
@@ -184,7 +186,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                 rows={4}
-                placeholder="Enter paragraph text"
+                placeholder={t("fieldConfig.enterParagraph")}
               />
             </div>
           </div>
@@ -194,11 +196,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {config.type === "helperText" && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Content
+              {t("fieldConfig.content")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Helper Text
+                {t("fieldConfig.helperText")}
               </label>
               <textarea
                 value={config.content || ""}
@@ -207,10 +209,10 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                 rows={3}
-                placeholder="Enter helper text"
+                placeholder={t("fieldConfig.enterHelperTextPlaceholder")}
               />
               <p className="text-xs text-gray-500 mt-1.5">
-                Static text shown in the form (not an input).
+                {t("fieldConfig.staticTextShown")}
               </p>
             </div>
           </div>
@@ -220,11 +222,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {config.type === "spacer" && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Spacing
+              {t("fieldConfig.spacing")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Height
+                {t("fieldConfig.height")}
               </label>
               <input
                 type="text"
@@ -249,11 +251,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {config.type === "divider" && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Styling
+              {t("fieldConfig.styling")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Color
+                {t("fieldConfig.color")}
               </label>
               <input
                 type="color"
@@ -281,24 +283,24 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           config.type === "textarea") && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Basic Settings
+              {t("fieldConfig.basicSettings")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Field Label <span className="text-red-500">*</span>
+                {t("fieldConfig.fieldLabel")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={config.label}
                 onChange={(e) => handleLabelChange(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter field label"
+                placeholder={t("fieldConfig.enterFieldLabel")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Field Name <span className="text-red-500">*</span>
+                {t("fieldConfig.fieldName")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -313,13 +315,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 placeholder="field_name"
               />
               <p className="text-xs text-gray-500 mt-1.5">
-                Used for form submission (auto-generated from label)
+                {t("fieldConfig.fieldNameHint")}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Placeholder
+                {t("fieldConfig.placeholder")}
               </label>
               <input
                 type="text"
@@ -328,13 +330,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   setConfig({ ...config, placeholder: e.target.value })
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter placeholder text"
+                placeholder={t("fieldConfig.enterPlaceholder")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Description
+                {t("fieldConfig.description")}
               </label>
               <textarea
                 value={config.description || ""}
@@ -343,13 +345,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                 rows={3}
-                placeholder="Help text for users"
+                placeholder={t("fieldConfig.helpTextForUsers")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Default Value
+                {t("fieldConfig.defaultValue")}
               </label>
               <input
                 type="text"
@@ -358,7 +360,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   setConfig({ ...config, defaultValue: e.target.value })
                 }
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Default value"
+                placeholder={t("fieldConfig.defaultValuePlaceholder")}
               />
             </div>
           </div>
@@ -371,24 +373,24 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           <>
             <div className="space-y-4">
               <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                Basic Settings
+                {t("fieldConfig.basicSettings")}
               </h4>
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Field Label <span className="text-red-500">*</span>
+                  {t("fieldConfig.fieldLabel")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={config.label}
                   onChange={(e) => handleLabelChange(e.target.value)}
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  placeholder="Enter field label"
+                  placeholder={t("fieldConfig.enterFieldLabel")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Field Name <span className="text-red-500">*</span>
+                  {t("fieldConfig.fieldName")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -406,7 +408,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Description
+                  {t("fieldConfig.description")}
                 </label>
                 <textarea
                   value={config.description || ""}
@@ -415,14 +417,14 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   }
                   className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all resize-none"
                   rows={2}
-                  placeholder="Help text for users"
+                  placeholder={t("fieldConfig.helpTextForUsers")}
                 />
               </div>
             </div>
 
             <div className="pt-2 border-t">
               <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                Options
+                {t("fieldConfig.options")}
               </h4>
               <div className="space-y-2">
                 {(config.options || []).map((option, index) => (
@@ -448,7 +450,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                         setConfig({ ...config, options: newOptions });
                       }}
                       className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm"
-                      placeholder="Option label"
+                      placeholder={t("fieldConfig.optionLabel")}
                     />
                     <button
                       onClick={() => {
@@ -458,7 +460,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                         setConfig({ ...config, options: newOptions || [] });
                       }}
                       className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Remove option"
+                      title={t("fieldConfig.removeOption")}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -478,7 +480,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   className="w-full px-3 py-2.5 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 hover:border-blue-400 hover:text-blue-600 flex items-center justify-center gap-2 transition-colors"
                 >
                   <Plus size={16} />
-                  Add Option
+                  {t("fieldConfig.addOption")}
                 </button>
               </div>
             </div>
@@ -489,24 +491,24 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {(config.type === "file" || config.type === "image") && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Basic Settings
+              {t("fieldConfig.basicSettings")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Field Label <span className="text-red-500">*</span>
+                {t("fieldConfig.fieldLabel")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
                 value={config.label}
                 onChange={(e) => handleLabelChange(e.target.value)}
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="Enter field label"
+                placeholder={t("fieldConfig.enterFieldLabel")}
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Field Name <span className="text-red-500">*</span>
+                {t("fieldConfig.fieldName")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -524,7 +526,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Accepted File Types
+                {t("fieldConfig.acceptedFileTypes")}
               </label>
               <input
                 type="text"
@@ -536,7 +538,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 placeholder="image/*, .pdf, .doc"
               />
               <p className="text-xs text-gray-500 mt-1">
-                e.g., image/*, .pdf, .doc, .docx
+                {t("fieldConfig.egImagePdfDoc")}
               </p>
             </div>
           </div>
@@ -546,11 +548,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
         {config.type === "button" && (
           <div className="space-y-4">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Button Settings
+              {t("fieldConfig.buttonSettings")}
             </h4>
             <div>
               <label className="block text-sm font-medium mb-2">
-                Button Text
+                {t("fieldConfig.buttonText")}
               </label>
               <input
                 type="text"
@@ -559,12 +561,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   setConfig({ ...config, buttonText: e.target.value })
                 }
                 className="w-full px-3 py-2 border rounded-lg"
-                placeholder="Click Me"
+                placeholder={t("fieldConfig.clickMe")}
               />
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">
-                Button Type
+                {t("fieldConfig.buttonType")}
               </label>
               <select
                 value={config.buttonType || "button"}
@@ -576,15 +578,15 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border rounded-lg"
               >
-                <option value="button">Button</option>
-                <option value="submit">Submit</option>
-                <option value="reset">Reset</option>
+                <option value="button">{t("fieldConfig.button")}</option>
+                <option value="submit">{t("fieldConfig.submit")}</option>
+                <option value="reset">{t("fieldConfig.reset")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">
-                Alignment
+                {t("fieldConfig.alignment")}
               </label>
               <div className="flex gap-2 bg-gray-100 p-1 rounded-lg">
                 {["left", "center", "right"].map((align) => (
@@ -602,14 +604,14 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                         : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
-                    {align.charAt(0).toUpperCase() + align.slice(1)}
+                    {t(`fieldConfig.${align}`)}
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Width</label>
+              <label className="block text-sm font-medium mb-2">{t("fieldConfig.width")}</label>
               <select
                 value={config.buttonWidth || "auto"}
                 onChange={(e) =>
@@ -620,9 +622,9 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border rounded-lg"
               >
-                <option value="auto">Auto (Content Width)</option>
-                <option value="full">Full Width (100%)</option>
-                <option value="custom">Custom Width</option>
+                <option value="auto">{t("fieldConfig.autoContentWidth")}</option>
+                <option value="full">{t("fieldConfig.fullWidth")}</option>
+                <option value="custom">{t("fieldConfig.customWidth")}</option>
               </select>
             </div>
           </div>
@@ -641,7 +643,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           config.type === "image") && (
           <div className="space-y-3 pt-2 border-t">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Field Options
+              {t("fieldConfig.fieldOptions")}
             </h4>
             <label className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
               <input
@@ -654,10 +656,10 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-gray-800 block">
-                  Required Field
+                  {t("fieldConfig.required")}
                 </span>
                 <span className="text-xs text-gray-500">
-                  User must fill this field
+                  {t("fieldConfig.requiredDescription")}
                 </span>
               </div>
             </label>
@@ -673,10 +675,10 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               />
               <div className="flex-1">
                 <span className="text-sm font-medium text-gray-800 block">
-                  Unique Value
+                  {t("fieldConfig.unique")}
                 </span>
                 <span className="text-xs text-gray-500">
-                  No duplicate values allowed
+                  {t("fieldConfig.uniqueDescription")}
                 </span>
               </div>
             </label>
@@ -689,13 +691,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           config.type === "number" ||
           config.type === "textarea") && (
           <div className="border-t pt-4">
-            <h4 className="font-medium mb-3">Validation Rules</h4>
+            <h4 className="font-medium mb-3">{t("fieldConfig.validation")}</h4>
             <div className="space-y-3">
               {config.type === "number" && (
                 <>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Minimum Value
+                      {t("fieldConfig.minValue")}
                     </label>
                     <input
                       type="number"
@@ -716,7 +718,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Maximum Value
+                      {t("fieldConfig.maxValue")}
                     </label>
                     <input
                       type="number"
@@ -743,7 +745,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 <>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Minimum Length
+                      {t("fieldConfig.minLength")}
                     </label>
                     <input
                       type="number"
@@ -764,7 +766,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Maximum Length
+                      {t("fieldConfig.maxLength")}
                     </label>
                     <input
                       type="number"
@@ -786,7 +788,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   {config.type === "text" && (
                     <div>
                       <label className="block text-sm font-medium mb-1">
-                        Pattern (Regex)
+                        {t("fieldConfig.pattern")}
                       </label>
                       <input
                         type="text"
@@ -816,7 +818,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           <div className="flex items-center gap-2">
             <Layers className="text-orange-600" size={18} />
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Conditional Logic
+              {t("fieldConfig.conditionalLogic")}
             </h4>
           </div>
 
@@ -834,13 +836,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     setConfig({ ...config, conditions: newConditions });
                   }}
                   className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                  title="Remove condition"
+                  title={t("fieldConfig.removeCondition")}
                 >
                   <X size={16} />
                 </button>
 
                 <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-600 w-12">If</span>
+                  <span className="font-medium text-gray-600 w-12">{t("fieldConfig.if")}</span>
                   <select
                     value={condition.field}
                     onChange={(e) => {
@@ -853,7 +855,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     }}
                     className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
                   >
-                    <option value="">Select Field</option>
+                    <option value="">{t("fieldConfig.selectField")}</option>
                     {allFields
                       .filter((f) => f.id !== config.id)
                       .map((f) => (
@@ -877,11 +879,11 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     }}
                     className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
                   >
-                    <option value="equals">Equals</option>
-                    <option value="notEquals">Not Equals</option>
-                    <option value="contains">Contains</option>
-                    <option value="greaterThan">Greater Than</option>
-                    <option value="lessThan">Less Than</option>
+                    <option value="equals">{t("fieldConfig.operator.equals")}</option>
+                    <option value="notEquals">{t("fieldConfig.operator.notEquals")}</option>
+                    <option value="contains">{t("fieldConfig.operator.contains")}</option>
+                    <option value="greaterThan">{t("fieldConfig.operator.greaterThan")}</option>
+                    <option value="lessThan">{t("fieldConfig.operator.lessThan")}</option>
                   </select>
                   <input
                     type="text"
@@ -900,7 +902,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 </div>
 
                 <div className="flex gap-2 items-center">
-                  <span className="font-medium text-gray-600 w-12">Then</span>
+                  <span className="font-medium text-gray-600 w-12">{t("fieldConfig.then")}</span>
                   <select
                     value={condition.action}
                     onChange={(e) => {
@@ -913,8 +915,8 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     }}
                     className="flex-1 px-2 py-1.5 border border-gray-300 rounded focus:ring-1 focus:ring-blue-500 text-sm"
                   >
-                    <option value="show">Show Field</option>
-                    <option value="hide">Hide Field</option>
+                    <option value="show">{t("fieldConfig.action.show")}</option>
+                    <option value="hide">{t("fieldConfig.action.hide")}</option>
                   </select>
                 </div>
               </div>
@@ -936,7 +938,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               className="w-full py-2 bg-white border border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 flex items-center justify-center gap-2 transition-colors text-sm"
             >
               <Plus size={16} />
-              Add Condition
+              {t("fieldConfig.addCondition")}
             </button>
           </div>
         </div>
@@ -947,12 +949,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div className="flex items-center gap-2">
               <Columns2 className="text-indigo-600" size={18} />
               <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                Column Sizing (Bootstrap)
+                {t("fieldConfig.columnSizing")}
               </h4>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Bootstrap CSS Class
+                {t("fieldConfig.bootstrapClass")}
               </label>
               <select
                 value={config.bootstrapClass || ""}
@@ -964,26 +966,25 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Auto (Equal Width)</option>
-                <option value="col-12">Full Width (col-12)</option>
-                <option value="col-6">Half Width (col-6)</option>
-                <option value="col-4">One Third (col-4)</option>
-                <option value="col-3">One Fourth (col-3)</option>
-                <option value="col-2">One Sixth (col-2)</option>
-                <option value="col-1">One Twelfth (col-1)</option>
-                <option value="col-md-6">Medium Half (col-md-6)</option>
-                <option value="col-md-4">Medium Third (col-md-4)</option>
-                <option value="col-lg-4">Large Third (col-lg-4)</option>
-                <option value="col-lg-3">Large Fourth (col-lg-3)</option>
+                <option value="">{t("fieldConfig.autoEqualWidth")}</option>
+                <option value="col-12">{t("fieldConfig.fullWidthCol12")}</option>
+                <option value="col-6">{t("fieldConfig.halfWidthCol6")}</option>
+                <option value="col-4">{t("fieldConfig.oneThirdCol4")}</option>
+                <option value="col-3">{t("fieldConfig.oneFourthCol3")}</option>
+                <option value="col-2">{t("fieldConfig.oneSixthCol2")}</option>
+                <option value="col-1">{t("fieldConfig.oneTwelfthCol1")}</option>
+                <option value="col-md-6">{t("fieldConfig.mediumHalfColMd6")}</option>
+                <option value="col-md-4">{t("fieldConfig.mediumThirdColMd4")}</option>
+                <option value="col-lg-4">{t("fieldConfig.largeThirdColLg4")}</option>
+                <option value="col-lg-3">{t("fieldConfig.largeFourthColLg3")}</option>
               </select>
               <p className="text-xs text-gray-500 mt-1">
-                Set custom Bootstrap grid class. Leave empty for auto equal
-                width.
+                {t("fieldConfig.setCustomBootstrapGrid")}
               </p>
               {config.bootstrapClass && (
                 <div className="mt-2 p-2 bg-indigo-50 rounded border border-indigo-200">
                   <p className="text-xs font-mono text-indigo-700">
-                    Class: {config.bootstrapClass}
+                    {t("fieldConfig.class")}: {config.bootstrapClass}
                   </p>
                 </div>
               )}
@@ -997,13 +998,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div className="flex items-center gap-2">
               <LayoutGrid className="text-purple-600" size={18} />
               <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-                Layout Properties
+                {t("fieldConfig.layoutProperties")}
               </h4>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Gap (spacing between items)
+                {t("fieldConfig.gap")}
               </label>
               <input
                 type="text"
@@ -1024,7 +1025,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Justify Content
+                {t("fieldConfig.justifyContent")}
               </label>
               <select
                 value={config.layoutProps?.justifyContent || "flex-start"}
@@ -1039,18 +1040,18 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="flex-start">Flex Start</option>
-                <option value="flex-end">Flex End</option>
-                <option value="center">Center</option>
-                <option value="space-between">Space Between</option>
-                <option value="space-around">Space Around</option>
-                <option value="space-evenly">Space Evenly</option>
+                <option value="flex-start">{t("fieldConfig.flexStart")}</option>
+                <option value="flex-end">{t("fieldConfig.flexEnd")}</option>
+                <option value="center">{t("fieldConfig.center")}</option>
+                <option value="space-between">{t("fieldConfig.spaceBetween")}</option>
+                <option value="space-around">{t("fieldConfig.spaceAround")}</option>
+                <option value="space-evenly">{t("fieldConfig.spaceEvenly")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Align Items
+                {t("fieldConfig.alignItems")}
               </label>
               <select
                 value={config.layoutProps?.alignItems || "stretch"}
@@ -1065,17 +1066,17 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="flex-start">Flex Start</option>
-                <option value="flex-end">Flex End</option>
-                <option value="center">Center</option>
-                <option value="stretch">Stretch</option>
-                <option value="baseline">Baseline</option>
+                <option value="flex-start">{t("fieldConfig.flexStart")}</option>
+                <option value="flex-end">{t("fieldConfig.flexEnd")}</option>
+                <option value="center">{t("fieldConfig.center")}</option>
+                <option value="stretch">{t("fieldConfig.stretch")}</option>
+                <option value="baseline">{t("fieldConfig.baseline")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Padding
+                {t("fieldConfig.padding")}
               </label>
               <input
                 type="text"
@@ -1096,7 +1097,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Margin
+                {t("fieldConfig.margin")}
               </label>
               <input
                 type="text"
@@ -1117,7 +1118,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Flex Wrap
+                {t("fieldConfig.flexWrap")}
               </label>
               <select
                 value={
@@ -1135,14 +1136,14 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="nowrap">No Wrap</option>
-                <option value="wrap">Wrap</option>
+                <option value="nowrap">{t("fieldConfig.noWrap")}</option>
+                <option value="wrap">{t("fieldConfig.wrap")}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Min Height
+                {t("fieldConfig.minHeight")}
               </label>
               <input
                 type="text"
@@ -1164,7 +1165,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Background Color
+                  {t("fieldConfig.backgroundColor")}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1199,7 +1200,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Border Radius
+                  {t("fieldConfig.borderRadius")}
                 </label>
                 <input
                   type="text"
@@ -1221,7 +1222,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
 
             <div>
               <label className="block text-xs font-medium mb-1 text-gray-600">
-                Text Align
+                {t("fieldConfig.textAlign")}
               </label>
               <select
                 value={config.fieldStyle?.textAlign || ""}
@@ -1236,18 +1237,18 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 }
                 className="w-full px-2 py-1.5 border rounded text-sm bg-white"
               >
-                <option value="">Default</option>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
-                <option value="justify">Justify</option>
+                <option value="">{t("fieldConfig.default")}</option>
+                <option value="left">{t("fieldConfig.left")}</option>
+                <option value="center">{t("fieldConfig.center")}</option>
+                <option value="right">{t("fieldConfig.right")}</option>
+                <option value="justify">{t("fieldConfig.justify")}</option>
               </select>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Border Color
+                  {t("fieldConfig.borderColor")}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -1283,7 +1284,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               </div>
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Border Width
+                  {t("fieldConfig.borderWidth")}
                 </label>
                 <input
                   type="text"
@@ -1314,14 +1315,14 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             }}
             className="flex w-full items-center justify-between text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3"
           >
-            <span>Custom Styling (CSS)</span>
+            <span>{t("fieldConfig.customStyling")}</span>
             <Palette size={16} />
           </button>
           <div id="styling-options" className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Width
+                  {t("fieldConfig.width")}
                 </label>
                 <input
                   type="text"
@@ -1341,7 +1342,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Padding
+                  {t("fieldConfig.padding")}
                 </label>
                 <input
                   type="text"
@@ -1356,7 +1357,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.paddingPlaceholder")}
                 />
               </div>
             </div>
@@ -1364,7 +1365,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Text Color
+                  {t("fieldConfig.textColor")}
                 </label>
                 <div className="flex gap-1">
                   <input
@@ -1400,7 +1401,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Label Color
+                  {t("fieldConfig.labelColor")}
                 </label>
                 <div className="flex gap-1">
                   <input
@@ -1439,7 +1440,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Bg Color
+                  {t("fieldConfig.bgColor")}
                 </label>
                 <div className="flex gap-1">
                   <input
@@ -1475,7 +1476,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Border Color
+                  {t("fieldConfig.borderColor")}
                 </label>
                 <div className="flex gap-1">
                   <input
@@ -1514,7 +1515,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Border Width
+                  {t("fieldConfig.borderWidth")}
                 </label>
                 <input
                   type="text"
@@ -1534,7 +1535,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Border Radius
+                  {t("fieldConfig.borderRadius")}
                 </label>
                 <input
                   type="text"
@@ -1555,7 +1556,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             </div>
             <div>
               <label className="block text-xs font-medium mb-1 text-gray-600">
-                Margin
+                {t("fieldConfig.margin")}
               </label>
               <input
                 type="text"
@@ -1570,13 +1571,13 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                   })
                 }
                 className="w-full px-2 py-1.5 border rounded text-sm"
-                placeholder="0px or 10px 0px"
+                placeholder={t("fieldConfig.marginPlaceholder")}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Margin Top
+                  {t("fieldConfig.marginTop")}
                 </label>
                 <input
                   type="text"
@@ -1591,12 +1592,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.marginTopPlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Margin Bottom
+                  {t("fieldConfig.marginBottom")}
                 </label>
                 <input
                   type="text"
@@ -1611,12 +1612,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.marginBottomPlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Margin Left
+                  {t("fieldConfig.marginLeft")}
                 </label>
                 <input
                   type="text"
@@ -1631,12 +1632,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.marginLeftPlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Margin Right
+                  {t("fieldConfig.marginRight")}
                 </label>
                 <input
                   type="text"
@@ -1651,14 +1652,14 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.marginRightPlaceholder")}
                 />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Padding Top
+                  {t("fieldConfig.paddingTop")}
                 </label>
                 <input
                   type="text"
@@ -1673,12 +1674,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.paddingTopPlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Padding Bottom
+                  {t("fieldConfig.paddingBottom")}
                 </label>
                 <input
                   type="text"
@@ -1693,12 +1694,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.paddingBottomPlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Padding Left
+                  {t("fieldConfig.paddingLeft")}
                 </label>
                 <input
                   type="text"
@@ -1713,12 +1714,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.paddingLeftPlaceholder")}
                 />
               </div>
               <div>
                 <label className="block text-xs font-medium mb-1 text-gray-600">
-                  Padding Right
+                  {t("fieldConfig.paddingRight")}
                 </label>
                 <input
                   type="text"
@@ -1733,7 +1734,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                     })
                   }
                   className="w-full px-2 py-1.5 border rounded text-sm"
-                  placeholder="10px"
+                  placeholder={t("fieldConfig.paddingRightPlaceholder")}
                 />
               </div>
             </div>
@@ -1745,12 +1746,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           <div className="flex items-center gap-2">
             <Zap className="text-yellow-600" size={18} />
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Event Handlers
+              {t("fieldConfig.eventHandlers")}
             </h4>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              onClick Handler
+              {t("fieldConfig.onClick")}
             </label>
             <input
               type="text"
@@ -1762,15 +1763,15 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
-              placeholder="handleClick() or function name"
+              placeholder={t("fieldConfig.handleClickOrFunctionName")}
             />
             <p className="text-xs text-gray-500 mt-1">
-              JavaScript function name or code to execute on click
+              {t("fieldConfig.javascriptFunctionName")}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              onChange Handler
+              {t("fieldConfig.onChange")}
             </label>
             <input
               type="text"
@@ -1782,15 +1783,15 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
-              placeholder="handleChange(value)"
+              placeholder={t("fieldConfig.handleChangeValue")}
             />
             <p className="text-xs text-gray-500 mt-1">
-              Function to call when field value changes
+              {t("fieldConfig.functionToCallWhenValueChanges")}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              onFocus Handler
+              {t("fieldConfig.onFocus")}
             </label>
             <input
               type="text"
@@ -1802,12 +1803,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
-              placeholder="handleFocus()"
+              placeholder={t("fieldConfig.handleFocus")}
             />
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              onBlur Handler
+              {t("fieldConfig.onBlur")}
             </label>
             <input
               type="text"
@@ -1819,7 +1820,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 })
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono text-sm"
-              placeholder="handleBlur()"
+              placeholder={t("fieldConfig.handleBlur")}
             />
           </div>
         </div>
@@ -1829,16 +1830,15 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           <div className="flex items-center gap-2">
             <Code className="text-purple-600" size={18} />
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Inline Parameters
+              {t("fieldConfig.inlineParams")}
             </h4>
           </div>
           <p className="text-xs text-gray-600">
-            Use variables like {"{Name}"} or {"{Email}"} in labels/placeholders.
-            They will be replaced with actual values.
+            {t("fieldConfig.useVariablesInLabels")}
           </p>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Available Variables
+              {t("fieldConfig.availableVariables")}
             </label>
             <div className="flex flex-wrap gap-2">
               {Object.keys(config.inlineParams || {}).map((key) => (
@@ -1853,12 +1853,12 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Add Variable
+              {t("fieldConfig.addVariable")}
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Variable name (e.g., Name)"
+                placeholder={t("fieldConfig.variableName")}
                 className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-sm"
                 onKeyPress={(e) => {
                   if (e.key === "Enter") {
@@ -1879,8 +1879,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
               />
             </div>
             <p className="text-xs text-gray-500 mt-1">
-              Press Enter to add. Use {"{" + "VariableName" + "}"} in
-              labels/placeholders
+              {t("fieldConfig.pressEnterToAdd")}
             </p>
           </div>
         </div>
@@ -1891,7 +1890,7 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
             onClick={handleUpdate}
             className="w-full bg-linear-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-3 rounded-lg font-semibold shadow-md hover:shadow-lg transition-all"
           >
-            Save Changes
+            {t("fieldConfig.saveChanges")}
           </button>
         </div>
       </div>

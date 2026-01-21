@@ -1,0 +1,49 @@
+/* RTL Support - Scoped to Custom Advance Registration Module Only */
+/* This file contains RTL styles specific to the Custom Advance Registration module */
+/* For global extension: Move these styles to a global RTL stylesheet */
+
+.custom-advance-registration-module[dir="rtl"] {
+  direction: rtl;
+}
+
+.custom-advance-registration-module[dir="ltr"] {
+  direction: ltr;
+}
+
+/* RTL-specific adjustments for form builder components */
+.custom-advance-registration-module[dir="rtl"] .field-config-panel {
+  right: auto;
+  left: 0;
+  border-left: none;
+  border-right: 1px solid #e5e7eb;
+}
+
+.custom-advance-registration-module[dir="rtl"] .language-switcher-dropdown {
+  right: auto;
+  left: 0;
+}
+
+/* Ensure text alignment works correctly in RTL within the module */
+.custom-advance-registration-module[dir="rtl"] input,
+.custom-advance-registration-module[dir="rtl"] textarea,
+.custom-advance-registration-module[dir="rtl"] select {
+  text-align: right;
+}
+
+.custom-advance-registration-module[dir="ltr"] input,
+.custom-advance-registration-module[dir="ltr"] textarea,
+.custom-advance-registration-module[dir="ltr"] select {
+  text-align: left;
+}
+
+/* RTL adjustments for JSON menu dropdown */
+.custom-advance-registration-module[dir="rtl"] .json-menu-container > div {
+  right: auto;
+  left: 0;
+}
+
+/* RTL adjustments for field palette */
+.custom-advance-registration-module[dir="rtl"] .field-palette {
+  border-right: none;
+  border-left: 1px solid #e5e7eb;
+}

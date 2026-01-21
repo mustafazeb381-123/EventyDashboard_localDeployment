@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Info,
   Eye,
@@ -41,6 +42,7 @@ const ReusableRegistrationForm = ({
   onDeleteField,
   deleteLoading = {},
 }) => {
+  const { t } = useTranslation("registration");
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
@@ -138,7 +140,7 @@ const ReusableRegistrationForm = ({
         field.required &&
         (!formData[field.name] || formData[field.name] === "")
       ) {
-        newErrors[field.name] = `${field.label} is required`;
+        newErrors[field.name] = `${field.label} ${t("registrationForm.fieldRequired")}`;
       }
 
       if (field.validation && formData[field.name]) {
@@ -196,10 +198,10 @@ const ReusableRegistrationForm = ({
             type={field.type}
             placeholder={
               isEditMode
-                ? "Preview only"
+                ? t("registrationForm.previewOnly")
                 : isVisible
                 ? field.placeholder
-                : "Field is disabled"
+                : t("registrationForm.fieldDisabled")
             }
             value={isEditMode ? "" : formData[field.name] || ""}
             onChange={(e) =>
@@ -214,10 +216,10 @@ const ReusableRegistrationForm = ({
           <textarea
             placeholder={
               isEditMode
-                ? "Preview only"
+                ? t("registrationForm.previewOnly")
                 : isVisible
                 ? field.placeholder
-                : "Field is disabled"
+                : t("registrationForm.fieldDisabled")
             }
             value={isEditMode ? "" : formData[field.name] || ""}
             onChange={(e) =>
@@ -239,10 +241,10 @@ const ReusableRegistrationForm = ({
           >
             <option value="">
               {isEditMode
-                ? "Preview only"
+                ? t("registrationForm.previewOnly")
                 : isVisible
-                ? field.placeholder || `Select ${field.label}`
-                : "Field is disabled"}
+                ? field.placeholder || `${t("registrationForm.selectField")} ${field.label}`
+                : t("registrationForm.fieldDisabled")}
             </option>
             {!isEditMode &&
               isVisible &&
@@ -259,7 +261,7 @@ const ReusableRegistrationForm = ({
         if (isEditMode) {
           return (
             <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed">
-              File upload field (disabled in edit mode)
+              {t("registrationForm.fileUploadDisabled")}
             </div>
           );
         }
@@ -392,7 +394,7 @@ const ReusableRegistrationForm = ({
                   isVisible ? "text-gray-500" : "text-gray-400"
                 }`}
               >
-                {isVisible ? field.hint : "Field is disabled"}
+                {isVisible ? field.hint : t("registrationForm.fieldDisabled")}
               </p>
             )}
           </div>
@@ -568,11 +570,11 @@ const ReusableRegistrationForm = ({
                             type="button"
                             onClick={() => onToggleField(childField.id)}
                                     className="flex items-center justify-center transition-colors shrink-0 hover:bg-gray-200 p-2 rounded"
-                            title={
-                              isFieldVisible(childField)
-                                ? "Disable field"
-                                : "Enable field"
-                            }
+                  title={
+                    isFieldVisible(childField)
+                      ? t("registrationForm.disableField")
+                      : t("registrationForm.enableField")
+                  }
                             disabled={!!toggleLoading[childField.id]}
                           >
                             {isFieldVisible(childField) ? (
@@ -604,7 +606,7 @@ const ReusableRegistrationForm = ({
                                       });
                                     }}
                                     className="flex items-center justify-center transition-colors shrink-0 hover:bg-red-100 p-2 rounded"
-                                    title="Delete field"
+                                    title={t("registrationForm.deleteField")}
                                     disabled={!!deleteLoading[childField.id]}
                                   >
                                     {deleteLoading[childField.id] ? (
@@ -634,7 +636,7 @@ const ReusableRegistrationForm = ({
                 })
               ) : (
                 <div className="text-center py-8 text-gray-400 text-sm italic w-full">
-                  No fields in container
+                  {t("registrationForm.noFieldsInContainer")}
                 </div>
               )}
             </div>
@@ -678,9 +680,9 @@ const ReusableRegistrationForm = ({
                   onClick={() => onToggleField(field.id)}
                           className="flex items-center justify-center transition-colors shrink-0 hover:bg-gray-200 p-2 rounded"
                   title={
-                            isFieldVisible(field)
-                              ? "Disable field"
-                              : "Enable field"
+                    isFieldVisible(field)
+                      ? t("registrationForm.disableField")
+                      : t("registrationForm.enableField")
                   }
                   disabled={!!toggleLoading[field.id]}
                 >
@@ -709,7 +711,7 @@ const ReusableRegistrationForm = ({
                             });
                           }}
                           className="flex items-center justify-center transition-colors shrink-0 hover:bg-red-100 p-2 rounded"
-                          title="Delete field"
+                          title={t("registrationForm.deleteField")}
                           disabled={!!deleteLoading[field.id]}
                         >
                           {deleteLoading[field.id] ? (
@@ -784,7 +786,7 @@ const ReusableRegistrationForm = ({
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900">
-                    Delete Field
+                    {t("registrationForm.deleteField")}
                   </h3>
                 </div>
                 <button
@@ -804,11 +806,11 @@ const ReusableRegistrationForm = ({
 
               <div className="mb-6">
                 <p className="text-gray-700">
-                  Are you sure you want to delete{" "}
+                  {t("registrationForm.deleteConfirm")}{" "}
                   <span className="font-semibold text-gray-900">
                     "{deleteConfirmModal.fieldLabel}"
                   </span>
-                  ? This action cannot be undone.
+                  {t("registrationForm.deleteConfirmDesc")}
                 </p>
               </div>
 
@@ -824,7 +826,7 @@ const ReusableRegistrationForm = ({
                   }
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
                 >
-                  Cancel
+                  {t("registrationForm.cancel")}
                 </button>
                 <button
                   type="button"
@@ -839,12 +841,12 @@ const ReusableRegistrationForm = ({
                   deleteLoading[deleteConfirmModal.fieldId] ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      <span>Deleting...</span>
+                      <span>{t("registrationForm.deleting")}</span>
                     </>
                   ) : (
                     <>
                       <Trash2 size={16} />
-                      <span>Delete</span>
+                      <span>{t("registrationForm.delete")}</span>
                     </>
                   )}
                 </button>

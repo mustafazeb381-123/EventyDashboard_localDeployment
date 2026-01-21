@@ -35,6 +35,11 @@ import { ThemeConfigPanel } from "./CustomFormBuilder/components/ThemeConfigPane
 import { FormPreview } from "./CustomFormBuilder/components/FormPreview";
 import { DroppableContainer } from "./CustomFormBuilder/components/DroppableContainer";
 import { MainDropZone } from "./CustomFormBuilder/components/MainDropZone";
+import { LanguageSwitcher } from "./CustomFormBuilder/components/LanguageSwitcher";
+import { RTLWrapper } from "./CustomFormBuilder/components/RTLWrapper";
+
+// Import i18n
+import { useTranslation } from "react-i18next";
 
 // Import types
 import type { CustomFormField, FormTheme } from "./CustomFormBuilder/types";
@@ -250,6 +255,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   onSave,
   onClose,
 }) => {
+  const { t } = useTranslation("formBuilder");
   const [fields, setFields] = useState<CustomFormField[]>(
     initialFields.length > 0 ? initialFields : DEFAULT_FORM_FIELDS
   );
@@ -835,13 +841,14 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   }, [showJsonMenu]);
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCenter}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragOver={(event) => {
-        const rawOverId = event.over?.id as string | undefined;
+    <RTLWrapper>
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragOver={(event) => {
+          const rawOverId = event.over?.id as string | undefined;
         const overId = rawOverId?.startsWith("container:")
           ? rawOverId.replace("container:", "")
           : rawOverId;
@@ -914,10 +921,13 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                 )}
               </div>
               <p className="text-pink-100 text-sm mt-0.5">
-                Design your perfect form
+                {t("header.subtitle")}
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {/* Language Switcher */}
+              <LanguageSwitcher />
+
               {/* JSON Menu */}
               <div className="relative json-menu-container">
                 <button
@@ -928,24 +938,24 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                   <FileJson size={20} />
                 </button>
                 {showJsonMenu && (
-                  <div className="absolute right-0 top-12 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 w-48">
+                  <div className="absolute right-0 rtl:left-0 rtl:right-auto top-12 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 w-48">
                     <button
                       onClick={handleViewJson}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center gap-3 transition-colors"
+                      className="w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors"
                     >
                       <Code size={16} />
-                      <span className="text-sm font-medium">View JSON</span>
+                      <span className="text-sm font-medium">{t("header.jsonMenu.viewJson")}</span>
                     </button>
                     <button
                       onClick={handleExportJson}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center gap-3 transition-colors border-t border-gray-100"
+                      className="w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors border-t border-gray-100"
                     >
                       <Download size={16} />
-                      <span className="text-sm font-medium">Export JSON</span>
+                      <span className="text-sm font-medium">{t("header.jsonMenu.exportJson")}</span>
                     </button>
-                    <label className="w-full px-4 py-3 text-left hover:bg-gray-100 flex items-center gap-3 transition-colors border-t border-gray-100 cursor-pointer">
+                    <label className="w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors border-t border-gray-100 cursor-pointer">
                       <Upload size={16} />
-                      <span className="text-sm font-medium">Import JSON</span>
+                      <span className="text-sm font-medium">{t("header.jsonMenu.importJson")}</span>
                       <input
                         type="file"
                         accept=".json"
@@ -960,24 +970,24 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               <button
                 onClick={() => setShowPreview(!showPreview)}
                 className="flex items-center gap-2 px-4 py-2.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                title={showPreview ? "Hide Preview" : "Show Preview"}
+                title={showPreview ? t("header.hidePreview") : t("header.preview")}
               >
                 {showPreview ? (
                   <>
                     <EyeOff size={18} />
-                    <span className="text-sm font-medium">Hide Preview</span>
+                    <span className="text-sm font-medium">{t("header.hidePreview")}</span>
                   </>
                 ) : (
                   <>
                     <Eye size={18} />
-                    <span className="text-sm font-medium">Preview</span>
+                    <span className="text-sm font-medium">{t("header.preview")}</span>
                   </>
                 )}
               </button>
               <button
                 onClick={() => setShowThemePanel(!showThemePanel)}
                 className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                title="Theme Settings"
+                title={t("header.theme")}
               >
                 <PaletteIcon size={20} />
               </button>
@@ -989,12 +999,12 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                 }`}
               >
                 <Save size={18} />
-                {isSaving ? "Saving..." : "Save Form"}
+                {isSaving ? t("header.saving") : t("header.saveForm")}
               </button>
               <button
                 onClick={onClose}
                 className="p-2.5 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-                title="Close Builder"
+                title={t("header.close")}
               >
                 <X size={20} />
               </button>
@@ -1007,7 +1017,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
             <div className="w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto p-4">
               <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <PaletteIcon size={18} className="text-pink-600" />
-                Form Elements
+                {t("fieldPalette.title")}
               </h3>
               <FieldPalette onAddField={handleAddField} />
             </div>
@@ -1266,7 +1276,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
           </div>
         </div>
       )}
-    </DndContext>
+      </DndContext>
+    </RTLWrapper>
   );
 };
 
