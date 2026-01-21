@@ -306,9 +306,16 @@ function ImageBlockSettings({
           {block.src ? (
             <div className="relative w-full">
               <img
+                key={block.src}
                 src={block.src}
                 alt={block.alt || "Preview"}
                 className="max-w-full h-auto max-h-40 mx-auto rounded shadow-sm"
+                onLoad={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = "block";
+                  const fallback = target.nextElementSibling as HTMLElement;
+                  if (fallback) fallback.style.display = "none";
+                }}
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = "none";
@@ -609,7 +616,7 @@ function renderHtml(design: EmailTemplateDesign) {
         case "image": {
           const b = block as ImageBlock;
           const img = `<img src="${escapeHtmlAttr(
-            b.src
+            b.src,
           )}" alt="${escapeHtmlAttr(b.alt)}" style="width:${
             b.width
           }px;max-width:100%;height:auto;border-radius:${
@@ -632,7 +639,7 @@ function renderHtml(design: EmailTemplateDesign) {
                 ? "flex-end"
                 : "center";
           return `<div style="display:flex;justify-content:${wrapperAlign};margin:16px 0;"><a href="${escapeHtmlAttr(
-            b.href
+            b.href,
           )}" style="background:${b.backgroundColor};color:${
             b.textColor
           };text-decoration:none;padding:12px 18px;border-radius:${
@@ -640,7 +647,7 @@ function renderHtml(design: EmailTemplateDesign) {
           }px;font-family:${
             gs.fontFamily
           };font-weight:600;display:inline-block;">${escapeHtmlAttr(
-            b.text
+            b.text,
           )}</a></div>`;
         }
         case "social": {
@@ -664,9 +671,9 @@ function renderHtml(design: EmailTemplateDesign) {
               };
               const color = iconColors[icon.platform] || "#6366f1";
               return `<a href="${escapeHtmlAttr(
-                icon.url
+                icon.url,
               )}" style="display:inline-block;margin:0 ${Math.floor(
-                b.spacing / 2
+                b.spacing / 2,
               )}px;"><div style="width:${b.iconSize}px;height:${
                 b.iconSize
               }px;background:${color};border-radius:50%;"></div></a>`;
@@ -680,7 +687,7 @@ function renderHtml(design: EmailTemplateDesign) {
           const columnsHtml = b.content
             .map(
               (html) =>
-                `<div style="width:${colWidth};display:inline-block;vertical-align:top;font-family:${gs.fontFamily};font-size:14px;color:${gs.textColor};">${html}</div>`
+                `<div style="width:${colWidth};display:inline-block;vertical-align:top;font-family:${gs.fontFamily};font-size:14px;color:${gs.textColor};">${html}</div>`,
             )
             .join(`<div style="width:${b.gap}px;display:inline-block;"></div>`);
           return `<div style="margin:16px 0;">${columnsHtml}</div>`;
@@ -736,7 +743,7 @@ function renderHtmlForPreview(design: EmailTemplateDesign) {
         case "image": {
           const b = block as ImageBlock;
           const img = `<img src="${escapeHtmlAttr(
-            b.src
+            b.src,
           )}" alt="${escapeHtmlAttr(b.alt)}" style="max-width:100%;width:auto;height:auto;border-radius:${
             b.borderRadius
           }px;display:block;" />`;
@@ -757,7 +764,7 @@ function renderHtmlForPreview(design: EmailTemplateDesign) {
                 ? "flex-end"
                 : "center";
           return `<div style="display:flex;justify-content:${wrapperAlign};margin:16px 0;"><a href="${escapeHtmlAttr(
-            b.href
+            b.href,
           )}" style="background:${b.backgroundColor};color:${
             b.textColor
           };text-decoration:none;padding:12px 18px;border-radius:${
@@ -765,7 +772,7 @@ function renderHtmlForPreview(design: EmailTemplateDesign) {
           }px;font-family:${
             gs.fontFamily
           };font-weight:600;display:inline-block;">${escapeHtmlAttr(
-            b.text
+            b.text,
           )}</a></div>`;
         }
         case "social": {
@@ -789,9 +796,9 @@ function renderHtmlForPreview(design: EmailTemplateDesign) {
               };
               const color = iconColors[icon.platform] || "#6366f1";
               return `<a href="${escapeHtmlAttr(
-                icon.url
+                icon.url,
               )}" style="display:inline-block;margin:0 ${Math.floor(
-                b.spacing / 2
+                b.spacing / 2,
               )}px;"><div style="width:${b.iconSize}px;height:${
                 b.iconSize
               }px;background:${color};border-radius:50%;"></div></a>`;
@@ -805,7 +812,7 @@ function renderHtmlForPreview(design: EmailTemplateDesign) {
           const columnsHtml = b.content
             .map(
               (html) =>
-                `<div style="width:${colWidth};display:inline-block;vertical-align:top;font-family:${gs.fontFamily};font-size:14px;color:${gs.textColor};">${html}</div>`
+                `<div style="width:${colWidth};display:inline-block;vertical-align:top;font-family:${gs.fontFamily};font-size:14px;color:${gs.textColor};">${html}</div>`,
             )
             .join(`<div style="width:${b.gap}px;display:inline-block;"></div>`);
           return `<div style="margin:16px 0;">${columnsHtml}</div>`;
@@ -912,8 +919,15 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
             ? "flex-end"
             : "center";
       return (
-        <div style={{ display: "flex", justifyContent: justify, margin: "0 0 12px 0" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: justify,
+            margin: "0 0 12px 0",
+          }}
+        >
           <img
+            key={b.src}
             src={b.src}
             alt={b.alt || "Image"}
             style={{
@@ -923,6 +937,10 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
               borderRadius: `${b.borderRadius}px`,
               display: "block",
               objectFit: "cover",
+            }}
+            onLoad={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = "block";
             }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -941,7 +959,9 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
             ? "flex-end"
             : "center";
       return (
-        <div style={{ display: "flex", justifyContent: justify, margin: "16px 0" }}>
+        <div
+          style={{ display: "flex", justifyContent: justify, margin: "16px 0" }}
+        >
           <a
             href={b.href || "#"}
             style={{
@@ -1059,15 +1079,30 @@ function renderPreviewContent(block: EmailBlock, gs: GlobalStyles) {
             ? "flex-end"
             : "center";
       return (
-        <div style={{ display: "flex", justifyContent: justify, margin: "16px 0" }}>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+        <div
+          style={{ display: "flex", justifyContent: justify, margin: "16px 0" }}
+        >
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "8px",
+            }}
+          >
             <QRCodeSVG
               value="{{user.qrcode}}"
               size={b.size}
               bgColor={b.backgroundColor}
               fgColor={b.foregroundColor}
             />
-            <span style={{ fontSize: "11px", color: "#6b7280", fontFamily: gs.fontFamily }}>
+            <span
+              style={{
+                fontSize: "11px",
+                color: "#6b7280",
+                fontFamily: gs.fontFamily,
+              }}
+            >
               QR Code will be generated for each recipient
             </span>
           </div>
@@ -1127,7 +1162,7 @@ function SortablePreviewBlock({
         {selected && (
           <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-1 h-8 bg-pink-500 rounded-full" />
         )}
-        
+
         {/* Block actions - shown on hover */}
         <div className="absolute top-2 right-2 flex flex-wrap items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
           <button
@@ -1180,9 +1215,7 @@ function SortablePreviewBlock({
         </div>
 
         {/* Block content */}
-        <div className="pr-20">
-          {renderPreviewContent(block, gs)}
-        </div>
+        <div className="pr-20">{renderPreviewContent(block, gs)}</div>
       </div>
     </div>
   );
@@ -1226,7 +1259,7 @@ function RichTextEditor({
     document.execCommand(
       "insertHTML",
       false,
-      `<span style="background:#fce7f3;padding:0 4px;border-radius:2px;">${tag.value}</span>&nbsp;`
+      `<span style="background:#fce7f3;padding:0 4px;border-radius:2px;">${tag.value}</span>&nbsp;`,
     );
     setShowTags(false);
     if (editorRef.current) {
@@ -1877,7 +1910,7 @@ function getSocialIcon(platform: string) {
 
 function addBlock(
   design: EmailTemplateDesign,
-  type: EmailBlock["type"]
+  type: EmailBlock["type"],
 ): EmailTemplateDesign {
   const next = { ...design, blocks: [...design.blocks] };
   if (type === "heading") {
@@ -1986,7 +2019,7 @@ export function EmailTemplateBuilderModal({
   onSave: (design: EmailTemplateDesign, html: string) => void;
 }) {
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
   const startingDesign: EmailTemplateDesign = useMemo(() => {
@@ -2001,16 +2034,19 @@ export function EmailTemplateBuilderModal({
 
   const [design, setDesign] = useState<EmailTemplateDesign>(startingDesign);
   const [selectedId, setSelectedId] = useState<string>(
-    startingDesign.blocks[0]?.id
+    startingDesign.blocks[0]?.id,
   );
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">(
-    "desktop"
+    "desktop",
   );
   const [previewType, setPreviewType] = useState<"builder" | "html">("builder");
 
   const selectedBlock = design.blocks.find((b) => b.id === selectedId);
   const previewHtml = useMemo(() => renderHtml(design), [design]);
-  const previewHtmlFullWidth = useMemo(() => renderHtmlForPreview(design), [design]);
+  const previewHtmlFullWidth = useMemo(
+    () => renderHtmlForPreview(design),
+    [design],
+  );
 
   if (!open) return null;
 
@@ -2031,7 +2067,7 @@ export function EmailTemplateBuilderModal({
     setDesign((prev) => ({
       ...prev,
       blocks: prev.blocks.map((b) =>
-        b.id === selectedBlock.id ? ({ ...b, ...patch } as EmailBlock) : b
+        b.id === selectedBlock.id ? ({ ...b, ...patch } as EmailBlock) : b,
       ),
     }));
   };
@@ -2067,7 +2103,7 @@ export function EmailTemplateBuilderModal({
         : defaultDesignFromHtml().blocks;
       const nextIndex = Math.min(
         Math.max(0, removedIndex - 1),
-        fallbackBlocks.length - 1
+        fallbackBlocks.length - 1,
       );
       const nextSelectedId =
         blockId === selectedId
@@ -2112,7 +2148,8 @@ export function EmailTemplateBuilderModal({
             <div className="hidden lg:flex items-center gap-2 bg-white/20 rounded-full px-4 py-1.5 backdrop-blur-sm">
               <LayoutGrid size={14} />
               <span className="text-sm font-medium">
-                {design.blocks.length} {design.blocks.length === 1 ? "block" : "blocks"}
+                {design.blocks.length}{" "}
+                {design.blocks.length === 1 ? "block" : "blocks"}
               </span>
             </div>
           </div>
@@ -2209,7 +2246,9 @@ export function EmailTemplateBuilderModal({
                   onClick={() => setDesign((prev) => addBlock(prev, item.type))}
                   title={`Add ${item.label}`}
                 >
-                  <span className={`${item.color} group-hover:scale-110 transition-transform`}>
+                  <span
+                    className={`${item.color} group-hover:scale-110 transition-transform`}
+                  >
                     {item.icon}
                   </span>
                   <span className="text-xs font-semibold text-gray-700 group-hover:text-pink-700">
@@ -2441,7 +2480,7 @@ export function EmailTemplateBuilderModal({
 
               <div
                 className="border-2 border-gray-300 rounded-2xl shadow-2xl overflow-hidden bg-white w-full transition-all"
-                style={{ 
+                style={{
                   background: design.globalStyles.backgroundColor,
                   maxWidth: previewMode === "mobile" ? "460px" : "100%",
                   margin: previewMode === "mobile" ? "0 auto" : "0",
@@ -2476,7 +2515,7 @@ export function EmailTemplateBuilderModal({
                   >
                     <div
                       className="w-full"
-                      style={{ 
+                      style={{
                         width: "100%",
                         margin: "0 auto",
                         padding: `0 ${previewMode === "mobile" ? "16px" : "8px"}`,
@@ -2500,12 +2539,16 @@ export function EmailTemplateBuilderModal({
                           >
                             {design.blocks.length === 0 ? (
                               <div className="text-sm text-gray-400 text-center py-16">
-                                <LayoutGrid size={48} className="mx-auto mb-4 text-gray-300" />
+                                <LayoutGrid
+                                  size={48}
+                                  className="mx-auto mb-4 text-gray-300"
+                                />
                                 <p className="font-medium text-gray-500 mb-1">
                                   No blocks yet
                                 </p>
                                 <p className="text-xs text-gray-400">
-                                  Add blocks from the left panel to start building your email
+                                  Add blocks from the left panel to start
+                                  building your email
                                 </p>
                               </div>
                             ) : (
