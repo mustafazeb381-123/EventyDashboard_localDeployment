@@ -871,6 +871,21 @@ export const likeEventUserQuestionApi = (
   );
 };
 
+// ---------------------- App Sections Visibility API ----------------------
+
+// Update which sections should be hidden in the mobile app interface
+export const updateAppHideSectionsApi = (
+  eventId: string | number,
+  hideAppSections: string[]
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/update_app_hide_sections`,
+    {
+      hide_app_sections: hideAppSections,
+    }
+  );
+};
+
 
 
 
