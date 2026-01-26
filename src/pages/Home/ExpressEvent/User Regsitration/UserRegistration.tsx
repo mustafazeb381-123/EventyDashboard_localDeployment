@@ -695,7 +695,7 @@ function UserRegistration() {
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
         {/* Notification Toast - Only shows on submit */}
         {notification && (
-          <div className="fixed top-4 right-4 z-100 animate-slide-in">
+          <div className="fixed top-4 right-4 z-[9999] animate-slide-in" style={{ position: 'fixed' }}>
             <div
               className={`px-6 py-3 rounded-lg shadow-lg ${
                 notification.type === "success"
@@ -786,7 +786,7 @@ function UserRegistration() {
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
       {/* Notification Toast - Only shows on submit */}
       {notification && (
-        <div className="fixed top-4 right-4 z-100 animate-slide-in">
+        <div className="fixed top-4 right-4 z-[9999] animate-slide-in" style={{ position: 'fixed' }}>
           <div
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"

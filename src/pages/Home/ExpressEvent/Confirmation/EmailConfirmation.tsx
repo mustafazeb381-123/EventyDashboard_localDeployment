@@ -10,8 +10,6 @@ import {
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
-import ReminderTemplateOne from "./Templates/ReminderEmailTemplate/ReminderTemplateOne";
-import ReminderTemplateTwo from "./Templates/ReminderEmailTemplate/ReminderTemplateTwo";
 import {
   getEmailTemplatesApi,
   createEmailTemplateApi,
@@ -28,7 +26,7 @@ const createStaticTemplates = (eventData: any) => {
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
-    return { welcome: [], thank_you: [], reminder: [] };
+    return { welcome: [], thank_you: [] };
   }
 
   const eventProps = {
@@ -82,28 +80,6 @@ const createStaticTemplates = (eventData: any) => {
         isStatic: true,
         type: "thank_you",
         readyMadeId: "thank-you-template-2",
-      },
-    ],
-    reminder: [
-      {
-        id: "reminder-template-1",
-        title: "Reminder Template 1",
-        component: <ReminderTemplateOne {...eventProps} />,
-        html: null,
-        design: null,
-        isStatic: true,
-        type: "reminder",
-        readyMadeId: "reminder-template-1",
-      },
-      {
-        id: "reminder-template-2",
-        title: "Reminder Template 2",
-        component: <ReminderTemplateTwo {...eventProps} />,
-        html: null,
-        design: null,
-        isStatic: true,
-        type: "reminder",
-        readyMadeId: "reminder-template-2",
       },
     ],
   };
@@ -464,7 +440,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   const [flows, setFlows] = useState<any[]>([
     { id: "welcome", label: "Welcome Email", templates: [] },
     { id: "thank_you", label: "Thank You Email", templates: [] },
-    { id: "reminder", label: "Reminder Email", templates: [] },
   ]);
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
@@ -508,7 +483,6 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         setFlows([
           { id: "welcome", label: "Welcome Email", templates: [] },
           { id: "thank_you", label: "Thank You Email", templates: [] },
-          { id: "reminder", label: "Reminder Email", templates: [] },
         ]);
         return;
       }
