@@ -13,6 +13,7 @@ import {
   getSessionAreaApi,
   deleteSessionAreaApi,
   updateSessionAreaApi,
+  getBadgeType,
 } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
 
@@ -36,7 +37,7 @@ export type Badge = {
   id: string;
   attributes: {
     name: string;
-    badge_type: string;
+    default?: boolean;
   };
 };
 
@@ -81,46 +82,36 @@ function AdvanceArea({
   const fetchBadgeApi = async () => {
     if (!currentEventId) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
+    setBadgeLoading(true);
     try {
-      setBadgeLoading(true);
-      const response = await fetch(
-        `https://scceventy.dev/en/api_dashboard/v1/events/${currentEventId}/badges`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      console.log("Fetching badges for event ID:", currentEventId);
 
-      if (!response.ok) {
-        console.error("API Error:", response);
-        return;
+      const response = await getBadgeType(currentEventId);
+
+      console.log("Badges API Response in AdvanceArea", response);
+
+      const result = response.data;
+      console.log("✅ Raw badges fetched:", result?.data);
+
+      // Store ALL badges (both default and non-default)
+      if (result?.data && Array.isArray(result.data)) {
+        // Deduplicate badges by name to avoid showing duplicates
+        const uniqueBadges = result.data.filter(
+          (badge: Badge, index: number, self: Badge[]) =>
+            index ===
+            self.findIndex(
+              (b: Badge) =>
+                b.attributes.name === badge.attributes.name
+            )
+        );
+        setBadges(uniqueBadges);
+        console.log("✅ Unique badges stored:", uniqueBadges);
+      } else {
+        setBadges([]);
       }
-
-      const result = await response.json();
-      const allBadges = result?.data || [];
-
-      // Deduplicate badges by badge_type to avoid showing duplicates
-      const uniqueBadges = allBadges.filter(
-        (badge: Badge, index: number, self: Badge[]) =>
-          index ===
-          self.findIndex(
-            (b: Badge) =>
-              b.attributes.badge_type === badge.attributes.badge_type
-          )
-      );
-
-      setBadges(uniqueBadges);
     } catch (error) {
       console.error("❌ Fetch error:", error);
+      setBadges([]);
     } finally {
       setBadgeLoading(false);
     }
@@ -477,7 +468,7 @@ function AdvanceArea({
                   Type
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guest numbers
+                  Guest number
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -589,8 +580,8 @@ function AdvanceArea({
                         >
                           {badges.map((badge) => (
                             <option
-                              key={badge.attributes.badge_type}
-                              value={badge.attributes.badge_type}
+                              key={badge.id}
+                              value={badge.attributes.name}
                             >
                               {badge.attributes.name}
                             </option>
@@ -598,7 +589,7 @@ function AdvanceArea({
                         </select>
                       ) : (
                         badges.find(
-                          (b) => b.attributes.badge_type === session.type
+                          (b) => b.attributes.name === session.type
                         )?.attributes.name || session.type
                       )}
                     </td>
@@ -711,9 +702,17 @@ function AdvanceArea({
               className="bg-white p-8 rounded-2xl w-3/4 shadow-xl"
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="text-xl font-semibold mb-6 text-gray-900">
-                Add Sessions
-              </h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Add Sessions
+                </h2>
+                <button
+                  onClick={() => setAddModalOpen(false)}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
               <div className="space-y-4">
                 <div>
@@ -751,7 +750,7 @@ function AdvanceArea({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Travel number
+                    Guest number
                   </label>
                   <input
                     type="number"
@@ -788,8 +787,8 @@ function AdvanceArea({
                     ) : (
                       badges.map((badge) => (
                         <option
-                          key={badge.attributes.badge_type}
-                          value={badge.attributes.badge_type}
+                          key={badge.id}
+                          value={badge.attributes.name}
                         >
                           {badge.attributes.name}
                         </option>

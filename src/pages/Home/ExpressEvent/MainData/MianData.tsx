@@ -1138,26 +1138,26 @@ const MainData = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <p className="text-sm font-medium text-blue-800">
+              <p className="text-sm font-medium text-blue-800 mb-0">
                 Editing Existing Event (ID: {eventId})
               </p>
             </div>
-            <button
+            {/* <button
               onClick={handleHideEventDataClick}
               className="text-xs text-blue-600 hover:text-blue-800 underline"
             >
               Hide Event Data
-            </button>
+            </button> */}
           </div>
-          <p className="text-xs text-blue-600">
+          {/* <p className="text-xs text-blue-600">
             Event data has been loaded from the database. You can modify the
             fields below.
-          </p>
+          </p> */}
         </div>
       )}
 
       {/* Show Event Data Button (when hidden) */}
-      {!showEventData && isEditing && (eventData || eventAttributes) && (
+      {/* {!showEventData && isEditing && (eventData || eventAttributes) && (
         <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -1177,7 +1177,7 @@ const MainData = ({
             Click to load existing event data into the form fields.
           </p>
         </div>
-      )}
+      )} */}
 
       {/* Mobile-First Responsive Grid */}
       <div className="w-full space-y-6 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 xl:gap-8">
@@ -1264,7 +1264,7 @@ const MainData = ({
               <label className="text-sm font-medium text-gray-700">
                 Require approval
               </label>
-              <Info size={14} className="text-gray-400" />
+              {/* <Info size={14} className="text-gray-400" /> */}
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -1303,7 +1303,7 @@ const MainData = ({
               <label className="text-sm font-medium text-gray-700">
                 Duplicate registration
               </label>
-              <Info size={14} className="text-gray-400" />
+              {/* <Info size={14} className="text-gray-400" /> */}
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -1342,7 +1342,7 @@ const MainData = ({
                 <label className="text-sm font-medium text-gray-700">
                   Ticket
                 </label>
-                <Info size={14} className="text-gray-400" />
+                {/* <Info size={14} className="text-gray-400" /> */}
               </div>
 
               <label className="relative inline-flex items-center cursor-pointer">
@@ -1586,7 +1586,7 @@ const MainData = ({
               <label className="block text-sm font-medium text-gray-700">
                 Add Guest Types <span className="text-red-500">*</span>
               </label>
-              <Info size={14} className="text-gray-400" />
+              {/* <Info size={14} className="text-gray-400" /> */}
             </div>
 
             {eventId ? (
