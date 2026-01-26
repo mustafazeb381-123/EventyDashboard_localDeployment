@@ -86,57 +86,67 @@ function AdvanceSpeaker({
   const [editSelectedImageFile, setEditSelectedImageFile] =
     useState<File | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
+  const itemsPerPage = 10; // Server-side pagination items per page
+  const [pagination, setPagination] = useState<any>(null);
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [speakerToDelete, setSpeakerToDelete] = useState<Speaker | null>(null);
 
-  // Compute speakers for current page
-  const currentSpeakers = eventUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  // Fetch speakers when eventId or currentPage changes
   useEffect(() => {
-    const fetchSpeakers = async () => {
-      if (!eventId) return;
+    if (eventId && currentPage > 0) {
+      fetchSpeakers(eventId, currentPage);
+    }
+  }, [eventId, currentPage]);
 
-      setIsFetchingSpeakers(true);
-      try {
-        const response = await getSpeakersApi(eventId);
+  const fetchSpeakers = async (id: string | number, page: number = 1) => {
+    setIsFetchingSpeakers(true);
+    try {
+      const response = await getSpeakersApi(id, {
+        page,
+        per_page: itemsPerPage,
+      });
 
-        if (response.status === 200) {
-          const speakersData = response.data.data.map((item: any) => ({
-            id: item.id,
-            attributes: {
-              name: item.attributes.name,
-              description: item.attributes.description,
-              organization: item.attributes.organization,
-              image: item.attributes.image_url,
-              image_url: item.attributes.image_url,
-              created_at: item.attributes.created_at,
-              updated_at: item.attributes.updated_at,
-              event_id: item.attributes.event_id,
-              agenda_ids: item.attributes.agenda_ids,
-            },
-          }));
+      if (response.status === 200) {
+        const responseData = response.data?.data || response.data;
+        const speakers = Array.isArray(responseData)
+          ? responseData
+          : responseData?.data || [];
 
-          setEventUsers(speakersData);
-        } else {
-          showNotification("Failed to fetch speakers", "error");
+        const speakersData = speakers.map((item: any) => ({
+          id: item.id,
+          attributes: {
+            name: item.attributes.name,
+            description: item.attributes.description,
+            organization: item.attributes.organization,
+            image: item.attributes.image_url,
+            image_url: item.attributes.image_url,
+            created_at: item.attributes.created_at,
+            updated_at: item.attributes.updated_at,
+            event_id: item.attributes.event_id,
+            agenda_ids: item.attributes.agenda_ids,
+          },
+        }));
+
+        setEventUsers(speakersData);
+
+        // Set pagination metadata
+        const paginationMeta =
+          response.data?.meta?.pagination || response.data?.pagination;
+        if (paginationMeta) {
+          setPagination(paginationMeta);
         }
-      } catch (error: any) {
-        console.log("💥 GET speakers error:", error);
-        showNotification("Network error: Cannot fetch speakers", "error");
-      } finally {
-        setIsFetchingSpeakers(false);
+      } else {
+        showNotification("Failed to fetch speakers", "error");
       }
-    };
-
-    fetchSpeakers();
-  }, [eventId]);
+    } catch (error: any) {
+      console.log("💥 GET speakers error:", error);
+      showNotification("Network error: Cannot fetch speakers", "error");
+    } finally {
+      setIsFetchingSpeakers(false);
+    }
+  };
 
   useEffect(() => {
     if (notification) {
@@ -178,12 +188,11 @@ function AdvanceSpeaker({
       const response = await deleteSpeakerApi(eventId!, speakerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers((prev) =>
-          prev.filter((u) => u.id !== speakerToDelete.id)
-        );
         showNotification("Speaker deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setSpeakerToDelete(null);
+        // Refresh current page to show updated data
+        fetchSpeakers(eventId!, currentPage);
       } else {
         showNotification("Failed to delete speaker", "error");
       }
@@ -253,8 +262,9 @@ function AdvanceSpeaker({
           },
         };
 
-        setEventUsers((prev) => [...prev, newSpeakerData]);
         showNotification("Speaker added successfully!", "success");
+        // Refresh current page to show updated data
+        fetchSpeakers(eventId, currentPage);
 
         // Reset form
         setNewSpeaker({
@@ -309,27 +319,11 @@ function AdvanceSpeaker({
 
       if (response.status === 200) {
         const updated = response.data.data;
-        setEventUsers((prev) =>
-          prev.map((u) =>
-            u.id === editingSpeaker.id
-              ? {
-                  ...u,
-                  attributes: {
-                    ...u.attributes,
-                    name: updated.attributes.name,
-                    description: updated.attributes.description,
-                    organization: updated.attributes.organization,
-                    image: updated.attributes.image_url,
-                    image_url: updated.attributes.image_url,
-                  },
-                }
-              : u
-          )
-        );
-
         showNotification("Speaker updated successfully!", "success");
         setEditModalOpen(false);
         setEditingSpeaker(null);
+        // Refresh current page to show updated data
+        fetchSpeakers(eventId!, currentPage);
       }
     } catch (error: any) {
       console.error("Update speaker error:", error);
@@ -550,7 +544,7 @@ function AdvanceSpeaker({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {currentSpeakers.map((user, index) => (
+                  {eventUsers.map((user, index) => (
                     <tr
                       key={user.id}
                       className={index % 2 ? "bg-gray-50" : "bg-white"}
@@ -606,13 +600,26 @@ function AdvanceSpeaker({
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page) => setCurrentPage(page)}
-                className="mt-4"
-              />
+            {!isFetchingSpeakers && pagination && pagination.total_pages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+                <div className="text-sm text-gray-600">
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * itemsPerPage, pagination.total_count)}
+                  </span>{" "}
+                  of <span className="font-medium">{pagination.total_count}</span> speakers
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={pagination.total_pages || 1}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    // Scroll to top when page changes
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className=""
+                />
+              </div>
             )}
           </>
         )}

@@ -232,8 +232,8 @@ export default function AdvanceUserPermission({
       </div> */}
 
       {/* Main Content */}
-      <div className="px-6 py-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="py-6">
+        <div className="">
           {/* App Sections Visibility */}
           <div className="bg-white rounded-lg shadow-sm mb-6">
             <div className="p-6">

@@ -79,60 +79,67 @@ function AdvancePartners({
     useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
+  const itemsPerPage = 10; // Server-side pagination items per page
+  const [pagination, setPagination] = useState<any>(null);
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [partnerToDelete, setPartnerToDelete] = useState<Partner | null>(null);
 
-  // Compute partners for current page
-  const currentPartners = eventUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  // Fetch partners when eventId or currentPage changes
   useEffect(() => {
-    const fetchPartners = async () => {
-      if (!eventId) {
-        setIsFetchingPartners(false);
-        return;
-      }
+    if (eventId && currentPage > 0) {
+      fetchPartners(eventId, currentPage);
+    }
+  }, [eventId, currentPage]);
 
-      setIsFetchingPartners(true);
-      try {
-        const response = await getPartnerApi(eventId);
+  const fetchPartners = async (id: string | number, page: number = 1) => {
+    setIsFetchingPartners(true);
+    try {
+      const response = await getPartnerApi(id, {
+        page,
+        per_page: itemsPerPage,
+      });
 
-        if (response.status === 200) {
-          const partnersData = response.data.data.map((item: any) => ({
-            id: item.id,
-            attributes: {
-              name: item.attributes.name,
-              description: item.attributes.description,
-              organization: item.attributes.organization,
-              image: item.attributes.image_url,
-              image_url: item.attributes.image_url,
-              created_at: item.attributes.created_at,
-              updated_at: item.attributes.updated_at,
-              event_id: item.attributes.event_id,
-              agenda_ids: item.attributes.agenda_ids,
-            },
-          }));
+      if (response.status === 200) {
+        const responseData = response.data?.data || response.data;
+        const partners = Array.isArray(responseData)
+          ? responseData
+          : responseData?.data || [];
 
-          setEventUsers(partnersData);
-        } else {
-          showNotification("Failed to fetch partners", "error");
+        const partnersData = partners.map((item: any) => ({
+          id: item.id,
+          attributes: {
+            name: item.attributes.name,
+            description: item.attributes.description,
+            organization: item.attributes.organization,
+            image: item.attributes.image_url,
+            image_url: item.attributes.image_url,
+            created_at: item.attributes.created_at,
+            updated_at: item.attributes.updated_at,
+            event_id: item.attributes.event_id,
+            agenda_ids: item.attributes.agenda_ids,
+          },
+        }));
+
+        setEventUsers(partnersData);
+
+        // Set pagination metadata
+        const paginationMeta =
+          response.data?.meta?.pagination || response.data?.pagination;
+        if (paginationMeta) {
+          setPagination(paginationMeta);
         }
-      } catch (error: any) {
-        console.log("💥 GET partners error:", error);
-        showNotification("Network error: Cannot fetch partners", "error");
-      } finally {
-        setIsFetchingPartners(false);
+      } else {
+        showNotification("Failed to fetch partners", "error");
       }
-    };
-
-    fetchPartners();
-  }, [eventId]);
+    } catch (error: any) {
+      console.log("💥 GET partners error:", error);
+      showNotification("Network error: Cannot fetch partners", "error");
+    } finally {
+      setIsFetchingPartners(false);
+    }
+  };
 
   useEffect(() => {
     if (notification) {
@@ -174,12 +181,11 @@ function AdvancePartners({
       const response = await deletePartnerApi(eventId!, partnerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        setEventUsers((prev) =>
-          prev.filter((u) => u.id !== partnerToDelete.id)
-        );
         showNotification("Partner deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setPartnerToDelete(null);
+        // Refresh current page to show updated data
+        fetchPartners(eventId!, currentPage);
       } else {
         showNotification("Failed to delete partner", "error");
       }
@@ -246,8 +252,9 @@ function AdvancePartners({
           },
         };
 
-        setEventUsers((prev) => [...prev, newPartnerData]);
         showNotification("Partner added successfully!", "success");
+        // Refresh current page to show updated data
+        fetchPartners(eventId, currentPage);
 
         setNewPartner({
           name: "",
@@ -301,55 +308,14 @@ function AdvancePartners({
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
 
-        setEventUsers((prev) =>
-          prev.map((u) =>
-            u.id === editingPartner.id
-              ? {
-                  ...u,
-                  attributes: {
-                    ...u.attributes,
-                    name: updated.attributes.name,
-                    image: updated.attributes.image_url,
-                    image_url: updated.attributes.image_url,
-                  },
-                }
-              : u
-          )
-        );
-
         showNotification("Partner updated successfully!", "success");
         setEditModalOpen(false);
         setEditingPartner(null);
         setEditSelectedImageFile(null);
         setEditImagePreview(null);
 
-        // Refetch partners to ensure we have the latest data from server
-        if (eventId) {
-          try {
-            const refreshResponse = await getPartnerApi(eventId);
-            if (refreshResponse.status === 200) {
-              const partnersData = refreshResponse.data.data.map(
-                (item: any) => ({
-                  id: item.id,
-                  attributes: {
-                    name: item.attributes.name,
-                    description: item.attributes.description,
-                    organization: item.attributes.organization,
-                    image: item.attributes.image_url,
-                    image_url: item.attributes.image_url,
-                    created_at: item.attributes.created_at,
-                    updated_at: item.attributes.updated_at,
-                    event_id: item.attributes.event_id,
-                    agenda_ids: item.attributes.agenda_ids,
-                  },
-                })
-              );
-              setEventUsers(partnersData);
-            }
-          } catch (error) {
-            console.error("Error refreshing partners:", error);
-          }
-        }
+        // Refresh current page to show updated data
+        fetchPartners(eventId!, currentPage);
       }
     } catch (error: any) {
       console.error("Update partner error:", error);
@@ -554,7 +520,7 @@ function AdvancePartners({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {currentPartners.map((user, index) => (
+                  {eventUsers.map((user, index) => (
                     <tr
                       key={user.id}
                       className={index % 2 ? "bg-gray-50" : "bg-white"}
@@ -603,13 +569,26 @@ function AdvancePartners({
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page: number) => setCurrentPage(page)}
-                className="mt-4"
-              />
+            {!isFetchingPartners && pagination && pagination.total_pages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+                <div className="text-sm text-gray-600">
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * itemsPerPage, pagination.total_count)}
+                  </span>{" "}
+                  of <span className="font-medium">{pagination.total_count}</span> partners
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={pagination.total_pages || 1}
+                  onPageChange={(page: number) => {
+                    setCurrentPage(page);
+                    // Scroll to top when page changes
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className=""
+                />
+              </div>
             )}
           </>
         )}
@@ -846,14 +825,6 @@ function AdvancePartners({
           ← Previous
         </button>
 
-        {!isFetchingPartners && eventUsers.length > 0 && totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page: number) => setCurrentPage(page)}
-            className="mt-4"
-          />
-        )}
 
         <button
           onClick={handleNext}

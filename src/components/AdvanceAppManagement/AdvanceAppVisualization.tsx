@@ -122,8 +122,8 @@ export default function AdvanceAppVisulization({
         </div>
       </div>
   {/* Main Content */}
-      <div className="px-6 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl">
+      <div className="py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Panel */}
           <div className="space-y-6">
             {/* App Visualization */}

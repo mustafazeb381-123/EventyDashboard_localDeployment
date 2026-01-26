@@ -17,6 +17,7 @@ import {
   updateEventById,
   deleteBadgeType,
   addGuestType,
+  getBadgeType,
 } from "../../../../apis/apiHelpers";
 import {
   getAllBadges,
@@ -639,37 +640,15 @@ const MainData = ({
   const fetchBadgeApi = async () => {
     if (!eventId) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
     try {
       setIsLoadingBadges(true);
       console.log("Fetching badges for event ID:", eventId);
 
-      const response = await fetch(
-        `https://scceventy.dev/en/api_dashboard/v1/events/${eventId}/badges`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await getBadgeType(eventId);
 
       console.log("Badges API Response:", response);
 
-      if (!response.ok) {
-        console.error("API Error:", response);
-        const errorText = await response.text();
-        console.log("Error response:", errorText);
-        return;
-      }
-
-      const result = await response.json();
+      const result = response.data;
       console.log("✅ Raw badges fetched:", result?.data);
       console.log("✅ All badge names:", result?.data?.map((b: Badge) => b.attributes.name));
 
@@ -682,6 +661,7 @@ const MainData = ({
       }
     } catch (error) {
       console.error("❌ Fetch error:", error);
+      setBadges([]);
     } finally {
       setIsLoadingBadges(false);
     }

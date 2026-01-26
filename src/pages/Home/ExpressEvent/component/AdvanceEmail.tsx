@@ -447,10 +447,27 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
+  const [showNameDialog, setShowNameDialog] = useState(false);
+  const [customTemplateName, setCustomTemplateName] = useState("");
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "warning";
   } | null>(null);
+
+  // Notification handler
+  const showNotification = (message: string, type: "success" | "error" | "warning") => {
+    setNotification({ message, type });
+  };
+
+  // Auto-hide notification after 3 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   const currentFlow = flows[currentFlowIndex];
 
@@ -505,19 +522,6 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       loadTemplatesFromAPI();
     }
   }, [effectiveEventId, currentFlowIndex, eventData]);
-
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [notification]);
-
-  const showNotification = (message: string, type: "success" | "error" | "warning") => {
-    setNotification({ message, type });
-  };
 
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId || !eventData) {
@@ -840,6 +844,16 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   };
 
   const handleCreateNewTemplate = () => {
+    setCustomTemplateName("");
+    setShowNameDialog(true);
+  };
+
+  const handleStartCreatingTemplate = () => {
+    if (!customTemplateName.trim()) {
+      showNotification("Please enter a template name", "warning");
+      return;
+    }
+    setShowNameDialog(false);
     setIsCreatingNew(true);
     setEditingTemplate(null);
     setIsEditorOpen(true);
@@ -917,11 +931,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       try {
         // Embed design in HTML so it's stored in API
         const htmlWithDesign = embedDesignInHtml(html, design);
+        const templateName =
+          customTemplateName || `Custom ${currentFlow.label} Template`;
         const apiResp = await createEmailTemplateApi(
           effectiveEventId,
           currentFlow.id,
           htmlWithDesign,
-          `Custom ${currentFlow.label} Template`,
+          templateName,
           design
         );
         console.log("apiResp of post api", apiResp);
@@ -933,9 +949,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
         const newTemplate = {
           id: `api-${apiId}`,
-          title:
-            apiResp.data.data.attributes?.name ||
-            `Custom ${currentFlow.label} Template`,
+          title: apiResp.data.data.attributes?.name || templateName,
           component: null,
           design: design, // Store design object for editing
           html,
@@ -1040,6 +1054,23 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
   return (
     <div className="w-full max-w-full mx-auto p-4 bg-white rounded-2xl shadow-sm">
+      {/* Notification Toast */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : notification.type === "error"
+                ? "bg-red-500 text-white"
+                : "bg-yellow-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft size={20} />{" "}
@@ -1189,22 +1220,53 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           setIsEditorOpen(false);
           setEditingTemplate(null);
           setIsCreatingNew(false);
+          setCustomTemplateName("");
         }}
         onSave={handleSaveFromEditor}
       />
 
-      {notification && (
-        <div className="fixed top-4 right-4 z-50 animate-slide-in">
-          <div
-            className={`px-6 py-3 rounded-lg shadow-lg ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-yellow-500 text-white"
-            }`}
-          >
-            {notification.message}
+      {/* Custom Template Name Dialog */}
+      {showNameDialog && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              Create Custom Template
+            </h3>
+            <p className="text-gray-600 mb-6 text-sm">
+              Enter a name for your new email template
+            </p>
+
+            <input
+              type="text"
+              placeholder="e.g., Welcome Email with QR Code"
+              value={customTemplateName}
+              onChange={(e) => setCustomTemplateName(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-pink-500"
+              autoFocus
+              onKeyPress={(e) => {
+                if (e.key === "Enter") {
+                  handleStartCreatingTemplate();
+                }
+              }}
+            />
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowNameDialog(false);
+                  setCustomTemplateName("");
+                }}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleStartCreatingTemplate}
+                className="flex-1 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium"
+              >
+                Create
+              </button>
+            </div>
           </div>
         </div>
       )}

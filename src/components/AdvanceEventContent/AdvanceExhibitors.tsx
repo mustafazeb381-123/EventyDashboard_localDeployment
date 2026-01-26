@@ -85,8 +85,8 @@ function AdvanceExhibitors({
     useState<File | null>(null);
   const [editImagePreview, setEditImagePreview] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 5;
-  const totalPages = Math.ceil(eventUsers.length / itemsPerPage);
+  const itemsPerPage = 10; // Server-side pagination items per page
+  const [pagination, setPagination] = useState<any>(null);
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -94,55 +94,65 @@ function AdvanceExhibitors({
     null
   );
 
-  // Compute exhibitors for current page
-  const currentExhibitors = eventUsers.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
-
+  // Fetch exhibitors when eventId or currentPage changes
   useEffect(() => {
-    const fetchExhibitors = async () => {
-      if (!eventId) return;
+    if (eventId && currentPage > 0) {
+      fetchExhibitors(eventId, currentPage);
+    }
+  }, [eventId, currentPage]);
 
-      setIsFetchingExhibitors(true);
-      try {
-        const response = await getExhibitorsApi(eventId);
+  const fetchExhibitors = async (id: string | number, page: number = 1) => {
+    setIsFetchingExhibitors(true);
+    try {
+      const response = await getExhibitorsApi(id, {
+        page,
+        per_page: itemsPerPage,
+      });
 
-        if (response.status === 200) {
-          const exhibitorsData = response.data.data.map(
-            (item: any, index: number) => ({
-              id: item.id,
-              attributes: {
-                name: item.attributes.name,
-                description: item.attributes.description,
-                organization: item.attributes.organization,
-                // Handle both image_url and image fields from API
-                image: item.attributes.image_url || item.attributes.image || "",
-                image_url:
-                  item.attributes.image_url || item.attributes.image || "",
-                created_at: item.attributes.created_at,
-                updated_at: item.attributes.updated_at,
-                event_id: item.attributes.event_id,
-              },
-              // Use unique timestamp + index to ensure each exhibitor gets a different version
-              _imageVersion: Date.now() + index,
-            })
-          );
+      if (response.status === 200) {
+        const responseData = response.data?.data || response.data;
+        const exhibitors = Array.isArray(responseData)
+          ? responseData
+          : responseData?.data || [];
 
-          setEventUsers(exhibitorsData);
-        } else {
-          showNotification("Failed to fetch exhibitors", "error");
+        const exhibitorsData = exhibitors.map(
+          (item: any, index: number) => ({
+            id: item.id,
+            attributes: {
+              name: item.attributes.name,
+              description: item.attributes.description,
+              organization: item.attributes.organization,
+              // Handle both image_url and image fields from API
+              image: item.attributes.image_url || item.attributes.image || "",
+              image_url:
+                item.attributes.image_url || item.attributes.image || "",
+              created_at: item.attributes.created_at,
+              updated_at: item.attributes.updated_at,
+              event_id: item.attributes.event_id,
+            },
+            // Use unique timestamp + index to ensure each exhibitor gets a different version
+            _imageVersion: Date.now() + index,
+          })
+        );
+
+        setEventUsers(exhibitorsData);
+
+        // Set pagination metadata
+        const paginationMeta =
+          response.data?.meta?.pagination || response.data?.pagination;
+        if (paginationMeta) {
+          setPagination(paginationMeta);
         }
-      } catch (error: any) {
-        console.log("💥 GET exhibitors error:", error);
-        showNotification("Network error: Cannot fetch exhibitors", "error");
-      } finally {
-        setIsFetchingExhibitors(false);
+      } else {
+        showNotification("Failed to fetch exhibitors", "error");
       }
-    };
-
-    fetchExhibitors();
-  }, [eventId]);
+    } catch (error: any) {
+      console.log("💥 GET exhibitors error:", error);
+      showNotification("Network error: Cannot fetch exhibitors", "error");
+    } finally {
+      setIsFetchingExhibitors(false);
+    }
+  };
 
   useEffect(() => {
     if (notification) {
@@ -185,13 +195,11 @@ function AdvanceExhibitors({
 
       // Backend returns 200 or 204 on successful deletion
       if (response.status === 200 || response.status === 204) {
-        // Remove the exhibitor from local state
-        setEventUsers((prev) =>
-          prev.filter((u) => u.id !== exhibitorToDelete.id)
-        );
         showNotification("Exhibitor deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setExhibitorToDelete(null);
+        // Refresh current page to show updated data
+        fetchExhibitors(eventId!, currentPage);
       } else {
         showNotification("Failed to delete exhibitor", "error");
       }
@@ -277,8 +285,6 @@ function AdvanceExhibitors({
           _imageVersion: Date.now(),
         };
 
-        // Add to state immediately for optimistic update
-        setEventUsers((prev) => [...prev, newExhibitorData]);
         showNotification("Exhibitor added successfully!", "success");
 
         // Reset UI
@@ -292,35 +298,8 @@ function AdvanceExhibitors({
         setImagePreview(null);
         setAddModalOpen(false);
 
-        // Refetch exhibitors to ensure we have the latest data with correct image URLs
-        // This ensures the image URL is properly set from the server
-        try {
-          const refreshResponse = await getExhibitorsApi(eventId);
-          if (refreshResponse.status === 200) {
-            const refreshedData = refreshResponse.data.data.map(
-              (item: any) => ({
-                id: item.id,
-                attributes: {
-                  name: item.attributes.name,
-                  description: item.attributes.description,
-                  organization: item.attributes.organization,
-                  image:
-                    item.attributes.image_url || item.attributes.image || "",
-                  image_url:
-                    item.attributes.image_url || item.attributes.image || "",
-                  created_at: item.attributes.created_at,
-                  updated_at: item.attributes.updated_at,
-                  event_id: item.attributes.event_id,
-                },
-                _imageVersion: Date.now(), // Fresh timestamp for each exhibitor
-              })
-            );
-            setEventUsers(refreshedData);
-          }
-        } catch (refreshError) {
-          console.error("Error refreshing exhibitors:", refreshError);
-          // Don't show error to user since the creation was successful
-        }
+        // Refresh current page to show updated data
+        fetchExhibitors(eventId, currentPage);
       }
     } catch (error: any) {
       console.log("💥 Axios error", error);
@@ -371,63 +350,14 @@ function AdvanceExhibitors({
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
 
-        // Update state with new data and increment image version to force cache refresh
-        setEventUsers((prev) =>
-          prev.map((u) =>
-            u.id === editingExhibitor.id
-              ? {
-                  ...u,
-                  attributes: {
-                    ...u.attributes,
-                    name: updated.attributes.name,
-                    description: updated.attributes.description,
-                    organization: updated.attributes.organization,
-                    image: updated.attributes.image_url,
-                    image_url: updated.attributes.image_url,
-                    updated_at:
-                      updated.attributes.updated_at || new Date().toISOString(),
-                  },
-                  // Increment image version to force browser to reload the image
-                  _imageVersion: (u._imageVersion || 0) + 1,
-                }
-              : u
-          )
-        );
-
         showNotification("Exhibitor updated successfully!", "success");
         setEditModalOpen(false);
         setEditingExhibitor(null);
         setEditSelectedImageFile(null);
         setEditImagePreview(null);
 
-        // Refetch exhibitors to ensure we have the latest data from server
-        // This ensures the image URL is definitely updated
-        if (eventId) {
-          const refreshResponse = await getExhibitorsApi(eventId);
-          if (refreshResponse.status === 200) {
-            const refreshedData = refreshResponse.data.data.map(
-              (item: any, index: number) => ({
-                id: item.id,
-                attributes: {
-                  name: item.attributes.name,
-                  description: item.attributes.description,
-                  organization: item.attributes.organization,
-                  // Handle both image_url and image fields from API
-                  image:
-                    item.attributes.image_url || item.attributes.image || "",
-                  image_url:
-                    item.attributes.image_url || item.attributes.image || "",
-                  created_at: item.attributes.created_at,
-                  updated_at: item.attributes.updated_at,
-                  event_id: item.attributes.event_id,
-                },
-                // Use unique timestamp + index to ensure each exhibitor gets a different version
-                _imageVersion: Date.now() + index,
-              })
-            );
-            setEventUsers(refreshedData);
-          }
-        }
+        // Refresh current page to show updated data
+        fetchExhibitors(eventId!, currentPage);
       }
     } catch (error: any) {
       console.error("Update exhibitor error:", error);
@@ -680,7 +610,7 @@ function AdvanceExhibitors({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {currentExhibitors.map((user, index) => (
+                  {eventUsers.map((user, index) => (
                     <tr
                       key={user.id}
                       className={index % 2 ? "bg-gray-50" : "bg-white"}
@@ -735,13 +665,26 @@ function AdvanceExhibitors({
             </div>
 
             {/* Pagination */}
-            {totalPages > 1 && (
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={(page: number) => setCurrentPage(page)}
-                className="mt-4"
-              />
+            {!isFetchingExhibitors && pagination && pagination.total_pages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+                <div className="text-sm text-gray-600">
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * itemsPerPage, pagination.total_count)}
+                  </span>{" "}
+                  of <span className="font-medium">{pagination.total_count}</span> exhibitors
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={pagination.total_pages || 1}
+                  onPageChange={(page: number) => {
+                    setCurrentPage(page);
+                    // Scroll to top when page changes
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className=""
+                />
+              </div>
             )}
           </>
         )}
@@ -1054,14 +997,6 @@ function AdvanceExhibitors({
           ← Previous
         </button>
 
-        {!isFetchingExhibitors && eventUsers.length > 0 && totalPages > 1 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={(page: number) => setCurrentPage(page)}
-            className="mt-4"
-          />
-        )}
 
         <button
           onClick={handleNext}

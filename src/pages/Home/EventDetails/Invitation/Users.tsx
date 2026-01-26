@@ -9,7 +9,7 @@ import {
   Users as UsersIcon,
   Upload,
 } from "lucide-react";
-import { getEventUsers, createEventUser, getEventbyId, sendCredentials } from "@/apis/apiHelpers";
+import { getEventUsers, createEventUser, getEventbyId, sendCredentials, getBadgeType } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/Pagination";
 
@@ -55,8 +55,7 @@ function Users() {
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterBadge, setFilterBadge] = useState<string>("all");
-  const [badges, setBadges] = useState<any[]>([]); // Store ALL badges (both default and non-default)
+  const [badges, setBadges] = useState<any[]>([]); // Store ALL badges for dynamic dropdown
   const [loadingBadges, setLoadingBadges] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -182,37 +181,15 @@ function Users() {
   const fetchBadges = async (id: string) => {
     if (!id) return;
 
-    const token = localStorage.getItem("token");
-    if (!token) {
-      console.error("No token found");
-      return;
-    }
-
     setLoadingBadges(true);
     try {
       console.log("Fetching badges for event ID:", id);
 
-      // Use same fetch approach as MainData.tsx
-      const response = await fetch(
-        `https://scceventy.dev/en/api_dashboard/v1/events/${id}/badges`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            Accept: "application/json",
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await getBadgeType(id);
 
-      if (!response.ok) {
-        console.error("API Error:", response);
-        const errorText = await response.text();
-        console.log("Error response:", errorText);
-        setBadges([]);
-        return;
-      }
+      console.log("Badges API Response in invitation users", response);
 
-      const result = await response.json();
+      const result = response.data;
       console.log("✅ Raw badges fetched:", result?.data);
       console.log("✅ All badge names:", result?.data?.map((b: any) => b?.attributes?.name));
       console.log("✅ All badge default values:", result?.data?.map((b: any) => ({
@@ -296,21 +273,10 @@ function Users() {
       return false;
     }
 
-    // Filter by type
+    // Filter by type (using badge names from API)
     if (filterType !== "all") {
       if (userType !== filterType.toLowerCase()) {
         return false;
-      }
-    }
-
-    // Filter by badge (only non-default badges are shown in dropdown)
-    if (filterBadge !== "all") {
-      const selectedBadge = badges.find((b: any) => String(b.id) === filterBadge);
-      if (selectedBadge) {
-        const badgeName = (selectedBadge?.attributes?.name || "").toLowerCase();
-        if (userType !== badgeName) {
-          return false;
-        }
       }
     }
 
@@ -659,37 +625,19 @@ function Users() {
                     setFilterType(e.target.value);
                     setCurrentPage(1); // Reset to page 1 when filter changes
                   }}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10"
-                >
-                  <option value="all">All Types</option>
-                  <option value="guest">Guest</option>
-                  <option value="speaker">Speaker</option>
-                  <option value="vip">VIP</option>
-                  <option value="VIP">VIP (uppercase)</option>
-                </select>
-                <ChevronDown
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                  size={20}
-                />
-              </div>
-              <div className="relative">
-                <select
-                  value={filterBadge}
-                  onChange={(e) => {
-                    setFilterBadge(e.target.value);
-                    setCurrentPage(1); // Reset to page 1 when filter changes
-                  }}
                   disabled={loadingBadges}
                   className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <option value="all">All Badges</option>
-                  {badges
-                    .filter((badge: any) => badge?.attributes?.default === false) // Only show non-default badges in dropdown
-                    .map((badge: any) => (
-                      <option key={badge.id} value={String(badge.id)}>
-                        {badge?.attributes?.name || `Badge ${badge.id}`}
+                  <option value="all">All Types</option>
+                  {badges.length > 0 ? (
+                    badges.map((badge: any) => (
+                      <option key={badge.id} value={badge?.attributes?.name || ""}>
+                        {badge?.attributes?.name}
                       </option>
-                    ))}
+                    ))
+                  ) : (
+                    <option value="guest">Guest</option>
+                  )}
                 </select>
                 <ChevronDown
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -777,20 +725,12 @@ function Users() {
                   ) : filteredUsers.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                        {searchTerm.trim() !== "" && filterType !== "all" && filterBadge !== "all"
-                          ? `No users found matching "${searchTerm}" with type "${filterType}" and badge filter`
-                          : searchTerm.trim() !== "" && filterType !== "all"
+                        {searchTerm.trim() !== "" && filterType !== "all"
                           ? `No users found matching "${searchTerm}" with type "${filterType}"`
-                          : searchTerm.trim() !== "" && filterBadge !== "all"
-                          ? `No users found matching "${searchTerm}" with badge filter`
-                          : filterType !== "all" && filterBadge !== "all"
-                          ? `No users found with type "${filterType}" and badge filter`
                           : searchTerm.trim() !== ""
                           ? `No users found matching "${searchTerm}"`
                           : filterType !== "all"
                           ? `No users found with type "${filterType}"`
-                          : filterBadge !== "all"
-                          ? `No users found with selected badge`
                           : "No users found"}
                       </td>
                     </tr>
@@ -890,11 +830,10 @@ function Users() {
                       {Math.min(currentPage * itemsPerPage, pagination.total_count)}
                     </span>{" "}
                     of <span className="font-medium">{pagination.total_count}</span> users
-                    {(filterType !== "all" || filterBadge !== "all") && (
+                    {filterType !== "all" && (
                       <span className="ml-2 text-blue-600">
                         • Filtered: {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
-                        {filterType !== "all" && ` (type: ${filterType})`}
-                        {filterBadge !== "all" && ` (badge: ${badges.find((b: any) => String(b.id) === filterBadge)?.attributes?.name || "N/A"})`}
+                        {` (type: ${filterType})`}
                       </span>
                     )}
                   </>
@@ -1031,13 +970,19 @@ function Users() {
                     onChange={(e) =>
                       setAddUserForm({ ...addUserForm, user_type: e.target.value })
                     }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white"
+                    disabled={loadingBadges}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Select user type</option>
-                    <option value="guest">Guest</option>
-                    <option value="speaker">Speaker</option>
-                    <option value="VIP">VIP</option>
-                    <option value="vip">vip</option>
+                    {badges.length > 0 ? (
+                      badges.map((badge: any) => (
+                        <option key={badge.id} value={badge?.attributes?.name || ""}>
+                          {badge?.attributes?.name}
+                        </option>
+                      ))
+                    ) : (
+                      <option value="guest">Guest</option>
+                    )}
                   </select>
                 </div>
 

@@ -7,6 +7,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import Pagination from "../Pagination";
 
 interface AdminManagementProps {
   onNext: (eventId?: string | number) => void;
@@ -41,7 +42,7 @@ export default function AdminManagement({
   const [newAdminEmail, setNewAdminEmail] = useState("");
   const [selectedAdmins, setSelectedAdmins] = useState<number[]>([]);
 
-  const itemsPerPage = 5;
+  const itemsPerPage = 10; // Pagination items per page
   const totalPages = Math.ceil(admins.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -137,8 +138,8 @@ export default function AdminManagement({
       </div>
 
       {/* Main Content */}
-      <div className="px-6 py-6">
-        <div className="max-w-6xl mx-auto">
+      <div className="py-6">
+        <div className="">
           {/* Tabs */}
           <div className="bg-white rounded-t-lg border-b">
             <div className="px-6 py-4 flex items-center justify-between">
@@ -225,45 +226,27 @@ export default function AdminManagement({
             </div>
 
             {/* Pagination */}
-            <div className="px-6 py-4 flex items-center justify-between border-t">
-              <button
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                <ChevronLeft size={16} />
-                Previous
-              </button>
-
-              <div className="flex items-center gap-2">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                  (page) => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${
-                        currentPage === page
-                          ? "bg-blue-600 text-white"
-                          : "text-gray-700 hover:bg-gray-100"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  )
-                )}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+                <div className="text-sm text-gray-600">
+                  Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * itemsPerPage, admins.length)}
+                  </span>{" "}
+                  of <span className="font-medium">{admins.length}</span> admins
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    // Scroll to top when page changes
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className=""
+                />
               </div>
-
-              <button
-                onClick={() =>
-                  setCurrentPage(Math.min(totalPages, currentPage + 1))
-                }
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                Next
-                <span>→</span>
-              </button>
-            </div>
+            )}
           </div>
 
           {/* Navigation Buttons */}
