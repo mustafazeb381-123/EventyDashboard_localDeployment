@@ -58,10 +58,7 @@ function TemplateFormThree({
   // Get event ID
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (propEventId as string | undefined) ||
-    (routeId as string | undefined) ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+    (propEventId as string | undefined) || (routeId as string | undefined);
 
   // Default form fields
   const defaultFormFields = [
@@ -114,13 +111,13 @@ function TemplateFormThree({
         const response = await getRegistrationFieldApi(effectiveEventId);
         console.log(
           "TemplateThree - getRegistrationFieldApi response:",
-          response.data
+          response.data,
         );
         setApiFormData(response.data.data || []);
       } catch (error) {
         console.error(
           "TemplateThree - Failed to get registration field:",
-          error
+          error,
         );
         setApiFormData([]);
       } finally {
@@ -148,10 +145,10 @@ function TemplateFormThree({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
         placeholder:
           attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
@@ -203,13 +200,16 @@ function TemplateFormThree({
       await updateRegistrationFieldToggleApi(
         { active: newActive },
         effectiveEventId,
-        fieldId
+        fieldId,
       );
       setFieldActiveStates((prev: any) => ({
         ...prev,
         [fieldId]: newActive,
       }));
-      showNotification(`Field ${newActive ? "enabled" : "disabled"} successfully`, "success");
+      showNotification(
+        `Field ${newActive ? "enabled" : "disabled"} successfully`,
+        "success",
+      );
     } catch (error) {
       console.error("Failed to toggle field:", error);
       showNotification("Failed to toggle field", "error");
@@ -271,7 +271,7 @@ function TemplateFormThree({
       await reorderRegistrationFieldApi(
         effectiveEventId,
         fieldIdNum,
-        targetFieldIdNum
+        targetFieldIdNum,
       );
 
       const response = await getRegistrationFieldApi(effectiveEventId);

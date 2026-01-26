@@ -84,10 +84,7 @@ function TemplateFormSeven({
   // Fetch event and form data
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (propEventId as string | undefined) ||
-    (routeId as string | undefined) ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+    (propEventId as string | undefined) || (routeId as string | undefined);
 
   // Fetch existing banner on mount
   useEffect(() => {
@@ -99,7 +96,7 @@ function TemplateFormSeven({
         setBannerUrl(
           propEventData?.attributes?.registration_page_banner ||
             propEventData?.registration_page_banner ||
-            null
+            null,
         );
         setEventData(propEventData);
         return;
@@ -114,7 +111,7 @@ function TemplateFormSeven({
           setBannerUrl(
             parsed?.attributes?.registration_page_banner ||
               parsed?.registration_page_banner ||
-              null
+              null,
           );
           return;
         } catch (err) {
@@ -127,7 +124,7 @@ function TemplateFormSeven({
         setBannerUrl(
           response.data.data?.attributes?.registration_page_banner ||
             response.data.data?.registration_page_banner ||
-            null
+            null,
         );
         setEventData(response.data.data);
         sessionStorage.setItem(cacheKey, JSON.stringify(response.data.data));
@@ -289,10 +286,10 @@ function TemplateFormSeven({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
         placeholder:
           attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
@@ -346,10 +343,13 @@ function TemplateFormSeven({
       await updateRegistrationFieldToggleApi(
         { active: newActive },
         effectiveEventId,
-        fieldId
+        fieldId,
       );
       setFieldActiveStates((prev: any) => ({ ...prev, [fieldId]: newActive }));
-      showNotification(`Field ${newActive ? "enabled" : "disabled"} successfully`, "success");
+      showNotification(
+        `Field ${newActive ? "enabled" : "disabled"} successfully`,
+        "success",
+      );
     } catch (error) {
       console.error("Failed to toggle field:", error);
       showNotification("Failed to toggle field", "error");
@@ -377,7 +377,7 @@ function TemplateFormSeven({
       await reorderRegistrationFieldApi(
         effectiveEventId,
         fieldIdNum,
-        targetFieldIdNum
+        targetFieldIdNum,
       );
 
       const response = await getRegistrationFieldApi(effectiveEventId);
@@ -552,7 +552,7 @@ function TemplateFormSeven({
           0,
           0,
           cropArea.width * scaleX,
-          cropArea.height * scaleY
+          cropArea.height * scaleY,
         );
 
         // Convert canvas to blob
@@ -583,7 +583,7 @@ function TemplateFormSeven({
             handleUploadBanner(croppedFile);
           },
           "image/jpeg",
-          0.95 // Quality
+          0.95, // Quality
         );
       } catch (error) {
         console.error("Error cropping image:", error);
@@ -805,12 +805,12 @@ function TemplateFormSeven({
         setBannerUrl(
           eventResponse.data.data?.attributes?.registration_page_banner ||
             eventResponse.data.data?.registration_page_banner ||
-            null
+            null,
         );
         const cacheKey = `event_meta_${effectiveEventId}`;
         sessionStorage.setItem(
           cacheKey,
-          JSON.stringify(eventResponse.data.data)
+          JSON.stringify(eventResponse.data.data),
         );
       } else {
         // Update from response if available
@@ -819,7 +819,7 @@ function TemplateFormSeven({
           setBannerUrl(
             response.data.data?.attributes?.registration_page_banner ||
               response.data.data?.registration_page_banner ||
-              null
+              null,
           );
         }
       }
@@ -900,8 +900,8 @@ function TemplateFormSeven({
                           ${cropArea.x}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${
-                          cropArea.y + cropArea.height
-                        }px, 
+                            cropArea.y + cropArea.height
+                          }px, 
                           ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
                           ${cropArea.x}px 100%, 
                           100% 100%, 
@@ -980,10 +980,10 @@ function TemplateFormSeven({
               formData.eventLogo
                 ? URL.createObjectURL(formData.eventLogo)
                 : eventData?.attributes?.registration_page_banner
-                ? eventData.attributes.registration_page_banner
-                : bannerUrl
-                ? bannerUrl
-                : Assets.images.uploadBackground3
+                  ? eventData.attributes.registration_page_banner
+                  : bannerUrl
+                    ? bannerUrl
+                    : Assets.images.uploadBackground3
             })`,
           }}
           className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"

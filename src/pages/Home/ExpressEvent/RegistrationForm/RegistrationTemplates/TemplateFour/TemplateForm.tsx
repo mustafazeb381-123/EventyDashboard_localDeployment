@@ -66,17 +66,17 @@ function TemplateFormFour({
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
   // Get event ID
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (propEventId as string | undefined) ||
-    (routeId as string | undefined) ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+    (propEventId as string | undefined) || (routeId as string | undefined);
 
   // Default form fields
   const defaultFormFields = [
@@ -129,13 +129,13 @@ function TemplateFormFour({
         const response = await getRegistrationFieldApi(effectiveEventId);
         console.log(
           "TemplateFour - getRegistrationFieldApi response:",
-          response.data
+          response.data,
         );
         setApiFormData(response.data.data || []);
       } catch (error) {
         console.error(
           "TemplateFour - Failed to get registration field:",
-          error
+          error,
         );
         setApiFormData([]);
       } finally {
@@ -163,10 +163,10 @@ function TemplateFormFour({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
         placeholder:
           attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
@@ -205,13 +205,16 @@ function TemplateFormFour({
       await updateRegistrationFieldToggleApi(
         { active: newActive },
         effectiveEventId,
-        fieldId
+        fieldId,
       );
       setFieldActiveStates((prev: any) => ({
         ...prev,
         [fieldId]: newActive,
       }));
-      showNotification(`Field ${newActive ? "enabled" : "disabled"} successfully`, "success");
+      showNotification(
+        `Field ${newActive ? "enabled" : "disabled"} successfully`,
+        "success",
+      );
     } catch (error) {
       console.error("Failed to toggle field:", error);
       showNotification("Failed to toggle field", "error");
@@ -239,7 +242,7 @@ function TemplateFormFour({
       await reorderRegistrationFieldApi(
         effectiveEventId,
         fieldIdNum,
-        targetFieldIdNum
+        targetFieldIdNum,
       );
 
       const response = await getRegistrationFieldApi(effectiveEventId);
@@ -490,8 +493,8 @@ function TemplateFormFour({
         <div className="bg-white/80 backdrop-blur-sm rounded-lg p-6 border border-gray-200">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-lg font-semibold text-gray-900">
-            Please fill name and contact information of attendees.
-          </h3>
+              Please fill name and contact information of attendees.
+            </h3>
             {!isUserRegistration && (
               <button
                 type="button"
@@ -688,10 +691,10 @@ function TemplateFormFour({
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : notification.type === "warning"
-                ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}

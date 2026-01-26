@@ -20,7 +20,7 @@ import {
 const createStaticTemplates = (eventData: any) => {
   console.log(
     "eventData in createStaticTemplates---------++++++++-------------",
-    eventData
+    eventData,
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
@@ -143,7 +143,7 @@ const convertHtmlToDesign = (html: string): any => {
 
     const safeHtml = (body.innerHTML || "").replace(
       /<!--\s*EMAIL_EDITOR_DESIGN:[\s\S]*?-->/g,
-      ""
+      "",
     );
 
     return {
@@ -183,7 +183,7 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
     } catch (e) {
       console.warn(
         "Failed to parse design from API attributes for template:",
-        e
+        e,
       );
     }
 
@@ -194,7 +194,7 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
         design = extractedDesign;
         console.log(
           "✅ Extracted design from HTML comment for template:",
-          tpl.id
+          tpl.id,
         );
       }
     }
@@ -222,7 +222,7 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
 // Helper function to check if an API template matches a ready-made template
 const matchesReadyMadeTemplate = (
   apiTemplate: any,
-  readyMadeTemplate: any
+  readyMadeTemplate: any,
 ): boolean => {
   // Match by exact title/name
   if (apiTemplate.attributes?.name === readyMadeTemplate.title) {
@@ -336,26 +336,30 @@ const TemplateModal = ({
             }
           `}</style>
           {template.html ? (
-            <div 
+            <div
               className="template-preview-content w-full"
-              style={{ 
+              style={{
                 maxWidth: "100%",
                 width: "100%",
-                overflowX: "hidden"
+                overflowX: "hidden",
               }}
-              dangerouslySetInnerHTML={{ 
-                __html: template.html.replace(/max-width:\s*\d+px/gi, "max-width: 100%")
+              dangerouslySetInnerHTML={{
+                __html: template.html
+                  .replace(/max-width:\s*\d+px/gi, "max-width: 100%")
                   .replace(/width:\s*\d+px/gi, (match: string) => {
                     // Only replace width if it's not already percentage or auto
                     if (!match.includes("%") && !match.includes("auto")) {
                       return "max-width: 100%";
                     }
                     return match;
-                  })
-              }} 
+                  }),
+              }}
             />
           ) : template.component ? (
-            <div className="template-preview-content w-full" style={{ maxWidth: "100%", width: "100%" }}>
+            <div
+              className="template-preview-content w-full"
+              style={{ maxWidth: "100%", width: "100%" }}
+            >
               {template.component}
             </div>
           ) : (
@@ -432,8 +436,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   onPrevious,
   eventId,
 }) => {
-  const localStorageEventId = localStorage.getItem("create_eventId");
-  const effectiveEventId = eventId || localStorageEventId;
+  const effectiveEventId = eventId;
 
   const [flows, setFlows] = useState<any[]>([
     { id: "welcome", label: "Welcome Email", templates: [] },
@@ -455,7 +458,10 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   } | null>(null);
 
   // Notification handler
-  const showNotification = (message: string, type: "success" | "error" | "warning") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -474,7 +480,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   // Fetch event data when eventId is available - respond to both eventId prop and effectiveEventId changes
   useEffect(() => {
     const fetchEventData = async () => {
-      const currentEventId = eventId || localStorage.getItem("create_eventId");
+      const currentEventId = eventId;
       if (!currentEventId) {
         setEventData(null); // Clear event data if no eventId
         // Reset flows when no eventId
@@ -500,14 +506,14 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       }
     };
     fetchEventData();
-  }, [eventId, effectiveEventId]); // Include both eventId prop and effectiveEventId to catch all changes
+  }, [eventId, effectiveEventId]); // respond to eventId changes
 
   // Update modal template when eventData or flows change to ensure it shows latest data
   useEffect(() => {
     if (modalTemplate && eventData && currentFlow) {
       // Find the latest version of this template from flows
       const latestTemplate = currentFlow.templates.find(
-        (t: any) => t.id === modalTemplate.id
+        (t: any) => t.id === modalTemplate.id,
       );
       if (latestTemplate) {
         // Only update if it's actually different (new component with updated event data)
@@ -527,7 +533,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     if (!effectiveEventId || !eventData) {
       console.log(
         "Skipping loadTemplatesFromAPI - missing eventId or eventData",
-        { effectiveEventId, eventData }
+        { effectiveEventId, eventData },
       );
       return;
     }
@@ -536,24 +542,24 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       console.log("Loading templates with eventData:", eventData);
       const response = await getEmailTemplatesApi(
         effectiveEventId,
-        currentFlow.id
+        currentFlow.id,
       );
-      
+
       // Validate response structure
       if (!response || !response.data) {
         throw new Error("Invalid API response structure");
       }
-      
+
       const apiTemplates = response.data.data || [];
       const convertedTemplates = convertApiTemplates(
         apiTemplates,
-        currentFlow.id
+        currentFlow.id,
       );
       // Get static templates with LATEST event data - always recreate with current eventData
       const staticTemplatesMap = createStaticTemplates(eventData);
       console.log(
         "Created static templates with eventData:",
-        eventData?.attributes?.name
+        eventData?.attributes?.name,
       );
       const staticTemplates =
         staticTemplatesMap[currentFlow.id as keyof typeof staticTemplatesMap] ||
@@ -562,14 +568,18 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       // Find the selected template from API response (check if a ready-made template is selected)
       // IMPORTANT: Only ONE template should be selected per flow type
       const selectedApiTemplate = convertedTemplates.find(
-        (t: any) => t.isSelected
+        (t: any) => t.isSelected,
       );
-      
+
       // Ensure only ONE template is selected - deselect all others
       const templatesWithSingleSelection = convertedTemplates.map((t: any) => {
         // If this is the first selected template, keep it selected
         // Otherwise, deselect it
-        if (t.isSelected && selectedApiTemplate && t.id === selectedApiTemplate.id) {
+        if (
+          t.isSelected &&
+          selectedApiTemplate &&
+          t.id === selectedApiTemplate.id
+        ) {
           return t; // Keep selected
         } else {
           return { ...t, isSelected: false }; // Deselect
@@ -578,25 +588,27 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
       // Filter out ready-made templates from API response to avoid duplicates
       // Only show custom templates from API, not ready-made ones
-      const customApiTemplates = templatesWithSingleSelection.filter((apiTpl: any) => {
-        // Check if this API template matches any ready-made template
-        const isReadyMade = staticTemplates.some((staticTpl: any) =>
-          matchesReadyMadeTemplate(
-            { attributes: { name: apiTpl.title } },
-            staticTpl
-          )
-        );
-        // Only include if it's NOT a ready-made template
-        return !isReadyMade;
-      });
-      
+      const customApiTemplates = templatesWithSingleSelection.filter(
+        (apiTpl: any) => {
+          // Check if this API template matches any ready-made template
+          const isReadyMade = staticTemplates.some((staticTpl: any) =>
+            matchesReadyMadeTemplate(
+              { attributes: { name: apiTpl.title } },
+              staticTpl,
+            ),
+          );
+          // Only include if it's NOT a ready-made template
+          return !isReadyMade;
+        },
+      );
+
       if (selectedApiTemplate) {
         // Check if the selected template is a ready-made template
         const isSelectedReadyMade = staticTemplates.some((staticTpl: any) =>
           matchesReadyMadeTemplate(
             { attributes: { name: selectedApiTemplate.title } },
-            staticTpl
-          )
+            staticTpl,
+          ),
         );
 
         if (isSelectedReadyMade) {
@@ -605,8 +617,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             (staticTpl: any) =>
               matchesReadyMadeTemplate(
                 { attributes: { name: selectedApiTemplate.title } },
-                staticTpl
-              )
+                staticTpl,
+              ),
           );
           if (matchingStaticTemplate) {
             setSelectedTemplates((prev: any) => ({
@@ -627,7 +639,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       const updatedTemplates = [...staticTemplates, ...customApiTemplates];
       console.log(
         "Setting flows with updated templates count:",
-        updatedTemplates.length
+        updatedTemplates.length,
       );
       setFlows((prev) =>
         prev.map((f) =>
@@ -636,14 +648,14 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                 ...f,
                 templates: updatedTemplates, // Use new array reference
               }
-            : f
-        )
+            : f,
+        ),
       );
     } catch (e: any) {
       console.error("Failed to load templates:", e);
-      const errorMessage = 
-        e?.response?.data?.message || 
-        e?.message || 
+      const errorMessage =
+        e?.response?.data?.message ||
+        e?.message ||
         "Failed to load templates. Please try again.";
       showNotification(errorMessage, "error");
     } finally {
@@ -704,7 +716,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
     // Find the selected template
     const selectedTemplate = currentFlow.templates.find(
-      (t: any) => t.id === templateId
+      (t: any) => t.id === templateId,
     );
     if (!selectedTemplate) {
       showNotification("Template not found", "error");
@@ -718,11 +730,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         // Check if this ready-made template already exists in API
         const response = await getEmailTemplatesApi(
           effectiveEventId,
-          currentFlow.id
+          currentFlow.id,
         );
         const apiTemplates = response.data.data || [];
         const existingTemplate = apiTemplates.find((apiTpl: any) =>
-          matchesReadyMadeTemplate(apiTpl, selectedTemplate)
+          matchesReadyMadeTemplate(apiTpl, selectedTemplate),
         );
 
         if (existingTemplate) {
@@ -737,11 +749,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                       (t: any) =>
                         t.id === templateId
                           ? { ...t, isSelected: true } // Select the static template
-                          : { ...t, isSelected: false } // Deselect others
+                          : { ...t, isSelected: false }, // Deselect others
                     ),
                   }
-                : f
-            )
+                : f,
+            ),
           );
 
           setSelectedTemplates({
@@ -762,7 +774,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                 currentFlow.id as keyof typeof staticTemplatesMap
               ] || [];
             const updatedTemplate = flowTemplates.find(
-              (t: any) => t.id === templateId
+              (t: any) => t.id === templateId,
             );
             const componentToRender =
               updatedTemplate?.component || selectedTemplate.component;
@@ -780,7 +792,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             effectiveEventId,
             currentFlow.id,
             htmlString,
-            selectedTemplate.title
+            selectedTemplate.title,
           );
           console.log("apiResp of post api for ready-made template", apiResp);
 
@@ -795,11 +807,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                       (t: any) =>
                         t.id === templateId
                           ? { ...t, isSelected: true } // Select the static template
-                          : { ...t, isSelected: false } // Deselect others
+                          : { ...t, isSelected: false }, // Deselect others
                     ),
                   }
-                : f
-            )
+                : f,
+            ),
           );
 
           // Set static template as selected
@@ -827,11 +839,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                 templates: f.templates.map((t: any) =>
                   t.id === templateId
                     ? { ...t, isSelected: true }
-                    : { ...t, isSelected: false }
+                    : { ...t, isSelected: false },
                 ),
               }
-            : f
-        )
+            : f,
+        ),
       );
 
       setSelectedTemplates({
@@ -863,7 +875,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     if (template.isStatic || template.readyMadeId) {
       showNotification(
         "Ready-made templates cannot be edited. Please create a custom template instead.",
-        "error"
+        "error",
       );
       return;
     }
@@ -882,16 +894,16 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         templateWithDesign.design = extractedDesign;
         console.log(
           "✅ Extracted design from HTML for editing, templateId:",
-          templateWithDesign.apiId
+          templateWithDesign.apiId,
         );
       } else {
         console.warn(
           "No design found in HTML for templateId:",
-          templateWithDesign.apiId
+          templateWithDesign.apiId,
         );
         showNotification(
           "Template design not found. Editor will open empty. Please recreate the template.",
-          "warning"
+          "warning",
         );
       }
     }
@@ -938,13 +950,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           currentFlow.id,
           htmlWithDesign,
           templateName,
-          design
+          design,
         );
         console.log("apiResp of post api", apiResp);
         const apiId = apiResp.data.data.id;
         console.log(
           "✅ Design embedded in HTML and saved to API for new template, apiId:",
-          apiId
+          apiId,
         );
 
         const newTemplate = {
@@ -976,8 +988,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                     { ...newTemplate, isSelected: true },
                   ],
                 }
-              : f
-          )
+              : f,
+          ),
         );
         setSelectedTemplates({
           ...selectedTemplates,
@@ -997,7 +1009,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       if (editingTemplate.isStatic || editingTemplate.readyMadeId) {
         showNotification(
           "Ready-made templates cannot be updated. Please create a custom template instead.",
-          "error"
+          "error",
         );
         setIsEditorOpen(false);
         setEditingTemplate(null);
@@ -1023,12 +1035,12 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           currentFlow.id,
           htmlWithDesign,
           templateName,
-          design
+          design,
         );
         console.log("Update API response:", updateResponse);
         console.log(
           "✅ Design embedded in HTML and saved to API after update, apiId:",
-          editingTemplate.apiId
+          editingTemplate.apiId,
         );
 
         // Reload templates from API to get the latest data
@@ -1045,7 +1057,10 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           response: e?.response?.data,
           status: e?.response?.status,
         });
-        showNotification(e?.response?.data?.message || "Failed to update template", "error");
+        showNotification(
+          e?.response?.data?.message || "Failed to update template",
+          "error",
+        );
       } finally {
         setIsLoading(false);
       }
@@ -1062,8 +1077,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-yellow-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : "bg-yellow-500 text-white"
             }`}
           >
             {notification.message}
@@ -1088,8 +1103,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                     done
                       ? "bg-pink-500 border-pink-500"
                       : active
-                      ? "border-pink-500"
-                      : "border-gray-300"
+                        ? "border-pink-500"
+                        : "border-gray-300"
                   }`}
                 >
                   {done ? (
@@ -1178,7 +1193,10 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         onDelete={async (tpl: any) => {
           // Ready-made templates cannot be deleted - check both isStatic and readyMadeId
           if (tpl.isStatic || tpl.readyMadeId) {
-            showNotification("Ready-made templates cannot be deleted.", "error");
+            showNotification(
+              "Ready-made templates cannot be deleted.",
+              "error",
+            );
             return;
           }
           if (!effectiveEventId || !tpl.apiId) return;
@@ -1190,7 +1208,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
               prev.map((f) => ({
                 ...f,
                 templates: f.templates.filter((t: any) => t.id !== tpl.id),
-              }))
+              })),
             );
             // If the deleted template was selected, clear the selection
             if (selectedTemplates[currentFlow.id] === tpl.id) {
@@ -1291,4 +1309,3 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 };
 
 export default AdvanceEmail;
-

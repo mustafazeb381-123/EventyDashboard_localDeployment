@@ -191,19 +191,15 @@ const RegistrationForm = ({
 }: RegistrationFormProps) => {
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (routeId as string | undefined) ||
-    (eventId as string | undefined) ||
-    (typeof window !== "undefined"
-      ? (localStorage.getItem("create_eventId") as string | null) || undefined
-      : undefined);
+    (routeId as string | undefined) || (eventId as string | undefined);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
-    null
+    null,
   );
   const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(
-    null
+    null,
   );
   const [internalStep, setInternalStep] = useState<number>(0);
   const [formData, setFormData] = useState<any[]>([]);
@@ -239,7 +235,10 @@ const RegistrationForm = ({
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -342,7 +341,7 @@ const RegistrationForm = ({
       }
       return formData;
     },
-    [selectedTemplateName, getTemplatesData, formData]
+    [selectedTemplateName, getTemplatesData, formData],
   );
 
   // Memoize skeleton component - created once with animated shimmer
@@ -361,7 +360,7 @@ const RegistrationForm = ({
         <Skeleton className="h-12 w-1/3" />
       </div>
     ),
-    []
+    [],
   );
 
   // Memoize template component factory
@@ -442,7 +441,7 @@ const RegistrationForm = ({
       eventData,
       effectiveEventId,
       skeletonComponent,
-    ]
+    ],
   );
 
   // Memoize templates array to prevent recreation on every render
@@ -477,7 +476,7 @@ const RegistrationForm = ({
         component: getTemplateComponent("template-seven", true),
       },
     ],
-    [getTemplateComponent]
+    [getTemplateComponent],
   );
 
   // Memoize handlers to prevent unnecessary re-renders
@@ -555,20 +554,23 @@ const RegistrationForm = ({
         if (error.response?.status === 400) {
           showNotification("Invalid template data. Please try again.", "error");
         } else if (error.response?.status === 401) {
-          showNotification("Authentication failed. Please login again.", "error");
+          showNotification(
+            "Authentication failed. Please login again.",
+            "error",
+          );
         } else if (error.response?.status === 500) {
           showNotification("Server error. Please try again later.", "error");
         } else {
           showNotification(
             error.message || "Error adding template. Please try again.",
-            "error"
+            "error",
           );
         }
       } finally {
         setIsLoading(false);
       }
     },
-    [effectiveEventId, formData, handleCloseModal]
+    [effectiveEventId, formData, handleCloseModal],
   );
 
   // Memoize toggle handler
@@ -588,19 +590,19 @@ const RegistrationForm = ({
 
     formData.append(
       `event[print_qr]`,
-      String(confirmationToggleStates.userQRCode)
+      String(confirmationToggleStates.userQRCode),
     );
     formData.append(
       `event[display_confirmation]`,
-      String(confirmationToggleStates.confirmationMsg)
+      String(confirmationToggleStates.confirmationMsg),
     );
     formData.append(
       `event[display_event_details]`,
-      String(confirmationToggleStates.eventDetails)
+      String(confirmationToggleStates.eventDetails),
     );
     formData.append(
       `event[display_location]`,
-      String(confirmationToggleStates.location)
+      String(confirmationToggleStates.location),
     );
 
     try {
@@ -652,7 +654,10 @@ const RegistrationForm = ({
   const handleNextClick = useCallback(() => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
-        showNotification("Please select a template before proceeding", "warning");
+        showNotification(
+          "Please select a template before proceeding",
+          "warning",
+        );
         return;
       } else {
         setInternalStep(1);
@@ -672,7 +677,7 @@ const RegistrationForm = ({
         <AdvanceEvent
           onComplete={(eventId) => {
             console.log(
-              "🔄 Advanced flow completed, moving to main Badge step"
+              "🔄 Advanced flow completed, moving to main Badge step",
             );
             if (onNext) {
               onNext(eventId, plan);
@@ -881,10 +886,10 @@ const RegistrationForm = ({
                   notification.type === "success"
                     ? "bg-green-500 text-white"
                     : notification.type === "error"
-                    ? "bg-red-500 text-white"
-                    : notification.type === "warning"
-                    ? "bg-yellow-500 text-white"
-                    : "bg-blue-500 text-white"
+                      ? "bg-red-500 text-white"
+                      : notification.type === "warning"
+                        ? "bg-yellow-500 text-white"
+                        : "bg-blue-500 text-white"
                 }`}
               >
                 {notification.message}
