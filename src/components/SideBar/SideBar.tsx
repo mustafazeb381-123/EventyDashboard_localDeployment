@@ -167,9 +167,6 @@ const SideBar = ({
     if (path.startsWith("/communication")) {
       return "Communications";
     }
-    if (path === "/committees" || path.startsWith("/committees")) {
-      return "Committees";
-    }
     if (path === "/Onboarding" || path.startsWith("/Onboarding")) {
       return "Onboarding";
     }
@@ -353,14 +350,6 @@ const SideBar = ({
         ? `/Onboarding?eventId=${currentEventId}`
         : "/Onboarding",
       availableForExpress: true,
-    },
-    {
-      icon: Users,
-      label: "Committees",
-      path: currentEventId
-        ? `/committees?eventId=${currentEventId}`
-        : "/committees",
-      availableForExpress: false,
     },
     {
       icon: Ticket,

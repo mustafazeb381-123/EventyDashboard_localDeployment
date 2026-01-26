@@ -277,8 +277,11 @@ export const getEventBadges = (id: string | number) => {
   return axiosInstance.get(`/events/${id}/badge_templates`);
 };
 
-export const getBadgeType = (id: string | number) => {
-  return axiosInstance.get(`/events/${id}/badges`);
+export const getBadgeType = (
+  id: string | number,
+  params?: { page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(`/events/${id}/badges`, { params });
 };
 
 // Create a new user for a specific event, with optional tenant UUID and image upload
@@ -353,14 +356,11 @@ export const createSessionAreaApi = (data: any, id: string) => {
   return axiosInstance.post(`events/${id}/session_areas`, data);
 };
 
-// export const getSessionAreaApi = (
-//   id: string,
-//   params?: { page?: number; per_page?: number }
-// ) => {
-//   return axiosInstance.get(`events/${id}/session_areas`, { params });
-// };
-export const getSessionAreaApi = (id: string) => {
-  return axiosInstance.get(`events/${id}/session_areas`);
+export const getSessionAreaApi = (
+  id: string,
+  params?: { page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(`events/${id}/session_areas`, { params });
 };
 
 export const deleteSessionAreaApi = (eventId: string, areaId: string) => {
@@ -584,8 +584,11 @@ export const createSpeakerApi = (eventId: string | number, data: FormData) => {
   });
 };
 
-export const getSpeakersApi = (eventId: string | number) => {
-  return axiosInstance.get(`events/${eventId}/speakers`);
+export const getSpeakersApi = (
+  eventId: string | number,
+  params?: { page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(`events/${eventId}/speakers`, { params });
 };
 
 export const deleteSpeakerApi = (eventId: string | number, speakerId: string | number) => {
@@ -605,8 +608,11 @@ export const createExhibitorApi = (eventId: string | number, data: FormData) => 
   return axiosInstance.post(`events/${eventId}/exhibitors`, data);
 };
 
-export const getExhibitorsApi = (eventId: string | number) => {
-  return axiosInstance.get(`events/${eventId}/exhibitors`);
+export const getExhibitorsApi = (
+  eventId: string | number,
+  params?: { page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(`events/${eventId}/exhibitors`, { params });
 };
 
 export const deleteExhibitorApi = (eventId: string | number, exhibitorId: string | number) => {
@@ -621,8 +627,11 @@ export const createPartnerApi = (eventId: string | number, data: FormData) => {
   });
 };
 
-export const getPartnerApi = (eventId: string | number) => {
-  return axiosInstance.get(`events/${eventId}/partners`);
+export const getPartnerApi = (
+  eventId: string | number,
+  params?: { page?: number; per_page?: number }
+) => {
+  return axiosInstance.get(`events/${eventId}/partners`, { params });
 };
 
 export const deletePartnerApi = (eventId: string | number, speakerId: string | number) => {

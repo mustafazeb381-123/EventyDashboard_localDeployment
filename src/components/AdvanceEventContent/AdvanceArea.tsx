@@ -14,6 +14,7 @@ import {
   deleteSessionAreaApi,
   updateSessionAreaApi,
 } from "@/apis/apiHelpers";
+import Pagination from "../Pagination";
 
 interface AdvanceAreaProps {
   onNext?: (eventId?: string | number) => void;
@@ -66,6 +67,9 @@ function AdvanceArea({
   const [saveLoading, setSaveLoading] = useState<string | null>(null);
   const [badges, setBadges] = useState<Badge[]>([]);
   const [badgeLoading, setBadgeLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Server-side pagination items per page
+  const [pagination, setPagination] = useState<any>(null);
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -123,21 +127,24 @@ function AdvanceArea({
   };
 
   // Fetch session areas
-  const fetchSessionAreas = async () => {
-    if (!currentEventId) {
-      console.log("No event ID found");
-      return;
-    }
-
+  const fetchSessionAreas = async (id: string, page: number = 1) => {
     setLoading(true);
 
     try {
-      const response = await getSessionAreaApi(currentEventId as string);
+      const response = await getSessionAreaApi(id, {
+        page,
+        per_page: itemsPerPage,
+      });
       console.log("GET API Response:", response);
 
-      if (response?.data?.data) {
+      const responseData = response?.data?.data || response?.data;
+      const areasData = Array.isArray(responseData)
+        ? responseData
+        : responseData?.data || [];
+
+      if (areasData.length > 0 || response?.data?.data) {
         // Transform API response to match our Area type
-        const areas: Area[] = response.data.data.map((item: any) => ({
+        const areas: Area[] = areasData.map((item: any) => ({
           id: item.id,
           title: item.attributes.name,
           location: item.attributes.location,
@@ -146,6 +153,13 @@ function AdvanceArea({
         }));
 
         setSessions(areas);
+
+        // Set pagination metadata
+        const paginationMeta =
+          response.data?.meta?.pagination || response.data?.pagination;
+        if (paginationMeta) {
+          setPagination(paginationMeta);
+        }
       } else {
         setSessions([]);
       }
@@ -161,9 +175,15 @@ function AdvanceArea({
   useEffect(() => {
     if (currentEventId) {
       fetchBadgeApi();
-      fetchSessionAreas();
     }
   }, [currentEventId]);
+
+  // Fetch session areas when eventId or currentPage changes
+  useEffect(() => {
+    if (currentEventId && currentPage > 0) {
+      fetchSessionAreas(currentEventId as string, currentPage);
+    }
+  }, [currentEventId, currentPage]);
 
   useEffect(() => {
     if (notification) {
@@ -208,17 +228,18 @@ function AdvanceArea({
       );
 
       if (response.status === 200 || response.status === 204) {
-        await fetchSessionAreas();
         showNotification("Session deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setAreaToDelete(null);
+        // Refresh current page to show updated data
+        fetchSessionAreas(currentEventId as string, currentPage);
       } else {
         throw new Error(`Delete failed with status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error deleting session:", error);
       showNotification("Failed to delete session", "error");
-      await fetchSessionAreas();
+      await fetchSessionAreas(currentEventId as string, currentPage);
     } finally {
       setDeleteLoading(null);
     }
@@ -259,7 +280,6 @@ function AdvanceArea({
           travelNumber: response.data.data.attributes.guest_number,
         };
 
-        setSessions((prevData) => [...prevData, newAreaData]);
         setNewSession({
           title: "",
           location: "",
@@ -268,6 +288,8 @@ function AdvanceArea({
         });
         setAddModalOpen(false);
         showNotification("Session added successfully!", "success");
+        // Refresh current page to show updated data
+        fetchSessionAreas(currentEventId as string, currentPage);
       } else {
         showNotification("Failed to add session: Invalid response", "error");
       }
@@ -277,7 +299,7 @@ function AdvanceArea({
         error?.message ||
         "Failed to add session";
       showNotification(errorMessage, "error");
-      await fetchSessionAreas();
+      await fetchSessionAreas(currentEventId as string, currentPage);
     }
   };
 
@@ -322,22 +344,18 @@ function AdvanceArea({
           travelNumber: response.data.data.attributes.guest_number,
         };
 
-        setSessions((prevData) =>
-          prevData.map((area) =>
-            area.id === updatedArea.id ? updatedArea : area
-          )
-        );
-
         setEditingRow(null);
         setEditData(null);
         showNotification("Session updated successfully!", "success");
+        // Refresh current page to show updated data
+        fetchSessionAreas(currentEventId as string, currentPage);
       } else {
         throw new Error("Update response format is invalid");
       }
     } catch (error) {
       console.error("Error updating session:", error);
       showNotification("Failed to update session", "error");
-      await fetchSessionAreas();
+      await fetchSessionAreas(currentEventId as string, currentPage);
     } finally {
       setSaveLoading(null);
     }
@@ -459,7 +477,7 @@ function AdvanceArea({
                   Type
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Travel number
+                  Guest numbers
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -660,6 +678,29 @@ function AdvanceArea({
           </table>
         </div>
 
+        {/* Pagination */}
+        {!loading && pagination && pagination.total_pages > 1 && (
+          <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+            <div className="text-sm text-gray-600">
+              Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
+              <span className="font-medium">
+                {Math.min(currentPage * itemsPerPage, pagination.total_count)}
+              </span>{" "}
+              of <span className="font-medium">{pagination.total_count}</span> sessions
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={pagination.total_pages || 1}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                // Scroll to top when page changes
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className=""
+            />
+          </div>
+        )}
+
         {/* Add Session Modal */}
         {addModalOpen && (
           <div
@@ -782,25 +823,6 @@ function AdvanceArea({
         >
           ← Previous
         </button>
-
-        <div className="flex items-center gap-2">
-          {[1, 2, 3, 4, 5, 6].map((page) => (
-            <button
-              key={page}
-              className={`w-8 h-8 rounded-md text-sm font-medium transition-colors ${
-                page === 1
-                  ? "bg-pink-500 text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          <span className="text-gray-400 px-2">...</span>
-          <button className="w-8 h-8 rounded-md text-sm font-medium text-gray-600 hover:bg-gray-100">
-            10
-          </button>
-        </div>
 
         <button
           onClick={handleNext}
