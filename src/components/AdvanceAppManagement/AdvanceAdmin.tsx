@@ -266,8 +266,15 @@ export default function AdminManagement({
             </div>
           </div>
 
-          {/* Next Button */}
-          <div className="mt-6 flex justify-end">
+          {/* Navigation Buttons */}
+          <div className="mt-6 flex justify-between">
+            <button
+              onClick={onPrevious}
+              className="px-8 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+            >
+              <span>←</span>
+              Previous
+            </button>
             <button
               onClick={() => onNext(eventId)}
               className="px-8 py-3 bg-indigo-950 text-white rounded-lg font-medium hover:bg-indigo-900 transition-colors flex items-center gap-2"

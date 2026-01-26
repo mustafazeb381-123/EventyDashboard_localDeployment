@@ -284,8 +284,16 @@ export default function AdvanceUserPermission({
             </div>
           </div>
 
-          {/* Next Button */}
-          <div className="flex justify-end">
+          {/* Navigation Buttons */}
+          <div className="flex justify-between">
+            <button 
+              onClick={onPrevious}
+              disabled={isSaving || isLoading}
+              className="bg-white text-gray-700 border border-gray-300 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span>←</span>
+              Previous
+            </button>
             <button 
               onClick={handleNext}
               disabled={isSaving || isLoading}
