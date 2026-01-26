@@ -1,5 +1,5 @@
-import React, { useEffect } from "react";
-import { X, Check } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { X, Check, ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PricingModalProps {
@@ -13,14 +13,15 @@ const PricingModal: React.FC<PricingModalProps> = ({
   selectedPlan,
 }) => {
   const navigate = useNavigate();
+  const [currentStep, setCurrentStep] = useState(1);
 
   useEffect(() => {
     console.log("selected plan in the pricing modal :", selectedPlan);
-  }, [selectedPlan]);
-
-  // const [currentPlan, setCurrentPlan] = useState(selectedPlan);
-
-  // console.log("current plan :", currentPlan)
+    // Reset to step 1 when modal opens with a new plan
+    if (isOpen) {
+      setCurrentStep(1);
+    }
+  }, [selectedPlan, isOpen]);
 
   if (!isOpen) return null;
 
@@ -37,6 +38,8 @@ const PricingModal: React.FC<PricingModalProps> = ({
         "Automatic QR Code Generation",
         "Attendance Reports",
       ],
+      buttonText: 'Get started',
+      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
     },
     {
       id: "advanced",
@@ -92,19 +95,27 @@ const PricingModal: React.FC<PricingModalProps> = ({
   const handleGetStarted = (plan: any) => {
     console.log(`Get started with plan: ${plan.name}`);
   
-    if (selectedPlan === "express") {
+    if (plan.id === "express") {
       console.log("navigating to express-event express");
-      navigate("/express-event", { state: { plan: selectedPlan } });
+      navigate("/express-event", { state: { plan: plan.id } });
     } else {
       console.log("navigating to express event advance");
-      navigate("/express-event", { state: { plan: selectedPlan } });
+      navigate("/express-event", { state: { plan: plan.id } });
     }
     onClose();
   };
-  
+
+  const handleNext = () => {
+    setCurrentStep(2);
+  };
+
+  const handleClose = () => {
+    setCurrentStep(1);
+    onClose();
+  };
 
   return (
-    <div className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
       <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="relative p-6 border-b">
@@ -129,7 +140,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
             <X size={24} />
@@ -187,15 +198,28 @@ const PricingModal: React.FC<PricingModalProps> = ({
 
                 {/* Button at bottom */}
                 <div className="mt-auto">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleGetStarted(plan);
-                    }}
-                    className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${plan.buttonClass}`}
-                  >
-                    {plan.buttonText}
-                  </button>
+                  {currentStep === 1 && selectedPlan === plan.id ? (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNext();
+                      }}
+                      className="w-full py-3 px-4 rounded-lg font-medium transition-colors bg-slate-800 hover:bg-slate-700 text-white cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      Next
+                      <ArrowRight size={18} />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGetStarted(plan);
+                      }}
+                      className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${plan.buttonClass || 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'}`}
+                    >
+                      {plan.buttonText || 'Get started'}
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
