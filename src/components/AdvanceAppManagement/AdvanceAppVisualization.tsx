@@ -418,11 +418,18 @@ export default function AdvanceAppVisulization({
                 </div>
               </div>
 
-              {/* Next Button - USE onNext PROP */}
-              <div className="mt-6">
+              {/* Navigation Buttons - USE onNext PROP */}
+              <div className="mt-6 flex gap-3">
+                <button 
+                  onClick={onPrevious}
+                  className="flex-1 bg-white text-gray-700 border border-gray-300 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                >
+                  <span>←</span>
+                  Previous
+                </button>
                 <button 
                   onClick={() => onNext(eventId)} // ADD: Call onNext when clicked
-                  className="w-full bg-indigo-950 text-white py-3 rounded-lg font-medium hover:bg-indigo-900 transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-indigo-950 text-white py-3 rounded-lg font-medium hover:bg-indigo-900 transition-colors flex items-center justify-center gap-2"
                 >
                   Next
                   <span>→</span>

@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   Loader2,
   Star,
+  AlertTriangle,
 } from "lucide-react";
 import {
   eventPostAPi,
@@ -108,6 +109,9 @@ const MainData = ({
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  const [showConvertToAdvancedModal, setShowConvertToAdvancedModal] =
+    useState<boolean>(false);
+  const [isConverting, setIsConverting] = useState<boolean>(false);
 
   // Image cropping states
   const [isCropping, setIsCropping] = useState<boolean>(false);
@@ -991,6 +995,45 @@ const MainData = ({
     }
   };
 
+  // Handle convert to Advanced event type
+  const handleConvertToAdvanced = async () => {
+    if (!eventId) {
+      showNotification("Event ID is missing", "error");
+      return;
+    }
+
+    setIsConverting(true);
+    try {
+      const fd = new FormData();
+      fd.append("event[event_type]", "advance");
+
+      const response = await updateEventById(eventId, fd);
+      console.log("Event converted to Advanced:", response.data);
+
+      showNotification(
+        "Event successfully converted to Advanced",
+        "success"
+      );
+
+      // Close modal
+      setShowConvertToAdvancedModal(false);
+
+      // Optionally reload the page after a short delay to reflect the changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error: any) {
+      console.error("Error converting event:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.response?.data?.error ||
+        "Failed to convert event to Advanced";
+      showNotification(errorMessage, "error");
+    } finally {
+      setIsConverting(false);
+    }
+  };
+
   return (
     <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
@@ -1800,14 +1843,70 @@ const MainData = ({
       </div>
 
       {/* Help Section */}
-      <div className="mt-6 sm:mt-8 lg:mt-12 flex justify-center sm:justify-end">
-        <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors">
-          <span className="text-center sm:text-left">
-            Can't find what you're looking for?
-          </span>
-          <ChevronLeft className="rotate-90" size={14} />
-        </button>
-      </div>
+      {plan === "express" && eventId && (
+        <div className="mt-6 sm:mt-8 lg:mt-12 flex justify-center sm:justify-end">
+          <button
+            onClick={() => setShowConvertToAdvancedModal(true)}
+            className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors"
+          >
+            <span className="text-center sm:text-left">
+              Can't find what you're looking for?
+            </span>
+            <ChevronLeft className="rotate-90" size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Convert to Advanced Confirmation Modal */}
+      {showConvertToAdvancedModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-4">
+              <AlertTriangle className="w-6 h-6 text-blue-500" />
+            </div>
+
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+              Convert to Advanced Event?
+            </h3>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Are you sure you want to convert this Express event to an Advanced
+              event? This will unlock additional features and customization
+              options.
+            </p>
+            <p className="text-xs text-gray-500 text-center mb-6">
+              <strong>Note:</strong> Once converted to Advanced, you cannot
+              switch back to Express. This action is permanent.
+            </p>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowConvertToAdvancedModal(false)}
+                disabled={isConverting}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConvertToAdvanced}
+                disabled={isConverting}
+                className="flex-1 px-4 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isConverting ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Converting...
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className="fixed top-4 right-4 z-[100] animate-slide-in">

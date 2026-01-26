@@ -385,7 +385,49 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     };
 
     return (
-        <div className="min-h-screen  from-gray-50 to-gray-100 animate-fade-in">
+        <div className="min-h-screen  from-gray-50 to-gray-100 animate-fade-in relative">
+            {/* Toast Notification - Top Right */}
+            {notification && (
+                <div
+                    className={`fixed top-4 right-4 z-[9999] min-w-[320px] max-w-md p-4 rounded-lg shadow-2xl transform transition-all duration-300 ease-in-out border-2 ${
+                        notification.type === "success"
+                            ? "bg-green-500 text-white border-green-600"
+                            : notification.type === "error"
+                            ? "bg-red-500 text-white border-red-600"
+                            : notification.type === "warning"
+                            ? "bg-yellow-500 text-white border-yellow-600"
+                            : "bg-blue-500 text-white border-blue-600"
+                    }`}
+                    style={{
+                        animation: "slideInRight 0.3s ease-out",
+                    }}
+                >
+                    <div className="flex items-center justify-between gap-3">
+                        <p className="font-semibold text-sm flex-1">{notification.message}</p>
+                        <button
+                            onClick={() => setNotification(null)}
+                            className="text-white hover:text-gray-200 transition text-xl font-bold leading-none ml-2 flex-shrink-0"
+                            aria-label="Close notification"
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            <style>{`
+                @keyframes slideInRight {
+                    from {
+                        transform: translateX(100%);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
+
             <div className="mx-auto p-6">
 
                 {/* Header */}
