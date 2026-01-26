@@ -26,7 +26,15 @@ export type Badge = {
   };
 };
 
-export default function Areas({}) {
+type AreasProps = {
+  eventId?: string;
+  onNext?: (eventId?: string | number) => void;
+  onPrevious?: () => void;
+  currentStep?: number;
+  totalSteps?: number;
+};
+
+export default function Areas({ eventId: propEventId }: AreasProps) {
   const [data, setData] = useState<Area[]>([]);
   const [editData, setEditData] = useState<Area | null>(null);
   const [newArea, setNewArea] = useState({
@@ -68,7 +76,10 @@ export default function Areas({}) {
   } | null>(null);
 
   // Notification handler
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -82,8 +93,8 @@ export default function Areas({}) {
     }
   }, [notification]);
 
-  const eventId = localStorage.getItem("create_eventId");
-  console.log("event id----------+++++-----------------", eventId);
+  const eventId = propEventId;
+  console.log("event id in area", eventId);
 
   const fetchBadgeApi = async () => {
     if (!eventId) return;
@@ -106,7 +117,7 @@ export default function Areas({}) {
             Accept: "application/json",
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       console.log("Badges API Response:", response);
@@ -120,8 +131,11 @@ export default function Areas({}) {
 
       const result = await response.json();
       console.log("✅ Badges fetched successfully:", result);
-      console.log("✅ Badge names in API:", result?.data?.map((b: Badge) => b.attributes.name));
-      
+      console.log(
+        "✅ Badge names in API:",
+        result?.data?.map((b: Badge) => b.attributes.name),
+      );
+
       // Only set badges that are actually in the API response
       if (result?.data && Array.isArray(result.data)) {
         setBadges(result.data);
@@ -211,7 +225,7 @@ export default function Areas({}) {
       location: newArea?.location,
       user_type: newArea?.type,
       guest_number: newArea?.guestNumbers,
-      event_id: eventId as string,
+      event_id: eventId ?? "",
     },
   };
 
@@ -243,7 +257,7 @@ export default function Areas({}) {
 
         const response = await createSessionAreaApi(
           AreaData,
-          eventId as string
+          eventId as string,
         );
         console.log("POST API Response:", response);
 
@@ -396,7 +410,7 @@ export default function Areas({}) {
 
       // Optimistically update UI
       setData((prevData) =>
-        prevData.map((area) => (area.id === editData.id ? editData : area))
+        prevData.map((area) => (area.id === editData.id ? editData : area)),
       );
 
       // Prepare data for UPDATE API - REMOVE THE ID FROM THE PAYLOAD
@@ -416,7 +430,7 @@ export default function Areas({}) {
       const response = await updateSessionAreaApi(
         eventId,
         editData.id,
-        updateData
+        updateData,
       );
       console.log("UPDATE API Response:", response);
 
@@ -433,8 +447,8 @@ export default function Areas({}) {
         // Update with server response
         setData((prevData) =>
           prevData.map((area) =>
-            area.id === updatedArea.id ? updatedArea : area
-          )
+            area.id === updatedArea.id ? updatedArea : area,
+          ),
         );
 
         setEditData(null);
@@ -458,7 +472,6 @@ export default function Areas({}) {
     }
   };
 
-
   const toggleRowSelection = (id: string) => {
     const newSelection = new Set(selectedRows);
     if (newSelection.has(id)) {
@@ -472,7 +485,7 @@ export default function Areas({}) {
   const toggleAllSelection = () => {
     const currentPageIds = data.map((area) => area.id);
     const allCurrentSelected = currentPageIds.every((id) =>
-      selectedRows.has(id)
+      selectedRows.has(id),
     );
 
     if (allCurrentSelected) {
@@ -501,23 +514,22 @@ export default function Areas({}) {
     >
       {/* Notification Toast */}
       {notification && (
-        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+        <div className="fixed top-4 right-4 z-100 animate-slide-in">
           <div
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : notification.type === "warning"
-                ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
           </div>
         </div>
       )}
-
 
       {/* Header with Add Form */}
       <div style={{ marginBottom: "32px" }}>
@@ -969,9 +981,7 @@ export default function Areas({}) {
                     key={area.id}
                     style={{
                       borderBottom:
-                        index < data.length - 1
-                          ? "1px solid #f3f4f6"
-                          : "none",
+                        index < data.length - 1 ? "1px solid #f3f4f6" : "none",
                       backgroundColor: "white",
                     }}
                     onMouseOver={(e) =>
@@ -1076,8 +1086,7 @@ export default function Areas({}) {
                             justifyContent: "center",
                           }}
                           onMouseOver={(e) =>
-                            (e.currentTarget.style.backgroundColor =
-                              "#fef3c7")
+                            (e.currentTarget.style.backgroundColor = "#fef3c7")
                           }
                           onMouseOut={(e) =>
                             (e.currentTarget.style.backgroundColor =
@@ -1099,9 +1108,7 @@ export default function Areas({}) {
                                 ? "not-allowed"
                                 : "pointer",
                             color:
-                              deleteLoading === area.id
-                                ? "#9ca3af"
-                                : "#ef4444",
+                              deleteLoading === area.id ? "#9ca3af" : "#ef4444",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
@@ -1109,8 +1116,7 @@ export default function Areas({}) {
                           }}
                           onMouseOver={(e) => {
                             if (deleteLoading !== area.id) {
-                              e.currentTarget.style.backgroundColor =
-                                "#fee2e2";
+                              e.currentTarget.style.backgroundColor = "#fee2e2";
                             }
                           }}
                           onMouseOut={(e) =>
@@ -1339,7 +1345,9 @@ export default function Areas({}) {
               Edit Area
             </h3>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div
+              style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            >
               {/* Area Name */}
               <div>
                 <label
@@ -1359,7 +1367,7 @@ export default function Areas({}) {
                   value={editData.name}
                   onChange={(e) =>
                     setEditData((prev) =>
-                      prev ? { ...prev, name: e.target.value } : null
+                      prev ? { ...prev, name: e.target.value } : null,
                     )
                   }
                   style={{
@@ -1376,7 +1384,11 @@ export default function Areas({}) {
                 />
                 {editValidationErrors.name && (
                   <div
-                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "4px",
+                    }}
                   >
                     {editValidationErrors.name}
                   </div>
@@ -1402,7 +1414,7 @@ export default function Areas({}) {
                   value={editData.location}
                   onChange={(e) =>
                     setEditData((prev) =>
-                      prev ? { ...prev, location: e.target.value } : null
+                      prev ? { ...prev, location: e.target.value } : null,
                     )
                   }
                   style={{
@@ -1419,7 +1431,11 @@ export default function Areas({}) {
                 />
                 {editValidationErrors.location && (
                   <div
-                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "4px",
+                    }}
                   >
                     {editValidationErrors.location}
                   </div>
@@ -1443,7 +1459,7 @@ export default function Areas({}) {
                   value={editData.type}
                   onChange={(e) =>
                     setEditData((prev) =>
-                      prev ? { ...prev, type: e.target.value } : null
+                      prev ? { ...prev, type: e.target.value } : null,
                     )
                   }
                   style={{
@@ -1477,7 +1493,11 @@ export default function Areas({}) {
                 </select>
                 {editValidationErrors.type && (
                   <div
-                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "4px",
+                    }}
                   >
                     {editValidationErrors.type}
                   </div>
@@ -1508,7 +1528,7 @@ export default function Areas({}) {
                             ...prev,
                             guestNumbers: parseInt(e.target.value) || 0,
                           }
-                        : null
+                        : null,
                     )
                   }
                   style={{
@@ -1525,7 +1545,11 @@ export default function Areas({}) {
                 />
                 {editValidationErrors.guestNumbers && (
                   <div
-                    style={{ color: "#ef4444", fontSize: "12px", marginTop: "4px" }}
+                    style={{
+                      color: "#ef4444",
+                      fontSize: "12px",
+                      marginTop: "4px",
+                    }}
                   >
                     {editValidationErrors.guestNumbers}
                   </div>

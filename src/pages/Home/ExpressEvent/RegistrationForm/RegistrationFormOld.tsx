@@ -66,8 +66,9 @@ const Modal = ({
           <button
             onClick={onClose}
             disabled={isLoading}
-            className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${isLoading ? "cursor-not-allowed opacity-50" : ""
-              }`}
+            className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${
+              isLoading ? "cursor-not-allowed opacity-50" : ""
+            }`}
           >
             <X />
           </button>
@@ -269,21 +270,17 @@ const RegistrationForm = ({
   console.log("RegistrationForm - plan type:", typeof plan);
   console.log("RegistrationForm - plan value:", plan);
   const effectiveEventId =
-    (routeId as string | undefined) ||
-    (eventId as string | undefined) ||
-    (typeof window !== "undefined"
-      ? (localStorage.getItem("create_eventId") as string | null) || undefined
-      : undefined);
+    (routeId as string | undefined) || (eventId as string | undefined);
 
   console.log("RegistrationForm - effective event id:", effectiveEventId);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
-    null
+    null,
   );
   const [selectedTemplateData, setSelectedTemplateData] = useState<any | null>(
-    null
+    null,
   );
   const [internalStep, setInternalStep] = useState<number>(0);
   const [formData, setFormData] = useState<any[]>([]);
@@ -307,7 +304,10 @@ const RegistrationForm = ({
   } | null>(null);
 
   // Notification handler
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -553,7 +553,7 @@ const RegistrationForm = ({
       } else {
         showNotification(
           error.message || "Error adding template. Please try again.",
-          "error"
+          "error",
         );
       }
     } finally {
@@ -574,7 +574,7 @@ const RegistrationForm = ({
       if (effectiveEventId && onNext) {
         console.log(
           "RegistrationForm - Sending eventId to ExpressEvent:",
-          effectiveEventId
+          effectiveEventId,
         );
         onNext(effectiveEventId, plan); // ADD plan parameter here
       } else {
@@ -620,7 +620,10 @@ const RegistrationForm = ({
   const handleNextClick = () => {
     if (internalStep === 0) {
       if (!confirmedTemplate) {
-        showNotification("Please select a template before proceeding", "warning");
+        showNotification(
+          "Please select a template before proceeding",
+          "warning",
+        );
         return;
       } else {
         setInternalStep(1);
@@ -645,19 +648,19 @@ const RegistrationForm = ({
 
     formData.append(
       `event[print_qr]`,
-      String(confirmationToggleStates.userQRCode)
+      String(confirmationToggleStates.userQRCode),
     );
     formData.append(
       `event[display_confirmation]`,
-      String(confirmationToggleStates.confirmationMsg)
+      String(confirmationToggleStates.confirmationMsg),
     );
     formData.append(
       `event[display_event_details]`,
-      String(confirmationToggleStates.eventDetails)
+      String(confirmationToggleStates.eventDetails),
     );
     formData.append(
       `event[display_location]`,
-      String(confirmationToggleStates.location)
+      String(confirmationToggleStates.location),
     );
 
     try {
@@ -680,10 +683,10 @@ const RegistrationForm = ({
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : notification.type === "warning"
-                ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -695,7 +698,7 @@ const RegistrationForm = ({
         <AdvanceEvent
           onComplete={(eventId) => {
             console.log(
-              "🔄 Advanced flow completed, moving to main Badge step"
+              "🔄 Advanced flow completed, moving to main Badge step",
             );
             if (onNext) {
               onNext(eventId, plan);
@@ -721,9 +724,10 @@ const RegistrationForm = ({
               <div className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                    ${isStep1Completed || isStep1Active
-                      ? "border-[#ff0080]"
-                      : "border-gray-200"
+                    ${
+                      isStep1Completed || isStep1Active
+                        ? "border-[#ff0080]"
+                        : "border-gray-200"
                     }
                     ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
                   `}
@@ -732,8 +736,9 @@ const RegistrationForm = ({
                     <Check size={18} color="white" />
                   ) : (
                     <p
-                      className={`text-sm font-poppins ${isStep1Active ? "text-[#ff0080]" : "text-gray-400"
-                        }`}
+                      className={`text-sm font-poppins ${
+                        isStep1Active ? "text-[#ff0080]" : "text-gray-400"
+                      }`}
                     >
                       01
                     </p>
@@ -743,8 +748,9 @@ const RegistrationForm = ({
 
               {/* Connector */}
               <div
-                className={`flex-1 h-1 rounded-full ${isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
-                  }`}
+                className={`flex-1 h-1 rounded-full ${
+                  isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
+                }`}
               ></div>
 
               {/* Step 2 */}
@@ -755,8 +761,9 @@ const RegistrationForm = ({
                   `}
                 >
                   <p
-                    className={`text-sm font-poppins ${isStep2Active ? "text-[#ff0080]" : "text-gray-400"
-                      }`}
+                    className={`text-sm font-poppins ${
+                      isStep2Active ? "text-[#ff0080]" : "text-gray-400"
+                    }`}
                   >
                     02
                   </p>
@@ -788,11 +795,13 @@ const RegistrationForm = ({
                       onClick={() =>
                         !isLoadingFormData && handleOpenModal(tpl.id)
                       }
-                      className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${confirmedTemplate === tpl.id
-                        ? "border-pink-500 bg-pink-50"
-                        : "border-gray-200 hover:border-pink-500"
-                        } ${isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
-                        }`}
+                      className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
+                        confirmedTemplate === tpl.id
+                          ? "border-pink-500 bg-pink-50"
+                          : "border-gray-200 hover:border-pink-500"
+                      } ${
+                        isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
+                      }`}
                     >
                       {/* Render the template preview */}
                       <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
@@ -850,10 +859,11 @@ const RegistrationForm = ({
             <button
               onClick={onPrevious}
               disabled={isLoading || isLoadingFormData}
-              className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50 ${isLoading || isLoadingFormData
-                ? "cursor-not-allowed opacity-50"
-                : ""
-                }`}
+              className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors border text-slate-800 border-gray-300 hover:bg-gray-50 ${
+                isLoading || isLoadingFormData
+                  ? "cursor-not-allowed opacity-50"
+                  : ""
+              }`}
             >
               ← Previous
             </button>
@@ -864,9 +874,10 @@ const RegistrationForm = ({
               }
               disabled={!confirmedTemplate || isLoading || isLoadingFormData}
               className={`cursor-pointer w-full sm:w-auto px-6 lg:px-8 py-2.5 lg:py-3 rounded-lg text-sm font-medium transition-colors flex items-center justify-center
-                ${!confirmedTemplate || isLoading || isLoadingFormData
-                  ? "text-gray-400 bg-gray-100 cursor-not-allowed"
-                  : "bg-slate-800 hover:bg-slate-900 text-white"
+                ${
+                  !confirmedTemplate || isLoading || isLoadingFormData
+                    ? "text-gray-400 bg-gray-100 cursor-not-allowed"
+                    : "bg-slate-800 hover:bg-slate-900 text-white"
                 }`}
             >
               {isLoading || isLoadingFormData ? (
@@ -881,7 +892,6 @@ const RegistrationForm = ({
               )}
             </button>
           </div>
-
 
           <style>{`
             @keyframes slide-in {

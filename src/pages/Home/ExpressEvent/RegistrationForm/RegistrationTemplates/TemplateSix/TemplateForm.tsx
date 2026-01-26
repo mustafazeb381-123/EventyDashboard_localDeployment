@@ -50,7 +50,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
   });
   const [logoError, setLogoError] = useState("");
   const [toggleLoading, setToggleLoading] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
   const [reorderLoading, setReorderLoading] = useState<{
     [key: string]: boolean;
@@ -79,11 +79,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
   } | null>(null);
 
   const { id: routeId } = useParams();
-  const effectiveEventId =
-    propEventId ||
-    routeId ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+  const effectiveEventId = propEventId || routeId || undefined;
 
   // Fetch event and banner
   useEffect(() => {
@@ -94,7 +90,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
       setBannerUrl(
         propEventData?.attributes?.registration_page_banner ||
           propEventData?.registration_page_banner ||
-          null
+          null,
       );
       setEventData(propEventData);
       return;
@@ -109,7 +105,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
         setBannerUrl(
           parsed?.attributes?.registration_page_banner ||
             parsed?.registration_page_banner ||
-            null
+            null,
         );
         return;
       } catch (err) {
@@ -123,7 +119,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
         setBannerUrl(
           response.data.data?.attributes?.registration_page_banner ||
             response.data.data?.registration_page_banner ||
-            null
+            null,
         );
         setEventData(response.data.data);
         sessionStorage.setItem(cacheKey, JSON.stringify(response.data.data));
@@ -226,8 +222,8 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
     let sourceData = data?.length
       ? data
       : apiFormData?.length
-      ? apiFormData
-      : defaultFormFields;
+        ? apiFormData
+        : defaultFormFields;
     return sourceData.map((field: any) => {
       const attr = field.attributes || {};
       return {
@@ -237,8 +233,8 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-            ? "email"
-            : "text",
+              ? "email"
+              : "text",
         label: attr.name || "Field",
         placeholder:
           attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
@@ -287,13 +283,16 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
       await updateRegistrationFieldToggleApi(
         { active: newActive },
         effectiveEventId,
-        fieldId
+        fieldId,
       );
       setFieldActiveStates((prev: any) => ({
         ...prev,
         [fieldId]: newActive,
       }));
-      showNotification(`Field ${newActive ? "enabled" : "disabled"} successfully`, "success");
+      showNotification(
+        `Field ${newActive ? "enabled" : "disabled"} successfully`,
+        "success",
+      );
     } catch (error) {
       console.error("Failed to toggle field:", error);
       showNotification("Failed to toggle field", "error");
@@ -321,7 +320,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
       await reorderRegistrationFieldApi(
         effectiveEventId,
         fieldIdNum,
-        targetFieldIdNum
+        targetFieldIdNum,
       );
 
       const response = await getRegistrationFieldApi(effectiveEventId);

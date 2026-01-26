@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
@@ -38,11 +38,13 @@ const ExpressEvent = () => {
 
   // Use route event ID if available, otherwise fallback to location state eventId
   const [createdEventId, setCreatedEventId] = useState<string | undefined>(
-    (routeEventId as string) || (eventId as string)
+    () => (routeEventId as string) || (eventId as string) || undefined,
   );
   const finalEventId = createdEventId;
 
-  const [currentStep, setCurrentStep] = useState(initialStep || 0);
+  const [currentStep, setCurrentStep] = useState<number>(
+    Number(initialStep) || 0,
+  );
 
   const navigation = useNavigate();
 
@@ -91,11 +93,6 @@ const ExpressEvent = () => {
           description: "Define event areas",
         },
   ];
-
-  const [selectedModal, setSelectedModal] = useState<number | null>(null);
-
-  const [isRegistrationNextEnabled, setIsRegistrationNextEnabled] =
-    useState(false);
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
     confirmationMsg: false,
@@ -154,13 +151,12 @@ const ExpressEvent = () => {
   const handleNext = (nextEventId?: string | number) => {
     if (nextEventId) {
       setCreatedEventId(String(nextEventId));
-      localStorage.setItem("create_eventId", String(nextEventId));
     }
-    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+    setCurrentStep((prev: number) => Math.min(prev + 1, steps.length - 1));
   };
 
   const handlePrevious = () => {
-    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setCurrentStep((prev: number) => Math.max(prev - 1, 0));
   };
 
   const handleBackNavigation = () => {
@@ -215,6 +211,7 @@ const ExpressEvent = () => {
       <div className="px-6 pb-4">
         <div className="flex gap-4 overflow-x-auto no-scrollbar">
           {steps.map((step, index) => {
+            const isLocked = !finalEventId && !isEditing && index !== 0;
             const isCompleted = index < currentStep;
             const isActive = index === currentStep;
 
@@ -233,11 +230,23 @@ const ExpressEvent = () => {
               iconColor = "text-green-500";
             }
 
+            if (isLocked) {
+              borderColor = "border-neutral-200";
+              textColor = "text-neutral-400";
+              iconColor = "text-neutral-400";
+              descriptionColor = "text-gray-400";
+            }
+
             return (
               <div
                 key={step.id}
-                onClick={() => setCurrentStep(index)}
-                className={`flex flex-col justify-between cursor-pointer min-w-[180px] px-4 py-3 transition-all border-t-4 ${borderColor}`}
+                onClick={() => {
+                  if (isLocked) return;
+                  setCurrentStep(index);
+                }}
+                className={`flex flex-col justify-between min-w-45 px-4 py-3 transition-all border-t-4 ${borderColor} ${
+                  isLocked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                }`}
               >
                 <div
                   className={`flex items-center gap-2 font-medium text-xs font-poppins ${textColor}`}
@@ -289,7 +298,7 @@ const ExpressEvent = () => {
             toggleStates={toggleStates}
             setToggleStates={setToggleStates}
             eventId={finalEventId}
-            onNext={handleNext}
+            onNext={(id?: string | number, _plan?: string) => handleNext(id)}
             onPrevious={handlePrevious}
             currentStep={currentStep}
             totalSteps={steps.length}
@@ -319,26 +328,20 @@ const ExpressEvent = () => {
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
           />
         ) : (
           <EmailConfirmation
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
           />
         );
       case 4:
         return plan === "advance" ? (
           <AdvanceAppManagement
             eventId={finalEventId}
-            onNext={handleNext}
+            onComplete={handleNext}
             onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
           />
         ) : (
           <Areas

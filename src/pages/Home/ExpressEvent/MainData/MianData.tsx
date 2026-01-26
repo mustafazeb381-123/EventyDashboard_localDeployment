@@ -34,7 +34,7 @@ import axios from "axios";
 // Since we have issues with dependencies, let's implement basic cropping manually
 
 type MainDataProps = {
-  onNext: () => void;
+  onNext: (eventId?: string | number) => void;
   onPrevious: () => void;
   currentStep: number;
   totalSteps: number;
@@ -157,7 +157,7 @@ const MainData = ({
 
   const handleInputChange = <K extends keyof MainFormData>(
     field: K,
-    value: MainFormData[K]
+    value: MainFormData[K],
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -219,7 +219,7 @@ const MainData = ({
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "info"
+    type: "success" | "error" | "info",
   ) => {
     setNotification({ message, type });
   };
@@ -254,7 +254,7 @@ const MainData = ({
           0,
           0,
           400,
-          400
+          400,
         );
 
         // Convert canvas to blob
@@ -263,7 +263,7 @@ const MainData = ({
             if (!blob) {
               showNotification(
                 "Failed to crop image. Please try again.",
-                "error"
+                "error",
               );
               return;
             }
@@ -287,11 +287,11 @@ const MainData = ({
 
             showNotification(
               "Image cropped and uploaded successfully!",
-              "success"
+              "success",
             );
           },
           "image/jpeg",
-          0.95 // Quality
+          0.95, // Quality
         );
       } catch (error) {
         console.error("Error cropping image:", error);
@@ -486,7 +486,7 @@ const MainData = ({
 
       console.log(
         "Form manually populated with event data. Event ID:",
-        eventId
+        eventId,
       );
     }
   };
@@ -531,7 +531,7 @@ const MainData = ({
     fd.append("event[require_approval]", String(formData.requireApproval));
     fd.append(
       "event[duplicate_registration]",
-      String(formData.duplicateRegistration)
+      String(formData.duplicateRegistration),
     );
     fd.append("event[primary_color]", formData.primaryColor);
     fd.append("event[secondary_color]", formData.secondaryColor);
@@ -546,7 +546,7 @@ const MainData = ({
     } else {
       // Creating new event: use formData.guestTypes
       guestTypesToUse = formData.guestTypes.filter(
-        (type) => type.trim() !== ""
+        (type) => type.trim() !== "",
       );
     }
 
@@ -563,7 +563,7 @@ const MainData = ({
       fd.append("event[badges_attributes][][name]", type.trim());
       fd.append(
         "event[badges_attributes][][default]",
-        index === 0 ? "true" : "false"
+        index === 0 ? "true" : "false",
       );
     });
 
@@ -571,22 +571,22 @@ const MainData = ({
     if (formData.dateFrom) {
       fd.append(
         "event[event_date_from]",
-        formData.dateFrom.toISOString().split("T")[0]
+        formData.dateFrom.toISOString().split("T")[0],
       );
     }
     if (formData.dateTo) {
       fd.append(
         "event[event_date_to]",
-        formData.dateTo.toISOString().split("T")[0]
+        formData.dateTo.toISOString().split("T")[0],
       );
     }
     fd.append(
       "event[event_time_from]",
-      formData.timeFrom ? `${formData.timeFrom}:00` : "09:00:00"
+      formData.timeFrom ? `${formData.timeFrom}:00` : "09:00:00",
     );
     fd.append(
       "event[event_time_to]",
-      formData.timeTo ? `${formData.timeTo}:00` : "17:00:00"
+      formData.timeTo ? `${formData.timeTo}:00` : "17:00:00",
     );
     fd.append("event[registration_page_banner]", "");
 
@@ -618,7 +618,6 @@ const MainData = ({
         console.log("API Response:", response.data);
 
         if (response?.data?.data?.id) {
-          localStorage.setItem("create_eventId", response.data.data.id);
           if (onEventCreated) {
             onEventCreated(String(response.data.data.id));
           }
@@ -631,7 +630,7 @@ const MainData = ({
       console.error("API Error:", error);
       showNotification(
         error?.response?.data?.message || "Error saving event data",
-        "error"
+        "error",
       );
       throw error;
     }
@@ -650,7 +649,10 @@ const MainData = ({
 
       const result = response.data;
       console.log("✅ Raw badges fetched:", result?.data);
-      console.log("✅ All badge names:", result?.data?.map((b: Badge) => b.attributes.name));
+      console.log(
+        "✅ All badge names:",
+        result?.data?.map((b: Badge) => b.attributes.name),
+      );
 
       // 👇 SHOW ALL BADGES INCLUDING DUPLICATES (same as Areas.tsx)
       if (result?.data && Array.isArray(result.data)) {
@@ -667,11 +669,10 @@ const MainData = ({
     }
   };
 
-
   // 👇 DIRECT DELETE API CALL FUNCTION
   const handleDeleteBadgeTypeDirect = async (
     badgeId: string | number,
-    index: number
+    index: number,
   ) => {
     console.log("=== DELETE BADGE ===");
     console.log("Badge ID to delete:", badgeId);
@@ -819,7 +820,7 @@ const MainData = ({
           console.error(
             "Error fetching event data for Event ID:",
             eventId,
-            error
+            error,
           );
           toast.error("Failed to load event data");
         } finally {
@@ -885,10 +886,7 @@ const MainData = ({
       // Create badge without default flag here; default can be set later from badge list
       await createBadgeSimple(eventId, newGuestType.trim(), false);
       console.log("Guest type added:", newGuestType);
-      showNotification(
-        "Guest type added successfully!",
-        "success"
-      );
+      showNotification("Guest type added successfully!", "success");
       setNewGuestType("");
       await fetchBadgeApi();
     } catch (error: any) {
@@ -909,7 +907,7 @@ const MainData = ({
   // Handler for API badges only - NOW USING DIRECT API CALL
   const handleDeleteBadgeType = async (
     badgeId: number | string,
-    index: number
+    index: number,
   ) => {
     // Call the direct DELETE function
     await handleDeleteBadgeTypeDirect(badgeId, index);
@@ -930,7 +928,7 @@ const MainData = ({
   // Toggle default badge
   const handleToggleDefaultBadge = async (
     badgeId: number | string,
-    isCurrentlyDefault: boolean
+    isCurrentlyDefault: boolean,
   ) => {
     if (!eventId) {
       showNotification("Event ID is missing", "error");
@@ -946,7 +944,7 @@ const MainData = ({
 
       // First, unset any current default badges (there should only be one, but guard against multiples)
       const currentDefaultBadges = badges.filter(
-        (b) => b.attributes.default && b.id !== badgeId
+        (b) => b.attributes.default && b.id !== badgeId,
       );
       if (currentDefaultBadges.length) {
         // Unset all other defaults to enforce single default badge
@@ -954,8 +952,8 @@ const MainData = ({
           currentDefaultBadges.map((b) =>
             updateBadge(eventId, b.id, {
               badge: { default: false },
-            })
-          )
+            }),
+          ),
         );
       }
 
@@ -990,10 +988,7 @@ const MainData = ({
       const response = await updateEventById(eventId, fd);
       console.log("Event converted to Advanced:", response.data);
 
-      showNotification(
-        "Event successfully converted to Advanced",
-        "success"
-      );
+      showNotification("Event successfully converted to Advanced", "success");
 
       // Close modal
       setShowConvertToAdvancedModal(false);
@@ -1075,8 +1070,8 @@ const MainData = ({
                           ${cropArea.x}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${
-                          cropArea.y + cropArea.height
-                        }px, 
+                            cropArea.y + cropArea.height
+                          }px, 
                           ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
                           ${cropArea.x}px 100%, 
                           100% 100%, 
@@ -1275,7 +1270,7 @@ const MainData = ({
                     "Require approval toggled. Event ID:",
                     eventId,
                     "Checked:",
-                    e.target.checked
+                    e.target.checked,
                   );
                   handleInputChange("requireApproval", e.target.checked);
                 }}
@@ -1314,7 +1309,7 @@ const MainData = ({
                     "Duplicate registration toggled. Event ID:",
                     eventId,
                     "Checked:",
-                    e.target.checked
+                    e.target.checked,
                   );
                   handleInputChange("duplicateRegistration", e.target.checked);
                 }}
@@ -1434,7 +1429,7 @@ const MainData = ({
                 onChange={(e) =>
                   handleInputChange(
                     "dateFrom",
-                    e.target.value ? new Date(e.target.value) : undefined
+                    e.target.value ? new Date(e.target.value) : undefined,
                   )
                 }
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
@@ -1463,7 +1458,7 @@ const MainData = ({
                 onChange={(e) =>
                   handleInputChange(
                     "dateTo",
-                    e.target.value ? new Date(e.target.value) : undefined
+                    e.target.value ? new Date(e.target.value) : undefined,
                   )
                 }
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
@@ -1679,7 +1674,7 @@ const MainData = ({
                             onClick={() =>
                               handleToggleDefaultBadge(
                                 badge.id,
-                                badge.attributes.default
+                                badge.attributes.default,
                               )
                             }
                             className={`p-1.5 rounded transition-colors ${
@@ -1895,8 +1890,8 @@ const MainData = ({
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}

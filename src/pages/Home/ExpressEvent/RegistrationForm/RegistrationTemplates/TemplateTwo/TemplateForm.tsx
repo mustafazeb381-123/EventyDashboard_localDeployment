@@ -88,10 +88,7 @@ function TemplateFormTwo({
   // Fetch event and banner on mount and after upload
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (propEventId as string | undefined) ||
-    (routeId as string | undefined) ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+    (propEventId as string | undefined) || (routeId as string | undefined);
 
   useEffect(() => {
     const fetchBanner = async () => {
@@ -102,7 +99,7 @@ function TemplateFormTwo({
         setBannerUrl(
           propEventData?.attributes?.registration_page_banner ||
             propEventData?.registration_page_banner ||
-            null
+            null,
         );
         setEventData(propEventData);
         setIsLoadingEventData(false);
@@ -128,7 +125,7 @@ function TemplateFormTwo({
         const response = await getEventbyId(effectiveEventId);
         setEventData(response.data.data);
         setBannerUrl(
-          response.data.data?.attributes?.registration_page_banner || null
+          response.data.data?.attributes?.registration_page_banner || null,
         );
         sessionStorage.setItem(cacheKey, JSON.stringify(response.data.data));
       } catch (error) {
@@ -204,7 +201,7 @@ function TemplateFormTwo({
         const response = await getRegistrationFieldApi(effectiveEventId);
         console.log(
           "TemplateTwo - getRegistrationFieldApi response:",
-          response.data
+          response.data,
         );
         const fields = response.data.data || [];
         setApiFormData(fields);
@@ -263,10 +260,10 @@ function TemplateFormTwo({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
         placeholder:
           attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
@@ -320,13 +317,16 @@ function TemplateFormTwo({
       await updateRegistrationFieldToggleApi(
         { active: newActive },
         effectiveEventId,
-        fieldId
+        fieldId,
       );
       setFieldActiveStates((prev: any) => ({
         ...prev,
         [fieldId]: newActive,
       }));
-      showNotification(`Field ${newActive ? "enabled" : "disabled"} successfully`, "success");
+      showNotification(
+        `Field ${newActive ? "enabled" : "disabled"} successfully`,
+        "success",
+      );
     } catch (error) {
       console.error("Failed to toggle field:", error);
       showNotification("Failed to toggle field", "error");
@@ -354,7 +354,7 @@ function TemplateFormTwo({
       await reorderRegistrationFieldApi(
         effectiveEventId,
         fieldIdNum,
-        targetFieldIdNum
+        targetFieldIdNum,
       );
 
       const response = await getRegistrationFieldApi(effectiveEventId);
@@ -528,7 +528,7 @@ function TemplateFormTwo({
           0,
           0,
           cropArea.width * scaleX,
-          cropArea.height * scaleY
+          cropArea.height * scaleY,
         );
 
         // Convert canvas to blob
@@ -559,7 +559,7 @@ function TemplateFormTwo({
             updateBanner(croppedFile);
           },
           "image/jpeg",
-          0.95 // Quality
+          0.95, // Quality
         );
       } catch (error) {
         console.error("Error cropping image:", error);
@@ -781,12 +781,12 @@ function TemplateFormTwo({
         setBannerUrl(
           eventResponse.data.data?.attributes?.registration_page_banner ||
             eventResponse.data.data?.registration_page_banner ||
-            null
+            null,
         );
         const cacheKey = `event_meta_${effectiveEventId}`;
         sessionStorage.setItem(
           cacheKey,
-          JSON.stringify(eventResponse.data.data)
+          JSON.stringify(eventResponse.data.data),
         );
       } else {
         // Update from response if available
@@ -795,7 +795,7 @@ function TemplateFormTwo({
           setBannerUrl(
             response.data.data?.attributes?.registration_page_banner ||
               response.data.data?.registration_page_banner ||
-              null
+              null,
           );
         }
       }
@@ -877,8 +877,8 @@ function TemplateFormTwo({
                           ${cropArea.x}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${
-                          cropArea.y + cropArea.height
-                        }px, 
+                            cropArea.y + cropArea.height
+                          }px, 
                           ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
                           ${cropArea.x}px 100%, 
                           100% 100%, 
@@ -956,10 +956,10 @@ function TemplateFormTwo({
             formData.eventLogo
               ? URL.createObjectURL(formData.eventLogo)
               : eventData?.attributes?.registration_page_banner
-              ? eventData.attributes.registration_page_banner
-              : bannerUrl
-              ? bannerUrl
-              : Assets.images.uploadBackground2
+                ? eventData.attributes.registration_page_banner
+                : bannerUrl
+                  ? bannerUrl
+                  : Assets.images.uploadBackground2
           })`,
         }}
         className="w-full  h-[400px] flex items-center justify-center border rounded-3xl

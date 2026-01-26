@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
-import {
-  Check,
-  MapPin,
-  Info,
-  QrCode,
-  Calendar,
-  Clock,
-} from "lucide-react";
+import { Check, MapPin, Info, QrCode, Calendar, Clock } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { getEventbyId } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -34,10 +27,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   // Get effective event ID
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (propEventId as string | undefined) ||
-    (routeId as string | undefined) ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+    (propEventId as string | undefined) || (routeId as string | undefined);
 
   console.log("ConfirmationDetails - event id:", effectiveEventId);
 
@@ -101,7 +91,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
         const response = await getEventbyId(effectiveEventId);
         const fetchedEventData = response.data.data;
 
-        console.log("ConfirmationDetails - Fetched event data:", fetchedEventData);
+        console.log(
+          "ConfirmationDetails - Fetched event data:",
+          fetchedEventData,
+        );
 
         // Store full event data
         setEventData(fetchedEventData);
@@ -112,7 +105,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
             fetchedEventData.attributes?.display_confirmation_message || false,
           userQRCode: fetchedEventData.attributes?.print_qr || false,
           location: fetchedEventData.attributes?.display_location || false,
-          eventDetails: fetchedEventData.attributes?.display_event_details || false,
+          eventDetails:
+            fetchedEventData.attributes?.display_event_details || false,
         };
 
         setEventName(fetchedEventData.attributes?.name || "");
@@ -446,7 +440,9 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                           <Calendar size={16} className="text-purple-500" />
                           <div className="flex-1">
                             <p className="text-xs font-medium text-purple-900">
-                              <span className="font-semibold">Start Date: </span>
+                              <span className="font-semibold">
+                                Start Date:{" "}
+                              </span>
                               {formatDate(eventData.attributes.event_date_from)}
                             </p>
                           </div>
@@ -459,7 +455,9 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                             <Calendar size={16} className="text-purple-500" />
                             <div className="flex-1">
                               <p className="text-xs font-medium text-purple-900">
-                                <span className="font-semibold">End Date: </span>
+                                <span className="font-semibold">
+                                  End Date:{" "}
+                                </span>
                                 {formatDate(eventData.attributes.event_date_to)}
                               </p>
                             </div>

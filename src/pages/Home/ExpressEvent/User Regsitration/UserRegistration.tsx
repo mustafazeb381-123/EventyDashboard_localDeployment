@@ -62,7 +62,7 @@ function UserRegistration() {
   const { i18n } = useTranslation();
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const langDropdownRef = useRef<HTMLDivElement>(null);
-  
+
   console.log("routeId", routeId);
   const [templateData, setTemplateData] = useState<TemplateData | null>(null);
   const [eventData, setEventData] = useState<EventData | null>(null);
@@ -81,26 +81,36 @@ function UserRegistration() {
     { code: "ar", name: "العربية", flag: "🇸🇦" },
   ];
 
-  const currentLanguage = languages.find((lang) => lang.code === i18n.language) || languages[0];
+  const currentLanguage =
+    languages.find((lang) => lang.code === i18n.language) || languages[0];
 
   const changeLanguage = (langCode: string) => {
     console.log("🔄 Changing language to:", langCode);
-    i18n.changeLanguage(langCode).then(() => {
-      console.log("✅ Language changed successfully to:", langCode);
-      // Force a small delay to ensure all components update
-      setTimeout(() => {
-        console.log("🔄 Language change complete, current language:", i18n.language);
-      }, 100);
-    }).catch((err) => {
-      console.error("❌ Error changing language:", err);
-    });
+    i18n
+      .changeLanguage(langCode)
+      .then(() => {
+        console.log("✅ Language changed successfully to:", langCode);
+        // Force a small delay to ensure all components update
+        setTimeout(() => {
+          console.log(
+            "🔄 Language change complete, current language:",
+            i18n.language,
+          );
+        }, 100);
+      })
+      .catch((err) => {
+        console.error("❌ Error changing language:", err);
+      });
     setIsLangDropdownOpen(false);
   };
 
   // Close language dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (langDropdownRef.current && !langDropdownRef.current.contains(event.target as Node)) {
+      if (
+        langDropdownRef.current &&
+        !langDropdownRef.current.contains(event.target as Node)
+      ) {
         setIsLangDropdownOpen(false);
       }
     };
@@ -126,17 +136,13 @@ function UserRegistration() {
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "info"
+    type: "success" | "error" | "info",
   ) => {
     setNotification({ message, type });
   };
 
   // Get effective event ID
-  const effectiveEventId =
-    (routeId as string | undefined) ||
-    localStorage.getItem("edit_eventId") ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+  const effectiveEventId = (routeId as string | undefined) || undefined;
 
   const getTemplateData = async () => {
     if (!effectiveEventId) {
@@ -152,7 +158,7 @@ function UserRegistration() {
         await getDefaultRegistrationFormTemplate(effectiveEventId);
       console.log(
         "📋 Default template response:",
-        defaultTemplateResponse?.data
+        defaultTemplateResponse?.data,
       );
 
       const defaultTemplate = defaultTemplateResponse?.data?.data;
@@ -174,7 +180,7 @@ function UserRegistration() {
               (field.type === "heading" ||
                 field.type === "container" ||
                 field.containerType ||
-                field.fieldStyle)
+                field.fieldStyle),
           );
 
         // Check if template name indicates it's not a default template
@@ -332,7 +338,7 @@ function UserRegistration() {
       const response = await getEventbyId(effectiveEventId);
       console.log(
         "response event data by id in user registration form ",
-        response
+        response,
       );
       setEventData(response?.data);
     } catch (error: any) {
@@ -396,7 +402,7 @@ function UserRegistration() {
 
     console.log(
       "Using fields from:",
-      registrationFields.length > 0 ? "API (all fields)" : "Template data"
+      registrationFields.length > 0 ? "API (all fields)" : "Template data",
     );
     console.log("Total fields available:", formFields.length);
     console.log(
@@ -406,7 +412,7 @@ function UserRegistration() {
         name: f.attributes?.name || f.attributes?.field,
         active: f.attributes?.active,
         order: f.attributes?.order,
-      }))
+      })),
     );
 
     // Filter only active fields
@@ -415,7 +421,7 @@ function UserRegistration() {
       console.log(
         `Field ${
           field.attributes?.name || field.attributes?.field || field.id
-        }: active=${field.attributes?.active}, order=${field.attributes?.order}`
+        }: active=${field.attributes?.active}, order=${field.attributes?.order}`,
       );
       return isActive;
     });
@@ -439,7 +445,7 @@ function UserRegistration() {
         name: f.attributes?.name,
         order: f.attributes?.order,
         active: f.attributes?.active,
-      }))
+      })),
     );
 
     // Process active fields into the format expected by the templates
@@ -499,7 +505,7 @@ function UserRegistration() {
         name: f.name,
         label: f.label,
         order: f.order,
-      }))
+      })),
     );
 
     const commonProps = {
@@ -628,7 +634,7 @@ function UserRegistration() {
           eventDataData: eventData?.data,
           routeId,
           eventIdToPass,
-        }
+        },
       );
       return (
         <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
@@ -695,7 +701,10 @@ function UserRegistration() {
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
         {/* Notification Toast - Only shows on submit */}
         {notification && (
-          <div className="fixed top-4 right-4 z-[9999] animate-slide-in" style={{ position: 'fixed' }}>
+          <div
+            className="fixed top-4 right-4 z-[9999] animate-slide-in"
+            style={{ position: "fixed" }}
+          >
             <div
               className={`px-6 py-3 rounded-lg shadow-lg ${
                 notification.type === "success"
@@ -709,7 +718,7 @@ function UserRegistration() {
             </div>
           </div>
         )}
-        
+
         {/* Language Switcher */}
         <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
           <div className="relative" ref={langDropdownRef}>
@@ -735,11 +744,15 @@ function UserRegistration() {
                     key={lang.code}
                     onClick={() => changeLanguage(lang.code)}
                     className={`w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors ${
-                      i18n.language === lang.code ? "bg-blue-50 text-blue-600" : ""
+                      i18n.language === lang.code
+                        ? "bg-blue-50 text-blue-600"
+                        : ""
                     }`}
                   >
                     <span className="text-lg">{lang.flag}</span>
-                    <span className="text-sm font-medium flex-1">{lang.name}</span>
+                    <span className="text-sm font-medium flex-1">
+                      {lang.name}
+                    </span>
                     {i18n.language === lang.code && (
                       <span className="text-blue-600 rtl:order-first">✓</span>
                     )}
@@ -786,7 +799,10 @@ function UserRegistration() {
     <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
       {/* Notification Toast - Only shows on submit */}
       {notification && (
-        <div className="fixed top-4 right-4 z-[9999] animate-slide-in" style={{ position: 'fixed' }}>
+        <div
+          className="fixed top-4 right-4 z-[9999] animate-slide-in"
+          style={{ position: "fixed" }}
+        >
           <div
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"
@@ -800,7 +816,7 @@ function UserRegistration() {
           </div>
         </div>
       )}
-      
+
       {/* Language Switcher */}
       <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
         <div className="relative" ref={langDropdownRef}>
@@ -826,11 +842,15 @@ function UserRegistration() {
                   key={lang.code}
                   onClick={() => changeLanguage(lang.code)}
                   className={`w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors ${
-                    i18n.language === lang.code ? "bg-blue-50 text-blue-600" : ""
+                    i18n.language === lang.code
+                      ? "bg-blue-50 text-blue-600"
+                      : ""
                   }`}
                 >
                   <span className="text-lg">{lang.flag}</span>
-                  <span className="text-sm font-medium flex-1">{lang.name}</span>
+                  <span className="text-sm font-medium flex-1">
+                    {lang.name}
+                  </span>
                   {i18n.language === lang.code && (
                     <span className="text-blue-600 rtl:order-first">✓</span>
                   )}

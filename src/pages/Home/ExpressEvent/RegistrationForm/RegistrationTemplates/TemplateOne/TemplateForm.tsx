@@ -85,10 +85,7 @@ function TemplateFormOne({
   // Fetch event and banner on mount and after upload
   const { id: routeId } = useParams();
   const effectiveEventId =
-    (propEventId as string | undefined) ||
-    (routeId as string | undefined) ||
-    localStorage.getItem("create_eventId") ||
-    undefined;
+    (propEventId as string | undefined) || (routeId as string | undefined);
 
   useEffect(() => {
     const fetchBanner = async () => {
@@ -99,7 +96,7 @@ function TemplateFormOne({
         setBannerUrl(
           propEventData?.attributes?.registration_page_banner ||
             propEventData?.registration_page_banner ||
-            null
+            null,
         );
         return;
       }
@@ -112,7 +109,7 @@ function TemplateFormOne({
           setBannerUrl(
             parsed?.attributes?.registration_page_banner ||
               parsed?.registration_page_banner ||
-              null
+              null,
           );
           return;
         } catch (err) {
@@ -125,7 +122,7 @@ function TemplateFormOne({
         setBannerUrl(
           response.data.data?.attributes?.registration_page_banner ||
             response.data.data?.registration_page_banner ||
-            null
+            null,
         );
         sessionStorage.setItem(cacheKey, JSON.stringify(response.data.data));
       } catch (error) {
@@ -201,7 +198,7 @@ function TemplateFormOne({
         const response = await getRegistrationFieldApi(effectiveEventId);
         console.log(
           "TemplateOne - getRegistrationFieldApi response:",
-          response.data
+          response.data,
         );
         const fetchedFields = response.data.data || [];
         // Sort by order
@@ -246,7 +243,7 @@ function TemplateFormOne({
         id: f.id,
         order: f.attributes?.order ?? f.order,
         name: f.attributes?.name ?? f.name,
-      }))
+      })),
     );
 
     const mapped = sortedData.map((field: any) => {
@@ -264,10 +261,10 @@ function TemplateFormOne({
           attr.field === "image"
             ? "file"
             : attr.validation_type === "email"
-            ? "email"
-            : attr.validation_type === "alphabetic"
-            ? "text"
-            : "text",
+              ? "email"
+              : attr.validation_type === "alphabetic"
+                ? "text"
+                : "text",
         label: attr.name || "Field",
         placeholder:
           attr.field === "image" ? "" : `Enter ${attr.name || "value"}`,
@@ -291,7 +288,7 @@ function TemplateFormOne({
       // Preserve API order exactly
       console.log(
         "formFields useMemo - returning mapped fields (API data):",
-        mapped.length
+        mapped.length,
       );
       return mapped;
     } else {
@@ -325,7 +322,7 @@ function TemplateFormOne({
       await updateRegistrationFieldToggleApi(
         { active: newActive },
         effectiveEventId,
-        fieldId
+        fieldId,
       );
       setFieldActiveStates((prev: any) => ({
         ...prev,
@@ -360,12 +357,12 @@ function TemplateFormOne({
         "Reordering field:",
         fieldIdNum,
         "after target:",
-        targetFieldIdNum
+        targetFieldIdNum,
       );
       const reorderResponse = await reorderRegistrationFieldApi(
         effectiveEventId,
         fieldIdNum,
-        targetFieldIdNum
+        targetFieldIdNum,
       );
 
       console.log("Reorder API response:", reorderResponse.data);
@@ -382,7 +379,7 @@ function TemplateFormOne({
         const orderA = a.attributes?.order ?? a.order ?? 999;
         const orderB = b.attributes?.order ?? b.order ?? 999;
         console.log(
-          `Field ${a.id}: order=${orderA}, Field ${b.id}: order=${orderB}`
+          `Field ${a.id}: order=${orderA}, Field ${b.id}: order=${orderB}`,
         );
         return orderA - orderB;
       });
@@ -393,14 +390,14 @@ function TemplateFormOne({
           id: f.id,
           order: f.attributes?.order ?? f.order,
           name: f.attributes?.name ?? f.name,
-        }))
+        })),
       );
 
       // Force update by creating a new array reference
       console.log(
         "About to set apiFormData with:",
         sortedFields.length,
-        "fields"
+        "fields",
       );
       setApiFormData([...sortedFields]);
 
@@ -574,7 +571,7 @@ function TemplateFormOne({
           0,
           0,
           cropArea.width * scaleX,
-          cropArea.height * scaleY
+          cropArea.height * scaleY,
         );
 
         // Convert canvas to blob
@@ -605,7 +602,7 @@ function TemplateFormOne({
             updateBanner(croppedFile);
           },
           "image/jpeg",
-          0.95 // Quality
+          0.95, // Quality
         );
       } catch (error) {
         console.error("Error cropping image:", error);
@@ -931,8 +928,8 @@ function TemplateFormOne({
                           ${cropArea.x}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${
-                          cropArea.y + cropArea.height
-                        }px, 
+                            cropArea.y + cropArea.height
+                          }px, 
                           ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
                           ${cropArea.x}px 100%, 
                           100% 100%, 
@@ -1010,10 +1007,10 @@ function TemplateFormOne({
             formData.eventLogo
               ? URL.createObjectURL(formData.eventLogo)
               : eventData?.attributes?.registration_page_banner
-              ? eventData.attributes.registration_page_banner
-              : bannerUrl
-              ? bannerUrl
-              : Assets.images.uploadBackground
+                ? eventData.attributes.registration_page_banner
+                : bannerUrl
+                  ? bannerUrl
+                  : Assets.images.uploadBackground
           })`,
         }}
         className="w-full h-[300px] flex items-center justify-center border rounded-2xl border-gray-200 p-4 sm:p-5 bg-cover bg-center bg-no-repeat relative"
