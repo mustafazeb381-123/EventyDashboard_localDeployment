@@ -45,6 +45,8 @@ function CheckOut() {
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [sessionAreaId, setSessionAreaId] = useState<string | number | null>(null);
+  const [sessionAreas, setSessionAreas] = useState<any[]>([]); // Store all session areas
+  const [loadingAreas, setLoadingAreas] = useState(false);
   const [allUsers, setAllUsers] = useState<any[]>([]); // Store all users
   const [eventUsers, setUsers] = useState<any[]>([]); // Displayed users (paginated)
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,18 +85,25 @@ function CheckOut() {
   useEffect(() => {
     const fetchSessionAreas = async () => {
       if (!eventId) return;
+      setLoadingAreas(true);
       try {
         const response = await getSessionAreaApi(eventId);
         const areas = response?.data?.data || [];
+        setSessionAreas(areas);
         if (areas.length > 0) {
-          // Use the first session area
+          // Use the first session area as default
           setSessionAreaId(areas[0].id);
         } else {
+          setSessionAreaId(null);
           showNotification("No session areas found for this event", "error");
         }
       } catch (error) {
         console.error("Error fetching session areas:", error);
         showNotification("Failed to load session areas", "error");
+        setSessionAreas([]);
+        setSessionAreaId(null);
+      } finally {
+        setLoadingAreas(false);
       }
     };
     fetchSessionAreas();
@@ -221,6 +230,33 @@ function CheckOut() {
                 {pagination?.total_count || allUsers.length} Users
               </span>
             </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <label className="text-sm font-medium text-gray-700">Session Area:</label>
+            <select
+              value={sessionAreaId ?? ""}
+              onChange={(e) => {
+                const selectedId = e.target.value;
+                setSessionAreaId(selectedId ? selectedId : null);
+                setCurrentPage(1); // Reset to first page when changing session area
+              }}
+              disabled={loadingAreas || sessionAreas.length === 0}
+              className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingAreas ? (
+                <option value="">Loading session areas...</option>
+              ) : sessionAreas.length === 0 ? (
+                <option value="">No session areas available</option>
+              ) : (
+                <>
+                  {sessionAreas.map((area) => (
+                    <option key={area.id} value={area.id}>
+                      {area.attributes?.name || `Area ${area.id}`}
+                    </option>
+                  ))}
+                </>
+              )}
+            </select>
           </div>
         </div>
 

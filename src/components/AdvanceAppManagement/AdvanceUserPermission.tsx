@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  X,
   ChevronLeft,
   Check,
 } from "lucide-react";
+import { updateAppHideSectionsApi, getEventbyId } from "@/apis/apiHelpers";
 
 // ADD PROPS INTERFACE
 interface AdvanceAppVisulizationProps {
@@ -22,50 +22,136 @@ export default function AdvanceUserPermission({
   currentStep, 
   totalSteps 
 }: AdvanceAppVisulizationProps) {
-  const [activeTab, setActiveTab] = useState("general");
-
-  const permissionSections = [
-    {
-      title: "Q & A Permissions",
-      permissions: ["VIP", "Type A", "Type B"]
-    },
-    {
-      title: "Chat Permissions",
-      permissions: ["VIP", "Type A", "Type B"]
-    },
-    {
-      title: "Meetings Permissions",
-      permissions: ["VIP", "Type A", "Type B"]
-    },
-    {
-      title: "Polls Permissions",
-      permissions: ["VIP", "Type A", "Type B"]
-    }
-  ];
-
-  const [permissions, setPermissions] = useState({
-    qna_VIP: true,
-    qna_TypeA: true,
-    qna_TypeB: true,
-    chat_VIP: true,
-    chat_TypeA: true,
-    chat_TypeB: true,
-    meetings_VIP: true,
-    meetings_TypeA: true,
-    meetings_TypeB: true,
-    polls_VIP: true,
-    polls_TypeA: true,
-    polls_TypeB: true,
+  // App Sections Visibility state
+  const [appSections, setAppSections] = useState({
+    networking: true,
+    speakers: true,
+    exhibitors: true,
+    gallery: true,
+    messaging: true,
+    agenda: true,
+    floor_plan: true,
   });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const tabs = [
-    { id: "general", label: "General Caption", removable: true },
-    { id: "snow", label: "Snow v2 API" },
+  // App sections configuration
+  const appSectionsConfig = [
+    { key: "networking", label: "Networking" },
+    { key: "speakers", label: "Speakers" },
+    { key: "exhibitors", label: "Exhibitors" },
+    { key: "gallery", label: "Gallery" },
+    { key: "messaging", label: "Messaging" },
+    { key: "agenda", label: "Agenda" },
+    { key: "floor_plan", label: "Floor_plan" },
   ];
 
-  const handlePermissionToggle = (section: string, type: string) => {
-    const key = `${section}_${type}`;
-    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
+  // Load existing hide_app_sections from event data
+  useEffect(() => {
+    const fetchEventData = async () => {
+      if (!eventId) return;
+      
+      setIsLoading(true);
+      try {
+        const response = await getEventbyId(eventId);
+        const eventData = response.data?.data;
+        const hideAppSections = eventData?.attributes?.hide_app_sections || [];
+        
+        console.log("📥 Loading event data:", {
+          eventId,
+          hideAppSections,
+          hideAppSectionsLength: hideAppSections.length
+        });
+        
+        // Initialize all sections as visible (true)
+        const newSections = {
+          networking: true,
+          speakers: true,
+          exhibitors: true,
+          gallery: true,
+          messaging: true,
+          agenda: true,
+          floor_plan: true,
+        };
+        
+        // Set sections to false (hidden) if they're in hide_app_sections
+        hideAppSections.forEach((section: string) => {
+          const sectionKey = section.toLowerCase();
+          if (sectionKey in newSections) {
+            newSections[sectionKey as keyof typeof newSections] = false;
+            console.log(`  ✓ Section "${section}" (${sectionKey}) is hidden`);
+          } else {
+            console.log(`  ⚠ Section "${section}" (${sectionKey}) not found in component, ignoring`);
+          }
+        });
+        
+        console.log("📊 Final sections state:", newSections);
+        setAppSections(newSections);
+      } catch (error) {
+        console.error("❌ Error fetching event data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEventData();
+  }, [eventId]);
+
+  // Save app sections visibility to API
+  const saveAppSections = async (sectionsToSave: typeof appSections) => {
+    if (!eventId) return;
+    
+    setIsSaving(true);
+    try {
+      // Get all sections that are hidden (unchecked = false)
+      const hideAppSections = Object.entries(sectionsToSave)
+        .filter(([_, isVisible]) => !isVisible)
+        .map(([key, _]) => key);
+      
+      console.log("💾 Saving app sections visibility:", {
+        eventId,
+        hideAppSections,
+        hideAppSectionsLength: hideAppSections.length,
+        allSections: sectionsToSave
+      });
+      
+      await updateAppHideSectionsApi(eventId, hideAppSections);
+      console.log("✅ App sections visibility updated successfully");
+      console.log("📤 API payload sent:", { hide_app_sections: hideAppSections });
+    } catch (error) {
+      console.error("❌ Error updating app sections visibility:", error);
+      throw error; // Re-throw to let handleAppSectionToggle handle the revert
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle app section toggle - save immediately
+  const handleAppSectionToggle = async (sectionKey: string) => {
+    // Store previous state for potential rollback
+    const previousSections = { ...appSections };
+    
+    const updatedSections = {
+      ...appSections,
+      [sectionKey]: !appSections[sectionKey as keyof typeof appSections],
+    };
+    
+    // Update UI immediately (optimistic update)
+    setAppSections(updatedSections);
+    
+    // Save to API immediately
+    try {
+      await saveAppSections(updatedSections);
+    } catch (error) {
+      // Revert to previous state on error
+      console.error("❌ Failed to save, reverting state");
+      setAppSections(previousSections);
+    }
+  };
+
+  // Handle Next button click - just proceed (already saved on toggle)
+  const handleNext = () => {
+    onNext(eventId);
   };
 
   return (
@@ -148,56 +234,65 @@ export default function AdvanceUserPermission({
       {/* Main Content */}
       <div className="px-6 py-6">
         <div className="max-w-7xl mx-auto">
-          {/* Permissions Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            {permissionSections.map((section, idx) => {
-              const sectionKey = section.title.split(' ')[0].toLowerCase();
-              return (
-                <div key={idx} className="bg-white rounded-lg shadow-sm p-6">
-                  <h3 className="text-base font-semibold text-gray-800 mb-4">
-                    {section.title}
-                  </h3>
-                  <div className="space-y-3">
-                    {section.permissions.map((perm) => {
-                      const permKey = perm.replace(' ', '');
-                      const stateKey = `${sectionKey}_${permKey}`;
-                      return (
-                        <div
-                          key={perm}
-                          className="flex items-center justify-between py-2"
-                        >
-                          <label className="text-sm text-gray-600">
-                            {perm}
-                          </label>
-                          <button
-                            onClick={() => handlePermissionToggle(sectionKey, permKey)}
-                            className={`relative w-12 h-6 rounded-full transition-colors ${
-                              permissions[stateKey] ? "bg-indigo-900" : "bg-gray-300"
-                            }`}
-                          >
-                            <span
-                              className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${
-                                permissions[stateKey] ? "right-0.5" : "left-0.5"
-                              }`}
-                            />
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
+          {/* App Sections Visibility */}
+          <div className="bg-white rounded-lg shadow-sm mb-6">
+            <div className="p-6">
+              <h2 className="text-lg font-semibold text-gray-800 mb-4">
+                App Sections Visibility
+              </h2>
+              
+              {isLoading ? (
+                <div className="text-center py-8 text-gray-500">
+                  Loading sections...
                 </div>
-              );
-            })}
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    {appSectionsConfig.map((section) => (
+                      <div
+                        key={section.key}
+                        className="flex items-center justify-between py-2"
+                      >
+                        <label className="text-sm text-gray-700 cursor-pointer">
+                          {section.label}
+                        </label>
+                        <button
+                          onClick={() => handleAppSectionToggle(section.key)}
+                          disabled={isSaving || isLoading}
+                          className={`relative w-12 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                            appSections[section.key as keyof typeof appSections]
+                              ? "bg-indigo-900"
+                              : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow-md ${
+                              appSections[section.key as keyof typeof appSections]
+                                ? "right-0.5"
+                                : "left-0.5"
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    Unchecked sections will be hidden in the app
+                  </p>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Next Button */}
           <div className="flex justify-end">
             <button 
-              onClick={() => onNext(eventId)}
-              className="bg-indigo-950 text-white px-8 py-3 rounded-lg font-medium hover:bg-indigo-900 transition-colors flex items-center gap-2"
+              onClick={handleNext}
+              disabled={isSaving || isLoading}
+              className="bg-indigo-950 text-white px-8 py-3 rounded-lg font-medium hover:bg-indigo-900 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Next
-              <span>→</span>
+              {isSaving ? "Saving..." : "Next"}
+              {!isSaving && <span>→</span>}
             </button>
           </div>
         </div>
