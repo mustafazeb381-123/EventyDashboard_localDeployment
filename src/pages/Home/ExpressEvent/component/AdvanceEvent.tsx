@@ -58,6 +58,9 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
   };
 
   const CurrentComponent = steps[currentStep].component;
+  const onStepClick = (step: number) => {
+    if (step >= 0 && step < steps.length) setCurrentStep(step);
+  };
 
   return (
     <div className="w-full">
@@ -67,6 +70,7 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
         eventId={eventId}
         currentStep={currentStep}
         totalSteps={steps.length}
+        onStepClick={onStepClick}
       />
     </div>
   );

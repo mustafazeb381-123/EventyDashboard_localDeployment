@@ -720,10 +720,12 @@ const RegistrationForm = ({
 
             {/* Steps */}
             <div className="flex items-center gap-2">
-              {/* Step 1 */}
+              {/* Step 1 - click to show registration (template) screen */}
               <div className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
+                <button
+                  type="button"
+                  onClick={() => setInternalStep(0)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[#ff0080] focus:ring-offset-2
                     ${
                       isStep1Completed || isStep1Active
                         ? "border-[#ff0080]"
@@ -731,43 +733,49 @@ const RegistrationForm = ({
                     }
                     ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
                   `}
+                  style={{ cursor: "pointer" }}
+                  aria-label="Go to step 1: Choose template"
                 >
                   {isStep1Completed ? (
-                    <Check size={18} color="white" />
+                    <Check size={18} color="white" className="pointer-events-none" />
                   ) : (
                     <p
-                      className={`text-sm font-poppins ${
+                      className={`text-sm font-poppins pointer-events-none ${
                         isStep1Active ? "text-[#ff0080]" : "text-gray-400"
                       }`}
                     >
                       01
                     </p>
                   )}
-                </div>
+                </button>
               </div>
 
               {/* Connector */}
               <div
-                className={`flex-1 h-1 rounded-full ${
+                className={`flex-1 h-1 rounded-full min-w-[8px] ${
                   isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
                 }`}
               ></div>
 
-              {/* Step 2 */}
-              <div className="flex items-center">
-                <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
-                    ${isStep2Active ? "border-[#ff0080]" : "border-gray-200"}
-                  `}
+              {/* Step 2 - click to show ConfirmationDetails screen */}
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors hover:opacity-90 ${
+                  isStep2Active ? "border-[#ff0080]" : "border-gray-200"
+                }`}
+                style={{ cursor: "pointer" }}
+                onClick={() => setInternalStep(1)}
+                onKeyDown={(e) => e.key === "Enter" && setInternalStep(1)}
+                role="button"
+                tabIndex={0}
+                aria-label="Go to step 2: Confirmation details"
+              >
+                <p
+                  className={`text-sm font-poppins pointer-events-none ${
+                    isStep2Active ? "text-[#ff0080]" : "text-gray-400"
+                  }`}
                 >
-                  <p
-                    className={`text-sm font-poppins ${
-                      isStep2Active ? "text-[#ff0080]" : "text-gray-400"
-                    }`}
-                  >
-                    02
-                  </p>
-                </div>
+                  02
+                </p>
               </div>
             </div>
           </div>

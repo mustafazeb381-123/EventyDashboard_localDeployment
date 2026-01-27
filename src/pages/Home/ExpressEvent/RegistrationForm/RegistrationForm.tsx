@@ -699,10 +699,14 @@ const RegistrationForm = ({
 
             {/* Steps */}
             <div className="flex items-center gap-2">
-              {/* Step 1 */}
+              {/* Step 1 - click to show registration (template) screen */}
               <div className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setInternalStep(0)}
+                  onKeyDown={(e) => e.key === "Enter" && setInternalStep(0)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors hover:opacity-90
                     ${
                       isStep1Completed || isStep1Active
                         ? "border-[#ff0080]"
@@ -710,12 +714,13 @@ const RegistrationForm = ({
                     }
                     ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
                   `}
+                  style={{ cursor: "pointer" }}
                 >
                   {isStep1Completed ? (
-                    <Check size={18} color="white" />
+                    <Check size={18} color="white" className="pointer-events-none" />
                   ) : (
                     <p
-                      className={`text-sm font-poppins ${
+                      className={`text-sm font-poppins pointer-events-none ${
                         isStep1Active ? "text-[#ff0080]" : "text-gray-400"
                       }`}
                     >
@@ -727,20 +732,25 @@ const RegistrationForm = ({
 
               {/* Connector */}
               <div
-                className={`flex-1 h-1 rounded-full ${
+                className={`flex-1 h-1 rounded-full min-w-[8px] ${
                   isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
                 }`}
               ></div>
 
-              {/* Step 2 */}
+              {/* Step 2 - click to show ConfirmationDetails screen */}
               <div className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setInternalStep(1)}
+                  onKeyDown={(e) => e.key === "Enter" && setInternalStep(1)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors hover:opacity-90
                     ${isStep2Active ? "border-[#ff0080]" : "border-gray-200"}
                   `}
+                  style={{ cursor: "pointer" }}
                 >
                   <p
-                    className={`text-sm font-poppins ${
+                    className={`text-sm font-poppins pointer-events-none ${
                       isStep2Active ? "text-[#ff0080]" : "text-gray-400"
                     }`}
                   >

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Check, MapPin, Info, QrCode, Calendar, Clock } from "lucide-react";
+import { Check, MapPin, Info, QrCode, Calendar, Clock, Loader2, Pencil, X } from "lucide-react";
 import { useParams } from "react-router-dom";
-import { getEventbyId } from "@/apis/apiHelpers";
+import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface ToggleStates {
@@ -41,10 +41,52 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [eventName, setEventName] = useState<string>("");
   const [eventData, setEventData] = useState<any>(null);
+  const [editableLocation, setEditableLocation] = useState<string>("");
+  const [editableAbout, setEditableAbout] = useState<string>("");
+  const [isSavingLocationDetails, setIsSavingLocationDetails] = useState(false);
+  const [locationDetailsNotification, setLocationDetailsNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // Edit modals for Location and Event Details cards in preview
+  const [editModalType, setEditModalType] = useState<"location" | "eventDetails" | null>(null);
+  const [modalLocation, setModalLocation] = useState("");
+  const [modalDateFrom, setModalDateFrom] = useState("");
+  const [modalDateTo, setModalDateTo] = useState("");
+  const [modalTimeFrom, setModalTimeFrom] = useState("09:00");
+  const [modalTimeTo, setModalTimeTo] = useState("17:00");
+  const [isSavingModal, setIsSavingModal] = useState(false);
+  const [modalErrors, setModalErrors] = useState<{
+    location?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }>({});
+
+  // Hard toast (same pattern as AdvancePartners)
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   useEffect(() => {
     onToggleStatesChange?.(toggleStates);
   }, [toggleStates, onToggleStatesChange]);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
+
+  const showNotification = (message: string, type: "success" | "error") => {
+    setNotification({ message, type });
+  };
+
+  useEffect(() => {
+    if (locationDetailsNotification) {
+      const t = setTimeout(() => setLocationDetailsNotification(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [locationDetailsNotification]);
 
   // Helper function to format date from ISO string to readable format
   const formatDate = (dateString: string | undefined): string => {
@@ -98,6 +140,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
         // Store full event data
         setEventData(fetchedEventData);
+        setEditableLocation(fetchedEventData.attributes?.location ?? "");
+        setEditableAbout(fetchedEventData.attributes?.about ?? "");
 
         // Map API fields to toggle states
         const newToggleStates: ToggleStates = {
@@ -123,6 +167,167 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   const updateToggle = (key: keyof ToggleStates, value: boolean) => {
     setToggleStates((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Helpers for date/time from API (same as MainData)
+  const toDateInputValue = (isoString: string | undefined): string => {
+    if (!isoString) return "";
+    try {
+      return new Date(isoString).toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
+  const toTimeInputValue = (isoString: string | undefined): string => {
+    if (!isoString) return "09:00";
+    try {
+      return new Date(isoString).toTimeString().slice(0, 5);
+    } catch {
+      return "09:00";
+    }
+  };
+
+  const openLocationEditModal = () => {
+    setModalLocation(eventData?.attributes?.location ?? "");
+    setModalErrors({});
+    setEditModalType("location");
+  };
+
+  const openEventDetailsEditModal = () => {
+    setModalLocation(eventData?.attributes?.location ?? "");
+    setModalDateFrom(toDateInputValue(eventData?.attributes?.event_date_from));
+    setModalDateTo(toDateInputValue(eventData?.attributes?.event_date_to));
+    setModalTimeFrom(toTimeInputValue(eventData?.attributes?.event_time_from));
+    setModalTimeTo(toTimeInputValue(eventData?.attributes?.event_time_to));
+    setModalErrors({});
+    setEditModalType("eventDetails");
+  };
+
+  const closeEditModal = () => {
+    setEditModalType(null);
+    setModalErrors({});
+  };
+
+  const handleSaveLocationModal = async () => {
+    if (!effectiveEventId) return;
+    const trimmed = modalLocation.trim();
+    if (!trimmed) {
+      setModalErrors({ location: "Event location is required" });
+      showNotification("Event location is required", "error");
+      return;
+    }
+    setModalErrors({});
+    setIsSavingModal(true);
+    try {
+      const fd = new FormData();
+      fd.append("event[location]", trimmed);
+      await updateEventById(effectiveEventId, fd);
+      setEventData((prev: any) =>
+        prev ? { ...prev, attributes: { ...prev.attributes, location: trimmed } } : prev
+      );
+      setEditableLocation(trimmed);
+      closeEditModal();
+      showNotification("Event location updated", "success");
+    } catch (err: any) {
+      console.error("Failed to save location:", err);
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? "Failed to save location";
+      showNotification(msg, "error");
+    } finally {
+      setIsSavingModal(false);
+    }
+  };
+
+  const handleSaveEventDetailsModal = async () => {
+    if (!effectiveEventId) return;
+    const loc = modalLocation.trim();
+    const from = modalDateFrom.trim();
+    const to = modalDateTo.trim();
+    const errors: { location?: string; dateFrom?: string; dateTo?: string } = {};
+    if (!loc) errors.location = "Location is required";
+    if (!from) errors.dateFrom = "Start date is required";
+    if (!to) errors.dateTo = "End date is required";
+    if (Object.keys(errors).length > 0) {
+      setModalErrors(errors);
+      showNotification("Please fill in all required fields: Location, Start Date, End Date", "error");
+      return;
+    }
+    setModalErrors({});
+    setIsSavingModal(true);
+    try {
+      const fd = new FormData();
+      fd.append("event[location]", loc);
+      fd.append("event[event_date_from]", from);
+      fd.append("event[event_date_to]", to);
+      fd.append("event[event_time_from]", modalTimeFrom ? `${modalTimeFrom}:00` : "09:00:00");
+      fd.append("event[event_time_to]", modalTimeTo ? `${modalTimeTo}:00` : "17:00:00");
+      await updateEventById(effectiveEventId, fd);
+      const fromDate = new Date(from).toISOString();
+      const toDate = new Date(to).toISOString();
+      const fromTime = modalTimeFrom ? `${modalTimeFrom}:00` : undefined;
+      const toTime = modalTimeTo ? `${modalTimeTo}:00` : undefined;
+      setEventData((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              attributes: {
+                ...prev.attributes,
+                location: loc,
+                event_date_from: fromDate,
+                event_date_to: toDate,
+                event_time_from: fromTime ?? prev.attributes?.event_time_from,
+                event_time_to: toTime ?? prev.attributes?.event_time_to,
+              },
+            }
+          : prev
+      );
+      setEditableLocation(loc);
+      closeEditModal();
+      showNotification("Event details updated", "success");
+    } catch (err: any) {
+      console.error("Failed to save event details:", err);
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? "Failed to save event details";
+      showNotification(msg, "error");
+    } finally {
+      setIsSavingModal(false);
+    }
+  };
+
+  // Save event location and event details (about) via updateEventById - same pattern as MainData
+  const handleSaveLocationAndDetails = async () => {
+    if (!effectiveEventId) {
+      setLocationDetailsNotification({ message: "Event ID not found", type: "error" });
+      return;
+    }
+    setIsSavingLocationDetails(true);
+    setLocationDetailsNotification(null);
+    try {
+      const fd = new FormData();
+      fd.append("event[location]", editableLocation);
+      fd.append("event[about]", editableAbout);
+      await updateEventById(effectiveEventId, fd);
+      setEventData((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              attributes: {
+                ...prev.attributes,
+                location: editableLocation,
+                about: editableAbout,
+              },
+            }
+          : prev
+      );
+      setLocationDetailsNotification({ message: "Location and event details updated", type: "success" });
+    } catch (error: any) {
+      console.error("Failed to save location/details:", error);
+      const msg =
+        error?.response?.data?.message ??
+        error?.response?.data?.error ??
+        "Failed to save location and event details";
+      setLocationDetailsNotification({ message: msg, type: "error" });
+    } finally {
+      setIsSavingLocationDetails(false);
+    }
   };
 
   const StatusCard = ({
@@ -214,6 +419,21 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
 
   return (
     <div className="w-full bg-white min-h-screen">
+      {/* Notification Toast (same as AdvancePartners) */}
+      {notification && (
+        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+          <div
+            className={`px-6 py-3 rounded-lg shadow-lg ${
+              notification.type === "success"
+                ? "bg-green-500 text-white"
+                : "bg-red-500 text-white"
+            }`}
+          >
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-8 max-w-full">
         <div className="space-y-6">
           {isLoading ? (
@@ -405,34 +625,54 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 )}
 
                 {/* Location */}
-                {toggleStates.location && eventData?.attributes?.location && (
-                  <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl flex items-center gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <MapPin
-                        size={20}
-                        className="text-white"
-                        strokeWidth={2.5}
-                      />
+                {toggleStates.location && (eventData?.attributes?.location != null || eventData) && (
+                  <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl flex items-center justify-between gap-3 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <MapPin
+                          size={20}
+                          className="text-white"
+                          strokeWidth={2.5}
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-orange-800 font-poppins">
+                          Event Location
+                        </p>
+                        <p className="text-xs text-orange-600 mt-0.5 truncate">
+                          {eventData?.attributes?.location ?? "—"}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-orange-800 font-poppins">
-                        Event Location
-                      </p>
-                      <p className="text-xs text-orange-600 mt-0.5">
-                        {eventData.attributes.location}
-                      </p>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={openLocationEditModal}
+                      className="flex-shrink-0 p-2 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors"
+                      title="Edit location"
+                      aria-label="Edit event location"
+                    >
+                      <Pencil size={16} />
+                    </button>
                   </div>
                 )}
 
                 {/* Event Details */}
                 {toggleStates.eventDetails && (
                   <div className="mt-4 p-5 bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center justify-center gap-2 mb-4">
+                    <div className="flex items-center justify-center gap-2 mb-4 relative">
                       <Info size={18} className="text-purple-600" />
                       <span className="text-sm font-semibold text-purple-800 font-poppins">
                         Event Details
                       </span>
+                      <button
+                        type="button"
+                        onClick={openEventDetailsEditModal}
+                        className="absolute right-0 top-1/2 -translate-y-1/2 p-2 rounded-lg text-purple-600 hover:bg-purple-100 transition-colors"
+                        title="Edit event details"
+                        aria-label="Edit event details"
+                      >
+                        <Pencil size={16} />
+                      </button>
                     </div>
                     <div className="space-y-2.5">
                       {eventData?.attributes?.event_date_from && (
@@ -493,9 +733,147 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 )}
               </div>
             </div>
+      </div>
+      </div>
+      </div>
+
+      {/* Edit Event Location Modal */}
+      {editModalType === "location" && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Event Location</h3>
+              <button type="button" onClick={closeEditModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Event Location <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={modalLocation}
+                  onChange={(e) => {
+                    setModalLocation(e.target.value);
+                    if (modalErrors.location) setModalErrors((p) => ({ ...p, location: undefined }));
+                  }}
+                  placeholder="Event location"
+                  className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                    modalErrors.location ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {modalErrors.location && (
+                  <p className="mt-1 text-xs text-red-600">{modalErrors.location}</p>
+                )}
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={closeEditModal} className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveLocationModal} disabled={isSavingModal} className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2">
+                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Edit Event Details Modal */}
+      {editModalType === "eventDetails" && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Edit Event Details</h3>
+              <button type="button" onClick={closeEditModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  value={modalDateFrom}
+                  onChange={(e) => {
+                    setModalDateFrom(e.target.value);
+                    if (modalErrors.dateFrom) setModalErrors((p) => ({ ...p, dateFrom: undefined }));
+                  }}
+                  className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    modalErrors.dateFrom ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {modalErrors.dateFrom && (
+                  <p className="mt-1 text-xs text-red-600">{modalErrors.dateFrom}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date <span className="text-red-500">*</span></label>
+                <input
+                  type="date"
+                  value={modalDateTo}
+                  onChange={(e) => {
+                    setModalDateTo(e.target.value);
+                    if (modalErrors.dateTo) setModalErrors((p) => ({ ...p, dateTo: undefined }));
+                  }}
+                  className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    modalErrors.dateTo ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {modalErrors.dateTo && (
+                  <p className="mt-1 text-xs text-red-600">{modalErrors.dateTo}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Time From</label>
+                  <input
+                    type="time"
+                    value={modalTimeFrom}
+                    onChange={(e) => setModalTimeFrom(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Time To</label>
+                  <input
+                    type="time"
+                    value={modalTimeTo}
+                    onChange={(e) => setModalTimeTo(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Location <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={modalLocation}
+                  onChange={(e) => {
+                    setModalLocation(e.target.value);
+                    if (modalErrors.location) setModalErrors((p) => ({ ...p, location: undefined }));
+                  }}
+                  placeholder="Event location"
+                  className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    modalErrors.location ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {modalErrors.location && (
+                  <p className="mt-1 text-xs text-red-600">{modalErrors.location}</p>
+                )}
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <button type="button" onClick={closeEditModal} className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
+                  Cancel
+                </button>
+                <button type="button" onClick={handleSaveEventDetailsModal} disabled={isSavingModal} className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2">
+                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation Buttons */}
       {/* <div className="flex justify-between items-center mt-8 px-8 py-4 border-t border-gray-200">
@@ -515,6 +893,22 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
           Next
         </button>
       </div> */}
+
+      <style>{`
+        @keyframes slide-in {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in {
+          animation: slide-in 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 };
