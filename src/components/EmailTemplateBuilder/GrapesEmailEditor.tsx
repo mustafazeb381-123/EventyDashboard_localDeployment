@@ -250,9 +250,9 @@ export function GrapesEmailEditor({
   const onChangeRef = useRef(onChange);
   const mergeTagsRef = useRef(mergeTags);
   const rteEnhancedRef = useRef(false);
-  const [rightTab, setRightTab] = useState<"styles" | "traits" | "layers">(
-    "styles",
-  );
+  const [rightTab, setRightTab] = useState<
+    "styles" | "traits" | "layers" | "blocks"
+  >("blocks");
 
   useEffect(() => {
     initialHtmlRef.current = initialHtml;
@@ -338,13 +338,24 @@ export function GrapesEmailEditor({
     await Promise.all(updates);
   };
 
+  const viewsPanelId = `${instanceIdRef.current}_views_panel`;
+  const blocksId = `${instanceIdRef.current}_blocks`;
+  const layersId = `${instanceIdRef.current}_layers`;
+  const traitsId = `${instanceIdRef.current}_traits`;
+  const stylesId = `${instanceIdRef.current}_styles`;
+
   useEffect(() => {
     if (!containerRef.current || editorRef.current) return;
 
-    const blocksId = `${instanceIdRef.current}_blocks`;
-    const layersId = `${instanceIdRef.current}_layers`;
-    const traitsId = `${instanceIdRef.current}_traits`;
-    const stylesId = `${instanceIdRef.current}_styles`;
+    // Define icons as string constants for config
+    const ICON_BLOCKS =
+      '<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>';
+    const ICON_STYLE =
+      '<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19.34 2.62c-.93-.89-2.39-.89-3.3 0l-12.4 11.9c-.2.19-.28.46-.22.73l1.8 7.3c.09.36.41.62.78.62.06 0 .13 0 .19-.01l7.6-1.74c.26-.06.5-.27.64-.51l7.31-14.7c.92-.9 1.1-2.4.6-3.59zm-13.8 17.5l-1.3-5.2 3.6 3.6-2.3 1.6zM15 4.3l3.7 3.7-9.5 9.5-3.7-3.7L15 4.3z"/></svg>';
+    const ICON_SETTINGS =
+      '<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.58 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>';
+    const ICON_LAYERS =
+      '<svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22"><path d="M11.99 18.54l-7.37-5.73L3 14.07l9 7 9-7-1.63-1.27-7.38 5.74zM12 16l7.36-5.73L21 9l-9-7-9 7 1.63 1.27L12 16z"/></svg>';
 
     const editor = grapesjs.init({
       container: containerRef.current,
@@ -352,7 +363,6 @@ export function GrapesEmailEditor({
       fromElement: false,
       storageManager: false,
       plugins: [grapesjsPresetNewsletter],
-      // The plugin options key is not correctly typed in grapesjs types.
       pluginsOpts: {
         "grapesjs-preset-newsletter": {
           modalTitleImport: "Import HTML",
@@ -373,14 +383,114 @@ export function GrapesEmailEditor({
         appendTo: `#${traitsId}`,
       },
       panels: {
-        defaults: [],
+        defaults: [
+          {
+            id: "views",
+            el: `#${viewsPanelId}`,
+            buttons: [
+              {
+                id: "open-blocks",
+                command: "open-blocks",
+                className: "gjs-pn-btn",
+                label: ICON_BLOCKS,
+                context: "views",
+                attributes: { title: "Blocks" },
+                active: true,
+              },
+              {
+                id: "open-sm",
+                command: "open-sm",
+                className: "gjs-pn-btn",
+                label: ICON_STYLE,
+                context: "views",
+                attributes: { title: "Styles" },
+              },
+              {
+                id: "open-tm",
+                command: "open-tm",
+                className: "gjs-pn-btn",
+                label: ICON_SETTINGS,
+                context: "views",
+                attributes: { title: "Settings" },
+              },
+              {
+                id: "open-layers",
+                command: "open-layers",
+                className: "gjs-pn-btn",
+                label: ICON_LAYERS,
+                context: "views",
+                attributes: { title: "Layers" },
+              },
+            ],
+          },
+        ],
       },
     } as any);
 
     editorRef.current = editor;
 
-    // Wire GrapesJS built-in right-panel icons to our sidebar visibility.
+    // Ensure the inline RTE toolbar stays visible (not clipped/hidden behind overlays).
+    const injectRteToolbarCss = () => {
+      // Ensure the inline RTE toolbar stays visible (not clipped/hidden behind overlays).
+      // Also force high contrast colors so icons are visible in dark/light modes.
+      const css = `
+        .gjs-rte-toolbar { 
+          z-index: 2147483647 !important; 
+          min-width: 300px !important; /* Ensure enough width for all icons */
+          background-color: #2a2a2a !important;
+          border: 1px solid #444 !important;
+          border-radius: 4px !important;
+        }
+        .gjs-rte-toolbar, .gjs-rte-toolbar * { pointer-events: auto !important; }
+        .gjs-rte-action { 
+          color: #e5e7eb !important; 
+          fill: #e5e7eb !important; 
+          min-width: 24px !important;
+          font-size: 14px !important;
+        }
+        .gjs-rte-action:hover { 
+          background-color: #444 !important;
+          color: #fff !important; 
+        }
+      `;
+
+      const addToDoc = (doc: Document | null | undefined) => {
+        if (!doc?.head) return;
+        const id = "eventy-grapes-rte-toolbar-fix";
+        if (doc.getElementById(id)) return;
+        const style = doc.createElement("style");
+        style.id = id;
+        style.textContent = css;
+        doc.head.appendChild(style);
+      };
+
+      addToDoc(document);
+      try {
+        addToDoc(editor.Canvas?.getDocument?.());
+      } catch {
+        // ignore
+      }
+    };
+
+    injectRteToolbarCss();
+    editor.on("load", injectRteToolbarCss);
+
+    // --- Wire GrapesJS commands to toggle visibility of our detached containers. ---
     try {
+      const getEl = (id: string) => document.getElementById(id);
+      const show = (id: string) => {
+        const el = getEl(id);
+        if (el) el.style.display = "block";
+      };
+      const hideOtherViews = (exceptId: string) => {
+        [blocksId, stylesId, traitsId, layersId].forEach((id) => {
+          if (id !== exceptId) {
+            const el = getEl(id);
+            if (el) el.style.display = "none";
+          }
+        });
+      };
+
       const cmdSm = editor.Commands.get("open-sm");
       const cmdTm = editor.Commands.get("open-tm");
       const cmdLayers = editor.Commands.get("open-layers");
@@ -388,26 +498,230 @@ export function GrapesEmailEditor({
       editor.Commands.add("open-sm", {
         run: (...args: any[]) => {
           cmdSm?.run?.(...args);
-          setRightTab("styles");
+          hideOtherViews(stylesId);
+          show(stylesId);
         },
         stop: (...args: any[]) => cmdSm?.stop?.(...args),
       });
       editor.Commands.add("open-tm", {
         run: (...args: any[]) => {
           cmdTm?.run?.(...args);
-          setRightTab("traits");
+          hideOtherViews(traitsId);
+          show(traitsId);
         },
         stop: (...args: any[]) => cmdTm?.stop?.(...args),
       });
       editor.Commands.add("open-layers", {
         run: (...args: any[]) => {
           cmdLayers?.run?.(...args);
-          setRightTab("layers");
+          hideOtherViews(layersId);
+          show(layersId);
         },
         stop: (...args: any[]) => cmdLayers?.stop?.(...args),
       });
+      editor.Commands.add("open-blocks", {
+        run: () => {
+          hideOtherViews(blocksId);
+          show(blocksId);
+        },
+      });
+
+      // Force open blocks initially to ensure visibility sync
+      setTimeout(() => editor.runCommand("open-blocks"), 0);
     } catch {
       // ignore
+    }
+
+    // --- RTE Configuration & Toolbar Extension ---
+    try {
+      const rteApi: any = (editor as any).RichTextEditor;
+
+      const safeAdd = (id: string, opts: any) => {
+        try {
+          if (rteApi && rteApi.add) {
+            rteApi.add(id, opts);
+          }
+        } catch {
+          // ignore
+        }
+      };
+
+      // Exec command wrapper
+      const execCmd = (rte: any, cmd: string, value?: any) => {
+        try {
+          rte.execCommand(cmd, value);
+        } catch {
+          try {
+            document.execCommand(cmd, false, value);
+          } catch {
+            // ignore
+          }
+        }
+      };
+
+      const normalizeToolbarIds = (value: any): string[] => {
+        if (!Array.isArray(value)) return [];
+        return value
+          .map((item) => {
+            if (typeof item === "string") return item;
+            if (item && typeof item === "object") {
+              const id =
+                (item as any).id ?? (item as any).name ?? (item as any).command;
+              return id ? String(id) : "";
+            }
+            return "";
+          })
+          .filter(Boolean);
+      };
+
+      const appendUnique = (baseIds: string[], extraIds: string[]) => {
+        const seen = new Set(baseIds);
+        const out = [...baseIds];
+        extraIds.forEach((id) => {
+          if (!seen.has(id)) {
+            seen.add(id);
+            out.push(id);
+          }
+        });
+        return out;
+      };
+
+      const extraRteButtonIds = [
+        "eventy-bold",
+        "eventy-italic",
+        "eventy-ul",
+        "eventy-ol",
+        "eventy-underline",
+        "eventy-strike",
+        "eventy-align-left",
+        "eventy-align-center",
+        "eventy-align-right",
+        "eventy-align-justify",
+        "eventy-link",
+        "eventy-unlink",
+        "eventy-personalize",
+      ];
+
+      // Add actions to global RTE
+      safeAdd("eventy-bold", {
+        icon: "<b>B</b>",
+        attributes: { title: "Bold" },
+        result: (rte: any) => execCmd(rte, "bold"),
+      });
+      safeAdd("eventy-italic", {
+        icon: "<i>I</i>",
+        attributes: { title: "Italic" },
+        result: (rte: any) => execCmd(rte, "italic"),
+      });
+      safeAdd("eventy-ul", {
+        icon: "•",
+        attributes: { title: "Bulleted list" },
+        result: (rte: any) => execCmd(rte, "insertUnorderedList"),
+      });
+      safeAdd("eventy-ol", {
+        icon: "1.",
+        attributes: { title: "Numbered list" },
+        result: (rte: any) => execCmd(rte, "insertOrderedList"),
+      });
+      safeAdd("eventy-underline", {
+        icon: "<u>U</u>",
+        attributes: { title: "Underline" },
+        result: (rte: any) => execCmd(rte, "underline"),
+      });
+      safeAdd("eventy-strike", {
+        icon: "<s>S</s>",
+        attributes: { title: "Strikethrough" },
+        result: (rte: any) => execCmd(rte, "strikeThrough"),
+      });
+      safeAdd("eventy-align-left", {
+        icon: "⟸",
+        attributes: { title: "Align left" },
+        result: (rte: any) => execCmd(rte, "justifyLeft"),
+      });
+      safeAdd("eventy-align-center", {
+        icon: "≡",
+        attributes: { title: "Align center" },
+        result: (rte: any) => execCmd(rte, "justifyCenter"),
+      });
+      safeAdd("eventy-align-right", {
+        icon: "⟹",
+        attributes: { title: "Align right" },
+        result: (rte: any) => execCmd(rte, "justifyRight"),
+      });
+      safeAdd("eventy-align-justify", {
+        icon: "⟺",
+        attributes: { title: "Justify" },
+        result: (rte: any) => execCmd(rte, "justifyFull"),
+      });
+      safeAdd("eventy-personalize", {
+        icon: "{}",
+        attributes: { title: "Personalize (merge tags)" },
+        result: (rte: any) => openPersonalize(rte),
+      });
+      safeAdd("eventy-link", {
+        icon: "🔗",
+        attributes: { title: "Insert Link" },
+        result: (rte: any) => openLinkModal(rte),
+      });
+      safeAdd("eventy-unlink", {
+        icon: "⛓",
+        attributes: { title: "Remove Link" },
+        result: (rte: any) => execCmd(rte, "unlink"),
+      });
+
+      // Aggressively extend all component types that might have text
+      const extendAllTextToolbars = () => {
+        const allTypes = editor.DomComponents.getTypes();
+        allTypes.forEach((typeObj: any) => {
+          if (!typeObj.model || !typeObj.model.prototype) return;
+          const proto = typeObj.model.prototype;
+          // Check if it has defaults
+          const defaults = proto.defaults || {};
+
+          // If it has rteToolbar or is a text-like component
+          // Note: 'text' component has 'text' trait often, or contentEditable
+          if (
+            defaults.rteToolbar ||
+            typeObj.id === "text" ||
+            typeObj.id === "default" ||
+            typeObj.id === "textnode"
+          ) {
+            const current = defaults.rteToolbar || [
+              "bold",
+              "italic",
+              "underline",
+              "strikethrough",
+              "link",
+            ];
+            const baseIds = normalizeToolbarIds(current);
+            // We append our IDs.
+            // Note: duplicating standard IDs (like 'bold' vs 'eventy-bold') is annoying but safe.
+            // Ideally we replace them, but appending ensures availability.
+            const newToolbar = appendUnique(baseIds, extraRteButtonIds);
+
+            // Update the prototype
+            proto.defaults = { ...defaults, rteToolbar: newToolbar };
+          }
+        });
+      };
+
+      extendAllTextToolbars();
+
+      // Also listen for component creation to patch instances if needed
+      const applyExtra = (comp: any) => {
+        if (!comp || !comp.get) return;
+        const toolbar = comp.get("rteToolbar");
+        if (toolbar) {
+          const base = normalizeToolbarIds(toolbar);
+          comp.set("rteToolbar", appendUnique(base, extraRteButtonIds));
+        }
+      };
+
+      editor.on("component:selected", (comp: any) => {
+        applyExtra(comp);
+      });
+    } catch (err) {
+      console.error("RTE Setup error", err);
     }
 
     // Register custom components/traits for Eventy blocks.
@@ -913,7 +1227,36 @@ export function GrapesEmailEditor({
         }
       };
 
+      const normalizeToolbarIds = (value: any): string[] => {
+        if (!Array.isArray(value)) return [];
+        return value
+          .map((item) => {
+            if (typeof item === "string") return item;
+            if (item && typeof item === "object") {
+              const id =
+                (item as any).id ?? (item as any).name ?? (item as any).command;
+              return id ? String(id) : "";
+            }
+            return "";
+          })
+          .filter(Boolean);
+      };
+
+      const appendUnique = (baseIds: string[], extraIds: string[]) => {
+        const seen = new Set(baseIds);
+        const out = [...baseIds];
+        extraIds.forEach((id) => {
+          if (!seen.has(id)) {
+            seen.add(id);
+            out.push(id);
+          }
+        });
+        return out;
+      };
+
       const extraRteButtonIds = [
+        "eventy-bold",
+        "eventy-italic",
         "eventy-ul",
         "eventy-ol",
         "eventy-underline",
@@ -931,6 +1274,16 @@ export function GrapesEmailEditor({
       ];
 
       // Ordered / unordered lists, indent/outdent, clear formatting.
+      safeAdd("eventy-bold", {
+        icon: "B",
+        attributes: { title: "Bold" },
+        result: (rte: any) => execCmd(rte, "bold"),
+      });
+      safeAdd("eventy-italic", {
+        icon: "I",
+        attributes: { title: "Italic" },
+        result: (rte: any) => execCmd(rte, "italic"),
+      });
       safeAdd("eventy-ul", {
         icon: "•",
         attributes: { title: "Bulleted list" },
@@ -1009,16 +1362,8 @@ export function GrapesEmailEditor({
           const type = editor.DomComponents.getType(typeName) as any;
           if (!type?.model?.prototype?.defaults) return;
           const defaults = type.model.prototype.defaults;
-          const toolbar = Array.isArray(defaults.rteToolbar)
-            ? [...defaults.rteToolbar]
-            : [];
-          const existing = new Set(
-            toolbar.map((t: any) => t?.id).filter(Boolean),
-          );
-          extraRteButtonIds.forEach((id) => {
-            if (!existing.has(id)) toolbar.push({ id });
-          });
-          defaults.rteToolbar = toolbar;
+          const baseIds = normalizeToolbarIds(defaults.rteToolbar);
+          defaults.rteToolbar = appendUnique(baseIds, extraRteButtonIds);
         } catch {
           // ignore
         }
@@ -1027,30 +1372,65 @@ export function GrapesEmailEditor({
       const applyExtraToolbar = (comp: any) => {
         try {
           if (!comp?.get) return;
-          const toolbar = Array.isArray(comp.get("rteToolbar"))
-            ? [...comp.get("rteToolbar")]
-            : [];
-          const existing = new Set(
-            toolbar.map((t: any) => t?.id).filter(Boolean),
-          );
-          extraRteButtonIds.forEach((id) => {
-            if (!existing.has(id)) toolbar.push({ id });
-          });
-          comp.set("rteToolbar", toolbar);
+          const baseIds = normalizeToolbarIds(comp.get("rteToolbar"));
+          comp.set("rteToolbar", appendUnique(baseIds, extraRteButtonIds));
         } catch {
           // ignore
         }
       };
 
-      extendToolbarForType("text");
-      extendToolbarForType("textnode");
+      const applyExtraToolbarUpTree = (comp: any) => {
+        try {
+          let current = comp;
+          // Some selections are on nested types (eg, link inside text). Apply up the tree.
+          for (let i = 0; i < 6 && current; i += 1) {
+            applyExtraToolbar(current);
+            current =
+              typeof current.parent === "function" ? current.parent() : null;
+          }
+        } catch {
+          // ignore
+        }
+      };
 
-      editor.on("rte:enable", (_rte: any, comp: any) => {
-        applyExtraToolbar(comp);
+      // Newsletter preset uses multiple component types (text, link, etc). Extend a broad set.
+      [
+        "default",
+        "text",
+        "textnode",
+        "link",
+        "link-block",
+        "paragraph",
+        "heading",
+      ].forEach((t) => extendToolbarForType(t));
+
+      editor.on("rte:enable", (_rte: any, maybeViewOrComp: any) => {
+        const comp =
+          maybeViewOrComp?.model || maybeViewOrComp?.get?.("type")
+            ? maybeViewOrComp
+            : editor.getSelected?.();
+        applyExtraToolbarUpTree(comp);
       });
 
-      editor.on("component:add", (comp: any) => applyExtraToolbar(comp));
-      editor.on("component:selected", (comp: any) => applyExtraToolbar(comp));
+      editor.on("component:add", (comp: any) => applyExtraToolbarUpTree(comp));
+      editor.on("component:selected", (comp: any) =>
+        applyExtraToolbarUpTree(comp),
+      );
+
+      editor.on("load", () => {
+        try {
+          const wrapper: any = (editor as any).getWrapper?.();
+          const walk = (node: any) => {
+            if (!node) return;
+            applyExtraToolbar(node);
+            const children = node.components?.();
+            if (children?.length) children.forEach((c: any) => walk(c));
+          };
+          walk(wrapper);
+        } catch {
+          // ignore
+        }
+      });
     }
 
     // Custom blocks
@@ -1121,39 +1501,28 @@ export function GrapesEmailEditor({
     };
   }, []);
 
-  const blocksId = `${instanceIdRef.current}_blocks`;
-  const layersId = `${instanceIdRef.current}_layers`;
-  const traitsId = `${instanceIdRef.current}_traits`;
-  const stylesId = `${instanceIdRef.current}_styles`;
-
   const tagOptions = mergeTagsRef.current || [];
 
   return (
     <div className="flex h-full w-full min-h-0 bg-white">
-      <div className="w-64 border-r border-gray-200 bg-gray-50 p-3 overflow-auto">
-        <div className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
-          Blocks
-        </div>
-        <div id={blocksId} className="gjs-blocks" />
-      </div>
-
       <div className="flex-1 min-w-0">
         <div ref={containerRef} className="h-full w-full" />
       </div>
 
-      <div className="w-72 border-l border-gray-200 bg-gray-50 flex flex-col">
-        <div className="flex-1 overflow-auto p-3">
+      <div className="w-[300px] border-l border-gray-700 bg-[#444] flex flex-col transition-all duration-300 text-gray-200">
+        <div
+          id={viewsPanelId}
+          className="flex items-center justify-around border-b border-gray-600 bg-[#3b3b3b] px-1 py-1 min-h-[44px]"
+        />
+
+        <div className="flex-1 overflow-auto p-0 gjs-one-bg gjs-two-color">
+          <div id={stylesId} style={{ display: "none" }} />
+          <div id={traitsId} style={{ display: "none" }} />
+          <div id={layersId} style={{ display: "none" }} />
           <div
-            id={stylesId}
-            className={rightTab === "styles" ? "block" : "hidden"}
-          />
-          <div
-            id={traitsId}
-            className={rightTab === "traits" ? "block" : "hidden"}
-          />
-          <div
-            id={layersId}
-            className={rightTab === "layers" ? "block" : "hidden"}
+            id={blocksId}
+            className="gjs-blocks"
+            style={{ display: "block" }}
           />
         </div>
       </div>
