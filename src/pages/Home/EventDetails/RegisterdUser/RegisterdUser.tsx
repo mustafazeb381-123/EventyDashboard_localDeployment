@@ -7,12 +7,14 @@ import { downloadEventUserTemplate } from "@/apis/apiHelpers";
 import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
 import { resetCheckInOutStatus } from "@/apis/apiHelpers";
+import { approveEventUsers } from "@/apis/apiHelpers";
+import { rejectEventUsers } from "@/apis/apiHelpers";
 
 import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { Trash2, Mail, Plus, Edit, RotateCcw, X, ChevronDown } from "lucide-react";
+import { Trash2, Mail, Plus, Edit, RotateCcw, X, ChevronDown, CheckCircle, XCircle } from "lucide-react";
 
 // Image compression function
 const compressImage = async (file: File): Promise<File> => {
@@ -77,6 +79,15 @@ const getUserInitial = (user: any) => {
   return (trimmed.charAt(0) || "U").toUpperCase();
 };
 
+// Helper to get approval status: "approved" | "rejected" | "pending"
+const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
+  const status = user?.attributes?.approval_status;
+  const approved = user?.attributes?.approved;
+  if (status === "approved" || approved === true) return "approved";
+  if (status === "rejected" || approved === false) return "rejected";
+  return "pending";
+};
+
 // Avatar component with image fallback
 const UserAvatar = ({ user }: { user: any }) => {
   const [loadError, setLoadError] = useState(false);
@@ -134,6 +145,10 @@ function RegisterdUser() {
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [userToReset, setUserToReset] = useState<any | null>(null);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
+  const [approvingBulk, setApprovingBulk] = useState(false);
+  const [rejectingBulk, setRejectingBulk] = useState(false);
+  const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
+  const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -286,6 +301,56 @@ function RegisterdUser() {
     } finally {
       setSendingCredentials(false);
       setSendingCredentialsUserId(null);
+    }
+  };
+
+  const handleApproveUsers = async (userIds?: string[]) => {
+    const idsToUse = userIds ?? selectedUsers;
+    if (!eventId || idsToUse.length === 0) return;
+    const isSingle = !!userIds && userIds.length === 1;
+    if (isSingle) setApprovingUserId(userIds![0]);
+    else setApprovingBulk(true);
+    try {
+      const res = await approveEventUsers(eventId, idsToUse);
+      const count = res?.data?.approved_count ?? idsToUse.length;
+      showNotification(
+        count === 1 ? "User approved successfully!" : `Successfully approved ${count} user(s).`,
+        "success"
+      );
+      setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
+      fetchUsers(eventId, currentPage);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error || err?.response?.data?.message || "Failed to approve users.";
+      showNotification(msg, "error");
+    } finally {
+      setApprovingBulk(false);
+      setApprovingUserId(null);
+    }
+  };
+
+  const handleRejectUsers = async (userIds?: string[]) => {
+    const idsToUse = userIds ?? selectedUsers;
+    if (!eventId || idsToUse.length === 0) return;
+    const isSingle = !!userIds && userIds.length === 1;
+    if (isSingle) setRejectingUserId(userIds![0]);
+    else setRejectingBulk(true);
+    try {
+      const res = await rejectEventUsers(eventId, idsToUse);
+      const count = res?.data?.rejected_count ?? idsToUse.length;
+      showNotification(
+        count === 1 ? "User rejected successfully." : `Successfully rejected ${count} user(s).`,
+        "success"
+      );
+      setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
+      fetchUsers(eventId, currentPage);
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.error || err?.response?.data?.message || "Failed to reject users.";
+      showNotification(msg, "error");
+    } finally {
+      setRejectingBulk(false);
+      setRejectingUserId(null);
     }
   };
 
@@ -796,14 +861,32 @@ function RegisterdUser() {
               selected
             </p>
 
-            <button
-              onClick={() => handleSendCredentials()}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-              disabled={sendingCredentials} // disable while sending
-            >
-              <Mail className="w-4 h-4" />
-              {sendingCredentials ? "...Sending" : "Send Credentials"}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleApproveUsers()}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                disabled={approvingBulk}
+              >
+                <CheckCircle className="w-4 h-4" />
+                {approvingBulk ? "...Approving" : "Approve"}
+              </button>
+              <button
+                onClick={() => handleRejectUsers()}
+                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                disabled={rejectingBulk}
+              >
+                <XCircle className="w-4 h-4" />
+                {rejectingBulk ? "...Rejecting" : "Reject"}
+              </button>
+              <button
+                onClick={() => handleSendCredentials()}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                disabled={sendingCredentials}
+              >
+                <Mail className="w-4 h-4" />
+                {sendingCredentials ? "...Sending" : "Send Credentials"}
+              </button>
+            </div>
           </div>
         )}
 
@@ -867,6 +950,9 @@ function RegisterdUser() {
                       <Skeleton className="h-4 w-16" />
                     </th>
                     <th className="px-6 py-3 text-left">
+                      <Skeleton className="h-4 w-16" />
+                    </th>
+                    <th className="px-6 py-3 text-left">
                       <Skeleton className="h-4 w-20" />
                     </th>
                     <th className="px-6 py-3 text-left">
@@ -906,6 +992,9 @@ function RegisterdUser() {
                       </td>
                       <td className="px-6 py-4">
                         <Skeleton className="h-4 w-24" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <Skeleton className="h-4 w-16" />
                       </td>
                       <td className="px-6 py-4">
                         <Skeleton className="h-4 w-24" />
@@ -955,6 +1044,9 @@ function RegisterdUser() {
                       Type
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Created
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -971,7 +1063,7 @@ function RegisterdUser() {
                   {filteredUsers.length === 0 && !loadingUsers ? (
                     <tr>
                       <td
-                        colSpan={9}
+                        colSpan={10}
                         className="px-6 py-8 text-center text-gray-500"
                       >
                         {debouncedSearchTerm.trim() !== "" && filterType !== "all"
@@ -1020,6 +1112,25 @@ function RegisterdUser() {
                             {user?.attributes?.user_type}
                           </span>
                         </td>
+                        <td className="px-6 py-4">
+                          {getApprovalStatus(user) === "approved" && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              Approved
+                            </span>
+                          )}
+                          {getApprovalStatus(user) === "rejected" && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              <XCircle className="w-3.5 h-3.5" />
+                              Rejected
+                            </span>
+                          )}
+                          {getApprovalStatus(user) === "pending" && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              Pending
+                            </span>
+                          )}
+                        </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {formatDate(user?.attributes?.created_at)}
                         </td>
@@ -1034,6 +1145,30 @@ function RegisterdUser() {
                               className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             >
                               <RotateCcw className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleApproveUsers([user.id])}
+                              disabled={approvingUserId === user.id}
+                              className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                approvingUserId === user.id
+                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                  : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                              }`}
+                            >
+                              {approvingUserId === user.id ? "Accepting..." : "Accept"}
+                            </button>
+
+                            <button
+                              onClick={() => handleRejectUsers([user.id])}
+                              disabled={rejectingUserId === user.id}
+                              className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                rejectingUserId === user.id
+                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                  : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                              }`}
+                            >
+                              {rejectingUserId === user.id ? "Rejecting..." : "Reject"}
                             </button>
 
                             <button

@@ -9,7 +9,8 @@ import {
 // ---------- Static Templates ----------
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
-import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
+import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
+import RejectionTemplateTwo from "./Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import {
   getEmailTemplatesApi,
   createEmailTemplateApi,
@@ -26,7 +27,7 @@ const createStaticTemplates = (eventData: any) => {
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
-    return { welcome: [], thank_you: [] };
+    return { thank_you: [], rejection: [] };
   }
 
   const eventProps = {
@@ -48,18 +49,6 @@ const createStaticTemplates = (eventData: any) => {
   console.log("Creating templates with eventProps:", eventProps);
 
   return {
-    welcome: [
-      {
-        id: "welcome-template-1",
-        title: "Welcome Template 1",
-        component: <ConfirmationTemplateOne {...eventProps} />,
-        html: null,
-        design: null,
-        isStatic: true,
-        type: "welcome",
-        readyMadeId: "welcome-template-1",
-      },
-    ],
     thank_you: [
       {
         id: "thank-you-template-1",
@@ -80,6 +69,28 @@ const createStaticTemplates = (eventData: any) => {
         isStatic: true,
         type: "thank_you",
         readyMadeId: "thank-you-template-2",
+      },
+    ],
+    rejection: [
+      {
+        id: "rejection-template-1",
+        title: "Rejection Template 1",
+        component: <RejectionTemplateOne {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "rejection",
+        readyMadeId: "rejection-template-1",
+      },
+      {
+        id: "rejection-template-2",
+        title: "Rejection Template 2",
+        component: <RejectionTemplateTwo {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "rejection",
+        readyMadeId: "rejection-template-2",
       },
     ],
   };
@@ -441,8 +452,8 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
   const effectiveEventId = eventId;
 
   const [flows, setFlows] = useState<any[]>([
-    { id: "welcome", label: "Welcome Email", templates: [] },
     { id: "thank_you", label: "Thank You Email", templates: [] },
+    { id: "rejection", label: "Rejection Email", templates: [] },
   ]);
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
@@ -487,8 +498,8 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         setEventData(null); // Clear event data if no eventId
         // Reset flows when no eventId
         setFlows([
-          { id: "welcome", label: "Welcome Email", templates: [] },
           { id: "thank_you", label: "Thank You Email", templates: [] },
+          { id: "rejection", label: "Rejection Email", templates: [] },
         ]);
         return;
       }
