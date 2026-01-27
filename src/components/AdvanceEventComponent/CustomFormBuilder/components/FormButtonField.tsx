@@ -1,13 +1,23 @@
 import type { CSSProperties } from "react";
 
 import type { CustomFormField, FormTheme } from "../types";
+import { getTranslatedButtonText } from "../utils/fieldTranslations";
 
 type FormButtonFieldProps = {
   field: CustomFormField;
   theme?: FormTheme;
+  currentLanguage?: string;
 };
 
-export function FormButtonField({ field, theme }: FormButtonFieldProps) {
+export function FormButtonField({
+  field,
+  theme,
+  currentLanguage = "en",
+}: FormButtonFieldProps) {
+  const displayText =
+    currentLanguage
+      ? getTranslatedButtonText(field, currentLanguage)
+      : field.buttonText ?? "Button";
   const justifyContent: CSSProperties["justifyContent"] =
     field.buttonAlignment === "center"
       ? "center"
@@ -63,7 +73,7 @@ export function FormButtonField({ field, theme }: FormButtonFieldProps) {
             "#ffffff") as string;
         }}
       >
-        {field.buttonText || "Button"}
+        {displayText}
       </button>
     </div>
   );

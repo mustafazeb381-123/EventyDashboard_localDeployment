@@ -25,6 +25,7 @@ import {
   Upload,
   Download,
   Code,
+  Languages,
 } from "lucide-react";
 
 // Import extracted components
@@ -32,6 +33,7 @@ import { FieldConfigPanel } from "./CustomFormBuilder/components/FieldConfigPane
 import { SortableFieldItem } from "./CustomFormBuilder/components/SortableFieldItem";
 import { FieldPalette } from "./CustomFormBuilder/components/FieldPalette";
 import { ThemeConfigPanel } from "./CustomFormBuilder/components/ThemeConfigPanel";
+import { TranslationPanel } from "./CustomFormBuilder/components/TranslationPanel";
 import { FormPreview } from "./CustomFormBuilder/components/FormPreview";
 import { DroppableContainer } from "./CustomFormBuilder/components/DroppableContainer";
 import { MainDropZone } from "./CustomFormBuilder/components/MainDropZone";
@@ -41,7 +43,11 @@ import { RTLWrapper } from "./CustomFormBuilder/components/RTLWrapper";
 import { useTranslation } from "react-i18next";
 
 // Import types
-import type { CustomFormField, FormTheme } from "./CustomFormBuilder/types";
+import type {
+  CustomFormField,
+  FormTheme,
+  FormLanguageConfig,
+} from "./CustomFormBuilder/types";
 import {
   ensureUniqueFieldName,
   makeAutoPlaceholderFromLabel,
@@ -53,11 +59,13 @@ interface CustomFormBuilderProps {
   initialBannerImage?: File | string | null;
   initialTheme?: Partial<FormTheme>;
   initialTemplateName?: string;
+  initialLanguageConfig?: FormLanguageConfig;
   onSave: (
     fields: CustomFormField[],
     bannerImage?: File | string,
     theme?: FormTheme,
-    templateName?: string
+    templateName?: string,
+    languageConfig?: FormLanguageConfig
   ) => void | Promise<void>;
   onClose: () => void;
 }
@@ -251,6 +259,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   initialBannerImage = null,
   initialTheme,
   initialTemplateName = "Custom Form Builder Template",
+  initialLanguageConfig,
   onSave,
   onClose,
 }) => {
@@ -267,6 +276,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   );
   const [showPreview, setShowPreview] = useState(false);
   const [showThemePanel, setShowThemePanel] = useState(false);
+  const [showTranslationPanel, setShowTranslationPanel] = useState(false);
+  const [languageConfig, setLanguageConfig] = useState<FormLanguageConfig>(
+    initialLanguageConfig ?? { languageMode: "single", primaryLanguage: "en" }
+  );
   const [showJsonEditor, setShowJsonEditor] = useState(false);
   const [jsonEditorContent, setJsonEditorContent] = useState("");
   const [showJsonMenu, setShowJsonMenu] = useState(false);
@@ -853,7 +866,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
         fieldsToSave,
         bannerImage || undefined,
         theme,
-        templateName.trim()
+        templateName.trim(),
+        languageConfig
       );
     } catch (error) {
       console.error("Error saving form:", error);
@@ -1022,6 +1036,20 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                 title={t("header.theme")}
               >
                 <PaletteIcon size={20} />
+              </button>
+              <button
+                onClick={() => {
+                  setShowTranslationPanel(!showTranslationPanel);
+                  if (showThemePanel) setShowThemePanel(false);
+                }}
+                className={`p-2.5 rounded-lg transition-colors ${
+                  showTranslationPanel
+                    ? "bg-white/30"
+                    : "bg-white/10 hover:bg-white/20"
+                }`}
+                title="Language & Translation"
+              >
+                <Languages size={20} />
               </button>
               <button
                 onClick={handleSave}
@@ -1313,6 +1341,17 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
           theme={theme}
           onUpdate={setTheme}
           onClose={() => setShowThemePanel(false)}
+        />
+      )}
+
+      {/* Translation Panel */}
+      {showTranslationPanel && (
+        <TranslationPanel
+          fields={fields}
+          languageConfig={languageConfig}
+          onLanguageConfigChange={setLanguageConfig}
+          onFieldsChange={setFields}
+          onClose={() => setShowTranslationPanel(false)}
         />
       )}
 

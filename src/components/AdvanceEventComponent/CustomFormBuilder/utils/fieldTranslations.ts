@@ -141,3 +141,21 @@ export const getTranslatedOptionLabel = (
   // Fallback to English translation or main label
   return option.labelTranslations?.en || option.label || "";
 };
+
+/**
+ * Get the translated button text (Register, Submit, Save, etc.) for button fields
+ */
+export const getTranslatedButtonText = (
+  field: CustomFormField,
+  currentLanguage: string
+): string => {
+  if (field.type !== "button") return field.buttonText || "Button";
+  if (currentLanguage === "ar" && field.buttonTextTranslations?.ar) {
+    return field.buttonTextTranslations.ar;
+  }
+  return (
+    field.buttonTextTranslations?.en ??
+    field.buttonText ??
+    "Button"
+  );
+};

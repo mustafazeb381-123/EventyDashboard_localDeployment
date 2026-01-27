@@ -932,6 +932,33 @@ export const FieldConfigPanel: React.FC<FieldConfigProps> = ({
                 className="w-full px-3 py-2 border rounded-lg"
                 placeholder={t("fieldConfig.clickMe")}
               />
+              <p className="text-xs text-gray-500 mt-1">
+                Shown when the form language is English
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">
+                Button text (Arabic / العربية)
+              </label>
+              <input
+                type="text"
+                value={config.buttonTextTranslations?.ar || ""}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    buttonTextTranslations: {
+                      ...config.buttonTextTranslations,
+                      ar: e.target.value || undefined,
+                    },
+                  })
+                }
+                className="w-full px-3 py-2 border rounded-lg"
+                placeholder="e.g. تسجيل، إرسال، حفظ"
+                dir="rtl"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Shown when the registration form is in Arabic
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">

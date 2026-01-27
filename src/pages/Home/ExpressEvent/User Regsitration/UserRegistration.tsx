@@ -134,6 +134,25 @@ function UserRegistration() {
     }
   }, [notification]);
 
+  // Use primary language: single = only that language; dual = open form in primary by default
+  useEffect(() => {
+    const fd = customFormBuilderTemplate?.formBuilderData;
+    if (!fd) return;
+    const primary = fd.primaryLanguage ?? "en";
+    if (fd.languageMode === "single") {
+      if (i18n.language !== primary) i18n.changeLanguage(primary);
+      return;
+    }
+    if (fd.languageMode === "dual") {
+      // By default show the form in the chosen primary (Arabic or English)
+      if (i18n.language !== primary) i18n.changeLanguage(primary);
+    }
+  }, [
+    customFormBuilderTemplate?.formBuilderData?.languageMode,
+    customFormBuilderTemplate?.formBuilderData?.primaryLanguage,
+    customFormBuilderTemplate,
+  ]);
+
   const showNotification = (
     message: string,
     type: "success" | "error" | "info",
@@ -697,6 +716,10 @@ function UserRegistration() {
       isUserRegistration: true,
     });
 
+    const formLanguageMode =
+      customFormBuilderTemplate?.formBuilderData?.languageMode ?? "dual";
+    const isDualLanguage = formLanguageMode === "dual";
+
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
         {/* Notification Toast - Only shows on submit */}
@@ -719,49 +742,51 @@ function UserRegistration() {
           </div>
         )}
 
-        {/* Language Switcher */}
-        <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
-          <div className="relative" ref={langDropdownRef}>
-            <button
-              onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
-              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg shadow-md transition-colors border border-gray-200"
-              title="Change Language"
-            >
-              <Globe size={18} className="text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">
-                {currentLanguage.flag} {currentLanguage.name}
-              </span>
-              <ChevronDown
-                size={16}
-                className={`text-gray-600 transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
-              />
-            </button>
+        {/* Language Switcher – only when form is dual language */}
+        {isDualLanguage && (
+          <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
+            <div className="relative" ref={langDropdownRef}>
+              <button
+                onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
+                className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-gray-50 rounded-lg shadow-md transition-colors border border-gray-200"
+                title="Change Language"
+              >
+                <Globe size={18} className="text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">
+                  {currentLanguage.flag} {currentLanguage.name}
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={`text-gray-600 transition-transform ${isLangDropdownOpen ? "rotate-180" : ""}`}
+                />
+              </button>
 
-            {isLangDropdownOpen && (
-              <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-2 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px] border border-gray-200">
-                {languages.map((lang) => (
-                  <button
-                    key={lang.code}
-                    onClick={() => changeLanguage(lang.code)}
-                    className={`w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors ${
-                      i18n.language === lang.code
-                        ? "bg-blue-50 text-blue-600"
-                        : ""
-                    }`}
-                  >
-                    <span className="text-lg">{lang.flag}</span>
-                    <span className="text-sm font-medium flex-1">
-                      {lang.name}
-                    </span>
-                    {i18n.language === lang.code && (
-                      <span className="text-blue-600 rtl:order-first">✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
+              {isLangDropdownOpen && (
+                <div className="absolute right-0 rtl:left-0 rtl:right-auto top-full mt-2 bg-white text-gray-800 rounded-lg shadow-xl overflow-hidden z-50 min-w-[160px] border border-gray-200">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => changeLanguage(lang.code)}
+                      className={`w-full px-4 py-3 text-left rtl:text-right hover:bg-gray-100 flex items-center gap-3 transition-colors ${
+                        i18n.language === lang.code
+                          ? "bg-blue-50 text-blue-600"
+                          : ""
+                      }`}
+                    >
+                      <span className="text-lg">{lang.flag}</span>
+                      <span className="text-sm font-medium flex-1">
+                        {lang.name}
+                      </span>
+                      {i18n.language === lang.code && (
+                        <span className="text-blue-600 rtl:order-first">✓</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="w-full max-w-4xl mx-auto">
           <FormBuilderTemplateForm

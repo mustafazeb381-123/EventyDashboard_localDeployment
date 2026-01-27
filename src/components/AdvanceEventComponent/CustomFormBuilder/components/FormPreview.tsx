@@ -24,6 +24,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   theme,
 }) => {
   const { i18n } = useTranslation();
+  const { t: tFormBuilder } = useTranslation("formBuilder");
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
     string | null
@@ -632,7 +633,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   cursor: "default",
                 }}
               >
-                {fileName || `No ${field.type} selected`}
+                {fileName || (field.type === "image" ? tFormBuilder("formPreview.noImageSelected") : tFormBuilder("formPreview.noFileSelected"))}
               </div>
               <label
                 className="px-4 py-2 border rounded-lg cursor-pointer text-sm font-medium transition-colors whitespace-nowrap flex items-center gap-2"
@@ -655,7 +656,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 ) : (
                   <FileText size={16} />
                 )}
-                Choose {field.type === "image" ? "Image" : "File"}
+                {field.type === "image" ? tFormBuilder("formPreview.chooseImage") : tFormBuilder("formPreview.chooseFile")}
                 <input
                   type="file"
                   {...commonProps}
@@ -907,7 +908,10 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     backgroundSize: theme?.formBackgroundImage ? "cover" : undefined,
     backgroundPosition: theme?.formBackgroundImage ? "center" : undefined,
     backgroundRepeat: theme?.formBackgroundImage ? "no-repeat" : undefined,
-    padding: theme?.formPadding || "24px",
+    paddingTop: theme?.formPadding || "24px",
+    paddingLeft: theme?.formPadding || "24px",
+    paddingRight: theme?.formPadding || "24px",
+    paddingBottom: 0,
     borderRadius: theme?.formBorderRadius || "8px",
     borderColor: theme?.formBorderColor || "#e5e7eb",
     borderWidth: theme?.formBorderWidth || "1px",
@@ -956,10 +960,10 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       className="w-full rounded-xl shadow-lg overflow-hidden"
       style={formLayoutStyle}
     >
-      {/* Banner Image - Full width, breaks out of padding */}
+      {/* Banner - full-bleed (touch top and sides), optional theme margins */}
       {bannerImage && (
         <div
-          className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
+          className="w-full bg-gray-100 overflow-hidden"
           style={{
             marginLeft: `-${paddingValue}px`,
             marginRight: `-${paddingValue}px`,
@@ -967,11 +971,21 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             width: `calc(100% + ${paddingValue * 2}px)`,
           }}
         >
-          <img
-            src={bannerImage}
-            alt="Form banner"
-            className="w-full h-full object-cover"
-          />
+          <div
+            className="w-full h-[300px] overflow-hidden"
+            style={{
+              marginTop: theme?.bannerMarginTop || "0",
+              marginRight: theme?.bannerMarginRight || "0",
+              marginBottom: theme?.bannerMarginBottom || "0",
+              marginLeft: theme?.bannerMarginLeft || "0",
+            }}
+          >
+            <img
+              src={bannerImage}
+              alt="Form banner"
+              className="w-full h-full object-cover"
+            />
+          </div>
         </div>
       )}
 
@@ -1443,40 +1457,48 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           })()}
         </form>
 
-        {/* Footer: banner image (form_background_image, same as header) + optional text */}
+        {/* Footer: full-bleed (touch bottom and sides), optional theme margins */}
         {(footerBannerUrl || (theme?.footerEnabled && theme?.footerText)) && (
-          <div className="mt-6 pt-4 border-t" style={{ borderTopColor: theme?.formBorderColor || "#e5e7eb" }}>
-            {/* Footer banner – same dimensions/object-fit as header banner */}
-            {footerBannerUrl && (
-              <div
-                className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
-                style={{
-                  marginLeft: `-${paddingValue}px`,
-                  marginRight: `-${paddingValue}px`,
-                  marginBottom: "0",
-                  width: `calc(100% + ${paddingValue * 2}px)`,
-                }}
-              >
-                <img
-                  src={footerBannerUrl}
-                  alt="Footer banner"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
-            {theme?.footerEnabled && theme?.footerText && (
-              <div
-                style={{
-                  backgroundColor: theme.footerBackgroundColor || "#f9fafb",
-                  color: theme.footerTextColor || "#6b7280",
-                  padding: theme.footerPadding || "16px",
-                  fontSize: theme.footerFontSize || "14px",
-                  textAlign: theme.footerAlignment || "center",
-                }}
-              >
-                {theme.footerText}
-              </div>
-            )}
+          <div
+            className="border-t"
+            style={{
+              borderTopColor: theme?.formBorderColor || "#e5e7eb",
+              marginLeft: `-${paddingValue}px`,
+              marginRight: `-${paddingValue}px`,
+              marginTop: theme?.footerMarginTop ?? "24px",
+              width: `calc(100% + ${paddingValue * 2}px)`,
+            }}
+          >
+            <div
+              style={{
+                marginRight: theme?.footerMarginRight || "0",
+                marginBottom: theme?.footerMarginBottom || "0",
+                marginLeft: theme?.footerMarginLeft || "0",
+              }}
+            >
+              {footerBannerUrl && (
+                <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2">
+                  <img
+                    src={footerBannerUrl}
+                    alt="Footer banner"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
+              {theme?.footerEnabled && theme?.footerText && (
+                <div
+                  style={{
+                    backgroundColor: theme.footerBackgroundColor || "#f9fafb",
+                    color: theme.footerTextColor || "#6b7280",
+                    padding: theme.footerPadding || "16px",
+                    fontSize: theme.footerFontSize || "14px",
+                    textAlign: theme.footerAlignment || "center",
+                  }}
+                >
+                  {theme.footerText}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
