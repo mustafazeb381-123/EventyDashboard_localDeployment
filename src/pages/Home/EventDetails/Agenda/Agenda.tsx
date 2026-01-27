@@ -6,8 +6,6 @@ import {
   Edit,
   X,
   MapPin,
-  CreditCard,
-  DollarSign,
   Loader2,
 } from "lucide-react";
 import {
@@ -53,11 +51,6 @@ type FormState = {
   speakers: number[];
   display: boolean;
   requiredEnrollment: boolean;
-  paid: boolean;
-  price: string;
-  currency: string;
-  onlinePayment: boolean;
-  cashPayment: boolean;
 };
 
 function Agenda() {
@@ -107,11 +100,6 @@ function Agenda() {
     speakers: [],
     display: true,
     requiredEnrollment: true,
-    paid: false,
-    price: "",
-    currency: "USD",
-    onlinePayment: false,
-    cashPayment: false,
   });
 
   // Fetch speakers
@@ -257,11 +245,6 @@ function Agenda() {
       speakers: [],
       display: true,
       requiredEnrollment: true,
-      paid: false,
-      price: "",
-      currency: "USD",
-      onlinePayment: false,
-      cashPayment: false,
     });
     setSelectedSpeakers([]);
     setIsEditMode(false);
@@ -283,11 +266,6 @@ function Agenda() {
       ? session.endTime.split(" ")[1]?.substring(0, 5) || "17:00"
       : "17:00";
 
-    // Determine payment settings
-    const isPaid = session.pay_by !== "free";
-    const onlinePayment = session.pay_by === "online";
-    const cashPayment = session.pay_by === "cash";
-
     setFormData({
       title: session.title,
       date: startDate ? new Date(startDate) : undefined,
@@ -297,11 +275,6 @@ function Agenda() {
       speakers: session.speaker_ids || [],
       display: session.display !== false,
       requiredEnrollment: session.require_enroll || false,
-      paid: isPaid,
-      price: session.price || "",
-      currency: session.currency || "USD",
-      onlinePayment: onlinePayment,
-      cashPayment: cashPayment,
     });
 
     setSelectedSpeakers(session.speaker_ids || []);
@@ -321,7 +294,7 @@ function Agenda() {
   const confirmDelete = async () => {
     if (!sessionToDelete || !eventId) return;
 
-    setIsDeletingSession(sessionToDeleteToDelete.id);
+    setIsDeletingSession(sessionToDelete.id);
     try {
       const response = await deleteAgendaApi(eventId, sessionToDelete.id);
       if (response.status === 204 || response.status === 200) {
@@ -360,29 +333,6 @@ function Agenda() {
       return;
     }
 
-    // Validation for paid sessions
-    if (formData.paid) {
-      if (!formData.onlinePayment && !formData.cashPayment) {
-        showNotification(
-          "Please select a payment method for paid sessions!",
-          "error"
-        );
-        return;
-      }
-      const priceNum = parseFloat(formData.price);
-      if (isNaN(priceNum) || priceNum <= 0) {
-        showNotification(
-          "Price must be greater than 0 for paid sessions!",
-          "error"
-        );
-        return;
-      }
-      if (formData.currency !== "USD" && formData.currency !== "SAR") {
-        showNotification("Currency must be either USD or SAR!", "error");
-        return;
-      }
-    }
-
     const dateStr = formData.date!.toISOString().split("T")[0];
     const payload: any = {
       agenda: {
@@ -393,13 +343,9 @@ function Agenda() {
         end_time: `${dateStr} ${formData.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: formData.requiredEnrollment,
-        pay_by: formData.paid
-          ? formData.onlinePayment
-            ? "online"
-            : "cash"
-          : "free",
-        price: formData.paid ? formData.price : "0",
-        currency: formData.currency || "USD",
+        pay_by: "free",
+        price: "0",
+        currency: "USD",
         speaker_ids: selectedSpeakers,
         display: formData.display,
       },
@@ -1231,140 +1177,7 @@ function Agenda() {
                         ></div>
                       </label>
                     </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-700">
-                          Paid
-                        </span>
-                        <svg
-                          className="w-4 h-4 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={formData.paid}
-                          onChange={(e) => {
-                            const updatedPaid = e.target.checked;
-                            handleInputChange("paid", updatedPaid);
-                            if (!updatedPaid) {
-                              handleInputChange("onlinePayment", false);
-                              handleInputChange("cashPayment", false);
-                              handleInputChange("price", "");
-                            }
-                          }}
-                          disabled={isAddingSession || isUpdatingSession}
-                          className="sr-only peer"
-                        />
-                        <div
-                          className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${
-                            isAddingSession || isUpdatingSession
-                              ? "opacity-50 cursor-not-allowed"
-                              : ""
-                          }`}
-                        ></div>
-                      </label>
-                    </div>
                   </div>
-
-                  {/* Price */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Price{" "}
-                      {formData.paid && <span className="text-red-500">*</span>}
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Price here"
-                        value={formData.price}
-                        onChange={(e) =>
-                          handleInputChange("price", e.target.value)
-                        }
-                        disabled={
-                          !formData.paid || isAddingSession || isUpdatingSession
-                        }
-                        className={`flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                          !formData.paid || isAddingSession || isUpdatingSession
-                            ? "bg-gray-100 cursor-not-allowed"
-                            : ""
-                        }`}
-                      />
-                      <select
-                        value={formData.currency}
-                        onChange={(e) =>
-                          handleInputChange("currency", e.target.value)
-                        }
-                        disabled={
-                          !formData.paid || isAddingSession || isUpdatingSession
-                        }
-                        className={`px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none ${
-                          !formData.paid || isAddingSession || isUpdatingSession
-                            ? "bg-gray-100 cursor-not-allowed"
-                            : ""
-                        }`}
-                      >
-                        <option value="USD">USD</option>
-                        <option value="SAR">SAR</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Payment Methods */}
-                  {formData.paid && (
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-gray-700 mb-2">
-                        Payment Method:
-                      </p>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          checked={formData.onlinePayment}
-                          onChange={() => {
-                            handleInputChange("onlinePayment", true);
-                            handleInputChange("cashPayment", false);
-                          }}
-                          disabled={isAddingSession || isUpdatingSession}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
-                        />
-                        <CreditCard className="w-5 h-5 text-gray-600" />
-                        <span className="text-sm text-gray-700">
-                          Online payment
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          checked={formData.cashPayment}
-                          onChange={() => {
-                            handleInputChange("cashPayment", true);
-                            handleInputChange("onlinePayment", false);
-                          }}
-                          disabled={isAddingSession || isUpdatingSession}
-                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 disabled:opacity-50"
-                        />
-                        <DollarSign className="w-5 h-5 text-gray-600" />
-                        <span className="text-sm text-gray-700">
-                          Cash payment
-                        </span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

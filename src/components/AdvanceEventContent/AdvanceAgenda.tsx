@@ -105,11 +105,6 @@ function AdvanceAgenda({
     location: "",
     display: true,
     requiredEnrolment: true,
-    paid: true,
-    price: "",
-    currency: "USD", // Currency: USD or SAR
-    onlinePayment: false,
-    cashPayment: false,
   });
   const [selectedSpeakers, setSelectedSpeakers] = useState<string[]>([]);
   const [availableSpeakers, setAvailableSpeakers] = useState<any[]>([]);
@@ -237,7 +232,7 @@ function AdvanceAgenda({
   const confirmDelete = async () => {
     if (!sessionToDelete) return;
 
-    setIsDeletingSession(sessionToDeleteToDelete.id);
+    setIsDeletingSession(sessionToDelete.id);
     try {
       // Call the delete API
       const response = await deleteAgendaApi(eventId!, sessionToDelete.id);
@@ -315,11 +310,6 @@ function AdvanceAgenda({
       }
     }
 
-    // Determine payment settings
-    const isPaid = session.pay_by !== "free";
-    const onlinePayment = session.pay_by === "online";
-    const cashPayment = session.pay_by === "cash";
-
     console.log("Editing session:", {
       session,
       startDate,
@@ -336,11 +326,6 @@ function AdvanceAgenda({
       location: session.location || "",
       display: session.display !== false, // Default to true if not specified
       requiredEnrolment: session.require_enroll || false,
-      paid: isPaid,
-      price: session.price || "",
-      currency: session.currency || "USD",
-      onlinePayment: onlinePayment,
-      cashPayment: cashPayment,
     });
 
     // Set selected speakers from the session - ensure they're strings
@@ -405,34 +390,6 @@ function AdvanceAgenda({
       return;
     }
 
-    // Validation for paid sessions
-    if (newSession.paid) {
-      // Validate pay_by is either "cash" or "online"
-      if (!newSession.onlinePayment && !newSession.cashPayment) {
-        showNotification(
-          "Please select a payment method (Online or Cash) for paid sessions!",
-          "error"
-        );
-        return;
-      }
-
-      // Validate price is greater than 0
-      const priceNum = parseFloat(newSession.price);
-      if (isNaN(priceNum) || priceNum <= 0) {
-        showNotification(
-          "Price must be greater than 0 for paid sessions!",
-          "error"
-        );
-        return;
-      }
-
-      // Validate currency is either "USD" or "SAR"
-      if (newSession.currency !== "USD" && newSession.currency !== "SAR") {
-        showNotification("Currency must be either USD or SAR!", "error");
-        return;
-      }
-    }
-
     // Prepare payload
     const payload: any = {
       agenda: {
@@ -443,13 +400,9 @@ function AdvanceAgenda({
         end_time: `${newSession.date} ${newSession.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: newSession.requiredEnrolment,
-        pay_by: newSession.paid
-          ? newSession.onlinePayment
-            ? "online"
-            : "cash"
-          : "free",
-        price: newSession.paid ? newSession.price : "0",
-        currency: newSession.currency || "USD",
+        pay_by: "free",
+        price: "0",
+        currency: "USD",
         speaker_ids: selectedSpeakers.map((id) => parseInt(id)),
         display: newSession.display, // Include display field in API call if supported
       },
@@ -482,13 +435,9 @@ function AdvanceAgenda({
                   end_date: updatedAgenda.attributes.formatted_time.end_date,
                   display: newSession.display,
                   require_enroll: newSession.requiredEnrolment,
-                  pay_by: newSession.paid
-                    ? newSession.onlinePayment
-                      ? "online"
-                      : "cash"
-                    : "free",
-                  price: newSession.price,
-                  currency: newSession.currency,
+                  pay_by: "free",
+                  price: "",
+                  currency: "USD",
                   sponsors: availableSpeakers.filter((speaker) =>
                     selectedSpeakers.includes(speaker.id.toString())
                   ),
@@ -512,13 +461,9 @@ function AdvanceAgenda({
                   end_date: newSession.date,
                   display: newSession.display,
                   require_enroll: newSession.requiredEnrolment,
-                  pay_by: newSession.paid
-                    ? newSession.onlinePayment
-                      ? "online"
-                      : "cash"
-                    : "free",
-                  price: newSession.price,
-                  currency: newSession.currency,
+                  pay_by: "free",
+                  price: "",
+                  currency: "USD",
                   sponsors: availableSpeakers.filter((speaker) =>
                     selectedSpeakers.includes(speaker.id.toString())
                   ),
@@ -626,34 +571,6 @@ function AdvanceAgenda({
       return;
     }
 
-    // Validation for paid sessions
-    if (newSession.paid) {
-      // Validate pay_by is either "cash" or "online"
-      if (!newSession.onlinePayment && !newSession.cashPayment) {
-        showNotification(
-          "Please select a payment method (Online or Cash) for paid sessions!",
-          "error"
-        );
-        return;
-      }
-
-      // Validate price is greater than 0
-      const priceNum = parseFloat(newSession.price);
-      if (isNaN(priceNum) || priceNum <= 0) {
-        showNotification(
-          "Price must be greater than 0 for paid sessions!",
-          "error"
-        );
-        return;
-      }
-
-      // Validate currency is either "USD" or "SAR"
-      if (newSession.currency !== "USD" && newSession.currency !== "SAR") {
-        showNotification("Currency must be either USD or SAR!", "error");
-        return;
-      }
-    }
-
     const payload: any = {
       agenda: {
         title: newSession.title,
@@ -663,13 +580,9 @@ function AdvanceAgenda({
         end_time: `${newSession.date} ${newSession.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: newSession.requiredEnrolment,
-        pay_by: newSession.paid
-          ? newSession.onlinePayment
-            ? "online"
-            : "cash"
-          : "free",
-        price: newSession.paid ? newSession.price : "0",
-        currency: newSession.currency || "USD",
+        pay_by: "free",
+        price: "0",
+        currency: "USD",
         speaker_ids: selectedSpeakers.map((id) => parseInt(id)),
         display: newSession.display, // Include display field in API call if supported
       },
@@ -695,13 +608,9 @@ function AdvanceAgenda({
         ),
         display: newSession.display, // Set display status
         require_enroll: newSession.requiredEnrolment,
-        pay_by: newSession.paid
-          ? newSession.onlinePayment
-            ? "online"
-            : "cash"
-          : "free",
-        price: newSession.price,
-        currency: newSession.currency,
+        pay_by: "free",
+        price: "",
+        currency: "USD",
         speaker_ids: selectedSpeakers.map((id) => parseInt(id)),
       };
 
@@ -726,11 +635,6 @@ function AdvanceAgenda({
       location: "",
       display: true,
       requiredEnrolment: false,
-      paid: false,
-      price: "",
-      currency: "USD",
-      onlinePayment: false,
-      cashPayment: false,
     });
     setSelectedSpeakers([]);
   };
@@ -1432,161 +1336,6 @@ function AdvanceAgenda({
                       />
                     </button>
                   </div>
-
-                  {/* Paid Session Toggle */}
-                  <div className="flex items-center justify-between">
-                    <label className="text-base font-medium text-gray-700">
-                      Paid Session
-                    </label>
-                    <button
-                      type="button"
-                      disabled={isAddingSession || isUpdatingSession}
-                      className={`relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        newSession.paid ? "bg-blue-600" : "bg-gray-300"
-                      } ${
-                        isAddingSession || isUpdatingSession
-                          ? "opacity-50 cursor-not-allowed"
-                          : "cursor-pointer"
-                      }`}
-                      onClick={() => {
-                        const updatedPaid = !newSession.paid;
-                        setNewSession({
-                          ...newSession,
-                          paid: updatedPaid,
-                          // Reset payment methods if turning off paid
-                          onlinePayment: updatedPaid
-                            ? newSession.onlinePayment
-                            : false,
-                          cashPayment: updatedPaid
-                            ? newSession.cashPayment
-                            : false,
-                          price: updatedPaid ? newSession.price : "",
-                        });
-                      }}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          newSession.paid ? "translate-x-5" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </div>
-
-                  {/* Price and Payment Options */}
-                  <div>
-                    <label className="block text-base font-medium text-gray-700 mb-1.5">
-                      Price{" "}
-                      {newSession.paid && (
-                        <span className="text-red-500">*</span>
-                      )}
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="Price here"
-                        value={newSession.price}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            price: e.target.value,
-                          })
-                        }
-                        disabled={
-                          !newSession.paid ||
-                          isAddingSession ||
-                          isUpdatingSession
-                        }
-                        className={`flex-1 p-2.5 border rounded-lg text-base placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          !newSession.paid ||
-                          isAddingSession ||
-                          isUpdatingSession
-                            ? "bg-gray-100 border-gray-300 cursor-not-allowed"
-                            : "border-gray-300"
-                        }`}
-                      />
-                      <select
-                        value={newSession.currency}
-                        onChange={(e) =>
-                          setNewSession({
-                            ...newSession,
-                            currency: e.target.value,
-                          })
-                        }
-                        disabled={
-                          !newSession.paid ||
-                          isAddingSession ||
-                          isUpdatingSession
-                        }
-                        className={`p-2.5 border rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          !newSession.paid ||
-                          isAddingSession ||
-                          isUpdatingSession
-                            ? "bg-gray-100 border-gray-300 cursor-not-allowed"
-                            : "border-gray-300"
-                        }`}
-                      >
-                        <option value="USD">USD</option>
-                        <option value="SAR">SAR</option>
-                      </select>
-                    </div>
-
-                    {/* Payment Options - Show only when Paid Session is enabled */}
-                    {newSession.paid && (
-                      <div className="mt-3 space-y-2">
-                        <p className="text-sm font-medium text-gray-700 mb-2">
-                          Payment Method:
-                        </p>
-                        <div className="flex items-center gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              checked={newSession.onlinePayment}
-                              onChange={() =>
-                                setNewSession({
-                                  ...newSession,
-                                  onlinePayment: true,
-                                  cashPayment: false,
-                                })
-                              }
-                              disabled={isAddingSession || isUpdatingSession}
-                              className="text-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
-                            <span className="text-sm text-gray-700">
-                              Online payment
-                            </span>
-                          </label>
-
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              checked={newSession.cashPayment}
-                              onChange={() =>
-                                setNewSession({
-                                  ...newSession,
-                                  cashPayment: true,
-                                  onlinePayment: false,
-                                })
-                              }
-                              disabled={isAddingSession || isUpdatingSession}
-                              className="text-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                            />
-                            <span className="text-sm text-gray-700">
-                              Cash payment
-                            </span>
-                          </label>
-                        </div>
-                        <p className="mt-2 text-xs text-gray-500">
-                          {!newSession.onlinePayment && !newSession.cashPayment
-                            ? "Please select a payment method for paid sessions"
-                            : ""}
-                        </p>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
 
@@ -1616,12 +1365,6 @@ function AdvanceAgenda({
                   whether this session appears on the public event agenda.
                   Uncheck to hide from attendees.
                 </p>
-                {newSession.paid && (
-                  <p className="mt-1">
-                    <strong>For Paid Sessions:</strong> Price must be greater
-                    than 0 and a payment method must be selected.
-                  </p>
-                )}
               </div>
             </div>
           </div>
