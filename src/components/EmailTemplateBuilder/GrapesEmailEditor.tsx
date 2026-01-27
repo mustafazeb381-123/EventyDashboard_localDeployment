@@ -9,6 +9,8 @@ type GrapesEmailEditorProps = {
   initialHtml?: string;
   mergeTags?: Array<{ name: string; value: string }>;
   onChange: (html: string) => void;
+  /** Set by parent so save() can call it to get the latest HTML (includes personalize/merge tags). */
+  getLatestHtmlRef?: { current: (() => string) | null };
 };
 
 function extractBodyAndStyles(html: string) {
@@ -60,13 +62,11 @@ function normalizeBodyToTableRows(bodyInnerHtml: string) {
 
 function mergeTagToHtml(token: string) {
   const safe = String(token || "");
-  // Email-safe inline chip; prevents accidental overwrites while typing.
-  // Note: contenteditable is stripped during export.
+  // Inline span so backspace/delete work normally; contenteditable is stripped on export.
   return (
-    `<span data-eventy-merge="${safe}" contenteditable="false" ` +
-    `style="display:inline-block;padding:2px 6px;margin:0 1px;border-radius:6px;` +
-    `background:#eef2ff;color:#3730a3;font-family:Arial, Helvetica, sans-serif;` +
-    `font-size:13px;line-height:1.4;">${safe}</span>`
+    `<span data-eventy-merge="${safe}" ` +
+    `style="display:inline;font-family:Arial, Helvetica, sans-serif;` +
+    `font-size:inherit;line-height:inherit;color:inherit;">${safe}</span>`
   );
 }
 
@@ -239,6 +239,7 @@ export function GrapesEmailEditor({
   initialHtml,
   mergeTags,
   onChange,
+  getLatestHtmlRef,
 }: GrapesEmailEditorProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<Editor | null>(null);
@@ -250,6 +251,9 @@ export function GrapesEmailEditor({
   const onChangeRef = useRef(onChange);
   const mergeTagsRef = useRef(mergeTags);
   const rteEnhancedRef = useRef(false);
+  const openPersonalizeRef = useRef<((rte: any) => void) | null>(null);
+  const lastRteRangeRef = useRef<Range | null>(null);
+  const lastRteSelectionCleanupRef = useRef<(() => void) | null>(null);
   const [rightTab, setRightTab] = useState<
     "styles" | "traits" | "layers" | "blocks"
   >("blocks");
@@ -535,6 +539,7 @@ export function GrapesEmailEditor({
     // --- RTE Configuration & Toolbar Extension ---
     try {
       const rteApi: any = (editor as any).RichTextEditor;
+      const modalApi: any = (editor as any).Modal;
 
       const safeAdd = (id: string, opts: any) => {
         try {
@@ -558,6 +563,108 @@ export function GrapesEmailEditor({
           }
         }
       };
+
+      // Personalize dropdown: define and set ref here so it's ready when toolbar registers the button
+      const insertTextAtCursorForPersonalize = (rte: any, value: string) => {
+        try {
+          if (typeof rte?.insertHTML === "function") {
+            rte.insertHTML(value);
+            return;
+          }
+        } catch {
+          // fall back
+        }
+        try {
+          if (!document.execCommand("insertText", false, value)) {
+            document.execCommand("insertHTML", false, value);
+          }
+        } catch {
+          // ignore
+        }
+      };
+
+      const openPersonalizeForToolbar = (rte: any) => {
+        const doc = editor.getContainer?.()?.ownerDocument ?? document;
+        const sel = doc.getSelection?.();
+        let savedRange: Range | null = null;
+        if (sel && sel.rangeCount) {
+          try {
+            const range = sel.getRangeAt(0);
+            let node: Node | null = range.startContainer;
+            while (node && node.nodeType !== Node.ELEMENT_NODE) node = node.parentNode;
+            while (node && !(node instanceof HTMLElement && (node as HTMLElement).isContentEditable))
+              node = (node as Element).parentNode;
+            if (node) savedRange = range.cloneRange();
+          } catch {
+            // ignore
+          }
+        }
+        if (!savedRange && lastRteRangeRef.current) savedRange = lastRteRangeRef.current;
+
+        const tags =
+          (mergeTagsRef.current || []).length > 0
+            ? mergeTagsRef.current!
+            : [
+                { name: "First name", value: "{{user.firstname}}" },
+                { name: "Last name", value: "{{user.lastname}}" },
+                { name: "Organization", value: "{{user.organization}}" },
+                { name: "Email", value: "{{user.email}}" },
+              ];
+        const wrapper = doc.createElement("div");
+        wrapper.style.cssText =
+          "min-width:180px;max-height:260px;overflow-y:auto;padding:4px 0;background:#2a2a2a;border:1px solid #444;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);";
+        tags.forEach((t) => {
+          const row = doc.createElement("button");
+          row.type = "button";
+          row.textContent = t.name;
+          row.style.cssText =
+            "display:block;width:100%;padding:8px 12px;border:none;background:transparent;color:#e5e7eb;font-size:13px;text-align:left;cursor:pointer;font-family:inherit;";
+          row.addEventListener("mouseenter", () => {
+            row.style.background = "#404040";
+          });
+          row.addEventListener("mouseleave", () => {
+            row.style.background = "transparent";
+          });
+          // Use mousedown + preventDefault so focus stays in RTE and insert happens at cursor
+          row.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const payload =
+              t.value.includes("{{") && t.value.includes("}}")
+                ? mergeTagToHtml(t.value)
+                : t.value;
+            // Restore selection when it was lost (e.g. after clicking {}); else cursor stays
+            if (savedRange && doc.getSelection) {
+              let node: Node | null = savedRange.startContainer;
+              while (node && node.nodeType !== Node.ELEMENT_NODE)
+                node = node.parentNode;
+              while (
+                node &&
+                !(node instanceof HTMLElement && (node as HTMLElement).isContentEditable)
+              )
+                node = (node as Element).parentNode;
+              const editable = node as HTMLElement | null;
+              if (editable) {
+                editable.focus();
+                const s = doc.getSelection()!;
+                s.removeAllRanges();
+                s.addRange(savedRange);
+              }
+            }
+            insertTextAtCursorForPersonalize(rte, payload);
+            if (modalApi?.close) modalApi.close();
+          });
+          wrapper.appendChild(row);
+        });
+
+        if (wrapper instanceof Node && modalApi?.open) {
+          modalApi.open({
+            title: "Personalize",
+            content: wrapper,
+          });
+        }
+      };
+      openPersonalizeRef.current = openPersonalizeForToolbar;
 
       const normalizeToolbarIds = (value: any): string[] => {
         if (!Array.isArray(value)) return [];
@@ -586,135 +693,46 @@ export function GrapesEmailEditor({
         return out;
       };
 
-      const extraRteButtonIds = [
-        "eventy-bold",
-        "eventy-italic",
-        "eventy-ul",
-        "eventy-ol",
-        "eventy-underline",
-        "eventy-strike",
-        "eventy-align-left",
-        "eventy-align-center",
-        "eventy-align-right",
-        "eventy-align-justify",
-        "eventy-link",
-        "eventy-unlink",
-        "eventy-personalize",
-      ];
-
-      // Add actions to global RTE
-      safeAdd("eventy-bold", {
-        icon: "<b>B</b>",
-        attributes: { title: "Bold" },
-        result: (rte: any) => execCmd(rte, "bold"),
-      });
-      safeAdd("eventy-italic", {
-        icon: "<i>I</i>",
-        attributes: { title: "Italic" },
-        result: (rte: any) => execCmd(rte, "italic"),
-      });
-      safeAdd("eventy-ul", {
-        icon: "•",
-        attributes: { title: "Bulleted list" },
-        result: (rte: any) => execCmd(rte, "insertUnorderedList"),
-      });
-      safeAdd("eventy-ol", {
-        icon: "1.",
-        attributes: { title: "Numbered list" },
-        result: (rte: any) => execCmd(rte, "insertOrderedList"),
-      });
-      safeAdd("eventy-underline", {
-        icon: "<u>U</u>",
-        attributes: { title: "Underline" },
-        result: (rte: any) => execCmd(rte, "underline"),
-      });
-      safeAdd("eventy-strike", {
-        icon: "<s>S</s>",
-        attributes: { title: "Strikethrough" },
-        result: (rte: any) => execCmd(rte, "strikeThrough"),
-      });
-      safeAdd("eventy-align-left", {
-        icon: "⟸",
-        attributes: { title: "Align left" },
-        result: (rte: any) => execCmd(rte, "justifyLeft"),
-      });
-      safeAdd("eventy-align-center", {
-        icon: "≡",
-        attributes: { title: "Align center" },
-        result: (rte: any) => execCmd(rte, "justifyCenter"),
-      });
-      safeAdd("eventy-align-right", {
-        icon: "⟹",
-        attributes: { title: "Align right" },
-        result: (rte: any) => execCmd(rte, "justifyRight"),
-      });
-      safeAdd("eventy-align-justify", {
-        icon: "⟺",
-        attributes: { title: "Justify" },
-        result: (rte: any) => execCmd(rte, "justifyFull"),
-      });
+      // Only add Personalize; use built-in bold, italic, underline (no custom B/I/U to avoid duplicates)
       safeAdd("eventy-personalize", {
         icon: "{}",
         attributes: { title: "Personalize (merge tags)" },
-        result: (rte: any) => openPersonalize(rte),
-      });
-      safeAdd("eventy-link", {
-        icon: "🔗",
-        attributes: { title: "Insert Link" },
-        result: (rte: any) => openLinkModal(rte),
-      });
-      safeAdd("eventy-unlink", {
-        icon: "⛓",
-        attributes: { title: "Remove Link" },
-        result: (rte: any) => execCmd(rte, "unlink"),
+        result: (rte: any) => openPersonalizeRef.current?.(rte),
       });
 
-      // Aggressively extend all component types that might have text
+      // Toolbar: built-in B, I, U + our Personalize only (no strikethrough, link, unlink, etc.)
+      const rteToolbarOnlyBiuPersonalize = [
+        "bold",
+        "italic",
+        "underline",
+        "eventy-personalize",
+      ];
+
       const extendAllTextToolbars = () => {
         const allTypes = editor.DomComponents.getTypes();
         allTypes.forEach((typeObj: any) => {
           if (!typeObj.model || !typeObj.model.prototype) return;
           const proto = typeObj.model.prototype;
-          // Check if it has defaults
           const defaults = proto.defaults || {};
-
-          // If it has rteToolbar or is a text-like component
-          // Note: 'text' component has 'text' trait often, or contentEditable
           if (
             defaults.rteToolbar ||
             typeObj.id === "text" ||
             typeObj.id === "default" ||
             typeObj.id === "textnode"
           ) {
-            const current = defaults.rteToolbar || [
-              "bold",
-              "italic",
-              "underline",
-              "strikethrough",
-              "link",
-            ];
-            const baseIds = normalizeToolbarIds(current);
-            // We append our IDs.
-            // Note: duplicating standard IDs (like 'bold' vs 'eventy-bold') is annoying but safe.
-            // Ideally we replace them, but appending ensures availability.
-            const newToolbar = appendUnique(baseIds, extraRteButtonIds);
-
-            // Update the prototype
-            proto.defaults = { ...defaults, rteToolbar: newToolbar };
+            proto.defaults = {
+              ...defaults,
+              rteToolbar: rteToolbarOnlyBiuPersonalize,
+            };
           }
         });
       };
 
       extendAllTextToolbars();
 
-      // Also listen for component creation to patch instances if needed
       const applyExtra = (comp: any) => {
         if (!comp || !comp.get) return;
-        const toolbar = comp.get("rteToolbar");
-        if (toolbar) {
-          const base = normalizeToolbarIds(toolbar);
-          comp.set("rteToolbar", appendUnique(base, extraRteButtonIds));
-        }
+        comp.set("rteToolbar", rteToolbarOnlyBiuPersonalize);
       };
 
       editor.on("component:selected", (comp: any) => {
@@ -1148,76 +1166,89 @@ export function GrapesEmailEditor({
         });
       };
 
+      // Personalize: dropdown of merge tags; click a tag to insert it at the cursor
       const openPersonalize = (rte: any) => {
-        const tags = mergeTagsRef.current || [];
-        const wrapper = document.createElement("div");
-        wrapper.style.display = "flex";
-        wrapper.style.flexDirection = "column";
-        wrapper.style.gap = "12px";
+        const doc = editor.getContainer?.()?.ownerDocument ?? document;
+        const sel = doc.getSelection?.();
+        let savedRange: Range | null = null;
+        if (sel && sel.rangeCount) {
+          try {
+            const range = sel.getRangeAt(0);
+            let node: Node | null = range.startContainer;
+            while (node && node.nodeType !== Node.ELEMENT_NODE) node = node.parentNode;
+            while (node && !(node instanceof HTMLElement && (node as HTMLElement).isContentEditable))
+              node = (node as Element).parentNode;
+            if (node) savedRange = range.cloneRange();
+          } catch {
+            // ignore
+          }
+        }
+        if (!savedRange && lastRteRangeRef.current) savedRange = lastRteRangeRef.current;
 
-        const select = document.createElement("select");
-        select.style.width = "100%";
-        select.style.padding = "10px";
-        select.style.borderRadius = "8px";
-        select.style.border = "1px solid #d1d5db";
-        select.style.fontSize = "14px";
-
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = "Select a merge tag…";
-        placeholder.disabled = true;
-        placeholder.selected = true;
-        select.appendChild(placeholder);
-
+        const tags =
+          (mergeTagsRef.current || []).length > 0
+            ? mergeTagsRef.current!
+            : [
+                { name: "First name", value: "{{user.firstname}}" },
+                { name: "Last name", value: "{{user.lastname}}" },
+                { name: "Organization", value: "{{user.organization}}" },
+                { name: "Email", value: "{{user.email}}" },
+              ];
+        const wrapper = doc.createElement("div");
+        wrapper.style.cssText =
+          "min-width:180px;max-height:260px;overflow-y:auto;padding:4px 0;background:#2a2a2a;border:1px solid #444;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.3);";
         tags.forEach((t) => {
-          const opt = document.createElement("option");
-          opt.value = t.value;
-          opt.textContent = t.name;
-          select.appendChild(opt);
+          const row = doc.createElement("button");
+          row.type = "button";
+          row.textContent = t.name;
+          row.style.cssText =
+            "display:block;width:100%;padding:8px 12px;border:none;background:transparent;color:#e5e7eb;font-size:13px;text-align:left;cursor:pointer;font-family:inherit;";
+          row.addEventListener("mouseenter", () => {
+            row.style.background = "#404040";
+          });
+          row.addEventListener("mouseleave", () => {
+            row.style.background = "transparent";
+          });
+          // Use mousedown + preventDefault so focus stays in RTE and insert happens at cursor
+          row.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const payload =
+              t.value.includes("{{") && t.value.includes("}}")
+                ? mergeTagToHtml(t.value)
+                : t.value;
+            // Restore selection when it was lost; else cursor stays where it was
+            if (savedRange && doc.getSelection) {
+              let node: Node | null = savedRange.startContainer;
+              while (node && node.nodeType !== Node.ELEMENT_NODE)
+                node = node.parentNode;
+              while (
+                node &&
+                !(node instanceof HTMLElement && (node as HTMLElement).isContentEditable)
+              )
+                node = (node as Element).parentNode;
+              const editable = node as HTMLElement | null;
+              if (editable) {
+                editable.focus();
+                const s = doc.getSelection()!;
+                s.removeAllRanges();
+                s.addRange(savedRange);
+              }
+            }
+            insertTextAtCursor(rte, payload);
+            if (modalApi?.close) modalApi.close();
+          });
+          wrapper.appendChild(row);
         });
 
-        const actions = document.createElement("div");
-        actions.style.display = "flex";
-        actions.style.justifyContent = "flex-end";
-        actions.style.gap = "8px";
-
-        const cancelBtn = document.createElement("button");
-        cancelBtn.type = "button";
-        cancelBtn.textContent = "Cancel";
-        cancelBtn.style.padding = "8px 12px";
-        cancelBtn.style.borderRadius = "8px";
-        cancelBtn.style.border = "1px solid #d1d5db";
-        cancelBtn.style.background = "#fff";
-        cancelBtn.onclick = () => modalApi?.close?.();
-
-        const insertBtn = document.createElement("button");
-        insertBtn.type = "button";
-        insertBtn.textContent = "Insert";
-        insertBtn.style.padding = "8px 12px";
-        insertBtn.style.borderRadius = "8px";
-        insertBtn.style.border = "1px solid #ec4899";
-        insertBtn.style.background = "#ec4899";
-        insertBtn.style.color = "#fff";
-        insertBtn.onclick = () => {
-          const v = select.value;
-          if (!v) return;
-          const payload =
-            v.includes("{{") && v.includes("}}") ? mergeTagToHtml(v) : v;
-          insertTextAtCursor(rte, payload);
-          modalApi?.close?.();
-        };
-
-        actions.appendChild(cancelBtn);
-        actions.appendChild(insertBtn);
-
-        wrapper.appendChild(select);
-        wrapper.appendChild(actions);
-
-        modalApi?.open?.({
-          title: "Personalize",
-          content: wrapper,
-        });
+        if (wrapper instanceof Node && modalApi?.open) {
+          modalApi.open({
+            title: "Personalize",
+            content: wrapper,
+          });
+        }
       };
+      openPersonalizeRef.current = openPersonalize;
 
       const safeAdd = (id: string, opts: any) => {
         try {
@@ -1254,116 +1285,26 @@ export function GrapesEmailEditor({
         return out;
       };
 
-      const extraRteButtonIds = [
-        "eventy-bold",
-        "eventy-italic",
-        "eventy-ul",
-        "eventy-ol",
-        "eventy-underline",
-        "eventy-strike",
-        "eventy-indent",
-        "eventy-outdent",
-        "eventy-align-left",
-        "eventy-align-center",
-        "eventy-align-right",
-        "eventy-align-justify",
-        "eventy-clear",
-        "eventy-personalize",
-        "eventy-link",
-        "eventy-unlink",
-      ];
-
-      // Ordered / unordered lists, indent/outdent, clear formatting.
-      safeAdd("eventy-bold", {
-        icon: "B",
-        attributes: { title: "Bold" },
-        result: (rte: any) => execCmd(rte, "bold"),
-      });
-      safeAdd("eventy-italic", {
-        icon: "I",
-        attributes: { title: "Italic" },
-        result: (rte: any) => execCmd(rte, "italic"),
-      });
-      safeAdd("eventy-ul", {
-        icon: "•",
-        attributes: { title: "Bulleted list" },
-        result: (rte: any) => execCmd(rte, "insertUnorderedList"),
-      });
-      safeAdd("eventy-ol", {
-        icon: "1.",
-        attributes: { title: "Numbered list" },
-        result: (rte: any) => execCmd(rte, "insertOrderedList"),
-      });
-      safeAdd("eventy-underline", {
-        icon: "U",
-        attributes: { title: "Underline" },
-        result: (rte: any) => execCmd(rte, "underline"),
-      });
-      safeAdd("eventy-strike", {
-        icon: "S",
-        attributes: { title: "Strikethrough" },
-        result: (rte: any) => execCmd(rte, "strikeThrough"),
-      });
-      safeAdd("eventy-indent", {
-        icon: "⇥",
-        attributes: { title: "Indent" },
-        result: (rte: any) => execCmd(rte, "indent"),
-      });
-      safeAdd("eventy-outdent", {
-        icon: "⇤",
-        attributes: { title: "Outdent" },
-        result: (rte: any) => execCmd(rte, "outdent"),
-      });
-      safeAdd("eventy-align-left", {
-        icon: "⟸",
-        attributes: { title: "Align left" },
-        result: (rte: any) => execCmd(rte, "justifyLeft"),
-      });
-      safeAdd("eventy-align-center", {
-        icon: "≡",
-        attributes: { title: "Align center" },
-        result: (rte: any) => execCmd(rte, "justifyCenter"),
-      });
-      safeAdd("eventy-align-right", {
-        icon: "⟹",
-        attributes: { title: "Align right" },
-        result: (rte: any) => execCmd(rte, "justifyRight"),
-      });
-      safeAdd("eventy-align-justify", {
-        icon: "⟺",
-        attributes: { title: "Justify" },
-        result: (rte: any) => execCmd(rte, "justifyFull"),
-      });
-      safeAdd("eventy-clear", {
-        icon: "Tx",
-        attributes: { title: "Clear formatting" },
-        result: (rte: any) => execCmd(rte, "removeFormat"),
-      });
+      // Only add Personalize; B/I/U come from built-in (no custom B/I/U to avoid duplicates)
       safeAdd("eventy-personalize", {
         icon: "{}",
         attributes: { title: "Personalize (merge tags)" },
         result: (rte: any) => openPersonalize(rte),
       });
 
-      safeAdd("eventy-link", {
-        icon: "🔗",
-        attributes: { title: "Insert/Edit link" },
-        result: (rte: any) => openLinkModal(rte),
-      });
-
-      safeAdd("eventy-unlink", {
-        icon: "⛓",
-        attributes: { title: "Remove link" },
-        result: (rte: any) => execCmd(rte, "unlink"),
-      });
+      const rteToolbarOnlyBiuPersonalize2 = [
+        "bold",
+        "italic",
+        "underline",
+        "eventy-personalize",
+      ];
 
       const extendToolbarForType = (typeName: string) => {
         try {
           const type = editor.DomComponents.getType(typeName) as any;
           if (!type?.model?.prototype?.defaults) return;
           const defaults = type.model.prototype.defaults;
-          const baseIds = normalizeToolbarIds(defaults.rteToolbar);
-          defaults.rteToolbar = appendUnique(baseIds, extraRteButtonIds);
+          defaults.rteToolbar = rteToolbarOnlyBiuPersonalize2;
         } catch {
           // ignore
         }
@@ -1372,8 +1313,7 @@ export function GrapesEmailEditor({
       const applyExtraToolbar = (comp: any) => {
         try {
           if (!comp?.get) return;
-          const baseIds = normalizeToolbarIds(comp.get("rteToolbar"));
-          comp.set("rteToolbar", appendUnique(baseIds, extraRteButtonIds));
+          comp.set("rteToolbar", rteToolbarOnlyBiuPersonalize2);
         } catch {
           // ignore
         }
@@ -1404,12 +1344,37 @@ export function GrapesEmailEditor({
         "heading",
       ].forEach((t) => extendToolbarForType(t));
 
-      editor.on("rte:enable", (_rte: any, maybeViewOrComp: any) => {
+      let selectionchangeCleanup: (() => void) | null = null;
+      editor.on("rte:enable", (view: any, _rte: any) => {
         const comp =
-          maybeViewOrComp?.model || maybeViewOrComp?.get?.("type")
-            ? maybeViewOrComp
-            : editor.getSelected?.();
+          view?.model || view?.get?.("type") ? view : editor.getSelected?.();
         applyExtraToolbarUpTree(comp);
+        const el = (view?.el || (view as any)?.$el?.[0]) as HTMLElement | undefined;
+        if (el?.ownerDocument) {
+          selectionchangeCleanup?.();
+          const doc = el.ownerDocument;
+          const onSel = () => {
+            const s = doc.getSelection?.();
+            if (s?.rangeCount) {
+              const r = s.getRangeAt(0);
+              if (el.contains(r.startContainer)) lastRteRangeRef.current = r.cloneRange();
+            }
+          };
+          doc.addEventListener("selectionchange", onSel);
+          const cleanup = () => {
+            doc.removeEventListener("selectionchange", onSel);
+            selectionchangeCleanup = null;
+            lastRteSelectionCleanupRef.current = null;
+          };
+          selectionchangeCleanup = cleanup;
+          lastRteSelectionCleanupRef.current = cleanup;
+        }
+      });
+      editor.on("rte:disable", () => {
+        selectionchangeCleanup?.();
+        selectionchangeCleanup = null;
+        lastRteSelectionCleanupRef.current = null;
+        lastRteRangeRef.current = null;
       });
 
       editor.on("component:add", (comp: any) => applyExtraToolbarUpTree(comp));
@@ -1469,6 +1434,10 @@ export function GrapesEmailEditor({
       initializedRef.current = true;
       void hydrateQrImagesForEditor();
       onChangeRef.current(buildFullHtml(editor));
+      if (getLatestHtmlRef) {
+        getLatestHtmlRef.current = () =>
+          editorRef.current ? buildFullHtml(editorRef.current) : "";
+      }
     });
 
     const scheduleUpdate = () => {
@@ -1487,6 +1456,9 @@ export function GrapesEmailEditor({
     editor.on("styleManager:change", scheduleUpdate);
 
     return () => {
+      lastRteSelectionCleanupRef.current?.();
+      lastRteSelectionCleanupRef.current = null;
+      lastRteRangeRef.current = null;
       editor.off("update", scheduleUpdate);
       editor.off("component:add", scheduleUpdate);
       editor.off("component:remove", scheduleUpdate);
@@ -1498,8 +1470,9 @@ export function GrapesEmailEditor({
       }
       editorRef.current = null;
       initializedRef.current = false;
+      if (getLatestHtmlRef) getLatestHtmlRef.current = null;
     };
-  }, []);
+  }, [getLatestHtmlRef]);
 
   const tagOptions = mergeTagsRef.current || [];
 
