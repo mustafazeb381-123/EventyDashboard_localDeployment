@@ -28,6 +28,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
     string | null
   >(null);
+  const [footerBannerPreview, setFooterBannerPreview] = useState<string | null>(null);
   const [inlineParams, _setInlineParams] = useState<Record<string, string>>({
     Name: "John Doe",
     Email: "john@example.com",
@@ -168,8 +169,23 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       reader.readAsDataURL(theme.formBackgroundImage);
     } else if (typeof theme?.formBackgroundImage === "string") {
       setBackgroundImagePreview(theme.formBackgroundImage);
+    } else {
+      setBackgroundImagePreview(null);
     }
   }, [theme?.formBackgroundImage]);
+
+  React.useEffect(() => {
+    const src = theme?.footerBannerImage;
+    if (src instanceof File) {
+      const reader = new FileReader();
+      reader.onloadend = () => setFooterBannerPreview(reader.result as string);
+      reader.readAsDataURL(src);
+    } else if (typeof src === "string" && src.trim() !== "") {
+      setFooterBannerPreview(src);
+    } else {
+      setFooterBannerPreview(null);
+    }
+  }, [theme?.footerBannerImage]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -928,6 +944,13 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const paddingValue =
     typeof formPadding === "string" ? parseInt(formPadding) || 24 : formPadding;
 
+  // Footer banner: use theme.footerBannerImage (same dimensions/object-fit as header banner)
+  const footerBannerUrl =
+    theme?.footerBannerImage &&
+    (typeof theme.footerBannerImage === "string"
+      ? theme.footerBannerImage
+      : footerBannerPreview);
+
   return (
     <div
       className="w-full rounded-xl shadow-lg overflow-hidden"
@@ -1420,20 +1443,40 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           })()}
         </form>
 
-        {/* Footer */}
-        {theme?.footerEnabled && theme?.footerText && (
-          <div
-            className="mt-6 pt-4 border-t"
-            style={{
-              backgroundColor: theme.footerBackgroundColor || "#f9fafb",
-              color: theme.footerTextColor || "#6b7280",
-              padding: theme.footerPadding || "16px",
-              fontSize: theme.footerFontSize || "14px",
-              textAlign: theme.footerAlignment || "center",
-              borderTopColor: theme.formBorderColor || "#e5e7eb",
-            }}
-          >
-            {theme.footerText}
+        {/* Footer: banner image (form_background_image, same as header) + optional text */}
+        {(footerBannerUrl || (theme?.footerEnabled && theme?.footerText)) && (
+          <div className="mt-6 pt-4 border-t" style={{ borderTopColor: theme?.formBorderColor || "#e5e7eb" }}>
+            {/* Footer banner – same dimensions/object-fit as header banner */}
+            {footerBannerUrl && (
+              <div
+                className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
+                style={{
+                  marginLeft: `-${paddingValue}px`,
+                  marginRight: `-${paddingValue}px`,
+                  marginBottom: "0",
+                  width: `calc(100% + ${paddingValue * 2}px)`,
+                }}
+              >
+                <img
+                  src={footerBannerUrl}
+                  alt="Footer banner"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            )}
+            {theme?.footerEnabled && theme?.footerText && (
+              <div
+                style={{
+                  backgroundColor: theme.footerBackgroundColor || "#f9fafb",
+                  color: theme.footerTextColor || "#6b7280",
+                  padding: theme.footerPadding || "16px",
+                  fontSize: theme.footerFontSize || "14px",
+                  textAlign: theme.footerAlignment || "center",
+                }}
+              >
+                {theme.footerText}
+              </div>
+            )}
           </div>
         )}
       </div>

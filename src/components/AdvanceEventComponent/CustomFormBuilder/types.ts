@@ -181,6 +181,7 @@ export interface FormTheme {
   footerPadding?: string;
   footerFontSize?: string;
   footerAlignment?: "left" | "center" | "right";
+  footerBannerImage?: File | string | null; // Footer banner (same layout as header banner)
   requiredIndicatorColor?: string;
   errorTextColor?: string;
   errorBorderColor?: string;

@@ -261,7 +261,7 @@ export const setRegistrationFormTemplateAsDefault = (
 export const updateRegistrationFormTemplateImage = (
   eventId: string | number,
   templateId: string | number,
-  imageName: "banner_image" | "logo" | "form_background_image",
+  imageName: "banner_image" | "logo" | "form_background_image" | "footer_banner_image",
   base64Data: string
 ) => {
   return axiosInstance.patch(
