@@ -14,7 +14,7 @@ import {
   MessagesSquare,
   Vote,
   BarChart3,
-  Ticket,
+  // Ticket,
   IdCard,
   Lock,
 } from "lucide-react";
@@ -170,9 +170,9 @@ const SideBar = ({
     if (path === "/Onboarding" || path.startsWith("/Onboarding")) {
       return "Onboarding";
     }
-    if (path === "/TicketManagement" || path.startsWith("/TicketManagement")) {
-      return "Ticket Management";
-    }
+    // if (path === "/TicketManagement" || path.startsWith("/TicketManagement")) {
+    //   return "Ticket Management";
+    // }
 
     // Default fallback
     return null;
@@ -351,14 +351,14 @@ const SideBar = ({
         : "/Onboarding",
       availableForExpress: true,
     },
-    {
-      icon: Ticket,
-      label: "Ticket Management",
-      path: currentEventId
-        ? `/TicketManagement?eventId=${currentEventId}`
-        : "/TicketManagement",
-      availableForExpress: false,
-    },
+    // {
+    //   icon: Ticket,
+    //   label: "Ticket Management",
+    //   path: currentEventId
+    //     ? `/TicketManagement?eventId=${currentEventId}`
+    //     : "/TicketManagement",
+    //   availableForExpress: false,
+    // },
   ];
 
   // Show all menu items, but mark unavailable ones for express events

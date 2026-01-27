@@ -104,6 +104,9 @@ const MainData = ({
   const [deletingBadgeId, setDeletingBadgeId] = useState<
     number | string | null
   >(null);
+  const [togglingDefaultBadgeId, setTogglingDefaultBadgeId] = useState<
+    number | string | null
+  >(null);
   const [ticket, setTicket] = useState(true);
   const [eventguesttype, setEventguesttype] = useState<string>("");
   const [notification, setNotification] = useState<{
@@ -935,13 +938,13 @@ const MainData = ({
       return;
     }
 
-    try {
-      if (isCurrentlyDefault) {
-        // If already default, inform user
-        showNotification("This badge is already set as default", "info");
-        return;
-      }
+    if (isCurrentlyDefault) {
+      showNotification("This badge is already set as default", "info");
+      return;
+    }
 
+    setTogglingDefaultBadgeId(badgeId);
+    try {
       // First, unset any current default badges (there should only be one, but guard against multiples)
       const currentDefaultBadges = badges.filter(
         (b) => b.attributes.default && b.id !== badgeId,
@@ -970,6 +973,8 @@ const MainData = ({
         error?.response?.data?.error ||
         "Failed to set default badge";
       showNotification(errorMessage, "error");
+    } finally {
+      setTogglingDefaultBadgeId(null);
     }
   };
 
@@ -1648,7 +1653,7 @@ const MainData = ({
             )}
 
             {eventId ? (
-              <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
+              <div className="space-y-2 max-h-48 sm:max-h-60">
                 {/* Show guest types - display "Guest" only when completely empty */}
                 {badges.length > 0 || formData.guestTypes.length > 0 ? (
                   <div className="mb-4">
@@ -1687,16 +1692,23 @@ const MainData = ({
                                 ? "Default badge"
                                 : "Set as default"
                             }
-                            disabled={deletingBadgeId === badge.id}
+                            disabled={
+                              deletingBadgeId === badge.id ||
+                              togglingDefaultBadgeId === badge.id
+                            }
                           >
-                            <Star
-                              size={16}
-                              fill={
-                                badge.attributes.default
-                                  ? "currentColor"
-                                  : "none"
-                              }
-                            />
+                            {togglingDefaultBadgeId === badge.id ? (
+                              <Loader2 size={16} className="animate-spin" />
+                            ) : (
+                              <Star
+                                size={16}
+                                fill={
+                                  badge.attributes.default
+                                    ? "currentColor"
+                                    : "none"
+                                }
+                              />
+                            )}
                           </button>
                           <button
                             onClick={() =>
