@@ -261,7 +261,7 @@ export const setRegistrationFormTemplateAsDefault = (
 export const updateRegistrationFormTemplateImage = (
   eventId: string | number,
   templateId: string | number,
-  imageName: "banner_image" | "logo" | "form_background_image",
+  imageName: "banner_image" | "logo" | "form_background_image" | "footer_banner_image",
   base64Data: string
 ) => {
   return axiosInstance.patch(
@@ -350,6 +350,30 @@ export const sendCredentials = (
   return axiosInstance.post(`/events/${eventId}/event_users/send_credentials`, {
     user_ids: userIds,
   });
+};
+
+// Bulk approve event users (approves and sends credentials if not already sent)
+export const approveEventUsers = (
+  eventId: string | number,
+  userIds: (number | string)[]
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/event_users/approve`,
+    { user_ids: userIds },
+    { headers: { "Content-Type": "application/json" } }
+  );
+};
+
+// Bulk reject event users (sets approval to false and sends rejection email if configured)
+export const rejectEventUsers = (
+  eventId: string | number,
+  userIds: (number | string)[]
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/event_users/reject`,
+    { user_ids: userIds },
+    { headers: { "Content-Type": "application/json" } }
+  );
 };
 
 export const createSessionAreaApi = (data: any, id: string) => {

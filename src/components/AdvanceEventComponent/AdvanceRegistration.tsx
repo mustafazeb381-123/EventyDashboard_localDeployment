@@ -604,6 +604,7 @@ export const FormBuilderTemplateForm: React.FC<
   const [backgroundBlobUrl, setBackgroundBlobUrl] = useState<string | null>(
     null
   );
+  const [footerBannerBlobUrl, setFooterBannerBlobUrl] = useState<string | null>(null);
 
   const [bannerLoadError, setBannerLoadError] = useState(false);
   
@@ -715,6 +716,15 @@ export const FormBuilderTemplateForm: React.FC<
     setBackgroundBlobUrl(null);
   }, [theme?.formBackgroundImage]);
 
+  useEffect(() => {
+    const fb = theme?.footerBannerImage;
+    if (fb instanceof Blob) {
+      const url = URL.createObjectURL(fb);
+      setFooterBannerBlobUrl(url);
+      return () => URL.revokeObjectURL(url);
+    }
+    setFooterBannerBlobUrl(null);
+  }, [theme?.footerBannerImage]);
 
   // Check if this is a custom form builder template (has CustomFormField array)
   const isCustomFormBuilder =
@@ -1472,6 +1482,16 @@ export const FormBuilderTemplateForm: React.FC<
         ? theme.formBackgroundImage
         : backgroundBlobUrl;
 
+    const footerBannerUrl =
+      theme?.footerBannerImage &&
+      (typeof theme.footerBannerImage === "string" && theme.footerBannerImage.trim() !== ""
+        ? theme.footerBannerImage
+        : footerBannerBlobUrl);
+
+    const formPaddingVal = theme?.formPadding || "24px";
+    const paddingValue =
+      typeof formPaddingVal === "string" ? parseInt(formPaddingVal) || 24 : formPaddingVal;
+
     // If the src changes, allow the image to render again
     useEffect(() => {
       setBannerLoadError(false);
@@ -1970,19 +1990,43 @@ export const FormBuilderTemplateForm: React.FC<
               </div>
             )}
 
-            {theme?.footerEnabled && theme?.footerText && (
-              <div
-                className="mt-6 pt-4 border-t"
-                style={{
-                  backgroundColor: theme.footerBackgroundColor || "#f9fafb",
-                  color: theme.footerTextColor || "#6b7280",
-                  padding: theme.footerPadding || "16px",
-                  fontSize: theme.footerFontSize || "14px",
-                  textAlign: theme.footerAlignment || "center",
-                  borderTopColor: theme.formBorderColor || "#e5e7eb",
-                }}
-              >
-                {theme.footerText}
+            {/* Footer: banner (theme.footerBannerImage, same as header) + optional text */}
+            {(footerBannerUrl || (theme?.footerEnabled && theme?.footerText)) && (
+              <div className="mt-6 pt-4 border-t" style={{ borderTopColor: theme?.formBorderColor || "#e5e7eb" }}>
+                {footerBannerUrl && (
+                  <div
+                    className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
+                    style={{
+                      marginLeft: `-${paddingValue}px`,
+                      marginRight: `-${paddingValue}px`,
+                      marginBottom: "0",
+                      width: `calc(100% + ${paddingValue * 2}px)`,
+                    }}
+                  >
+                    <img
+                      src={footerBannerUrl}
+                      alt="Footer banner"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        console.error("Footer banner image failed to load:", footerBannerUrl);
+                        e.currentTarget.style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
+                {theme?.footerEnabled && theme?.footerText && (
+                  <div
+                    style={{
+                      backgroundColor: theme.footerBackgroundColor || "#f9fafb",
+                      color: theme.footerTextColor || "#6b7280",
+                      padding: theme.footerPadding || "16px",
+                      fontSize: theme.footerFontSize || "14px",
+                      textAlign: theme.footerAlignment || "center",
+                    }}
+                  >
+                    {theme.footerText}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -2410,7 +2454,8 @@ const AdvanceRegistration = ({
     const theme: FormTheme = {
       ...themeFromFormData,
       // Always prefer URLs from API attributes (ActiveStorage URLs are the source of truth)
-      formBackgroundImage: attrs.form_background_image || null,
+      formBackgroundImage: attrs.form_background_image ?? themeFromFormData.formBackgroundImage ?? null,
+      footerBannerImage: attrs.footer_banner_image ?? themeFromFormData.footerBannerImage ?? null,
     };
 
     // Debug logging
@@ -3017,6 +3062,9 @@ const AdvanceRegistration = ({
             formBackgroundImage: await normalizeImageValue(
               template.theme.formBackgroundImage
             ),
+            footerBannerImage: await normalizeImageValue(
+              template.theme.footerBannerImage
+            ),
           }
         : undefined;
 
@@ -3064,6 +3112,13 @@ const AdvanceRegistration = ({
           typeof normalizedTheme.formBackgroundImage === "string"
         ) {
           cleanTheme.formBackgroundImage = normalizedTheme.formBackgroundImage;
+        }
+        // Only include footerBannerImage if it's a base64 string (not File or null)
+        if (
+          normalizedTheme.footerBannerImage &&
+          typeof normalizedTheme.footerBannerImage === "string"
+        ) {
+          cleanTheme.footerBannerImage = normalizedTheme.footerBannerImage;
         }
         // Include color properties
         cleanTheme.primaryColor =
@@ -3252,6 +3307,25 @@ const AdvanceRegistration = ({
           } catch (imageError: any) {
             console.error("❌ Error updating form background image:", imageError);
             // Don't fail the entire save if image update fails
+          }
+        }
+
+        // Update footer banner image if it exists in theme
+        if (
+          cleanTheme.footerBannerImage &&
+          typeof cleanTheme.footerBannerImage === "string" &&
+          cleanTheme.footerBannerImage.trim() !== ""
+        ) {
+          try {
+            await updateRegistrationFormTemplateImage(
+              effectiveEventId,
+              editingFormBuilderTemplate.id,
+              "footer_banner_image",
+              cleanTheme.footerBannerImage
+            );
+            console.log("✅ Footer banner image updated successfully");
+          } catch (imageError: any) {
+            console.error("❌ Error updating footer banner image:", imageError);
           }
         }
       } else {

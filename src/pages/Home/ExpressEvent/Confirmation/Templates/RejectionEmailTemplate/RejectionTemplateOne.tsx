@@ -1,23 +1,52 @@
 import Assets from "@/utils/Assets";
 import React from "react";
 import {
-  Calendar,
-  CalendarDays,
-  Clock,
   Facebook,
   Instagram,
-  Locate,
-  LocateIcon,
-  MapPin,
-  MoveRight,
   Twitter,
 } from "lucide-react";
 
-function RejectionTemplateOne() {
+interface EventDataProps {
+  eventName?: string;
+  dateFrom?: string | Date;
+  dateTo?: string | Date;
+  timeFrom?: string;
+  timeTo?: string;
+  location?: string;
+  logoUrl?: string | null;
+}
+
+const formatDate = (date: string | Date | undefined): string => {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
+};
+
+function RejectionTemplateOne({
+  eventName = "event name",
+  dateFrom,
+  dateTo,
+  logoUrl,
+}: EventDataProps) {
+  const formattedDateFrom = formatDate(dateFrom);
+  const formattedDateTo = formatDate(dateTo);
+  const dateRangeText =
+    formattedDateFrom && formattedDateTo
+      ? `from ${formattedDateFrom} to ${formattedDateTo}`
+      : formattedDateFrom
+        ? `on ${formattedDateFrom}`
+        : "";
+
   return (
     <>
       <div className="w-full bg-gray-50 p-10">
-        <p>Our Logo</p>
+        {logoUrl ? (
+          <div className="flex items-center">
+            <img src={logoUrl} alt="Event Logo" style={{ maxHeight: 60, maxWidth: 200 }} />
+          </div>
+        ) : (
+          <p>Our Logo</p>
+        )}
         <div style={{ marginTop: 40 }} />
 
         <div className="p-[40px] bg-white">
@@ -32,15 +61,16 @@ function RejectionTemplateOne() {
           </div>
           <div />
           <div className="flex justify-center items-center  font-bold text-[20px]">
-            <p>Thanks for registering to "event name"</p>
+            <p>Thanks for registering to &quot;{eventName}&quot;</p>
           </div>
           <div className="mt-[24px]">
             <p className="font-medium text-[16px] text-[#121A26]">
-              Dear [Guest’s Name],
+              Dear [Guest&apos;s Name],
             </p>
             <p className="mt-[8px] font-normal text-[16px] text-[#384860]">
-              Thank you for your interest in attending [Event Name], scheduled
-              from May 10 to May 30, 2025. <br /> <br /> We appreciate your
+              Thank you for your interest in attending {eventName}
+              {dateRangeText ? `, scheduled ${dateRangeText}.` : "."}{" "}
+              <br /> <br /> We appreciate your
               enthusiasm, but unfortunately, we are unable to confirm your
               registration at this time due to limited capacity and high demand.{" "}
               <br /> <br />

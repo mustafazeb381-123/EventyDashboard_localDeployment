@@ -281,6 +281,11 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
   );
   const bannerInputRef = useRef<HTMLInputElement>(null);
 
+  const [footerBannerPreview, setFooterBannerPreview] = useState<string | null>(
+    typeof initialTheme?.footerBannerImage === "string" ? initialTheme.footerBannerImage : null
+  );
+  const footerBannerInputRef = useRef<HTMLInputElement>(null);
+
   // Loading state for save button
   const [isSaving, setIsSaving] = useState(false);
 
@@ -345,6 +350,19 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
       setBannerPreview(initialBannerImage);
     }
   }, [initialBannerImage]);
+
+  React.useEffect(() => {
+    const src = theme?.footerBannerImage;
+    if (src instanceof File) {
+      const reader = new FileReader();
+      reader.onloadend = () => setFooterBannerPreview(reader.result as string);
+      reader.readAsDataURL(src);
+    } else if (typeof src === "string" && src.trim() !== "") {
+      setFooterBannerPreview(src);
+    } else {
+      setFooterBannerPreview(null);
+    }
+  }, [theme?.footerBannerImage]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -773,6 +791,24 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     }
   };
 
+  const handleFooterBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        alert("Please select an image file");
+        return;
+      }
+      setTheme((prev) => ({ ...prev, footerBannerImage: file }));
+    }
+  };
+
+  const handleRemoveFooterBanner = () => {
+    setTheme((prev) => ({ ...prev, footerBannerImage: null }));
+    if (footerBannerInputRef.current) {
+      footerBannerInputRef.current.value = "";
+    }
+  };
+
   const handleSave = async () => {
     console.log("💾 Save button clicked");
 
@@ -1062,6 +1098,52 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                           type="file"
                           accept="image/*"
                           onChange={handleBannerImageChange}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                  </div>
+
+                  {/* Footer Banner Image Section - same layout as Banner Image */}
+                  <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+                    <div className="p-4 bg-linear-to-r from-purple-50 to-pink-50 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                          <ImageIcon size={18} className="text-purple-600" />
+                          Footer Banner Image
+                        </h3>
+                        {footerBannerPreview && (
+                          <button
+                            onClick={handleRemoveFooterBanner}
+                            className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {footerBannerPreview ? (
+                      <div className="relative w-full h-64 bg-gray-100">
+                        <img
+                          src={footerBannerPreview}
+                          alt="Footer banner preview"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all">
+                        <ImageIcon className="w-12 h-12 text-gray-400 mb-2" />
+                        <span className="text-sm font-medium text-gray-600">
+                          Click to upload footer banner image
+                        </span>
+                        <span className="text-xs text-gray-500 mt-1">
+                          Recommended: 1200x400px
+                        </span>
+                        <input
+                          ref={footerBannerInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFooterBannerChange}
                           className="hidden"
                         />
                       </label>
