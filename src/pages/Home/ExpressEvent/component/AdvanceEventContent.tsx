@@ -69,11 +69,18 @@ const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
 
   const CurrentComponent = steps[currentStep].component;
 
+  const handleStepChange = (step: number) => {
+    if (step >= 0 && step < steps.length) {
+      setCurrentStep(step);
+    }
+  };
+
   return (
     <div className="w-full">
       <CurrentComponent
         onNext={handleNext}
         onPrevious={handlePrevious}
+        onStepChange={handleStepChange}
         eventId={eventId}
         currentStep={currentStep}
         totalSteps={steps.length}

@@ -12,6 +12,7 @@ import Pagination from "../Pagination";
 interface AdminManagementProps {
   onNext: (eventId?: string | number) => void;
   onPrevious?: () => void;
+  onStepChange?: (step: number) => void;
   eventId?: string | number;
   currentStep: number;
   totalSteps: number;
@@ -25,6 +26,7 @@ interface Admin {
 export default function AdminManagement({
   onNext,
   onPrevious,
+  onStepChange,
   eventId,
   currentStep,
   totalSteps,
@@ -102,21 +104,25 @@ export default function AdminManagement({
             {Array.from({ length: totalSteps }, (_, index) => index).map(
               (step) => (
                 <div key={step} className="flex items-center">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  <button
+                    type="button"
+                    onClick={() => onStepChange?.(step)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors ${
                       step === currentStep
                         ? "border-pink-500 bg-white text-pink-500"
                         : step < currentStep
                         ? "bg-pink-500 border-pink-500 text-white"
-                        : "border-gray-300 bg-white text-gray-400"
+                        : "border-gray-300 bg-white text-gray-400 hover:border-gray-400"
                     }`}
                   >
                     {step < currentStep ? (
                       <Check size={16} />
                     ) : (
-                      <span className="text-sm font-medium">{step + 1}</span>
+                      <span className="text-sm font-medium">
+                        {String(step + 1).padStart(2, "0")}
+                      </span>
                     )}
-                  </div>
+                  </button>
                   {step < totalSteps - 1 && (
                     <div
                       className={`w-8 h-0.5 mx-1 ${

@@ -59,13 +59,20 @@ const AdvanceAppManagement: React.FC<AdvanceEventProps> = ({
     }
   };
 
+  const handleStepChange = (step: number) => {
+    if (step >= 0 && step < steps.length) {
+      setCurrentStep(step);
+    }
+  };
+
   const CurrentComponent = steps[currentStep].component;
 
   return (
     <div className="w-full">
       <CurrentComponent
-        onNext={handleNext} // UPDATED: Pass the updated handleNext
+        onNext={handleNext}
         onPrevious={handlePrevious}
+        onStepChange={handleStepChange}
         eventId={eventId}
         currentStep={currentStep}
         totalSteps={steps.length}

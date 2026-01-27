@@ -116,6 +116,9 @@ const MainData = ({
   const [showConvertToAdvancedModal, setShowConvertToAdvancedModal] =
     useState<boolean>(false);
   const [isConverting, setIsConverting] = useState<boolean>(false);
+  const [openInfoTooltip, setOpenInfoTooltip] = useState<
+    "requireApproval" | "duplicateRegistration" | null
+  >(null);
 
   // Image cropping states
   const [isCropping, setIsCropping] = useState<boolean>(false);
@@ -157,6 +160,8 @@ const MainData = ({
     Record<string, string>
   >({});
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const requireApprovalTooltipRef = useRef<HTMLDivElement | null>(null);
+  const duplicateRegTooltipRef = useRef<HTMLDivElement | null>(null);
 
   const handleInputChange = <K extends keyof MainFormData>(
     field: K,
@@ -1260,11 +1265,27 @@ const MainData = ({
 
           {/* Require Approval Toggle */}
           <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <label className="text-sm font-medium text-gray-700">
-                Require approval
-              </label>
-              {/* <Info size={14} className="text-gray-400" /> */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenInfoTooltip((prev) =>
+                    prev === "requireApproval" ? null : "requireApproval"
+                  )
+                }
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                title="Registration waits for admin approval or rejection."
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Require approval
+                </span>
+                <Info size={17} className="text-gray-400 flex-shrink-0" />
+              </button>
+              {openInfoTooltip === "requireApproval" && (
+                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                  Registration waits for admin approval or rejection.
+                </div>
+              )}
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
@@ -1299,11 +1320,29 @@ const MainData = ({
 
           {/* Duplicate Registration Toggle */}
           <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
-            <div className="flex items-center gap-2 sm:gap-3">
-              <label className="text-sm font-medium text-gray-700">
-                Duplicate registration
-              </label>
-              {/* <Info size={14} className="text-gray-400" /> */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenInfoTooltip((prev) =>
+                    prev === "duplicateRegistration"
+                      ? null
+                      : "duplicateRegistration"
+                  )
+                }
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                title="Blocks duplicate entries automatically."
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Duplicate registration
+                </span>
+                <Info size={17} className="text-gray-400 flex-shrink-0" />
+              </button>
+              {openInfoTooltip === "duplicateRegistration" && (
+                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                  Blocks duplicate entries automatically.
+                </div>
+              )}
             </div>
             <label className="relative inline-flex items-center cursor-pointer">
               <input

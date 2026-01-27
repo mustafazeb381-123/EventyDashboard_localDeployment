@@ -437,7 +437,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                 {step < currentStep ? (
                   <Check size={16} />
                 ) : (
-                  <span className="text-sm font-medium">{step + 1}</span>
+                  <span className="text-sm font-medium">{String(step + 1).padStart(2, "0")}</span>
                 )}
               </button>
               {step < totalSteps - 1 && (

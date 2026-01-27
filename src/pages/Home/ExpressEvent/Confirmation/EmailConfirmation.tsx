@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Check, ChevronLeft, X, Pencil, Trash2 } from "lucide-react";
+import { Check, ChevronLeft, X, Pencil, Trash2, Eye } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -1110,19 +1110,22 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             return (
               <div key={f.id} className="flex items-center">
                 <button
-                  disabled={idx > currentFlowIndex && !done}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                  type="button"
+                  onClick={() => setCurrentFlowIndex(idx)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer ${
                     done
-                      ? "bg-pink-500 border-pink-500"
+                      ? "bg-pink-500 border-pink-500 hover:bg-pink-600"
                       : active
-                        ? "border-pink-500"
-                        : "border-gray-300"
+                        ? "border-pink-500 bg-white"
+                        : "border-gray-300 hover:border-pink-400"
                   }`}
                 >
                   {done ? (
                     <Check size={16} className="text-white" />
                   ) : (
-                    <span className="text-sm">{idx + 1}</span>
+                    <span className="text-sm font-medium">
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
                   )}
                 </button>
                 {idx !== flows.length - 1 && (
@@ -1148,7 +1151,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div
             onClick={handleCreateNewTemplate}
-            className="border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400 cursor-pointer hover:bg-gray-50 transition"
+            className="border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400 cursor-pointer hover:border-pink-400 hover:bg-pink-50 transition-all duration-200 min-h-[280px]"
           >
             + New Template
           </div>
@@ -1156,22 +1159,50 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             const eventDataKey = `${effectiveEventId}-${eventData?.id || ""}-${
               eventData?.attributes?.name || ""
             }`;
+            const isSelected = selectedTemplates[currentFlow.id] === template.id;
             return (
               <div
                 key={`${template.id}-${eventDataKey}`}
-                onClick={() => handleOpenModal(template)}
-                className={`cursor-pointer rounded-2xl border ${
-                  selectedTemplates[currentFlow.id] === template.id
-                    ? "border-pink-500"
-                    : "border-gray-200"
-                } overflow-hidden`}
+                onClick={() => handleSelectTemplate(template.id)}
+                className={`cursor-pointer rounded-2xl border-2 p-4 transition-colors flex flex-col min-h-[280px] overflow-hidden ${
+                  isSelected
+                    ? "border-pink-500 bg-pink-50"
+                    : "border-gray-200 hover:border-pink-500 bg-white"
+                }`}
               >
-                <TemplateThumbnail
-                  template={template}
-                  eventDataKey={eventDataKey}
-                />
-                <div className="p-2 text-center font-medium">
-                  {template.title}
+                <div className="flex-1 min-h-0 overflow-hidden rounded-lg relative">
+                  <TemplateThumbnail
+                    template={template}
+                    eventDataKey={eventDataKey}
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenModal(template);
+                      }}
+                      className="pointer-events-auto w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-pink-400 transition-colors cursor-pointer z-10 shrink-0"
+                      aria-label="Preview template"
+                    >
+                      <Eye size={24} className="text-gray-700" />
+                    </button>
+                  </div>
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-sm text-gray-900 truncate pr-2">
+                      {template.title}
+                    </span>
+                    {isSelected && (
+                      <div className="flex items-center shrink-0">
+                        <Check size={16} className="text-pink-500 mr-1" />
+                        <span className="text-sm text-pink-500 font-medium">
+                          Selected
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             );
