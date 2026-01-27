@@ -55,6 +55,7 @@ export interface CustomFormField {
   inputVariant?: "phone";
   accept?: string; // For file/image
   buttonText?: string; // For button
+  buttonTextTranslations?: { en?: string; ar?: string }; // Arabic/English for registration form
   buttonType?: "button" | "submit" | "reset";
   buttonAlignment?: "left" | "center" | "right";
   buttonWidth?: "auto" | "full" | "custom";
@@ -139,6 +140,14 @@ export interface CustomFormField {
 // Export FormField as an alias for compatibility
 export type FormField = CustomFormField;
 
+export type LanguageMode = "single" | "dual";
+export type PrimaryLanguage = "en" | "ar";
+
+export interface FormLanguageConfig {
+  languageMode: LanguageMode;
+  primaryLanguage?: PrimaryLanguage;
+}
+
 export interface FormTheme {
   // High-level layout
   formMaxWidth?: string; // e.g. "768px", "900px", "100%"
@@ -182,6 +191,16 @@ export interface FormTheme {
   footerFontSize?: string;
   footerAlignment?: "left" | "center" | "right";
   footerBannerImage?: File | string | null; // Footer banner (same layout as header banner)
+  /** Margins around banner (default: touch edges). e.g. "0", "8px", "16px" */
+  bannerMarginTop?: string;
+  bannerMarginRight?: string;
+  bannerMarginBottom?: string;
+  bannerMarginLeft?: string;
+  /** Margins around footer (default: touch edges). e.g. "0", "8px", "16px" */
+  footerMarginTop?: string;
+  footerMarginRight?: string;
+  footerMarginBottom?: string;
+  footerMarginLeft?: string;
   requiredIndicatorColor?: string;
   errorTextColor?: string;
   errorBorderColor?: string;

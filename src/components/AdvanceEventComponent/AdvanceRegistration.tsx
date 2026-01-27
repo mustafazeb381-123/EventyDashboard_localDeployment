@@ -37,7 +37,11 @@ import TemplateFormSix from "@/pages/Home/ExpressEvent/RegistrationForm/Registra
 import TemplateFormSeven from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateSeven/TemplateForm";
 import ReusableRegistrationForm from "@/pages/Home/ExpressEvent/RegistrationForm/components/ReusableRegistrationForm";
 import CustomFormBuilder from "./CustomFormBuilder";
-import type { CustomFormField, FormTheme } from "./CustomFormBuilder/types";
+import type {
+  CustomFormField,
+  FormTheme,
+  FormLanguageConfig,
+} from "./CustomFormBuilder/types";
 import { FormHeader } from "./CustomFormBuilder/components/FormHeader";
 import { FormButtonField } from "./CustomFormBuilder/components/FormButtonField";
 import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
@@ -106,6 +110,7 @@ type RegistrationFormProps = {
 };
 
 // -------------------- CUSTOM FIELD RENDERER --------------------
+type FormPreviewT = ((key: string) => string) | undefined;
 const renderCustomField = (
   field: CustomFormField,
   inputStyle: React.CSSProperties,
@@ -113,7 +118,8 @@ const renderCustomField = (
   formData: Record<string, any>,
   setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>,
   imagePreviewUrls?: Record<string, string>,
-  currentLanguage?: string
+  currentLanguage?: string,
+  tFormPreview?: FormPreviewT
 ) => {
   const lang = currentLanguage || "en";
   const isRTL = lang === "ar";
@@ -368,7 +374,7 @@ const renderCustomField = (
               className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 text-gray-500 text-sm overflow-hidden text-ellipsis whitespace-nowrap"
               style={fieldInputStyle}
             >
-              {fileName || `No ${field.type} selected`}
+              {fileName || (field.type === "image" ? (tFormPreview?.("noImageSelected") ?? "No image selected") : (tFormPreview?.("noFileSelected") ?? "No file selected"))}
             </div>
             <label
               className="px-4 py-2 border rounded-lg cursor-pointer text-sm font-medium transition-colors whitespace-nowrap"
@@ -378,7 +384,7 @@ const renderCustomField = (
                 borderColor: theme?.buttonBorderColor || "#3b82f6",
               }}
             >
-              Choose {field.type === "image" ? "Image" : "File"}
+              {field.type === "image" ? (tFormPreview?.("chooseImage") ?? "Choose Image") : (tFormPreview?.("chooseFile") ?? "Choose File")}
               <input
                 type="file"
                 {...commonProps}
@@ -426,7 +432,13 @@ const renderCustomField = (
         </div>
       );
     case "button":
-      return <FormButtonField field={field} theme={theme} />;
+      return (
+        <FormButtonField
+          field={field}
+          theme={theme}
+          currentLanguage={lang}
+        />
+      );
     case "table":
       if (!field.tableData) {
         return <div className="text-gray-400 text-sm">No table data</div>;
@@ -571,6 +583,7 @@ export const FormBuilderTemplateForm: React.FC<
   onRegistrationError,
 }: FormBuilderTemplateFormProps) => {
   const { i18n } = useTranslation();
+  const { t: tFormBuilder } = useTranslation("formBuilder");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
 
   // Listen to language changes to force re-render
@@ -1506,7 +1519,10 @@ export const FormBuilderTemplateForm: React.FC<
       backgroundSize: backgroundImageUrl ? "cover" : undefined,
       backgroundPosition: backgroundImageUrl ? "center" : undefined,
       backgroundRepeat: backgroundImageUrl ? "no-repeat" : undefined,
-      padding: theme?.formPadding || "24px",
+      paddingTop: formPaddingVal,
+      paddingLeft: formPaddingVal,
+      paddingRight: formPaddingVal,
+      paddingBottom: 0,
       borderRadius: theme?.formBorderRadius || "8px",
       borderColor: theme?.formBorderColor || "#e5e7eb",
       borderWidth: theme?.formBorderWidth || "1px",
@@ -1544,25 +1560,51 @@ export const FormBuilderTemplateForm: React.FC<
           }}
         >
           {bannerUrl && !bannerLoadError && (
-            <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2">
-              <img
-                src={bannerUrl}
-                alt="Form banner"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  console.error("Banner image failed to load:", bannerUrl);
-                  setBannerLoadError(true);
+            <div
+              className="w-full bg-gray-100 overflow-hidden"
+              style={{
+                marginLeft: `-${paddingValue}px`,
+                marginRight: `-${paddingValue}px`,
+                marginTop: `-${paddingValue}px`,
+                width: `calc(100% + ${paddingValue * 2}px)`,
+              }}
+            >
+              <div
+                className="w-full h-[300px] overflow-hidden"
+                style={{
+                  marginTop: theme?.bannerMarginTop || "0",
+                  marginRight: theme?.bannerMarginRight || "0",
+                  marginBottom: theme?.bannerMarginBottom || "0",
+                  marginLeft: theme?.bannerMarginLeft || "0",
                 }}
-                onLoad={() => {
-                  console.log("Banner image loaded successfully:", bannerUrl);
-                  setBannerLoadError(false);
-                }}
-              />
+              >
+                <img
+                  src={bannerUrl}
+                  alt="Form banner"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    console.error("Banner image failed to load:", bannerUrl);
+                    setBannerLoadError(true);
+                  }}
+                  onLoad={() => {
+                    console.log("Banner image loaded successfully:", bannerUrl);
+                    setBannerLoadError(false);
+                  }}
+                />
+              </div>
             </div>
           )}
 
           {bannerUrl && bannerLoadError && (
-            <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2 flex items-center justify-center">
+            <div
+              className="w-full h-[300px] bg-gray-100 overflow-hidden flex items-center justify-center"
+              style={{
+                marginLeft: `-${paddingValue}px`,
+                marginRight: `-${paddingValue}px`,
+                marginTop: `-${paddingValue}px`,
+                width: `calc(100% + ${paddingValue * 2}px)`,
+              }}
+            >
               <span className="text-sm text-gray-500">
                 Failed to load banner image
               </span>
@@ -1835,7 +1877,8 @@ export const FormBuilderTemplateForm: React.FC<
                                     formData,
                                     setFormData,
                                     imagePreviewUrls,
-                                    currentLanguage
+                                    currentLanguage,
+                                    (key) => tFormBuilder("formPreview." + key)
                                   )}
                                 </div>
                               </div>
@@ -1940,7 +1983,8 @@ export const FormBuilderTemplateForm: React.FC<
                         formData,
                         setFormData,
                         imagePreviewUrls,
-                        currentLanguage
+                        currentLanguage,
+                        (key) => tFormBuilder("formPreview." + key)
                       )}
                     </div>
                   );
@@ -1991,43 +2035,52 @@ export const FormBuilderTemplateForm: React.FC<
               </div>
             )}
 
-            {/* Footer: banner (theme.footerBannerImage, same as header) + optional text */}
+            {/* Footer: full-bleed (touch bottom and sides), optional margins from theme */}
             {(footerBannerUrl || (theme?.footerEnabled && theme?.footerText)) && (
-              <div className="mt-6 pt-4 border-t" style={{ borderTopColor: theme?.formBorderColor || "#e5e7eb" }}>
-                {footerBannerUrl && (
-                  <div
-                    className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2"
-                    style={{
-                      marginLeft: `-${paddingValue}px`,
-                      marginRight: `-${paddingValue}px`,
-                      marginBottom: "0",
-                      width: `calc(100% + ${paddingValue * 2}px)`,
-                    }}
-                  >
-                    <img
-                      src={footerBannerUrl}
-                      alt="Footer banner"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        console.error("Footer banner image failed to load:", footerBannerUrl);
-                        e.currentTarget.style.display = "none";
+              <div
+                className="border-t"
+                style={{
+                  borderTopColor: theme?.formBorderColor || "#e5e7eb",
+                  marginLeft: `-${paddingValue}px`,
+                  marginRight: `-${paddingValue}px`,
+                  marginTop: theme?.footerMarginTop ?? "24px",
+                  width: `calc(100% + ${paddingValue * 2}px)`,
+                }}
+              >
+                <div
+                  style={{
+                    marginRight: theme?.footerMarginRight || "0",
+                    marginBottom: theme?.footerMarginBottom || "0",
+                    marginLeft: theme?.footerMarginLeft || "0",
+                  }}
+                >
+                  {footerBannerUrl && (
+                    <div className="w-full h-[300px] bg-gray-100 overflow-hidden mb-2">
+                      <img
+                        src={footerBannerUrl}
+                        alt="Footer banner"
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error("Footer banner image failed to load:", footerBannerUrl);
+                          e.currentTarget.style.display = "none";
+                        }}
+                      />
+                    </div>
+                  )}
+                  {theme?.footerEnabled && theme?.footerText && (
+                    <div
+                      style={{
+                        backgroundColor: theme.footerBackgroundColor || "#f9fafb",
+                        color: theme.footerTextColor || "#6b7280",
+                        padding: theme.footerPadding || "16px",
+                        fontSize: theme.footerFontSize || "14px",
+                        textAlign: theme.footerAlignment || "center",
                       }}
-                    />
-                  </div>
-                )}
-                {theme?.footerEnabled && theme?.footerText && (
-                  <div
-                    style={{
-                      backgroundColor: theme.footerBackgroundColor || "#f9fafb",
-                      color: theme.footerTextColor || "#6b7280",
-                      padding: theme.footerPadding || "16px",
-                      fontSize: theme.footerFontSize || "14px",
-                      textAlign: theme.footerAlignment || "center",
-                    }}
-                  >
-                    {theme.footerText}
-                  </div>
-                )}
+                    >
+                      {theme.footerText}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -2469,11 +2522,13 @@ const AdvanceRegistration = ({
       hasFormData: !!formData,
     });
 
-    // Reconstruct formBuilderData structure
+    // Reconstruct formBuilderData structure (include language config when present)
     const formBuilderData = {
       formData: fields,
       bannerImage: bannerImage,
       theme: theme,
+      languageMode: formData.formBuilderData?.languageMode ?? "single",
+      primaryLanguage: formData.formBuilderData?.primaryLanguage,
     };
 
     return {
@@ -2799,7 +2854,8 @@ const AdvanceRegistration = ({
     customFields: CustomFormField[],
     bannerImage?: File | string,
     theme?: FormTheme,
-    templateName?: string
+    templateName?: string,
+    languageConfig?: FormLanguageConfig
   ) => {
     try {
       // Check if banner image is unchanged when editing
@@ -2955,6 +3011,10 @@ const AdvanceRegistration = ({
         formData: customFields, // Store complete CustomFormField[] with all properties
         bannerImage: normalizedBannerImage || null,
         theme: theme || undefined,
+        languageMode: languageConfig?.languageMode ?? "single",
+        primaryLanguage:
+          languageConfig?.primaryLanguage ??
+          (languageConfig?.languageMode === "dual" ? "en" : "en"),
       };
 
       const templateData: CustomFormTemplate = {
@@ -3177,6 +3237,10 @@ const AdvanceRegistration = ({
                   ? { bannerImage: normalizedBannerImage }
                   : {}),
               theme: cleanTheme,
+              languageMode:
+                normalizedFormBuilderData?.languageMode ?? "single",
+              primaryLanguage:
+                normalizedFormBuilderData?.primaryLanguage ?? undefined,
             },
             // Only include bannerImage when creating (not when updating)
             ...(isEditFormBuilderMode
@@ -4170,6 +4234,18 @@ const AdvanceRegistration = ({
                 initialTemplateName={
                   editingFormBuilderTemplate?.title ||
                   "Custom Form Builder Template"
+                }
+                initialLanguageConfig={
+                  editingFormBuilderTemplate?.formBuilderData?.languageMode
+                    ? {
+                        languageMode:
+                          editingFormBuilderTemplate.formBuilderData
+                            .languageMode,
+                        primaryLanguage:
+                          editingFormBuilderTemplate.formBuilderData
+                            .primaryLanguage,
+                      }
+                    : undefined
                 }
                 onSave={handleSaveCustomForm}
                 onClose={() => {

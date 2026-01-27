@@ -238,6 +238,8 @@
     "noTableData": "لا توجد بيانات في الجدول",
     "noImageSelected": "لم يتم اختيار صورة",
     "noFileSelected": "لم يتم اختيار ملف",
+    "chooseImage": "اختر صورة",
+    "chooseFile": "اختر ملف",
     "selectOption": "اختر خيارًا...",
     "enterHeading": "أدخل نص العنوان",
     "enterParagraph": "أدخل نص الفقرة",

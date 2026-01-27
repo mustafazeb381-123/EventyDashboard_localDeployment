@@ -2049,6 +2049,7 @@ export function EmailTemplateBuilderModal({
   }, [initialHtml, startingDesign]);
 
   const [grapesHtml, setGrapesHtml] = useState<string>(initialGrapesHtml);
+  const getLatestGrapesHtmlRef = useRef<(() => string) | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -2136,7 +2137,7 @@ export function EmailTemplateBuilderModal({
   };
 
   const save = () => {
-    const htmlToSave = grapesHtml;
+    const htmlToSave = getLatestGrapesHtmlRef.current?.() ?? grapesHtml;
     const designToSave = defaultDesignFromHtml(htmlToSave);
     onSave(designToSave, htmlToSave);
     onClose();
@@ -2193,6 +2194,7 @@ export function EmailTemplateBuilderModal({
               initialHtml={initialGrapesHtml}
               mergeTags={mergeTags}
               onChange={setGrapesHtml}
+              getLatestHtmlRef={getLatestGrapesHtmlRef}
             />
           </div>
         </div>

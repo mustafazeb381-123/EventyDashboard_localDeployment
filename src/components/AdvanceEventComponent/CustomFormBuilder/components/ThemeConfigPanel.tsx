@@ -254,6 +254,100 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
           </div>
         </div>
 
+        {/* Banner & Footer Margins – touch edges by default, optional inset */}
+        <div className="space-y-4 pt-4 border-t">
+          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+            Banner &amp; Footer Margins
+          </h4>
+          <p className="text-xs text-gray-500">
+            Banner and footer touch top, bottom, and sides by default. Add margins (e.g. 8px, 16px) to inset from edges.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Top</label>
+              <input
+                type="text"
+                value={localTheme.bannerMarginTop || "0"}
+                onChange={(e) => handleUpdate({ bannerMarginTop: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Right</label>
+              <input
+                type="text"
+                value={localTheme.bannerMarginRight || "0"}
+                onChange={(e) => handleUpdate({ bannerMarginRight: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Bottom</label>
+              <input
+                type="text"
+                value={localTheme.bannerMarginBottom || "0"}
+                onChange={(e) => handleUpdate({ bannerMarginBottom: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Left</label>
+              <input
+                type="text"
+                value={localTheme.bannerMarginLeft || "0"}
+                onChange={(e) => handleUpdate({ bannerMarginLeft: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Top (gap from form)</label>
+              <input
+                type="text"
+                value={localTheme.footerMarginTop ?? "24px"}
+                onChange={(e) => handleUpdate({ footerMarginTop: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="24px"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Right</label>
+              <input
+                type="text"
+                value={localTheme.footerMarginRight || "0"}
+                onChange={(e) => handleUpdate({ footerMarginRight: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Bottom</label>
+              <input
+                type="text"
+                value={localTheme.footerMarginBottom || "0"}
+                onChange={(e) => handleUpdate({ footerMarginBottom: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Left</label>
+              <input
+                type="text"
+                value={localTheme.footerMarginLeft || "0"}
+                onChange={(e) => handleUpdate({ footerMarginLeft: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Event Details */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
