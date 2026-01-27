@@ -2794,6 +2794,10 @@ const AdvanceRegistration = ({
   // };
 
   const handleOpenCustomFormBuilder = (template?: CustomFormTemplate) => {
+    if (!effectiveEventId) {
+      showNotification("Event ID not found. Cannot open form builder.", "error");
+      return;
+    }
     if (template) {
       setEditingFormBuilderTemplate(template);
       setIsEditFormBuilderMode(true);
@@ -3166,7 +3170,13 @@ const AdvanceRegistration = ({
       });
 
       // Clean theme object - only include string values, exclude File objects and null
-      const cleanTheme: any = {};
+      // For new templates, normalizedTheme can be undefined; ensure we always send a valid theme object
+      const cleanTheme: any = {
+        formBackgroundColor: "#ffffff",
+        formPadding: "24px",
+        primaryColor: "#3B82F6",
+        secondaryColor: "#10B981",
+      };
       if (normalizedTheme) {
         // Only include formBackgroundImage if it's a base64 string (not File or null)
         if (
@@ -3441,54 +3451,53 @@ const AdvanceRegistration = ({
 
         // Handle validation errors (422)
         if (error.response.status === 422) {
-          // Format validation errors - handle different error response structures
-          const validationErrors: string[] = [];
-
-          // Check for errors object
-          if (apiError?.errors) {
-            Object.keys(apiError.errors).forEach((field) => {
-              const fieldErrors = apiError.errors[field];
-              if (Array.isArray(fieldErrors)) {
-                fieldErrors.forEach((err: any) => {
-                  const errorText =
-                    typeof err === "string" ? err : JSON.stringify(err);
-                  validationErrors.push(`${field}: ${errorText}`);
-                });
-              } else if (typeof fieldErrors === "string") {
-                validationErrors.push(`${field}: ${fieldErrors}`);
-              } else {
-                validationErrors.push(
-                  `${field}: ${JSON.stringify(fieldErrors)}`
-                );
-              }
-            });
-          }
-
-          // Check for error array
-          if (apiError?.error && Array.isArray(apiError.error)) {
-            apiError.error.forEach((err: any) => {
-              const errorText =
-                typeof err === "string" ? err : JSON.stringify(err);
-              validationErrors.push(errorText);
-            });
-          }
-
-          // Check for single error message
-          if (apiError?.error && typeof apiError.error === "string") {
-            validationErrors.push(apiError.error);
-          }
-
-          // Check for message
-          if (apiError?.message) {
-            validationErrors.push(apiError.message);
-          }
-
-          // If we have validation errors, format them
-          if (validationErrors.length > 0) {
-            errorMessage = `Validation failed:\n${validationErrors.join("\n")}`;
+          // Handle nested errors array: { errors: { errors: [ { field, code, message } ] } }
+          const errList = apiError?.errors?.errors;
+          if (Array.isArray(errList) && errList.length > 0) {
+            const nameTaken = errList.find(
+              (e: any) =>
+                (e?.field === "name" && e?.code === "taken") ||
+                (e?.field === "name" && /taken|already exists/i.test(String(e?.message || "")))
+            );
+            if (nameTaken) {
+              errorMessage =
+                "A template with this name already exists. Please choose a different name for your template.";
+            } else {
+              errorMessage = errList
+                .map((e: any) => e?.message || `${e?.field}: ${e?.code || "error"}`)
+                .filter(Boolean)
+                .join("\n") || "Validation failed.";
+            }
           } else {
-            // Fallback: try to stringify the entire error object
-            errorMessage = `Validation failed: ${JSON.stringify(apiError, null, 2)}`;
+            // Legacy: format validation errors from other structures
+            const validationErrors: string[] = [];
+            if (apiError?.errors && typeof apiError.errors === "object" && !Array.isArray(apiError.errors)) {
+              Object.keys(apiError.errors).forEach((field) => {
+                const fieldErrors = (apiError.errors as any)[field];
+                if (Array.isArray(fieldErrors)) {
+                  fieldErrors.forEach((err: any) => {
+                    const errorText =
+                      typeof err === "string" ? err : (err?.message || JSON.stringify(err));
+                    validationErrors.push(`${field}: ${errorText}`);
+                  });
+                } else if (typeof fieldErrors === "string") {
+                  validationErrors.push(`${field}: ${fieldErrors}`);
+                }
+              });
+            }
+            if (apiError?.error && Array.isArray(apiError.error)) {
+              apiError.error.forEach((err: any) => {
+                validationErrors.push(
+                  typeof err === "string" ? err : (err?.message || JSON.stringify(err))
+                );
+              });
+            }
+            if (apiError?.message) validationErrors.push(apiError.message);
+            if (validationErrors.length > 0) {
+              errorMessage = validationErrors.join("\n");
+            } else {
+              errorMessage = apiError?.message || "Validation failed. Please check your input.";
+            }
           }
         } else if (apiError?.error) {
           // Handle error field (could be string, object, or array)
@@ -4224,16 +4233,17 @@ const AdvanceRegistration = ({
             <div className="bg-white w-full h-full max-w-[95vw] max-h-[95vh] rounded-2xl shadow-2xl overflow-hidden">
               <CustomFormBuilder
                 initialFields={
-                  editingFormBuilderTemplate?.formBuilderData?.formData
+                  editingFormBuilderTemplate?.formBuilderData?.formData &&
+                  Array.isArray(editingFormBuilderTemplate.formBuilderData.formData)
                     ? (editingFormBuilderTemplate.formBuilderData
                         .formData as CustomFormField[])
                     : []
                 }
-                initialBannerImage={editingFormBuilderTemplate?.bannerImage}
-                initialTheme={editingFormBuilderTemplate?.theme}
+                initialBannerImage={editingFormBuilderTemplate?.bannerImage ?? null}
+                initialTheme={editingFormBuilderTemplate?.theme ?? undefined}
                 initialTemplateName={
                   editingFormBuilderTemplate?.title ||
-                  "Custom Form Builder Template"
+                  `Custom Form Template ${formBuilderTemplates.length + 1}`
                 }
                 initialLanguageConfig={
                   editingFormBuilderTemplate?.formBuilderData?.languageMode
