@@ -56,13 +56,13 @@ function AdvanceArea({
     message: string;
     type: "success" | "error";
   } | null>(null);
-  const [newSession, setNewSession] = useState({
+  const [newArea, setNewArea] = useState({
     title: "",
     location: "",
     travelNumber: "",
     type: "",
   });
-  const [sessions, setSessions] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [editingRow, setEditingRow] = useState<string | null>(null);
   const [editData, setEditData] = useState<Area | null>(null);
   const [loading, setLoading] = useState(false);
@@ -119,8 +119,8 @@ function AdvanceArea({
     }
   };
 
-  // Fetch session areas
-  const fetchSessionAreas = async (id: string, page: number = 1) => {
+  // Fetch areas
+  const fetchAreas = async (id: string, page: number = 1) => {
     setLoading(true);
 
     try {
@@ -145,7 +145,7 @@ function AdvanceArea({
           travelNumber: item.attributes.guest_number,
         }));
 
-        setSessions(areas);
+        setAreas(areas);
 
         // Set pagination metadata
         const paginationMeta =
@@ -154,12 +154,12 @@ function AdvanceArea({
           setPagination(paginationMeta);
         }
       } else {
-        setSessions([]);
+        setAreas([]);
       }
     } catch (error) {
-      console.error("Error fetching session areas:", error);
-      showNotification("Failed to fetch session areas", "error");
-      setSessions([]);
+      console.error("Error fetching areas:", error);
+      showNotification("Failed to fetch areas", "error");
+      setAreas([]);
     } finally {
       setLoading(false);
     }
@@ -171,10 +171,10 @@ function AdvanceArea({
     }
   }, [currentEventId]);
 
-  // Fetch session areas when eventId or currentPage changes
+  // Fetch areas when eventId or currentPage changes
   useEffect(() => {
     if (currentEventId && currentPage > 0) {
-      fetchSessionAreas(currentEventId as string, currentPage);
+      fetchAreas(currentEventId as string, currentPage);
     }
   }, [currentEventId, currentPage]);
 
@@ -193,7 +193,7 @@ function AdvanceArea({
 
   const handleSelectAll = (e: any) => {
     if (e.target.checked) {
-      setSelectedUsers(sessions.map((s) => s.id));
+      setSelectedUsers(areas.map((s) => s.id));
     } else {
       setSelectedUsers([]);
     }
@@ -205,8 +205,8 @@ function AdvanceArea({
     );
   };
 
-  const handleDeleteSession = async (session: Area) => {
-    setAreaToDelete(session);
+  const handleDeleteArea = async (area: Area) => {
+    setAreaToDelete(area);
     setIsDeleteModalOpen(true);
   };
 
@@ -221,24 +221,24 @@ function AdvanceArea({
       );
 
       if (response.status === 200 || response.status === 204) {
-        showNotification("Session deleted successfully!", "success");
+        showNotification("Area deleted successfully!", "success");
         setIsDeleteModalOpen(false);
         setAreaToDelete(null);
         // Refresh current page to show updated data
-        fetchSessionAreas(currentEventId as string, currentPage);
+        fetchAreas(currentEventId as string, currentPage);
       } else {
         throw new Error(`Delete failed with status: ${response.status}`);
       }
     } catch (error) {
-      console.error("Error deleting session:", error);
-      showNotification("Failed to delete session", "error");
-      await fetchSessionAreas(currentEventId as string, currentPage);
+      console.error("Error deleting area:", error);
+      showNotification("Failed to delete area", "error");
+      await fetchAreas(currentEventId as string, currentPage);
     } finally {
       setDeleteLoading(null);
     }
   };
 
-  const handleAddSession = async () => {
+  const handleAddArea = async () => {
     if (!currentEventId) {
       showNotification("Event ID not found", "error");
       return;
@@ -246,13 +246,13 @@ function AdvanceArea({
 
     try {
       // Convert guest_number to number
-      const guestNumber = parseInt(newSession.travelNumber || "0", 10) || 0;
+      const guestNumber = parseInt(newArea.travelNumber || "0", 10) || 0;
 
       const AreaData = {
         session_area: {
-          name: newSession.title || "",
-          location: newSession.location || "",
-          user_type: newSession.type || "",
+          name: newArea.title || "",
+          location: newArea.location || "",
+          user_type: newArea.type || "",
           guest_number: guestNumber,
           event_id: currentEventId as string,
         },
@@ -273,32 +273,32 @@ function AdvanceArea({
           travelNumber: response.data.data.attributes.guest_number,
         };
 
-        setNewSession({
+        setNewArea({
           title: "",
           location: "",
           travelNumber: "",
           type: "",
         });
         setAddModalOpen(false);
-        showNotification("Session added successfully!", "success");
+        showNotification("Area added successfully!", "success");
         // Refresh current page to show updated data
-        fetchSessionAreas(currentEventId as string, currentPage);
+        fetchAreas(currentEventId as string, currentPage);
       } else {
-        showNotification("Failed to add session: Invalid response", "error");
+        showNotification("Failed to add area: Invalid response", "error");
       }
     } catch (error: any) {
       const errorMessage =
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to add session";
+        "Failed to add area";
       showNotification(errorMessage, "error");
-      await fetchSessionAreas(currentEventId as string, currentPage);
+      await fetchAreas(currentEventId as string, currentPage);
     }
   };
 
-  const handleEdit = (session: Area) => {
-    setEditingRow(session.id);
-    setEditData({ ...session });
+  const handleEdit = (area: Area) => {
+    setEditingRow(area.id);
+    setEditData({ ...area });
   };
 
   const handleSaveEdit = async () => {
@@ -339,16 +339,16 @@ function AdvanceArea({
 
         setEditingRow(null);
         setEditData(null);
-        showNotification("Session updated successfully!", "success");
+        showNotification("Area updated successfully!", "success");
         // Refresh current page to show updated data
-        fetchSessionAreas(currentEventId as string, currentPage);
+        fetchAreas(currentEventId as string, currentPage);
       } else {
         throw new Error("Update response format is invalid");
       }
     } catch (error) {
-      console.error("Error updating session:", error);
-      showNotification("Failed to update session", "error");
-      await fetchSessionAreas(currentEventId as string, currentPage);
+      console.error("Error updating area:", error);
+      showNotification("Failed to update area", "error");
+      await fetchAreas(currentEventId as string, currentPage);
     } finally {
       setSaveLoading(null);
     }
@@ -435,7 +435,7 @@ function AdvanceArea({
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-medium text-gray-900">Area</h1>
             <span className="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-md text-xs font-medium">
-              {sessions.length} Session
+              {areas.length} Area
             </span>
           </div>
 
@@ -444,7 +444,7 @@ function AdvanceArea({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add Sessions
+            Add Area
           </button>
         </div>
 
@@ -458,8 +458,8 @@ function AdvanceArea({
                     type="checkbox"
                     onChange={handleSelectAll}
                     checked={
-                      sessions.length > 0 &&
-                      selectedUsers.length === sessions.length
+                      areas.length > 0 &&
+                      selectedUsers.length === areas.length
                     }
                     className="w-4 h-4 rounded border-gray-300"
                   />
@@ -513,32 +513,32 @@ function AdvanceArea({
                     </tr>
                   ))}
                 </>
-              ) : sessions.length === 0 ? (
+              ) : areas.length === 0 ? (
                 <tr>
                   <td
                     colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
-                    No sessions found. Add your first session above.
+                    No Area found. Add your first Area above.
                   </td>
                 </tr>
               ) : (
-                sessions.map((session) => (
+                areas.map((area) => (
                   <tr
-                    key={session.id}
+                    key={area.id}
                     className="hover:bg-gray-50 transition-colors"
                   >
                     <td className="px-4 py-3">
                       <input
                         type="checkbox"
-                        checked={selectedUsers.includes(session.id)}
-                        onChange={() => handleSelectUser(session.id)}
+                        checked={selectedUsers.includes(area.id)}
+                        onChange={() => handleSelectUser(area.id)}
                         className="w-4 h-4 rounded border-gray-300"
                       />
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-900">
-                      {editingRow === session.id ? (
+                      {editingRow === area.id ? (
                         <input
                           type="text"
                           value={editData?.title || ""}
@@ -550,12 +550,12 @@ function AdvanceArea({
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                         />
                       ) : (
-                        session.title
+                        area.title
                       )}
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {editingRow === session.id ? (
+                      {editingRow === area.id ? (
                         <input
                           type="text"
                           value={editData?.location || ""}
@@ -569,12 +569,12 @@ function AdvanceArea({
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                         />
                       ) : (
-                        session.location
+                        area.location
                       )}
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {editingRow === session.id ? (
+                      {editingRow === area.id ? (
                         <select
                           value={editData?.type || ""}
                           onChange={(e) =>
@@ -595,13 +595,13 @@ function AdvanceArea({
                         </select>
                       ) : (
                         badges.find(
-                          (b) => b.attributes.name === session.type
-                        )?.attributes.name || session.type
+                          (b) => b.attributes.name === area.type
+                        )?.attributes.name || area.type
                       )}
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {editingRow === session.id ? (
+                      {editingRow === area.id ? (
                         <input
                           type="number"
                           value={editData?.travelNumber || ""}
@@ -618,20 +618,20 @@ function AdvanceArea({
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                         />
                       ) : (
-                        session.travelNumber
+                        area.travelNumber
                       )}
                     </td>
 
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
-                        {editingRow === session.id ? (
+                        {editingRow === area.id ? (
                           <>
                             <button
                               onClick={handleSaveEdit}
-                              disabled={saveLoading === session.id}
+                              disabled={saveLoading === area.id}
                               className="p-1.5 text-green-500 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {saveLoading === session.id ? (
+                              {saveLoading === area.id ? (
                                 <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
                               ) : (
                                 <Check className="w-4 h-4" />
@@ -639,7 +639,7 @@ function AdvanceArea({
                             </button>
                             <button
                               onClick={handleCancelEdit}
-                              disabled={saveLoading === session.id}
+                              disabled={saveLoading === area.id}
                               className="p-1.5 text-gray-500 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               Cancel
@@ -648,18 +648,18 @@ function AdvanceArea({
                         ) : (
                           <>
                             <button
-                              onClick={() => handleDeleteSession(session)}
-                              disabled={deleteLoading === session.id}
+                              onClick={() => handleDeleteArea(area)}
+                              disabled={deleteLoading === area.id}
                               className="p-1.5 text-pink-500 hover:bg-pink-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {deleteLoading === session.id ? (
+                              {deleteLoading === area.id ? (
                                 <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
                               ) : (
                                 <Trash2 className="w-4 h-4" />
                               )}
                             </button>
                             <button
-                              onClick={() => handleEdit(session)}
+                              onClick={() => handleEdit(area)}
                               className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-md transition-colors"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -683,7 +683,7 @@ function AdvanceArea({
               <span className="font-medium">
                 {Math.min(currentPage * itemsPerPage, pagination.total_count)}
               </span>{" "}
-              of <span className="font-medium">{pagination.total_count}</span> sessions
+              of <span className="font-medium">{pagination.total_count}</span> areas
             </div>
             <Pagination
               currentPage={currentPage}
@@ -698,7 +698,7 @@ function AdvanceArea({
           </div>
         )}
 
-        {/* Add Session Modal */}
+        {/* Add Area Modal */}
         {addModalOpen && (
           <div
             className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
@@ -710,7 +710,7 @@ function AdvanceArea({
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Add Sessions
+                  Add Area
                 </h2>
                 <button
                   onClick={() => setAddModalOpen(false)}
@@ -723,14 +723,14 @@ function AdvanceArea({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Name
+                    Area Name
                   </label>
                   <input
                     type="text"
                     placeholder="Click here"
-                    value={newSession.title}
+                    value={newArea.title}
                     onChange={(e) =>
-                      setNewSession({ ...newSession, title: e.target.value })
+                      setNewArea({ ...newArea, title: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   />
@@ -738,15 +738,15 @@ function AdvanceArea({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Location
+                    Area Location
                   </label>
                   <input
                     type="text"
                     placeholder="Location here"
-                    value={newSession.location}
+                    value={newArea.location}
                     onChange={(e) =>
-                      setNewSession({
-                        ...newSession,
+                      setNewArea({
+                        ...newArea,
                         location: e.target.value,
                       })
                     }
@@ -761,10 +761,10 @@ function AdvanceArea({
                   <input
                     type="number"
                     placeholder="Number"
-                    value={newSession.travelNumber || ""}
+                    value={newArea.travelNumber || ""}
                     onChange={(e) =>
-                      setNewSession({
-                        ...newSession,
+                      setNewArea({
+                        ...newArea,
                         travelNumber: e.target.value,
                       })
                     }
@@ -777,9 +777,9 @@ function AdvanceArea({
                     User Type
                   </label>
                   <select
-                    value={newSession.type}
+                    value={newArea.type}
                     onChange={(e) =>
-                      setNewSession({ ...newSession, type: e.target.value })
+                      setNewArea({ ...newArea, type: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
@@ -809,11 +809,11 @@ function AdvanceArea({
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  handleAddSession();
+                  handleAddArea();
                 }}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors mt-4"
               >
-                <Plus className="w-4 h-4" /> Add Sessions
+                <Plus className="w-4 h-4" /> Add Area
               </button>
             </div>
           </div>
