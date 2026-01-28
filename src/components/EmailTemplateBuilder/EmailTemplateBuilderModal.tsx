@@ -2024,12 +2024,30 @@ export function EmailTemplateBuilderModal({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
+  const defaultGlobalStyles: GlobalStyles = {
+    backgroundColor: "#f3f4f6",
+    contentWidth: 600,
+    fontFamily: "Arial, Helvetica, sans-serif",
+    primaryColor: "#ec4899",
+    textColor: "#111827",
+    linkColor: "#3b82f6",
+    paddingX: 24,
+    paddingY: 32,
+  };
+
   const startingDesign: EmailTemplateDesign = useMemo(() => {
     if (
       initialDesign?.schema === "eventy-email-builder" &&
       initialDesign?.schemaVersion === 1
     ) {
-      return initialDesign as EmailTemplateDesign;
+      const normalized = { ...initialDesign } as EmailTemplateDesign;
+      if (!normalized.globalStyles || typeof normalized.globalStyles?.fontFamily === "undefined") {
+        normalized.globalStyles = {
+          ...defaultGlobalStyles,
+          ...(normalized.globalStyles || {}),
+        };
+      }
+      return normalized;
     }
     return defaultDesignFromHtml(initialHtml);
   }, [initialDesign, initialHtml]);

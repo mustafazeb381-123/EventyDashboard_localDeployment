@@ -35,6 +35,7 @@ function MainRoutes() {
     "/communication/QA",
     "/TicketManagement",
     "/Onboarding",
+    "/email-templates",
   ];
 
   // --- FIXED: use startsWith() instead of includes() ---

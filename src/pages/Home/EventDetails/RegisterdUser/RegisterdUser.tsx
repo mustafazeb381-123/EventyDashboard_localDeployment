@@ -125,7 +125,7 @@ function RegisterdUser() {
   const [editAvatarError, setEditAvatarError] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -473,12 +473,12 @@ function RegisterdUser() {
   useEffect(() => {
     if (eventId && currentPage > 0) {
       if (debouncedSearchTerm) {
-        searchUsersAcrossPages(eventId, debouncedSearchTerm, filterType);
+        searchUsersAcrossPages(eventId, debouncedSearchTerm, filterStatus);
       } else {
         fetchUsers(eventId, currentPage);
       }
     }
-  }, [eventId, currentPage, debouncedSearchTerm, filterType]);
+  }, [eventId, currentPage, debouncedSearchTerm, filterStatus]);
 
   const fetchUsers = async (id: string, page: number = 1) => {
     setLoadingUsers(true);
@@ -521,7 +521,7 @@ function RegisterdUser() {
   };
 
   // Search users across all pages
-  const searchUsersAcrossPages = async (id: string, searchQuery: string, typeFilter: string = "all") => {
+  const searchUsersAcrossPages = async (id: string, searchQuery: string, statusFilter: string = "all") => {
     setLoadingUsers(true);
     setIsSearching(true);
     try {
@@ -561,10 +561,10 @@ function RegisterdUser() {
           : responseData?.data || [];
 
         const matchingUsers = users.filter((user: any) => {
-          // Filter by type first
-          if (typeFilter !== "all") {
-            const userType = (user?.attributes?.user_type || "").toLowerCase();
-            if (userType !== typeFilter.toLowerCase()) {
+          // Filter by status first
+          if (statusFilter !== "all") {
+            const status = getApprovalStatus(user);
+            if (status !== statusFilter) {
               return false;
             }
           }
@@ -620,12 +620,12 @@ function RegisterdUser() {
     }
   };
 
-  // Filter users by type and search term (client-side filtering)
+  // Filter users by status and search term (client-side filtering)
   const filteredUsers = eventUsers.filter((user: any) => {
-    // Filter by type
-    if (filterType !== "all") {
-      const userType = (user?.attributes?.user_type || "").toLowerCase();
-      if (userType !== filterType.toLowerCase()) {
+    // Filter by status
+    if (filterStatus !== "all") {
+      const status = getApprovalStatus(user);
+      if (status !== filterStatus) {
         return false;
       }
     }
@@ -795,7 +795,7 @@ function RegisterdUser() {
             <div className="flex items-center gap-2">
               <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-                {filterType !== "all" || debouncedSearchTerm.trim() !== ""
+                {filterStatus !== "all" || debouncedSearchTerm.trim() !== ""
                   ? `${filteredUsers.length} Users`
                   : `${pagination?.total_count || eventUsers.length} Users`}
               </span>
@@ -903,18 +903,17 @@ function RegisterdUser() {
             </div>
             <div className="relative lg:w-48">
               <select
-                value={filterType}
+                value={filterStatus}
                 onChange={(e) => {
-                  setFilterType(e.target.value);
+                  setFilterStatus(e.target.value);
                   setCurrentPage(1); // Reset to page 1 when filter changes
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
               >
-                <option value="all">All Types</option>
-                <option value="guest">Guest</option>
-                <option value="speaker">Speaker</option>
-                <option value="vip">VIP</option>
-                <option value="VIP">VIP (uppercase)</option>
+                <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
               </select>
               <ChevronDown
                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -1066,12 +1065,12 @@ function RegisterdUser() {
                         colSpan={10}
                         className="px-6 py-8 text-center text-gray-500"
                       >
-                        {debouncedSearchTerm.trim() !== "" && filterType !== "all"
-                          ? `No users found matching "${debouncedSearchTerm}" with type "${filterType}"`
+                        {debouncedSearchTerm.trim() !== "" && filterStatus !== "all"
+                          ? `No users found matching "${debouncedSearchTerm}" with status "${filterStatus}"`
                           : debouncedSearchTerm.trim() !== ""
                           ? `No users found matching "${debouncedSearchTerm}"`
-                          : filterType !== "all"
-                          ? `No users found with type "${filterType}"`
+                          : filterStatus !== "all"
+                          ? `No users found with status "${filterStatus}"`
                           : "No users found"}
                       </td>
                     </tr>
@@ -1114,14 +1113,12 @@ function RegisterdUser() {
                         </td>
                         <td className="px-6 py-4">
                           {getApprovalStatus(user) === "approved" && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              <CheckCircle className="w-3.5 h-3.5" />
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                               Approved
                             </span>
                           )}
                           {getApprovalStatus(user) === "rejected" && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              <XCircle className="w-3.5 h-3.5" />
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               Rejected
                             </span>
                           )}
@@ -1140,12 +1137,12 @@ function RegisterdUser() {
 
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button
+                            {/* <button
                               onClick={() => handleResetCheckInOut(user)}
                               className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             >
                               <RotateCcw className="w-4 h-4" />
-                            </button>
+                            </button> */}
 
                             <button
                               onClick={() => handleApproveUsers([user.id])}
@@ -1244,9 +1241,9 @@ function RegisterdUser() {
                       {Math.min(currentPage * itemsPerPage, pagination.total_count)}
                     </span>{" "}
                     of <span className="font-medium">{pagination.total_count}</span> users
-                    {filterType !== "all" && (
+                    {filterStatus !== "all" && (
                       <span className="ml-2 text-blue-600">
-                        • Filtered: {filteredUsers.length} {filterType} user{filteredUsers.length !== 1 ? "s" : ""}
+                        • Filtered: {filteredUsers.length} {filterStatus} user{filteredUsers.length !== 1 ? "s" : ""}
                       </span>
                     )}
                   </>

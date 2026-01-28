@@ -5,8 +5,8 @@ import {
   EmailTemplateBuilderModal,
   type MergeTag,
 } from "@/components/EmailTemplateBuilder/EmailTemplateBuilderModal";
-import ThanksTemplateOne from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateOne";
-import ThanksTemplateTwo from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateTwo";
+import RejectionTemplateOne from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateOne";
+import RejectionTemplateTwo from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import ConfirmationTemplateOne from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
 import {
   getEmailTemplatesApi,
@@ -24,7 +24,7 @@ const createStaticTemplates = (eventData: any) => {
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
-    return { welcome: [], thank_you: [] };
+    return { welcome: [], rejection: [] };
   }
 
   const eventProps = {
@@ -58,26 +58,26 @@ const createStaticTemplates = (eventData: any) => {
         readyMadeId: "welcome-template-1",
       },
     ],
-    thank_you: [
+    rejection: [
       {
-        id: "thank-you-template-1",
-        title: "Thank You Template 1",
-        component: <ThanksTemplateOne {...eventProps} />,
+        id: "rejection-template-1",
+        title: "Rejection Template 1",
+        component: <RejectionTemplateOne {...eventProps} />,
         html: null,
         design: null,
         isStatic: true,
-        type: "thank_you",
-        readyMadeId: "thank-you-template-1",
+        type: "rejection",
+        readyMadeId: "rejection-template-1",
       },
       {
-        id: "thank-you-template-2",
-        title: "Thank You Template 2",
-        component: <ThanksTemplateTwo {...eventProps} />,
+        id: "rejection-template-2",
+        title: "Rejection Template 2",
+        component: <RejectionTemplateTwo {...eventProps} />,
         html: null,
         design: null,
         isStatic: true,
-        type: "thank_you",
-        readyMadeId: "thank-you-template-2",
+        type: "rejection",
+        readyMadeId: "rejection-template-2",
       },
     ],
   };
@@ -146,6 +146,17 @@ const convertHtmlToDesign = (html: string): any => {
       "",
     );
 
+    const defaultGlobalStyles = {
+      backgroundColor: "#f3f4f6",
+      contentWidth: 600,
+      fontFamily: "Arial, Helvetica, sans-serif",
+      primaryColor: "#ec4899",
+      textColor: "#111827",
+      linkColor: "#3b82f6",
+      paddingX: 24,
+      paddingY: 32,
+    };
+
     return {
       schema: "eventy-email-builder",
       schemaVersion: 1,
@@ -160,6 +171,7 @@ const convertHtmlToDesign = (html: string): any => {
           lineHeight: 1.6,
         },
       ],
+      globalStyles: defaultGlobalStyles,
     };
   } catch (e) {
     console.error("Error converting HTML to design:", e);
@@ -278,34 +290,44 @@ const TemplateModal = ({
   eventDataKey,
 }: any) => {
   if (!template) return null;
-  // Ready-made templates are read-only - check both isStatic and readyMadeId
-  const isReadyMade = template.isStatic || template.readyMadeId;
+  // Edit and Delete are enabled for all templates (including default/ready-made)
   return (
     <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       key={eventDataKey}
+      onClick={onClose}
+      role="presentation"
     >
-      <div className="bg-white p-6 rounded-2xl max-w-[95vw] w-full max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white p-6 rounded-2xl max-w-[95vw] w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-lg font-bold text-gray-900">{template.title}</h3>
           <div className="flex items-center gap-3">
-            {!isReadyMade && template.apiId && (
-              <button
-                onClick={() => onEdit(template)}
-                className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
-              >
-                <Pencil size={14} />
-              </button>
-            )}
-            {!isReadyMade && template.apiId && (
-              <button
-                onClick={() => onDelete(template)}
-                className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
-              >
-                <Trash2 size={14} />
-              </button>
-            )}
             <button
+              type="button"
+              onClick={() => onEdit(template)}
+              className="flex items-center gap-2 bg-pink-500 text-white px-3 py-1.5 rounded-lg hover:bg-pink-600 transition shadow-sm"
+              aria-label="Edit template"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(template);
+              }}
+              className="flex items-center gap-2 bg-red-500 text-white px-3 py-1.5 rounded-lg hover:bg-red-600 transition shadow-sm"
+              aria-label="Delete template"
+            >
+              <Trash2 size={14} />
+            </button>
+            <button
+              type="button"
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
@@ -318,6 +340,10 @@ const TemplateModal = ({
           key={`modal-content-${eventDataKey}`}
         >
           <style>{`
+            .template-preview-content {
+              overflow: hidden !important;
+              position: relative;
+            }
             .template-preview-content * {
               max-width: 100% !important;
               box-sizing: border-box;
@@ -325,10 +351,30 @@ const TemplateModal = ({
             .template-preview-content img {
               max-width: 100% !important;
               height: auto !important;
+              object-fit: contain !important;
+            }
+            /* Prevent icons from scaling too large - target images with 80px dimensions */
+            .template-preview-content img[style*="height: 80"],
+            .template-preview-content img[style*="width: 80"],
+            .template-preview-content img[style*="height:80"],
+            .template-preview-content img[style*="width:80"],
+            .template-preview-content img[style*="height: 80px"],
+            .template-preview-content img[style*="width: 80px"],
+            .template-preview-content img[style*="height:80px"],
+            .template-preview-content img[style*="width:80px"] {
+              max-width: 80px !important;
+              max-height: 80px !important;
+              width: 80px !important;
+              height: 80px !important;
+              flex-shrink: 0 !important;
+            }
+            /* Also target any div containing images with flex centering */
+            .template-preview-content div[class*="flex"][class*="items-center"][class*="justify-center"] img {
+              max-width: 80px !important;
+              max-height: 80px !important;
             }
             .template-preview-content div {
               max-width: 100% !important;
-              width: 100% !important;
             }
             .template-preview-content table {
               max-width: 100% !important;
@@ -352,15 +398,27 @@ const TemplateModal = ({
                       return "max-width: 100%";
                     }
                     return match;
+                  })
+                  // Fix for icons with specific dimensions - preserve their size
+                  .replace(/style="([^"]*height:\s*80[^"]*)"/gi, (match: string) => {
+                    return match.replace(/height:\s*80px/gi, "height: 80px").replace(/width:\s*80px/gi, "width: 80px");
                   }),
               }}
             />
           ) : template.component ? (
             <div
               className="template-preview-content w-full"
-              style={{ maxWidth: "100%", width: "100%" }}
+              style={{ 
+                maxWidth: "100%", 
+                width: "100%",
+                transform: "scale(1)",
+                transformOrigin: "top left",
+                overflow: "hidden"
+              }}
             >
-              {template.component}
+              <div style={{ width: "100%", maxWidth: "600px", margin: "0 auto" }}>
+                {template.component}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center w-full h-full text-gray-400">
@@ -440,7 +498,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
   const [flows, setFlows] = useState<any[]>([
     { id: "welcome", label: "Welcome Email", templates: [] },
-    { id: "thank_you", label: "Thank You Email", templates: [] },
+    { id: "rejection", label: "Rejection Email", templates: [] },
   ]);
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
@@ -486,7 +544,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         // Reset flows when no eventId
         setFlows([
           { id: "welcome", label: "Welcome Email", templates: [] },
-          { id: "thank_you", label: "Thank You Email", templates: [] },
+          { id: "rejection", label: "Rejection Email", templates: [] },
         ]);
         return;
       }
@@ -586,6 +644,26 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         }
       });
 
+      // Merge API data into static templates when an API record matches a default by name (so Edit/Delete work)
+      const enrichedStaticTemplates = staticTemplates.map((staticTpl: any) => {
+        const match = templatesWithSingleSelection.find((ct: any) =>
+          matchesReadyMadeTemplate(
+            { attributes: { name: ct.title } },
+            staticTpl,
+          ),
+        );
+        if (match) {
+          return {
+            ...staticTpl,
+            apiId: match.apiId,
+            html: match.html,
+            design: match.design,
+            isSelected: match.isSelected,
+          };
+        }
+        return staticTpl;
+      });
+
       // Filter out ready-made templates from API response to avoid duplicates
       // Only show custom templates from API, not ready-made ones
       const customApiTemplates = templatesWithSingleSelection.filter(
@@ -635,8 +713,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         }
       }
 
-      // Always show static templates + only custom templates from API (no ready-made duplicates)
-      const updatedTemplates = [...staticTemplates, ...customApiTemplates];
+      // Always show static templates (enriched with API data when matched) + only custom templates from API
+      const updatedTemplates = [...enrichedStaticTemplates, ...customApiTemplates];
       console.log(
         "Setting flows with updated templates count:",
         updatedTemplates.length,
@@ -871,21 +949,34 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     setIsEditorOpen(true);
   };
   const handleEditTemplate = async (template: any) => {
-    // Ready-made templates cannot be updated - check both isStatic and readyMadeId
-    if (template.isStatic || template.readyMadeId) {
-      showNotification(
-        "Ready-made templates cannot be edited. Please create a custom template instead.",
-        "error",
-      );
-      return;
-    }
-
     // Get the latest template from flows to ensure we have the most up-to-date data
     const latestTemplate =
       currentFlow.templates.find((t: any) => t.id === template.id) || template;
 
-    // Ensure we have the design loaded from localStorage if not in template
     let templateWithDesign = { ...latestTemplate };
+
+    // For default/ready-made templates: if no html/design but has component, derive from component
+    if (
+      (templateWithDesign.isStatic || templateWithDesign.readyMadeId) &&
+      !templateWithDesign.html &&
+      templateWithDesign.component
+    ) {
+      try {
+        templateWithDesign.html = await componentToHtml(
+          templateWithDesign.component,
+        );
+        templateWithDesign.design =
+          extractDesignFromHtml(templateWithDesign.html) ||
+          convertHtmlToDesign(templateWithDesign.html);
+      } catch (e) {
+        console.warn("Could not derive html/design from default template:", e);
+        showNotification(
+          "Could not load template for editing. Please try again.",
+          "warning",
+        );
+        return;
+      }
+    }
 
     // Try to extract design from HTML if not already loaded
     if (!templateWithDesign.design && templateWithDesign.html) {
@@ -901,10 +992,12 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           "No design found in HTML for templateId:",
           templateWithDesign.apiId,
         );
-        showNotification(
-          "Template design not found. Editor will open empty. Please recreate the template.",
-          "warning",
-        );
+        if (!templateWithDesign.isStatic && !templateWithDesign.readyMadeId) {
+          showNotification(
+            "Template design not found. Editor will open empty. Please recreate the template.",
+            "warning",
+          );
+        }
       }
     }
 
@@ -1005,46 +1098,51 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         setIsLoading(false);
       }
     } else if (editingTemplate) {
-      // Ready-made templates cannot be updated - check both isStatic and readyMadeId
-      if (editingTemplate.isStatic || editingTemplate.readyMadeId) {
-        showNotification(
-          "Ready-made templates cannot be updated. Please create a custom template instead.",
-          "error",
-        );
-        setIsEditorOpen(false);
-        setEditingTemplate(null);
-        return;
-      }
       setIsLoading(true);
       try {
         const templateName =
           editingTemplate.title || `Custom ${currentFlow.label} Template`;
-        console.log("Updating template:", {
-          eventId: effectiveEventId,
-          templateId: editingTemplate.apiId,
-          flowType: currentFlow.id,
-          hasDesign: !!design,
-          htmlLength: html?.length,
-        });
-
         // Embed design in HTML so it's stored in API
         const htmlWithDesign = embedDesignInHtml(html, design);
-        const updateResponse = await updateEmailTemplateApi(
-          effectiveEventId,
-          editingTemplate.apiId,
-          currentFlow.id,
-          htmlWithDesign,
-          templateName,
-          design,
-        );
-        console.log("Update API response:", updateResponse);
-        console.log(
-          "✅ Design embedded in HTML and saved to API after update, apiId:",
-          editingTemplate.apiId,
-        );
 
-        // Reload templates from API to get the latest data
-        console.log("Reloading templates after update...");
+        if (editingTemplate.apiId) {
+          // Update existing template (custom or default that was already saved)
+          console.log("Updating template:", {
+            eventId: effectiveEventId,
+            templateId: editingTemplate.apiId,
+            flowType: currentFlow.id,
+            hasDesign: !!design,
+            htmlLength: html?.length,
+          });
+          await updateEmailTemplateApi(
+            effectiveEventId,
+            editingTemplate.apiId,
+            currentFlow.id,
+            htmlWithDesign,
+            templateName,
+            design,
+          );
+          console.log(
+            "✅ Design embedded in HTML and saved to API after update, apiId:",
+            editingTemplate.apiId,
+          );
+        } else {
+          // Default template not yet saved: create new API record
+          const apiResp = await createEmailTemplateApi(
+            effectiveEventId,
+            currentFlow.id,
+            htmlWithDesign,
+            templateName,
+            design,
+          );
+          console.log(
+            "✅ Created API record for edited default template, apiId:",
+            apiResp.data.data.id,
+          );
+        }
+
+        // Reload templates from API to get the latest data (and merge into static when applicable)
+        console.log("Reloading templates after save...");
         await loadTemplatesFromAPI();
 
         setEditingTemplate(null);
@@ -1152,7 +1250,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
               <div
                 key={`${template.id}-${eventDataKey}`}
                 onClick={() => handleSelectTemplate(template.id)}
-                className={`cursor-pointer rounded-2xl border-2 p-4 transition-colors flex flex-col min-h-[280px] overflow-hidden ${
+                className={`group cursor-pointer rounded-2xl border-2 p-4 transition-colors flex flex-col min-h-[280px] overflow-hidden ${
                   isSelected
                     ? "border-pink-500 bg-pink-50"
                     : "border-gray-200 hover:border-pink-500 bg-white"
@@ -1163,7 +1261,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                     template={template}
                     eventDataKey={eventDataKey}
                   />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1222,26 +1320,65 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         onSelect={handleSelectTemplate}
         onEdit={handleEditTemplate}
         onDelete={async (tpl: any) => {
-          // Ready-made templates cannot be deleted - check both isStatic and readyMadeId
-          if (tpl.isStatic || tpl.readyMadeId) {
-            showNotification(
-              "Ready-made templates cannot be deleted.",
-              "error",
-            );
+          if (!effectiveEventId) {
+            handleCloseModal();
             return;
           }
-          if (!effectiveEventId || !tpl.apiId) return;
+
+          // Default/ready-made with no apiId: just deselect and close
+          if ((tpl.isStatic || tpl.readyMadeId) && !tpl.apiId) {
+            if (selectedTemplates[currentFlow.id] === tpl.id) {
+              setSelectedTemplates((prev: any) => {
+                const updated = { ...prev };
+                delete updated[currentFlow.id];
+                return updated;
+              });
+            }
+            showNotification("Template deselected", "success");
+            handleCloseModal();
+            return;
+          }
+
+          // Delete from API when template has apiId (custom or saved default)
+          if (!tpl.apiId) {
+            showNotification("This template cannot be deleted.", "warning");
+            handleCloseModal();
+            return;
+          }
           setIsLoading(true);
           try {
             await deleteEmailTemplateApi(effectiveEventId, tpl.apiId);
-            // Remove the template from flows
-            setFlows((prev) =>
-              prev.map((f) => ({
-                ...f,
-                templates: f.templates.filter((t: any) => t.id !== tpl.id),
-              })),
-            );
-            // If the deleted template was selected, clear the selection
+            if (tpl.isStatic || tpl.readyMadeId) {
+              // Default template: keep card, clear apiId/html/design and deselect
+              setFlows((prev) =>
+                prev.map((f) =>
+                  f.id === currentFlow.id
+                    ? {
+                        ...f,
+                        templates: f.templates.map((t: any) =>
+                          t.id === tpl.id
+                            ? {
+                                ...t,
+                                apiId: undefined,
+                                html: t.component ? undefined : t.html,
+                                design: undefined,
+                                isSelected: false,
+                              }
+                            : t,
+                        ),
+                      }
+                    : f,
+                ),
+              );
+            } else {
+              // Custom template: remove from list
+              setFlows((prev) =>
+                prev.map((f) => ({
+                  ...f,
+                  templates: f.templates.filter((t: any) => t.id !== tpl.id),
+                })),
+              );
+            }
             if (selectedTemplates[currentFlow.id] === tpl.id) {
               setSelectedTemplates((prev: any) => {
                 const updated = { ...prev };

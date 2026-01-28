@@ -22,7 +22,7 @@ type Speaker = {
   avatar: string | null;
 };
 
-type Session = {
+type AgendaItem = {
   id: number | string;
   title: string;
   startTime: string;
@@ -64,20 +64,20 @@ function Agenda() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [editingSession, setEditingSession] = useState<Session | null>(null);
-  const [selectedSessions, setSelectedSessions] = useState<(number | string)[]>(
+  const [editingAgenda, setEditingAgenda] = useState<AgendaItem | null>(null);
+  const [selectedAgendas, setSelectedAgendas] = useState<(number | string)[]>(
     []
   );
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [agendas, setAgendas] = useState<AgendaItem[]>([]);
   const [availableSpeakers, setAvailableSpeakers] = useState<Speaker[]>([]);
   const [selectedSpeakers, setSelectedSpeakers] = useState<number[]>([]);
 
   // Loading states
   const [isFetchingAgendas, setIsFetchingAgendas] = useState(false);
   const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
-  const [isAddingSession, setIsAddingSession] = useState(false);
-  const [isUpdatingSession, setIsUpdatingSession] = useState(false);
-  const [isDeletingSession, setIsDeletingSession] = useState<
+  const [isAddingAgenda, setIsAddingAgenda] = useState(false);
+  const [isUpdatingAgenda, setIsUpdatingAgenda] = useState(false);
+  const [isDeletingAgenda, setIsDeletingAgenda] = useState<
     string | number | null
   >(null);
 
@@ -89,7 +89,7 @@ function Agenda() {
 
   // Delete confirmation modal state
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [sessionToDelete, setSessionToDelete] = useState<Session | null>(null);
+  const [agendaToDelete, setAgendaToDelete] = useState<AgendaItem | null>(null);
 
   const [formData, setFormData] = useState<FormState>({
     title: "",
@@ -175,11 +175,11 @@ function Agenda() {
               end_date: item.attributes.formatted_time?.end_date,
             };
           });
-          setSessions(agendas);
+          setAgendas(agendas);
         }
       } catch (error) {
         console.error("Error fetching agendas:", error);
-        showNotification("Failed to fetch sessions", "error");
+        showNotification("Failed to fetch agendas", "error");
       } finally {
         setIsFetchingAgendas(false);
       }
@@ -206,17 +206,17 @@ function Agenda() {
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.checked) {
-      setSelectedSessions(sessions.map((session) => session.id));
+      setSelectedAgendas(agendas.map((agenda) => agenda.id));
     } else {
-      setSelectedSessions([]);
+      setSelectedAgendas([]);
     }
   };
 
-  const handleSelectSession = (sessionId: number | string) => {
-    setSelectedSessions((prev) =>
-      prev.includes(sessionId)
-        ? prev.filter((id) => id !== sessionId)
-        : [...prev, sessionId]
+  const handleSelectAgenda = (agendaId: number | string) => {
+    setSelectedAgendas((prev) =>
+      prev.includes(agendaId)
+        ? prev.filter((id) => id !== agendaId)
+        : [...prev, agendaId]
     );
   };
 
@@ -248,71 +248,71 @@ function Agenda() {
     });
     setSelectedSpeakers([]);
     setIsEditMode(false);
-    setEditingSession(null);
+    setEditingAgenda(null);
   };
 
-  const handleEditSession = (session: Session) => {
-    setEditingSession(session);
+  const handleEditAgenda = (agenda: AgendaItem) => {
+    setEditingAgenda(agenda);
     setIsEditMode(true);
 
     // Parse date from startTime
     const startDate =
-      session.start_date ||
-      (session.startTime ? session.startTime.split(" ")[0] : "");
-    const timeFrom = session.startTime
-      ? session.startTime.split(" ")[1]?.substring(0, 5) || "09:00"
+      agenda.start_date ||
+      (agenda.startTime ? agenda.startTime.split(" ")[0] : "");
+    const timeFrom = agenda.startTime
+      ? agenda.startTime.split(" ")[1]?.substring(0, 5) || "09:00"
       : "09:00";
-    const timeTo = session.endTime
-      ? session.endTime.split(" ")[1]?.substring(0, 5) || "17:00"
+    const timeTo = agenda.endTime
+      ? agenda.endTime.split(" ")[1]?.substring(0, 5) || "17:00"
       : "17:00";
 
     setFormData({
-      title: session.title,
+      title: agenda.title,
       date: startDate ? new Date(startDate) : undefined,
       timeFrom: timeFrom,
       timeTo: timeTo,
-      location: session.location,
-      speakers: session.speaker_ids || [],
-      display: session.display !== false,
-      requiredEnrollment: session.require_enroll || false,
+      location: agenda.location,
+      speakers: agenda.speaker_ids || [],
+      display: agenda.display !== false,
+      requiredEnrollment: agenda.require_enroll || false,
     });
 
-    setSelectedSpeakers(session.speaker_ids || []);
+    setSelectedSpeakers(agenda.speaker_ids || []);
     setIsModalOpen(true);
   };
 
-  const handleDeleteSession = async (session: Session) => {
+  const handleDeleteAgenda = async (agenda: AgendaItem) => {
     if (!eventId) {
       showNotification("Event ID is missing", "error");
       return;
     }
 
-    setSessionToDelete(session);
+    setAgendaToDelete(agenda);
     setIsDeleteModalOpen(true);
   };
 
   const confirmDelete = async () => {
-    if (!sessionToDelete || !eventId) return;
+    if (!agendaToDelete || !eventId) return;
 
-    setIsDeletingSession(sessionToDelete.id);
+    setIsDeletingAgenda(agendaToDelete.id);
     try {
-      const response = await deleteAgendaApi(eventId, sessionToDelete.id);
+      const response = await deleteAgendaApi(eventId, agendaToDelete.id);
       if (response.status === 204 || response.status === 200) {
-        setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id));
-        setSelectedSessions((prev) =>
-          prev.filter((id) => id !== sessionToDelete.id)
+        setAgendas((prev) => prev.filter((a) => a.id !== agendaToDelete.id));
+        setSelectedAgendas((prev) =>
+          prev.filter((id) => id !== agendaToDelete.id)
         );
-        showNotification("Session deleted successfully!", "success");
+        showNotification("Agenda deleted successfully!", "success");
         setIsDeleteModalOpen(false);
-        setSessionToDelete(null);
+        setAgendaToDelete(null);
       } else {
-        showNotification("Failed to delete session", "error");
+        showNotification("Failed to delete agenda", "error");
       }
     } catch (error) {
-      console.error("Error deleting session:", error);
-      showNotification("Error deleting session", "error");
+      console.error("Error deleting agenda:", error);
+      showNotification("Error deleting agenda", "error");
     } finally {
-      setIsDeletingSession(null);
+      setIsDeletingAgenda(null);
     }
   };
 
@@ -343,25 +343,22 @@ function Agenda() {
         end_time: `${dateStr} ${formData.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: formData.requiredEnrollment,
-        pay_by: "free",
-        price: "0",
-        currency: "USD",
         speaker_ids: selectedSpeakers,
         display: formData.display,
       },
     };
 
-    if (isEditMode && editingSession) {
-      // Update existing session
-      setIsUpdatingSession(true);
+    if (isEditMode && editingAgenda) {
+      // Update existing agenda
+      setIsUpdatingAgenda(true);
       try {
         const response = await updateAgendaApi(
           eventId,
-          editingSession.id,
+          editingAgenda.id,
           payload
         );
         if (response.status === 200) {
-          // Refresh sessions
+          // Refresh agendas
           const refreshResponse = await getAgendaApi(eventId);
           if (refreshResponse.status === 200) {
             const agendas = refreshResponse.data.data.map((item: any) => {
@@ -400,27 +397,27 @@ function Agenda() {
                 end_date: item.attributes.formatted_time?.end_date,
               };
             });
-            setSessions(agendas);
+            setAgendas(agendas);
           }
-          showNotification("Session updated successfully!", "success");
+          showNotification("Agenda updated successfully!", "success");
           setIsModalOpen(false);
           resetForm();
         } else {
-          showNotification("Failed to update session", "error");
+          showNotification("Failed to update agenda", "error");
         }
       } catch (error) {
-        console.error("Error updating session:", error);
-        showNotification("Error updating session", "error");
+        console.error("Error updating agenda:", error);
+        showNotification("Error updating agenda", "error");
       } finally {
-        setIsUpdatingSession(false);
+        setIsUpdatingAgenda(false);
       }
     } else {
-      // Create new session
-      setIsAddingSession(true);
+      // Create new agenda
+      setIsAddingAgenda(true);
       try {
         const response = await createAgendaApi(eventId, payload);
         if (response.status === 200 || response.status === 201) {
-          // Refresh sessions
+          // Refresh agendas
           const refreshResponse = await getAgendaApi(eventId);
           if (refreshResponse.status === 200) {
             const agendas = refreshResponse.data.data.map((item: any) => {
@@ -459,19 +456,19 @@ function Agenda() {
                 end_date: item.attributes.formatted_time?.end_date,
               };
             });
-            setSessions(agendas);
+            setAgendas(agendas);
           }
-          showNotification("Session added successfully!", "success");
+          showNotification("Agenda added successfully!", "success");
           setIsModalOpen(false);
           resetForm();
         } else {
-          showNotification("Failed to add session", "error");
+          showNotification("Failed to add agenda", "error");
         }
       } catch (error) {
-        console.error("Error creating session:", error);
-        showNotification("Error creating session", "error");
+        console.error("Error creating agenda:", error);
+        showNotification("Error creating agenda", "error");
       } finally {
-        setIsAddingSession(false);
+        setIsAddingAgenda(false);
       }
     }
   };
@@ -522,9 +519,9 @@ function Agenda() {
     return null;
   };
 
-  const SpeakersDisplay = ({ session }: { session: Session }) => {
-    if (session.speakers.length > 5) {
-      const visibleSpeakers = session.speakers.slice(0, 5);
+  const SpeakersDisplay = ({ agenda }: { agenda: AgendaItem }) => {
+    if (agenda.speakers.length > 5) {
+      const visibleSpeakers = agenda.speakers.slice(0, 5);
       return (
         <div className="flex items-center gap-1">
           <div className="flex -space-x-2">
@@ -533,26 +530,26 @@ function Agenda() {
             ))}
           </div>
           <span className="text-sm text-gray-600 ml-2">
-            +{session.additionalSpeakers}
+            +{agenda.additionalSpeakers}
           </span>
         </div>
       );
-    } else if (session.speakerName) {
+    } else if (agenda.speakerName) {
       return (
         <div className="flex items-center gap-3">
-          <SpeakerAvatar speaker={session.speakers[0]} size="w-10 h-10" />
+          <SpeakerAvatar speaker={agenda.speakers[0]} size="w-10 h-10" />
         </div>
       );
     } else {
       return (
         <div className="flex items-center gap-1">
           <div className="flex -space-x-2">
-            {session.speakers.map((speaker, index) => (
+            {agenda.speakers.map((speaker, index) => (
               <SpeakerAvatar key={index} speaker={speaker} fallbackInitials />
             ))}
           </div>
           <span className="text-sm text-gray-600 ml-2">
-            +{session.additionalSpeakers}
+            +{agenda.additionalSpeakers}
           </span>
         </div>
       );
@@ -591,7 +588,7 @@ function Agenda() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-gray-900">Sessions</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">Agenda</h1>
               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
                 {isFetchingAgendas ? (
                   <span className="flex items-center gap-1">
@@ -599,7 +596,7 @@ function Agenda() {
                     Loading...
                   </span>
                 ) : (
-                  `${sessions.length} Sessions`
+                  `${agendas.length} Agendas`
                 )}
               </span>
             </div>
@@ -612,7 +609,7 @@ function Agenda() {
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
-              Add Sessions
+              Add Agenda
             </button>
           </div>
 
@@ -701,9 +698,9 @@ function Agenda() {
                 </tbody>
               </table>
             </div>
-          ) : sessions.length === 0 ? (
+          ) : agendas.length === 0 ? (
             <div className="text-center py-12 border border-gray-200 rounded-lg">
-              <p className="text-gray-500 mb-4">No sessions found</p>
+              <p className="text-gray-500 mb-4">No agendas found</p>
               <button
                 onClick={() => {
                   resetForm();
@@ -713,7 +710,7 @@ function Agenda() {
                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" />
-                Add Your First Session
+                Add Your First Agenda
               </button>
             </div>
           ) : (
@@ -728,8 +725,8 @@ function Agenda() {
                         className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                         onChange={handleSelectAll}
                         checked={
-                          sessions.length > 0 &&
-                          selectedSessions.length === sessions.length
+                          agendas.length > 0 &&
+                          selectedAgendas.length === agendas.length
                         }
                         disabled={isFetchingAgendas}
                       />
@@ -758,25 +755,25 @@ function Agenda() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {sessions.map((session, index) => {
-                    const startTime = formatTimeDisplay(session.startTime);
-                    const endTime = formatTimeDisplay(session.endTime);
+                  {agendas.map((agenda, index) => {
+                    const startTime = formatTimeDisplay(agenda.startTime);
+                    const endTime = formatTimeDisplay(agenda.endTime);
                     return (
                       <tr
-                        key={session.id}
+                        key={agenda.id}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-6 py-4">
                           <input
                             type="checkbox"
                             className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            checked={selectedSessions.includes(session.id)}
-                            onChange={() => handleSelectSession(session.id)}
-                            disabled={isDeletingSession === session.id}
+                            checked={selectedAgendas.includes(agenda.id)}
+                            onChange={() => handleSelectAgenda(agenda.id)}
+                            disabled={isDeletingAgenda === agenda.id}
                           />
                         </td>
                         <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {session.title}
+                          {agenda.title}
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           <div>{startTime.date}</div>
@@ -787,32 +784,32 @@ function Agenda() {
                           <div>{endTime.time}</div>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
-                          {session.location}
+                          {agenda.location}
                         </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {session.type}
+                            {agenda.type}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <SpeakersDisplay session={session} />
+                          <SpeakersDisplay agenda={agenda} />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => handleDeleteSession(session)}
-                              disabled={isDeletingSession === session.id}
+                              onClick={() => handleDeleteAgenda(agenda)}
+                              disabled={isDeletingAgenda === agenda.id}
                               className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              {isDeletingSession === session.id ? (
+                              {isDeletingAgenda === agenda.id ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />
                               ) : (
                                 <Trash2 className="w-4 h-4" />
                               )}
                             </button>
                             <button
-                              onClick={() => handleEditSession(session)}
-                              disabled={isDeletingSession === session.id}
+                              onClick={() => handleEditAgenda(agenda)}
+                              disabled={isDeletingAgenda === agenda.id}
                               className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                               <Edit className="w-4 h-4" />
@@ -833,9 +830,9 @@ function Agenda() {
       {isDeleteModalOpen && (
         <div
           onClick={() => {
-            if (isDeletingSession === null) {
+            if (isDeletingAgenda === null) {
               setIsDeleteModalOpen(false);
-              setSessionToDelete(null);
+              setAgendaToDelete(null);
             }
           }}
           className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
@@ -848,16 +845,16 @@ function Agenda() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Delete Session
+                  Delete Agenda
                 </h3>
                 <button
                   onClick={() => {
-                    if (isDeletingSession === null) {
+                    if (isDeletingAgenda === null) {
                       setIsDeleteModalOpen(false);
-                      setSessionToDelete(null);
+                      setAgendaToDelete(null);
                     }
                   }}
-                  disabled={isDeletingSession !== null}
+                  disabled={isDeletingAgenda !== null}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -867,15 +864,15 @@ function Agenda() {
               {/* Content */}
               <div className="mb-6">
                 <p className="text-gray-600 mb-2">
-                  Are you sure you want to delete this session?
+                  Are you sure you want to delete this agenda?
                 </p>
-                {sessionToDelete && (
+                {agendaToDelete && (
                   <div className="bg-gray-50 p-3 rounded-lg mt-3">
                     <p className="font-medium text-gray-900">
-                      {sessionToDelete.title}
+                      {agendaToDelete.title}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
-                      {sessionToDelete.location}
+                      {agendaToDelete.location}
                     </p>
                   </div>
                 )}
@@ -889,19 +886,19 @@ function Agenda() {
                 <button
                   onClick={() => {
                     setIsDeleteModalOpen(false);
-                    setSessionToDelete(null);
+                    setAgendaToDelete(null);
                   }}
-                  disabled={isDeletingSession !== null}
+                  disabled={isDeletingAgenda !== null}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmDelete}
-                  disabled={isDeletingSession !== null}
+                  disabled={isDeletingAgenda !== null}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
-                  {isDeletingSession !== null ? (
+                  {isDeletingAgenda !== null ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Deleting...
@@ -923,7 +920,7 @@ function Agenda() {
       {isModalOpen && (
         <div
           onClick={() => {
-            if (!isAddingSession && !isUpdatingSession) {
+            if (!isAddingAgenda && !isUpdatingAgenda) {
               setIsModalOpen(false);
               resetForm();
             }
@@ -938,16 +935,16 @@ function Agenda() {
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-gray-900">
-                  {isEditMode ? "Edit Session" : "Add Sessions"}
+                  {isEditMode ? "Edit Agenda" : "Add Agenda"}
                 </h2>
                 <button
                   onClick={() => {
-                    if (!isAddingSession && !isUpdatingSession) {
+                    if (!isAddingAgenda && !isUpdatingAgenda) {
                       setIsModalOpen(false);
                       resetForm();
                     }
                   }}
-                  disabled={isAddingSession || isUpdatingSession}
+                  disabled={isAddingAgenda || isUpdatingAgenda}
                   className="p-2 hover:bg-gray-100 rounded-full transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <X className="w-5 h-5 text-gray-500" />
@@ -969,7 +966,7 @@ function Agenda() {
                       onChange={(e) =>
                         handleInputChange("title", e.target.value)
                       }
-                      disabled={isAddingSession || isUpdatingSession}
+                      disabled={isAddingAgenda || isUpdatingAgenda}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
                     />
                   </div>
@@ -992,7 +989,7 @@ function Agenda() {
                           e.target.value ? new Date(e.target.value) : undefined
                         )
                       }
-                      disabled={isAddingSession || isUpdatingSession}
+                      disabled={isAddingAgenda || isUpdatingAgenda}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
                     />
                   </div>
@@ -1009,7 +1006,7 @@ function Agenda() {
                         onChange={(e) =>
                           handleInputChange("timeFrom", e.target.value)
                         }
-                        disabled={isAddingSession || isUpdatingSession}
+                        disabled={isAddingAgenda || isUpdatingAgenda}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
                       />
                     </div>
@@ -1023,7 +1020,7 @@ function Agenda() {
                         onChange={(e) =>
                           handleInputChange("timeTo", e.target.value)
                         }
-                        disabled={isAddingSession || isUpdatingSession}
+                        disabled={isAddingAgenda || isUpdatingAgenda}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
                       />
                     </div>
@@ -1042,7 +1039,7 @@ function Agenda() {
                         onChange={(e) =>
                           handleInputChange("location", e.target.value)
                         }
-                        disabled={isAddingSession || isUpdatingSession}
+                        disabled={isAddingAgenda || isUpdatingAgenda}
                         className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none disabled:opacity-50 disabled:bg-gray-100"
                       />
                       <MapPin className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -1075,7 +1072,7 @@ function Agenda() {
                               type="checkbox"
                               checked={selectedSpeakers.includes(speaker.id)}
                               onChange={() => handleSpeakerToggle(speaker.id)}
-                              disabled={isAddingSession || isUpdatingSession}
+                              disabled={isAddingAgenda || isUpdatingAgenda}
                               className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
                             />
                             <SpeakerAvatar speaker={speaker} size="w-10 h-10" />
@@ -1123,12 +1120,12 @@ function Agenda() {
                           onChange={(e) =>
                             handleInputChange("display", e.target.checked)
                           }
-                          disabled={isAddingSession || isUpdatingSession}
+                          disabled={isAddingAgenda || isUpdatingAgenda}
                           className="sr-only peer"
                         />
                         <div
                           className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${
-                            isAddingSession || isUpdatingSession
+                            isAddingAgenda || isUpdatingAgenda
                               ? "opacity-50 cursor-not-allowed"
                               : ""
                           }`}
@@ -1165,12 +1162,12 @@ function Agenda() {
                               e.target.checked
                             )
                           }
-                          disabled={isAddingSession || isUpdatingSession}
+                          disabled={isAddingAgenda || isUpdatingAgenda}
                           className="sr-only peer"
                         />
                         <div
                           className={`w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 ${
-                            isAddingSession || isUpdatingSession
+                            isAddingAgenda || isUpdatingAgenda
                               ? "opacity-50 cursor-not-allowed"
                               : ""
                           }`}
@@ -1185,18 +1182,18 @@ function Agenda() {
               <div className="mt-8">
                 <button
                   onClick={handleSubmit}
-                  disabled={isAddingSession || isUpdatingSession}
+                  disabled={isAddingAgenda || isUpdatingAgenda}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isAddingSession || isUpdatingSession ? (
+                  {isAddingAgenda || isUpdatingAgenda ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      {isEditMode ? "Updating Session..." : "Adding Session..."}
+                      {isEditMode ? "Updating Agenda..." : "Adding Agenda..."}
                     </>
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      {isEditMode ? "Update Session" : "Add Sessions"}
+                      {isEditMode ? "Update Agenda" : "Add Agenda"}
                     </>
                   )}
                 </button>

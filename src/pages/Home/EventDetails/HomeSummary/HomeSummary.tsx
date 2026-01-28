@@ -7,6 +7,7 @@ import {
   getEventbyId,
   updateEventById,
   getEventUserMetrics,
+  getEventUsers,
 } from "@/apis/apiHelpers";
 import imageCompression from "browser-image-compression";
 
@@ -19,6 +20,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [eventData, setEventData] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
+  const [eventUsers, setEventUsers] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Notification state
@@ -245,10 +247,24 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   };
 
+  // Fetch event users to derive user types and counts (each event has different user types)
+  const fetchEventUsersForSummary = async (id: string) => {
+    try {
+      const response = await getEventUsers(id, { per_page: 500 });
+      const data = response?.data?.data;
+      const users = Array.isArray(data) ? data : [];
+      setEventUsers(users);
+    } catch (error) {
+      console.error("Error fetching event users for summary:", error);
+      setEventUsers([]);
+    }
+  };
+
   useEffect(() => {
     if (eventId) {
       getEventDataById(eventId);
       fetchEventMetrics(eventId);
+      fetchEventUsersForSummary(eventId);
     }
   }, [eventId]);
 
@@ -337,6 +353,97 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     </div>
   );
 
+  // Derive user types and counts from event users API – each event has different user types
+  const userTypeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return counts;
+    eventUsers.forEach((user: any) => {
+      const type = user?.attributes?.user_type;
+      if (type != null && String(type).trim() !== "") {
+        const key = String(type).toLowerCase().trim();
+        counts[key] = (counts[key] ?? 0) + 1;
+      }
+    });
+    return counts;
+  }, [eventUsers]);
+
+  const uniqueUserTypes = useMemo(() => {
+    const types = Object.keys(userTypeCounts);
+    return types.sort((a, b) => a.localeCompare(b));
+  }, [userTypeCounts]);
+
+  // Display label: capitalize first letter (e.g. "guest" -> "Guest", "great" -> "Great")
+  const formatUserTypeLabel = (key: string) =>
+    key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+
+  const guestTypeColors = [
+    "bg-indigo-50",
+    "bg-purple-50",
+    "bg-sky-50",
+    "bg-violet-50",
+    "bg-fuchsia-50",
+    "bg-teal-50",
+    "bg-amber-50",
+  ];
+  const guestTypeIcons = [
+    Assets.icons.todayRegistration,
+    Assets.icons.approvedRegistration,
+    Assets.icons.invitationRegistration,
+    Assets.icons.totalRegistration,
+    Assets.icons.pendingUsers,
+    Assets.icons.rejectionEmailOne,
+    Assets.icons.confirmationEmailOne,
+  ];
+
+  // Stats: base metrics + dynamic user-type cards (only types that exist for this event)
+  const stats = useMemo(() => {
+    const base = [
+      {
+        label: "Total Registrations",
+        value: metrics?.total_registration || 0,
+        icon: Assets.icons.totalRegistration,
+        bgColor: "bg-blue-50",
+      },
+      {
+        label: "Today Registrations",
+        value: metrics?.todays_registration || 0,
+        icon: Assets.icons.todayRegistration,
+        bgColor: "bg-emerald-50",
+      },
+      {
+        label: "Pending Users",
+        value: metrics?.pending_users || 0,
+        icon: Assets.icons.pendingUsers,
+        bgColor: "bg-amber-50",
+      },
+      {
+        label: "Approved Users",
+        value: metrics?.approved_registration || 0,
+        icon: Assets.icons.approvedRegistration,
+        bgColor: "bg-teal-50",
+      },
+      {
+        label: "Rejected Users",
+        value: metrics?.rejected_users || 0,
+        icon: Assets.icons.rejectionEmailOne,
+        bgColor: "bg-red-50",
+      },
+      {
+        label: "Printed Users",
+        value: metrics?.printed_users || 0,
+        icon: Assets.icons.totalRegistration,
+        bgColor: "bg-slate-50",
+      },
+    ];
+    const userTypeCards = uniqueUserTypes.map((typeKey, index) => ({
+      label: `${formatUserTypeLabel(typeKey)} Count`,
+      value: userTypeCounts[typeKey] ?? 0,
+      icon: guestTypeIcons[index % guestTypeIcons.length],
+      bgColor: guestTypeColors[index % guestTypeColors.length],
+    }));
+    return [...base, ...userTypeCards];
+  }, [metrics, uniqueUserTypes, userTypeCounts]);
+
   if (!eventData) {
     return <SkeletonLoader />;
   }
@@ -356,30 +463,6 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     registration_page_banner,
     require_approval,
   } = eventData.attributes;
-
-  // Define stats config (label + icon + key) using real metrics data
-  const stats = [
-    {
-      label: "Total Registrations",
-      value: metrics?.total_registration || 0,
-      icon: Assets.icons.totalRegistration,
-    },
-    {
-      label: "Today Registrations",
-      value: metrics?.todays_registration || 0,
-      icon: Assets.icons.todayRegistration,
-    },
-    {
-      label: "Approved Registrations",
-      value: metrics?.approved_registration || 0,
-      icon: Assets.icons.approvedRegistration,
-    },
-    {
-      label: "Pending Users",
-      value: metrics?.pending_users || 0,
-      icon: Assets.icons.pendingUsers,
-    },
-  ];
 
   const handleTimeRangeChange = (newRange: string) => {
     // Call parent callback if provided
@@ -429,6 +512,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
   // Handle SVG upload (no cropping needed)
   const handleSvgUpload = async (file: File) => {
+    if (!eventId) return;
     setIsUploading(true);
     try {
       // Compress SVG if needed (though SVG compression is limited)
@@ -965,14 +1049,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
         </div>
 
-        {/* registration and user counters - Responsive Grid */}
+        {/* registration and user counters - Responsive Grid (colorful icon backgrounds) */}
         <div className="mt-6 lg:mt-6 gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
           {stats.map((item, index) => (
             <div
               key={`${item.label}-${index}`}
               className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
             >
-              <div className="p-3 lg:p-4 bg-neutral-50 rounded-xl shrink-0">
+              <div
+                className={`p-3 lg:p-4 ${item.bgColor} rounded-xl shrink-0`}
+              >
                 <img
                   src={item.icon}
                   alt={item.label}
