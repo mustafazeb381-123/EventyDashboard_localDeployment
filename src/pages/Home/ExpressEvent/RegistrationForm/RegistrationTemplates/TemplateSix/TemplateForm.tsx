@@ -200,14 +200,22 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
     },
   ];
 
-  // Fetch API form data if no `data` prop
+  // Fetch API form data - always fetch to get latest order and data
+  // Similar to TemplateOne: always fetch from API to get the latest order, even if data prop is provided
   useEffect(() => {
     if (!effectiveEventId) return;
     const fetchApiFormData = async () => {
       setIsLoadingApiData(true);
       try {
         const response = await getRegistrationFieldApi(effectiveEventId);
-        setApiFormData(response.data.data || []);
+        const fields = response.data.data || [];
+        // Sort by order
+        const sortedFields = [...fields].sort((a: any, b: any) => {
+          const orderA = a.attributes?.order ?? a.order ?? 999;
+          const orderB = b.attributes?.order ?? b.order ?? 999;
+          return orderA - orderB;
+        });
+        setApiFormData(sortedFields);
       } catch (error) {
         setApiFormData([]);
       } finally {
@@ -215,15 +223,27 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
       }
     };
     fetchApiFormData();
-  }, [effectiveEventId, data]);
+  }, [effectiveEventId]);
 
-  // Compute final form fields: data prop > API > default
+  // Compute final form fields: apiFormData (API) > data prop > default
+  // Priority: 1. apiFormData (always fetch from API for latest order), 2. data prop, 3. defaultFormFields
+  // Similar to TemplateOne: always use apiFormData if available (it has the latest order from API)
   const formFields: FormField[] = useMemo(() => {
-    let sourceData = data?.length
-      ? data
-      : apiFormData?.length
-        ? apiFormData
+    let sourceData = apiFormData?.length
+      ? apiFormData
+      : data?.length
+        ? data
         : defaultFormFields;
+    
+    // Sort by order property if it exists (from API response)
+    if (Array.isArray(sourceData) && sourceData !== defaultFormFields) {
+      sourceData = [...sourceData].sort((a: any, b: any) => {
+        const orderA = a.attributes?.order ?? a.order ?? 999;
+        const orderB = b.attributes?.order ?? b.order ?? 999;
+        return orderA - orderB;
+      });
+    }
+    
     return sourceData.map((field: any) => {
       const attr = field.attributes || {};
       return {
@@ -250,7 +270,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
         }),
       };
     });
-  }, [data, apiFormData]);
+  }, [apiFormData, data]);
 
   // Update field active states
   useEffect(() => {

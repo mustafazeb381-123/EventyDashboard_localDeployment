@@ -41,7 +41,7 @@ function TemplateFormFive({
   }>({});
   const [eventData, setEventData] = useState<any>(null);
   const [apiFormData, setApiFormData] = useState<any[]>([]);
-  const [isLoadingApiData, setIsLoadingApiData] = useState(false);
+  const [isLoadingApiData, setIsLoadingApiData] = useState(true); // Start as true to show loading initially
   const [showAddFieldModal, setShowAddFieldModal] = useState(false);
   const [isCreatingField, setIsCreatingField] = useState(false);
   const [newFieldData, setNewFieldData] = useState({
@@ -101,11 +101,11 @@ function TemplateFormFive({
     },
   ];
 
-  // Fetch form fields
+  // Fetch form fields from API - always fetch to get latest order and data
+  // Similar to TemplateOne: always fetch from API to get the latest order, even if data prop is provided
   useEffect(() => {
     const fetchApiFormData = async () => {
       if (!effectiveEventId) return;
-      if (data && Array.isArray(data) && data.length > 0) return;
 
       setIsLoadingApiData(true);
       try {
@@ -114,7 +114,14 @@ function TemplateFormFive({
           "TemplateFive - getRegistrationFieldApi response:",
           response.data,
         );
-        setApiFormData(response.data.data || []);
+        const fields = response.data.data || [];
+        // Sort by order
+        const sortedFields = [...fields].sort((a: any, b: any) => {
+          const orderA = a.attributes?.order ?? a.order ?? 999;
+          const orderB = b.attributes?.order ?? b.order ?? 999;
+          return orderA - orderB;
+        });
+        setApiFormData(sortedFields);
       } catch (error) {
         console.error(
           "TemplateFive - Failed to get registration field:",
@@ -126,18 +133,28 @@ function TemplateFormFive({
       }
     };
     fetchApiFormData();
-  }, [effectiveEventId, data]);
+  }, [effectiveEventId]);
 
   const formFields = useMemo((): any[] => {
-    let sourceData = data;
+    // Priority: 1. apiFormData (always fetch from API for latest order), 2. data prop, 3. defaultFormFields
+    // Similar to TemplateOne: always use apiFormData if available (it has the latest order from API)
+    // Only fall back to data prop if apiFormData is empty
+    let sourceData = apiFormData;
     if (!Array.isArray(sourceData) || sourceData.length === 0) {
-      sourceData = apiFormData;
+      sourceData = data;
     }
     if (!Array.isArray(sourceData) || sourceData.length === 0) {
       return defaultFormFields;
     }
 
-    return sourceData.map((field: any) => {
+    // Sort by order property if it exists (from API response)
+    const sortedData = [...sourceData].sort((a: any, b: any) => {
+      const orderA = a.attributes?.order ?? a.order ?? 999;
+      const orderB = b.attributes?.order ?? b.order ?? 999;
+      return orderA - orderB;
+    });
+
+    return sortedData.map((field: any) => {
       const attr = field.attributes || {};
       return {
         id: field.id,
@@ -165,7 +182,7 @@ function TemplateFormFive({
         }),
       };
     });
-  }, [data, apiFormData]);
+  }, [apiFormData, data]);
 
   const [fieldActiveStates, setFieldActiveStates] = useState<{
     [key: string]: boolean;

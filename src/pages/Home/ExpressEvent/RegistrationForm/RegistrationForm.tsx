@@ -334,14 +334,14 @@ const RegistrationForm = ({
   }, [effectiveEventId, getFieldAPi]);
 
   // Memoize getTemplateData to prevent unnecessary recalculations
+  // Always return formData (registration fields) - templates will fetch their own data if needed
   const getTemplateData = useCallback(
     (templateId: string) => {
-      if (templateId === selectedTemplateName) {
-        return getTemplatesData.length > 0 ? getTemplatesData : formData;
-      }
+      // Return formData which contains registration fields from getRegistrationFieldApi
+      // Templates can use this as initial data and fetch fresh data themselves if needed
       return formData;
     },
-    [selectedTemplateName, getTemplatesData, formData],
+    [formData],
   );
 
   // Memoize skeleton component - created once with animated shimmer

@@ -56,7 +56,7 @@ const TemplateTwo = ({
             </div>
           </div>
         ) : (
-          <TemplateForm />
+          <TemplateForm data={data} eventId={eventId} />
         )}
       </div>
 
