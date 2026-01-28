@@ -5,8 +5,8 @@ import {
   EmailTemplateBuilderModal,
   type MergeTag,
 } from "@/components/EmailTemplateBuilder/EmailTemplateBuilderModal";
-import ThanksTemplateOne from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateOne";
-import ThanksTemplateTwo from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateTwo";
+import RejectionTemplateOne from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateOne";
+import RejectionTemplateTwo from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import ConfirmationTemplateOne from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
 import {
   getEmailTemplatesApi,
@@ -24,7 +24,7 @@ const createStaticTemplates = (eventData: any) => {
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
-    return { welcome: [], thank_you: [] };
+    return { welcome: [], rejection: [] };
   }
 
   const eventProps = {
@@ -58,26 +58,26 @@ const createStaticTemplates = (eventData: any) => {
         readyMadeId: "welcome-template-1",
       },
     ],
-    thank_you: [
+    rejection: [
       {
-        id: "thank-you-template-1",
-        title: "Thank You Template 1",
-        component: <ThanksTemplateOne {...eventProps} />,
+        id: "rejection-template-1",
+        title: "Rejection Template 1",
+        component: <RejectionTemplateOne {...eventProps} />,
         html: null,
         design: null,
         isStatic: true,
-        type: "thank_you",
-        readyMadeId: "thank-you-template-1",
+        type: "rejection",
+        readyMadeId: "rejection-template-1",
       },
       {
-        id: "thank-you-template-2",
-        title: "Thank You Template 2",
-        component: <ThanksTemplateTwo {...eventProps} />,
+        id: "rejection-template-2",
+        title: "Rejection Template 2",
+        component: <RejectionTemplateTwo {...eventProps} />,
         html: null,
         design: null,
         isStatic: true,
-        type: "thank_you",
-        readyMadeId: "thank-you-template-2",
+        type: "rejection",
+        readyMadeId: "rejection-template-2",
       },
     ],
   };
@@ -340,6 +340,10 @@ const TemplateModal = ({
           key={`modal-content-${eventDataKey}`}
         >
           <style>{`
+            .template-preview-content {
+              overflow: hidden !important;
+              position: relative;
+            }
             .template-preview-content * {
               max-width: 100% !important;
               box-sizing: border-box;
@@ -347,10 +351,30 @@ const TemplateModal = ({
             .template-preview-content img {
               max-width: 100% !important;
               height: auto !important;
+              object-fit: contain !important;
+            }
+            /* Prevent icons from scaling too large - target images with 80px dimensions */
+            .template-preview-content img[style*="height: 80"],
+            .template-preview-content img[style*="width: 80"],
+            .template-preview-content img[style*="height:80"],
+            .template-preview-content img[style*="width:80"],
+            .template-preview-content img[style*="height: 80px"],
+            .template-preview-content img[style*="width: 80px"],
+            .template-preview-content img[style*="height:80px"],
+            .template-preview-content img[style*="width:80px"] {
+              max-width: 80px !important;
+              max-height: 80px !important;
+              width: 80px !important;
+              height: 80px !important;
+              flex-shrink: 0 !important;
+            }
+            /* Also target any div containing images with flex centering */
+            .template-preview-content div[class*="flex"][class*="items-center"][class*="justify-center"] img {
+              max-width: 80px !important;
+              max-height: 80px !important;
             }
             .template-preview-content div {
               max-width: 100% !important;
-              width: 100% !important;
             }
             .template-preview-content table {
               max-width: 100% !important;
@@ -374,15 +398,27 @@ const TemplateModal = ({
                       return "max-width: 100%";
                     }
                     return match;
+                  })
+                  // Fix for icons with specific dimensions - preserve their size
+                  .replace(/style="([^"]*height:\s*80[^"]*)"/gi, (match: string) => {
+                    return match.replace(/height:\s*80px/gi, "height: 80px").replace(/width:\s*80px/gi, "width: 80px");
                   }),
               }}
             />
           ) : template.component ? (
             <div
               className="template-preview-content w-full"
-              style={{ maxWidth: "100%", width: "100%" }}
+              style={{ 
+                maxWidth: "100%", 
+                width: "100%",
+                transform: "scale(1)",
+                transformOrigin: "top left",
+                overflow: "hidden"
+              }}
             >
-              {template.component}
+              <div style={{ width: "100%", maxWidth: "600px", margin: "0 auto" }}>
+                {template.component}
+              </div>
             </div>
           ) : (
             <div className="flex items-center justify-center w-full h-full text-gray-400">
@@ -462,7 +498,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
   const [flows, setFlows] = useState<any[]>([
     { id: "welcome", label: "Welcome Email", templates: [] },
-    { id: "thank_you", label: "Thank You Email", templates: [] },
+    { id: "rejection", label: "Rejection Email", templates: [] },
   ]);
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
@@ -508,7 +544,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         // Reset flows when no eventId
         setFlows([
           { id: "welcome", label: "Welcome Email", templates: [] },
-          { id: "thank_you", label: "Thank You Email", templates: [] },
+          { id: "rejection", label: "Rejection Email", templates: [] },
         ]);
         return;
       }

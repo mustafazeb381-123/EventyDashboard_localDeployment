@@ -73,12 +73,12 @@ const ExpressEvent = () => {
     plan === "advance"
       ? {
           id: "Invitation-Management",
-          label: "Invitation Management",
+          label: "Email Management",
           description: "Manage invitations for the event",
         }
       : {
           id: "confirmation",
-          label: "Confirmation",
+          label: "Email Management",
           description: "Confirm event details",
         },
     plan === "advance"

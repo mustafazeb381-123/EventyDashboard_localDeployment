@@ -17,6 +17,7 @@ import {
   // Ticket,
   IdCard,
   Lock,
+  Mail,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
@@ -169,6 +170,9 @@ const SideBar = ({
     }
     if (path === "/Onboarding" || path.startsWith("/Onboarding")) {
       return "Onboarding";
+    }
+    if (path === "/email-templates" || path.startsWith("/email-templates")) {
+      return "Email Templates";
     }
     // if (path === "/TicketManagement" || path.startsWith("/TicketManagement")) {
     //   return "Ticket Management";
@@ -350,6 +354,14 @@ const SideBar = ({
         ? `/Onboarding?eventId=${currentEventId}`
         : "/Onboarding",
       availableForExpress: true,
+    },
+    {
+      icon: Mail,
+      label: "Email Management",
+      path: currentEventId
+        ? `/email-templates?eventId=${currentEventId}`
+        : "/email-templates",
+      availableForExpress: false,
     },
     // {
     //   icon: Ticket,

@@ -1137,12 +1137,12 @@ function RegisterdUser() {
 
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button
+                            {/* <button
                               onClick={() => handleResetCheckInOut(user)}
                               className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             >
                               <RotateCcw className="w-4 h-4" />
-                            </button>
+                            </button> */}
 
                             <button
                               onClick={() => handleApproveUsers([user.id])}

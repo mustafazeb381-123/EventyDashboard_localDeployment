@@ -2,7 +2,6 @@ import Assets from "@/utils/Assets";
 import React from "react";
 import {
   Calendar,
-  Calendar as CalendarIcon,
   Facebook,
   Instagram,
   Twitter,
@@ -48,6 +47,7 @@ function ThanksTemplateOne({
   location,
   logoUrl
 }: EventDataProps) {
+  const [logoError, setLogoError] = React.useState(false);
   const formattedDateFrom = formatDate(dateFrom);
   const formattedDateTo = formatDate(dateTo);
   const formattedTimeFrom = formatTimeDisplay(timeFrom);
@@ -66,12 +66,24 @@ function ThanksTemplateOne({
     ? `at ${formattedTimeFrom}`
     : "";
 
+  // Check if logoUrl is valid
+  const isValidLogoUrl = logoUrl && 
+    typeof logoUrl === 'string' && 
+    logoUrl.trim() !== '' && 
+    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:') || logoUrl.startsWith('/'));
+
   return (
     <>
       <div className="w-full bg-gray-50 p-10">
-        {logoUrl ? (
+        {isValidLogoUrl && !logoError ? (
           <div className="flex items-center">
-            <img src={logoUrl} alt="Event Logo" style={{ maxHeight: 60, maxWidth: 200 }} />
+            <img 
+              src={logoUrl} 
+              alt="Event Logo" 
+              style={{ maxHeight: 60, maxWidth: 200 }} 
+              onError={() => setLogoError(true)}
+              onLoad={() => setLogoError(false)}
+            />
           </div>
         ) : (
           <p>Our Logo</p>
