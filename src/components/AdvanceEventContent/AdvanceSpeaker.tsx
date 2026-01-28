@@ -109,7 +109,7 @@ function AdvanceSpeaker({
         page,
         per_page: itemsPerPage,
       });
-
+      console.log("-------response of get speakers api---------------", response);
       if (response.status === 200) {
         const responseData = response.data?.data || response.data;
         const speakers = Array.isArray(responseData)

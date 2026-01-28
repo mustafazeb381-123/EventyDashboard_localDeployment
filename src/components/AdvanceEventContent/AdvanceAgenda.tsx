@@ -402,9 +402,6 @@ function AdvanceAgenda({
         end_time: `${newSession.date} ${newSession.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: newSession.requiredEnrolment,
-        pay_by: "free",
-        price: "0",
-        currency: "USD",
         speaker_ids: selectedSpeakers.map((id) => parseInt(id)),
         display: newSession.display, // Include display field in API call if supported
       },
@@ -582,9 +579,6 @@ function AdvanceAgenda({
         end_time: `${newSession.date} ${newSession.timeTo}:00`,
         auto_accept_users_questions: true,
         require_enroll: newSession.requiredEnrolment,
-        pay_by: "free",
-        price: "0",
-        currency: "USD",
         speaker_ids: selectedSpeakers.map((id) => parseInt(id)),
         display: newSession.display, // Include display field in API call if supported
       },
@@ -1386,10 +1380,6 @@ function AdvanceAgenda({
         >
           ← Previous
         </button>
-
-        <span className="text-sm text-gray-500">
-          Step {currentStep + 1} of {totalSteps}
-        </span>
 
         <button
           onClick={handleNext}

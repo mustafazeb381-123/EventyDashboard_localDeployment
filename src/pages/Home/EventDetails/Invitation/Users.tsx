@@ -821,26 +821,7 @@ function Users() {
             </div>
 
             {/* Pagination */}
-            <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
-              <div className="text-sm text-gray-600">
-                {pagination ? (
-                  <>
-                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-                    <span className="font-medium">
-                      {Math.min(currentPage * itemsPerPage, pagination.total_count)}
-                    </span>{" "}
-                    of <span className="font-medium">{pagination.total_count}</span> users
-                    {filterType !== "all" && (
-                      <span className="ml-2 text-blue-600">
-                        • Filtered: {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
-                        {` (type: ${filterType})`}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <>Loading...</>
-                )}
-              </div>
+            <div className="flex items-center justify-end px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
               {pagination && (
                 <Pagination
                   currentPage={currentPage}
