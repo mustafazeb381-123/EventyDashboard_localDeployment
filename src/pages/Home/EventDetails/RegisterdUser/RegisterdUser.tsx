@@ -14,7 +14,19 @@ import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { Trash2, Mail, Plus, Edit, RotateCcw, X, ChevronDown, CheckCircle, XCircle } from "lucide-react";
+import {
+  Trash2,
+  Mail,
+  Plus,
+  Edit,
+  RotateCcw,
+  X,
+  ChevronDown,
+  CheckCircle,
+  XCircle,
+  FileDown,
+  FileSpreadsheet,
+} from "lucide-react";
 
 // Image compression function
 const compressImage = async (file: File): Promise<File> => {
@@ -61,7 +73,7 @@ const compressImage = async (file: File): Promise<File> => {
             }
           },
           "image/jpeg",
-          0.8
+          0.8,
         );
       };
     };
@@ -149,6 +161,21 @@ function RegisterdUser() {
   const [rejectingBulk, setRejectingBulk] = useState(false);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
+  // Default export date range: start of current month → today; date + status involved by default
+  const [exportDateFrom, setExportDateFrom] = useState<string>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1)
+      .toISOString()
+      .slice(0, 10);
+  });
+  const [exportDateTo, setExportDateTo] = useState<string>(() =>
+    new Date().toISOString().slice(0, 10),
+  );
+  const [exportByMode, setExportByMode] = useState<"date" | "status" | "both">(
+    "both",
+  );
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -177,7 +204,10 @@ function RegisterdUser() {
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -255,10 +285,13 @@ function RegisterdUser() {
         console.error("Server response data:", err.response.data);
         showNotification(
           `Import failed: ${err.response.data?.message || "Validation error"}`,
-          "error"
+          "error",
         );
       } else {
-        showNotification("Failed to import users. Check the file and try again.", "error");
+        showNotification(
+          "Failed to import users. Check the file and try again.",
+          "error",
+        );
       }
     } finally {
       setUploadingTemplate(false); // stop loader
@@ -286,7 +319,7 @@ function RegisterdUser() {
       } else {
         showNotification(
           `Credentials sent to ${idsToSend.length} users successfully!`,
-          "success"
+          "success",
         );
       }
       setSelectedUsers([]);
@@ -294,9 +327,15 @@ function RegisterdUser() {
       console.error("Error sending credentials:", err);
 
       if (isSingleUser) {
-        showNotification("Failed to send credentials to user. Please try again.", "error");
+        showNotification(
+          "Failed to send credentials to user. Please try again.",
+          "error",
+        );
       } else {
-        showNotification("Failed to send credentials. Please try again.", "error");
+        showNotification(
+          "Failed to send credentials. Please try again.",
+          "error",
+        );
       }
     } finally {
       setSendingCredentials(false);
@@ -314,14 +353,18 @@ function RegisterdUser() {
       const res = await approveEventUsers(eventId, idsToUse);
       const count = res?.data?.approved_count ?? idsToUse.length;
       showNotification(
-        count === 1 ? "User approved successfully!" : `Successfully approved ${count} user(s).`,
-        "success"
+        count === 1
+          ? "User approved successfully!"
+          : `Successfully approved ${count} user(s).`,
+        "success",
       );
       setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
       fetchUsers(eventId, currentPage);
     } catch (err: any) {
       const msg =
-        err?.response?.data?.error || err?.response?.data?.message || "Failed to approve users.";
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "Failed to approve users.";
       showNotification(msg, "error");
     } finally {
       setApprovingBulk(false);
@@ -339,14 +382,18 @@ function RegisterdUser() {
       const res = await rejectEventUsers(eventId, idsToUse);
       const count = res?.data?.rejected_count ?? idsToUse.length;
       showNotification(
-        count === 1 ? "User rejected successfully." : `Successfully rejected ${count} user(s).`,
-        "success"
+        count === 1
+          ? "User rejected successfully."
+          : `Successfully rejected ${count} user(s).`,
+        "success",
       );
       setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
       fetchUsers(eventId, currentPage);
     } catch (err: any) {
       const msg =
-        err?.response?.data?.error || err?.response?.data?.message || "Failed to reject users.";
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "Failed to reject users.";
       showNotification(msg, "error");
     } finally {
       setRejectingBulk(false);
@@ -378,7 +425,10 @@ function RegisterdUser() {
 
       // ✅ Save organization to custom_fields.title instead of event_user[organization]
       if (editForm.organization)
-        formData.append("event_user[custom_fields][title]", editForm.organization);
+        formData.append(
+          "event_user[custom_fields][title]",
+          editForm.organization,
+        );
 
       // Append image if provided
       if (selectedImageFile)
@@ -408,8 +458,8 @@ function RegisterdUser() {
                   updated_at: new Date().toISOString(),
                 },
               }
-            : u
-        )
+            : u,
+        ),
       );
 
       showNotification("User updated successfully!", "success");
@@ -508,7 +558,7 @@ function RegisterdUser() {
           const storageKey = `eventUsersLength_${id}`;
           localStorage.setItem(
             storageKey,
-            paginationMeta.total_count?.toString() || "0"
+            paginationMeta.total_count?.toString() || "0",
           );
         }
       }
@@ -521,7 +571,11 @@ function RegisterdUser() {
   };
 
   // Search users across all pages
-  const searchUsersAcrossPages = async (id: string, searchQuery: string, statusFilter: string = "all") => {
+  const searchUsersAcrossPages = async (
+    id: string,
+    searchQuery: string,
+    statusFilter: string = "all",
+  ) => {
     setLoadingUsers(true);
     setIsSearching(true);
     try {
@@ -547,7 +601,7 @@ function RegisterdUser() {
           getEventUsers(id, {
             page,
             per_page: itemsPerPage,
-          })
+          }),
         );
       }
 
@@ -577,7 +631,8 @@ function RegisterdUser() {
           const phoneNumber =
             user.attributes?.phone_number?.toLowerCase() || "";
           // Include title from custom_fields in search
-          const title = user.attributes?.custom_fields?.title?.toLowerCase() || "";
+          const title =
+            user.attributes?.custom_fields?.title?.toLowerCase() || "";
           const userType = (user?.attributes?.user_type || "").toLowerCase();
 
           return (
@@ -638,7 +693,9 @@ function RegisterdUser() {
       const email = (user?.attributes?.email || "").toLowerCase();
       const phone = (user?.attributes?.phone_number || "").toLowerCase();
       const organization = (user?.attributes?.organization || "").toLowerCase();
-      const title = (user?.attributes?.custom_fields?.title || "").toLowerCase();
+      const title = (
+        user?.attributes?.custom_fields?.title || ""
+      ).toLowerCase();
       const userType = (user?.attributes?.user_type || "").toLowerCase();
 
       return (
@@ -680,6 +737,175 @@ function RegisterdUser() {
     );
   };
 
+  // Fetch all users across pages for export (filter by status and optional date range)
+  const fetchAllUsersForExport = async (): Promise<any[]> => {
+    if (!eventId) return [];
+    const perPage = 100;
+    const first = await getEventUsers(eventId, { page: 1, per_page: perPage });
+    const paginationMeta =
+      first.data?.meta?.pagination || first.data?.pagination;
+    const totalPages = paginationMeta?.total_pages || 1;
+    const allUsers: any[] = [];
+    const responseData = first.data?.data || first.data;
+    const firstUsers = Array.isArray(responseData)
+      ? responseData
+      : responseData?.data || [];
+    allUsers.push(...firstUsers);
+    if (totalPages > 1) {
+      const pagePromises = [];
+      for (let p = 2; p <= totalPages; p++) {
+        pagePromises.push(
+          getEventUsers(eventId, { page: p, per_page: perPage }),
+        );
+      }
+      const rest = await Promise.all(pagePromises);
+      rest.forEach((r) => {
+        const data = r.data?.data || r.data;
+        const users = Array.isArray(data) ? data : data?.data || [];
+        allUsers.push(...users);
+      });
+    }
+    const useDate = exportByMode === "date" || exportByMode === "both";
+    const useStatus = exportByMode === "status" || exportByMode === "both";
+    return allUsers.filter((user: any) => {
+      if (useStatus && filterStatus !== "all") {
+        const status = getApprovalStatus(user);
+        if (status !== filterStatus) return false;
+      }
+      if (useDate && (exportDateFrom || exportDateTo)) {
+        const created = user?.attributes?.created_at || "";
+        if (!created) return true;
+        const d = new Date(created).getTime();
+        if (exportDateFrom && d < new Date(exportDateFrom).getTime())
+          return false;
+        if (exportDateTo && d > new Date(exportDateTo + "T23:59:59").getTime())
+          return false;
+      }
+      return true;
+    });
+  };
+
+  const escapeCsvCell = (val: string): string => {
+    const s = String(val ?? "").replace(/"/g, '""');
+    return s.includes(",") || s.includes("\n") || s.includes('"')
+      ? `"${s}"`
+      : s;
+  };
+
+  const handleExportCsv = async () => {
+    if (!eventId) {
+      showNotification("Event ID is required.", "error");
+      return;
+    }
+    setExportingCsv(true);
+    try {
+      const users = await fetchAllUsersForExport();
+      const headers = [
+        "ID",
+        "Name",
+        "Email",
+        "Phone",
+        "Organization",
+        "Type",
+        "Status",
+        "Created",
+        "Updated",
+      ];
+      const rows = users.map((user: any) => {
+        const status = getApprovalStatus(user);
+        const org =
+          user?.attributes?.custom_fields?.title ||
+          user?.attributes?.organization ||
+          "";
+        return [
+          user.id,
+          user?.attributes?.name ?? "",
+          user?.attributes?.email ?? "",
+          user?.attributes?.phone_number ?? "",
+          org,
+          user?.attributes?.user_type ?? "",
+          status,
+          user?.attributes?.created_at ?? "",
+          user?.attributes?.updated_at ?? "",
+        ].map(escapeCsvCell);
+      });
+      const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join(
+        "\n",
+      );
+      const blob = new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `registered_users_${eventId}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showNotification(`Exported ${users.length} users (CSV).`, "success");
+    } catch (e) {
+      console.error(e);
+      showNotification("Export failed.", "error");
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    if (!eventId) {
+      showNotification("Event ID is required.", "error");
+      return;
+    }
+    setExportingExcel(true);
+    try {
+      const users = await fetchAllUsersForExport();
+      const headers = [
+        "ID",
+        "Name",
+        "Email",
+        "Phone",
+        "Organization",
+        "Type",
+        "Status",
+        "Created",
+        "Updated",
+      ];
+      const rows = users.map((user: any) => {
+        const status = getApprovalStatus(user);
+        const org =
+          user?.attributes?.custom_fields?.title ||
+          user?.attributes?.organization ||
+          "";
+        return [
+          user.id,
+          user?.attributes?.name ?? "",
+          user?.attributes?.email ?? "",
+          user?.attributes?.phone_number ?? "",
+          org,
+          user?.attributes?.user_type ?? "",
+          status,
+          user?.attributes?.created_at ?? "",
+          user?.attributes?.updated_at ?? "",
+        ].join("\t");
+      });
+      const tsv = [headers.join("\t"), ...rows].join("\n");
+      const blob = new Blob(["\uFEFF" + tsv], {
+        type: "application/vnd.ms-excel;charset=utf-8",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `registered_users_${eventId}_${new Date().toISOString().slice(0, 10)}.xls`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showNotification(`Exported ${users.length} users (Excel).`, "success");
+    } catch (e) {
+      console.error(e);
+      showNotification("Export failed.", "error");
+    } finally {
+      setExportingExcel(false);
+    }
+  };
+
   const handleDeleteUser = (user: any) => {
     setUserToDelete(user);
     setIsDeleteModalOpen(true);
@@ -713,7 +939,7 @@ function RegisterdUser() {
 
       showNotification(
         `Failed to delete user: ${error.response?.data?.error || error.message}`,
-        "error"
+        "error",
       );
     } finally {
       setDeletingUserId(null);
@@ -732,10 +958,9 @@ function RegisterdUser() {
     setSelectedUsers((prev) =>
       prev.includes(userId)
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
+        : [...prev, userId],
     );
   };
-
 
   const handleResetCheckInOut = (user: any) => {
     setUserToReset(user);
@@ -768,504 +993,609 @@ function RegisterdUser() {
 
   return (
     <>
-    <div className="bg-white min-h-screen p-6">
-      {/* Notification Toast */}
-      {notification && (
-        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
-          <div
-            className={`px-6 py-3 rounded-lg shadow-lg ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-green-500 text-white"
-            }`}
-          >
-            {notification.message}
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-8xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
-              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-                {filterStatus !== "all" || debouncedSearchTerm.trim() !== ""
-                  ? `${filteredUsers.length} Users`
-                  : `${pagination?.total_count || eventUsers.length} Users`}
-              </span>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Import Attendees
-          </button>
-
-          {isImportModalOpen && (
+      <div className="bg-white min-h-screen p-6">
+        {/* Notification Toast */}
+        {notification && (
+          <div className="fixed top-4 right-4 z-[100] animate-slide-in">
             <div
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-              onClick={() => setIsImportModalOpen(false)} // Close on outside click
+              className={`px-6 py-3 rounded-lg shadow-lg ${
+                notification.type === "success"
+                  ? "bg-green-500 text-white"
+                  : notification.type === "error"
+                    ? "bg-red-500 text-white"
+                    : "bg-green-500 text-white"
+              }`}
             >
-              <div
-                className="bg-white p-6 rounded-lg w-96"
-                onClick={(e) => e.stopPropagation()} // Prevent modal content clicks from closing
-              >
-                <h2 className="text-xl font-bold mb-4 text-center">
-                  Import Attendees
-                </h2>
-
-                {/* Download Template */}
-                <button
-                  onClick={handleDownloadTemplate}
-                  className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full flex justify-center items-center gap-2 disabled:opacity-50"
-                  disabled={downloadingTemplate}
-                >
-                  {downloadingTemplate ? "...Downloading" : "Download Template"}
-                </button>
-
-                {/* File Upload */}
-                <input
-                  type="file"
-                  accept=".xlsx, .xls"
-                  onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
-                  className="w-full text-sm border border-gray-300 rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer mb-4"
-                />
-
-                {/* Submit Button (only show if file is selected) */}
-
-                <button
-                  onClick={handleUploadTemplate}
-                  className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-                  disabled={uploadingTemplate} // disable while uploading
-                >
-                  {uploadingTemplate ? "...Uploading" : "Submit"}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {selectedUsers.length > 0 && (
-          <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-blue-700 font-medium">
-              {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
-              selected
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => handleApproveUsers()}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                disabled={approvingBulk}
-              >
-                <CheckCircle className="w-4 h-4" />
-                {approvingBulk ? "...Approving" : "Approve"}
-              </button>
-              <button
-                onClick={() => handleRejectUsers()}
-                className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                disabled={rejectingBulk}
-              >
-                <XCircle className="w-4 h-4" />
-                {rejectingBulk ? "...Rejecting" : "Reject"}
-              </button>
-              <button
-                onClick={() => handleSendCredentials()}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                disabled={sendingCredentials}
-              >
-                <Mail className="w-4 h-4" />
-                {sendingCredentials ? "...Sending" : "Send Credentials"}
-              </button>
+              {notification.message}
             </div>
           </div>
         )}
 
-        <div className="flex flex-col lg:flex-row justify-between gap-4 mb-4">
-          <div className="flex flex-col lg:flex-row gap-4 flex-1">
-            <div className="relative flex-1 lg:w-1/3">
-              <Search
-                value={searchTerm}
-                onChange={(val) => {
-                  setSearchTerm(val);
-                }}
-                placeholder="Search users across all pages..."
-              />
+        <div className="max-w-8xl mx-auto">
+          <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
+
+          {/* Reports / Export bar: export by date, status, or both */}
+          <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+            <div className="flex flex-wrap items-center gap-4 mb-3">
+              <span className="text-sm font-semibold text-gray-700">
+                Reports — Export by:
+              </span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="exportBy"
+                  checked={exportByMode === "date"}
+                  onChange={() => setExportByMode("date")}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Date</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="exportBy"
+                  checked={exportByMode === "status"}
+                  onChange={() => setExportByMode("status")}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Status</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="exportBy"
+                  checked={exportByMode === "both"}
+                  onChange={() => setExportByMode("both")}
+                  className="text-blue-600"
+                />
+                <span className="text-sm">Both (date + status)</span>
+              </label>
             </div>
-            <div className="relative lg:w-48">
-              <select
-                value={filterStatus}
-                onChange={(e) => {
-                  setFilterStatus(e.target.value);
-                  setCurrentPage(1); // Reset to page 1 when filter changes
-                }}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
-              >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
-              </select>
-              <ChevronDown
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                size={20}
-              />
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">From</span>
+                <input
+                  type="date"
+                  value={exportDateFrom}
+                  onChange={(e) => setExportDateFrom(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">To</span>
+                <input
+                  type="date"
+                  value={exportDateTo}
+                  onChange={(e) => setExportDateTo(e.target.value)}
+                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
+                />
+              </div>
+              <div className="flex items-center gap-2 ml-2">
+                <button
+                  onClick={handleExportCsv}
+                  disabled={exportingCsv}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+                >
+                  <FileDown className="w-4 h-4" />
+                  {exportingCsv ? "Exporting…" : "Export CSV"}
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  disabled={exportingExcel}
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  {exportingExcel ? "Exporting…" : "Export Excel"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Table */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
-          <div className="overflow-x-auto">
-            {loadingUsers ? (
-              <table className="w-full">
-                <thead className="bg-gray-50/80 border-b border-gray-200/60">
-                  <tr>
-                    <th className="w-12 px-6 py-3 text-left">
-                      <Skeleton className="w-4 h-4" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-12" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-20" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-24" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-28" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-16" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-16" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-20" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-20" />
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <Skeleton className="h-4 w-16" />
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {Array.from({ length: 10 }).map((_, index) => (
-                    <tr
-                      key={index}
-                      className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
-                    >
-                      <td className="px-6 py-4">
-                        <Skeleton className="w-4 h-4" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-12" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <Skeleton className="w-10 h-10 rounded-full" />
-                          <Skeleton className="h-4 w-32" />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-40" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-36" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-6 w-20 rounded-full" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-24" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-16" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <Skeleton className="h-4 w-24" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="w-8 h-8 rounded-lg" />
-                          <Skeleton className="w-8 h-8 rounded-lg" />
-                          <Skeleton className="w-8 h-8 rounded-lg" />
-                          <Skeleton className="w-8 h-8 rounded-lg" />
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <table className="w-full">
-                <thead className="bg-gray-50/80 border-b border-gray-200/60">
-                  <tr>
-                    <th className="w-12 px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                        onChange={handleSelectAll}
-                        checked={
-                          filteredUsers.length > 0 &&
-                          selectedUsers.length === filteredUsers.length &&
-                          filteredUsers.every((user) => selectedUsers.includes(user.id))
-                        }
-                      />
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
-                    </th>
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
+                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
+                  {filterStatus !== "all" || debouncedSearchTerm.trim() !== ""
+                    ? `${filteredUsers.length} Users`
+                    : `${pagination?.total_count || eventUsers.length} Users`}
+                </span>
+              </div>
+            </div>
 
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Organization
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Updated
-                    </th>
+            <button
+              onClick={() => setIsImportModalOpen(true)}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Import Attendees
+            </button>
 
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
+            {isImportModalOpen && (
+              <div
+                className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+                onClick={() => setIsImportModalOpen(false)} // Close on outside click
+              >
+                <div
+                  className="bg-white p-6 rounded-lg w-96"
+                  onClick={(e) => e.stopPropagation()} // Prevent modal content clicks from closing
+                >
+                  <h2 className="text-xl font-bold mb-4 text-center">
+                    Import Attendees
+                  </h2>
 
-                <tbody className="divide-y divide-gray-200/60">
-                  {filteredUsers.length === 0 && !loadingUsers ? (
+                  {/* Download Template */}
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 w-full flex justify-center items-center gap-2 disabled:opacity-50"
+                    disabled={downloadingTemplate}
+                  >
+                    {downloadingTemplate
+                      ? "...Downloading"
+                      : "Download Template"}
+                  </button>
+
+                  {/* File Upload */}
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={(e) => setUploadFile(e.target.files?.[0] || null)}
+                    className="w-full text-sm border border-gray-300 rounded-lg py-2 px-3 transition-colors text-gray-500 bg-white file:mr-4 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer mb-4"
+                  />
+
+                  {/* Submit Button (only show if file is selected) */}
+
+                  <button
+                    onClick={handleUploadTemplate}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                    disabled={uploadingTemplate} // disable while uploading
+                  >
+                    {uploadingTemplate ? "...Uploading" : "Submit"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {selectedUsers.length > 0 && (
+            <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-blue-700 font-medium">
+                {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
+                selected
+              </p>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleApproveUsers()}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  disabled={approvingBulk}
+                >
+                  <CheckCircle className="w-4 h-4" />
+                  {approvingBulk ? "...Approving" : "Approve"}
+                </button>
+                <button
+                  onClick={() => handleRejectUsers()}
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  disabled={rejectingBulk}
+                >
+                  <XCircle className="w-4 h-4" />
+                  {rejectingBulk ? "...Rejecting" : "Reject"}
+                </button>
+                <button
+                  onClick={() => handleSendCredentials()}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  disabled={sendingCredentials}
+                >
+                  <Mail className="w-4 h-4" />
+                  {sendingCredentials ? "...Sending" : "Send Credentials"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-col lg:flex-row justify-between gap-4 mb-4">
+            <div className="flex flex-col lg:flex-row gap-4 flex-1">
+              <div className="relative flex-1 lg:w-1/3">
+                <Search
+                  value={searchTerm}
+                  onChange={(val) => {
+                    setSearchTerm(val);
+                  }}
+                  placeholder="Search users across all pages..."
+                />
+              </div>
+              <div className="relative lg:w-48">
+                <select
+                  value={filterStatus}
+                  onChange={(e) => {
+                    setFilterStatus(e.target.value);
+                    setCurrentPage(1); // Reset to page 1 when filter changes
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
+                >
+                  <option value="all">All Status</option>
+                  <option value="pending">Pending</option>
+                  <option value="approved">Approved</option>
+                  <option value="rejected">Rejected</option>
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={20}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+            <div className="overflow-x-auto">
+              {loadingUsers ? (
+                <table className="w-full">
+                  <thead className="bg-gray-50/80 border-b border-gray-200/60">
                     <tr>
-                      <td
-                        colSpan={10}
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
-                        {debouncedSearchTerm.trim() !== "" && filterStatus !== "all"
-                          ? `No users found matching "${debouncedSearchTerm}" with status "${filterStatus}"`
-                          : debouncedSearchTerm.trim() !== ""
-                          ? `No users found matching "${debouncedSearchTerm}"`
-                          : filterStatus !== "all"
-                          ? `No users found with status "${filterStatus}"`
-                          : "No users found"}
-                      </td>
+                      <th className="w-12 px-6 py-3 text-left">
+                        <Skeleton className="w-4 h-4" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-12" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-20" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-24" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-28" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-16" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-16" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-20" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-20" />
+                      </th>
+                      <th className="px-6 py-3 text-left">
+                        <Skeleton className="h-4 w-16" />
+                      </th>
                     </tr>
-                  ) : (
-                    filteredUsers.map((user, index) => (
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {Array.from({ length: 10 }).map((_, index) => (
                       <tr
-                        key={user.id}
+                        key={index}
                         className={index % 2 === 0 ? "bg-white" : "bg-gray-50"}
                       >
                         <td className="px-6 py-4">
-                          <input
-                            type="checkbox"
-                            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                            checked={selectedUsers.includes(user.id)}
-                            onChange={() => handleSelectUser(user.id)}
-                          />
+                          <Skeleton className="w-4 h-4" />
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          {user.id}
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-12" />
                         </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <UserAvatar user={user} />
-                            <span className="text-sm font-medium text-gray-900">
-                              {user?.attributes?.name}
-                            </span>
+                            <Skeleton className="w-10 h-10 rounded-full" />
+                            <Skeleton className="h-4 w-32" />
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {user?.attributes?.email}
-                        </td>
-
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {user?.attributes?.custom_fields?.title || user?.attributes?.organization || "-"}
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-40" />
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {user?.attributes?.user_type}
-                          </span>
+                          <Skeleton className="h-4 w-36" />
                         </td>
                         <td className="px-6 py-4">
-                          {getApprovalStatus(user) === "approved" && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Approved
-                            </span>
-                          )}
-                          {getApprovalStatus(user) === "rejected" && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                              Rejected
-                            </span>
-                          )}
-                          {getApprovalStatus(user) === "pending" && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                              Pending
-                            </span>
-                          )}
+                          <Skeleton className="h-6 w-20 rounded-full" />
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {formatDate(user?.attributes?.created_at)}
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {formatDate(user?.attributes?.updated_at)}
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-16" />
                         </td>
-
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            {/* <button
+                            <Skeleton className="w-8 h-8 rounded-lg" />
+                            <Skeleton className="w-8 h-8 rounded-lg" />
+                            <Skeleton className="w-8 h-8 rounded-lg" />
+                            <Skeleton className="w-8 h-8 rounded-lg" />
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50/80 border-b border-gray-200/60">
+                    <tr>
+                      <th className="w-12 px-6 py-3 text-left">
+                        <input
+                          type="checkbox"
+                          className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                          onChange={handleSelectAll}
+                          checked={
+                            filteredUsers.length > 0 &&
+                            selectedUsers.length === filteredUsers.length &&
+                            filteredUsers.every((user) =>
+                              selectedUsers.includes(user.id),
+                            )
+                          }
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        ID
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Email
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Organization
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Created
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Updated
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+
+                  <tbody className="divide-y divide-gray-200/60">
+                    {filteredUsers.length === 0 && !loadingUsers ? (
+                      <tr>
+                        <td
+                          colSpan={10}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          {debouncedSearchTerm.trim() !== "" &&
+                          filterStatus !== "all"
+                            ? `No users found matching "${debouncedSearchTerm}" with status "${filterStatus}"`
+                            : debouncedSearchTerm.trim() !== ""
+                              ? `No users found matching "${debouncedSearchTerm}"`
+                              : filterStatus !== "all"
+                                ? `No users found with status "${filterStatus}"`
+                                : "No users found"}
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((user, index) => (
+                        <tr
+                          key={user.id}
+                          className={
+                            index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                          }
+                        >
+                          <td className="px-6 py-4">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                              checked={selectedUsers.includes(user.id)}
+                              onChange={() => handleSelectUser(user.id)}
+                            />
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                            {user.id}
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <UserAvatar user={user} />
+                              <span className="text-sm font-medium text-gray-900">
+                                {user?.attributes?.name}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {user?.attributes?.email}
+                          </td>
+
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {user?.attributes?.custom_fields?.title ||
+                              user?.attributes?.organization ||
+                              "-"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {user?.attributes?.user_type}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4">
+                            {getApprovalStatus(user) === "approved" && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Approved
+                              </span>
+                            )}
+                            {getApprovalStatus(user) === "rejected" && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                Rejected
+                              </span>
+                            )}
+                            {getApprovalStatus(user) === "pending" && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                                Pending
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {formatDate(user?.attributes?.created_at)}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-600">
+                            {formatDate(user?.attributes?.updated_at)}
+                          </td>
+
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2">
+                              {/* <button
                               onClick={() => handleResetCheckInOut(user)}
                               className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
                             >
                               <RotateCcw className="w-4 h-4" />
                             </button> */}
 
-                            <button
-                              onClick={() => handleApproveUsers([user.id])}
-                              disabled={approvingUserId === user.id}
-                              className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                                approvingUserId === user.id
-                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                  : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
-                              }`}
-                            >
-                              {approvingUserId === user.id ? "Accepting..." : "Accept"}
-                            </button>
+                              <button
+                                onClick={() => handleApproveUsers([user.id])}
+                                disabled={approvingUserId === user.id}
+                                className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                  approvingUserId === user.id
+                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                    : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                }`}
+                              >
+                                {approvingUserId === user.id
+                                  ? "Accepting..."
+                                  : "Accept"}
+                              </button>
 
-                            <button
-                              onClick={() => handleRejectUsers([user.id])}
-                              disabled={rejectingUserId === user.id}
-                              className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
-                                rejectingUserId === user.id
-                                  ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                  : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                              }`}
-                            >
-                              {rejectingUserId === user.id ? "Rejecting..." : "Reject"}
-                            </button>
+                              <button
+                                onClick={() => handleRejectUsers([user.id])}
+                                disabled={rejectingUserId === user.id}
+                                className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                  rejectingUserId === user.id
+                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
+                                    : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                }`}
+                              >
+                                {rejectingUserId === user.id
+                                  ? "Rejecting..."
+                                  : "Reject"}
+                              </button>
 
-                            <button
-                              onClick={() => handleDeleteUser(user)}
-                              className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                              <button
+                                onClick={() => handleDeleteUser(user)}
+                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
 
-                            <button
-                              onClick={() => {
-                                setEditingUser(user);
-                                setEditForm({
-                                  name: user?.attributes?.name || "",
-                                  email: user?.attributes?.email || "",
-                                  phone_number:
-                                    user?.attributes?.phone_number || "",
-                                  organization:
-                                    user?.attributes?.custom_fields?.title || user?.attributes?.organization || "", // Load title from custom_fields into organization field
-                                  position: user?.attributes?.position || "",
-                                  image: user?.attributes?.image || "",
-                                  user_type: user?.attributes?.user_type || "",
-                                  printed: user?.attributes?.printed || false,
-                                });
-                              }}
-                              className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
+                              <button
+                                onClick={() => {
+                                  setEditingUser(user);
+                                  setEditForm({
+                                    name: user?.attributes?.name || "",
+                                    email: user?.attributes?.email || "",
+                                    phone_number:
+                                      user?.attributes?.phone_number || "",
+                                    organization:
+                                      user?.attributes?.custom_fields?.title ||
+                                      user?.attributes?.organization ||
+                                      "", // Load title from custom_fields into organization field
+                                    position: user?.attributes?.position || "",
+                                    image: user?.attributes?.image || "",
+                                    user_type:
+                                      user?.attributes?.user_type || "",
+                                    printed: user?.attributes?.printed || false,
+                                  });
+                                }}
+                                className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
 
-                            <button
-                              onClick={() => handleSendCredentials([user.id])}
-                              disabled={sendingCredentialsUserId === user.id}
-                              className={`p-2 rounded-lg transition-colors ${
-                                sendingCredentialsUserId === user.id
-                                  ? "text-gray-400 cursor-not-allowed"
-                                  : "text-blue-600 hover:bg-blue-50"
-                              }`}
-                            >
-                              {sendingCredentialsUserId === user.id ? (
-                                <div
-                                  style={{
-                                    width: "16px",
-                                    height: "16px",
-                                    border: "2px solid #d1d5db",
-                                    borderTop: "2px solid #3b82f6",
-                                    borderRadius: "50%",
-                                    animation: "spin 1s linear infinite",
-                                  }}
-                                />
-                              ) : (
-                                <Mail className="w-4 h-4" />
-                              )}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            )}
-          </div>
-
-          {/* Pagination */}
-          {!loadingUsers && (
-            <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
-              <div className="text-sm text-gray-600">
-                {pagination ? (
-                  <>
-                    Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{" "}
-                    <span className="font-medium">
-                      {Math.min(currentPage * itemsPerPage, pagination.total_count)}
-                    </span>{" "}
-                    of <span className="font-medium">{pagination.total_count}</span> users
-                    {filterStatus !== "all" && (
-                      <span className="ml-2 text-blue-600">
-                        • Filtered: {filteredUsers.length} {filterStatus} user{filteredUsers.length !== 1 ? "s" : ""}
-                      </span>
+                              <button
+                                onClick={() => handleSendCredentials([user.id])}
+                                disabled={sendingCredentialsUserId === user.id}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  sendingCredentialsUserId === user.id
+                                    ? "text-gray-400 cursor-not-allowed"
+                                    : "text-blue-600 hover:bg-blue-50"
+                                }`}
+                              >
+                                {sendingCredentialsUserId === user.id ? (
+                                  <div
+                                    style={{
+                                      width: "16px",
+                                      height: "16px",
+                                      border: "2px solid #d1d5db",
+                                      borderTop: "2px solid #3b82f6",
+                                      borderRadius: "50%",
+                                      animation: "spin 1s linear infinite",
+                                    }}
+                                  />
+                                ) : (
+                                  <Mail className="w-4 h-4" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
                     )}
-                  </>
-                ) : (
-                  <>Loading...</>
-                )}
-              </div>
-              {pagination && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={pagination.total_pages || 1}
-                  onPageChange={(page) => {
-                    setCurrentPage(page);
-                    // Scroll to top when page changes
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                  }}
-                  className=""
-                />
+                  </tbody>
+                </table>
               )}
             </div>
-          )}
-        </div>
+
+            {/* Pagination */}
+            {!loadingUsers && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+                <div className="text-sm text-gray-600">
+                  {pagination ? (
+                    <>
+                      Showing{" "}
+                      <span className="font-medium">
+                        {(currentPage - 1) * itemsPerPage + 1}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-medium">
+                        {Math.min(
+                          currentPage * itemsPerPage,
+                          pagination.total_count,
+                        )}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-medium">
+                        {pagination.total_count}
+                      </span>{" "}
+                      users
+                      {filterStatus !== "all" && (
+                        <span className="ml-2 text-blue-600">
+                          • Filtered: {filteredUsers.length} {filterStatus} user
+                          {filteredUsers.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>Loading...</>
+                  )}
+                </div>
+                {pagination && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={pagination.total_pages || 1}
+                    onPageChange={(page) => {
+                      setCurrentPage(page);
+                      // Scroll to top when page changes
+                      window.scrollTo({ top: 0, behavior: "smooth" });
+                    }}
+                    className=""
+                  />
+                )}
+              </div>
+            )}
+          </div>
 
           {isDeleteModalOpen && userToDelete && (
             <div
@@ -1417,10 +1747,13 @@ function RegisterdUser() {
                     onChange={async (e) => {
                       if (e.target.files && e.target.files[0]) {
                         const compressedFile = await compressImage(
-                          e.target.files[0]
+                          e.target.files[0],
                         );
                         setSelectedImageFile(compressedFile);
-                        showNotification("Image compressed and ready to upload", "info");
+                        showNotification(
+                          "Image compressed and ready to upload",
+                          "info",
+                        );
                       }
                     }}
                   />

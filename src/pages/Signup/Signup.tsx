@@ -28,8 +28,12 @@ const RHFInput = React.forwardRef<HTMLInputElement, any>((props, ref) => (
 RHFInput.displayName = "RHFInput";
 
 function Signup() {
-  const { t } = useTranslation("signupPage");
+  const { t, i18n } = useTranslation("signupPage");
   const navigate = useNavigate();
+  const isArabic = i18n.language?.toLowerCase().startsWith("ar");
+  const dir = isArabic ? "rtl" : "ltr";
+  const isRTL = isArabic;
+  const lang = i18n.language || "en";
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [notification, setNotification] = useState<{
@@ -100,8 +104,8 @@ function Signup() {
       // }
 
       showNotification(
-        response?.data?.message || "Signup successful!",
-        "success"
+        response?.data?.message || t("successMessage"),
+        "success",
       );
       setTimeout(() => navigate("/login"), 1000);
     } catch (error: any) {
@@ -115,12 +119,12 @@ function Signup() {
                 ? "passwordConfirmation"
                 : (field as keyof SignupFormData);
             setError(key, { message: (messages as string[]).join(", ") });
-          }
+          },
         );
       } else if (error?.response?.data?.error) {
         showNotification(error.response.data.error, "error");
       } else {
-        showNotification("Signup failed. Please try again.", "error");
+        showNotification(t("signupFailed"), "error");
       }
     }
   };
@@ -129,7 +133,7 @@ function Signup() {
     id: keyof SignupFormData,
     placeholder: string,
     show: boolean,
-    toggle: () => void
+    toggle: () => void,
   ) => (
     <div className="relative">
       <RHFInput
@@ -137,12 +141,12 @@ function Signup() {
         type={show ? "text" : "password"}
         placeholder={placeholder}
         {...register(id)}
-        className="w-full h-10 sm:h-11 text-sm pr-10 border-[#A3ADBC] rounded-2xl"
+        className={`w-full h-10 sm:h-11 text-sm border-[#A3ADBC] rounded-2xl ${isRTL ? "pl-10" : "pr-10"}`}
       />
       <button
         type="button"
         onClick={toggle}
-        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+        className={`absolute top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 ${isRTL ? "left-3" : "right-3"}`}
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
@@ -157,7 +161,7 @@ function Signup() {
   const renderInput = (
     id: keyof SignupFormData,
     placeholder: string,
-    type: string = "text"
+    type: string = "text",
   ) => (
     <>
       <RHFInput
@@ -175,10 +179,16 @@ function Signup() {
     </>
   );
 
+  const handleChangeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
+  };
+
   return (
-    <div className="h-[100svh] p-2 sm:p-4 self-center">
-      <div className="flex flex-1 h-full flex-col lg:flex-row gap-2 sm:gap-4">
-        {/* Left side - Form */}
+    <div className="h-[100svh] p-2 sm:p-4 self-center" dir={dir} lang={lang}>
+      <div
+        className={`flex flex-1 h-full flex-col gap-2 sm:gap-4 ${isRTL ? "lg:flex-row-reverse" : "lg:flex-row"}`}
+      >
+        {/* Form panel */}
         <div className="w-full lg:w-1/2 flex rounded-2xl sm:rounded-4xl justify-center items-center flex-col bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)] overflow-hidden p-4 sm:p-6">
           <div className="pb-2 flex flex-col items-center">
             <img
@@ -187,8 +197,26 @@ function Signup() {
               alt="Eventy Logo"
             />
             <span className="pb-2 text-lg font-semibold text-[#0F4999]">
-              Signup
+              {t("signupTitle")}
             </span>
+            {/* Language toggle: English | Arabic (direction follows language) */}
+            <div className="flex items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white/90 px-2 py-1.5 shadow-sm pt-1 pb-2">
+              <button
+                type="button"
+                onClick={() => handleChangeLanguage("en")}
+                className={`rounded px-2 py-1 text-sm font-medium transition-colors ${lang.startsWith("en") ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                English
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                type="button"
+                onClick={() => handleChangeLanguage("ar")}
+                className={`rounded px-2 py-1 text-sm font-medium transition-colors ${isArabic ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"}`}
+              >
+                العربية
+              </button>
+            </div>
           </div>
 
           <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">
@@ -200,13 +228,13 @@ function Signup() {
                 "password",
                 t("passwordPlaceholder"),
                 showPassword,
-                () => setShowPassword(!showPassword)
+                () => setShowPassword(!showPassword),
               )}
               {renderPasswordInput(
                 "passwordConfirmation",
                 t("confirmPasswordPlaceholder"),
                 showConfirmPassword,
-                () => setShowConfirmPassword(!showConfirmPassword)
+                () => setShowConfirmPassword(!showConfirmPassword),
               )}
 
               <Button
@@ -215,7 +243,7 @@ function Signup() {
                 variant="default"
                 className={`${myButtonClass} ${myButtonVariants.default} w-full h-10 sm:h-11 text-sm`}
               >
-                {isSubmitting ? "Loading..." : t("nextButton")}
+                {isSubmitting ? t("loading") : t("nextButton")}
               </Button>
 
               <div className="text-center pt-1">
@@ -244,7 +272,9 @@ function Signup() {
       </div>
 
       {notification && (
-        <div className="fixed top-4 right-4 z-[100] animate-slide-in">
+        <div
+          className={`fixed top-4 z-[100] animate-slide-in ${isRTL ? "left-4" : "right-4"}`}
+        >
           <div
             className={`px-6 py-3 rounded-lg shadow-lg ${
               notification.type === "success"

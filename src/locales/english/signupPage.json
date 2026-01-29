@@ -15,6 +15,7 @@
   "passwordPlaceholder": "Password",
   "confirmPasswordPlaceholder": "Confirm Password",
   "signupButton": "Sign Up",
+  "nextButton": "Sign Up",
   "doYouHaveAccount": "Do you have an account?",
   "alreadyHaveAccount": "Already have an account?",
   "signInLink": "Sign in",
@@ -22,6 +23,8 @@
   "agreeTerms": "Agree to the Terms and Conditions and Privacy Policy",
   "termsAndConditions": "Terms and Conditions",
   "privacyPolicy": "Privacy Policy",
+  "loading": "Loading...",
+  "signupFailed": "Signup failed. Please try again.",
   "errorMessages": {
     "nameRequired": "Name is required",
     "emailRequired": "Email is required",
@@ -35,4 +38,3 @@
   },
   "successMessage": "Signup successful! You can now login."
 }
-
