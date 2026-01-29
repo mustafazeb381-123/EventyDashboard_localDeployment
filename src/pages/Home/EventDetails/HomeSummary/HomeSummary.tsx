@@ -11,6 +11,15 @@ import {
 } from "@/apis/apiHelpers";
 import imageCompression from "browser-image-compression";
 
+// Same logic as SummaryCardData so counts match the card-detail page
+const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
+  const status = user?.attributes?.approval_status;
+  const approved = user?.attributes?.approved;
+  if (status === "approved" || approved === true) return "approved";
+  if (status === "rejected" || approved === false) return "rejected";
+  return "pending";
+};
+
 type HomeSummaryProps = {
   chartData?: Array<Record<string, any>>;
   onTimeRangeChange?: (range: string) => void;
@@ -38,7 +47,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -52,7 +64,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       { label: "May", registered: 85 },
       { label: "Jun", registered: 200 },
     ],
-    []
+    [],
   );
 
   // Derive chart data from metrics API with fallbacks
@@ -117,7 +129,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       !Array.isArray(metricsSeries)
     ) {
       const entries = Object.entries(metricsSeries).map(([key, value], idx) =>
-        normalizePoint({ label: key, registered: value }, idx)
+        normalizePoint({ label: key, registered: value }, idx),
       );
 
       if (entries.length) {
@@ -189,7 +201,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const location = useLocation();
   const { id: paramId } = useParams();
   const [eventId, setEventId] = useState<string | undefined>(
-    (location.state as any)?.eventId || paramId
+    (location.state as any)?.eventId || paramId,
   );
 
   // Keep eventId in sync with params, search, or localStorage so metrics fetch fires with a valid ID.
@@ -247,13 +259,26 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   };
 
-  // Fetch event users to derive user types and counts (each event has different user types)
+  // Fetch all event users (all pages) so summary counts match the card-detail page
   const fetchEventUsersForSummary = async (id: string) => {
     try {
-      const response = await getEventUsers(id, { per_page: 500 });
-      const data = response?.data?.data;
-      const users = Array.isArray(data) ? data : [];
-      setEventUsers(users);
+      const perPage = 100;
+      const first = await getEventUsers(id, { page: 1, per_page: perPage });
+      const data = first?.data?.data || first?.data;
+      const list = Array.isArray(data) ? data : data?.data || [];
+      const pagination =
+        first?.data?.meta?.pagination || first?.data?.pagination;
+      const totalPages = pagination?.total_pages ?? 1;
+      const all: any[] = [...list];
+      if (totalPages > 1) {
+        for (let p = 2; p <= totalPages; p++) {
+          const res = await getEventUsers(id, { page: p, per_page: perPage });
+          const d = res?.data?.data || res?.data;
+          const users = Array.isArray(d) ? d : d?.data || [];
+          all.push(...users);
+        }
+      }
+      setEventUsers(all);
     } catch (error) {
       console.error("Error fetching event users for summary:", error);
       setEventUsers([]);
@@ -353,6 +378,41 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     </div>
   );
 
+  // Derived counts from eventUsers (same logic as SummaryCardData) so summary and card-detail match
+  const derivedCounts = useMemo(() => {
+    const list = Array.isArray(eventUsers) ? eventUsers : [];
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+    let total = list.length;
+    let today = 0;
+    let pending = 0;
+    let approved = 0;
+    let rejected = 0;
+    let printed = 0;
+    list.forEach((user: any) => {
+      const created = user?.attributes?.created_at;
+      if (created) {
+        const t = new Date(created).getTime();
+        if (t >= todayStart.getTime() && t <= todayEnd.getTime()) today++;
+      }
+      const status = getApprovalStatus(user);
+      if (status === "pending") pending++;
+      else if (status === "approved") approved++;
+      else if (status === "rejected") rejected++;
+      if (user?.attributes?.printed) printed++;
+    });
+    return {
+      total,
+      today,
+      pending,
+      approved,
+      rejected,
+      printed,
+    };
+  }, [eventUsers]);
+
   // Derive user types and counts from event users API – each event has different user types
   const userTypeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -395,44 +455,57 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     Assets.icons.confirmationEmailOne,
   ];
 
-  // Stats: base metrics + dynamic user-type cards (only types that exist for this event)
+  // Stats: derived from eventUsers (same logic as SummaryCardData) so counts match card-detail page
   const stats = useMemo(() => {
-    const base = [
+    const base: Array<{
+      label: string;
+      value: number;
+      icon: string;
+      bgColor: string;
+      filterKey: string;
+      userTypeKey?: string;
+    }> = [
       {
         label: "Total Registrations",
-        value: metrics?.total_registration || 0,
+        value: derivedCounts.total,
         icon: Assets.icons.totalRegistration,
         bgColor: "bg-blue-50",
+        filterKey: "all",
       },
       {
         label: "Today Registrations",
-        value: metrics?.todays_registration || 0,
+        value: derivedCounts.today,
         icon: Assets.icons.todayRegistration,
         bgColor: "bg-emerald-50",
+        filterKey: "today",
       },
       {
         label: "Pending Users",
-        value: metrics?.pending_users || 0,
+        value: derivedCounts.pending,
         icon: Assets.icons.pendingUsers,
         bgColor: "bg-amber-50",
+        filterKey: "pending",
       },
       {
         label: "Approved Users",
-        value: metrics?.approved_registration || 0,
+        value: derivedCounts.approved,
         icon: Assets.icons.approvedRegistration,
         bgColor: "bg-teal-50",
+        filterKey: "approved",
       },
       {
         label: "Rejected Users",
-        value: metrics?.rejected_users || 0,
+        value: derivedCounts.rejected,
         icon: Assets.icons.rejectionEmailOne,
         bgColor: "bg-red-50",
+        filterKey: "rejected",
       },
       {
         label: "Printed Users",
-        value: metrics?.printed_users || 0,
+        value: derivedCounts.printed,
         icon: Assets.icons.totalRegistration,
         bgColor: "bg-slate-50",
+        filterKey: "printed",
       },
     ];
     const userTypeCards = uniqueUserTypes.map((typeKey, index) => ({
@@ -440,9 +513,11 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       value: userTypeCounts[typeKey] ?? 0,
       icon: guestTypeIcons[index % guestTypeIcons.length],
       bgColor: guestTypeColors[index % guestTypeColors.length],
+      filterKey: "user_type",
+      userTypeKey: typeKey,
     }));
     return [...base, ...userTypeCards];
-  }, [metrics, uniqueUserTypes, userTypeCounts]);
+  }, [derivedCounts, uniqueUserTypes, userTypeCounts]);
 
   if (!eventData) {
     return <SkeletonLoader />;
@@ -491,7 +566,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       "image/jpg",
     ];
     if (!allowedTypes.includes(file.type)) {
-      showNotification("Invalid file type. Please upload SVG, PNG, or JPG.", "error");
+      showNotification(
+        "Invalid file type. Please upload SVG, PNG, or JPG.",
+        "error",
+      );
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -519,7 +597,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       let fileToUpload = file;
 
       if (file.size > 2 * 1024 * 1024) {
-        showNotification("SVG file is too large. Maximum allowed size is 2MB.", "error");
+        showNotification(
+          "SVG file is too large. Maximum allowed size is 2MB.",
+          "error",
+        );
         setIsUploading(false);
         return;
       }
@@ -539,7 +620,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
       showNotification("Logo updated successfully", "success");
     } catch (error: any) {
-      showNotification(error?.response?.data?.message || "Error updating logo", "error");
+      showNotification(
+        error?.response?.data?.message || "Error updating logo",
+        "error",
+      );
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -773,14 +857,17 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         0,
         0,
         400,
-        400
+        400,
       );
 
       // Convert canvas to blob
       canvas.toBlob(
         async (blob) => {
           if (!blob) {
-            showNotification("Failed to crop image. Please try again.", "error");
+            showNotification(
+              "Failed to crop image. Please try again.",
+              "error",
+            );
             setIsUploading(false);
             return;
           }
@@ -805,7 +892,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
               finalFile = await imageCompression(
                 croppedFile,
-                compressionOptions
+                compressionOptions,
               );
             }
 
@@ -836,7 +923,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             console.error("Error processing image:", error);
             showNotification(
               error?.response?.data?.message || "Error updating logo",
-              "error"
+              "error",
             );
           } finally {
             setIsUploading(false);
@@ -846,7 +933,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           }
         },
         "image/jpeg",
-        0.9 // Quality
+        0.9, // Quality
       );
     } catch (error: any) {
       console.error("Error cropping image:", error);
@@ -984,7 +1071,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 navigator.clipboard
                   .writeText(registrationUrl)
                   .then(() => {
-                    showNotification("Registration link copied to clipboard!", "success");
+                    showNotification(
+                      "Registration link copied to clipboard!",
+                      "success",
+                    );
                   })
                   .catch(() => {
                     showNotification("Failed to copy link", "error");
@@ -1049,16 +1139,37 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
         </div>
 
-        {/* registration and user counters - Responsive Grid (colorful icon backgrounds) */}
+        {/* registration and user counters - Responsive Grid (clickable cards) */}
         <div className="mt-6 lg:mt-6 gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
           {stats.map((item, index) => (
             <div
               key={`${item.label}-${index}`}
-              className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+              role="button"
+              tabIndex={0}
+              onClick={() =>
+                navigate(`/home/${eventId}/summary-card`, {
+                  state: {
+                    cardLabel: item.label,
+                    filterKey: item.filterKey ?? "all",
+                    userTypeKey: item.userTypeKey,
+                  },
+                })
+              }
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  navigate(`/home/${eventId}/summary-card`, {
+                    state: {
+                      cardLabel: item.label,
+                      filterKey: item.filterKey ?? "all",
+                      userTypeKey: item.userTypeKey,
+                    },
+                  });
+                }
+              }}
+              className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <div
-                className={`p-3 lg:p-4 ${item.bgColor} rounded-xl shrink-0`}
-              >
+              <div className={`p-3 lg:p-4 ${item.bgColor} rounded-xl shrink-0`}>
                 <img
                   src={item.icon}
                   alt={item.label}
@@ -1152,8 +1263,8 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                           ${cropArea.x}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
                           ${cropArea.x + cropArea.width}px ${
-                          cropArea.y + cropArea.height
-                        }px, 
+                            cropArea.y + cropArea.height
+                          }px, 
                           ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
                           ${cropArea.x}px 100%, 
                           100% 100%, 
@@ -1239,10 +1350,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : notification.type === "warning"
-                ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
