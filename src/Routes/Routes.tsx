@@ -11,6 +11,7 @@ import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
+import SummaryCardData from "@/pages/Home/EventDetails/SummaryCardData/SummaryCardData";
 import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
 import Agenda from "@/pages/Home/EventDetails/Agenda/Agenda";
 import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
           {
             path: "home/:id",
             element: <HomeSummary />,
+          },
+          {
+            path: "home/:id/summary-card",
+            element: <SummaryCardData />,
           },
           {
             path: "regesterd_user",
