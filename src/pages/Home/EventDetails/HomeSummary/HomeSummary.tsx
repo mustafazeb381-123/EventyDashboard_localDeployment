@@ -372,6 +372,12 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     return types.sort((a, b) => a.localeCompare(b));
   }, [userTypeCounts]);
 
+  // Printed count from getEventUsers (attributes.printed === true)
+  const printedCountFromUsers = useMemo(() => {
+    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
+    return eventUsers.filter((u: any) => u?.attributes?.printed === true).length;
+  }, [eventUsers]);
+
   // Display label: capitalize first letter (e.g. "guest" -> "Guest", "great" -> "Great")
   const formatUserTypeLabel = (key: string) =>
     key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
@@ -430,7 +436,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       },
       {
         label: "Printed Users",
-        value: metrics?.printed_users || 0,
+        value: eventUsers.length > 0 ? printedCountFromUsers : (metrics?.printed_users ?? 0),
         icon: Assets.icons.totalRegistration,
         bgColor: "bg-slate-50",
       },
@@ -442,7 +448,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       bgColor: guestTypeColors[index % guestTypeColors.length],
     }));
     return [...base, ...userTypeCards];
-  }, [metrics, uniqueUserTypes, userTypeCounts]);
+  }, [metrics, uniqueUserTypes, userTypeCounts, printedCountFromUsers, eventUsers.length]);
 
   if (!eventData) {
     return <SkeletonLoader />;

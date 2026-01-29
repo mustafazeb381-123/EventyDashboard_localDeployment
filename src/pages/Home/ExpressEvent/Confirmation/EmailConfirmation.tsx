@@ -18,6 +18,27 @@ import {
   deleteEmailTemplateApi,
   getShowEventData,
 } from "@/apis/apiHelpers";
+import { wrapHtmlAsFullEmailDocument } from "@/utils/emailHtml";
+
+// Base URL for email HTML so images work when backend sends emails (and in preview).
+// Relative paths like /assets/xxx.png become absolute so email clients can load them.
+const EMAIL_HTML_BASE_URL =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as any).env?.VITE_APP_PUBLIC_URL) ||
+  "https://scceventy.dev";
+
+/**
+ * Rewrites relative image/link URLs in HTML to absolute URLs.
+ * Backend can then send this HTML in emails and images will display correctly.
+ * Use when loading from API (preview) and when saving to API (email-ready body).
+ */
+const rewriteHtmlUrlsToAbsolute = (html: string, baseUrl: string): string => {
+  if (!html || !baseUrl) return html;
+  const base = baseUrl.replace(/\/$/, "");
+  return html
+    .replace(/src="\/(?!\/)/g, `src="${base}/`)
+    .replace(/href="\/(?!\/)/g, `href="${base}/`);
+};
 
 // Helper function to create static templates with event data
 const createStaticTemplates = (eventData: any) => {
@@ -224,6 +245,7 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
       }
     }
 
+    const rawBody = tpl.attributes?.body || "";
     return {
       id: `api-${tpl.id}`,
       title:
@@ -233,7 +255,7 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
         } Template ${idx + 1}`,
       component: null,
       design: design, // Load from API or localStorage
-      html: tpl.attributes?.body || "",
+      html: rewriteHtmlUrlsToAbsolute(rawBody, EMAIL_HTML_BASE_URL),
       apiId: tpl.id,
       isStatic: false,
       type: tpl.attributes?.template_type || flowType,
@@ -379,7 +401,10 @@ const TemplateModal = ({
                 overflowX: "hidden",
               }}
               dangerouslySetInnerHTML={{
-                __html: template.html
+                __html: rewriteHtmlUrlsToAbsolute(
+                  template.html,
+                  EMAIL_HTML_BASE_URL,
+                )
                   .replace(/max-width:\s*\d+px/gi, "max-width: 100%")
                   .replace(/width:\s*\d+px/gi, (match: string) => {
                     // Only replace width if it's not already percentage or auto
@@ -434,7 +459,14 @@ const TemplateThumbnail = ({ template, eventDataKey }: any) => {
               height: scaledHeight,
             }}
           >
-            <div dangerouslySetInnerHTML={{ __html: template.html }} />
+            <div
+              dangerouslySetInnerHTML={{
+                __html: rewriteHtmlUrlsToAbsolute(
+                  template.html,
+                  EMAIL_HTML_BASE_URL,
+                ),
+              }}
+            />
           </div>
         </div>
       ) : template.component ? (
@@ -841,11 +873,19 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             return;
           }
 
-          // Call POST API to save the ready-made template
+          // Full email document (html/head/body) so GET API returns correct format for backend to send
+          const emailReadyHtml = rewriteHtmlUrlsToAbsolute(
+            htmlString,
+            EMAIL_HTML_BASE_URL,
+          );
+          const fullEmailBody = wrapHtmlAsFullEmailDocument(
+            emailReadyHtml,
+            selectedTemplate.title,
+          );
           const apiResp = await createEmailTemplateApi(
             effectiveEventId,
             currentFlow.id,
-            htmlString,
+            fullEmailBody,
             selectedTemplate.title,
           );
           console.log("apiResp of post api for ready-made template", apiResp);
@@ -1010,14 +1050,22 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
     if (isCreatingNew) {
       setIsLoading(true);
       try {
-        // Embed design in HTML so it's stored in API
+        // Full email document (html/head/body) so GET API returns correct format
         const htmlWithDesign = embedDesignInHtml(html, design);
+        const emailReadyHtml = rewriteHtmlUrlsToAbsolute(
+          htmlWithDesign,
+          EMAIL_HTML_BASE_URL,
+        );
         const templateName =
           customTemplateName || `Custom ${currentFlow.label} Template`;
+        const fullEmailBody = wrapHtmlAsFullEmailDocument(
+          emailReadyHtml,
+          templateName,
+        );
         const apiResp = await createEmailTemplateApi(
           effectiveEventId,
           currentFlow.id,
-          htmlWithDesign,
+          fullEmailBody,
           templateName,
           design,
         );
@@ -1078,8 +1126,16 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       try {
         const templateName =
           editingTemplate.title || `Custom ${currentFlow.label} Template`;
-        // Embed design in HTML so it's stored in API
+        // Full email document (html/head/body) so GET API returns correct format
         const htmlWithDesign = embedDesignInHtml(html, design);
+        const emailReadyHtml = rewriteHtmlUrlsToAbsolute(
+          htmlWithDesign,
+          EMAIL_HTML_BASE_URL,
+        );
+        const fullEmailBody = wrapHtmlAsFullEmailDocument(
+          emailReadyHtml,
+          templateName,
+        );
 
         if (editingTemplate.apiId) {
           // Update existing template (custom or default that was already saved)
@@ -1094,7 +1150,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
             effectiveEventId,
             editingTemplate.apiId,
             currentFlow.id,
-            htmlWithDesign,
+            fullEmailBody,
             templateName,
             design,
           );
@@ -1107,7 +1163,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
           const apiResp = await createEmailTemplateApi(
             effectiveEventId,
             currentFlow.id,
-            htmlWithDesign,
+            fullEmailBody,
             templateName,
             design,
           );
