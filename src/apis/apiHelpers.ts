@@ -784,6 +784,16 @@ export const deleteEmailTemplateApi = (
   );
 };
 
+// Mark an email template as default (selected) for its event and template_type
+export const markAsDefaultEmailTemplateApi = (
+  eventId: string | number,
+  templateId: string | number
+) => {
+  return axiosInstance.patch(
+    `/events/${eventId}/email_templates/${templateId}/mark_as_default`
+  );
+};
+
 // ---------------------- Event Users Questions API ----------------------
 
 // Get all event user questions for an agenda (with optional status filter)

@@ -169,7 +169,7 @@ const SideBar = ({
       return "Communications";
     }
     if (path === "/Onboarding" || path.startsWith("/Onboarding")) {
-      return "Onboarding";
+      return "Check-In/out";
     }
     if (path === "/email-templates" || path.startsWith("/email-templates")) {
       return "Email Templates";
@@ -349,7 +349,7 @@ const SideBar = ({
     },
     {
       icon: IdCard,
-      label: "Onboarding",
+      label: "Check-In/out",
       path: currentEventId
         ? `/Onboarding?eventId=${currentEventId}`
         : "/Onboarding",
