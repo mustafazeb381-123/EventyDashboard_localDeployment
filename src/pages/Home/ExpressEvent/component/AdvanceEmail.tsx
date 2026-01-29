@@ -13,6 +13,7 @@ import {
   createEmailTemplateApi,
   updateEmailTemplateApi,
   deleteEmailTemplateApi,
+  markAsDefaultEmailTemplateApi,
   getShowEventData,
 } from "@/apis/apiHelpers";
 import { wrapHtmlAsFullEmailDocument } from "@/utils/emailHtml";
@@ -245,7 +246,10 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
       isStatic: false,
       type: tpl.attributes?.template_type || flowType,
       isSelected:
-        tpl.attributes?.selected || tpl.attributes?.is_selected || false, // Check for selected field from API
+        tpl.attributes?.default ||
+        tpl.attributes?.selected ||
+        tpl.attributes?.is_selected ||
+        false, // API uses "default" for the selected template
       readyMadeId: null, // Will be set if this matches a ready-made template
     };
   });
@@ -846,8 +850,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         );
 
         if (existingTemplate) {
-          // Template already exists in API - just select the static template (don't replace it)
-          // Keep static template visible, just mark it as selected
+          // Default template already in API: mark it as default via PATCH so selection persists
+          await markAsDefaultEmailTemplateApi(
+            effectiveEventId,
+            existingTemplate.id,
+          );
           setFlows((prev) =>
             prev.map((f) =>
               f.id === currentFlow.id
@@ -856,17 +863,16 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                     templates: f.templates.map(
                       (t: any) =>
                         t.id === templateId
-                          ? { ...t, isSelected: true } // Select the static template
-                          : { ...t, isSelected: false }, // Deselect others
+                          ? { ...t, isSelected: true }
+                          : { ...t, isSelected: false },
                     ),
                   }
                 : f,
             ),
           );
-
           setSelectedTemplates({
             ...selectedTemplates,
-            [currentFlow.id]: templateId, // Use static template ID
+            [currentFlow.id]: templateId,
           });
           setModalTemplate(null);
           showNotification("Template selected!", "success");
@@ -911,9 +917,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             selectedTemplate.title,
           );
           console.log("apiResp of post api for ready-made template", apiResp);
+          const newApiId =
+            apiResp?.data?.data?.id ?? apiResp?.data?.data?.attributes?.id;
+          if (newApiId != null) {
+            await markAsDefaultEmailTemplateApi(effectiveEventId, newApiId);
+          }
 
           // Keep the static template visible, just mark it as selected
-          // The template is saved to API but we don't replace the static template in the UI
           setFlows((prev) =>
             prev.map((f) =>
               f.id === currentFlow.id
@@ -945,29 +955,41 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         setIsLoading(false);
       }
     } else {
-      // For non-static templates or already saved static templates
-      // Only one template can be selected at a time - clear previous selection
-      setFlows((prev) =>
-        prev.map((f) =>
-          f.id === currentFlow.id
-            ? {
-                ...f,
-                templates: f.templates.map((t: any) =>
-                  t.id === templateId
-                    ? { ...t, isSelected: true }
-                    : { ...t, isSelected: false },
-                ),
-              }
-            : f,
-        ),
-      );
-
-      setSelectedTemplates({
-        ...selectedTemplates,
-        [currentFlow.id]: templateId,
-      });
-      setModalTemplate(null);
-      showNotification("Template selected!", "success");
+      // Custom template: mark as default via API so selection persists
+      const apiId = selectedTemplate.apiId;
+      if (!apiId) {
+        showNotification("Template cannot be selected", "error");
+        return;
+      }
+      setIsLoading(true);
+      try {
+        await markAsDefaultEmailTemplateApi(effectiveEventId, apiId);
+        setFlows((prev) =>
+          prev.map((f) =>
+            f.id === currentFlow.id
+              ? {
+                  ...f,
+                  templates: f.templates.map((t: any) =>
+                    t.id === templateId
+                      ? { ...t, isSelected: true }
+                      : { ...t, isSelected: false },
+                  ),
+                }
+              : f,
+          ),
+        );
+        setSelectedTemplates({
+          ...selectedTemplates,
+          [currentFlow.id]: templateId,
+        });
+        setModalTemplate(null);
+        showNotification("Template selected!", "success");
+      } catch (e) {
+        console.error("Failed to mark template as default:", e);
+        showNotification("Failed to select template", "error");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
