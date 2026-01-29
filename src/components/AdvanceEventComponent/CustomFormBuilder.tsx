@@ -344,7 +344,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     requiredIndicatorColor: "#ef4444",
     errorTextColor: "#ef4444",
     errorBorderColor: "#ef4444",
-    ...initialTheme,
+    ...(initialTheme ?? {}),
   });
 
   // Load banner preview if initial banner is a file or convert to base64

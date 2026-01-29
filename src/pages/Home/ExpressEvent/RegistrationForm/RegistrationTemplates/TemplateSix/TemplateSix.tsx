@@ -56,7 +56,7 @@ const TemplateSix = ({
             </div>
           </div>
         ) : (
-          <TemplateForm />
+          <TemplateForm data={data} eventId={eventId} />
         )}
       </div>
 

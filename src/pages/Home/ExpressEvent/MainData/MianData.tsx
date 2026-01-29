@@ -943,31 +943,32 @@ const MainData = ({
       return;
     }
 
-    if (isCurrentlyDefault) {
-      showNotification("This badge is already set as default", "info");
-      return;
-    }
-
     setTogglingDefaultBadgeId(badgeId);
     try {
-      // First, unset any current default badges (there should only be one, but guard against multiples)
-      const currentDefaultBadges = badges.filter(
-        (b) => b.attributes.default && b.id !== badgeId,
-      );
-      if (currentDefaultBadges.length) {
-        // Unset all other defaults to enforce single default badge
-        await Promise.all(
-          currentDefaultBadges.map((b) =>
-            updateBadge(eventId, b.id, {
-              badge: { default: false },
-            }),
-          ),
+      if (isCurrentlyDefault) {
+        // If this badge is already default and user clicks again, unset it (no default badge)
+        await updateBadge(eventId, badgeId, { badge: { default: false } });
+        showNotification("Default badge removed.", "success");
+      } else {
+        // First, unset any current default badges (there should only be one, but guard against multiples)
+        const currentDefaultBadges = badges.filter(
+          (b) => b.attributes.default && b.id !== badgeId,
         );
-      }
+        if (currentDefaultBadges.length) {
+          // Unset all other defaults to enforce single default badge
+          await Promise.all(
+            currentDefaultBadges.map((b) =>
+              updateBadge(eventId, b.id, {
+                badge: { default: false },
+              }),
+            ),
+          );
+        }
 
-      // Then set this badge as default
-      await setDefaultBadge(eventId, badgeId);
-      showNotification("Default badge updated successfully!", "success");
+        // Then set this badge as default
+        await setDefaultBadge(eventId, badgeId);
+        showNotification("Default badge updated successfully!", "success");
+      }
 
       // Refresh badges to get updated default status
       await fetchBadgeApi();

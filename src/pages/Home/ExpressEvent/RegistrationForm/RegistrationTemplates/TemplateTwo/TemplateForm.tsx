@@ -47,7 +47,7 @@ function TemplateFormTwo({
   }>({});
   const [eventData, setEventData] = useState<any>(null);
   const [apiFormData, setApiFormData] = useState<any[]>([]);
-  const [isLoadingApiData, setIsLoadingApiData] = useState(false);
+  const [isLoadingApiData, setIsLoadingApiData] = useState(true); // Start as true to show loading initially
   const [isLoadingEventData, setIsLoadingEventData] = useState(true);
   const [showAddFieldModal, setShowAddFieldModal] = useState(false);
   const [isCreatingField, setIsCreatingField] = useState(false);
@@ -177,26 +177,13 @@ function TemplateFormTwo({
     },
   ];
 
-  // Fetch form fields from API when no data is provided
+  // Fetch form fields from API - always fetch to get latest order and data
+  // Similar to TemplateOne: always fetch from API to get the latest order, even if data prop is provided
   useEffect(() => {
     const fetchApiFormData = async () => {
       if (!effectiveEventId) return;
-      if (data && Array.isArray(data) && data.length > 0) return; // Don't fetch if data is already provided
 
-      const cacheKey = `registration_fields_${effectiveEventId}`;
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) {
-        try {
-          const parsed = JSON.parse(cached);
-          setApiFormData(parsed);
-          setIsLoadingApiData(false);
-        } catch (err) {
-          console.warn("TemplateTwo - failed to parse cached fields", err);
-        }
-      } else {
-        setIsLoadingApiData(true);
-      }
-
+      setIsLoadingApiData(true);
       try {
         const response = await getRegistrationFieldApi(effectiveEventId);
         console.log(
@@ -204,8 +191,13 @@ function TemplateFormTwo({
           response.data,
         );
         const fields = response.data.data || [];
-        setApiFormData(fields);
-        sessionStorage.setItem(cacheKey, JSON.stringify(fields));
+        // Sort by order
+        const sortedFields = [...fields].sort((a: any, b: any) => {
+          const orderA = a.attributes?.order ?? a.order ?? 999;
+          const orderB = b.attributes?.order ?? b.order ?? 999;
+          return orderA - orderB;
+        });
+        setApiFormData(sortedFields);
       } catch (error) {
         console.error("TemplateTwo - Failed to get registration field:", error);
         setApiFormData([]);
@@ -215,7 +207,7 @@ function TemplateFormTwo({
     };
 
     fetchApiFormData();
-  }, [effectiveEventId, data]);
+  }, [effectiveEventId]);
 
   const renderSkeleton = () => (
     <div className="space-y-4" aria-label="Template two loading">
@@ -242,16 +234,25 @@ function TemplateFormTwo({
   );
 
   const formFields = useMemo((): any[] => {
-    // Priority: 1. data prop, 2. apiFormData, 3. defaultFormFields
-    let sourceData = data;
+    // Priority: 1. apiFormData (always fetch from API for latest order), 2. data prop, 3. defaultFormFields
+    // Similar to TemplateOne: always use apiFormData if available (it has the latest order from API)
+    // Only fall back to data prop if apiFormData is empty
+    let sourceData = apiFormData;
     if (!Array.isArray(sourceData) || sourceData.length === 0) {
-      sourceData = apiFormData;
+      sourceData = data;
     }
     if (!Array.isArray(sourceData) || sourceData.length === 0) {
       return defaultFormFields;
     }
 
-    return sourceData.map((field: any) => {
+    // Sort by order property if it exists (from API response)
+    const sortedData = [...sourceData].sort((a: any, b: any) => {
+      const orderA = a.attributes?.order ?? a.order ?? 999;
+      const orderB = b.attributes?.order ?? b.order ?? 999;
+      return orderA - orderB;
+    });
+
+    return sortedData.map((field: any) => {
       const attr = field.attributes || {};
       return {
         id: field.id,
@@ -280,7 +281,7 @@ function TemplateFormTwo({
         }),
       };
     });
-  }, [data, apiFormData]);
+  }, [apiFormData, data]);
 
   const [fieldActiveStates, setFieldActiveStates] = useState<{
     [key: string]: boolean;
