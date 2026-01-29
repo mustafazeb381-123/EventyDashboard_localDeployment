@@ -1,8 +1,17 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import GateOnboarding from "./GateOnboarding";
-import { ArrowRight, Clipboard } from "lucide-react";
-import { getSessionAreaApi } from "@/apis/apiHelpers";
+import { ArrowRight, Clipboard, Plus } from "lucide-react";
+import {
+  getSessionAreaApi,
+  createSessionAreaApi,
+  getBadgeType,
+} from "@/apis/apiHelpers";
+
+type BadgeOption = {
+  id: string;
+  attributes: { name: string; default?: boolean };
+};
 
 function Onboarding() {
   const [showGateOnboarding, setShowGateOnboarding] = useState(false);
@@ -10,6 +19,24 @@ function Onboarding() {
   const [areasData, setAreasData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [eventId, setEventId] = useState<string | null>(null);
+
+  // Add Area modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [newArea, setNewArea] = useState({
+    name: "",
+    location: "",
+    type: "",
+    guestNumbers: "",
+  });
+  const [validationErrors, setValidationErrors] = useState({
+    name: "",
+    location: "",
+    type: "",
+    guestNumbers: "",
+  });
+  const [addLoading, setAddLoading] = useState(false);
+  const [badges, setBadges] = useState<BadgeOption[]>([]);
+  const [badgeLoading, setBadgeLoading] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -39,23 +66,101 @@ function Onboarding() {
   }, [location]);
 
   // Fetch Areas
+  const fetchAreas = async () => {
+    if (!eventId) return;
+    setLoading(true);
+    try {
+      const response = await getSessionAreaApi(eventId);
+      setAreasData(response.data.data || []);
+    } catch (err) {
+      console.error("Error fetching areas:", err);
+      showNotification("Failed to fetch areas", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchAreas = async () => {
-      if (!eventId) return;
-      setLoading(true);
-      try {
-        const response = await getSessionAreaApi(eventId);
-        console.log("Areas response:", response.data.data);
-        setAreasData(response.data.data);
-      } catch (err) {
-        console.error("Error fetching areas:", err);
-        showNotification("Failed to fetch areas", "error");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchAreas();
   }, [eventId]);
+
+  // Fetch badges for Add Area form (User Type dropdown)
+  useEffect(() => {
+    const fetchBadges = async () => {
+      if (!eventId) {
+        setBadges([]);
+        return;
+      }
+      setBadgeLoading(true);
+      try {
+        const response = await getBadgeType(eventId);
+        if (response?.data?.data && Array.isArray(response.data.data)) {
+          setBadges(response.data.data);
+        } else {
+          setBadges([]);
+        }
+      } catch (err) {
+        console.error("Error fetching badges:", err);
+        setBadges([]);
+      } finally {
+        setBadgeLoading(false);
+      }
+    };
+    fetchBadges();
+  }, [eventId]);
+
+  const openAddModal = () => {
+    setNewArea({ name: "", location: "", type: "", guestNumbers: "" });
+    setValidationErrors({ name: "", location: "", type: "", guestNumbers: "" });
+    setIsAddModalOpen(true);
+  };
+
+  const closeAddModal = () => {
+    setIsAddModalOpen(false);
+    setNewArea({ name: "", location: "", type: "", guestNumbers: "" });
+    setValidationErrors({ name: "", location: "", type: "", guestNumbers: "" });
+  };
+
+  const handleAddArea = async () => {
+    const errors = {
+      name: newArea.name ? "" : "Name is required",
+      location: newArea.location ? "" : "Location is required",
+      type: newArea.type ? "" : "Type is required",
+      guestNumbers: newArea.guestNumbers ? "" : "Guest numbers are required",
+    };
+    setValidationErrors(errors);
+    if (Object.values(errors).some((err) => err !== "")) {
+      showNotification("Please fill all required fields", "error");
+      return;
+    }
+
+    if (!eventId) {
+      showNotification("Event ID not found", "error");
+      return;
+    }
+
+    setAddLoading(true);
+    try {
+      const payload = {
+        session_area: {
+          name: newArea.name,
+          location: newArea.location,
+          user_type: newArea.type,
+          guest_number: newArea.guestNumbers,
+          event_id: eventId,
+        },
+      };
+      await createSessionAreaApi(payload, eventId);
+      showNotification("Area added successfully!", "success");
+      closeAddModal();
+      await fetchAreas();
+    } catch (err) {
+      console.error("Error adding area:", err);
+      showNotification("Failed to add area", "error");
+    } finally {
+      setAddLoading(false);
+    }
+  };
 
   const handleOpenGateOnboarding = (area: any) => {
     console.log("Selected area details:", area);
@@ -126,12 +231,21 @@ function Onboarding() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              On Boarding
+              Check-In/out
             </h1>
             <p className="text-gray-600 mt-1">
               Areas: {areasData.length}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={openAddModal}
+            disabled={!eventId}
+            className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            Add Area
+          </button>
         </div>
 
         {/* Table */}
@@ -220,6 +334,159 @@ function Onboarding() {
           )}
         </div>
       </div>
+
+      {/* Add Area Modal */}
+      {isAddModalOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50"
+          onClick={closeAddModal}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Add Area
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Area Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter area name"
+                  value={newArea.name}
+                  onChange={(e) =>
+                    setNewArea((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
+                    validationErrors.name ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+                {validationErrors.name && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {validationErrors.name}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Area Location <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter area location"
+                  value={newArea.location}
+                  onChange={(e) =>
+                    setNewArea((prev) => ({ ...prev, location: e.target.value }))
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
+                    validationErrors.location
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
+                />
+                {validationErrors.location && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {validationErrors.location}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  User Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newArea.type}
+                  onChange={(e) =>
+                    setNewArea((prev) => ({ ...prev, type: e.target.value }))
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
+                    validationErrors.type ? "border-red-500" : "border-gray-300"
+                  }`}
+                >
+                  <option value="">Select User Type</option>
+                  <option value="any">Any</option>
+                  {badgeLoading ? (
+                    <option value="" disabled>
+                      Loading...
+                    </option>
+                  ) : (
+                    badges.map((badge) => (
+                      <option
+                        key={badge.id}
+                        value={badge.attributes.name}
+                      >
+                        {badge.attributes.name}
+                      </option>
+                    ))
+                  )}
+                </select>
+                {validationErrors.type && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {validationErrors.type}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Guest numbers <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Type number"
+                  value={newArea.guestNumbers}
+                  onChange={(e) =>
+                    setNewArea((prev) => ({
+                      ...prev,
+                      guestNumbers: e.target.value,
+                    }))
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
+                    validationErrors.guestNumbers
+                      ? "border-red-500"
+                      : "border-gray-300"
+                  }`}
+                />
+                {validationErrors.guestNumbers && (
+                  <p className="text-red-500 text-xs mt-1">
+                    {validationErrors.guestNumbers}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6 justify-end">
+              <button
+                type="button"
+                onClick={closeAddModal}
+                disabled={addLoading}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddArea}
+                disabled={addLoading}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {addLoading ? (
+                  <>
+                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Adding...
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+                    Add
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {notification && (
         <div className="fixed top-4 right-4 z-[100] animate-slide-in">

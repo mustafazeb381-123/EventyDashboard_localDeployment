@@ -13,8 +13,28 @@ import {
   createEmailTemplateApi,
   updateEmailTemplateApi,
   deleteEmailTemplateApi,
+  markAsDefaultEmailTemplateApi,
   getShowEventData,
 } from "@/apis/apiHelpers";
+import { wrapHtmlAsFullEmailDocument } from "@/utils/emailHtml";
+
+// Base URL for email HTML so images work when backend sends emails (and in preview).
+const EMAIL_HTML_BASE_URL =
+  (typeof import.meta !== "undefined" &&
+    (import.meta as any).env?.VITE_APP_PUBLIC_URL) ||
+  "https://scceventy.dev";
+
+/**
+ * Rewrites relative image/link URLs in HTML to absolute URLs.
+ * Backend can then send this HTML in emails and images will display correctly.
+ */
+const rewriteHtmlUrlsToAbsolute = (html: string, baseUrl: string): string => {
+  if (!html || !baseUrl) return html;
+  const base = baseUrl.replace(/\/$/, "");
+  return html
+    .replace(/src="\/(?!\/)/g, `src="${base}/`)
+    .replace(/href="\/(?!\/)/g, `href="${base}/`);
+};
 
 // Helper function to create static templates with event data
 const createStaticTemplates = (eventData: any) => {
@@ -211,6 +231,7 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
       }
     }
 
+    const rawBody = tpl.attributes?.body || "";
     return {
       id: `api-${tpl.id}`,
       title:
@@ -220,12 +241,15 @@ const convertApiTemplates = (apiTemplates: any[], flowType: string) => {
         } Template ${idx + 1}`,
       component: null,
       design: design, // Load from API or localStorage
-      html: tpl.attributes?.body || "",
+      html: rewriteHtmlUrlsToAbsolute(rawBody, EMAIL_HTML_BASE_URL),
       apiId: tpl.id,
       isStatic: false,
       type: tpl.attributes?.template_type || flowType,
       isSelected:
-        tpl.attributes?.selected || tpl.attributes?.is_selected || false, // Check for selected field from API
+        tpl.attributes?.default ||
+        tpl.attributes?.selected ||
+        tpl.attributes?.is_selected ||
+        false, // API uses "default" for the selected template
       readyMadeId: null, // Will be set if this matches a ready-made template
     };
   });
@@ -390,7 +414,10 @@ const TemplateModal = ({
                 overflowX: "hidden",
               }}
               dangerouslySetInnerHTML={{
-                __html: template.html
+                __html: rewriteHtmlUrlsToAbsolute(
+                  template.html,
+                  EMAIL_HTML_BASE_URL,
+                )
                   .replace(/max-width:\s*\d+px/gi, "max-width: 100%")
                   .replace(/width:\s*\d+px/gi, (match: string) => {
                     // Only replace width if it's not already percentage or auto
@@ -457,7 +484,14 @@ const TemplateThumbnail = ({ template, eventDataKey }: any) => {
               height: scaledHeight,
             }}
           >
-            <div dangerouslySetInnerHTML={{ __html: template.html }} />
+            <div
+              dangerouslySetInnerHTML={{
+                __html: rewriteHtmlUrlsToAbsolute(
+                  template.html,
+                  EMAIL_HTML_BASE_URL,
+                ),
+              }}
+            />
           </div>
         </div>
       ) : template.component ? (
@@ -816,8 +850,11 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         );
 
         if (existingTemplate) {
-          // Template already exists in API - just select the static template (don't replace it)
-          // Keep static template visible, just mark it as selected
+          // Default template already in API: mark it as default via PATCH so selection persists
+          await markAsDefaultEmailTemplateApi(
+            effectiveEventId,
+            existingTemplate.id,
+          );
           setFlows((prev) =>
             prev.map((f) =>
               f.id === currentFlow.id
@@ -826,17 +863,16 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                     templates: f.templates.map(
                       (t: any) =>
                         t.id === templateId
-                          ? { ...t, isSelected: true } // Select the static template
-                          : { ...t, isSelected: false }, // Deselect others
+                          ? { ...t, isSelected: true }
+                          : { ...t, isSelected: false },
                     ),
                   }
                 : f,
             ),
           );
-
           setSelectedTemplates({
             ...selectedTemplates,
-            [currentFlow.id]: templateId, // Use static template ID
+            [currentFlow.id]: templateId,
           });
           setModalTemplate(null);
           showNotification("Template selected!", "success");
@@ -865,17 +901,29 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             return;
           }
 
-          // Call POST API to save the ready-made template
+          // Full email document (html/head/body) so GET API returns correct format for backend to send
+          const emailReadyHtml = rewriteHtmlUrlsToAbsolute(
+            htmlString,
+            EMAIL_HTML_BASE_URL,
+          );
+          const fullEmailBody = wrapHtmlAsFullEmailDocument(
+            emailReadyHtml,
+            selectedTemplate.title,
+          );
           const apiResp = await createEmailTemplateApi(
             effectiveEventId,
             currentFlow.id,
-            htmlString,
+            fullEmailBody,
             selectedTemplate.title,
           );
           console.log("apiResp of post api for ready-made template", apiResp);
+          const newApiId =
+            apiResp?.data?.data?.id ?? apiResp?.data?.data?.attributes?.id;
+          if (newApiId != null) {
+            await markAsDefaultEmailTemplateApi(effectiveEventId, newApiId);
+          }
 
           // Keep the static template visible, just mark it as selected
-          // The template is saved to API but we don't replace the static template in the UI
           setFlows((prev) =>
             prev.map((f) =>
               f.id === currentFlow.id
@@ -907,29 +955,41 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         setIsLoading(false);
       }
     } else {
-      // For non-static templates or already saved static templates
-      // Only one template can be selected at a time - clear previous selection
-      setFlows((prev) =>
-        prev.map((f) =>
-          f.id === currentFlow.id
-            ? {
-                ...f,
-                templates: f.templates.map((t: any) =>
-                  t.id === templateId
-                    ? { ...t, isSelected: true }
-                    : { ...t, isSelected: false },
-                ),
-              }
-            : f,
-        ),
-      );
-
-      setSelectedTemplates({
-        ...selectedTemplates,
-        [currentFlow.id]: templateId,
-      });
-      setModalTemplate(null);
-      showNotification("Template selected!", "success");
+      // Custom template: mark as default via API so selection persists
+      const apiId = selectedTemplate.apiId;
+      if (!apiId) {
+        showNotification("Template cannot be selected", "error");
+        return;
+      }
+      setIsLoading(true);
+      try {
+        await markAsDefaultEmailTemplateApi(effectiveEventId, apiId);
+        setFlows((prev) =>
+          prev.map((f) =>
+            f.id === currentFlow.id
+              ? {
+                  ...f,
+                  templates: f.templates.map((t: any) =>
+                    t.id === templateId
+                      ? { ...t, isSelected: true }
+                      : { ...t, isSelected: false },
+                  ),
+                }
+              : f,
+          ),
+        );
+        setSelectedTemplates({
+          ...selectedTemplates,
+          [currentFlow.id]: templateId,
+        });
+        setModalTemplate(null);
+        showNotification("Template selected!", "success");
+      } catch (e) {
+        console.error("Failed to mark template as default:", e);
+        showNotification("Failed to select template", "error");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -1034,14 +1094,22 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     if (isCreatingNew) {
       setIsLoading(true);
       try {
-        // Embed design in HTML so it's stored in API
+        // Full email document (html/head/body) so GET API returns correct format
         const htmlWithDesign = embedDesignInHtml(html, design);
+        const emailReadyHtml = rewriteHtmlUrlsToAbsolute(
+          htmlWithDesign,
+          EMAIL_HTML_BASE_URL,
+        );
         const templateName =
           customTemplateName || `Custom ${currentFlow.label} Template`;
+        const fullEmailBody = wrapHtmlAsFullEmailDocument(
+          emailReadyHtml,
+          templateName,
+        );
         const apiResp = await createEmailTemplateApi(
           effectiveEventId,
           currentFlow.id,
-          htmlWithDesign,
+          fullEmailBody,
           templateName,
           design,
         );
@@ -1102,8 +1170,16 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       try {
         const templateName =
           editingTemplate.title || `Custom ${currentFlow.label} Template`;
-        // Embed design in HTML so it's stored in API
+        // Full email document (html/head/body) so GET API returns correct format
         const htmlWithDesign = embedDesignInHtml(html, design);
+        const emailReadyHtml = rewriteHtmlUrlsToAbsolute(
+          htmlWithDesign,
+          EMAIL_HTML_BASE_URL,
+        );
+        const fullEmailBody = wrapHtmlAsFullEmailDocument(
+          emailReadyHtml,
+          templateName,
+        );
 
         if (editingTemplate.apiId) {
           // Update existing template (custom or default that was already saved)
@@ -1118,7 +1194,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             effectiveEventId,
             editingTemplate.apiId,
             currentFlow.id,
-            htmlWithDesign,
+            fullEmailBody,
             templateName,
             design,
           );
@@ -1131,7 +1207,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           const apiResp = await createEmailTemplateApi(
             effectiveEventId,
             currentFlow.id,
-            htmlWithDesign,
+            fullEmailBody,
             templateName,
             design,
           );

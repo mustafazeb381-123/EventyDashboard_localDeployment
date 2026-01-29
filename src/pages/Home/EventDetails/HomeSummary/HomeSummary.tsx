@@ -8,6 +8,8 @@ import {
   updateEventById,
   getEventUserMetrics,
   getEventUsers,
+  getSessionAreaApi,
+  getCheckOuts,
 } from "@/apis/apiHelpers";
 import imageCompression from "browser-image-compression";
 
@@ -30,6 +32,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const [eventUsers, setEventUsers] = useState<any[]>([]);
+  // Attending count from check-out API (users currently checked in = "need check out" per area)
+  const [attendingCountFromApi, setAttendingCountFromApi] = useState<
+    number | null
+  >(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Notification state
@@ -285,11 +291,38 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   };
 
+  // Fetch Attending count using check-in/check-out APIs:
+  // getCheckOuts(area) = users who need to check out = currently checked in to that area.
+  // We fetch all session areas, then getCheckOuts for each, and count unique user ids.
+  const fetchAttendingCount = async (id: string) => {
+    try {
+      const areasRes = await getSessionAreaApi(id);
+      const areas = areasRes?.data?.data || [];
+      if (areas.length === 0) {
+        setAttendingCountFromApi(0);
+        return;
+      }
+      const checkOutResponses = await Promise.all(
+        areas.map((area: any) => getCheckOuts(id, area.id)),
+      );
+      const uniqueUserIds = new Set<string | number>();
+      checkOutResponses.forEach((res: any) => {
+        const users = res?.data?.data || [];
+        users.forEach((u: any) => uniqueUserIds.add(u.id));
+      });
+      setAttendingCountFromApi(uniqueUserIds.size);
+    } catch (error) {
+      console.error("Error fetching attending count:", error);
+      setAttendingCountFromApi(null);
+    }
+  };
+
   useEffect(() => {
     if (eventId) {
       getEventDataById(eventId);
       fetchEventMetrics(eventId);
       fetchEventUsersForSummary(eventId);
+      fetchAttendingCount(eventId);
     }
   }, [eventId]);
 
@@ -432,6 +465,49 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     return types.sort((a, b) => a.localeCompare(b));
   }, [userTypeCounts]);
 
+  // Printed count from getEventUsers (attributes.printed === true)
+  const printedCountFromUsers = useMemo(() => {
+    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
+    return eventUsers.filter((u: any) => u?.attributes?.printed === true)
+      .length;
+  }, [eventUsers]);
+
+  // Attending: currently checked in.
+  // Source 1: metrics API (attending_count / checked_in_count) if backend returns it.
+  // Source 2: getCheckOuts API — we call getSessionAreaApi + getCheckOuts(area) for each area; "need check out" = currently in that area; we count unique users.
+  // Source 3: fallback from event users (getEventUsers) if attributes include check_user_area_statuses.
+  const attendingCountFromUsers = useMemo(() => {
+    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
+    return eventUsers.filter((u: any) => {
+      const statuses = u?.attributes?.check_user_area_statuses;
+      if (Array.isArray(statuses)) {
+        return statuses.some(
+          (s: any) =>
+            s?.check_in != null &&
+            s?.check_in !== "" &&
+            (s?.check_out == null || s?.check_out === ""),
+        );
+      }
+      return u?.attributes?.check_in != null && u?.attributes?.check_in !== "";
+    }).length;
+  }, [eventUsers]);
+
+  // Attended: have checked out. No dedicated API; we use metrics (attended_count / checked_out_count) or derive from event users.
+  const attendedCountFromUsers = useMemo(() => {
+    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
+    return eventUsers.filter((u: any) => {
+      const statuses = u?.attributes?.check_user_area_statuses;
+      if (Array.isArray(statuses)) {
+        return statuses.some(
+          (s: any) => s?.check_out != null && s?.check_out !== "",
+        );
+      }
+      return (
+        u?.attributes?.check_out != null && u?.attributes?.check_out !== ""
+      );
+    }).length;
+  }, [eventUsers]);
+
   // Display label: capitalize first letter (e.g. "guest" -> "Guest", "great" -> "Great")
   const formatUserTypeLabel = (key: string) =>
     key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
@@ -506,6 +582,24 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         icon: Assets.icons.totalRegistration,
         bgColor: "bg-slate-50",
         filterKey: "printed",
+      },
+      {
+        label: "Attending",
+        value:
+          metrics?.attending_count ??
+          metrics?.checked_in_count ??
+          (eventUsers.length > 0 ? attendingCountFromUsers : 0),
+        icon: Assets.icons.todayRegistration,
+        bgColor: "bg-cyan-50",
+      },
+      {
+        label: "Attended",
+        value:
+          metrics?.attended_count ??
+          metrics?.checked_out_count ??
+          (eventUsers.length > 0 ? attendedCountFromUsers : 0),
+        icon: Assets.icons.approvedRegistration,
+        bgColor: "bg-green-50",
       },
     ];
     const userTypeCards = uniqueUserTypes.map((typeKey, index) => ({
