@@ -719,6 +719,7 @@ export const getEmailTemplateByIdApi = (
 };
 
 // Create a new email template
+// Sends fully styled HTML (body + html) so Rails GET returns the same HTML for viewing in html.onlineviewer.net
 export const createEmailTemplateApi = (
   eventId: string | number,
   templateType: string,
@@ -731,12 +732,11 @@ export const createEmailTemplateApi = (
       name: name,
       template_type: getEmailTemplateType(templateType),
       body: html,
+      html: html, // same styled HTML so GET returns it as-is (Rails may use body or html)
     },
   };
 
   // Include design if provided (store as JSON string)
-  // Note: Backend may not support this field yet, but we send it anyway
-  // If backend doesn't support it, the field will be ignored but won't cause errors
   if (design) {
     payload.email_template.design = typeof design === 'string' ? design : JSON.stringify(design);
   }
@@ -745,6 +745,7 @@ export const createEmailTemplateApi = (
 };
 
 // Update an existing email template (using PUT as per API spec)
+// Sends fully styled HTML (body + html) so Rails GET returns the same HTML
 export const updateEmailTemplateApi = (
   eventId: string | number,
   templateId: string | number,
@@ -758,12 +759,10 @@ export const updateEmailTemplateApi = (
       name: name,
       template_type: getEmailTemplateType(templateType),
       body: html,
+      html: html, // same styled HTML so GET returns it as-is
     },
   };
 
-  // Include design if provided (store as JSON string)
-  // Note: Backend may not support this field yet, but we send it anyway
-  // If backend doesn't support it, the field will be ignored but won't cause errors
   if (design) {
     payload.email_template.design = typeof design === 'string' ? design : JSON.stringify(design);
   }

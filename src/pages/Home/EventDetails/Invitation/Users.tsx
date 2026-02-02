@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
   X,
@@ -22,6 +22,12 @@ import {
   Redo,
   Link,
   Image as ImageIcon,
+  BarChart2,
+  Tag,
+  Share2,
+  Zap,
+  Settings,
+  Copy,
 } from "lucide-react";
 import { getEventUsers, createEventUser, getEventbyId, sendCredentials, getBadgeType } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -63,6 +69,21 @@ const UserAvatar = ({ user }: { user: any }) => {
   );
 };
 
+// Static invitation data (screenshot) - full table layout
+const staticInvitations = [
+  { id: "58", name: "Copy of Copy of Althenayan Dinner", emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026", channel: "Email", status: "pending", type: "Public-9", scheduled: "Immediate" },
+  { id: "57", name: "Copy of Gather Batch 6 & Reminder", emailSubject: "Guest Information | FMF Premier 26 | Time Sensitive", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "56", name: "Copy of Batch 6", emailSubject: "FMF Premier 2026 | Official Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "55", name: "Copy of Dinner Invite Batch 2", emailSubject: "ESNAD Premier Dinner | Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "54", name: "Copy of Esnad Batch 1", emailSubject: "FMF Premier 2026 | Official Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "53", name: "Copy of AlRushaid Dinner Additional", emailSubject: "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "52", name: "Copy of Althenayan Dinner", emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "51", name: "Artar Dinner Additional", emailSubject: "Invitation: ARTAR & GMCG Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "50", name: "AlRushaid Dinner Additional", emailSubject: "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "49", name: "Badge Collection", emailSubject: "FMF Premier 2026 | Budge Collection Details", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  { id: "48", name: "Additional - FMF", emailSubject: "FMF Premier 2026 | Official Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+];
+
 // Email Templates
 const templates = [
   {
@@ -87,6 +108,7 @@ const templates = [
 
 function Invitations() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
@@ -379,6 +401,18 @@ function Invitations() {
     });
   };
 
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const handleCreateInvitation = async () => {
     const idToUse = actualEventId || eventId;
     
@@ -463,10 +497,11 @@ function Invitations() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.size === filteredUsers.length) {
+    const list = staticInvitations;
+    if (selectedUsers.size === list.length) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(filteredUsers.map((user: any) => user.id)));
+      setSelectedUsers(new Set(list.map((inv) => inv.id)));
     }
   };
 
@@ -640,133 +675,144 @@ function Invitations() {
             </div>
           </div>
 
-          {/* Table */}
+          {/* Table - Invitations (screenshot layout) */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-[#1e3a5f] border-b border-[#1e3a5f]">
                   <tr>
                     <th className="px-6 py-3 text-left">
-                      <input
-                        type="checkbox"
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
-                        onChange={handleSelectAll}
-                      />
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider"># ID</span>
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ID</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">USER</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">CHANNEL</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">STATUS</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">TYPE</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">CREATED</th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ACTIONS</th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <FileText size={16} />
+                        Name
+                      </span>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <Mail size={16} />
+                        Email Subject
+                      </span>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <Share2 size={16} />
+                        Channel
+                      </span>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <CheckCircle size={16} />
+                        Status
+                      </span>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <Tag size={16} />
+                        Type
+                      </span>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <Clock size={16} />
+                        Scheduled
+                      </span>
+                    </th>
+                    <th className="px-6 py-3 text-left">
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        <Settings size={16} />
+                        Actions
+                      </span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {loadingUsers ? (
                     Array.from({ length: 10 }).map((_, index) => (
                       <tr key={index}>
-                        <td className="px-6 py-4">
-                          <Skeleton className="w-4 h-4 rounded" />
-                        </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-4 w-12" />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <Skeleton className="w-10 h-10 rounded-full" />
-                            <div className="flex flex-col gap-2">
-                              <Skeleton className="h-4 w-32" />
-                              <Skeleton className="h-3 w-40" />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-6 w-8" />
-                        </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-6 w-16 rounded-full" />
-                        </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-4 w-16" />
-                        </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-4 w-24" />
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Skeleton className="w-8 h-8 rounded" />
-                            <Skeleton className="w-8 h-8 rounded" />
-                          </div>
-                        </td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-10 rounded" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-4 w-40" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-4 w-56" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-6 w-14 rounded-full" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
+                        <td className="px-6 py-4"><Skeleton className="h-4 w-20" /></td>
+                        <td className="px-6 py-4"><div className="flex gap-1"><Skeleton className="w-8 h-8 rounded" /><Skeleton className="w-8 h-8 rounded" /><Skeleton className="w-8 h-8 rounded" /></div></td>
                       </tr>
                     ))
-                  ) : filteredUsers.length === 0 ? (
+                  ) : staticInvitations.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
-                        {searchTerm.trim() !== "" && filterType !== "all"
-                          ? `No users found matching "${searchTerm}" with type "${filterType}"`
-                          : searchTerm.trim() !== ""
-                          ? `No users found matching "${searchTerm}"`
-                          : filterType !== "all"
-                          ? `No users found with type "${filterType}"`
-                          : "No users found"}
+                        No invitations found
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user) => (
-                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                    staticInvitations.map((invitation) => (
+                      <tr key={invitation.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
-                          <input
-                            type="checkbox"
-                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            checked={selectedUsers.has(user.id)}
-                            onChange={() => handleUserSelect(user.id)}
-                          />
+                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-md bg-blue-600 text-white text-sm font-medium">
+                            {invitation.id}
+                          </span>
                         </td>
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                          #{user.id}
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          {invitation.name}
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <UserAvatar user={user} />
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {user?.attributes?.name || "N/A"}
-                              </div>
-                              <div className="text-sm text-gray-500">
-                                {user?.attributes?.email || "N/A"}
-                              </div>
-                            </div>
-                          </div>
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {invitation.emailSubject}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="w-8 h-8 bg-blue-50 rounded flex items-center justify-center">
-                            <Mail size={16} className="text-blue-600" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></div>
-                            Done
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
+                            <Mail size={14} />
+                            {invitation.channel}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="text-sm text-gray-700 capitalize">
-                            {user?.attributes?.user_type || "Public-9"}
-                          </span>
+                          {invitation.status === "pending" ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
+                              <Clock size={14} />
+                              Pending
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                              <CheckCircle size={14} />
+                              Done
+                            </span>
+                          )}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {formatDate(user?.attributes?.created_at)}
+                        <td className="px-6 py-4 text-sm text-gray-700">
+                          {invitation.type}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded transition-colors">
-                              <Eye size={16} className="text-gray-600" />
+                          <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
+                            <Zap size={14} className="text-gray-500" />
+                            {invitation.scheduled}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate(`/invitation/report/${invitation.id}`, {
+                                  state: {
+                                    invitationName: invitation.name,
+                                    type: invitation.type,
+                                    createdAt: "January 27, 2026 at 15:04",
+                                  },
+                                })
+                              }
+                              className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                              title="Report"
+                            >
+                              <BarChart2 size={16} />
                             </button>
-                            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded transition-colors">
-                              <MoreVertical size={16} className="text-gray-600" />
+                            <button type="button" className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="View">
+                              <Eye size={16} />
+                            </button>
+                            <button type="button" className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="Copy">
+                              <Copy size={16} />
                             </button>
                           </div>
                         </td>
@@ -781,7 +827,7 @@ function Invitations() {
             <div className="border-t border-gray-200 px-6 py-3 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Showing 1 to 10 of {pagination?.total_count || filteredUsers.length} invitations
+                  Showing 1 to {staticInvitations.length} of {pagination?.total_count ?? staticInvitations.length} invitations
                 </div>
                 {pagination && (
                   <Pagination
