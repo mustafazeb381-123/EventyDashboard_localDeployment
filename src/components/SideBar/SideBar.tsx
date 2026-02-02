@@ -46,7 +46,7 @@ const SideBar = ({
 
   const [activeItem, setActiveItem] = useState(getInitialActiveItem);
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>(
-    {}
+    {},
   );
   const [registeredUsersCount, setRegisteredUsersCount] = useState<string>("0");
   const [eventType, setEventType] = useState<string | null>(null);
@@ -219,7 +219,7 @@ const SideBar = ({
       if (currentEventId && e.key === `eventUsersLength_${currentEventId}`) {
         console.log(
           "Storage changed, updating registered users count:",
-          e.newValue
+          e.newValue,
         );
         setRegisteredUsersCount(e.newValue || "0");
       }

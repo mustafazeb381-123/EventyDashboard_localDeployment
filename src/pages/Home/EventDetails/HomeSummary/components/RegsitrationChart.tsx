@@ -128,12 +128,12 @@ const RegistrationChart = ({
       { month: "Aug", registered: 200 },
       { month: "Sep", registered: 200 },
     ],
-    []
+    [],
   );
 
   const chartData = useMemo(
     () => (data.length > 0 ? data : useDefaultFallback ? defaultData : []),
-    [data, defaultData, useDefaultFallback]
+    [data, defaultData, useDefaultFallback],
   );
 
   useEffect(() => {
@@ -399,7 +399,7 @@ export const ChartExamples = () => {
       { month: "Nov", registered: 700 },
       { month: "Dec", registered: 10 },
     ],
-    []
+    [],
   );
 
   // New data sets
@@ -413,7 +413,7 @@ export const ChartExamples = () => {
       { day: "Sat", visitors: 1100 },
       { day: "Sun", visitors: 880 },
     ],
-    []
+    [],
   );
 
   const revenueData = useMemo(
@@ -423,7 +423,7 @@ export const ChartExamples = () => {
       { quarter: "Q3", revenue: 41000 },
       { quarter: "Q4", revenue: 35000 },
     ],
-    []
+    [],
   );
 
   const appDownloadsData = useMemo(
@@ -435,11 +435,11 @@ export const ChartExamples = () => {
       { month: "May", downloads: 5500 },
       { month: "Jun", downloads: 6800 },
     ],
-    []
+    [],
   );
 
   const [currentRegistrationData, setCurrentRegistrationData] = useState(
-    registrationDataFull.slice(-6)
+    registrationDataFull.slice(-6),
   );
 
   const [timeRange, setTimeRange] = useState("6 months");

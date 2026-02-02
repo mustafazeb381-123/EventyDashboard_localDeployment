@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useState, useMemo } from "react";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { deleteEventUser } from "@/apis/apiHelpers";
 import { updateEventUser } from "@/apis/apiHelpers";
 import { sendCredentials } from "@/apis/apiHelpers";
@@ -24,6 +24,7 @@ import {
   ChevronDown,
   CheckCircle,
   XCircle,
+  Clock,
   FileDown,
   FileSpreadsheet,
 } from "lucide-react";
@@ -100,6 +101,21 @@ const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
   return "pending";
 };
 
+// Helper to get attendance status for filtering
+const getAttendanceStatus = (
+  user: any,
+): "attended" | "not_attended" | "checked_in" | null => {
+  const statuses = user?.attributes?.check_user_area_statuses;
+  if (Array.isArray(statuses) && statuses.length > 0) {
+    const hasCheckIn = statuses.some((s: any) => s?.check_in);
+    const hasCheckOut = statuses.some((s: any) => s?.check_out);
+    if (hasCheckOut) return "attended";
+    if (hasCheckIn) return "checked_in";
+  }
+  if (user?.attributes?.attended === true) return "attended";
+  return "not_attended";
+};
+
 // Avatar component with image fallback
 const UserAvatar = ({ user }: { user: any }) => {
   const [loadError, setLoadError] = useState(false);
@@ -135,9 +151,27 @@ function RegisterdUser() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const [editAvatarError, setEditAvatarError] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [searchTerm, setSearchTerm] = useState(
+    () => searchParams.get("search") ?? "",
+  );
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>(
+    () => searchParams.get("approvalStatus") ?? "all",
+  );
+  const [filterGuestType, setFilterGuestType] = useState<string>(
+    () => searchParams.get("guestType") ?? "all",
+  );
+  const [filterAttendanceStatus, setFilterAttendanceStatus] = useState<string>(
+    () => searchParams.get("attendanceStatus") ?? "all",
+  );
+  const [filterDateFrom, setFilterDateFrom] = useState<string>(
+    () => searchParams.get("dateFrom") ?? "",
+  );
+  const [filterDateTo, setFilterDateTo] = useState<string>(
+    () => searchParams.get("dateTo") ?? "",
+  );
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -161,19 +195,6 @@ function RegisterdUser() {
   const [rejectingBulk, setRejectingBulk] = useState(false);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
   const [rejectingUserId, setRejectingUserId] = useState<string | null>(null);
-  // Default export date range: start of current month → today; date + status involved by default
-  const [exportDateFrom, setExportDateFrom] = useState<string>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1)
-      .toISOString()
-      .slice(0, 10);
-  });
-  const [exportDateTo, setExportDateTo] = useState<string>(() =>
-    new Date().toISOString().slice(0, 10),
-  );
-  const [exportByMode, setExportByMode] = useState<"date" | "status" | "both">(
-    "both",
-  );
   const [exportingCsv, setExportingCsv] = useState(false);
   const [exportingExcel, setExportingExcel] = useState(false);
   const [notification, setNotification] = useState<{
@@ -509,6 +530,34 @@ function RegisterdUser() {
     }
   }, [location.search, eventId]);
 
+  // Sync filters to URL (consistent UI + shareable links)
+  useEffect(() => {
+    const next = new URLSearchParams(location.search);
+    if (filterStatus && filterStatus !== "all")
+      next.set("approvalStatus", filterStatus);
+    else next.delete("approvalStatus");
+    if (filterGuestType && filterGuestType !== "all")
+      next.set("guestType", filterGuestType);
+    else next.delete("guestType");
+    if (filterAttendanceStatus && filterAttendanceStatus !== "all")
+      next.set("attendanceStatus", filterAttendanceStatus);
+    else next.delete("attendanceStatus");
+    if (filterDateFrom) next.set("dateFrom", filterDateFrom);
+    else next.delete("dateFrom");
+    if (filterDateTo) next.set("dateTo", filterDateTo);
+    else next.delete("dateTo");
+    if (searchTerm.trim()) next.set("search", searchTerm.trim());
+    else next.delete("search");
+    setSearchParams(next, { replace: true });
+  }, [
+    filterStatus,
+    filterGuestType,
+    filterAttendanceStatus,
+    filterDateFrom,
+    filterDateTo,
+    searchTerm,
+  ]);
+
   // Debounce search term
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -675,18 +724,39 @@ function RegisterdUser() {
     }
   };
 
-  // Filter users by status and search term (client-side filtering)
+  // Unique guest types from current data (for dropdown)
+  const uniqueGuestTypes = useMemo(() => {
+    const set = new Set<string>();
+    eventUsers.forEach((u: any) => {
+      const t = u?.attributes?.user_type;
+      if (t && String(t).trim()) set.add(String(t).trim());
+    });
+    return Array.from(set).sort();
+  }, [eventUsers]);
+
+  // Filter users: Approval Status, Attendance Status, Guest Type, Date range, Search
   const filteredUsers = eventUsers.filter((user: any) => {
-    // Filter by status
     if (filterStatus !== "all") {
       const status = getApprovalStatus(user);
-      if (status !== filterStatus) {
-        return false;
-      }
+      if (status !== filterStatus) return false;
     }
-
-    // Filter by search term (if searching, the server-side search already filtered)
-    // But we still apply client-side filtering for the current page results
+    if (filterGuestType !== "all") {
+      const ut = (user?.attributes?.user_type || "").trim();
+      if (ut !== filterGuestType) return false;
+    }
+    if (filterAttendanceStatus !== "all") {
+      const att = getAttendanceStatus(user);
+      if (att !== filterAttendanceStatus) return false;
+    }
+    if (filterDateFrom || filterDateTo) {
+      const created = user?.attributes?.created_at || "";
+      if (!created) return false;
+      const d = new Date(created).getTime();
+      if (filterDateFrom && d < new Date(filterDateFrom).getTime())
+        return false;
+      if (filterDateTo && d > new Date(filterDateTo + "T23:59:59").getTime())
+        return false;
+    }
     if (debouncedSearchTerm.trim() !== "") {
       const searchLower = debouncedSearchTerm.toLowerCase().trim();
       const name = (user?.attributes?.name || "").toLowerCase();
@@ -697,7 +767,6 @@ function RegisterdUser() {
         user?.attributes?.custom_fields?.title || ""
       ).toLowerCase();
       const userType = (user?.attributes?.user_type || "").toLowerCase();
-
       return (
         name.includes(searchLower) ||
         email.includes(searchLower) ||
@@ -707,34 +776,16 @@ function RegisterdUser() {
         userType.includes(searchLower)
       );
     }
-
     return true;
   });
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "-";
-
     const date = new Date(dateString);
-
-    const formattedDate = date.toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-
-    const formattedTime = date.toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    });
-
-    return (
-      <>
-        {formattedDate}
-        <br />
-        {formattedTime}
-      </>
-    );
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
   };
 
   // Fetch all users across pages for export (filter by status and optional date range)
@@ -765,20 +816,47 @@ function RegisterdUser() {
         allUsers.push(...users);
       });
     }
-    const useDate = exportByMode === "date" || exportByMode === "both";
-    const useStatus = exportByMode === "status" || exportByMode === "both";
+    // Apply same filters as table: Approval, Guest Type, Attendance, Date range, Search
     return allUsers.filter((user: any) => {
-      if (useStatus && filterStatus !== "all") {
+      if (filterStatus !== "all") {
         const status = getApprovalStatus(user);
         if (status !== filterStatus) return false;
       }
-      if (useDate && (exportDateFrom || exportDateTo)) {
+      if (filterGuestType !== "all") {
+        const ut = (user?.attributes?.user_type || "").trim();
+        if (ut !== filterGuestType) return false;
+      }
+      if (filterAttendanceStatus !== "all") {
+        const att = getAttendanceStatus(user);
+        if (att !== filterAttendanceStatus) return false;
+      }
+      if (filterDateFrom || filterDateTo) {
         const created = user?.attributes?.created_at || "";
-        if (!created) return true;
+        if (!created) return false;
         const d = new Date(created).getTime();
-        if (exportDateFrom && d < new Date(exportDateFrom).getTime())
+        if (filterDateFrom && d < new Date(filterDateFrom).getTime())
           return false;
-        if (exportDateTo && d > new Date(exportDateTo + "T23:59:59").getTime())
+        if (filterDateTo && d > new Date(filterDateTo + "T23:59:59").getTime())
+          return false;
+      }
+      if (debouncedSearchTerm.trim() !== "") {
+        const searchLower = debouncedSearchTerm.toLowerCase().trim();
+        const name = (user?.attributes?.name || "").toLowerCase();
+        const email = (user?.attributes?.email || "").toLowerCase();
+        const phone = (user?.attributes?.phone_number || "").toLowerCase();
+        const org = (user?.attributes?.organization || "").toLowerCase();
+        const title = (
+          user?.attributes?.custom_fields?.title || ""
+        ).toLowerCase();
+        const userType = (user?.attributes?.user_type || "").toLowerCase();
+        if (
+          !name.includes(searchLower) &&
+          !email.includes(searchLower) &&
+          !phone.includes(searchLower) &&
+          !org.includes(searchLower) &&
+          !title.includes(searchLower) &&
+          !userType.includes(searchLower)
+        )
           return false;
       }
       return true;
@@ -809,7 +887,6 @@ function RegisterdUser() {
         "Type",
         "Status",
         "Created",
-        "Updated",
       ];
       const rows = users.map((user: any) => {
         const status = getApprovalStatus(user);
@@ -826,7 +903,6 @@ function RegisterdUser() {
           user?.attributes?.user_type ?? "",
           status,
           user?.attributes?.created_at ?? "",
-          user?.attributes?.updated_at ?? "",
         ].map(escapeCsvCell);
       });
       const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join(
@@ -867,7 +943,6 @@ function RegisterdUser() {
         "Type",
         "Status",
         "Created",
-        "Updated",
       ];
       const rows = users.map((user: any) => {
         const status = getApprovalStatus(user);
@@ -884,7 +959,6 @@ function RegisterdUser() {
           user?.attributes?.user_type ?? "",
           status,
           user?.attributes?.created_at ?? "",
-          user?.attributes?.updated_at ?? "",
         ].join("\t");
       });
       const tsv = [headers.join("\t"), ...rows].join("\n");
@@ -1014,80 +1088,29 @@ function RegisterdUser() {
         <div className="max-w-8xl mx-auto">
           <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
 
-          {/* Reports / Export bar: export by date, status, or both */}
+          {/* Export: respects current filters (Approval, Guest Type, Attendance, Date range, Search) */}
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
-            <div className="flex flex-wrap items-center gap-4 mb-3">
-              <span className="text-sm font-semibold text-gray-700">
-                Reports — Export by:
-              </span>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="exportBy"
-                  checked={exportByMode === "date"}
-                  onChange={() => setExportByMode("date")}
-                  className="text-blue-600"
-                />
-                <span className="text-sm">Date</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="exportBy"
-                  checked={exportByMode === "status"}
-                  onChange={() => setExportByMode("status")}
-                  className="text-blue-600"
-                />
-                <span className="text-sm">Status</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="exportBy"
-                  checked={exportByMode === "both"}
-                  onChange={() => setExportByMode("both")}
-                  className="text-blue-600"
-                />
-                <span className="text-sm">Both (date + status)</span>
-              </label>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">From</span>
-                <input
-                  type="date"
-                  value={exportDateFrom}
-                  onChange={(e) => setExportDateFrom(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">To</span>
-                <input
-                  type="date"
-                  value={exportDateTo}
-                  onChange={(e) => setExportDateTo(e.target.value)}
-                  className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm"
-                />
-              </div>
-              <div className="flex items-center gap-2 ml-2">
-                <button
-                  onClick={handleExportCsv}
-                  disabled={exportingCsv}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
-                >
-                  <FileDown className="w-4 h-4" />
-                  {exportingCsv ? "Exporting…" : "Export CSV"}
-                </button>
-                <button
-                  onClick={handleExportExcel}
-                  disabled={exportingExcel}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
-                >
-                  <FileSpreadsheet className="w-4 h-4" />
-                  {exportingExcel ? "Exporting…" : "Export Excel"}
-                </button>
-              </div>
+            <p className="text-sm text-gray-600 mb-3">
+              Export respects current filters (approval status, guest type,
+              attendance, date range, search).
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={handleExportCsv}
+                disabled={exportingCsv}
+                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+              >
+                <FileDown className="w-4 h-4" />
+                {exportingCsv ? "Exporting…" : "Export CSV"}
+              </button>
+              <button
+                onClick={handleExportExcel}
+                disabled={exportingExcel}
+                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                {exportingExcel ? "Exporting…" : "Export Excel"}
+              </button>
             </div>
           </div>
 
@@ -1097,8 +1120,13 @@ function RegisterdUser() {
               <div className="flex items-center gap-2">
                 <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
                 <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-                  {filterStatus !== "all" || debouncedSearchTerm.trim() !== ""
-                    ? `${filteredUsers.length} Users`
+                  {filterStatus !== "all" ||
+                  filterGuestType !== "all" ||
+                  filterAttendanceStatus !== "all" ||
+                  filterDateFrom ||
+                  filterDateTo ||
+                  debouncedSearchTerm.trim() !== ""
+                    ? `${filteredUsers.length} Users (filtered)`
                     : `${pagination?.total_count || eventUsers.length} Users`}
                 </span>
               </div>
@@ -1168,19 +1196,19 @@ function RegisterdUser() {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleApproveUsers()}
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  title="Approve selected"
+                  className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   disabled={approvingBulk}
                 >
                   <CheckCircle className="w-4 h-4" />
-                  {approvingBulk ? "...Approving" : "Approve"}
                 </button>
                 <button
                   onClick={() => handleRejectUsers()}
-                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                  title="Reject selected"
+                  className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   disabled={rejectingBulk}
                 >
                   <XCircle className="w-4 h-4" />
-                  {rejectingBulk ? "...Rejecting" : "Reject"}
                 </button>
                 <button
                   onClick={() => handleSendCredentials()}
@@ -1194,34 +1222,90 @@ function RegisterdUser() {
             </div>
           )}
 
-          <div className="flex flex-col lg:flex-row justify-between gap-4 mb-4">
-            <div className="flex flex-col lg:flex-row gap-4 flex-1">
-              <div className="relative flex-1 lg:w-1/3">
+          {/* Filters: Search, Approval Status, Guest Type, Attendance Status, Date range */}
+          <div className="flex flex-col gap-4 mb-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-md">
                 <Search
                   value={searchTerm}
                   onChange={(val) => {
                     setSearchTerm(val);
+                    setCurrentPage(1);
                   }}
-                  placeholder="Search users across all pages..."
+                  placeholder="Search users..."
                 />
               </div>
-              <div className="relative lg:w-48">
+              <div className="relative w-full sm:w-40">
                 <select
                   value={filterStatus}
                   onChange={(e) => {
                     setFilterStatus(e.target.value);
-                    setCurrentPage(1); // Reset to page 1 when filter changes
+                    setCurrentPage(1);
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
                 >
-                  <option value="all">All Status</option>
+                  <option value="all">All approval</option>
                   <option value="pending">Pending</option>
                   <option value="approved">Approved</option>
                   <option value="rejected">Rejected</option>
                 </select>
-                <ChevronDown
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                  size={20}
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
+              </div>
+              <div className="relative w-full sm:w-40">
+                <select
+                  value={filterGuestType}
+                  onChange={(e) => {
+                    setFilterGuestType(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
+                >
+                  <option value="all">All guest types</option>
+                  {uniqueGuestTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
+              </div>
+              <div className="relative w-full sm:w-44">
+                <select
+                  value={filterAttendanceStatus}
+                  onChange={(e) => {
+                    setFilterAttendanceStatus(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
+                >
+                  <option value="all">All attendance</option>
+                  <option value="attended">Attended</option>
+                  <option value="not_attended">Not attended</option>
+                  <option value="checked_in">Checked in</option>
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="date"
+                  value={filterDateFrom}
+                  onChange={(e) => {
+                    setFilterDateFrom(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="From"
+                />
+                <span className="text-gray-400 text-sm">–</span>
+                <input
+                  type="date"
+                  value={filterDateTo}
+                  onChange={(e) => {
+                    setFilterDateTo(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  placeholder="To"
                 />
               </div>
             </div>
@@ -1354,9 +1438,6 @@ function RegisterdUser() {
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Created
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Updated
-                      </th>
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Actions
@@ -1368,17 +1449,17 @@ function RegisterdUser() {
                     {filteredUsers.length === 0 && !loadingUsers ? (
                       <tr>
                         <td
-                          colSpan={10}
+                          colSpan={9}
                           className="px-6 py-8 text-center text-gray-500"
                         >
-                          {debouncedSearchTerm.trim() !== "" &&
-                          filterStatus !== "all"
-                            ? `No users found matching "${debouncedSearchTerm}" with status "${filterStatus}"`
-                            : debouncedSearchTerm.trim() !== ""
-                              ? `No users found matching "${debouncedSearchTerm}"`
-                              : filterStatus !== "all"
-                                ? `No users found with status "${filterStatus}"`
-                                : "No users found"}
+                          {filterStatus !== "all" ||
+                          filterGuestType !== "all" ||
+                          filterAttendanceStatus !== "all" ||
+                          filterDateFrom ||
+                          filterDateTo ||
+                          debouncedSearchTerm.trim() !== ""
+                            ? "No users match the current filters."
+                            : "No users found"}
                         </td>
                       </tr>
                     ) : (
@@ -1424,26 +1505,32 @@ function RegisterdUser() {
                           </td>
                           <td className="px-6 py-4">
                             {getApprovalStatus(user) === "approved" && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Approved
+                              <span
+                                title="Approved"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700"
+                              >
+                                <CheckCircle className="w-4 h-4" />
                               </span>
                             )}
                             {getApprovalStatus(user) === "rejected" && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                Rejected
+                              <span
+                                title="Rejected"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700"
+                              >
+                                <XCircle className="w-4 h-4" />
                               </span>
                             )}
                             {getApprovalStatus(user) === "pending" && (
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                                Pending
+                              <span
+                                title="Pending"
+                                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700"
+                              >
+                                <Clock className="w-4 h-4" />
                               </span>
                             )}
                           </td>
                           <td className="px-6 py-4 text-sm text-gray-600">
                             {formatDate(user?.attributes?.created_at)}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">
-                            {formatDate(user?.attributes?.updated_at)}
                           </td>
 
                           <td className="px-6 py-4">
@@ -1458,29 +1545,27 @@ function RegisterdUser() {
                               <button
                                 onClick={() => handleApproveUsers([user.id])}
                                 disabled={approvingUserId === user.id}
-                                className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                title="Accept"
+                                className={`p-2 rounded-lg transition-colors ${
                                   approvingUserId === user.id
-                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                    : "bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "text-green-600 hover:bg-green-50"
                                 }`}
                               >
-                                {approvingUserId === user.id
-                                  ? "Accepting..."
-                                  : "Accept"}
+                                <CheckCircle className="w-4 h-4" />
                               </button>
 
                               <button
                                 onClick={() => handleRejectUsers([user.id])}
                                 disabled={rejectingUserId === user.id}
-                                className={`px-3 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                                title="Reject"
+                                className={`p-2 rounded-lg transition-colors ${
                                   rejectingUserId === user.id
-                                    ? "bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed"
-                                    : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "text-red-600 hover:bg-red-50"
                                 }`}
                               >
-                                {rejectingUserId === user.id
-                                  ? "Rejecting..."
-                                  : "Reject"}
+                                <XCircle className="w-4 h-4" />
                               </button>
 
                               <button
@@ -1570,9 +1655,14 @@ function RegisterdUser() {
                         {pagination.total_count}
                       </span>{" "}
                       users
-                      {filterStatus !== "all" && (
+                      {(filterStatus !== "all" ||
+                        filterGuestType !== "all" ||
+                        filterAttendanceStatus !== "all" ||
+                        filterDateFrom ||
+                        filterDateTo ||
+                        debouncedSearchTerm.trim() !== "") && (
                         <span className="ml-2 text-blue-600">
-                          • Filtered: {filteredUsers.length} {filterStatus} user
+                          • Filtered: {filteredUsers.length} user
                           {filteredUsers.length !== 1 ? "s" : ""}
                         </span>
                       )}
