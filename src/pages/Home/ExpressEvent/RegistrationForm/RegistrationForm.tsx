@@ -688,76 +688,75 @@ const RegistrationForm = ({
         />
       ) : (
         <div className="w-full mx-5 bg-white p-5 rounded-2xl">
-          {/* Header */}
+          {/* Header with Step Indicator */}
           <div className="flex flex-row justify-between items-center">
             <div className="flex flex-row gap-2 items-center">
-              <ChevronLeft />
+              <ChevronLeft
+                size={20}
+                className="cursor-pointer text-gray-500 hover:text-gray-700"
+                onClick={handlePreviousClick}
+              />
               <p className="text-neutral-900 text-md font-poppins font-normal">
-                Choose a registration form template
+                {internalStep === 0
+                  ? "Choose a registration form template"
+                  : "Confirmation details"}
               </p>
             </div>
 
             {/* Steps */}
-            <div className="flex items-center gap-2">
-              {/* Step 1 - click to show registration (template) screen */}
-              <div className="flex items-center">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setInternalStep(0)}
-                  onKeyDown={(e) => e.key === "Enter" && setInternalStep(0)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors hover:opacity-90
-                    ${
-                      isStep1Completed || isStep1Active
-                        ? "border-[#ff0080]"
-                        : "border-gray-200"
-                    }
-                    ${isStep1Completed ? "bg-[#ff0080]" : "bg-transparent"}
-                  `}
-                  style={{ cursor: "pointer" }}
-                >
-                  {isStep1Completed ? (
-                    <Check size={18} color="white" className="pointer-events-none" />
-                  ) : (
-                    <p
-                      className={`text-sm font-poppins pointer-events-none ${
-                        isStep1Active ? "text-[#ff0080]" : "text-gray-400"
-                      }`}
-                    >
-                      01
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              {/* Connector */}
-              <div
-                className={`flex-1 h-1 rounded-full min-w-[8px] ${
-                  isStep1Completed ? "bg-[#ff0080]" : "bg-gray-200"
-                }`}
-              ></div>
-
-              {/* Step 2 - click to show ConfirmationDetails screen */}
-              <div className="flex items-center">
-                <div
-                  role="button"
-                  tabIndex={0}
-                  onClick={() => setInternalStep(1)}
-                  onKeyDown={(e) => e.key === "Enter" && setInternalStep(1)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 cursor-pointer transition-colors hover:opacity-90
-                    ${isStep2Active ? "border-[#ff0080]" : "border-gray-200"}
-                  `}
-                  style={{ cursor: "pointer" }}
-                >
-                  <p
-                    className={`text-sm font-poppins pointer-events-none ${
-                      isStep2Active ? "text-[#ff0080]" : "text-gray-400"
-                    }`}
-                  >
-                    02
-                  </p>
-                </div>
-              </div>
+            <div className="flex items-center gap-1">
+              {[
+                { step: 0, label: "Registration Template" },
+                { step: 1, label: "Confirmation Details" },
+              ].map(({ step, label }, idx) => {
+                const isActive = (step === 0 && isStep1Active) || (step === 1 && isStep2Active);
+                const done = step === 0 ? isStep1Completed : internalStep > 1;
+                return (
+                  <React.Fragment key={step}>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setInternalStep(step)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer transition-colors ${
+                          done
+                            ? "bg-[#ff0080] border-[#ff0080] hover:opacity-90 text-white"
+                            : isActive
+                              ? "border-[#ff0080] bg-white text-[#ff0080]"
+                              : "border-gray-300 hover:border-[#ff0080] text-gray-400"
+                        }`}
+                        aria-label={`Go to step ${step + 1}: ${label}`}
+                      >
+                        {done ? (
+                          <Check size={16} className="text-white" />
+                        ) : (
+                          <span className="text-sm font-medium">
+                            {String(step + 1).padStart(2, "0")}
+                          </span>
+                        )}
+                      </button>
+                      <span
+                        className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
+                          done
+                            ? "text-gray-700"
+                            : isActive
+                              ? "text-[#ff0080]"
+                              : "text-gray-400"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                    {idx < 1 && (
+                      <div
+                        className={`w-12 h-0.5 self-start mt-4 flex-shrink-0 ${
+                          isStep1Completed ? "bg-[#ff0080]" : "bg-gray-300"
+                        }`}
+                        aria-hidden
+                      />
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </div>
           </div>
 

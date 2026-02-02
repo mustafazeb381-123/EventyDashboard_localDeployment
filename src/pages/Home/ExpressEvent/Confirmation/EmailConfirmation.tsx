@@ -1248,42 +1248,60 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
-          <ChevronLeft size={20} />{" "}
+          <ChevronLeft
+            size={20}
+            className="cursor-pointer text-gray-500 hover:text-gray-700"
+            onClick={onPrevious}
+          />
           <h2 className="text-xl font-semibold">{currentFlow.label}</h2>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           {flows.map((f, idx) => {
             const active = idx === currentFlowIndex,
               done = Boolean(selectedTemplates[f.id]);
             return (
-              <div key={f.id} className="flex items-center">
-                <button
-                  type="button"
-                  onClick={() => setCurrentFlowIndex(idx)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer ${
-                    done
-                      ? "bg-pink-500 border-pink-500 hover:bg-pink-600"
-                      : active
-                        ? "border-pink-500 bg-white"
-                        : "border-gray-300 hover:border-pink-400"
-                  }`}
-                >
-                  {done ? (
-                    <Check size={16} className="text-white" />
-                  ) : (
-                    <span className="text-sm font-medium">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                  )}
-                </button>
+              <React.Fragment key={f.id}>
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentFlowIndex(idx)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer transition-colors ${
+                      done
+                        ? "bg-pink-500 border-pink-500 hover:bg-pink-600 text-white"
+                        : active
+                          ? "border-pink-500 bg-white text-pink-500"
+                          : "border-gray-300 hover:border-pink-400 text-gray-400"
+                    }`}
+                  >
+                    {done ? (
+                      <Check size={16} className="text-white" />
+                    ) : (
+                      <span className="text-sm font-medium">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                    )}
+                  </button>
+                  <span
+                    className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
+                      done
+                        ? "text-gray-700"
+                        : active
+                          ? "text-pink-500"
+                          : "text-gray-400"
+                    }`}
+                  >
+                    {f.label}
+                  </span>
+                </div>
                 {idx !== flows.length - 1 && (
                   <div
-                    className={`w-8 h-0.5 mx-1 ${
+                    className={`w-12 h-0.5 self-start mt-4 flex-shrink-0 ${
                       selectedTemplates[f.id] ? "bg-pink-500" : "bg-gray-300"
                     }`}
+                    aria-hidden
                   />
                 )}
-              </div>
+              </React.Fragment>
             );
           })}
         </div>

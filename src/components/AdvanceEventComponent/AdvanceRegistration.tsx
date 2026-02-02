@@ -2343,6 +2343,8 @@ const AdvanceRegistration = ({
       ? localStorage.getItem("create_eventId") || undefined
       : undefined);
 
+  const STEP_NAMES = ["Registration Template", "Confirmation Template", "Badge Template", "Payment"];
+
   // State for default templates
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -3927,35 +3929,43 @@ const AdvanceRegistration = ({
 
           {/* Steps */}
           {currentStep !== undefined && totalSteps !== undefined && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {Array.from({ length: totalSteps }, (_, index) => index).map(
                 (step) => (
-                  <div key={step} className="flex items-center">
-                    <button
-                      type="button"
-                      onClick={() => onStepClick?.(step)}
-                      className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                        step === currentStep
-                          ? "border-pink-500 bg-white text-pink-500"
-                          : step < currentStep
-                            ? "bg-pink-500 border-pink-500 text-white"
-                            : "border-gray-300 bg-white text-gray-400"
-                      } ${onStepClick ? "cursor-pointer hover:opacity-90" : ""}`}
-                    >
-                      {step < currentStep ? (
-                        <Check size={16} />
-                      ) : (
-                        <span className="text-sm font-medium">{String(step + 1).padStart(2, "0")}</span>
-                      )}
-                    </button>
+                  <React.Fragment key={step}>
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => onStepClick?.(step)}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                          step === currentStep
+                            ? "border-pink-500 bg-white text-pink-500"
+                            : step < currentStep
+                              ? "bg-pink-500 border-pink-500 text-white"
+                              : "border-gray-300 bg-white text-gray-400"
+                        } ${onStepClick ? "cursor-pointer hover:opacity-90" : ""}`}
+                      >
+                        {step < currentStep ? (
+                          <Check size={16} />
+                        ) : (
+                          <span className="text-sm font-medium">{String(step + 1).padStart(2, "0")}</span>
+                        )}
+                      </button>
+                      <span className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
+                        step === currentStep ? "text-pink-500" : step < currentStep ? "text-gray-700" : "text-gray-400"
+                      }`}>
+                        {STEP_NAMES[step] ?? `Step ${step + 1}`}
+                      </span>
+                    </div>
                     {step < totalSteps - 1 && (
                       <div
-                        className={`w-8 h-0.5 mx-1 ${
+                        className={`w-12 h-0.5 self-start mt-4 flex-shrink-0 ${
                           step < currentStep ? "bg-pink-500" : "bg-gray-300"
                         }`}
+                        aria-hidden
                       />
                     )}
-                  </div>
+                  </React.Fragment>
                 )
               )}
             </div>

@@ -8,6 +8,20 @@ import {
   Search,
   Users as UsersIcon,
   Upload,
+  Eye,
+  MoreVertical,
+  FileText,
+  Download,
+  CheckCircle,
+  Clock,
+  XCircle,
+  UserCheck,
+  Bold,
+  Italic,
+  Undo,
+  Redo,
+  Link,
+  Image as ImageIcon,
 } from "lucide-react";
 import { getEventUsers, createEventUser, getEventbyId, sendCredentials, getBadgeType } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,19 +57,41 @@ const UserAvatar = ({ user }: { user: any }) => {
   }
 
   return (
-    <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center text-white font-semibold text-base">
       {getUserInitial(user)}
     </div>
   );
 };
 
-function Users() {
+// Email Templates
+const templates = [
+  {
+    id: 1,
+    name: "Professional",
+    preview: "Template 1",
+    backgroundColor: "#ffffff",
+  },
+  {
+    id: 2,
+    name: "Colorful",
+    preview: "Template 2",
+    backgroundColor: "#f0f9ff",
+  },
+  {
+    id: 3,
+    name: "Elegant",
+    preview: "Template 3",
+    backgroundColor: "#fef3c7",
+  },
+];
+
+function Invitations() {
   const location = useLocation();
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
-  const [badges, setBadges] = useState<any[]>([]); // Store ALL badges for dynamic dropdown
+  const [badges, setBadges] = useState<any[]>([]);
   const [loadingBadges, setLoadingBadges] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [eventId, setEventId] = useState<string | null>(null);
@@ -70,30 +106,30 @@ function Users() {
     type: "success" | "error" | "info";
   } | null>(null);
 
-  // Add User Form State
-  const [addUserForm, setAddUserForm] = useState({
-    name: "",
-    email: "",
-    phone_number: "",
-    organization: "",
-    position: "",
-    user_type: "",
-    title: "",
-    age: "",
-    city: "",
-    country: "",
-    id_number: "",
-    passport_number: "",
-    blood_type: "",
-    gender: "",
-    seat_row: "",
-    seat_column: "",
-    password: "",
-    password_confirmation: "",
-    device_token: "",
-    image: null as File | null,
+  // Invitation Form State
+  const [invitationForm, setInvitationForm] = useState({
+    invitationName: "",
+    communicationType: "Email",
+    invitationCategory: "",
+    event: "",
+    language: "Arabic (العربية)",
+    scheduleSendAt: "",
+    emailSubject: "",
+    backgroundColor: "#ffffff",
   });
-  const [isCreatingUser, setIsCreatingUser] = useState(false);
+
+  const [headerImagePreview, setHeaderImagePreview] = useState<string | null>(null);
+  const [footerImagePreview, setFooterImagePreview] = useState<string | null>(null);
+  const [bannerImage, setBannerImage] = useState<File | null>(null);
+  const [footerImage, setFooterImage] = useState<File | null>(null);
+  const [isCreatingInvitation, setIsCreatingInvitation] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(0);
+  
+  // Rich text editor state
+  const [editorContent, setEditorContent] = useState({
+    title: "Join us for our upcoming event!",
+    body: "We're excited to invite you to our upcoming event full requirement from 2024-05-12 - 2024-05-20 at 09:01:00 - 18:01:00.",
+  });
 
   const itemsPerPage = 10;
 
@@ -122,7 +158,6 @@ function Users() {
     } else if (!idFromQuery && eventId) {
       // Keep current eventId
     } else if (!idFromQuery && !eventId) {
-      // Try to get from localStorage as fallback
       const storedEventId =
         localStorage.getItem("create_eventId") ||
         localStorage.getItem("edit_eventId");
@@ -132,7 +167,7 @@ function Users() {
     }
   }, [location.search, eventId]);
 
-  // Fetch event data to get the actual event ID (optional - fallback to eventId if it fails)
+  // Fetch event data to get the actual event ID
   useEffect(() => {
     if (eventId) {
       fetchEventData(eventId);
@@ -147,7 +182,7 @@ function Users() {
     }
   }, [actualEventId, eventId]);
 
-  // Fetch users when we have an eventId (use actualEventId if available, otherwise use eventId)
+  // Fetch users when we have an eventId
   useEffect(() => {
     const idToUse = actualEventId || eventId;
     if (idToUse && currentPage > 0) {
@@ -158,23 +193,15 @@ function Users() {
   const fetchEventData = async (id: string) => {
     try {
       const response = await getEventbyId(id);
-      console.log("Event data response:", response.data);
-      
-      // Extract the actual event ID from the API response
       const actualId = response?.data?.data?.id;
       if (actualId) {
         setActualEventId(String(actualId));
         setEventData(response.data);
-        console.log("✅ Using actual event ID from API:", actualId);
       } else {
-        // Fallback: use the original eventId if no actual ID found
-        console.warn("⚠️ No event ID found in API response, using original eventId:", id);
-        setActualEventId(null); // Will fallback to eventId
+        setActualEventId(null);
       }
     } catch (error: any) {
-      console.warn("⚠️ Error fetching event data, will use original eventId:", error);
-      // Don't show error - just fallback to using eventId directly
-      setActualEventId(null); // Will fallback to eventId
+      setActualEventId(null);
     }
   };
 
@@ -183,31 +210,15 @@ function Users() {
 
     setLoadingBadges(true);
     try {
-      console.log("Fetching badges for event ID:", id);
-
       const response = await getBadgeType(id);
-
-      console.log("Badges API Response in invitation users", response);
-
       const result = response.data;
-      console.log("✅ Raw badges fetched:", result?.data);
-      console.log("✅ All badge names:", result?.data?.map((b: any) => b?.attributes?.name));
-      console.log("✅ All badge default values:", result?.data?.map((b: any) => ({
-        id: b.id,
-        name: b?.attributes?.name,
-        default: b?.attributes?.default
-      })));
 
-      // Store ALL badges (both default and non-default) so we can check which ones are default
-      // This is needed to exclude users with default badge types
       if (result?.data && Array.isArray(result.data)) {
         setBadges(result.data);
-        console.log("✅ All badges stored (including default ones):", result.data);
       } else {
         setBadges([]);
       }
     } catch (error) {
-      console.error("❌ Fetch error:", error);
       setBadges([]);
     } finally {
       setLoadingBadges(false);
@@ -227,18 +238,14 @@ function Users() {
         ? responseData
         : responseData?.data || [];
 
-      // Show all users (both normal and VIP)
       setUsers(allUsers);
 
-      // Set pagination metadata
       const paginationMeta =
         response.data?.meta?.pagination || response.data?.pagination;
       if (paginationMeta) {
         setPagination(paginationMeta);
       }
     } catch (error) {
-      console.error("Error fetching event users:", error);
-      // Set empty state when API fails
       setUsers([]);
       setPagination(null);
     } finally {
@@ -257,30 +264,23 @@ function Users() {
         }
       }
     });
-    console.log("🔵 Default badge names (will be excluded):", Array.from(defaultNames));
     return defaultNames;
   }, [badges]);
 
   // Filter users by type, badge, and search term
-  // IMPORTANT: Exclude users whose user_type matches a badge with default: true
   const filteredUsers = users.filter((user: any) => {
     const userType = (user?.attributes?.user_type || "").toLowerCase();
 
-    // GLOBAL EXCLUSION: If the user's type matches any badge marked as default: true,
-    // then this user should NOT be displayed in the invitation list
     if (defaultBadgeNames.has(userType)) {
-      console.log(`❌ Excluding user ${user.id} (${user?.attributes?.name}) - user_type "${userType}" matches default badge`);
       return false;
     }
 
-    // Filter by type (using badge names from API)
     if (filterType !== "all") {
       if (userType !== filterType.toLowerCase()) {
         return false;
       }
     }
 
-    // Filter by search term
     if (searchTerm.trim() === "") {
       return true;
     }
@@ -302,9 +302,23 @@ function Users() {
     );
   });
 
+  // Calculate statistics
+  const stats = useMemo(() => {
+    const total = users.length;
+    const completed = users.filter((u: any) => u?.attributes?.invitation_status === "completed").length;
+    const inProgress = users.filter((u: any) => u?.attributes?.invitation_status === "in_progress").length;
+    const pending = users.filter((u: any) => !u?.attributes?.invitation_status || u?.attributes?.invitation_status === "pending").length;
+
+    return {
+      total,
+      completed,
+      inProgress,
+      pending,
+    };
+  }, [users]);
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -321,7 +335,6 @@ function Users() {
       return;
     }
 
-    // Track which user(s) are sending invitations
     const isSingleUser = userIds && userIds.length === 1;
     if (isSingleUser) {
       setSendingCredentialsUserId(userIds[0]);
@@ -329,7 +342,6 @@ function Users() {
 
     try {
       const response = await sendCredentials(String(idToUse), idsToSend);
-      console.log("Invitation sent response:", response.data);
 
       if (isSingleUser) {
         showNotification("Invitation sent to user successfully!", "success");
@@ -341,7 +353,6 @@ function Users() {
       }
       setSelectedUsers(new Set());
     } catch (err: any) {
-      console.error("Error sending invitation:", err);
       const errorMessage = 
         err?.response?.data?.message || 
         err?.response?.data?.error ||
@@ -368,166 +379,76 @@ function Users() {
     });
   };
 
-  const handleCreateUser = async () => {
-    // Use actualEventId if available, otherwise fallback to eventId
+  const handleCreateInvitation = async () => {
     const idToUse = actualEventId || eventId;
     
     if (!idToUse) {
-      showNotification("Event ID is missing. Cannot create user.", "error");
-      console.error("❌ Event ID validation failed:", { 
-        eventId, 
-        actualEventId, 
-        eventData,
-        location: location.search 
-      });
+      showNotification("Event ID is missing. Cannot create invitation.", "error");
       return;
     }
 
-    // Validate required fields
-    if (!addUserForm.name || !addUserForm.email) {
-      showNotification("Name and Email are required fields", "error");
+    if (!invitationForm.invitationName || !invitationForm.emailSubject) {
+      showNotification("Invitation Name and Email Subject are required", "error");
       return;
     }
 
-    setIsCreatingUser(true);
-
-    // Use the event ID (actualEventId preferred, fallback to eventId)
-    const validEventId = String(idToUse).trim();
-    if (!validEventId) {
-      showNotification("Invalid Event ID", "error");
-      setIsCreatingUser(false);
-      return;
-    }
+    setIsCreatingInvitation(true);
 
     try {
       const formData = new FormData();
 
-      // Append tenant_uuid if available (for multi-tenancy)
       const tenantUuid = localStorage.getItem("tenant_uuid");
       if (tenantUuid) {
         formData.append("tenant_uuid", tenantUuid);
-        console.log("✅ Including tenant_uuid:", tenantUuid);
       }
 
-      // Append required fields
-      formData.append("event_user[name]", addUserForm.name);
-      formData.append("event_user[email]", addUserForm.email);
+      // Append invitation fields
+      formData.append("invitation[name]", invitationForm.invitationName);
+      formData.append("invitation[communication_type]", invitationForm.communicationType);
+      formData.append("invitation[category]", invitationForm.invitationCategory);
+      formData.append("invitation[language]", invitationForm.language);
+      formData.append("invitation[subject]", invitationForm.emailSubject);
+      formData.append("invitation[title]", editorContent.title);
+      formData.append("invitation[body]", editorContent.body);
+      formData.append("invitation[background_color]", invitationForm.backgroundColor);
 
-      // Append optional fields
-      if (addUserForm.phone_number)
-        formData.append("event_user[phone_number]", addUserForm.phone_number);
-      if (addUserForm.organization)
-        formData.append("event_user[organization]", addUserForm.organization);
-      if (addUserForm.position)
-        formData.append("event_user[position]", addUserForm.position);
-      if (addUserForm.user_type)
-        formData.append("event_user[user_type]", addUserForm.user_type);
-      if (addUserForm.title)
-        formData.append("event_user[title]", addUserForm.title);
-      if (addUserForm.age)
-        formData.append("event_user[age]", addUserForm.age);
-      if (addUserForm.city)
-        formData.append("event_user[city]", addUserForm.city);
-      if (addUserForm.country)
-        formData.append("event_user[country]", addUserForm.country);
-      if (addUserForm.id_number)
-        formData.append("event_user[id_number]", addUserForm.id_number);
-      if (addUserForm.passport_number)
-        formData.append("event_user[passport_number]", addUserForm.passport_number);
-      if (addUserForm.blood_type)
-        formData.append("event_user[blood_type]", addUserForm.blood_type);
-      if (addUserForm.gender)
-        formData.append("event_user[gender]", addUserForm.gender);
-      if (addUserForm.seat_row)
-        formData.append("event_user[seat_row]", addUserForm.seat_row);
-      if (addUserForm.seat_column)
-        formData.append("event_user[seat_column]", addUserForm.seat_column);
-      if (addUserForm.password)
-        formData.append("event_user[password]", addUserForm.password);
-      if (addUserForm.password_confirmation)
-        formData.append("event_user[password_confirmation]", addUserForm.password_confirmation);
-      if (addUserForm.device_token)
-        formData.append("event_user[device_token]", addUserForm.device_token);
-
-      // Append image if provided
-      if (addUserForm.image) {
-        formData.append("event_user[image]", addUserForm.image);
+      if (invitationForm.scheduleSendAt) {
+        formData.append("invitation[schedule_send_at]", invitationForm.scheduleSendAt);
       }
 
-      // Debug: Log form data
-      console.log("📤 Creating user with:", {
-        eventId: validEventId,
-        eventIdType: typeof validEventId,
-        endpoint: `/events/${validEventId}/event_users`,
-        fullUrl: `https://scceventy.dev/en/api_dashboard/v1/events/${validEventId}/event_users`,
-        hasToken: !!localStorage.getItem("token"),
-        formDataEntries: Array.from(formData.entries()).map(([key, value]) => ({
-          key,
-          value: value instanceof File ? `File: ${value.name} (${(value.size / 1024).toFixed(2)}KB)` : value
-        }))
-      });
-
-      // Log each form data entry for debugging
-      for (const [key, value] of formData.entries()) {
-        console.log(`FormData[${key}]:`, value instanceof File ? `File: ${value.name}` : value);
+      if (bannerImage) {
+        formData.append("invitation[banner_image]", bannerImage);
       }
 
-      const response = await createEventUser(validEventId, formData);
-      console.log("✅ Create user response:", response.data);
+      if (footerImage) {
+        formData.append("invitation[footer_image]", footerImage);
+      }
 
-      showNotification("User created successfully!", "success");
-      setShowAddUserModal(false);
+      // Replace with your actual API endpoint
+      // const response = await createInvitation(validEventId, formData);
       
-      // Reset form
-      setAddUserForm({
-        name: "",
-        email: "",
-        phone_number: "",
-        organization: "",
-        position: "",
-        user_type: "",
-        title: "",
-        age: "",
-        city: "",
-        country: "",
-        id_number: "",
-        passport_number: "",
-        blood_type: "",
-        gender: "",
-        seat_row: "",
-        seat_column: "",
-        password: "",
-        password_confirmation: "",
-        device_token: "",
-        image: null,
+      console.log("Creating invitation with data:", {
+        ...invitationForm,
+        editorContent,
+        bannerImage: bannerImage?.name,
+        footerImage: footerImage?.name,
       });
 
-      // Refresh user list
-      const idToRefresh = actualEventId || eventId;
-      if (idToRefresh) {
-        fetchUsers(String(idToRefresh), currentPage);
-      }
+      showNotification("Invitation preview ready!", "success");
+      
+      // Don't close modal, just show preview
+      // You can add preview logic here
+      
     } catch (error: any) {
-      console.error("❌ Error creating user:", error);
-      console.error("Error details:", {
-        message: error?.message,
-        status: error?.response?.status,
-        statusText: error?.response?.statusText,
-        data: error?.response?.data,
-        url: error?.config?.url,
-        method: error?.config?.method,
-        eventId: eventId,
-      });
-
       const errorMessage = 
         error?.response?.data?.message || 
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to create user. Please try again.";
+        "Failed to create invitation. Please try again.";
 
       showNotification(errorMessage, "error");
     } finally {
-      setIsCreatingUser(false);
+      setIsCreatingInvitation(false);
     }
   };
 
@@ -542,11 +463,42 @@ function Users() {
   };
 
   const handleSelectAll = () => {
-    if (selectedUsers.size === users.length) {
+    if (selectedUsers.size === filteredUsers.length) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(users.map((user: any) => user.id)));
+      setSelectedUsers(new Set(filteredUsers.map((user: any) => user.id)));
     }
+  };
+
+  const handleHeaderImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setBannerImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setHeaderImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleFooterImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFooterImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFooterImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const insertVariable = (variable: string) => {
+    setEditorContent({
+      ...editorContent,
+      body: editorContent.body + ` ${variable} `,
+    });
   };
 
   return (
@@ -568,124 +520,153 @@ function Users() {
         </div>
       )}
 
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="p-8">
+      <div className="min-h-screen bg-white">
+        <div className="px-8 py-6">
           {/* Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-600 rounded-xl shadow-lg">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
                 <UsersIcon className="w-6 h-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                  Invitation Users
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {pagination?.total_count || users.length} total users • {selectedUsers.size} selected
-                </p>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Invitation Users</h1>
             </div>
             <div className="flex items-center gap-3">
+              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                <Download size={16} />
+                Export CSV
+              </button>
+              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                <FileText size={16} />
+                Event Report
+              </button>
               <button
                 onClick={() => setShowAddUserModal(true)}
-                className="flex items-center gap-2 bg-green-600 hover:bg-green-700
-                 text-white px-6 py-3 rounded-xl font-medium shadow-lg shadow-green-600/25 
-                 hover:shadow-xl hover:shadow-green-600/30 transition-all
-                  duration-200 transform hover:-translate-y-0.5 cursor-pointer"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
               >
-                <Plus size={18} />
-                Add User
+                <Plus size={16} />
+                Creat New Invitations
               </button>
             </div>
           </div>
 
-          {/* Filters and Search */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 mb-6 p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                  size={20}
-                />
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setCurrentPage(1); // Reset to page 1 when search changes
-                  }}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                />
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Total Invitations</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                </div>
+                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <UserCheck className="w-5 h-5 text-gray-600" />
+                </div>
               </div>
-              <div className="relative">
-                <select
-                  value={filterType}
-                  onChange={(e) => {
-                    setFilterType(e.target.value);
-                    setCurrentPage(1); // Reset to page 1 when filter changes
-                  }}
-                  disabled={loadingBadges}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <option value="all">All Types</option>
-                  {badges.length > 0 ? (
-                    badges.map((badge: any) => (
-                      <option key={badge.id} value={badge?.attributes?.name || ""}>
-                        {badge?.attributes?.name}
-                      </option>
-                    ))
-                  ) : (
-                    <option value="guest">Guest</option>
-                  )}
-                </select>
-                <ChevronDown
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                  size={20}
-                />
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Completed</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                </div>
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-green-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">In Progress</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
+                </div>
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 mb-1">Pending</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+                </div>
+                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                  <XCircle className="w-5 h-5 text-red-600" />
+                </div>
               </div>
             </div>
           </div>
 
+          {/* Search and Filter */}
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search users..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            <div className="relative">
+              <select
+                value={filterType}
+                onChange={(e) => {
+                  setFilterType(e.target.value);
+                  setCurrentPage(1);
+                }}
+                disabled={loadingBadges}
+                className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white pr-10 disabled:opacity-50 min-w-[150px]"
+              >
+                <option value="all">All Types</option>
+                {badges.length > 0 ? (
+                  badges.map((badge: any) => (
+                    <option key={badge.id} value={badge?.attributes?.name || ""}>
+                      {badge?.attributes?.name}
+                    </option>
+                  ))
+                ) : (
+                  <option value="guest">Guest</option>
+                )}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+            </div>
+          </div>
+
           {/* Table */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 overflow-hidden">
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50/80 border-b border-gray-200/60">
+                <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 text-left">
+                    <th className="px-6 py-3 text-left">
                       <input
                         type="checkbox"
                         className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        checked={selectedUsers.size === users.length && users.length > 0}
+                        checked={selectedUsers.size === filteredUsers.length && filteredUsers.length > 0}
                         onChange={handleSelectAll}
                       />
                     </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Created
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                      Actions
-                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ID</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">USER</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">CHANNEL</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">STATUS</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">TYPE</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">CREATED</th>
+                    <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">ACTIONS</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200/60">
+                <tbody className="divide-y divide-gray-200">
                   {loadingUsers ? (
-                    // Skeleton Loader
                     Array.from({ length: 10 }).map((_, index) => (
-                      <tr key={index} className="hover:bg-gray-50/50 transition-colors">
+                      <tr key={index}>
                         <td className="px-6 py-4">
                           <Skeleton className="w-4 h-4 rounded" />
                         </td>
@@ -702,29 +683,28 @@ function Users() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Skeleton className="w-4 h-4 rounded" />
-                            <Skeleton className="h-4 w-16" />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-4 w-24" />
+                          <Skeleton className="h-6 w-8" />
                         </td>
                         <td className="px-6 py-4">
                           <Skeleton className="h-6 w-16 rounded-full" />
                         </td>
                         <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-24" />
+                        </td>
+                        <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <Skeleton className="w-8 h-8 rounded-lg" />
-                            <Skeleton className="w-8 h-8 rounded-lg" />
-                            <Skeleton className="w-8 h-8 rounded-lg" />
+                            <Skeleton className="w-8 h-8 rounded" />
+                            <Skeleton className="w-8 h-8 rounded" />
                           </div>
                         </td>
                       </tr>
                     ))
                   ) : filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
                         {searchTerm.trim() !== "" && filterType !== "all"
                           ? `No users found matching "${searchTerm}" with type "${filterType}"`
                           : searchTerm.trim() !== ""
@@ -735,12 +715,8 @@ function Users() {
                       </td>
                     </tr>
                   ) : (
-                    filteredUsers.map((user, index) => (
-                      <tr
-                        key={user.id}
-                        className="hover:bg-gray-50/50 transition-colors group"
-                        style={{ animationDelay: `${index * 50}ms` }}
-                      >
+                    filteredUsers.map((user) => (
+                      <tr key={user.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4">
                           <input
                             type="checkbox"
@@ -756,7 +732,7 @@ function Users() {
                           <div className="flex items-center gap-3">
                             <UserAvatar user={user} />
                             <div>
-                              <div className="font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900">
                                 {user?.attributes?.name || "N/A"}
                               </div>
                               <div className="text-sm text-gray-500">
@@ -766,50 +742,31 @@ function Users() {
                           </div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <Mail size={16} className="text-blue-500" />
-                            <span className="text-sm text-gray-700 capitalize">
-                              {user?.attributes?.user_type || "User"}
-                            </span>
+                          <div className="w-8 h-8 bg-blue-50 rounded flex items-center justify-center">
+                            <Mail size={16} className="text-blue-600" />
                           </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 mr-1.5"></div>
+                            Done
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-700 capitalize">
+                            {user?.attributes?.user_type || "Public-9"}
+                          </span>
                         </td>
                         <td className="px-6 py-4 text-sm text-gray-600">
                           {formatDate(user?.attributes?.created_at)}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200">
-                            <div className="w-2 h-2 rounded-full mr-2 bg-emerald-500"></div>
-                            Active
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleSendInvitation([user.id])}
-                              disabled={sendingCredentialsUserId === user.id}
-                              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                                sendingCredentialsUserId === user.id
-                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                  : "bg-blue-600 text-white hover:bg-blue-700"
-                              }`}
-                            >
-                              {sendingCredentialsUserId === user.id ? (
-                                <span className="flex items-center gap-2">
-                                  <div
-                                    style={{
-                                      width: "14px",
-                                      height: "14px",
-                                      border: "2px solid #d1d5db",
-                                      borderTop: "2px solid #9333ea",
-                                      borderRadius: "50%",
-                                      animation: "spin 1s linear infinite",
-                                    }}
-                                  />
-                                  Sending...
-                                </span>
-                              ) : (
-                                "Invitation"
-                              )}
+                            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded transition-colors">
+                              <Eye size={16} className="text-gray-600" />
+                            </button>
+                            <button className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded transition-colors">
+                              <MoreVertical size={16} className="text-gray-600" />
                             </button>
                           </div>
                         </td>
@@ -820,243 +777,428 @@ function Users() {
               </table>
             </div>
 
-            {/* Pagination */}
-            <div className="flex items-center justify-end px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
-              {pagination && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={pagination.total_pages || 1}
-                  onPageChange={handlePageChange}
-                  className=""
-                />
-              )}
+            {/* Pagination Footer */}
+            <div className="border-t border-gray-200 px-6 py-3 bg-gray-50">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-600">
+                  Showing 1 to 10 of {pagination?.total_count || filteredUsers.length} invitations
+                </div>
+                {pagination && (
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={pagination.total_pages || 1}
+                    onPageChange={handlePageChange}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add User Modal */}
+      {/* New Invitation Modal */}
       {showAddUserModal && (
         <div
-          onClick={() => !isCreatingUser && setShowAddUserModal(false)}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => !isCreatingInvitation && setShowAddUserModal(false)}
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transform animate-in zoom-in-95 duration-200"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-6 border-b border-gray-200/60 sticky top-0 bg-white z-10">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Add New User</h2>
-                <p className="text-gray-600 mt-1">Create a new user for this event</p>
-              </div>
-              <button
-                onClick={() => !isCreatingUser && setShowAddUserModal(false)}
-                disabled={isCreatingUser}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-colors cursor-pointer disabled:opacity-50"
-              >
-                <X size={20} />
-              </button>
+            <div className="p-8 border-b border-gray-200 sticky top-0 bg-white z-10">
+              <h2 className="text-2xl font-bold text-gray-900">New Invitation</h2>
             </div>
 
-            <div className="p-6 space-y-6">
-              {/* Required Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Name <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Full Name"
-                    value={addUserForm.name}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, name: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="user@example.com"
-                    value={addUserForm.email}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, email: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Optional Fields */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    placeholder="+1234567890"
-                    value={addUserForm.phone_number}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, phone_number: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Organization
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Organization Name"
-                    value={addUserForm.organization}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, organization: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Position
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Job Title"
-                    value={addUserForm.position}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, position: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    User Type
-                  </label>
-                  <select
-                    value={addUserForm.user_type}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, user_type: e.target.value })
-                    }
-                    disabled={loadingBadges}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Select user type</option>
-                    {badges.length > 0 ? (
-                      badges.map((badge: any) => (
-                        <option key={badge.id} value={badge?.attributes?.name || ""}>
-                          {badge?.attributes?.name}
-                        </option>
-                      ))
-                    ) : (
-                      <option value="guest">Guest</option>
-                    )}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="City"
-                    value={addUserForm.city}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, city: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Country
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Country"
-                    value={addUserForm.country}
-                    onChange={(e) =>
-                      setAddUserForm({ ...addUserForm, country: e.target.value })
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Image Upload */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Profile Image
-                </label>
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors">
-                    <Upload size={18} className="text-gray-600" />
-                    <span className="text-sm text-gray-700">
-                      {addUserForm.image ? addUserForm.image.name : "Choose Image"}
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files && e.target.files[0]) {
-                          setAddUserForm({ ...addUserForm, image: e.target.files[0] });
+            <div className="p-8">
+              <div className="flex gap-8">
+                {/* Main Form */}
+                <div className="flex-1 space-y-6">
+                  {/* Row 1: Invitation Name & Communication Type */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Invitation Name
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Annual Conference 2025"
+                        value={invitationForm.invitationName}
+                        onChange={(e) =>
+                          setInvitationForm({ ...invitationForm, invitationName: e.target.value })
                         }
-                      }}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Communication Type
+                      </label>
+                      <select
+                        value={invitationForm.communicationType}
+                        onChange={(e) =>
+                          setInvitationForm({ ...invitationForm, communicationType: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                      >
+                        <option>Email</option>
+                        <option>SMS</option>
+                        <option>WhatsApp</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Invitation Category & Event */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Invitation Category
+                      </label>
+                      <select
+                        value={invitationForm.invitationCategory}
+                        onChange={(e) =>
+                          setInvitationForm({ ...invitationForm, invitationCategory: e.target.value })
+                        }
+                        disabled={loadingBadges}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:opacity-50"
+                      >
+                        <option value="">Public-9</option>
+                        {badges.length > 0 &&
+                          badges.map((badge: any) => (
+                            <option key={badge.id} value={badge?.attributes?.name || ""}>
+                              {badge?.attributes?.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Event
+                      </label>
+                      <select
+                        value={invitationForm.event}
+                        onChange={(e) =>
+                          setInvitationForm({ ...invitationForm, event: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                      >
+                        <option>Budget Forum 2026 (ID: 3)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Row 3: Invitation Language & Schedule Send At */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Invitation Language
+                      </label>
+                      <select
+                        value={invitationForm.language}
+                        onChange={(e) =>
+                          setInvitationForm({ ...invitationForm, language: e.target.value })
+                        }
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
+                      >
+                        <option>Arabic (العربية)</option>
+                        <option>English</option>
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Select the language for invitation links and email content
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Schedule Send At (Optional)
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={invitationForm.scheduleSendAt}
+                        onChange={(e) =>
+                          setInvitationForm({ ...invitationForm, scheduleSendAt: e.target.value })
+                        }
+                        placeholder="mm/dd/yyyy --:--"
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Leave empty to send immediately
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Email Subject */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-900 mb-2">
+                      Email Subject
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Subject"
+                      value={invitationForm.emailSubject}
+                      onChange={(e) =>
+                        setInvitationForm({ ...invitationForm, emailSubject: e.target.value })
+                      }
+                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
-                  </label>
-                  {addUserForm.image && (
+                  </div>
+
+                  {/* Email Body */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-sm font-medium text-gray-900">
+                        Email Body
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-600">set template background color</span>
+                        <input
+                          type="color"
+                          value={invitationForm.backgroundColor}
+                          onChange={(e) =>
+                            setInvitationForm({ ...invitationForm, backgroundColor: e.target.value })
+                          }
+                          className="w-8 h-8 rounded border border-gray-400 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Email Editor */}
+                    <div className="border border-gray-300 rounded-lg overflow-hidden">
+                      {/* Toolbar */}
+                      <div className="bg-gray-50 border-b border-gray-300 px-3 py-2">
+                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
+                          <button className="hover:text-gray-900">File</button>
+                          <button className="hover:text-gray-900">Edit</button>
+                          <button className="hover:text-gray-900">View</button>
+                          <button className="hover:text-gray-900">Insert</button>
+                          <button className="hover:text-gray-900">Format</button>
+                          <button className="hover:text-gray-900">Tools</button>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => insertVariable("{{first_name}}")}
+                            className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                          >
+                            Add_First_name
+                          </button>
+                          <button
+                            onClick={() => insertVariable("{{last_name}}")}
+                            className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
+                          >
+                            Add_Last_name
+                          </button>
+                          <div className="w-px h-4 bg-gray-300"></div>
+                          <label className="p-1 hover:bg-gray-200 rounded cursor-pointer">
+                            <ImageIcon size={14} />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleHeaderImageChange}
+                            />
+                          </label>
+                          <button className="p-1 hover:bg-gray-200 rounded font-bold">B</button>
+                          <button className="p-1 hover:bg-gray-200 rounded italic">I</button>
+                          <button className="p-1 hover:bg-gray-200 rounded"><Undo size={14} /></button>
+                          <button className="p-1 hover:bg-gray-200 rounded"><Redo size={14} /></button>
+                          <button className="p-1 hover:bg-gray-200 rounded bg-blue-500 text-white text-xs px-2">
+                            T
+                          </button>
+                          <button className="p-1 hover:bg-gray-200 rounded">¶</button>
+                          <button className="p-1 hover:bg-gray-200 rounded">⚙</button>
+                          <button className="p-1 hover:bg-gray-200 rounded">📋</button>
+                          <button className="p-1 hover:bg-gray-200 rounded"><Link size={14} /></button>
+                        </div>
+                      </div>
+
+                      {/* Editor Content */}
+                      <div 
+                        className="bg-white p-8 min-h-[450px]"
+                        style={{ backgroundColor: invitationForm.backgroundColor }}
+                      >
+                        {/* Header Image */}
+                        <div className="w-full max-w-3xl mx-auto mb-6">
+                          {headerImagePreview ? (
+                            <div className="relative">
+                              <img
+                                src={headerImagePreview}
+                                alt="Header"
+                                className="w-full h-48 object-cover rounded-lg"
+                              />
+                              <button
+                                onClick={() => {
+                                  setHeaderImagePreview(null);
+                                  setBannerImage(null);
+                                }}
+                                className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-lg hover:bg-gray-100"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="w-full bg-gray-200 rounded-lg flex items-center justify-center py-20 cursor-pointer hover:bg-gray-300 transition-colors">
+                              <span className="text-gray-500 text-sm">Change Image</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleHeaderImageChange}
+                              />
+                            </label>
+                          )}
+                        </div>
+
+                        {/* Email Content - Editable */}
+                        <div className="w-full max-w-3xl mx-auto space-y-4">
+                          <input
+                            type="text"
+                            value={editorContent.title}
+                            onChange={(e) =>
+                              setEditorContent({ ...editorContent, title: e.target.value })
+                            }
+                            className="w-full text-xl font-bold text-center text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                            placeholder="Enter title..."
+                          />
+                          <textarea
+                            value={editorContent.body}
+                            onChange={(e) =>
+                              setEditorContent({ ...editorContent, body: e.target.value })
+                            }
+                            className="w-full text-sm text-gray-700 text-center bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 min-h-[100px] resize-none"
+                            placeholder="Enter email body..."
+                          />
+                        </div>
+
+                        {/* Footer Image */}
+                        <div className="w-full max-w-3xl mx-auto mt-6">
+                          {footerImagePreview ? (
+                            <div className="relative">
+                              <img
+                                src={footerImagePreview}
+                                alt="Footer"
+                                className="w-full h-32 object-cover rounded-lg"
+                              />
+                              <button
+                                onClick={() => {
+                                  setFooterImagePreview(null);
+                                  setFooterImage(null);
+                                }}
+                                className="absolute top-2 right-2 bg-white rounded-full p-1 shadow-lg hover:bg-gray-100"
+                              >
+                                <X size={16} />
+                              </button>
+                            </div>
+                          ) : (
+                            <label className="w-full bg-gray-200 rounded-lg flex items-center justify-center py-20 cursor-pointer hover:bg-gray-300 transition-colors">
+                              <span className="text-gray-500 text-sm">Add Footer Image</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFooterImageChange}
+                              />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* File Attachments */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Banner Attachment
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                          Choose File
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setBannerImage(file);
+                            }}
+                          />
+                        </label>
+                        <span className="text-sm text-gray-500">
+                          {bannerImage ? bannerImage.name : "No file chosen"}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-900 mb-2">
+                        Footer Attachment
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 cursor-pointer">
+                          Choose File
+                          <input
+                            type="file"
+                            className="hidden"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) setFooterImage(file);
+                            }}
+                          />
+                        </label>
+                        <span className="text-sm text-gray-500">
+                          {footerImage ? footerImage.name : "No file chosen"}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Templates Sidebar */}
+                <div className="w-32 space-y-3">
+                  <div className="text-xs font-semibold text-gray-700 mb-2">Templates:</div>
+                  {templates.map((template, index) => (
                     <button
-                      onClick={() => setAddUserForm({ ...addUserForm, image: null })}
-                      className="text-sm text-red-600 hover:text-red-700"
+                      key={template.id}
+                      onClick={() => {
+                        setSelectedTemplate(index);
+                        setInvitationForm({
+                          ...invitationForm,
+                          backgroundColor: template.backgroundColor,
+                        });
+                      }}
+                      className={`w-full h-20 rounded-lg border-2 transition-all ${
+                        selectedTemplate === index
+                          ? "border-blue-500 shadow-lg"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
+                      style={{ backgroundColor: template.backgroundColor }}
                     >
-                      Remove
+                      <div className="flex flex-col items-center justify-center h-full">
+                        <div className="text-xs text-gray-600">{template.preview}</div>
+                      </div>
                     </button>
-                  )}
+                  ))}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-4 p-6 border-t border-gray-200/60 sticky bottom-0 bg-white">
+            {/* Footer with Preview Button */}
+            <div className="flex items-center justify-end p-6 border-t border-gray-200 sticky bottom-0 bg-white">
               <button
-                onClick={() => !isCreatingUser && setShowAddUserModal(false)}
-                disabled={isCreatingUser}
-                className="px-6 py-3 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
+                onClick={handleCreateInvitation}
+                disabled={isCreatingInvitation}
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateUser}
-                disabled={isCreatingUser || !addUserForm.name || !addUserForm.email}
-                className={`flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-lg shadow-blue-600/25 hover:bg-blue-700 transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  isCreatingUser ? "animate-pulse" : ""
-                }`}
-              >
-                {isCreatingUser ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Creating...
-                  </>
+                {isCreatingInvitation ? (
+                  <span className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Processing...
+                  </span>
                 ) : (
-                  <>
-                    <Plus size={18} />
-                    Create User
-                  </>
+                  "Preview"
                 )}
               </button>
             </div>
@@ -1075,14 +1217,6 @@ function Users() {
             opacity: 1;
           }
         }
-        @keyframes spin {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
         .animate-slide-in {
           animation: slide-in 0.3s ease-out;
         }
@@ -1091,4 +1225,4 @@ function Users() {
   );
 }
 
-export default Users;
+export default Invitations;
