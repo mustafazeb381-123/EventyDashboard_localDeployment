@@ -65,6 +65,13 @@ type MainFormData = {
   existingLogoUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
+  // Optional (API supports both plans)
+  registrationLimit?: string;
+  languageSupport?: "single" | "dual";
+  primaryLanguage?: "arabic" | "english";
+  secondaryLanguage?: "arabic" | "english";
+  // Existing UI uses this toggle; keep typed to avoid TS errors
+  requiredTicket?: boolean;
 };
 
 type Badge = {
@@ -148,11 +155,16 @@ const MainData = ({
     location: "",
     requireApproval: false,
     duplicateRegistration: false,
-    guestTypes: [], // ✅ Empty array - no default "Guest"
+    guestTypes: ["Guest"], // Default "Guest" for new events; user can add more, change default, or delete when editing
     eventLogo: null,
     existingLogoUrl: null,
     primaryColor: "#00A7B5",
     secondaryColor: "#202242",
+    registrationLimit: "",
+    languageSupport: "single",
+    primaryLanguage: "english",
+    secondaryLanguage: "arabic",
+    requiredTicket: true,
   });
 
   const [logoError, setLogoError] = useState<string>("");
@@ -179,6 +191,18 @@ const MainData = ({
         [String(field)]: "",
       }));
     }
+  };
+
+  // Registration limit: optional, only positive integers (no decimals, no negative)
+  const handleRegistrationLimitChange = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, "");
+    if (digitsOnly === "") {
+      handleInputChange("registrationLimit", "");
+      return;
+    }
+    const num = parseInt(digitsOnly, 10);
+    if (Number.isNaN(num) || num < 1) return;
+    handleInputChange("registrationLimit", String(num));
   };
 
   const validateForm = () => {
@@ -210,6 +234,14 @@ const MainData = ({
 
     if (!formData.location.trim()) {
       errors.location = "Location is required";
+    }
+
+    // Registration limit (optional): if provided, must be a positive integer (both express & advance)
+    if (formData.registrationLimit?.trim()) {
+      const num = parseInt(formData.registrationLimit, 10);
+      if (Number.isNaN(num) || num < 1 || !Number.isInteger(num)) {
+        errors.registrationLimit = "Must be a positive integer";
+      }
     }
 
     setValidationErrors(errors);
@@ -444,9 +476,25 @@ const MainData = ({
     }));
   };
 
+  // When editing (user_types list, no badges): set type at index as default by moving it to first
+  const setDefaultGuestTypeAtEdit = (index: number) => {
+    if (index === 0) return;
+    setFormData((prev) => {
+      const list = [...prev.guestTypes];
+      const [item] = list.splice(index, 1);
+      list.unshift(item);
+      return { ...prev, guestTypes: list };
+    });
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      addGuestType();
+      // Match the visible "Add" button behavior
+      if (eventId) {
+        handleAddUserType();
+      } else {
+        handleEventType();
+      }
     }
   };
 
@@ -479,15 +527,25 @@ const MainData = ({
         requireApproval: attributes.require_approval || false,
         duplicateRegistration: attributes.duplicate_registration || false,
         guestTypes:
-          attributes.badges && attributes.badges.length > 0
-            ? attributes.badges
-                .map((badge: any) => badge.name || badge.attributes?.name)
+          Array.isArray(attributes.user_types) &&
+          attributes.user_types.length > 0
+            ? attributes.user_types
+                .map((t: any) => String(t || "").trim())
                 .filter(Boolean)
-            : [], // ✅ Empty array instead of ["Guest"]
+                .map((t: string) => t.charAt(0).toUpperCase() + t.slice(1))
+            : ["Guest"],
         eventLogo: null, // You might need to handle existing logo
         existingLogoUrl: attributes.logo_url || null,
         primaryColor: attributes.primary_color || "#00A7B5",
         secondaryColor: attributes.secondary_color || "#202242",
+        registrationLimit:
+          attributes.registration_limit !== undefined &&
+          attributes.registration_limit !== null
+            ? String(attributes.registration_limit)
+            : "",
+        languageSupport: attributes.secondary_language ? "dual" : "single",
+        primaryLanguage: attributes.primary_language || "english",
+        secondaryLanguage: attributes.secondary_language || "arabic",
       });
 
       setShowEventData(true);
@@ -545,34 +603,26 @@ const MainData = ({
     fd.append("event[secondary_color]", formData.secondaryColor);
     fd.append("event[event_type]", plan);
 
-    // 👇 UPDATED: Always include "Guest" as default when no guest types exist
-    let guestTypesToUse = [];
-
+    // API expects user_types as array of strings e.g. ["guest", "vip"] (lowercase)
+    // When editing: use badges if API returned any; else use formData.guestTypes (from event.user_types)
+    let guestTypesToUse: string[] = [];
     if (eventId) {
-      // Editing existing event: use badges from API
-      guestTypesToUse = badges.map((badge) => badge.attributes.name);
+      guestTypesToUse =
+        badges.length > 0
+          ? badges.map((b) => b.attributes.name)
+          : (formData.guestTypes || [])
+              .map((t) => String(t || "").trim())
+              .filter(Boolean);
     } else {
-      // Creating new event: use formData.guestTypes
-      guestTypesToUse = formData.guestTypes.filter(
-        (type) => type.trim() !== "",
-      );
+      guestTypesToUse = (formData.guestTypes || [])
+        .map((t) => String(t || "").trim())
+        .filter(Boolean);
     }
-
-    // ✅ If no guest types exist, use "Guest" as default
-    if (guestTypesToUse.length === 0) {
-      guestTypesToUse = ["Guest"];
-    }
-
-    // Remove duplicates from the selected array
+    if (guestTypesToUse.length === 0) guestTypesToUse = ["Guest"];
     const uniqueGuestTypes = [...new Set(guestTypesToUse)];
-
-    // ✅ Append badges - always include at least one type
-    uniqueGuestTypes.forEach((type, index) => {
-      fd.append("event[badges_attributes][][name]", type.trim());
-      fd.append(
-        "event[badges_attributes][][default]",
-        index === 0 ? "true" : "false",
-      );
+    const userTypesArray = uniqueGuestTypes.map((t) => t.toLowerCase());
+    userTypesArray.forEach((t) => {
+      fd.append("event[user_types][]", t);
     });
 
     // Rest of your code remains the same...
@@ -598,6 +648,21 @@ const MainData = ({
     );
     fd.append("event[registration_page_banner]", "");
 
+    // Registration limit (optional, both express & advance) – only positive integers
+    fd.append(
+      "event[registration_limit]",
+      formData.registrationLimit?.trim() || "",
+    );
+
+    // Language (API: primary_language + secondary_language)
+    fd.append("event[primary_language]", formData.primaryLanguage || "english");
+    fd.append(
+      "event[secondary_language]",
+      formData.languageSupport === "dual"
+        ? formData.secondaryLanguage || "arabic"
+        : "",
+    );
+
     if (formData.eventLogo) {
       fd.append("event[logo]", formData.eventLogo);
     }
@@ -606,7 +671,7 @@ const MainData = ({
     fd.append("locale", "en");
 
     // Debug log
-    console.log("Guest types being sent:", uniqueGuestTypes);
+    console.log("User types being sent (array):", userTypesArray);
     console.log("=== FORM DATA ===");
     for (let [key, value] of fd.entries()) {
       console.log(key, value);
@@ -637,7 +702,9 @@ const MainData = ({
     } catch (error: any) {
       console.error("API Error:", error);
       showNotification(
-        error?.response?.data?.message || "Error saving event data",
+        error?.response?.data?.message ||
+          error?.message ||
+          "Error saving event data",
         "error",
       );
       throw error;
@@ -754,16 +821,25 @@ const MainData = ({
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
+        duplicateRegistration: attributes.duplicate_registration || false,
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
                 .map((badge: any) => badge.name || badge.attributes?.name)
                 .filter(Boolean)
-            : [], // ✅ Empty array instead of ["Guest"]
+            : ["Guest"],
         eventLogo: null,
         existingLogoUrl: attributes.logo_url || null,
         primaryColor: attributes.primary_color || "#00A7B5",
         secondaryColor: attributes.secondary_color || "#202242",
+        registrationLimit:
+          attributes.registration_limit !== undefined &&
+          attributes.registration_limit !== null
+            ? String(attributes.registration_limit)
+            : "",
+        languageSupport: attributes.secondary_language ? "dual" : "single",
+        primaryLanguage: attributes.primary_language || "english",
+        secondaryLanguage: attributes.secondary_language || "arabic",
       });
 
       console.log("Form populated with event data. Event ID:", eventId);
@@ -809,16 +885,38 @@ const MainData = ({
               timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
               location: attributes.location || "",
               requireApproval: attributes.require_approval || false,
+              duplicateRegistration: attributes.duplicate_registration || false,
               guestTypes:
-                attributes.badges && attributes.badges.length > 0
-                  ? attributes.badges
-                      .map((badge: any) => badge.name || badge.attributes?.name)
+                Array.isArray(attributes.user_types) &&
+                attributes.user_types.length > 0
+                  ? attributes.user_types
+                      .map((t: any) => String(t || "").trim())
                       .filter(Boolean)
-                  : [], // ✅ Empty array instead of ["Guest"]
+                      .map(
+                        (t: string) =>
+                          t.charAt(0).toUpperCase() + t.slice(1).toLowerCase(),
+                      )
+                  : attributes.badges && attributes.badges.length > 0
+                    ? attributes.badges
+                        .map(
+                          (badge: any) => badge.name || badge.attributes?.name,
+                        )
+                        .filter(Boolean)
+                    : ["Guest"],
               eventLogo: null, // You might need to handle existing logo
               existingLogoUrl: attributes.logo_url || null,
               primaryColor: attributes.primary_color || "#00A7B5",
               secondaryColor: attributes.secondary_color || "#202242",
+              registrationLimit:
+                attributes.registration_limit !== undefined &&
+                attributes.registration_limit !== null
+                  ? String(attributes.registration_limit)
+                  : "",
+              languageSupport: attributes.secondary_language
+                ? "dual"
+                : "single",
+              primaryLanguage: attributes.primary_language || "english",
+              secondaryLanguage: attributes.secondary_language || "arabic",
             });
 
             setShowEventData(true);
@@ -830,7 +928,7 @@ const MainData = ({
             eventId,
             error,
           );
-          toast.error("Failed to load event data");
+          showNotification("Failed to load event data", "error");
         } finally {
           setIsLoading(false);
         }
@@ -860,11 +958,15 @@ const MainData = ({
 
     const trimmedType = eventguesttype.trim();
 
-    // Add to local guest types for new event creation
-    setFormData((prev) => ({
-      ...prev,
-      guestTypes: [...prev.guestTypes, trimmedType],
-    }));
+    // Add to local guest types; if list is empty (user deleted all), keep Guest as default and add new type
+    setFormData((prev) => {
+      const current =
+        prev.guestTypes.length === 0 ? ["Guest"] : prev.guestTypes;
+      if (current.some((t) => t.toLowerCase() === trimmedType.toLowerCase())) {
+        return prev;
+      }
+      return { ...prev, guestTypes: [...current, trimmedType] };
+    });
 
     setEventguesttype("");
 
@@ -884,16 +986,29 @@ const MainData = ({
       showNotification("Event ID is missing", "error");
       return;
     }
-
-    if (!newGuestType) {
+    if (!newGuestType?.trim()) {
       showNotification("Guest type name required", "error");
       return;
     }
 
+    // When backend has no badges (only user_types), add to formData and save with event update
+    if (badges.length === 0) {
+      const trimmed = newGuestType.trim();
+      setFormData((prev) => {
+        const current =
+          prev.guestTypes.length === 0 ? ["Guest"] : prev.guestTypes;
+        if (current.some((t) => t.toLowerCase() === trimmed.toLowerCase())) {
+          return prev;
+        }
+        return { ...prev, guestTypes: [...current, trimmed] };
+      });
+      showNotification("Guest type added. Click Next to save.", "success");
+      setNewGuestType("");
+      return;
+    }
+
     try {
-      // Create badge without default flag here; default can be set later from badge list
       await createBadgeSimple(eventId, newGuestType.trim(), false);
-      console.log("Guest type added:", newGuestType);
       showNotification("Guest type added successfully!", "success");
       setNewGuestType("");
       await fetchBadgeApi();
@@ -1271,7 +1386,7 @@ const MainData = ({
                 type="button"
                 onClick={() =>
                   setOpenInfoTooltip((prev) =>
-                    prev === "requireApproval" ? null : "requireApproval"
+                    prev === "requireApproval" ? null : "requireApproval",
                   )
                 }
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -1328,7 +1443,7 @@ const MainData = ({
                   setOpenInfoTooltip((prev) =>
                     prev === "duplicateRegistration"
                       ? null
-                      : "duplicateRegistration"
+                      : "duplicateRegistration",
                   )
                 }
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
@@ -1568,21 +1683,124 @@ const MainData = ({
             )}
           </div>
 
-          {plan === "advance" ? (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Registration Limits <span className="text-red-500">*</span>
-              </label>
-
-              <div className="relative">
-                <input
-                  type="number"
-                  placeholder="Registration Limits"
-                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors border-gray-300"
-                />
-              </div>
+          {/* Registration Limit – optional, both express & advance */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Registration Limit{" "}
+              <span className="text-gray-400">(optional)</span>
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min={1}
+                step={1}
+                placeholder="e.g. 100"
+                value={formData.registrationLimit ?? ""}
+                onChange={(e) => handleRegistrationLimitChange(e.target.value)}
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
+                  validationErrors.registrationLimit
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
+              />
             </div>
-          ) : null}
+            {validationErrors.registrationLimit && (
+              <p className="mt-1 text-xs text-red-600">
+                {validationErrors.registrationLimit}
+              </p>
+            )}
+          </div>
+
+          {/* Language Support */}
+          <div className="space-y-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Language support
+            </label>
+            <div>
+              <select
+                value={formData.languageSupport ?? "single"}
+                onChange={(e) =>
+                  handleInputChange(
+                    "languageSupport",
+                    e.target.value as "single" | "dual",
+                  )
+                }
+                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+              >
+                <option value="single">Single</option>
+                <option value="dual">Dual</option>
+              </select>
+            </div>
+            {formData.languageSupport === "single" ? (
+              <div>
+                <label className="block text-xs text-gray-500 mb-1.5">
+                  Primary language
+                </label>
+                <select
+                  value={formData.primaryLanguage ?? "english"}
+                  onChange={(e) =>
+                    handleInputChange(
+                      "primaryLanguage",
+                      e.target.value as "arabic" | "english",
+                    )
+                  }
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                >
+                  <option value="arabic">Arabic</option>
+                  <option value="english">English</option>
+                </select>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5">
+                    Primary language
+                  </label>
+                  <select
+                    value={formData.primaryLanguage ?? "english"}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "primaryLanguage",
+                        e.target.value as "arabic" | "english",
+                      )
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                  >
+                    <option value="arabic">Arabic</option>
+                    <option value="english">English</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1.5">
+                    Secondary language
+                  </label>
+                  <select
+                    value={formData.secondaryLanguage ?? "arabic"}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "secondaryLanguage",
+                        e.target.value as "arabic" | "english",
+                      )
+                    }
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
+                  >
+                    <option
+                      value="arabic"
+                      disabled={formData.primaryLanguage === "arabic"}
+                    >
+                      Arabic
+                    </option>
+                    <option
+                      value="english"
+                      disabled={formData.primaryLanguage === "english"}
+                    >
+                      English
+                    </option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Primary Color */}
           <div>
@@ -1681,7 +1899,6 @@ const MainData = ({
               Guest Types
             </label>
 
-            {/* Loading state for badges */}
             {isLoadingBadges && (
               <div className="flex items-center justify-center py-4">
                 <Loader2
@@ -1694,10 +1911,8 @@ const MainData = ({
 
             {eventId ? (
               <div className="space-y-2 max-h-48 sm:max-h-60">
-                {/* Show guest types - display "Guest" only when completely empty */}
-                {badges.length > 0 || formData.guestTypes.length > 0 ? (
+                {badges.length > 0 ? (
                   <div className="mb-4">
-                    {/* Show API Badges */}
                     {badges.map((badge, index) => (
                       <div
                         key={`api-${badge.id}`}
@@ -1766,64 +1981,111 @@ const MainData = ({
                         </div>
                       </div>
                     ))}
-
-                    {/* Show Local Guest Types */}
-                    {formData.guestTypes.map((type, index) => (
-                      <div
-                        key={`local-${index}`}
-                        className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
-                      >
-                        <span className="text-sm text-gray-700 truncate pr-2">
-                          {type}
-                        </span>
-                        <button
-                          onClick={() => removeGuestType(index)}
-                          className="text-red-400 hover:text-red-500 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    ))}
                   </div>
                 ) : (
-                  /* Show "Guest" only when no guest types exist */
-                  <div className="mb-4">
-                    <div className="mb-2 flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
-                      <span className="text-sm text-gray-700 truncate pr-2">
-                        Guest
-                      </span>
-                      {/* Guest type cannot be deleted since it's default */}
-                    </div>
+                  /* No badges from API – show user_types from event (formData.guestTypes); can change default */
+                  <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
+                    {formData.guestTypes.length > 0 ? (
+                      formData.guestTypes.map((type, index) => (
+                        <div
+                          key={`${type}-${index}`}
+                          className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
+                        >
+                          <span className="text-sm text-gray-700 truncate pr-2 flex items-center gap-2">
+                            {type}
+                            {index === 0 && (
+                              <span className="text-xs text-gray-500">
+                                (default)
+                              </span>
+                            )}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setDefaultGuestTypeAtEdit(index)}
+                              className={`p-1.5 rounded transition-colors ${
+                                index === 0
+                                  ? "text-yellow-500"
+                                  : "text-gray-400 hover:text-yellow-500"
+                              }`}
+                              title={
+                                index === 0 ? "Default type" : "Set as default"
+                              }
+                            >
+                              <Star
+                                size={16}
+                                fill={index === 0 ? "currentColor" : "none"}
+                              />
+                            </button>
+                            {type.toLowerCase() !== "guest" ? (
+                              <button
+                                onClick={() => removeGuestType(index)}
+                                className="text-red-400 hover:text-red-500 transition-colors"
+                                title="Remove type"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            ) : (
+                              /* Don't show "Default" again when we already show "(default)" for index 0 */
+                              index !== 0 && (
+                                <span className="text-xs text-gray-400 w-8">
+                                  Default
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
+                        <span className="text-sm text-gray-700 truncate pr-2">
+                          Guest
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          Default (add types above)
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-2 max-h-48 sm:max-h-60 overflow-y-auto">
-                {/* For new events - show "Guest" only when empty */}
                 {formData.guestTypes.length > 0 ? (
                   formData.guestTypes.map((type, index) => (
                     <div
-                      key={index}
+                      key={`${type}-${index}`}
                       className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200"
                     >
-                      <span className="text-sm text-gray-700 truncate pr-2">
+                      <span className="text-sm text-gray-700 truncate pr-2 flex items-center gap-2">
                         {type}
+                        {index === 0 && (
+                          <span className="text-xs text-gray-500">
+                            (default)
+                          </span>
+                        )}
                       </span>
-                      <button
-                        onClick={() => removeGuestType(index)}
-                        className="text-red-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      {/* When creating: Guest cannot be removed; other types can. No extra "Default" when already "(default)" for index 0. */}
+                      {type.toLowerCase() !== "guest" ? (
+                        <button
+                          onClick={() => removeGuestType(index)}
+                          className="text-red-400 hover:text-red-500 transition-colors"
+                          title="Remove type"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      ) : (
+                        index !== 0 && (
+                          <span className="text-xs text-gray-400">Default</span>
+                        )
+                      )}
                     </div>
                   ))
                 ) : (
-                  /* Show "Guest" only when no guest types exist */
                   <div className="flex items-center justify-between bg-gray-50 px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg border border-gray-200">
                     <span className="text-sm text-gray-700 truncate pr-2">
                       Guest
                     </span>
-                    {/* Guest type cannot be deleted since it's default */}
+                    <span className="text-xs text-gray-400">Default</span>
                   </div>
                 )}
               </div>
