@@ -193,7 +193,15 @@ function RegisterdUser() {
   const [openActionsUserId, setOpenActionsUserId] = useState<string | null>(
     null,
   );
+  const [actionsTriggerRect, setActionsTriggerRect] = useState<DOMRect | null>(
+    null,
+  );
   const [userForInfoModal, setUserForInfoModal] = useState<any | null>(null);
+
+  const closeActionsMenu = () => {
+    setOpenActionsUserId(null);
+    setActionsTriggerRect(null);
+  };
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [userToReset, setUserToReset] = useState<any | null>(null);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
@@ -1653,124 +1661,169 @@ function RegisterdUser() {
                             <div className="relative">
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setOpenActionsUserId(
-                                    openActionsUserId === user.id
-                                      ? null
-                                      : user.id,
-                                  )
-                                }
+                                onClick={(e) => {
+                                  if (openActionsUserId === user.id) {
+                                    closeActionsMenu();
+                                  } else {
+                                    setOpenActionsUserId(user.id);
+                                    setActionsTriggerRect(
+                                      (
+                                        e.currentTarget as HTMLElement
+                                      ).getBoundingClientRect(),
+                                    );
+                                  }
+                                }}
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                                 title="Actions"
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </button>
-                              {openActionsUserId === user.id && (
-                                <>
-                                  <div
-                                    className="fixed inset-0 z-10"
-                                    aria-hidden
-                                    onClick={() => setOpenActionsUserId(null)}
-                                  />
-                                  <div className="absolute right-0 top-full mt-1 z-20 min-w-[200px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setUserForInfoModal(user);
-                                        setOpenActionsUserId(null);
-                                      }}
-                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                              {openActionsUserId === user.id &&
+                                actionsTriggerRect && (
+                                  <>
+                                    <div
+                                      className="fixed inset-0 z-10"
+                                      aria-hidden
+                                      onClick={closeActionsMenu}
+                                    />
+                                    <div
+                                      className="fixed z-20 w-[208px] min-w-[200px] bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 flex flex-col max-h-[280px]"
+                                      style={(() => {
+                                        const GAP = 6;
+                                        const PAD = 8;
+                                        const openBelow =
+                                          actionsTriggerRect.bottom +
+                                            280 +
+                                            GAP <=
+                                          window.innerHeight - PAD;
+                                        const top = openBelow
+                                          ? actionsTriggerRect.bottom + GAP
+                                          : Math.max(
+                                              PAD,
+                                              actionsTriggerRect.top -
+                                                280 -
+                                                GAP,
+                                            );
+                                        let left =
+                                          actionsTriggerRect.right - 208;
+                                        left = Math.max(
+                                          PAD,
+                                          Math.min(
+                                            left,
+                                            window.innerWidth - 208 - PAD,
+                                          ),
+                                        );
+                                        return { top, left };
+                                      })()}
                                     >
-                                      <Info className="w-4 h-4" />
-                                      More Information
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleApproveUsers([user.id]);
-                                        setOpenActionsUserId(null);
-                                      }}
-                                      disabled={approvingUserId === user.id}
-                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-700 hover:bg-green-50 disabled:opacity-50"
-                                    >
-                                      <CheckCircle className="w-4 h-4" />
-                                      Accept
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleRejectUsers([user.id]);
-                                        setOpenActionsUserId(null);
-                                      }}
-                                      disabled={rejectingUserId === user.id}
-                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
-                                    >
-                                      <XCircle className="w-4 h-4" />
-                                      Reject
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingUser(user);
-                                        setEditForm({
-                                          name: user?.attributes?.name || "",
-                                          email: user?.attributes?.email || "",
-                                          phone_number:
-                                            user?.attributes?.phone_number ||
-                                            "",
-                                          organization:
-                                            user?.attributes?.custom_fields
-                                              ?.title ||
-                                            user?.attributes?.organization ||
-                                            "",
-                                          position:
-                                            user?.attributes?.position || "",
-                                          image: user?.attributes?.image || "",
-                                          user_type:
-                                            user?.attributes?.user_type || "",
-                                          printed:
-                                            user?.attributes?.printed || false,
-                                        });
-                                        setOpenActionsUserId(null);
-                                      }}
-                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-amber-700 hover:bg-amber-50"
-                                    >
-                                      <Edit className="w-4 h-4" />
-                                      Edit
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        handleSendCredentials([user.id]);
-                                        setOpenActionsUserId(null);
-                                      }}
-                                      disabled={
-                                        sendingCredentialsUserId === user.id
-                                      }
-                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 disabled:opacity-50"
-                                    >
-                                      {sendingCredentialsUserId === user.id ? (
-                                        <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
-                                      ) : (
-                                        <Mail className="w-4 h-4" />
-                                      )}
-                                      Send Credentials
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setUserToDelete(user);
-                                        setIsDeleteModalOpen(true);
-                                        setOpenActionsUserId(null);
-                                      }}
-                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
-                                    >
-                                      <Trash2 className="w-4 h-4" />
-                                      Delete
-                                    </button>
-                                  </div>
-                                </>
-                              )}
+                                      <div className="overflow-y-auto overflow-x-hidden overscroll-contain flex-1 min-h-0 py-0.5">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setUserForInfoModal(user);
+                                            closeActionsMenu();
+                                          }}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                        >
+                                          <Info className="w-4 h-4 shrink-0" />
+                                          More Information
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleApproveUsers([user.id]);
+                                            closeActionsMenu();
+                                          }}
+                                          disabled={approvingUserId === user.id}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 disabled:opacity-50 text-left"
+                                        >
+                                          <CheckCircle className="w-4 h-4 shrink-0" />
+                                          Accept
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleRejectUsers([user.id]);
+                                            closeActionsMenu();
+                                          }}
+                                          disabled={rejectingUserId === user.id}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 text-left"
+                                        >
+                                          <XCircle className="w-4 h-4 shrink-0" />
+                                          Reject
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setEditingUser(user);
+                                            setEditForm({
+                                              name:
+                                                user?.attributes?.name || "",
+                                              email:
+                                                user?.attributes?.email || "",
+                                              phone_number:
+                                                user?.attributes
+                                                  ?.phone_number || "",
+                                              organization:
+                                                user?.attributes?.custom_fields
+                                                  ?.title ||
+                                                user?.attributes
+                                                  ?.organization ||
+                                                "",
+                                              position:
+                                                user?.attributes?.position ||
+                                                "",
+                                              image:
+                                                user?.attributes?.image || "",
+                                              user_type:
+                                                user?.attributes?.user_type ||
+                                                "",
+                                              printed:
+                                                user?.attributes?.printed ||
+                                                false,
+                                            });
+                                            closeActionsMenu();
+                                          }}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-amber-700 hover:bg-amber-50 text-left"
+                                        >
+                                          <Edit className="w-4 h-4 shrink-0" />
+                                          Edit
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleSendCredentials([user.id]);
+                                            closeActionsMenu();
+                                          }}
+                                          disabled={
+                                            sendingCredentialsUserId === user.id
+                                          }
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-blue-700 hover:bg-blue-50 disabled:opacity-50 text-left"
+                                        >
+                                          {sendingCredentialsUserId ===
+                                          user.id ? (
+                                            <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin shrink-0" />
+                                          ) : (
+                                            <Mail className="w-4 h-4 shrink-0" />
+                                          )}
+                                          Send Credentials
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setUserToDelete(user);
+                                            setIsDeleteModalOpen(true);
+                                            closeActionsMenu();
+                                          }}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 text-left"
+                                        >
+                                          <Trash2 className="w-4 h-4 shrink-0" />
+                                          Delete
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </>
+                                )}
                             </div>
                           </td>
                         </tr>
