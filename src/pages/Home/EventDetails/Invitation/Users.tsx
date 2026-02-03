@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -29,7 +29,13 @@ import {
   Settings,
   Copy,
 } from "lucide-react";
-import { getEventUsers, createEventUser, getEventbyId, sendCredentials, getBadgeType } from "@/apis/apiHelpers";
+import {
+  getEventUsers,
+  createEventUser,
+  getEventbyId,
+  sendCredentials,
+  getBadgeType,
+} from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/Pagination";
 
@@ -71,17 +77,108 @@ const UserAvatar = ({ user }: { user: any }) => {
 
 // Static invitation data (screenshot) - full table layout
 const staticInvitations = [
-  { id: "58", name: "Copy of Copy of Althenayan Dinner", emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026", channel: "Email", status: "pending", type: "Public-9", scheduled: "Immediate" },
-  { id: "57", name: "Copy of Gather Batch 6 & Reminder", emailSubject: "Guest Information | FMF Premier 26 | Time Sensitive", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "56", name: "Copy of Batch 6", emailSubject: "FMF Premier 2026 | Official Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "55", name: "Copy of Dinner Invite Batch 2", emailSubject: "ESNAD Premier Dinner | Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "54", name: "Copy of Esnad Batch 1", emailSubject: "FMF Premier 2026 | Official Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "53", name: "Copy of AlRushaid Dinner Additional", emailSubject: "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "52", name: "Copy of Althenayan Dinner", emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "51", name: "Artar Dinner Additional", emailSubject: "Invitation: ARTAR & GMCG Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "50", name: "AlRushaid Dinner Additional", emailSubject: "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "49", name: "Badge Collection", emailSubject: "FMF Premier 2026 | Budge Collection Details", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
-  { id: "48", name: "Additional - FMF", emailSubject: "FMF Premier 2026 | Official Private Invitation", channel: "Email", status: "done", type: "Public-9", scheduled: "Immediate" },
+  {
+    id: "58",
+    name: "Copy of Copy of Althenayan Dinner",
+    emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026",
+    channel: "Email",
+    status: "pending",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "57",
+    name: "Copy of Gather Batch 6 & Reminder",
+    emailSubject: "Guest Information | FMF Premier 26 | Time Sensitive",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "56",
+    name: "Copy of Batch 6",
+    emailSubject: "FMF Premier 2026 | Official Private Invitation",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "55",
+    name: "Copy of Dinner Invite Batch 2",
+    emailSubject: "ESNAD Premier Dinner | Private Invitation",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "54",
+    name: "Copy of Esnad Batch 1",
+    emailSubject: "FMF Premier 2026 | Official Private Invitation",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "53",
+    name: "Copy of AlRushaid Dinner Additional",
+    emailSubject:
+      "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "52",
+    name: "Copy of Althenayan Dinner",
+    emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "51",
+    name: "Artar Dinner Additional",
+    emailSubject:
+      "Invitation: ARTAR & GMCG Exclusive Private Dinner - FMF 2026",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "50",
+    name: "AlRushaid Dinner Additional",
+    emailSubject:
+      "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "49",
+    name: "Badge Collection",
+    emailSubject: "FMF Premier 2026 | Budge Collection Details",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
+  {
+    id: "48",
+    name: "Additional - FMF",
+    emailSubject: "FMF Premier 2026 | Official Private Invitation",
+    channel: "Email",
+    status: "done",
+    type: "Public-9",
+    scheduled: "Immediate",
+  },
 ];
 
 // Email Templates
@@ -122,7 +219,9 @@ function Invitations() {
   const [users, setUsers] = useState<any[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [pagination, setPagination] = useState<any>(null);
-  const [sendingCredentialsUserId, setSendingCredentialsUserId] = useState<string | null>(null);
+  const [sendingCredentialsUserId, setSendingCredentialsUserId] = useState<
+    string | null
+  >(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -140,20 +239,54 @@ function Invitations() {
     backgroundColor: "#ffffff",
   });
 
-  const [headerImagePreview, setHeaderImagePreview] = useState<string | null>(null);
-  const [footerImagePreview, setFooterImagePreview] = useState<string | null>(null);
+  const [headerImagePreview, setHeaderImagePreview] = useState<string | null>(
+    null,
+  );
+  const [footerImagePreview, setFooterImagePreview] = useState<string | null>(
+    null,
+  );
   const [bannerImage, setBannerImage] = useState<File | null>(null);
   const [footerImage, setFooterImage] = useState<File | null>(null);
   const [isCreatingInvitation, setIsCreatingInvitation] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(0);
-  
+
   // Rich text editor state
   const [editorContent, setEditorContent] = useState({
     title: "Join us for our upcoming event!",
     body: "We're excited to invite you to our upcoming event full requirement from 2024-05-12 - 2024-05-20 at 09:01:00 - 18:01:00.",
   });
+  const bodyEditorRef = useRef<HTMLDivElement>(null);
 
   const itemsPerPage = 10;
+
+  // Sync contenteditable with state when modal opens
+  useEffect(() => {
+    if (showAddUserModal && bodyEditorRef.current) {
+      const html = editorContent.body;
+      if (typeof html === "string" && !html.startsWith("<")) {
+        bodyEditorRef.current.innerHTML = `<p>${html.replace(/\n/g, "</p><p>")}</p>`;
+      } else {
+        bodyEditorRef.current.innerHTML = html || "<p><br></p>";
+      }
+    }
+  }, [showAddUserModal]);
+
+  // Run format command on the body editor (bold, italic, link, etc.)
+  const execBodyCommand = (command: string, value?: string) => {
+    bodyEditorRef.current?.focus();
+    document.execCommand(command, false, value ?? undefined);
+    if (bodyEditorRef.current) {
+      setEditorContent((prev) => ({
+        ...prev,
+        body: bodyEditorRef.current!.innerHTML,
+      }));
+    }
+  };
+
+  const handleInsertLink = () => {
+    const url = window.prompt("Enter URL:", "https://");
+    if (url) execBodyCommand("createLink", url);
+  };
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -165,7 +298,10 @@ function Invitations() {
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -327,9 +463,17 @@ function Invitations() {
   // Calculate statistics
   const stats = useMemo(() => {
     const total = users.length;
-    const completed = users.filter((u: any) => u?.attributes?.invitation_status === "completed").length;
-    const inProgress = users.filter((u: any) => u?.attributes?.invitation_status === "in_progress").length;
-    const pending = users.filter((u: any) => !u?.attributes?.invitation_status || u?.attributes?.invitation_status === "pending").length;
+    const completed = users.filter(
+      (u: any) => u?.attributes?.invitation_status === "completed",
+    ).length;
+    const inProgress = users.filter(
+      (u: any) => u?.attributes?.invitation_status === "in_progress",
+    ).length;
+    const pending = users.filter(
+      (u: any) =>
+        !u?.attributes?.invitation_status ||
+        u?.attributes?.invitation_status === "pending",
+    ).length;
 
     return {
       total,
@@ -351,9 +495,13 @@ function Invitations() {
       return;
     }
 
-    const idsToSend: string[] = userIds || Array.from(selectedUsers).map(id => String(id));
+    const idsToSend: string[] =
+      userIds || Array.from(selectedUsers).map((id) => String(id));
     if (idsToSend.length === 0) {
-      showNotification("Please select at least one user to send invitation.", "error");
+      showNotification(
+        "Please select at least one user to send invitation.",
+        "error",
+      );
       return;
     }
 
@@ -370,19 +518,22 @@ function Invitations() {
       } else {
         showNotification(
           `Invitation sent to ${idsToSend.length} users successfully!`,
-          "success"
+          "success",
         );
       }
       setSelectedUsers(new Set());
     } catch (err: any) {
-      const errorMessage = 
-        err?.response?.data?.message || 
+      const errorMessage =
+        err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
         "Failed to send invitation. Please try again.";
 
       if (isSingleUser) {
-        showNotification("Failed to send invitation to user. Please try again.", "error");
+        showNotification(
+          "Failed to send invitation to user. Please try again.",
+          "error",
+        );
       } else {
         showNotification(errorMessage, "error");
       }
@@ -415,14 +566,20 @@ function Invitations() {
 
   const handleCreateInvitation = async () => {
     const idToUse = actualEventId || eventId;
-    
+
     if (!idToUse) {
-      showNotification("Event ID is missing. Cannot create invitation.", "error");
+      showNotification(
+        "Event ID is missing. Cannot create invitation.",
+        "error",
+      );
       return;
     }
 
     if (!invitationForm.invitationName || !invitationForm.emailSubject) {
-      showNotification("Invitation Name and Email Subject are required", "error");
+      showNotification(
+        "Invitation Name and Email Subject are required",
+        "error",
+      );
       return;
     }
 
@@ -438,16 +595,28 @@ function Invitations() {
 
       // Append invitation fields
       formData.append("invitation[name]", invitationForm.invitationName);
-      formData.append("invitation[communication_type]", invitationForm.communicationType);
-      formData.append("invitation[category]", invitationForm.invitationCategory);
+      formData.append(
+        "invitation[communication_type]",
+        invitationForm.communicationType,
+      );
+      formData.append(
+        "invitation[category]",
+        invitationForm.invitationCategory,
+      );
       formData.append("invitation[language]", invitationForm.language);
       formData.append("invitation[subject]", invitationForm.emailSubject);
       formData.append("invitation[title]", editorContent.title);
       formData.append("invitation[body]", editorContent.body);
-      formData.append("invitation[background_color]", invitationForm.backgroundColor);
+      formData.append(
+        "invitation[background_color]",
+        invitationForm.backgroundColor,
+      );
 
       if (invitationForm.scheduleSendAt) {
-        formData.append("invitation[schedule_send_at]", invitationForm.scheduleSendAt);
+        formData.append(
+          "invitation[schedule_send_at]",
+          invitationForm.scheduleSendAt,
+        );
       }
 
       if (bannerImage) {
@@ -460,7 +629,7 @@ function Invitations() {
 
       // Replace with your actual API endpoint
       // const response = await createInvitation(validEventId, formData);
-      
+
       console.log("Creating invitation with data:", {
         ...invitationForm,
         editorContent,
@@ -469,13 +638,12 @@ function Invitations() {
       });
 
       showNotification("Invitation preview ready!", "success");
-      
+
       // Don't close modal, just show preview
       // You can add preview logic here
-      
     } catch (error: any) {
-      const errorMessage = 
-        error?.response?.data?.message || 
+      const errorMessage =
+        error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
         "Failed to create invitation. Please try again.";
@@ -530,10 +698,17 @@ function Invitations() {
   };
 
   const insertVariable = (variable: string) => {
-    setEditorContent({
-      ...editorContent,
-      body: editorContent.body + ` ${variable} `,
-    });
+    bodyEditorRef.current?.focus();
+    const text = ` ${variable} `;
+    if (!document.execCommand("insertText", false, text)) {
+      document.execCommand("insertHTML", false, text);
+    }
+    if (bodyEditorRef.current) {
+      setEditorContent((prev) => ({
+        ...prev,
+        body: bodyEditorRef.current!.innerHTML,
+      }));
+    }
   };
 
   return (
@@ -546,8 +721,8 @@ function Invitations() {
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -563,7 +738,9 @@ function Invitations() {
               <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
                 <UsersIcon className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">Invitation Users</h1>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Invitation Users
+              </h1>
             </div>
             <div className="flex items-center gap-3">
               <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
@@ -589,8 +766,12 @@ function Invitations() {
             <div className="bg-white border border-gray-200 rounded-xl p-4">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Invitations</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
+                  <p className="text-sm text-gray-600 mb-1">
+                    Total Invitations
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.total}
+                  </p>
                 </div>
                 <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                   <UserCheck className="w-5 h-5 text-gray-600" />
@@ -602,7 +783,9 @@ function Invitations() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.completed}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.completed}
+                  </p>
                 </div>
                 <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-green-600" />
@@ -614,7 +797,9 @@ function Invitations() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">In Progress</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.inProgress}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.inProgress}
+                  </p>
                 </div>
                 <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                   <Clock className="w-5 h-5 text-blue-600" />
@@ -626,7 +811,9 @@ function Invitations() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.pending}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stats.pending}
+                  </p>
                 </div>
                 <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
                   <XCircle className="w-5 h-5 text-red-600" />
@@ -638,7 +825,10 @@ function Invitations() {
           {/* Search and Filter */}
           <div className="flex items-center gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Search
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                size={18}
+              />
               <input
                 type="text"
                 placeholder="Search users..."
@@ -663,7 +853,10 @@ function Invitations() {
                 <option value="all">All Types</option>
                 {badges.length > 0 ? (
                   badges.map((badge: any) => (
-                    <option key={badge.id} value={badge?.attributes?.name || ""}>
+                    <option
+                      key={badge.id}
+                      value={badge?.attributes?.name || ""}
+                    >
                       {badge?.attributes?.name}
                     </option>
                   ))
@@ -671,7 +864,10 @@ function Invitations() {
                   <option value="guest">Guest</option>
                 )}
               </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" size={18} />
+              <ChevronDown
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                size={18}
+              />
             </div>
           </div>
 
@@ -682,7 +878,9 @@ function Invitations() {
                 <thead className="bg-[#1e3a5f] border-b border-[#1e3a5f]">
                   <tr>
                     <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider"># ID</span>
+                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
+                        # ID
+                      </span>
                     </th>
                     <th className="px-6 py-3 text-left">
                       <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
@@ -732,25 +930,51 @@ function Invitations() {
                   {loadingUsers ? (
                     Array.from({ length: 10 }).map((_, index) => (
                       <tr key={index}>
-                        <td className="px-6 py-4"><Skeleton className="h-6 w-10 rounded" /></td>
-                        <td className="px-6 py-4"><Skeleton className="h-4 w-40" /></td>
-                        <td className="px-6 py-4"><Skeleton className="h-4 w-56" /></td>
-                        <td className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
-                        <td className="px-6 py-4"><Skeleton className="h-6 w-14 rounded-full" /></td>
-                        <td className="px-6 py-4"><Skeleton className="h-4 w-16" /></td>
-                        <td className="px-6 py-4"><Skeleton className="h-4 w-20" /></td>
-                        <td className="px-6 py-4"><div className="flex gap-1"><Skeleton className="w-8 h-8 rounded" /><Skeleton className="w-8 h-8 rounded" /><Skeleton className="w-8 h-8 rounded" /></div></td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-6 w-10 rounded" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-40" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-56" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-6 w-16 rounded-full" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-6 w-14 rounded-full" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-16" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <Skeleton className="h-4 w-20" />
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex gap-1">
+                            <Skeleton className="w-8 h-8 rounded" />
+                            <Skeleton className="w-8 h-8 rounded" />
+                            <Skeleton className="w-8 h-8 rounded" />
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : staticInvitations.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="px-6 py-12 text-center text-gray-500">
+                      <td
+                        colSpan={8}
+                        className="px-6 py-12 text-center text-gray-500"
+                      >
                         No invitations found
                       </td>
                     </tr>
                   ) : (
                     staticInvitations.map((invitation) => (
-                      <tr key={invitation.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={invitation.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-md bg-blue-600 text-white text-sm font-medium">
                             {invitation.id}
@@ -795,23 +1019,34 @@ function Invitations() {
                             <button
                               type="button"
                               onClick={() =>
-                                navigate(`/invitation/report/${invitation.id}`, {
-                                  state: {
-                                    invitationName: invitation.name,
-                                    type: invitation.type,
-                                    createdAt: "January 27, 2026 at 15:04",
+                                navigate(
+                                  `/invitation/report/${invitation.id}`,
+                                  {
+                                    state: {
+                                      invitationName: invitation.name,
+                                      type: invitation.type,
+                                      createdAt: "January 27, 2026 at 15:04",
+                                    },
                                   },
-                                })
+                                )
                               }
                               className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
                               title="Report"
                             >
                               <BarChart2 size={16} />
                             </button>
-                            <button type="button" className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="View">
+                            <button
+                              type="button"
+                              className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                              title="View"
+                            >
                               <Eye size={16} />
                             </button>
-                            <button type="button" className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors" title="Copy">
+                            <button
+                              type="button"
+                              className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                              title="Copy"
+                            >
                               <Copy size={16} />
                             </button>
                           </div>
@@ -827,7 +1062,9 @@ function Invitations() {
             <div className="border-t border-gray-200 px-6 py-3 bg-gray-50">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-600">
-                  Showing 1 to {staticInvitations.length} of {pagination?.total_count ?? staticInvitations.length} invitations
+                  Showing 1 to {staticInvitations.length} of{" "}
+                  {pagination?.total_count ?? staticInvitations.length}{" "}
+                  invitations
                 </div>
                 {pagination && (
                   <Pagination
@@ -853,7 +1090,9 @@ function Invitations() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="p-8 border-b border-gray-200 sticky top-0 bg-white z-10">
-              <h2 className="text-2xl font-bold text-gray-900">New Invitation</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                New Invitation
+              </h2>
             </div>
 
             <div className="p-8">
@@ -871,7 +1110,10 @@ function Invitations() {
                         placeholder="e.g., Annual Conference 2025"
                         value={invitationForm.invitationName}
                         onChange={(e) =>
-                          setInvitationForm({ ...invitationForm, invitationName: e.target.value })
+                          setInvitationForm({
+                            ...invitationForm,
+                            invitationName: e.target.value,
+                          })
                         }
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
@@ -884,7 +1126,10 @@ function Invitations() {
                       <select
                         value={invitationForm.communicationType}
                         onChange={(e) =>
-                          setInvitationForm({ ...invitationForm, communicationType: e.target.value })
+                          setInvitationForm({
+                            ...invitationForm,
+                            communicationType: e.target.value,
+                          })
                         }
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                       >
@@ -904,7 +1149,10 @@ function Invitations() {
                       <select
                         value={invitationForm.invitationCategory}
                         onChange={(e) =>
-                          setInvitationForm({ ...invitationForm, invitationCategory: e.target.value })
+                          setInvitationForm({
+                            ...invitationForm,
+                            invitationCategory: e.target.value,
+                          })
                         }
                         disabled={loadingBadges}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white disabled:opacity-50"
@@ -912,7 +1160,10 @@ function Invitations() {
                         <option value="">Public-9</option>
                         {badges.length > 0 &&
                           badges.map((badge: any) => (
-                            <option key={badge.id} value={badge?.attributes?.name || ""}>
+                            <option
+                              key={badge.id}
+                              value={badge?.attributes?.name || ""}
+                            >
                               {badge?.attributes?.name}
                             </option>
                           ))}
@@ -926,7 +1177,10 @@ function Invitations() {
                       <select
                         value={invitationForm.event}
                         onChange={(e) =>
-                          setInvitationForm({ ...invitationForm, event: e.target.value })
+                          setInvitationForm({
+                            ...invitationForm,
+                            event: e.target.value,
+                          })
                         }
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                       >
@@ -944,7 +1198,10 @@ function Invitations() {
                       <select
                         value={invitationForm.language}
                         onChange={(e) =>
-                          setInvitationForm({ ...invitationForm, language: e.target.value })
+                          setInvitationForm({
+                            ...invitationForm,
+                            language: e.target.value,
+                          })
                         }
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white"
                       >
@@ -952,7 +1209,8 @@ function Invitations() {
                         <option>English</option>
                       </select>
                       <p className="text-xs text-gray-500 mt-1">
-                        Select the language for invitation links and email content
+                        Select the language for invitation links and email
+                        content
                       </p>
                     </div>
 
@@ -964,7 +1222,10 @@ function Invitations() {
                         type="datetime-local"
                         value={invitationForm.scheduleSendAt}
                         onChange={(e) =>
-                          setInvitationForm({ ...invitationForm, scheduleSendAt: e.target.value })
+                          setInvitationForm({
+                            ...invitationForm,
+                            scheduleSendAt: e.target.value,
+                          })
                         }
                         placeholder="mm/dd/yyyy --:--"
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -985,7 +1246,10 @@ function Invitations() {
                       placeholder="Subject"
                       value={invitationForm.emailSubject}
                       onChange={(e) =>
-                        setInvitationForm({ ...invitationForm, emailSubject: e.target.value })
+                        setInvitationForm({
+                          ...invitationForm,
+                          emailSubject: e.target.value,
+                        })
                       }
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -998,45 +1262,166 @@ function Invitations() {
                         Email Body
                       </label>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-600">set template background color</span>
+                        <span className="text-xs text-gray-600">
+                          set template background color
+                        </span>
                         <input
                           type="color"
                           value={invitationForm.backgroundColor}
                           onChange={(e) =>
-                            setInvitationForm({ ...invitationForm, backgroundColor: e.target.value })
+                            setInvitationForm({
+                              ...invitationForm,
+                              backgroundColor: e.target.value,
+                            })
                           }
                           className="w-8 h-8 rounded border border-gray-400 cursor-pointer"
                         />
                       </div>
                     </div>
 
-                    {/* Email Editor */}
+                    {/* Email Editor - rich text with working toolbar */}
                     <div className="border border-gray-300 rounded-lg overflow-hidden">
-                      {/* Toolbar */}
+                      {/* Toolbar: Format tools (bold, italic, link, etc.) */}
                       <div className="bg-gray-50 border-b border-gray-300 px-3 py-2">
-                        <div className="flex items-center gap-2 text-xs text-gray-600 mb-2">
-                          <button className="hover:text-gray-900">File</button>
-                          <button className="hover:text-gray-900">Edit</button>
-                          <button className="hover:text-gray-900">View</button>
-                          <button className="hover:text-gray-900">Insert</button>
-                          <button className="hover:text-gray-900">Format</button>
-                          <button className="hover:text-gray-900">Tools</button>
-                        </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-1 text-xs text-gray-600 mb-2">
+                          <span className="text-gray-400 mr-1">Format:</span>
                           <button
+                            type="button"
+                            onClick={() => execBodyCommand("bold")}
+                            className="p-1.5 hover:bg-gray-200 rounded font-bold"
+                            title="Bold"
+                          >
+                            B
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("italic")}
+                            className="p-1.5 hover:bg-gray-200 rounded italic"
+                            title="Italic"
+                          >
+                            I
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("underline")}
+                            className="p-1.5 hover:bg-gray-200 rounded underline"
+                            title="Underline"
+                          >
+                            U
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("strikeThrough")}
+                            className="p-1.5 hover:bg-gray-200 rounded line-through"
+                            title="Strikethrough"
+                          >
+                            S
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleInsertLink}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Insert link"
+                          >
+                            <Link size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("unlink")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Remove link"
+                          >
+                            Unlink
+                          </button>
+                          <div className="w-px h-4 bg-gray-300 mx-1" />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              execBodyCommand("insertUnorderedList")
+                            }
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Bullet list"
+                          >
+                            • List
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("insertOrderedList")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Numbered list"
+                          >
+                            1. List
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("justifyLeft")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Align left"
+                          >
+                            ≡ Left
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("justifyCenter")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Align center"
+                          >
+                            ≡ Center
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("justifyRight")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Align right"
+                          >
+                            ≡ Right
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("removeFormat")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Clear formatting"
+                          >
+                            Clear
+                          </button>
+                          <div className="w-px h-4 bg-gray-300 mx-1" />
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("undo")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Undo"
+                          >
+                            <Undo size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => execBodyCommand("redo")}
+                            className="p-1.5 hover:bg-gray-200 rounded"
+                            title="Redo"
+                          >
+                            <Redo size={14} />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <button
+                            type="button"
                             onClick={() => insertVariable("{{first_name}}")}
                             className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
                           >
-                            Add_First_name
+                            Add First name
                           </button>
                           <button
+                            type="button"
                             onClick={() => insertVariable("{{last_name}}")}
                             className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-50"
                           >
-                            Add_Last_name
+                            Add Last name
                           </button>
-                          <div className="w-px h-4 bg-gray-300"></div>
-                          <label className="p-1 hover:bg-gray-200 rounded cursor-pointer">
+                          <div className="w-px h-4 bg-gray-300" />
+                          <label
+                            className="p-1.5 hover:bg-gray-200 rounded cursor-pointer"
+                            title="Insert image"
+                          >
                             <ImageIcon size={14} />
                             <input
                               type="file"
@@ -1045,24 +1430,15 @@ function Invitations() {
                               onChange={handleHeaderImageChange}
                             />
                           </label>
-                          <button className="p-1 hover:bg-gray-200 rounded font-bold">B</button>
-                          <button className="p-1 hover:bg-gray-200 rounded italic">I</button>
-                          <button className="p-1 hover:bg-gray-200 rounded"><Undo size={14} /></button>
-                          <button className="p-1 hover:bg-gray-200 rounded"><Redo size={14} /></button>
-                          <button className="p-1 hover:bg-gray-200 rounded bg-blue-500 text-white text-xs px-2">
-                            T
-                          </button>
-                          <button className="p-1 hover:bg-gray-200 rounded">¶</button>
-                          <button className="p-1 hover:bg-gray-200 rounded">⚙</button>
-                          <button className="p-1 hover:bg-gray-200 rounded">📋</button>
-                          <button className="p-1 hover:bg-gray-200 rounded"><Link size={14} /></button>
                         </div>
                       </div>
 
                       {/* Editor Content */}
-                      <div 
+                      <div
                         className="bg-white p-8 min-h-[450px]"
-                        style={{ backgroundColor: invitationForm.backgroundColor }}
+                        style={{
+                          backgroundColor: invitationForm.backgroundColor,
+                        }}
                       >
                         {/* Header Image */}
                         <div className="w-full max-w-3xl mx-auto mb-6">
@@ -1085,7 +1461,9 @@ function Invitations() {
                             </div>
                           ) : (
                             <label className="w-full bg-gray-200 rounded-lg flex items-center justify-center py-20 cursor-pointer hover:bg-gray-300 transition-colors">
-                              <span className="text-gray-500 text-sm">Change Image</span>
+                              <span className="text-gray-500 text-sm">
+                                Change Image
+                              </span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -1102,18 +1480,29 @@ function Invitations() {
                             type="text"
                             value={editorContent.title}
                             onChange={(e) =>
-                              setEditorContent({ ...editorContent, title: e.target.value })
+                              setEditorContent((prev) => ({
+                                ...prev,
+                                title: e.target.value,
+                              }))
                             }
                             className="w-full text-xl font-bold text-center text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
                             placeholder="Enter title..."
                           />
-                          <textarea
-                            value={editorContent.body}
-                            onChange={(e) =>
-                              setEditorContent({ ...editorContent, body: e.target.value })
-                            }
-                            className="w-full text-sm text-gray-700 text-center bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 min-h-[100px] resize-none"
-                            placeholder="Enter email body..."
+                          <div
+                            ref={bodyEditorRef}
+                            contentEditable
+                            suppressContentEditableWarning
+                            onInput={() => {
+                              if (bodyEditorRef.current) {
+                                setEditorContent((prev) => ({
+                                  ...prev,
+                                  body: bodyEditorRef.current!.innerHTML,
+                                }));
+                              }
+                            }}
+                            className="w-full text-sm text-gray-700 text-center bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 min-h-[120px] prose prose-sm max-w-none [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1"
+                            data-placeholder="Enter email body..."
+                            style={{ outline: "none" }}
                           />
                         </div>
 
@@ -1138,7 +1527,9 @@ function Invitations() {
                             </div>
                           ) : (
                             <label className="w-full bg-gray-200 rounded-lg flex items-center justify-center py-20 cursor-pointer hover:bg-gray-300 transition-colors">
-                              <span className="text-gray-500 text-sm">Add Footer Image</span>
+                              <span className="text-gray-500 text-sm">
+                                Add Footer Image
+                              </span>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -1204,7 +1595,9 @@ function Invitations() {
 
                 {/* Templates Sidebar */}
                 <div className="w-32 space-y-3">
-                  <div className="text-xs font-semibold text-gray-700 mb-2">Templates:</div>
+                  <div className="text-xs font-semibold text-gray-700 mb-2">
+                    Templates:
+                  </div>
                   {templates.map((template, index) => (
                     <button
                       key={template.id}
@@ -1223,7 +1616,9 @@ function Invitations() {
                       style={{ backgroundColor: template.backgroundColor }}
                     >
                       <div className="flex flex-col items-center justify-center h-full">
-                        <div className="text-xs text-gray-600">{template.preview}</div>
+                        <div className="text-xs text-gray-600">
+                          {template.preview}
+                        </div>
                       </div>
                     </button>
                   ))}

@@ -1,8 +1,6 @@
 import AdvanceBadge from "@/components/AdvanceEventComponent/AdvanceBadge";
 import AdvanceConfirmation from "@/components/AdvanceEventComponent/AdvanceConfirmation";
 import AdvanceRegistration from "@/components/AdvanceEventComponent/AdvanceRegistration";
-import AdvanceTicket from "@/components/AdvanceEventComponent/AdvanceTickt";
-import AdvancePayment from "@/components/AdvanceEventComponent/AdvancePayment";
 import React, { useState } from "react";
 
 interface AdvanceEventProps {
@@ -16,15 +14,13 @@ const AdvanceEvent: React.FC<AdvanceEventProps> = ({
   onPrevious,
   eventId,
 }) => {
-  console.log('event id__________', eventId)
+  console.log("event id__________", eventId);
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
-    // { component: AdvanceTicket, name: "Advance Ticket" },
     { component: AdvanceRegistration, name: "Advance Registration" },
     { component: AdvanceConfirmation, name: "Advance Confirmation" },
     { component: AdvanceBadge, name: "Advance Badge" },
-    { component: AdvancePayment, name: "Payment" },
   ];
 
   // UPDATED: Handle next with eventId parameter

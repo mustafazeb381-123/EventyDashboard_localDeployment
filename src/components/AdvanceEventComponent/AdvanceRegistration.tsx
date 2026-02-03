@@ -119,7 +119,7 @@ const renderCustomField = (
   setFormData: React.Dispatch<React.SetStateAction<Record<string, any>>>,
   imagePreviewUrls?: Record<string, string>,
   currentLanguage?: string,
-  tFormPreview?: FormPreviewT
+  tFormPreview?: FormPreviewT,
 ) => {
   const lang = currentLanguage || "en";
   const isRTL = lang === "ar";
@@ -374,7 +374,10 @@ const renderCustomField = (
               className="flex-1 px-3 py-2 border rounded-lg bg-gray-50 text-gray-500 text-sm overflow-hidden text-ellipsis whitespace-nowrap"
               style={fieldInputStyle}
             >
-              {fileName || (field.type === "image" ? (tFormPreview?.("noImageSelected") ?? "No image selected") : (tFormPreview?.("noFileSelected") ?? "No file selected"))}
+              {fileName ||
+                (field.type === "image"
+                  ? (tFormPreview?.("noImageSelected") ?? "No image selected")
+                  : (tFormPreview?.("noFileSelected") ?? "No file selected"))}
             </div>
             <label
               className="px-4 py-2 border rounded-lg cursor-pointer text-sm font-medium transition-colors whitespace-nowrap"
@@ -384,7 +387,9 @@ const renderCustomField = (
                 borderColor: theme?.buttonBorderColor || "#3b82f6",
               }}
             >
-              {field.type === "image" ? (tFormPreview?.("chooseImage") ?? "Choose Image") : (tFormPreview?.("chooseFile") ?? "Choose File")}
+              {field.type === "image"
+                ? (tFormPreview?.("chooseImage") ?? "Choose Image")
+                : (tFormPreview?.("chooseFile") ?? "Choose File")}
               <input
                 type="file"
                 {...commonProps}
@@ -412,7 +417,7 @@ const renderCustomField = (
                   });
                   // Clear the file input
                   const input = document.querySelector(
-                    `input[name="${field.name}"]`
+                    `input[name="${field.name}"]`,
                   ) as HTMLInputElement;
                   if (input) input.value = "";
                 }}
@@ -433,11 +438,7 @@ const renderCustomField = (
       );
     case "button":
       return (
-        <FormButtonField
-          field={field}
-          theme={theme}
-          currentLanguage={lang}
-        />
+        <FormButtonField field={field} theme={theme} currentLanguage={lang} />
       );
     case "table":
       if (!field.tableData) {
@@ -590,7 +591,7 @@ export const FormBuilderTemplateForm: React.FC<
   useEffect(() => {
     // Update immediately when component mounts
     setCurrentLanguage(i18n.language || "en");
-    
+
     const handleLanguageChange = (lng: string) => {
       console.log("🌐 FormBuilderTemplateForm: Language changed to:", lng);
       console.log("🌐 Current i18n.language:", i18n.language);
@@ -611,17 +612,19 @@ export const FormBuilderTemplateForm: React.FC<
     Record<string, string>
   >({});
   const imagePreviewMapRef = useRef<Map<string, { file: File; url: string }>>(
-    new Map()
+    new Map(),
   );
 
   const [bannerBlobUrl, setBannerBlobUrl] = useState<string | null>(null);
   const [backgroundBlobUrl, setBackgroundBlobUrl] = useState<string | null>(
-    null
+    null,
   );
-  const [footerBannerBlobUrl, setFooterBannerBlobUrl] = useState<string | null>(null);
+  const [footerBannerBlobUrl, setFooterBannerBlobUrl] = useState<string | null>(
+    null,
+  );
 
   const [bannerLoadError, setBannerLoadError] = useState(false);
-  
+
   // Local notification state for preview mode
   const [localNotification, setLocalNotification] = useState<{
     message: string;
@@ -639,7 +642,7 @@ export const FormBuilderTemplateForm: React.FC<
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => {
     if (onRegistrationSuccess && type === "success") {
       onRegistrationSuccess(message);
@@ -653,10 +656,10 @@ export const FormBuilderTemplateForm: React.FC<
   // Maintain stable object URLs for image fields (no revoke-before-render race)
   useEffect(() => {
     const customFields = getUniqueFields(
-      (formBuilderData?.formData as CustomFormField[]) || []
+      (formBuilderData?.formData as CustomFormField[]) || [],
     );
     const imageFieldNames = new Set(
-      customFields.filter((f) => f.type === "image").map((f) => f.name)
+      customFields.filter((f) => f.type === "image").map((f) => f.name),
     );
 
     const map = imagePreviewMapRef.current;
@@ -843,7 +846,7 @@ export const FormBuilderTemplateForm: React.FC<
       // Validate eventId before form is used
       if (!effectiveEventId) {
         console.warn(
-          "⚠️ WARNING: No effectiveEventId found! Form submission will fail."
+          "⚠️ WARNING: No effectiveEventId found! Form submission will fail.",
         );
         console.warn("⚠️ Available sources:", {
           eventIdProp: eventId,
@@ -853,7 +856,7 @@ export const FormBuilderTemplateForm: React.FC<
       } else {
         console.log(
           "✅ Event ID is available for submission:",
-          effectiveEventId
+          effectiveEventId,
         );
       }
     }
@@ -893,10 +896,7 @@ export const FormBuilderTemplateForm: React.FC<
             ? localStorage.getItem("edit_eventId")
             : null,
       });
-      showNotification(
-        "No event ID found",
-        "error"
-      );
+      showNotification("No event ID found", "error");
       return;
     }
 
@@ -913,12 +913,9 @@ export const FormBuilderTemplateForm: React.FC<
       // Double-check eventId before submission
       if (!actualEventId) {
         console.error(
-          "❌ CRITICAL: actualEventId is missing at submission time!"
+          "❌ CRITICAL: actualEventId is missing at submission time!",
         );
-        showNotification(
-          "No event ID found",
-          "error"
-        );
+        showNotification("No event ID found", "error");
         setIsSubmitting(false);
         return;
       }
@@ -927,10 +924,10 @@ export const FormBuilderTemplateForm: React.FC<
 
       // Validate required fields
       const customFields = getUniqueFields(
-        (formBuilderData?.formData as CustomFormField[]) || []
+        (formBuilderData?.formData as CustomFormField[]) || [],
       );
       const requiredFields = customFields.filter(
-        (field) => field.required && !field.containerType
+        (field) => field.required && !field.containerType,
       );
       const missingFields = requiredFields.filter((field) => {
         const value = formData[field.name];
@@ -941,10 +938,7 @@ export const FormBuilderTemplateForm: React.FC<
         const fieldNames = missingFields
           .map((f) => f.label || f.name)
           .join(", ");
-        showNotification(
-          `Required fields: ${fieldNames}`,
-          "error"
-        );
+        showNotification(`Required fields: ${fieldNames}`, "error");
         setIsSubmitting(false);
         return;
       }
@@ -963,12 +957,9 @@ export const FormBuilderTemplateForm: React.FC<
             eventDataId: eventData?.id,
             eventDataDataId: eventData?.data?.id,
             effectiveEventId,
-          }
+          },
         );
-        showNotification(
-          "No event ID found",
-          "error"
-        );
+        showNotification("No event ID found", "error");
         setIsSubmitting(false);
         return;
       }
@@ -1045,7 +1036,7 @@ export const FormBuilderTemplateForm: React.FC<
       const emailValue = formData["email"] || formData["email_address"];
       formDataToSend.append(
         "event_user[email]",
-        emailValue && typeof emailValue === "string" ? emailValue : ""
+        emailValue && typeof emailValue === "string" ? emailValue : "",
       );
 
       // ✅ Always append phone_number (even if empty) - CRITICAL for API
@@ -1086,14 +1077,14 @@ export const FormBuilderTemplateForm: React.FC<
 
       formDataToSend.append(
         "event_user[phone_number]",
-        phoneCombined ? String(phoneCombined) : ""
+        phoneCombined ? String(phoneCombined) : "",
       );
 
       // ✅ Append optional standard fields if they have values
       if (formData["position"]) {
         formDataToSend.append(
           "event_user[position]",
-          String(formData["position"])
+          String(formData["position"]),
         );
       }
 
@@ -1103,7 +1094,7 @@ export const FormBuilderTemplateForm: React.FC<
         // Save to custom_fields.title (for display in registered users table)
         formDataToSend.append(
           "event_user[custom_fields][title]",
-          String(orgValue)
+          String(orgValue),
         );
         // Also save to event_user[organization] (standard field)
         formDataToSend.append("event_user[organization]", String(orgValue));
@@ -1142,12 +1133,12 @@ export const FormBuilderTemplateForm: React.FC<
               console.log(
                 `✅ Appending image field '${field.name}' to event_user[image]:`,
                 imageValue.name,
-                `(${(imageValue.size / 1024).toFixed(2)}KB)`
+                `(${(imageValue.size / 1024).toFixed(2)}KB)`,
               );
               imageAppended = true;
             } else if (typeof imageValue === "string") {
               console.warn(
-                `Image field '${field.name}' is a base64 string, skipping upload`
+                `Image field '${field.name}' is a base64 string, skipping upload`,
               );
             }
           }
@@ -1163,7 +1154,7 @@ export const FormBuilderTemplateForm: React.FC<
             console.log(
               `✅ Appending image from '${imageFieldName}' to event_user[image]:`,
               imageValue.name,
-              `(${(imageValue.size / 1024).toFixed(2)}KB)`
+              `(${(imageValue.size / 1024).toFixed(2)}KB)`,
             );
             imageAppended = true;
             break;
@@ -1184,7 +1175,7 @@ export const FormBuilderTemplateForm: React.FC<
             console.log(
               `✅ Appending image from '${key}' to event_user[image]:`,
               value.name,
-              `(${(value.size / 1024).toFixed(2)}KB)`
+              `(${(value.size / 1024).toFixed(2)}KB)`,
             );
             imageAppended = true;
             break;
@@ -1209,7 +1200,7 @@ export const FormBuilderTemplateForm: React.FC<
               formData[key] instanceof File
                 ? `File: ${formData[key].name} (${(formData[key].size / 1024).toFixed(2)}KB)`
                 : formData[key],
-          }))
+          })),
       );
 
       // ✅ Append any other custom fields that don't match standard fields
@@ -1259,13 +1250,13 @@ export const FormBuilderTemplateForm: React.FC<
           // For image/file type fields, append to custom_fields
           formDataToSend.append(
             `event_user[custom_fields][${fieldName}]`,
-            value
+            value,
           );
         } else {
           // For other field types, convert to string
           formDataToSend.append(
             `event_user[custom_fields][${fieldName}]`,
-            String(value)
+            String(value),
           );
         }
       });
@@ -1296,7 +1287,7 @@ export const FormBuilderTemplateForm: React.FC<
 
       const response = await createEventUser(
         String(actualEventId),
-        formDataToSend
+        formDataToSend,
       );
 
       console.log("✅ Registration successful:", response);
@@ -1444,7 +1435,7 @@ export const FormBuilderTemplateForm: React.FC<
   // Render custom form builder template (exactly like preview)
   if (isCustomFormBuilder) {
     const allFields = (formBuilderData.formData as CustomFormField[]) || [];
-    
+
     // Memoize fields calculation to ensure re-render when language changes
     const customFields = useMemo(() => {
       const fields = getUniqueFields(allFields);
@@ -1457,23 +1448,25 @@ export const FormBuilderTemplateForm: React.FC<
       i18nLanguage: i18n.language,
       totalFieldsBefore: allFields.length,
       totalFieldsAfter: customFields.length,
-      sampleField: customFields[0] ? {
-        name: customFields[0].name,
-        label: customFields[0].label,
-        hasLabelTranslations: !!customFields[0].labelTranslations,
-        labelTranslations: customFields[0].labelTranslations,
-      } : null,
+      sampleField: customFields[0]
+        ? {
+            name: customFields[0].name,
+            label: customFields[0].label,
+            hasLabelTranslations: !!customFields[0].labelTranslations,
+            labelTranslations: customFields[0].labelTranslations,
+          }
+        : null,
       hasTitleFieldBefore: allFields.some(
-        (f) => f.name === "title" || f.label === "Title"
+        (f) => f.name === "title" || f.label === "Title",
       ),
       hasTitleFieldAfter: customFields.some(
-        (f) => f.name === "title" || f.label === "Title"
+        (f) => f.name === "title" || f.label === "Title",
       ),
       titleFieldBefore: allFields.find(
-        (f) => f.name === "title" || f.label === "Title"
+        (f) => f.name === "title" || f.label === "Title",
       ),
       titleFieldAfter: customFields.find(
-        (f) => f.name === "title" || f.label === "Title"
+        (f) => f.name === "title" || f.label === "Title",
       ),
       allFieldNames: customFields.map((f) => ({
         name: f.name,
@@ -1498,13 +1491,16 @@ export const FormBuilderTemplateForm: React.FC<
 
     const footerBannerUrl =
       theme?.footerBannerImage &&
-      (typeof theme.footerBannerImage === "string" && theme.footerBannerImage.trim() !== ""
+      (typeof theme.footerBannerImage === "string" &&
+      theme.footerBannerImage.trim() !== ""
         ? theme.footerBannerImage
         : footerBannerBlobUrl);
 
     const formPaddingVal = theme?.formPadding || "24px";
     const paddingValue =
-      typeof formPaddingVal === "string" ? parseInt(formPaddingVal) || 24 : formPaddingVal;
+      typeof formPaddingVal === "string"
+        ? parseInt(formPaddingVal) || 24
+        : formPaddingVal;
 
     // If the src changes, allow the image to render again
     useEffect(() => {
@@ -1617,13 +1613,18 @@ export const FormBuilderTemplateForm: React.FC<
             style={{ backgroundColor: theme?.formBackgroundColor || "#ffffff" }}
             dir={currentLanguage === "ar" ? "rtl" : "ltr"}
           >
-            <form onSubmit={handleSubmit} className="space-y-6" key={`form-${currentLanguage}`} dir={currentLanguage === "ar" ? "rtl" : "ltr"}>
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-6"
+              key={`form-${currentLanguage}`}
+              dir={currentLanguage === "ar" ? "rtl" : "ltr"}
+            >
               {(() => {
                 // Calculate all child field IDs once to avoid duplicate rendering
                 const allChildIds = new Set(
                   customFields
                     .filter((f) => f.containerType && f.children)
-                    .flatMap((f) => f.children || [])
+                    .flatMap((f) => f.children || []),
                 );
 
                 // Track rendered field IDs to prevent duplicates
@@ -1713,7 +1714,7 @@ export const FormBuilderTemplateForm: React.FC<
                     // For column containers, use Bootstrap grid if Bootstrap classes are set
                     const isColumnContainer = field.containerType === "column";
                     const hasBootstrapClasses = childFields.some(
-                      (f) => f.bootstrapClass
+                      (f) => f.bootstrapClass,
                     );
 
                     // If column container with Bootstrap classes, use row wrapper
@@ -1851,17 +1852,28 @@ export const FormBuilderTemplateForm: React.FC<
                                         fontWeight:
                                           theme?.labelFontWeight || "600",
                                       }}
-                                      dir={currentLanguage === "ar" ? "rtl" : "ltr"}
+                                      dir={
+                                        currentLanguage === "ar" ? "rtl" : "ltr"
+                                      }
                                     >
-                                      {getTranslatedLabel(childField, currentLanguage)}
+                                      {getTranslatedLabel(
+                                        childField,
+                                        currentLanguage,
+                                      )}
                                       {childField.required && (
                                         <span
                                           style={{
                                             color:
                                               theme?.requiredIndicatorColor ||
                                               "#ef4444",
-                                            marginLeft: currentLanguage === "ar" ? "0" : "4px",
-                                            marginRight: currentLanguage === "ar" ? "4px" : "0",
+                                            marginLeft:
+                                              currentLanguage === "ar"
+                                                ? "0"
+                                                : "4px",
+                                            marginRight:
+                                              currentLanguage === "ar"
+                                                ? "4px"
+                                                : "0",
                                           }}
                                         >
                                           *
@@ -1878,7 +1890,7 @@ export const FormBuilderTemplateForm: React.FC<
                                     setFormData,
                                     imagePreviewUrls,
                                     currentLanguage,
-                                    (key) => tFormBuilder("formPreview." + key)
+                                    (key) => tFormBuilder("formPreview." + key),
                                   )}
                                 </div>
                               </div>
@@ -1953,8 +1965,10 @@ export const FormBuilderTemplateForm: React.FC<
                                 style={{
                                   color:
                                     theme?.requiredIndicatorColor || "#ef4444",
-                                  marginLeft: currentLanguage === "ar" ? "0" : "4px",
-                                  marginRight: currentLanguage === "ar" ? "4px" : "0",
+                                  marginLeft:
+                                    currentLanguage === "ar" ? "0" : "4px",
+                                  marginRight:
+                                    currentLanguage === "ar" ? "4px" : "0",
                                 }}
                               >
                                 *
@@ -1984,7 +1998,7 @@ export const FormBuilderTemplateForm: React.FC<
                         setFormData,
                         imagePreviewUrls,
                         currentLanguage,
-                        (key) => tFormBuilder("formPreview." + key)
+                        (key) => tFormBuilder("formPreview." + key),
                       )}
                     </div>
                   );
@@ -1992,7 +2006,7 @@ export const FormBuilderTemplateForm: React.FC<
               })()}
 
               {!customFields.some(
-                (f) => f.type === "button" && f.buttonType === "submit"
+                (f) => f.type === "button" && f.buttonType === "submit",
               ) && (
                 <div
                   className="pt-4 border-t"
@@ -2036,7 +2050,8 @@ export const FormBuilderTemplateForm: React.FC<
             )}
 
             {/* Footer: full-bleed (touch bottom and sides), optional margins from theme */}
-            {(footerBannerUrl || (theme?.footerEnabled && theme?.footerText)) && (
+            {(footerBannerUrl ||
+              (theme?.footerEnabled && theme?.footerText)) && (
               <div
                 className="border-t"
                 style={{
@@ -2061,7 +2076,10 @@ export const FormBuilderTemplateForm: React.FC<
                         alt="Footer banner"
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error("Footer banner image failed to load:", footerBannerUrl);
+                          console.error(
+                            "Footer banner image failed to load:",
+                            footerBannerUrl,
+                          );
                           e.currentTarget.style.display = "none";
                         }}
                       />
@@ -2070,7 +2088,8 @@ export const FormBuilderTemplateForm: React.FC<
                   {theme?.footerEnabled && theme?.footerText && (
                     <div
                       style={{
-                        backgroundColor: theme.footerBackgroundColor || "#f9fafb",
+                        backgroundColor:
+                          theme.footerBackgroundColor || "#f9fafb",
                         color: theme.footerTextColor || "#6b7280",
                         padding: theme.footerPadding || "16px",
                         fontSize: theme.footerFontSize || "14px",
@@ -2343,13 +2362,17 @@ const AdvanceRegistration = ({
       ? localStorage.getItem("create_eventId") || undefined
       : undefined);
 
-  const STEP_NAMES = ["Registration Template", "Confirmation Template", "Badge Template", "Payment"];
+  const STEP_NAMES = [
+    "Registration Template",
+    "Confirmation Template",
+    "Badge Template",
+  ];
 
   // State for default templates
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
   const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
-    null
+    null,
   );
   // Track which system was just selected to handle priority when both have default: true
   const [lastSelectedSystem, setLastSelectedSystem] = useState<
@@ -2395,7 +2418,7 @@ const AdvanceRegistration = ({
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "warning" | "info"
+    type: "success" | "error" | "warning" | "info",
   ) => {
     setNotification({ message, type });
   };
@@ -2403,7 +2426,7 @@ const AdvanceRegistration = ({
   // -------------------- HELPER FUNCTIONS FOR FORM BUILDER --------------------
   // Helper function to validate and convert form builder data
   const convertFormBuilderToFieldsForValidation = (
-    jsonData: any
+    jsonData: any,
   ): FormField[] => {
     if (!jsonData) return [];
 
@@ -2424,7 +2447,7 @@ const AdvanceRegistration = ({
     return formDataArray.map((item: any, index: number) => ({
       id: item.id || item.elementId || `field-${Date.now()}-${index}`,
       type: mapFormBuilderTypeForValidation(
-        item.type || item.element || item.fieldType
+        item.type || item.element || item.fieldType,
       ),
       label: item.label || item.name || item.title || "Field",
       placeholder: item.placeholder || item.hint || "",
@@ -2434,14 +2457,16 @@ const AdvanceRegistration = ({
       options:
         item.options || item.values
           ? (item.options || item.values).map((opt: any) =>
-              typeof opt === "string" ? opt : opt.label || opt.value || opt.text
+              typeof opt === "string"
+                ? opt
+                : opt.label || opt.value || opt.text,
             )
           : undefined,
     }));
   };
 
   const mapFormBuilderTypeForValidation = (
-    fbType: string
+    fbType: string,
   ): FormField["type"] => {
     const typeMap: Record<string, FormField["type"]> = {
       text: "text",
@@ -2493,7 +2518,7 @@ const AdvanceRegistration = ({
 
   // Transform API response to component format
   const transformApiTemplateToComponent = (
-    apiTemplate: any
+    apiTemplate: any,
   ): CustomFormTemplate => {
     const attrs = apiTemplate.attributes || {};
     const formData = attrs.form_template_data || {};
@@ -2511,8 +2536,14 @@ const AdvanceRegistration = ({
     const theme: FormTheme = {
       ...themeFromFormData,
       // Always prefer URLs from API attributes (ActiveStorage URLs are the source of truth)
-      formBackgroundImage: attrs.form_background_image ?? themeFromFormData.formBackgroundImage ?? null,
-      footerBannerImage: attrs.footer_banner_image ?? themeFromFormData.footerBannerImage ?? null,
+      formBackgroundImage:
+        attrs.form_background_image ??
+        themeFromFormData.formBackgroundImage ??
+        null,
+      footerBannerImage:
+        attrs.footer_banner_image ??
+        themeFromFormData.footerBannerImage ??
+        null,
     };
 
     // Debug logging
@@ -2567,7 +2598,7 @@ const AdvanceRegistration = ({
       if (customTemplatesResponse.status === "fulfilled") {
         const customTemplates = customTemplatesResponse.value?.data?.data || [];
         defaultCustomTemplate = customTemplates.find(
-          (t: any) => t.attributes?.default === true
+          (t: any) => t.attributes?.default === true,
         );
         console.log("Custom templates default check:", {
           total: customTemplates.length,
@@ -2611,14 +2642,14 @@ const AdvanceRegistration = ({
           shouldUseCustom = true;
           console.warn(
             "⚠️ Both systems have default: true - using custom template (lastSelectedSystem: custom):",
-            defaultCustomTemplate.id
+            defaultCustomTemplate.id,
           );
         } else if (lastSelectedSystem === "default") {
           // User just selected a default template - prioritize it
           shouldUseCustom = false;
           console.warn(
             "⚠️ Both systems have default: true - using default template (lastSelectedSystem: default):",
-            defaultOldTemplate.attributes?.name
+            defaultOldTemplate.attributes?.name,
           );
         } else if (customUpdatedAt && oldUpdatedAt) {
           // No lastSelectedSystem - use timestamp comparison (most recent = last selected)
@@ -2637,13 +2668,13 @@ const AdvanceRegistration = ({
               customDate: customDate.toISOString(),
               oldDate: oldDate.toISOString(),
               customIsNewer: customDate > oldDate,
-            }
+            },
           );
         } else {
           // No timestamps or lastSelectedSystem - default to custom if it exists
           shouldUseCustom = true;
           console.warn(
-            "⚠️ Both systems have default: true but no timestamps/lastSelectedSystem - defaulting to custom template"
+            "⚠️ Both systems have default: true but no timestamps/lastSelectedSystem - defaulting to custom template",
           );
         }
 
@@ -2659,7 +2690,7 @@ const AdvanceRegistration = ({
         const templateName = defaultOldTemplate.attributes?.name;
         console.log(
           "✅ Default template selected (old system) - default: true:",
-          templateName
+          templateName,
         );
         setConfirmedTemplate(templateName);
       } else if (defaultCustomTemplate) {
@@ -2689,7 +2720,7 @@ const AdvanceRegistration = ({
           hasDefaultOld: !!defaultOldTemplate,
           hasDefaultCustom: !!defaultCustomTemplate,
           lastSelectedSystem,
-        }
+        },
       );
 
       // Don't clear lastSelectedSystem immediately - keep it until next selection
@@ -2717,12 +2748,12 @@ const AdvanceRegistration = ({
           id: t.id,
           name: t.attributes?.name,
           default: t.attributes?.default,
-        }))
+        })),
       );
 
       // Transform API templates to component format
       const transformedTemplates = templates.map(
-        transformApiTemplateToComponent
+        transformApiTemplateToComponent,
       );
 
       // Validate and ensure data structure is correct
@@ -2744,7 +2775,7 @@ const AdvanceRegistration = ({
       console.error("Error loading form builder templates:", error);
       showNotification(
         "Failed to load form templates. Please try again.",
-        "error"
+        "error",
       );
       setFormBuilderTemplates([]);
     } finally {
@@ -2797,7 +2828,10 @@ const AdvanceRegistration = ({
 
   const handleOpenCustomFormBuilder = (template?: CustomFormTemplate) => {
     if (!effectiveEventId) {
-      showNotification("Event ID not found. Cannot open form builder.", "error");
+      showNotification(
+        "Event ID not found. Cannot open form builder.",
+        "error",
+      );
       return;
     }
     if (template) {
@@ -2813,7 +2847,7 @@ const AdvanceRegistration = ({
   // Helper function to compress image if too large
   const compressImageIfNeeded = async (
     base64String: string,
-    maxSizeKB: number = 500
+    maxSizeKB: number = 500,
   ): Promise<string> => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -2861,19 +2895,21 @@ const AdvanceRegistration = ({
     bannerImage?: File | string,
     theme?: FormTheme,
     templateName?: string,
-    languageConfig?: FormLanguageConfig
+    languageConfig?: FormLanguageConfig,
   ) => {
     try {
       // Check if banner image is unchanged when editing
-      const originalBannerImage = isEditFormBuilderMode && editingFormBuilderTemplate
-        ? (editingFormBuilderTemplate.bannerImage || 
-           editingFormBuilderTemplate.formBuilderData?.bannerImage)
-        : null;
-      
-      const isBannerUnchanged = isEditFormBuilderMode && 
-        originalBannerImage && 
+      const originalBannerImage =
+        isEditFormBuilderMode && editingFormBuilderTemplate
+          ? editingFormBuilderTemplate.bannerImage ||
+            editingFormBuilderTemplate.formBuilderData?.bannerImage
+          : null;
+
+      const isBannerUnchanged =
+        isEditFormBuilderMode &&
+        originalBannerImage &&
         bannerImage === originalBannerImage;
-      
+
       console.log("💾 Banner image check:", {
         isEditMode: isEditFormBuilderMode,
         hasOriginalBanner: !!originalBannerImage,
@@ -2886,11 +2922,13 @@ const AdvanceRegistration = ({
       // Convert File to base64 string if needed
       let normalizedBannerImage: string | null = null;
       let shouldUpdateBannerImage = false; // Flag to track if we need to update banner via API
-      
+
       if (bannerImage) {
         // If banner is unchanged (still the original URL), preserve it and skip conversion
         if (isBannerUnchanged) {
-          console.log("✅ Banner image unchanged - will preserve existing banner (no conversion needed)");
+          console.log(
+            "✅ Banner image unchanged - will preserve existing banner (no conversion needed)",
+          );
           // Don't update banner - it's already there
           normalizedBannerImage = null;
           shouldUpdateBannerImage = false;
@@ -2904,7 +2942,7 @@ const AdvanceRegistration = ({
               reader.onerror = () =>
                 reject(new Error("Failed to read banner image"));
               reader.readAsDataURL(bannerImage);
-            }
+            },
           );
 
           // Compress if larger than 500KB
@@ -2912,49 +2950,56 @@ const AdvanceRegistration = ({
             console.log("Compressing banner image...");
             normalizedBannerImage = await compressImageIfNeeded(
               normalizedBannerImage,
-              500
+              500,
             );
             console.log(
               "Banner image compressed to:",
               (normalizedBannerImage.length / 1024).toFixed(2),
-              "KB"
+              "KB",
             );
           }
         } else if (typeof bannerImage === "string") {
           // Check if it's a URL (starts with http:// or https://)
-          const isUrl = bannerImage.startsWith("http://") || bannerImage.startsWith("https://");
-          
+          const isUrl =
+            bannerImage.startsWith("http://") ||
+            bannerImage.startsWith("https://");
+
           if (isUrl) {
             // Different URL or new URL - fetch and convert to base64
             shouldUpdateBannerImage = true;
             console.log("Converting banner image URL to base64:", bannerImage);
             try {
               // Get authentication token from localStorage
-              const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-              
+              const token =
+                typeof window !== "undefined"
+                  ? localStorage.getItem("token")
+                  : null;
+
               // Prepare headers with authentication if token exists
               const headers: HeadersInit = {};
               if (token) {
                 headers.Authorization = `Bearer ${token}`;
               }
-              
+
               const response = await fetch(bannerImage, {
                 headers,
-                credentials: 'include',
-                mode: 'cors',
+                credentials: "include",
+                mode: "cors",
               });
-              
+
               if (!response.ok) {
-                throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+                throw new Error(
+                  `Failed to fetch image: ${response.status} ${response.statusText}`,
+                );
               }
-              
+
               const blob = await response.blob();
-              
+
               // Check if the blob is actually an image
               if (!blob.type.startsWith("image/")) {
                 throw new Error(`Invalid image type: ${blob.type}`);
               }
-              
+
               normalizedBannerImage = await new Promise<string>(
                 (resolve, reject) => {
                   const reader = new FileReader();
@@ -2962,11 +3007,14 @@ const AdvanceRegistration = ({
                   reader.onerror = () =>
                     reject(new Error("Failed to convert image to base64"));
                   reader.readAsDataURL(blob);
-                }
+                },
               );
               console.log("✅ Banner image URL converted to base64");
             } catch (error: any) {
-              console.error("❌ Error converting banner image URL to base64:", error);
+              console.error(
+                "❌ Error converting banner image URL to base64:",
+                error,
+              );
               // If URL fetch fails, throw error to prevent saving with invalid data
               throw new Error(`Failed to load banner image: ${error.message}`);
             }
@@ -2977,16 +3025,19 @@ const AdvanceRegistration = ({
           }
 
           // Compress if larger than 500KB
-          if (normalizedBannerImage && normalizedBannerImage.length > 500 * 1024) {
+          if (
+            normalizedBannerImage &&
+            normalizedBannerImage.length > 500 * 1024
+          ) {
             console.log("Compressing existing banner image...");
             normalizedBannerImage = await compressImageIfNeeded(
               normalizedBannerImage,
-              500
+              500,
             );
             console.log(
               "Banner image compressed to:",
               (normalizedBannerImage.length / 1024).toFixed(2),
-              "KB"
+              "KB",
             );
           }
         }
@@ -3051,7 +3102,7 @@ const AdvanceRegistration = ({
       console.error("Error in handleSaveCustomForm:", error);
       showNotification(
         error?.message || "Failed to save form. Please try again.",
-        "error"
+        "error",
       );
     }
   };
@@ -3067,13 +3118,13 @@ const AdvanceRegistration = ({
     } else {
       showNotification(
         "Legacy form templates cannot be edited. Please create a new Custom Form Template.",
-        "info"
+        "info",
       );
     }
   };
 
   const handleSaveFormBuilderTemplate = async (
-    template: CustomFormTemplate
+    template: CustomFormTemplate,
   ) => {
     try {
       if (!effectiveEventId) {
@@ -3090,7 +3141,7 @@ const AdvanceRegistration = ({
         });
 
       const normalizeImageValue = async (
-        value: unknown
+        value: unknown,
       ): Promise<string | null | undefined> => {
         if (typeof value === "string") {
           // Already a base64 string or URL
@@ -3109,7 +3160,7 @@ const AdvanceRegistration = ({
       };
 
       const normalizedBannerImage = await normalizeImageValue(
-        template.bannerImage ?? template.formBuilderData?.bannerImage
+        template.bannerImage ?? template.formBuilderData?.bannerImage,
       );
 
       // Check banner image size and warn if too large
@@ -3120,7 +3171,7 @@ const AdvanceRegistration = ({
         console.warn(
           "Banner image is large (",
           (normalizedBannerImage.length / 1024 / 1024).toFixed(2),
-          "MB). This may cause save issues. Consider compressing the image."
+          "MB). This may cause save issues. Consider compressing the image.",
         );
       }
 
@@ -3128,10 +3179,10 @@ const AdvanceRegistration = ({
         ? {
             ...template.theme,
             formBackgroundImage: await normalizeImageValue(
-              template.theme.formBackgroundImage
+              template.theme.formBackgroundImage,
             ),
             footerBannerImage: await normalizeImageValue(
-              template.theme.footerBannerImage
+              template.theme.footerBannerImage,
             ),
           }
         : undefined;
@@ -3159,10 +3210,10 @@ const AdvanceRegistration = ({
       console.log("💾 Saving form fields:", {
         totalFields: fields.length,
         hasTitleField: fields.some(
-          (f) => f.name === "title" || f.label === "Title"
+          (f) => f.name === "title" || f.label === "Title",
         ),
         titleField: fields.find(
-          (f) => f.name === "title" || f.label === "Title"
+          (f) => f.name === "title" || f.label === "Title",
         ),
         allFieldNames: fields.map((f) => ({
           name: f.name,
@@ -3224,7 +3275,7 @@ const AdvanceRegistration = ({
       // Validate required fields
       if (!template.title || template.title.trim() === "") {
         throw new Error(
-          "Template name is required. Please provide a name for your template."
+          "Template name is required. Please provide a name for your template.",
         );
       }
 
@@ -3244,13 +3295,12 @@ const AdvanceRegistration = ({
               ...(isEditFormBuilderMode
                 ? {}
                 : normalizedBannerImage &&
-                  typeof normalizedBannerImage === "string" &&
-                  normalizedBannerImage.trim() !== ""
+                    typeof normalizedBannerImage === "string" &&
+                    normalizedBannerImage.trim() !== ""
                   ? { bannerImage: normalizedBannerImage }
                   : {}),
               theme: cleanTheme,
-              languageMode:
-                normalizedFormBuilderData?.languageMode ?? "single",
+              languageMode: normalizedFormBuilderData?.languageMode ?? "single",
               primaryLanguage:
                 normalizedFormBuilderData?.primaryLanguage ?? undefined,
             },
@@ -3258,8 +3308,8 @@ const AdvanceRegistration = ({
             ...(isEditFormBuilderMode
               ? {}
               : normalizedBannerImage &&
-                typeof normalizedBannerImage === "string" &&
-                normalizedBannerImage.trim() !== ""
+                  typeof normalizedBannerImage === "string" &&
+                  normalizedBannerImage.trim() !== ""
                 ? { bannerImage: normalizedBannerImage }
                 : {}),
             theme: cleanTheme,
@@ -3270,7 +3320,7 @@ const AdvanceRegistration = ({
       // Log payload for debugging
       console.log(
         "Saving template with payload:",
-        JSON.stringify(payload, null, 2)
+        JSON.stringify(payload, null, 2),
       );
       console.log("Payload structure:", {
         name: payload.registration_form_template.name,
@@ -3299,18 +3349,18 @@ const AdvanceRegistration = ({
         const testStringify = JSON.stringify(payload);
         if (testStringify.length > 10 * 1024 * 1024) {
           throw new Error(
-            "Payload is too large (>10MB). Please reduce image sizes."
+            "Payload is too large (>10MB). Please reduce image sizes.",
           );
         }
       } catch (stringifyError: any) {
         console.error("Error stringifying payload:", stringifyError);
         if (stringifyError.message?.includes("circular")) {
           throw new Error(
-            "Form data contains circular references. Please check your form configuration."
+            "Form data contains circular references. Please check your form configuration.",
           );
         }
         throw new Error(
-          `Failed to prepare form data: ${stringifyError.message || "Unknown error"}`
+          `Failed to prepare form data: ${stringifyError.message || "Unknown error"}`,
         );
       }
 
@@ -3321,20 +3371,21 @@ const AdvanceRegistration = ({
         response = await updateRegistrationFormTemplate(
           effectiveEventId,
           editingFormBuilderTemplate.id,
-          payload
+          payload,
         );
         console.log("Template updated successfully:", response);
 
         // Check if banner image should be updated
         // If _shouldUpdateBannerImage is false, banner is unchanged - skip update and preserve existing
-        const shouldUpdateBanner = (template as any)._shouldUpdateBannerImage !== false;
-        
+        const shouldUpdateBanner =
+          (template as any)._shouldUpdateBannerImage !== false;
+
         console.log("Banner update check:", {
           shouldUpdateBanner,
           flagValue: (template as any)._shouldUpdateBannerImage,
           hasNormalizedBanner: !!normalizedBannerImage,
         });
-        
+
         if (shouldUpdateBanner) {
           if (
             normalizedBannerImage &&
@@ -3347,7 +3398,7 @@ const AdvanceRegistration = ({
                 effectiveEventId,
                 editingFormBuilderTemplate.id,
                 "banner_image",
-                normalizedBannerImage
+                normalizedBannerImage,
               );
               console.log("✅ Banner image updated successfully");
             } catch (imageError: any) {
@@ -3355,16 +3406,20 @@ const AdvanceRegistration = ({
               // Don't fail the entire save if image update fails
               showNotification(
                 "Template updated, but banner image update failed. Please try updating the image separately.",
-                "warning"
+                "warning",
               );
             }
           } else if (normalizedBannerImage === null) {
             // User removed the banner - we might want to handle this case
             // For now, we'll skip updating (banner remains as is)
-            console.log("Banner image was removed - skipping update (banner will remain)");
+            console.log(
+              "Banner image was removed - skipping update (banner will remain)",
+            );
           }
         } else {
-          console.log("✅ Banner image unchanged - preserving existing banner (no API call needed)");
+          console.log(
+            "✅ Banner image unchanged - preserving existing banner (no API call needed)",
+          );
         }
 
         // Update form background image if it exists in theme
@@ -3374,16 +3429,21 @@ const AdvanceRegistration = ({
           cleanTheme.formBackgroundImage.trim() !== ""
         ) {
           try {
-            console.log("Updating form background image using update_image endpoint");
+            console.log(
+              "Updating form background image using update_image endpoint",
+            );
             await updateRegistrationFormTemplateImage(
               effectiveEventId,
               editingFormBuilderTemplate.id,
               "form_background_image",
-              cleanTheme.formBackgroundImage
+              cleanTheme.formBackgroundImage,
             );
             console.log("✅ Form background image updated successfully");
           } catch (imageError: any) {
-            console.error("❌ Error updating form background image:", imageError);
+            console.error(
+              "❌ Error updating form background image:",
+              imageError,
+            );
             // Don't fail the entire save if image update fails
           }
         }
@@ -3399,7 +3459,7 @@ const AdvanceRegistration = ({
               effectiveEventId,
               editingFormBuilderTemplate.id,
               "footer_banner_image",
-              cleanTheme.footerBannerImage
+              cleanTheme.footerBannerImage,
             );
             console.log("✅ Footer banner image updated successfully");
           } catch (imageError: any) {
@@ -3410,7 +3470,7 @@ const AdvanceRegistration = ({
         // Create new template
         response = await createRegistrationFormTemplate(
           effectiveEventId,
-          payload
+          payload,
         );
         console.log("Template created successfully:", response);
       }
@@ -3430,7 +3490,7 @@ const AdvanceRegistration = ({
         isEditFormBuilderMode
           ? "Template updated successfully"
           : "Template saved successfully",
-        "success"
+        "success",
       );
     } catch (error: any) {
       console.error("Error saving form builder template:", error);
@@ -3459,27 +3519,38 @@ const AdvanceRegistration = ({
             const nameTaken = errList.find(
               (e: any) =>
                 (e?.field === "name" && e?.code === "taken") ||
-                (e?.field === "name" && /taken|already exists/i.test(String(e?.message || "")))
+                (e?.field === "name" &&
+                  /taken|already exists/i.test(String(e?.message || ""))),
             );
             if (nameTaken) {
               errorMessage =
                 "A template with this name already exists. Please choose a different name for your template.";
             } else {
-              errorMessage = errList
-                .map((e: any) => e?.message || `${e?.field}: ${e?.code || "error"}`)
-                .filter(Boolean)
-                .join("\n") || "Validation failed.";
+              errorMessage =
+                errList
+                  .map(
+                    (e: any) =>
+                      e?.message || `${e?.field}: ${e?.code || "error"}`,
+                  )
+                  .filter(Boolean)
+                  .join("\n") || "Validation failed.";
             }
           } else {
             // Legacy: format validation errors from other structures
             const validationErrors: string[] = [];
-            if (apiError?.errors && typeof apiError.errors === "object" && !Array.isArray(apiError.errors)) {
+            if (
+              apiError?.errors &&
+              typeof apiError.errors === "object" &&
+              !Array.isArray(apiError.errors)
+            ) {
               Object.keys(apiError.errors).forEach((field) => {
                 const fieldErrors = (apiError.errors as any)[field];
                 if (Array.isArray(fieldErrors)) {
                   fieldErrors.forEach((err: any) => {
                     const errorText =
-                      typeof err === "string" ? err : (err?.message || JSON.stringify(err));
+                      typeof err === "string"
+                        ? err
+                        : err?.message || JSON.stringify(err);
                     validationErrors.push(`${field}: ${errorText}`);
                   });
                 } else if (typeof fieldErrors === "string") {
@@ -3490,7 +3561,9 @@ const AdvanceRegistration = ({
             if (apiError?.error && Array.isArray(apiError.error)) {
               apiError.error.forEach((err: any) => {
                 validationErrors.push(
-                  typeof err === "string" ? err : (err?.message || JSON.stringify(err))
+                  typeof err === "string"
+                    ? err
+                    : err?.message || JSON.stringify(err),
                 );
               });
             }
@@ -3498,7 +3571,9 @@ const AdvanceRegistration = ({
             if (validationErrors.length > 0) {
               errorMessage = validationErrors.join("\n");
             } else {
-              errorMessage = apiError?.message || "Validation failed. Please check your input.";
+              errorMessage =
+                apiError?.message ||
+                "Validation failed. Please check your input.";
             }
           }
         } else if (apiError?.error) {
@@ -3566,7 +3641,7 @@ const AdvanceRegistration = ({
 
       // Remove from local state
       const updatedTemplates = formBuilderTemplates.filter(
-        (template) => template.id !== templateId
+        (template) => template.id !== templateId,
       );
       setFormBuilderTemplates(updatedTemplates);
 
@@ -3647,7 +3722,7 @@ const AdvanceRegistration = ({
       // Backend should automatically unset any default template in the old system
       const response = await setRegistrationFormTemplateAsDefault(
         effectiveEventId,
-        templateId
+        templateId,
       );
 
       console.log("✅ Custom template set as default - API response:", {
@@ -3716,7 +3791,7 @@ const AdvanceRegistration = ({
                 validationErrors.push(`${field}: ${fieldErrors}`);
               } else {
                 validationErrors.push(
-                  `${field}: ${JSON.stringify(fieldErrors)}`
+                  `${field}: ${JSON.stringify(fieldErrors)}`,
                 );
               }
             });
@@ -3827,7 +3902,7 @@ const AdvanceRegistration = ({
           await getRegistrationFormTemplates(effectiveEventId);
         const customTemplates = customTemplatesResponse?.data?.data || [];
         const defaultCustomTemplates = customTemplates.filter(
-          (t: any) => t.attributes?.default === true
+          (t: any) => t.attributes?.default === true,
         );
 
         // Unset default: false for all custom templates that have default: true
@@ -3843,15 +3918,15 @@ const AdvanceRegistration = ({
                   form_template_data:
                     customTemplate.attributes?.form_template_data || {},
                 },
-              }
+              },
             );
             console.log(
-              `✅ Unset default for custom template: ${customTemplate.id}`
+              `✅ Unset default for custom template: ${customTemplate.id}`,
             );
           } catch (error) {
             console.error(
               `Failed to unset default for custom template ${customTemplate.id}:`,
-              error
+              error,
             );
           }
         }
@@ -3948,12 +4023,20 @@ const AdvanceRegistration = ({
                         {step < currentStep ? (
                           <Check size={16} />
                         ) : (
-                          <span className="text-sm font-medium">{String(step + 1).padStart(2, "0")}</span>
+                          <span className="text-sm font-medium">
+                            {String(step + 1).padStart(2, "0")}
+                          </span>
                         )}
                       </button>
-                      <span className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
-                        step === currentStep ? "text-pink-500" : step < currentStep ? "text-gray-700" : "text-gray-400"
-                      }`}>
+                      <span
+                        className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
+                          step === currentStep
+                            ? "text-pink-500"
+                            : step < currentStep
+                              ? "text-gray-700"
+                              : "text-gray-400"
+                        }`}
+                      >
                         {STEP_NAMES[step] ?? `Step ${step + 1}`}
                       </span>
                     </div>
@@ -3966,7 +4049,7 @@ const AdvanceRegistration = ({
                       />
                     )}
                   </React.Fragment>
-                )
+                ),
               )}
             </div>
           )}
@@ -4000,7 +4083,8 @@ const AdvanceRegistration = ({
                 Custom Form Builder
               </h3>
               <p className="text-sm text-gray-500 text-center">
-                Fully customizable with drag and drop, conditions, validation and more
+                Fully customizable with drag and drop, conditions, validation
+                and more
               </p>
             </div>
 
@@ -4244,12 +4328,16 @@ const AdvanceRegistration = ({
               <CustomFormBuilder
                 initialFields={
                   editingFormBuilderTemplate?.formBuilderData?.formData &&
-                  Array.isArray(editingFormBuilderTemplate.formBuilderData.formData)
+                  Array.isArray(
+                    editingFormBuilderTemplate.formBuilderData.formData,
+                  )
                     ? (editingFormBuilderTemplate.formBuilderData
                         .formData as CustomFormField[])
                     : []
                 }
-                initialBannerImage={editingFormBuilderTemplate?.bannerImage ?? null}
+                initialBannerImage={
+                  editingFormBuilderTemplate?.bannerImage ?? null
+                }
                 initialTheme={editingFormBuilderTemplate?.theme ?? undefined}
                 initialTemplateName={
                   editingFormBuilderTemplate?.title ||
@@ -4290,7 +4378,7 @@ const AdvanceRegistration = ({
                   <button
                     onClick={() =>
                       handleUseFormBuilderTemplate(
-                        previewFormBuilderTemplate.id
+                        previewFormBuilderTemplate.id,
                       )
                     }
                     disabled={isLoading}

@@ -27,6 +27,8 @@ import {
   Clock,
   FileDown,
   FileSpreadsheet,
+  MoreVertical,
+  Info,
 } from "lucide-react";
 
 // Image compression function
@@ -188,6 +190,10 @@ function RegisterdUser() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [openActionsUserId, setOpenActionsUserId] = useState<string | null>(
+    null,
+  );
+  const [userForInfoModal, setUserForInfoModal] = useState<any | null>(null);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [userToReset, setUserToReset] = useState<any | null>(null);
   const [resettingUserId, setResettingUserId] = useState<string | null>(null);
@@ -788,6 +794,21 @@ function RegisterdUser() {
     return `${day}/${month}/${year}`;
   };
 
+  // Full date + time for modals (e.g. "30/1/2026, 2:30 PM")
+  const formatDateTime = (dateString: string) => {
+    if (!dateString) return "—";
+    const date = new Date(dateString);
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+    const hours = date.getHours();
+    const mins = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    const h12 = hours % 12 || 12;
+    const m = mins < 10 ? `0${mins}` : mins;
+    return `${day}/${month}/${year}, ${h12}:${m} ${ampm}`;
+  };
+
   // Fetch all users across pages for export (filter by status and optional date range)
   const fetchAllUsersForExport = async (): Promise<any[]> => {
     if (!eventId) return [];
@@ -870,6 +891,29 @@ function RegisterdUser() {
       : s;
   };
 
+  // Collect all unique custom field keys from users for export columns
+  const getCustomFieldKeys = (users: any[]): string[] => {
+    const set = new Set<string>();
+    users.forEach((user: any) => {
+      const cf = user?.attributes?.custom_fields;
+      if (cf && typeof cf === "object")
+        Object.keys(cf).forEach((k) => set.add(k));
+    });
+    return Array.from(set).sort();
+  };
+
+  // Format a single custom field value for export (no JSON brackets for primitives)
+  const formatCustomFieldValue = (v: unknown): string => {
+    if (v == null) return "";
+    if (
+      typeof v === "string" ||
+      typeof v === "number" ||
+      typeof v === "boolean"
+    )
+      return String(v);
+    return JSON.stringify(v);
+  };
+
   const handleExportCsv = async () => {
     if (!eventId) {
       showNotification("Event ID is required.", "error");
@@ -878,15 +922,27 @@ function RegisterdUser() {
     setExportingCsv(true);
     try {
       const users = await fetchAllUsersForExport();
-      const headers = [
+      const customKeys = getCustomFieldKeys(users);
+      const baseHeaders = [
         "ID",
         "Name",
         "Email",
         "Phone",
         "Organization",
+        "Position",
         "Type",
-        "Status",
+        "Approval Status",
+        "Printed",
+        "Image URL",
         "Created",
+        "Updated",
+        "Attended",
+        "Approval status (raw)",
+        "Check-in/out statuses",
+      ];
+      const headers = [
+        ...baseHeaders,
+        ...customKeys.map((k) => `Custom: ${k}`),
       ];
       const rows = users.map((user: any) => {
         const status = getApprovalStatus(user);
@@ -894,16 +950,40 @@ function RegisterdUser() {
           user?.attributes?.custom_fields?.title ||
           user?.attributes?.organization ||
           "";
-        return [
+        const checkStatuses = user?.attributes?.check_user_area_statuses;
+        const checkStatusesStr =
+          Array.isArray(checkStatuses) && checkStatuses.length > 0
+            ? JSON.stringify(checkStatuses)
+            : "";
+        const baseValues = [
           user.id,
           user?.attributes?.name ?? "",
           user?.attributes?.email ?? "",
           user?.attributes?.phone_number ?? "",
           org,
+          user?.attributes?.position ?? "",
           user?.attributes?.user_type ?? "",
           status,
+          user?.attributes?.printed === true
+            ? "Yes"
+            : user?.attributes?.printed === false
+              ? "No"
+              : "",
+          user?.attributes?.image ?? "",
           user?.attributes?.created_at ?? "",
-        ].map(escapeCsvCell);
+          user?.attributes?.updated_at ?? "",
+          user?.attributes?.attended === true
+            ? "Yes"
+            : user?.attributes?.attended === false
+              ? "No"
+              : "",
+          user?.attributes?.approval_status ?? "",
+          checkStatusesStr,
+        ];
+        const customValues = customKeys.map((k) =>
+          formatCustomFieldValue(user?.attributes?.custom_fields?.[k]),
+        );
+        return [...baseValues, ...customValues].map(escapeCsvCell);
       });
       const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join(
         "\n",
@@ -934,15 +1014,27 @@ function RegisterdUser() {
     setExportingExcel(true);
     try {
       const users = await fetchAllUsersForExport();
-      const headers = [
+      const customKeys = getCustomFieldKeys(users);
+      const baseHeaders = [
         "ID",
         "Name",
         "Email",
         "Phone",
         "Organization",
+        "Position",
         "Type",
-        "Status",
+        "Approval Status",
+        "Printed",
+        "Image URL",
         "Created",
+        "Updated",
+        "Attended",
+        "Approval status (raw)",
+        "Check-in/out statuses",
+      ];
+      const headers = [
+        ...baseHeaders,
+        ...customKeys.map((k) => `Custom: ${k}`),
       ];
       const rows = users.map((user: any) => {
         const status = getApprovalStatus(user);
@@ -950,16 +1042,40 @@ function RegisterdUser() {
           user?.attributes?.custom_fields?.title ||
           user?.attributes?.organization ||
           "";
-        return [
+        const checkStatuses = user?.attributes?.check_user_area_statuses;
+        const checkStatusesStr =
+          Array.isArray(checkStatuses) && checkStatuses.length > 0
+            ? JSON.stringify(checkStatuses)
+            : "";
+        const baseValues = [
           user.id,
           user?.attributes?.name ?? "",
           user?.attributes?.email ?? "",
           user?.attributes?.phone_number ?? "",
           org,
+          user?.attributes?.position ?? "",
           user?.attributes?.user_type ?? "",
           status,
+          user?.attributes?.printed === true
+            ? "Yes"
+            : user?.attributes?.printed === false
+              ? "No"
+              : "",
+          user?.attributes?.image ?? "",
           user?.attributes?.created_at ?? "",
-        ].join("\t");
+          user?.attributes?.updated_at ?? "",
+          user?.attributes?.attended === true
+            ? "Yes"
+            : user?.attributes?.attended === false
+              ? "No"
+              : "",
+          user?.attributes?.approval_status ?? "",
+          checkStatusesStr,
+        ];
+        const customValues = customKeys.map((k) =>
+          formatCustomFieldValue(user?.attributes?.custom_fields?.[k]),
+        );
+        return [...baseValues, ...customValues].join("\t");
       });
       const tsv = [headers.join("\t"), ...rows].join("\n");
       const blob = new Blob(["\uFEFF" + tsv], {
@@ -1433,7 +1549,7 @@ function RegisterdUser() {
                         Type
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        Approval Status
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Created
@@ -1534,95 +1650,127 @@ function RegisterdUser() {
                           </td>
 
                           <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              {/* <button
-                              onClick={() => handleResetCheckInOut(user)}
-                              className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button> */}
-
+                            <div className="relative">
                               <button
-                                onClick={() => handleApproveUsers([user.id])}
-                                disabled={approvingUserId === user.id}
-                                title="Accept"
-                                className={`p-2 rounded-lg transition-colors ${
-                                  approvingUserId === user.id
-                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                    : "text-green-600 hover:bg-green-50"
-                                }`}
+                                type="button"
+                                onClick={() =>
+                                  setOpenActionsUserId(
+                                    openActionsUserId === user.id
+                                      ? null
+                                      : user.id,
+                                  )
+                                }
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Actions"
                               >
-                                <CheckCircle className="w-4 h-4" />
+                                <MoreVertical className="w-4 h-4" />
                               </button>
-
-                              <button
-                                onClick={() => handleRejectUsers([user.id])}
-                                disabled={rejectingUserId === user.id}
-                                title="Reject"
-                                className={`p-2 rounded-lg transition-colors ${
-                                  rejectingUserId === user.id
-                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                    : "text-red-600 hover:bg-red-50"
-                                }`}
-                              >
-                                <XCircle className="w-4 h-4" />
-                              </button>
-
-                              <button
-                                onClick={() => handleDeleteUser(user)}
-                                className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-
-                              <button
-                                onClick={() => {
-                                  setEditingUser(user);
-                                  setEditForm({
-                                    name: user?.attributes?.name || "",
-                                    email: user?.attributes?.email || "",
-                                    phone_number:
-                                      user?.attributes?.phone_number || "",
-                                    organization:
-                                      user?.attributes?.custom_fields?.title ||
-                                      user?.attributes?.organization ||
-                                      "", // Load title from custom_fields into organization field
-                                    position: user?.attributes?.position || "",
-                                    image: user?.attributes?.image || "",
-                                    user_type:
-                                      user?.attributes?.user_type || "",
-                                    printed: user?.attributes?.printed || false,
-                                  });
-                                }}
-                                className="p-2 text-yellow-600 hover:bg-yellow-50 rounded-lg transition-colors cursor-pointer"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </button>
-
-                              <button
-                                onClick={() => handleSendCredentials([user.id])}
-                                disabled={sendingCredentialsUserId === user.id}
-                                className={`p-2 rounded-lg transition-colors ${
-                                  sendingCredentialsUserId === user.id
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : "text-blue-600 hover:bg-blue-50"
-                                }`}
-                              >
-                                {sendingCredentialsUserId === user.id ? (
+                              {openActionsUserId === user.id && (
+                                <>
                                   <div
-                                    style={{
-                                      width: "16px",
-                                      height: "16px",
-                                      border: "2px solid #d1d5db",
-                                      borderTop: "2px solid #3b82f6",
-                                      borderRadius: "50%",
-                                      animation: "spin 1s linear infinite",
-                                    }}
+                                    className="fixed inset-0 z-10"
+                                    aria-hidden
+                                    onClick={() => setOpenActionsUserId(null)}
                                   />
-                                ) : (
-                                  <Mail className="w-4 h-4" />
-                                )}
-                              </button>
+                                  <div className="absolute right-0 top-full mt-1 z-20 min-w-[200px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setUserForInfoModal(user);
+                                        setOpenActionsUserId(null);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                      <Info className="w-4 h-4" />
+                                      More Information
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleApproveUsers([user.id]);
+                                        setOpenActionsUserId(null);
+                                      }}
+                                      disabled={approvingUserId === user.id}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-green-700 hover:bg-green-50 disabled:opacity-50"
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                      Accept
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleRejectUsers([user.id]);
+                                        setOpenActionsUserId(null);
+                                      }}
+                                      disabled={rejectingUserId === user.id}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50"
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                      Reject
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setEditingUser(user);
+                                        setEditForm({
+                                          name: user?.attributes?.name || "",
+                                          email: user?.attributes?.email || "",
+                                          phone_number:
+                                            user?.attributes?.phone_number ||
+                                            "",
+                                          organization:
+                                            user?.attributes?.custom_fields
+                                              ?.title ||
+                                            user?.attributes?.organization ||
+                                            "",
+                                          position:
+                                            user?.attributes?.position || "",
+                                          image: user?.attributes?.image || "",
+                                          user_type:
+                                            user?.attributes?.user_type || "",
+                                          printed:
+                                            user?.attributes?.printed || false,
+                                        });
+                                        setOpenActionsUserId(null);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-amber-700 hover:bg-amber-50"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        handleSendCredentials([user.id]);
+                                        setOpenActionsUserId(null);
+                                      }}
+                                      disabled={
+                                        sendingCredentialsUserId === user.id
+                                      }
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-700 hover:bg-blue-50 disabled:opacity-50"
+                                    >
+                                      {sendingCredentialsUserId === user.id ? (
+                                        <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin" />
+                                      ) : (
+                                        <Mail className="w-4 h-4" />
+                                      )}
+                                      Send Credentials
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setUserToDelete(user);
+                                        setIsDeleteModalOpen(true);
+                                        setOpenActionsUserId(null);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-700 hover:bg-red-50"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                      Delete
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1773,6 +1921,291 @@ function RegisterdUser() {
                     disabled={!!resettingUserId}
                   >
                     {resettingUserId ? "Resetting..." : "Reset"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* More Information modal: all user data in table form with image */}
+          {userForInfoModal && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+              onClick={() => setUserForInfoModal(null)}
+            >
+              <div
+                className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-xl font-bold text-gray-900">
+                    More Information
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => setUserForInfoModal(null)}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg transition"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                <div className="px-6 py-4 overflow-y-auto flex-1">
+                  {/* User image (actual image, not URL) + name & email */}
+                  <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+                    <div className="flex-shrink-0 w-24 h-24 rounded-full border-2 border-gray-200 shadow-sm overflow-hidden bg-gray-100 flex items-center justify-center">
+                      {userForInfoModal?.attributes?.image ? (
+                        <img
+                          src={userForInfoModal.attributes.image}
+                          alt={userForInfoModal?.attributes?.name || "User"}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const fallback = e.currentTarget.nextElementSibling;
+                            if (fallback)
+                              (fallback as HTMLElement).classList.remove(
+                                "hidden",
+                              );
+                          }}
+                          referrerPolicy="no-referrer"
+                          crossOrigin="anonymous"
+                        />
+                      ) : null}
+                      <div
+                        className={`w-full h-full flex items-center justify-center text-2xl font-semibold text-blue-700 bg-blue-100 ${userForInfoModal?.attributes?.image ? "hidden" : ""}`}
+                        aria-hidden
+                      >
+                        {getUserInitial(userForInfoModal)}
+                      </div>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 text-lg truncate">
+                        {userForInfoModal?.attributes?.name || "—"}
+                      </p>
+                      <p className="text-sm text-gray-500 truncate">
+                        {userForInfoModal?.attributes?.email || "—"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        ID: {userForInfoModal?.id ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Key–value table */}
+                  <table className="w-full border-collapse text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600 uppercase tracking-wider w-[40%]">
+                          Key
+                        </th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600 uppercase tracking-wider">
+                          Value
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {[
+                        {
+                          key: "Phone",
+                          value:
+                            userForInfoModal?.attributes?.phone_number ?? "—",
+                        },
+                        {
+                          key: "Position",
+                          value: userForInfoModal?.attributes?.position ?? "—",
+                        },
+                        {
+                          key: "Organization",
+                          value:
+                            userForInfoModal?.attributes?.organization ||
+                            userForInfoModal?.attributes?.custom_fields
+                              ?.title ||
+                            "—",
+                        },
+                        {
+                          key: "Type",
+                          value: userForInfoModal?.attributes?.user_type ?? "—",
+                        },
+                        {
+                          key: "Printed",
+                          value:
+                            userForInfoModal?.attributes?.printed == null
+                              ? "—"
+                              : userForInfoModal?.attributes?.printed
+                                ? "Yes"
+                                : "No",
+                        },
+                        {
+                          key: "Approval status",
+                          value:
+                            userForInfoModal?.attributes?.approval_status ??
+                            "—",
+                        },
+                        {
+                          key: "Approved",
+                          value:
+                            userForInfoModal?.attributes?.approved == null
+                              ? "—"
+                              : userForInfoModal?.attributes?.approved
+                                ? "Yes"
+                                : "No",
+                        },
+                        {
+                          key: "Created at",
+                          value: formatDateTime(
+                            userForInfoModal?.attributes?.created_at ?? "",
+                          ),
+                        },
+                        {
+                          key: "Updated at",
+                          value: formatDateTime(
+                            userForInfoModal?.attributes?.updated_at ?? "",
+                          ),
+                        },
+                        {
+                          key: "Attended",
+                          value:
+                            userForInfoModal?.attributes?.attended == null
+                              ? "—"
+                              : userForInfoModal?.attributes?.attended
+                                ? "Yes"
+                                : "No",
+                        },
+                        {
+                          key: "Check-in/out statuses",
+                          value: (() => {
+                            const s =
+                              userForInfoModal?.attributes
+                                ?.check_user_area_statuses;
+                            if (!s || !Array.isArray(s) || s.length === 0)
+                              return "—";
+                            return (
+                              <div className="space-y-3">
+                                {s.map((item: any, idx: number) => (
+                                  <div
+                                    key={item?.id ?? idx}
+                                    className="bg-gray-50 rounded-lg p-3 border border-gray-100 text-xs"
+                                  >
+                                    <div className="font-semibold text-gray-600 mb-2">
+                                      Session {idx + 1}
+                                      {item?.session_area_id != null &&
+                                        ` (Area ID: ${item.session_area_id})`}
+                                    </div>
+                                    <table className="w-full border-collapse">
+                                      <tbody>
+                                        <tr>
+                                          <td className="py-1 pr-2 font-medium text-gray-500 w-28">
+                                            Check in
+                                          </td>
+                                          <td className="py-1 text-gray-900">
+                                            {item?.check_in
+                                              ? formatDateTime(item.check_in)
+                                              : "—"}
+                                          </td>
+                                        </tr>
+                                        <tr>
+                                          <td className="py-1 pr-2 font-medium text-gray-500">
+                                            Check out
+                                          </td>
+                                          <td className="py-1 text-gray-900">
+                                            {item?.check_out
+                                              ? formatDateTime(item.check_out)
+                                              : "—"}
+                                          </td>
+                                        </tr>
+                                        {item?.event_user_id != null && (
+                                          <tr>
+                                            <td className="py-1 pr-2 font-medium text-gray-500">
+                                              Event user ID
+                                            </td>
+                                            <td className="py-1 text-gray-900">
+                                              {item.event_user_id}
+                                            </td>
+                                          </tr>
+                                        )}
+                                        {item?.event_id != null && (
+                                          <tr>
+                                            <td className="py-1 pr-2 font-medium text-gray-500">
+                                              Event ID
+                                            </td>
+                                            <td className="py-1 text-gray-900">
+                                              {item.event_id}
+                                            </td>
+                                          </tr>
+                                        )}
+                                        {item?.session_area_id != null && (
+                                          <tr>
+                                            <td className="py-1 pr-2 font-medium text-gray-500">
+                                              Session area ID
+                                            </td>
+                                            <td className="py-1 text-gray-900">
+                                              {item.session_area_id}
+                                            </td>
+                                          </tr>
+                                        )}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })(),
+                        },
+                        {
+                          key: "Custom fields",
+                          value: (() => {
+                            const cf =
+                              userForInfoModal?.attributes?.custom_fields;
+                            if (!cf || typeof cf !== "object") return "—";
+                            const entries = Object.entries(cf);
+                            if (entries.length === 0) return "—";
+                            return (
+                              <table className="w-full border-collapse text-sm bg-gray-50 rounded-lg border border-gray-100 overflow-hidden">
+                                <tbody>
+                                  {entries.map(([k, v]) => (
+                                    <tr
+                                      key={k}
+                                      className="border-b border-gray-100 last:border-b-0"
+                                    >
+                                      <td className="py-1.5 px-2 font-medium text-gray-600 capitalize w-32 align-top">
+                                        {k.replace(/_/g, " ")}
+                                      </td>
+                                      <td className="py-1.5 px-2 text-gray-900 align-top break-words">
+                                        {v == null
+                                          ? "—"
+                                          : typeof v === "object"
+                                            ? JSON.stringify(v)
+                                            : String(v)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            );
+                          })(),
+                        },
+                      ].map(({ key, value }) => (
+                        <tr
+                          key={key}
+                          className="border-b border-gray-100 hover:bg-gray-50/50"
+                        >
+                          <td className="py-2.5 px-3 font-medium text-gray-600 align-top">
+                            {key}
+                          </td>
+                          <td className="py-2.5 px-3 text-gray-900 align-top break-words">
+                            {typeof value === "string" ? value || "—" : value}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="px-6 py-3 border-t border-gray-200 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setUserForInfoModal(null)}
+                    className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                  >
+                    Close
                   </button>
                 </div>
               </div>

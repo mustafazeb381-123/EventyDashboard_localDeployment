@@ -47,7 +47,11 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
     localStorage.getItem("create_eventId") ||
     undefined;
 
-  const STEP_NAMES = ["Registration Template", "Confirmation Template", "Badge Template", "Payment"];
+  const STEP_NAMES = [
+    "Registration Template",
+    "Confirmation Template",
+    "Badge Template",
+  ];
 
   console.log("AdvanceConfirmation - event id:", effectiveEventId);
 
@@ -63,7 +67,9 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
   const [eventData, setEventData] = useState<any>(null);
 
   // Edit modals for Location and Event Details cards in preview (same as ConfirmationDetails)
-  const [editModalType, setEditModalType] = useState<"location" | "eventDetails" | null>(null);
+  const [editModalType, setEditModalType] = useState<
+    "location" | "eventDetails" | null
+  >(null);
   const [modalLocation, setModalLocation] = useState("");
   const [modalDateFrom, setModalDateFrom] = useState("");
   const [modalDateTo, setModalDateTo] = useState("");
@@ -138,7 +144,10 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
         const response = await getEventbyId(effectiveEventId);
         const fetchedEventData = response.data.data;
 
-        console.log("AdvanceConfirmation - Fetched event data:", fetchedEventData);
+        console.log(
+          "AdvanceConfirmation - Fetched event data:",
+          fetchedEventData,
+        );
 
         // Store full event data
         setEventData(fetchedEventData);
@@ -149,7 +158,8 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
             fetchedEventData.attributes?.display_confirmation_message || false,
           userQRCode: fetchedEventData.attributes?.print_qr || false,
           location: fetchedEventData.attributes?.display_location || false,
-          eventDetails: fetchedEventData.attributes?.display_event_details || false,
+          eventDetails:
+            fetchedEventData.attributes?.display_event_details || false,
         };
 
         setEventName(fetchedEventData.attributes?.name || "");
@@ -242,13 +252,18 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
       fd.append("event[location]", trimmed);
       await updateEventById(String(effectiveEventId), fd);
       setEventData((prev: any) =>
-        prev ? { ...prev, attributes: { ...prev.attributes, location: trimmed } } : prev
+        prev
+          ? { ...prev, attributes: { ...prev.attributes, location: trimmed } }
+          : prev,
       );
       closeEditModal();
       showNotification("Event location updated", "success");
     } catch (err: any) {
       console.error("Failed to save location:", err);
-      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? "Failed to save location";
+      const msg =
+        err?.response?.data?.message ??
+        err?.response?.data?.error ??
+        "Failed to save location";
       showNotification(msg, "error");
     } finally {
       setIsSavingModal(false);
@@ -260,13 +275,17 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
     const loc = modalLocation.trim();
     const from = modalDateFrom.trim();
     const to = modalDateTo.trim();
-    const errors: { location?: string; dateFrom?: string; dateTo?: string } = {};
+    const errors: { location?: string; dateFrom?: string; dateTo?: string } =
+      {};
     if (!loc) errors.location = "Location is required";
     if (!from) errors.dateFrom = "Start date is required";
     if (!to) errors.dateTo = "End date is required";
     if (Object.keys(errors).length > 0) {
       setModalErrors(errors);
-      showNotification("Please fill in all required fields: Location, Start Date, End Date", "error");
+      showNotification(
+        "Please fill in all required fields: Location, Start Date, End Date",
+        "error",
+      );
       return;
     }
     setModalErrors({});
@@ -276,8 +295,14 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
       fd.append("event[location]", loc);
       fd.append("event[event_date_from]", from);
       fd.append("event[event_date_to]", to);
-      fd.append("event[event_time_from]", modalTimeFrom ? `${modalTimeFrom}:00` : "09:00:00");
-      fd.append("event[event_time_to]", modalTimeTo ? `${modalTimeTo}:00` : "17:00:00");
+      fd.append(
+        "event[event_time_from]",
+        modalTimeFrom ? `${modalTimeFrom}:00` : "09:00:00",
+      );
+      fd.append(
+        "event[event_time_to]",
+        modalTimeTo ? `${modalTimeTo}:00` : "17:00:00",
+      );
       await updateEventById(String(effectiveEventId), fd);
       const fromDate = new Date(from).toISOString();
       const toDate = new Date(to).toISOString();
@@ -296,13 +321,16 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                 event_time_to: toTime ?? prev.attributes?.event_time_to,
               },
             }
-          : prev
+          : prev,
       );
       closeEditModal();
       showNotification("Event details updated", "success");
     } catch (err: any) {
       console.error("Failed to save event details:", err);
-      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? "Failed to save event details";
+      const msg =
+        err?.response?.data?.message ??
+        err?.response?.data?.error ??
+        "Failed to save event details";
       showNotification(msg, "error");
     } finally {
       setIsSavingModal(false);
@@ -423,42 +451,52 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
 
         {/* Steps - clickable to navigate */}
         <div className="flex items-center gap-1">
-          {Array.from({ length: totalSteps }, (_, index) => index).map((step) => (
-            <React.Fragment key={step}>
-              <div className="flex flex-col items-center flex-shrink-0">
-                <button
-                  type="button"
-                  onClick={() => onStepClick?.(step)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
-                    step === currentStep
-                      ? "border-pink-500 bg-white text-pink-500"
-                      : step < currentStep
-                      ? "bg-pink-500 border-pink-500 text-white"
-                      : "border-gray-300 bg-white text-gray-400"
-                  } ${onStepClick ? "cursor-pointer hover:opacity-90" : ""}`}
-                >
-                  {step < currentStep ? (
-                    <Check size={16} />
-                  ) : (
-                    <span className="text-sm font-medium">{String(step + 1).padStart(2, "0")}</span>
-                  )}
-                </button>
-                <span className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
-                  step === currentStep ? "text-pink-500" : step < currentStep ? "text-gray-700" : "text-gray-400"
-                }`}>
-                  {STEP_NAMES[step] ?? `Step ${step + 1}`}
-                </span>
-              </div>
-              {step < totalSteps - 1 && (
-                <div
-                  className={`w-12 h-0.5 self-start mt-4 flex-shrink-0 ${
-                    step < currentStep ? "bg-pink-500" : "bg-gray-300"
-                  }`}
-                  aria-hidden
-                />
-              )}
-            </React.Fragment>
-          ))}
+          {Array.from({ length: totalSteps }, (_, index) => index).map(
+            (step) => (
+              <React.Fragment key={step}>
+                <div className="flex flex-col items-center flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onStepClick?.(step)}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors ${
+                      step === currentStep
+                        ? "border-pink-500 bg-white text-pink-500"
+                        : step < currentStep
+                          ? "bg-pink-500 border-pink-500 text-white"
+                          : "border-gray-300 bg-white text-gray-400"
+                    } ${onStepClick ? "cursor-pointer hover:opacity-90" : ""}`}
+                  >
+                    {step < currentStep ? (
+                      <Check size={16} />
+                    ) : (
+                      <span className="text-sm font-medium">
+                        {String(step + 1).padStart(2, "0")}
+                      </span>
+                    )}
+                  </button>
+                  <span
+                    className={`text-xs mt-1 font-medium text-center whitespace-nowrap ${
+                      step === currentStep
+                        ? "text-pink-500"
+                        : step < currentStep
+                          ? "text-gray-700"
+                          : "text-gray-400"
+                    }`}
+                  >
+                    {STEP_NAMES[step] ?? `Step ${step + 1}`}
+                  </span>
+                </div>
+                {step < totalSteps - 1 && (
+                  <div
+                    className={`w-12 h-0.5 self-start mt-4 flex-shrink-0 ${
+                      step < currentStep ? "bg-pink-500" : "bg-gray-300"
+                    }`}
+                    aria-hidden
+                  />
+                )}
+              </React.Fragment>
+            ),
+          )}
         </div>
       </div>
 
@@ -619,7 +657,11 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                   {toggleStates.confirmationMsg && (
                     <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl flex items-center gap-3 shadow-sm">
                       <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                        <Check size={20} className="text-white" strokeWidth={3} />
+                        <Check
+                          size={20}
+                          className="text-white"
+                          strokeWidth={3}
+                        />
                       </div>
                       <div>
                         <p className="text-sm font-semibold text-green-800">
@@ -660,36 +702,37 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                   )}
 
                   {/* Location - with edit button */}
-                  {toggleStates.location && (eventData?.attributes?.location != null || eventData) && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl flex items-center justify-between gap-3 shadow-sm">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <MapPin
-                            size={20}
-                            className="text-white"
-                            strokeWidth={2.5}
-                          />
+                  {toggleStates.location &&
+                    (eventData?.attributes?.location != null || eventData) && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-200 rounded-xl flex items-center justify-between gap-3 shadow-sm">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-orange-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <MapPin
+                              size={20}
+                              className="text-white"
+                              strokeWidth={2.5}
+                            />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-orange-800">
+                              Event Location
+                            </p>
+                            <p className="text-xs text-orange-600 mt-0.5 truncate">
+                              {eventData?.attributes?.location ?? "—"}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-orange-800">
-                            Event Location
-                          </p>
-                          <p className="text-xs text-orange-600 mt-0.5 truncate">
-                            {eventData?.attributes?.location ?? "—"}
-                          </p>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={openLocationEditModal}
+                          className="flex-shrink-0 p-2 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors"
+                          title="Edit location"
+                          aria-label="Edit event location"
+                        >
+                          <Pencil size={16} />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        onClick={openLocationEditModal}
-                        className="flex-shrink-0 p-2 rounded-lg text-orange-600 hover:bg-orange-100 transition-colors"
-                        title="Edit location"
-                        aria-label="Edit event location"
-                      >
-                        <Pencil size={16} />
-                      </button>
-                    </div>
-                  )}
+                    )}
 
                   {/* Event Details - with edit button */}
                   {toggleStates.eventDetails && (
@@ -715,8 +758,12 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                             <Calendar size={16} className="text-purple-500" />
                             <div className="flex-1">
                               <p className="text-xs font-medium text-purple-900">
-                                <span className="font-semibold">Start Date: </span>
-                                {formatDate(eventData.attributes.event_date_from)}
+                                <span className="font-semibold">
+                                  Start Date:{" "}
+                                </span>
+                                {formatDate(
+                                  eventData.attributes.event_date_from,
+                                )}
                               </p>
                             </div>
                           </div>
@@ -728,8 +775,12 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                               <Calendar size={16} className="text-purple-500" />
                               <div className="flex-1">
                                 <p className="text-xs font-medium text-purple-900">
-                                  <span className="font-semibold">End Date: </span>
-                                  {formatDate(eventData.attributes.event_date_to)}
+                                  <span className="font-semibold">
+                                    End Date:{" "}
+                                  </span>
+                                  {formatDate(
+                                    eventData.attributes.event_date_to,
+                                  )}
                                 </p>
                               </div>
                             </div>
@@ -740,7 +791,9 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                             <div className="flex-1">
                               <p className="text-xs font-medium text-purple-900">
                                 <span className="font-semibold">Time: </span>
-                                {formatTime(eventData.attributes.event_time_from)}
+                                {formatTime(
+                                  eventData.attributes.event_time_from,
+                                )}
                                 {eventData?.attributes?.event_time_to
                                   ? ` - ${formatTime(eventData.attributes.event_time_to)}`
                                   : ""}
@@ -753,7 +806,9 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                             <MapPin size={16} className="text-purple-500" />
                             <div className="flex-1">
                               <p className="text-xs font-medium text-purple-900">
-                                <span className="font-semibold">Location: </span>
+                                <span className="font-semibold">
+                                  Location:{" "}
+                                </span>
                                 {eventData.attributes.location}
                               </p>
                             </div>
@@ -793,22 +848,34 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
       {/* Edit Event Location Modal */}
       {editModalType === "location" && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Event Location</h3>
-              <button type="button" onClick={closeEditModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Edit Event Location
+              </h3>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Event Location <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Event Location <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={modalLocation}
                   onChange={(e) => {
                     setModalLocation(e.target.value);
-                    if (modalErrors.location) setModalErrors((p) => ({ ...p, location: undefined }));
+                    if (modalErrors.location)
+                      setModalErrors((p) => ({ ...p, location: undefined }));
                   }}
                   placeholder="Event location"
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
@@ -816,15 +883,32 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                   }`}
                 />
                 {modalErrors.location && (
-                  <p className="mt-1 text-xs text-red-600">{modalErrors.location}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {modalErrors.location}
+                  </p>
                 )}
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <button type="button" onClick={closeEditModal} className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                >
                   Cancel
                 </button>
-                <button type="button" onClick={handleSaveLocationModal} disabled={isSavingModal} className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2">
-                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save"}
+                <button
+                  type="button"
+                  onClick={handleSaveLocationModal}
+                  disabled={isSavingModal}
+                  className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2"
+                >
+                  {isSavingModal ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
                 </button>
               </div>
             </div>
@@ -835,51 +919,72 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
       {/* Edit Event Details Modal */}
       {editModalType === "eventDetails" && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Event Details</h3>
-              <button type="button" onClick={closeEditModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Edit Event Details
+              </h3>
+              <button
+                type="button"
+                onClick={closeEditModal}
+                className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+              >
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Start Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   value={modalDateFrom}
                   onChange={(e) => {
                     setModalDateFrom(e.target.value);
-                    if (modalErrors.dateFrom) setModalErrors((p) => ({ ...p, dateFrom: undefined }));
+                    if (modalErrors.dateFrom)
+                      setModalErrors((p) => ({ ...p, dateFrom: undefined }));
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     modalErrors.dateFrom ? "border-red-500" : "border-gray-300"
                   }`}
                 />
                 {modalErrors.dateFrom && (
-                  <p className="mt-1 text-xs text-red-600">{modalErrors.dateFrom}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {modalErrors.dateFrom}
+                  </p>
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  End Date <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="date"
                   value={modalDateTo}
                   onChange={(e) => {
                     setModalDateTo(e.target.value);
-                    if (modalErrors.dateTo) setModalErrors((p) => ({ ...p, dateTo: undefined }));
+                    if (modalErrors.dateTo)
+                      setModalErrors((p) => ({ ...p, dateTo: undefined }));
                   }}
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     modalErrors.dateTo ? "border-red-500" : "border-gray-300"
                   }`}
                 />
                 {modalErrors.dateTo && (
-                  <p className="mt-1 text-xs text-red-600">{modalErrors.dateTo}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {modalErrors.dateTo}
+                  </p>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Time From</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Time From
+                  </label>
                   <input
                     type="time"
                     value={modalTimeFrom}
@@ -888,7 +993,9 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Time To</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Time To
+                  </label>
                   <input
                     type="time"
                     value={modalTimeTo}
@@ -898,13 +1005,16 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Location <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Location <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={modalLocation}
                   onChange={(e) => {
                     setModalLocation(e.target.value);
-                    if (modalErrors.location) setModalErrors((p) => ({ ...p, location: undefined }));
+                    if (modalErrors.location)
+                      setModalErrors((p) => ({ ...p, location: undefined }));
                   }}
                   placeholder="Event location"
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
@@ -912,15 +1022,32 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                   }`}
                 />
                 {modalErrors.location && (
-                  <p className="mt-1 text-xs text-red-600">{modalErrors.location}</p>
+                  <p className="mt-1 text-xs text-red-600">
+                    {modalErrors.location}
+                  </p>
                 )}
               </div>
               <div className="flex gap-3 justify-end pt-2">
-                <button type="button" onClick={closeEditModal} className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                >
                   Cancel
                 </button>
-                <button type="button" onClick={handleSaveEventDetailsModal} disabled={isSavingModal} className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2">
-                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save"}
+                <button
+                  type="button"
+                  onClick={handleSaveEventDetailsModal}
+                  disabled={isSavingModal}
+                  className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2"
+                >
+                  {isSavingModal ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" /> Saving...
+                    </>
+                  ) : (
+                    "Save"
+                  )}
                 </button>
               </div>
             </div>
