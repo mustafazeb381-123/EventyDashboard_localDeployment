@@ -42,12 +42,14 @@ axiosInstance.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.status === 401) {
-      localStorage.removeItem("token"); // clear old token
-
-      console.error('Unauthorized: Redirecting to login...');
-      // Redirect to login on 401 error
-      window.location.href = '/login'; // force redirect
-
+      const pathname = window.location.pathname || '';
+      // Do NOT redirect to login on public registration page — let the page show "Event not found" or handle 401
+      const isPublicRegistration = pathname.startsWith('/register/') || pathname.startsWith('/register');
+      if (!isPublicRegistration) {
+        localStorage.removeItem("token"); // clear old token
+        console.error('Unauthorized: Redirecting to login...');
+        window.location.href = '/login'; // force redirect for dashboard routes only
+      }
     }
     return Promise.reject(error);
   },

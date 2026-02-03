@@ -1,6 +1,14 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import Assets from "../../../../utils/Assets";
-import { Clock, Edit, MapPin, Loader2, Share2, XCircle } from "lucide-react";
+import {
+  Clock,
+  Edit,
+  MapPin,
+  Loader2,
+  Share2,
+  XCircle,
+  UserX,
+} from "lucide-react";
 import RegistrationChart from "./components/RegsitrationChart";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import {
@@ -1263,12 +1271,22 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               }}
               className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <div className={`p-3 lg:p-4 ${item.bgColor} rounded-xl shrink-0`}>
-                <img
-                  src={item.icon}
-                  alt={item.label}
-                  className="h-5 w-5 sm:h-6 sm:w-6"
-                />
+              <div
+                className={`p-3 lg:p-4 ${item.bgColor} rounded-xl shrink-0 flex items-center justify-center`}
+              >
+                {item.filterKey === "rejected" ? (
+                  <UserX
+                    className="h-5 w-5 sm:h-6 sm:w-6 text-red-600"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                ) : (
+                  <img
+                    src={item.icon}
+                    alt={item.label}
+                    className="h-5 w-5 sm:h-6 sm:w-6"
+                  />
+                )}
               </div>
               <div className="justify-between flex flex-col min-w-0 flex-1">
                 <p className="text-xs font-normal sm:text-sm text-[#656C95] line-clamp-2">
