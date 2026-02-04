@@ -39,9 +39,12 @@ function MainRoutes() {
   ];
 
   // --- FIXED: use startsWith() instead of includes() ---
+  // Invitation pages (list + new) always show sidebar/top bar like Figma
+  const isInvitationPage = location.pathname.startsWith("/invitation");
   const isEventContextPage =
-    eventRelatedPaths.some((path) => location.pathname.startsWith(path)) &&
-    isEventRelatedPage;
+    isInvitationPage ||
+    (eventRelatedPaths.some((path) => location.pathname.startsWith(path)) &&
+      isEventRelatedPage);
 
   // --- Determine sidebar default state ---
   const getSidebarState = () => {

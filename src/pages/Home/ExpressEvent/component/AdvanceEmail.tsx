@@ -8,6 +8,8 @@ import {
 import RejectionTemplateOne from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import ConfirmationTemplateOne from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
+import ThanksTemplateOne from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateOne";
+import ThanksTemplateTwo from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import {
   getEmailTemplatesApi,
   createEmailTemplateApi,
@@ -36,6 +38,21 @@ const rewriteHtmlUrlsToAbsolute = (html: string, baseUrl: string): string => {
     .replace(/href="\/(?!\/)/g, `href="${base}/`);
 };
 
+/** Flow steps config: when approval is required show Welcome, Thanks, Rejection; otherwise only Welcome (Confirmation). */
+const getFlowsConfig = (requireApproval: boolean) => {
+  const welcome = {
+    id: "welcome",
+    label: "Welcome Email (Confirmation)",
+    templates: [] as any[],
+  };
+  if (!requireApproval) return [welcome];
+  return [
+    welcome,
+    { id: "thank_you", label: "Thanks Email", templates: [] as any[] },
+    { id: "rejection", label: "Rejection Email", templates: [] as any[] },
+  ];
+};
+
 // Helper function to create static templates with event data
 const createStaticTemplates = (eventData: any) => {
   console.log(
@@ -44,7 +61,7 @@ const createStaticTemplates = (eventData: any) => {
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
-    return { welcome: [], rejection: [] };
+    return { welcome: [], thank_you: [], rejection: [] };
   }
 
   const eventProps = {
@@ -76,6 +93,28 @@ const createStaticTemplates = (eventData: any) => {
         isStatic: true,
         type: "welcome",
         readyMadeId: "welcome-template-1",
+      },
+    ],
+    thank_you: [
+      {
+        id: "thank-you-template-1",
+        title: "Thank You Template 1",
+        component: <ThanksTemplateOne {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "thank_you",
+        readyMadeId: "thank-you-template-1",
+      },
+      {
+        id: "thank-you-template-2",
+        title: "Thank You Template 2",
+        component: <ThanksTemplateTwo {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "thank_you",
+        readyMadeId: "thank-you-template-2",
       },
     ],
     rejection: [
@@ -427,23 +466,30 @@ const TemplateModal = ({
                     return match;
                   })
                   // Fix for icons with specific dimensions - preserve their size
-                  .replace(/style="([^"]*height:\s*80[^"]*)"/gi, (match: string) => {
-                    return match.replace(/height:\s*80px/gi, "height: 80px").replace(/width:\s*80px/gi, "width: 80px");
-                  }),
+                  .replace(
+                    /style="([^"]*height:\s*80[^"]*)"/gi,
+                    (match: string) => {
+                      return match
+                        .replace(/height:\s*80px/gi, "height: 80px")
+                        .replace(/width:\s*80px/gi, "width: 80px");
+                    },
+                  ),
               }}
             />
           ) : template.component ? (
             <div
               className="template-preview-content w-full"
-              style={{ 
-                maxWidth: "100%", 
+              style={{
+                maxWidth: "100%",
                 width: "100%",
                 transform: "scale(1)",
                 transformOrigin: "top left",
-                overflow: "hidden"
+                overflow: "hidden",
               }}
             >
-              <div style={{ width: "100%", maxWidth: "600px", margin: "0 auto" }}>
+              <div
+                style={{ width: "100%", maxWidth: "600px", margin: "0 auto" }}
+              >
                 {template.component}
               </div>
             </div>
@@ -530,10 +576,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 }) => {
   const effectiveEventId = eventId;
 
-  const [flows, setFlows] = useState<any[]>([
-    { id: "welcome", label: "Welcome Email", templates: [] },
-    { id: "rejection", label: "Rejection Email", templates: [] },
-  ]);
+  const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false));
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
   const [modalTemplate, setModalTemplate] = useState<any | null>(null);
@@ -574,12 +617,9 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     const fetchEventData = async () => {
       const currentEventId = eventId;
       if (!currentEventId) {
-        setEventData(null); // Clear event data if no eventId
-        // Reset flows when no eventId
-        setFlows([
-          { id: "welcome", label: "Welcome Email", templates: [] },
-          { id: "rejection", label: "Rejection Email", templates: [] },
-        ]);
+        setEventData(null);
+        setFlows(getFlowsConfig(false));
+        setCurrentFlowIndex(0);
         return;
       }
       try {
@@ -587,14 +627,27 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         console.log("response of get show event data", response);
         if (response.data?.data) {
           const newEventData = response.data.data;
+          const requireApproval =
+            newEventData?.attributes?.require_approval === true;
           setEventData(newEventData);
-          console.log("Event data updated:", newEventData);
+          setFlows(getFlowsConfig(requireApproval));
+          setCurrentFlowIndex(0);
+          console.log(
+            "Event data updated:",
+            newEventData,
+            "require_approval:",
+            requireApproval,
+          );
         } else {
           setEventData(null);
+          setFlows(getFlowsConfig(false));
+          setCurrentFlowIndex(0);
         }
       } catch (error) {
         console.error("Failed to fetch event data:", error);
         setEventData(null);
+        setFlows(getFlowsConfig(false));
+        setCurrentFlowIndex(0);
       }
     };
     fetchEventData();
@@ -748,7 +801,10 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       }
 
       // Always show static templates (enriched with API data when matched) + only custom templates from API
-      const updatedTemplates = [...enrichedStaticTemplates, ...customApiTemplates];
+      const updatedTemplates = [
+        ...enrichedStaticTemplates,
+        ...customApiTemplates,
+      ];
       console.log(
         "Setting flows with updated templates count:",
         updatedTemplates.length,
@@ -860,11 +916,10 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
               f.id === currentFlow.id
                 ? {
                     ...f,
-                    templates: f.templates.map(
-                      (t: any) =>
-                        t.id === templateId
-                          ? { ...t, isSelected: true }
-                          : { ...t, isSelected: false },
+                    templates: f.templates.map((t: any) =>
+                      t.id === templateId
+                        ? { ...t, isSelected: true }
+                        : { ...t, isSelected: false },
                     ),
                   }
                 : f,
@@ -1251,8 +1306,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                  ? "bg-red-500 text-white"
-                  : "bg-yellow-500 text-white"
+                ? "bg-red-500 text-white"
+                : "bg-yellow-500 text-white"
             }`}
           >
             {notification.message}
@@ -1283,8 +1338,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                       done
                         ? "bg-pink-500 border-pink-500 hover:bg-pink-600 text-white"
                         : active
-                          ? "border-pink-500 bg-white text-pink-500"
-                          : "border-gray-300 hover:border-pink-400 text-gray-400"
+                        ? "border-pink-500 bg-white text-pink-500"
+                        : "border-gray-300 hover:border-pink-400 text-gray-400"
                     }`}
                   >
                     {done ? (
@@ -1300,8 +1355,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                       done
                         ? "text-gray-700"
                         : active
-                          ? "text-pink-500"
-                          : "text-gray-400"
+                        ? "text-pink-500"
+                        : "text-gray-400"
                     }`}
                   >
                     {f.label}
@@ -1339,7 +1394,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             const eventDataKey = `${effectiveEventId}-${eventData?.id || ""}-${
               eventData?.attributes?.name || ""
             }`;
-            const isSelected = selectedTemplates[currentFlow.id] === template.id;
+            const isSelected =
+              selectedTemplates[currentFlow.id] === template.id;
             return (
               <div
                 key={`${template.id}-${eventDataKey}`}

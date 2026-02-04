@@ -18,6 +18,7 @@ import Galleries from "@/pages/Home/EventDetails/Galleries/Galleries";
 import GalleriesList from "@/pages/Home/EventDetails/Galleries/GalleriesList";
 import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 import Users from "@/pages/Home/EventDetails/Invitation/Users";
+import NewInvitation from "@/pages/Home/EventDetails/Invitation/NewInvitation";
 import InvitationReport from "@/pages/Home/EventDetails/Invitation/InvitationReport";
 import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
 import Poll from "@/pages/Home/EventDetails/Poll/Poll";
@@ -77,6 +78,10 @@ const router = createBrowserRouter([
           {
             path: "invitation",
             element: <Users />,
+          },
+          {
+            path: "invitation/new",
+            element: <NewInvitation />,
           },
           {
             path: "invitation/report/:invitationId",
