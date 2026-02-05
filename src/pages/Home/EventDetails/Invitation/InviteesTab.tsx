@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { ChevronDown, Upload, Trash2, Search, Download } from "lucide-react";
+import { ChevronDown, Upload, Trash2, Search, Download, X } from "lucide-react";
 import * as XLSX from "xlsx";
 import Pagination from "@/components/Pagination";
 
@@ -197,6 +197,24 @@ export function InviteesTab({
     [onParsedUsersChange],
   );
 
+  const removeSelectedUsers = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    setParsedUsers((prev: ParsedInvitee[]) => {
+      const next = prev.filter((u: ParsedInvitee) => !selectedIds.has(u.id));
+      onParsedUsersChange?.(next);
+      return next;
+    });
+    setSelectedIds(new Set());
+    setCurrentPage(1);
+  }, [selectedIds, onParsedUsersChange]);
+
+  const removeAllUsers = useCallback(() => {
+    setParsedUsers([]);
+    onParsedUsersChange?.([]);
+    setSelectedIds(new Set());
+    setCurrentPage(1);
+  }, [onParsedUsersChange]);
+
   const filteredUsers = useMemo(() => {
     if (!searchTerm.trim()) return parsedUsers;
     const q = searchTerm.toLowerCase().trim();
@@ -333,8 +351,43 @@ export function InviteesTab({
 
       {parsedUsers.length > 0 && (
         <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
+          {selectedIds.size > 0 && (
+            <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm font-medium text-blue-800">
+                {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={removeSelectedUsers}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Remove selected
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedIds(new Set())}
+                  className="inline-flex items-center gap-2 px-4 py-2 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                  Clear selection
+                </button>
+              </div>
+            </div>
+          )}
           <div className="px-4 py-3 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
-            <h4 className="text-sm font-semibold text-slate-800">Users</h4>
+            <div className="flex flex-wrap items-center gap-3">
+              <h4 className="text-sm font-semibold text-slate-800">Users</h4>
+              <button
+                type="button"
+                onClick={removeAllUsers}
+                className="inline-flex items-center gap-2 px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remove all
+              </button>
+            </div>
             <div className="flex flex-wrap items-center gap-3">
               <select
                 value={itemsPerPage}
