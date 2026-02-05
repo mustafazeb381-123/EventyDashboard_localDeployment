@@ -72,38 +72,46 @@ export function PreviewInvitationScreen({
     <div className="space-y-8">
       <h2 className="text-xl font-bold text-slate-900">Preview Invitation</h2>
 
-      {/* Invitation details */}
-      <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-5 space-y-3">
-        <h3 className="text-lg font-semibold text-slate-800">
+      {/* Invitation details – left-aligned single column (Figma-style) */}
+      <div className="rounded-xl border border-slate-200 bg-white p-6 max-w-2xl">
+        <h3 className="text-lg font-semibold text-slate-900 mb-5">
           {invitationForm.invitationName || "—"}
         </h3>
-        <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-          <div>
-            <dt className="text-slate-500">Email Subject</dt>
-            <dd className="font-medium text-slate-900">
+        <dl className="flex flex-col gap-4 text-left">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Email Subject
+            </dt>
+            <dd className="text-sm font-medium text-slate-900">
               {invitationForm.emailSubject || "—"}
             </dd>
           </div>
-          <div>
-            <dt className="text-slate-500">Communication Type</dt>
-            <dd className="font-medium text-slate-900">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Communication Type
+            </dt>
+            <dd className="text-sm font-medium text-slate-900">
               {invitationForm.communicationType || "—"}
             </dd>
           </div>
-          <div>
-            <dt className="text-slate-500">Scheduled For</dt>
-            <dd className="font-medium text-slate-900">
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Scheduled For
+            </dt>
+            <dd className="text-sm font-medium text-slate-900">
               {formatDateTime(invitationForm.scheduleSendAt)}
             </dd>
           </div>
-          <div>
-            <dt className="text-slate-500">Event</dt>
+          <div className="flex flex-col gap-0.5">
+            <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
+              Event
+            </dt>
             <dd>
               <a
                 href={eventLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-medium text-indigo-600 hover:text-indigo-700"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-700"
               >
                 {eventName}
               </a>
