@@ -29,11 +29,8 @@ export const loginApi = (data: any) =>
 // }
 
 export const eventPostAPi = (payload: FormData) => {
-  return axiosInstance.post("/events", payload, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // Do not set Content-Type manually — axios sets multipart/form-data with the correct boundary
+  return axiosInstance.post("/events", payload);
 };
 
 export const getAllEvents = (params?: Record<string, any>) => {
@@ -137,11 +134,8 @@ export const reorderRegistrationFieldApi = (
 };
 
 export const updateEventById = (id: string | number, data: any) => {
-  return axiosInstance.patch(`/events/${id}`, data, {
-    headers: {
-      "Content-Type": "multipart/form-data",
-    },
-  });
+  // For FormData, do not set Content-Type — axios sets multipart/form-data with boundary
+  return axiosInstance.patch(`/events/${id}`, data);
 };
 
 export const createTemplatePostApi = (data: any, id: string) => {
