@@ -9,6 +9,7 @@ import {
   Users as UsersIcon,
   Upload,
   Eye,
+  Pencil,
   MoreVertical,
   FileText,
   Download,
@@ -17,7 +18,6 @@ import {
   XCircle,
   UserCheck,
   BarChart2,
-  Tag,
   Share2,
   Zap,
   Settings,
@@ -220,8 +220,24 @@ function Invitations() {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  const [actionsMenuOpenId, setActionsMenuOpenId] = useState<string | null>(null);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
 
   const itemsPerPage = 10;
+
+  // Close actions menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        actionsMenuRef.current &&
+        !actionsMenuRef.current.contains(e.target as Node)
+      ) {
+        setActionsMenuOpenId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -719,12 +735,6 @@ function Invitations() {
                     </th>
                     <th className="px-6 py-3 text-left">
                       <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <Tag size={16} />
-                        Type
-                      </span>
-                    </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
                         <Clock size={16} />
                         Scheduled
                       </span>
@@ -757,9 +767,6 @@ function Invitations() {
                           <Skeleton className="h-6 w-14 rounded-full" />
                         </td>
                         <td className="px-6 py-4">
-                          <Skeleton className="h-4 w-16" />
-                        </td>
-                        <td className="px-6 py-4">
                           <Skeleton className="h-4 w-20" />
                         </td>
                         <td className="px-6 py-4">
@@ -774,7 +781,7 @@ function Invitations() {
                   ) : staticInvitations.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={7}
                         className="px-6 py-12 text-center text-gray-500"
                       >
                         No invitations found
@@ -816,9 +823,6 @@ function Invitations() {
                             </span>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          {invitation.type}
-                        </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
                             <Zap size={14} className="text-gray-500" />
@@ -829,37 +833,83 @@ function Invitations() {
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() =>
-                                navigate(
-                                  `/invitation/report/${invitation.id}`,
-                                  {
-                                    state: {
-                                      invitationName: invitation.name,
-                                      type: invitation.type,
-                                      createdAt: "January 27, 2026 at 15:04",
-                                    },
-                                  },
-                                )
-                              }
-                              className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-                              title="Report"
-                            >
-                              <BarChart2 size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
+                              className="w-8 h-8 flex items-center justify-center rounded text-gray-700 hover:bg-gray-100 transition-colors"
                               title="View"
+                              aria-label="View"
                             >
-                              <Eye size={16} />
+                              <Eye size={18} />
                             </button>
-                            <button
-                              type="button"
-                              className="w-8 h-8 flex items-center justify-center rounded bg-blue-100 text-blue-600 hover:bg-blue-200 transition-colors"
-                              title="Copy"
+                            <div
+                              className="relative"
+                              ref={
+                                actionsMenuOpenId === invitation.id
+                                  ? actionsMenuRef
+                                  : undefined
+                              }
                             >
-                              <Copy size={16} />
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setActionsMenuOpenId(
+                                    actionsMenuOpenId === invitation.id
+                                      ? null
+                                      : invitation.id,
+                                  )
+                                }
+                                className="w-8 h-8 flex items-center justify-center rounded text-gray-700 hover:bg-gray-100 transition-colors"
+                                title="More actions"
+                                aria-label="Open actions menu"
+                              >
+                                <MoreVertical size={18} />
+                              </button>
+                              {actionsMenuOpenId === invitation.id && (
+                                <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigate(
+                                        `/invitation/report/${invitation.id}`,
+                                        {
+                                          state: {
+                                            invitationName: invitation.name,
+                                            type: invitation.type,
+                                            createdAt:
+                                              "January 27, 2026 at 15:04",
+                                          },
+                                        },
+                                      );
+                                      setActionsMenuOpenId(null);
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                  >
+                                    <BarChart2 size={16} className="text-orange-500 shrink-0" />
+                                    Invitation Report
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActionsMenuOpenId(null);
+                                      // Edit action - add your edit navigation/handler here
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                  >
+                                    <Pencil size={16} className="text-green-600 shrink-0" />
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setActionsMenuOpenId(null);
+                                      // Clone action - add your clone handler here
+                                    }}
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                  >
+                                    <Copy size={16} className="text-pink-500 shrink-0" />
+                                    Clone
+                                  </button>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </td>
                       </tr>

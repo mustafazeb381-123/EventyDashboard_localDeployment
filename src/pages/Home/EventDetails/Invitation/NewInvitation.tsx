@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ChevronLeft, X } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { getEventbyId } from "@/apis/apiHelpers";
 import {
   EmailTemplateBuilderModal,
@@ -10,7 +10,8 @@ import type { TabId, InvitationEmailTemplate } from "./newInvitationTypes";
 import { InvitationDetailsTab } from "./InvitationDetailsTab";
 import { EmailTemplateTab } from "./EmailTemplateTab";
 import { RsvpTemplateTab } from "./RsvpTemplateTab";
-import { InviteesTab } from "./InviteesTab";
+import { InviteesTab, type ParsedInvitee } from "./InviteesTab";
+import { PreviewInvitationScreen } from "./PreviewInvitationScreen";
 
 function NewInvitation() {
   const location = useLocation();
@@ -56,21 +57,11 @@ function NewInvitation() {
   } | null>(null);
   const [inviteesFile, setInviteesFile] = useState<File | null>(null);
   const inviteesFileInputRef = useRef<HTMLInputElement>(null);
+  const [parsedInvitees, setParsedInvitees] = useState<ParsedInvitee[]>([]);
+  const [showPreviewScreen, setShowPreviewScreen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sendProgress, setSendProgress] = useState(0);
 
-  // RSVP Template tab: custom builder (same as Email Template)
-  const [rsvpTemplates, setRsvpTemplates] = useState<InvitationEmailTemplate[]>(
-    [],
-  );
-  const [selectedRsvpTemplateId, setSelectedRsvpTemplateId] = useState<
-    string | null
-  >(null);
-  const [showRsvpNameDialog, setShowRsvpNameDialog] = useState(false);
-  const [rsvpCustomTemplateName, setRsvpCustomTemplateName] = useState("");
-  const [rsvpBuilderOpen, setRsvpBuilderOpen] = useState(false);
-  const [rsvpEditingTemplate, setRsvpEditingTemplate] =
-    useState<InvitationEmailTemplate | null>(null);
-  const [rsvpPreviewTemplate, setRsvpPreviewTemplate] =
-    useState<InvitationEmailTemplate | null>(null);
   const [rsvpEmailSubject, setRsvpEmailSubject] = useState("");
 
   useEffect(() => {
@@ -119,13 +110,6 @@ function NewInvitation() {
     { name: "Event Start", value: "{{event.startdate}}" },
     { name: "Event End", value: "{{event.enddate}}" },
     { name: "User QR Code", value: "{{user.qrcode}}" },
-  ];
-
-  // RSVP template merge tags: same as invitation + Accept/Decline links for buttons
-  const rsvpMergeTags: MergeTag[] = [
-    ...invitationEmailMergeTags,
-    { name: "RSVP Accept Link", value: "{{rsvp.yes_url}}" },
-    { name: "RSVP Decline Link", value: "{{rsvp.no_url}}" },
   ];
 
   const handleInvitationCreateNewTemplate = () => {
@@ -185,55 +169,6 @@ function NewInvitation() {
     );
     if (selectedInvitationEmailTemplateId === template.id)
       setSelectedInvitationEmailTemplateId(null);
-  };
-
-  const handleRsvpCreateNewTemplate = () => {
-    setRsvpCustomTemplateName("");
-    setShowRsvpNameDialog(true);
-  };
-
-  const handleRsvpStartCreatingTemplate = () => {
-    if (!rsvpCustomTemplateName.trim()) {
-      showNotification("Please enter a template name", "info");
-      return;
-    }
-    setShowRsvpNameDialog(false);
-    setRsvpEditingTemplate(null);
-    setRsvpBuilderOpen(true);
-  };
-
-  const handleRsvpSaveFromBuilder = (design: any, html: string) => {
-    const title =
-      rsvpEditingTemplate?.title ||
-      rsvpCustomTemplateName.trim() ||
-      "RSVP Template";
-    if (rsvpEditingTemplate) {
-      setRsvpTemplates((prev) =>
-        prev.map((t) =>
-          t.id === rsvpEditingTemplate.id ? { ...t, title, html, design } : t,
-        ),
-      );
-      setSelectedRsvpTemplateId(rsvpEditingTemplate.id);
-    } else {
-      const id = `rsvp-tpl-${Date.now()}`;
-      setRsvpTemplates((prev) => [...prev, { id, title, html, design }]);
-      setSelectedRsvpTemplateId(id);
-    }
-    setRsvpBuilderOpen(false);
-    setRsvpEditingTemplate(null);
-    setRsvpCustomTemplateName("");
-    showNotification("RSVP template saved", "success");
-  };
-
-  const handleRsvpEditTemplate = (template: InvitationEmailTemplate) => {
-    setRsvpEditingTemplate(template);
-    setRsvpCustomTemplateName(template.title);
-    setRsvpBuilderOpen(true);
-  };
-
-  const handleRsvpDeleteTemplate = (template: InvitationEmailTemplate) => {
-    setRsvpTemplates((prev) => prev.filter((t) => t.id !== template.id));
-    if (selectedRsvpTemplateId === template.id) setSelectedRsvpTemplateId(null);
   };
 
   const handleCreateInvitation = async () => {
@@ -306,7 +241,38 @@ function NewInvitation() {
     }
   };
 
+  const handleSendTestEmail = () => {
+    showNotification("Test email sent to your address.", "success");
+  };
+
+  const handleSendInvitationFromPreview = async () => {
+    setIsSending(true);
+    setSendProgress(0);
+    const duration = 1500;
+    const step = 20;
+    const interval = duration / (100 / step);
+    let progress = 0;
+    const timer = setInterval(() => {
+      progress += step;
+      if (progress >= 100) {
+        clearInterval(timer);
+        setSendProgress(100);
+        handleCreateInvitation().finally(() => {
+          setIsSending(false);
+          setSendProgress(0);
+        });
+      } else {
+        setSendProgress(progress);
+      }
+    }, interval);
+  };
+
   const backUrl = `/invitation${eventId ? `?eventId=${eventId}` : ""}`;
+
+  const selectedTemplate = invitationEmailTemplates.find(
+    (t) => t.id === selectedInvitationEmailTemplateId,
+  );
+  const previewEmailHtml = selectedTemplate?.html ?? "";
 
   return (
     <div className="min-h-full flex flex-col">
@@ -386,7 +352,10 @@ function NewInvitation() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setNewInvitationActiveTab(item.id)}
+                onClick={() => {
+                  setShowPreviewScreen(false);
+                  setNewInvitationActiveTab(item.id);
+                }}
                 className={`flex-1 min-w-0 py-4 text-sm font-medium transition-colors text-center ${className}`}
               >
                 {item.label}
@@ -400,125 +369,161 @@ function NewInvitation() {
       <div className="flex-1 w-full">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-6 md:px-10 py-8 md:py-10">
-            {newInvitationActiveTab === "invitation-details" && (
-              <InvitationDetailsTab
+            {showPreviewScreen ? (
+              <PreviewInvitationScreen
                 invitationForm={invitationForm}
-                setInvitationForm={setInvitationForm}
-                enableRsvp={enableRsvp}
-                setEnableRsvp={setEnableRsvp}
                 eventData={eventData}
                 eventId={eventId}
+                emailHtml={previewEmailHtml}
+                parsedInvitees={parsedInvitees}
+                onBack={() => setShowPreviewScreen(false)}
+                onSendTestEmail={handleSendTestEmail}
+                onSendInvitation={handleSendInvitationFromPreview}
               />
-            )}
+            ) : (
+              <>
+                {newInvitationActiveTab === "invitation-details" && (
+                  <InvitationDetailsTab
+                    invitationForm={invitationForm}
+                    setInvitationForm={setInvitationForm}
+                    enableRsvp={enableRsvp}
+                    setEnableRsvp={setEnableRsvp}
+                    eventData={eventData}
+                    eventId={eventId}
+                  />
+                )}
 
-            {newInvitationActiveTab === "email-template" && (
-              <EmailTemplateTab
-                invitationForm={invitationForm}
-                setInvitationForm={setInvitationForm}
-                invitationEmailTemplates={invitationEmailTemplates}
-                selectedInvitationEmailTemplateId={
-                  selectedInvitationEmailTemplateId
-                }
-                setSelectedInvitationEmailTemplateId={
-                  setSelectedInvitationEmailTemplateId
-                }
-                onCreateNewTemplate={handleInvitationCreateNewTemplate}
-                onEditTemplate={handleInvitationEditTemplate}
-                onDeleteTemplate={handleInvitationDeleteTemplate}
-              />
-            )}
+                {newInvitationActiveTab === "email-template" && (
+                  <EmailTemplateTab
+                    invitationForm={invitationForm}
+                    setInvitationForm={setInvitationForm}
+                    invitationEmailTemplates={invitationEmailTemplates}
+                    selectedInvitationEmailTemplateId={
+                      selectedInvitationEmailTemplateId
+                    }
+                    setSelectedInvitationEmailTemplateId={
+                      setSelectedInvitationEmailTemplateId
+                    }
+                    onCreateNewTemplate={handleInvitationCreateNewTemplate}
+                    onEditTemplate={handleInvitationEditTemplate}
+                    onDeleteTemplate={handleInvitationDeleteTemplate}
+                  />
+                )}
 
-            {newInvitationActiveTab === "rsvp-template" && (
-              <RsvpTemplateTab
-                rsvpEmailSubject={rsvpEmailSubject}
-                setRsvpEmailSubject={setRsvpEmailSubject}
-                rsvpTemplates={rsvpTemplates}
-                selectedRsvpTemplateId={selectedRsvpTemplateId}
-                setSelectedRsvpTemplateId={setSelectedRsvpTemplateId}
-                onCreateNewTemplate={handleRsvpCreateNewTemplate}
-                onEditTemplate={handleRsvpEditTemplate}
-                onDeleteTemplate={handleRsvpDeleteTemplate}
-                onPreviewTemplate={setRsvpPreviewTemplate}
-              />
-            )}
+                {newInvitationActiveTab === "rsvp-template" && (
+                  <RsvpTemplateTab
+                    rsvpEmailSubject={rsvpEmailSubject}
+                    setRsvpEmailSubject={setRsvpEmailSubject}
+                  />
+                )}
 
-            {newInvitationActiveTab === "invitees" && (
-              <InviteesTab
-                inviteesFile={inviteesFile}
-                setInviteesFile={setInviteesFile}
-                inviteesFileInputRef={inviteesFileInputRef}
-              />
+                {newInvitationActiveTab === "invitees" && (
+                  <InviteesTab
+                    inviteesFile={inviteesFile}
+                    setInviteesFile={setInviteesFile}
+                    inviteesFileInputRef={inviteesFileInputRef}
+                    onParsedUsersChange={setParsedInvitees}
+                    onPreviewClick={() => setShowPreviewScreen(true)}
+                  />
+                )}
+              </>
             )}
           </div>
 
-          {/* Footer: Next + Close on same white background as Basic info */}
-          <footer className="shrink-0 flex items-center justify-between gap-4 px-6 md:px-10 py-5 border-t border-slate-200 bg-white rounded-b-2xl">
+          {/* Footer: progress bar (when sending) + Next/Close on same white background */}
+          <footer className="shrink-0 border-t border-slate-200 bg-white rounded-b-2xl overflow-hidden">
+            {showPreviewScreen && isSending && (
+              <div className="h-1.5 w-full bg-slate-200">
+                <div
+                  className="h-full bg-indigo-600 transition-all duration-300 rounded-r"
+                  style={{ width: `${sendProgress}%` }}
+                />
+              </div>
+            )}
+            <div className="flex items-center justify-between gap-4 px-6 md:px-10 py-5">
             <div>
-              {newInvitationActiveTab !== "invitation-details" && (
+              {showPreviewScreen ? (
                 <button
                   type="button"
-                  onClick={() => {
-                    if (newInvitationActiveTab === "invitees")
-                      setNewInvitationActiveTab(
-                        enableRsvp ? "rsvp-template" : "email-template",
-                      );
-                    else if (newInvitationActiveTab === "rsvp-template")
-                      setNewInvitationActiveTab("email-template");
-                    else setNewInvitationActiveTab("invitation-details");
-                  }}
+                  onClick={() => setShowPreviewScreen(false)}
                   className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
                 >
                   Back
                 </button>
+              ) : (
+                newInvitationActiveTab !== "invitation-details" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (newInvitationActiveTab === "invitees")
+                        setNewInvitationActiveTab(
+                          enableRsvp ? "rsvp-template" : "email-template",
+                        );
+                      else if (newInvitationActiveTab === "rsvp-template")
+                        setNewInvitationActiveTab("email-template");
+                      else setNewInvitationActiveTab("invitation-details");
+                    }}
+                    className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
+                  >
+                    Back
+                  </button>
+                )
               )}
             </div>
             <div className="flex items-center gap-3">
-              {newInvitationActiveTab === "invitation-details" && (
-                <button
-                  type="button"
-                  onClick={() => setNewInvitationActiveTab("email-template")}
-                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  Next
-                </button>
-              )}
-              {newInvitationActiveTab === "email-template" && (
-                <button
-                  type="button"
-                  onClick={() =>
-                    setNewInvitationActiveTab(
-                      enableRsvp ? "rsvp-template" : "invitees",
-                    )
-                  }
-                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  Next
-                </button>
-              )}
-              {newInvitationActiveTab === "rsvp-template" && (
-                <button
-                  type="button"
-                  onClick={() => setNewInvitationActiveTab("invitees")}
-                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                >
-                  Next
-                </button>
-              )}
-              {newInvitationActiveTab === "invitees" && (
-                <button
-                  onClick={handleCreateInvitation}
-                  disabled={isCreatingInvitation}
-                  className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isCreatingInvitation ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Processing...
-                    </span>
-                  ) : (
-                    "Create invitation"
+              {showPreviewScreen ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={handleSendTestEmail}
+                    disabled={isSending || isCreatingInvitation}
+                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send Test Email
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendInvitationFromPreview}
+                    disabled={isSending || isCreatingInvitation || parsedInvitees.length === 0}
+                    className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Send Invitation
+                  </button>
+                </>
+              ) : (
+                <>
+                  {newInvitationActiveTab === "invitation-details" && (
+                    <button
+                      type="button"
+                      onClick={() => setNewInvitationActiveTab("email-template")}
+                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                      Next
+                    </button>
                   )}
-                </button>
+                  {newInvitationActiveTab === "email-template" && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNewInvitationActiveTab(
+                          enableRsvp ? "rsvp-template" : "invitees",
+                        )
+                      }
+                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                      Next
+                    </button>
+                  )}
+                  {newInvitationActiveTab === "rsvp-template" && (
+                    <button
+                      type="button"
+                      onClick={() => setNewInvitationActiveTab("invitees")}
+                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                      Next
+                    </button>
+                  )}
+                </>
               )}
               <a
                 href={backUrl}
@@ -530,6 +535,7 @@ function NewInvitation() {
               >
                 Close
               </a>
+            </div>
             </div>
           </footer>
         </div>
@@ -597,107 +603,6 @@ function NewInvitation() {
         </div>
       )}
 
-      {/* RSVP Template builder (same as Email Template tab) */}
-      <EmailTemplateBuilderModal
-        open={rsvpBuilderOpen}
-        title={
-          rsvpEditingTemplate ? "Edit RSVP Template" : "Create RSVP Template"
-        }
-        initialDesign={rsvpEditingTemplate?.design}
-        initialHtml={rsvpEditingTemplate?.html}
-        mergeTags={rsvpMergeTags}
-        onClose={() => {
-          setRsvpBuilderOpen(false);
-          setRsvpEditingTemplate(null);
-          setRsvpCustomTemplateName("");
-        }}
-        onSave={handleRsvpSaveFromBuilder}
-        key={rsvpEditingTemplate?.id ?? "rsvp-new"}
-      />
-
-      {/* RSVP: name dialog for Create new */}
-      {showRsvpNameDialog && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              Create RSVP Template
-            </h3>
-            <p className="text-gray-600 mb-6 text-sm">
-              Enter a name for your RSVP email template (e.g. Accept / Decline)
-            </p>
-            <input
-              type="text"
-              placeholder="e.g., RSVP Accept Decline"
-              value={rsvpCustomTemplateName}
-              onChange={(e) => setRsvpCustomTemplateName(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRsvpStartCreatingTemplate();
-              }}
-            />
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowRsvpNameDialog(false);
-                  setRsvpCustomTemplateName("");
-                }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleRsvpStartCreatingTemplate}
-                className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium"
-              >
-                Create
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* RSVP Template preview modal */}
-      {rsvpPreviewTemplate && (
-        <div
-          className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
-          onClick={() => setRsvpPreviewTemplate(null)}
-          role="presentation"
-        >
-          <div
-            className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-              <h3 className="text-lg font-semibold text-slate-900">
-                Preview: {rsvpPreviewTemplate.title}
-              </h3>
-              <button
-                type="button"
-                onClick={() => setRsvpPreviewTemplate(null)}
-                className="p-2 rounded-lg text-slate-500 hover:bg-slate-100"
-                aria-label="Close preview"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-auto p-4 bg-slate-100">
-              {rsvpPreviewTemplate.html ? (
-                <iframe
-                  title={`Preview ${rsvpPreviewTemplate.title}`}
-                  srcDoc={rsvpPreviewTemplate.html}
-                  className="w-full min-h-[400px] border-0 rounded-lg bg-white shadow-inner"
-                  style={{ height: "60vh" }}
-                />
-              ) : (
-                <p className="text-slate-500 text-sm">No content to preview.</p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
