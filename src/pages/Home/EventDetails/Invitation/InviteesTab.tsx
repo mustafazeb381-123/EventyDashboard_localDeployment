@@ -87,6 +87,7 @@ type InviteesTabProps = {
   setInviteesFile: (file: File | null) => void;
   inviteesFileInputRef: React.RefObject<HTMLInputElement | null>;
   onParsedUsersChange?: (users: ParsedInvitee[]) => void;
+  onPreviewClick?: () => void;
 };
 
 export function InviteesTab({
@@ -94,6 +95,7 @@ export function InviteesTab({
   setInviteesFile,
   inviteesFileInputRef,
   onParsedUsersChange,
+  onPreviewClick,
 }: InviteesTabProps) {
   const [parsedUsers, setParsedUsers] = useState<ParsedInvitee[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -509,6 +511,7 @@ onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
         <div className="flex justify-end pt-4">
           <button
             type="button"
+            onClick={onPreviewClick}
             className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors"
           >
             Preview
