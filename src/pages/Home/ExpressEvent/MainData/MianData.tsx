@@ -544,8 +544,8 @@ const MainData = ({
             ? String(attributes.registration_limit)
             : "",
         languageSupport: attributes.secondary_language ? "dual" : "single",
-        primaryLanguage: attributes.primary_language || "english",
-        secondaryLanguage: attributes.secondary_language || "arabic",
+        primaryLanguage: attributes.primary_language === "ar" ? "arabic" : "english",
+        secondaryLanguage: attributes.secondary_language === "ar" ? "arabic" : "english",
       });
 
       setShowEventData(true);
@@ -572,8 +572,9 @@ const MainData = ({
 
       // If editing, use eventId from props. If creating, use the new ID from response.
       let nextEventId = eventId;
-      if (!eventId && response?.data?.data?.id) {
-        nextEventId = response.data.data.id;
+      if (!eventId && response?.data) {
+        const data = response.data?.data ?? response.data;
+        nextEventId = data?.id ?? data?.uuid ?? eventId;
       }
 
       // Pass the correct event ID to the next screen
@@ -648,26 +649,36 @@ const MainData = ({
     );
     fd.append("event[registration_page_banner]", "");
 
-    // Registration limit (optional, both express & advance) – only positive integers
-    fd.append(
-      "event[registration_limit]",
-      formData.registrationLimit?.trim() || "",
-    );
+    // Registration limit (optional): only send when valid positive integer; omit to avoid server validation errors
+    const limitStr = formData.registrationLimit?.trim();
+    if (limitStr) {
+      const limitNum = parseInt(limitStr, 10);
+      if (!Number.isNaN(limitNum) && limitNum >= 0) {
+        fd.append("event[registration_limit]", String(limitNum));
+      }
+    }
 
-    // Language (API: primary_language + secondary_language)
-    fd.append("event[primary_language]", formData.primaryLanguage || "english");
+    // Language: API expects codes (en, ar), not full names (english, arabic)
+    const isDualLanguage = formData.languageSupport === "dual";
+    const primaryCode = formData.primaryLanguage === "arabic" ? "ar" : "en";
+    const secondaryCode = formData.secondaryLanguage === "arabic" ? "ar" : "en";
+    fd.append("event[primary_language]", primaryCode);
     fd.append(
       "event[secondary_language]",
-      formData.languageSupport === "dual"
-        ? formData.secondaryLanguage || "arabic"
-        : "",
+      isDualLanguage ? secondaryCode : "",
     );
+    fd.append("event[enable_dual_language]", String(isDualLanguage));
 
     if (formData.eventLogo) {
       fd.append("event[logo]", formData.eventLogo);
     }
 
     fd.append("event[registration_template]", "form");
+    fd.append("event[template]", "form");
+    fd.append("event[print_qr]", "false");
+    fd.append("event[display_confirmation_message]", "true");
+    fd.append("event[display_location]", "true");
+    fd.append("event[display_event_details]", "true");
     fd.append("locale", "en");
 
     // Debug log
@@ -690,23 +701,40 @@ const MainData = ({
         response = await eventPostAPi(fd);
         console.log("API Response:", response.data);
 
-        if (response?.data?.data?.id) {
-          if (onEventCreated) {
-            onEventCreated(String(response.data.data.id));
-          }
+        // Support both response shapes: { data: { id } } or { id } at top level
+        const newEventId =
+          response?.data?.data?.id ?? response?.data?.id ?? response?.data?.uuid;
+        if (newEventId != null && onEventCreated) {
+          onEventCreated(String(newEventId));
         }
         showNotification("Event created successfully", "success");
       }
 
       return response;
     } catch (error: any) {
+      const data = error?.response?.data;
+      let msg =
+        typeof data?.message === "string"
+          ? data.message
+          : typeof data?.error === "string"
+            ? data.error
+            : error?.message || "Error saving event data";
+
+      // Rails returns HTML on 500; try to extract the exception message for the user
+      if (typeof data === "string" && data.includes("Action Controller: Exception")) {
+        const match =
+          data.match(/<div class="message">([^<]+)<\/div>/i) ||
+          data.match(/<h2[^>]*>([^<]+)<\/h2>/i) ||
+          data.match(/exception-message[^>]*>[\s\S]*?<pre[^>]*>([\s\S]*?)<\/pre>/i);
+        if (match && match[1]) {
+          const extracted = match[1].trim().replace(/\s+/g, " ").slice(0, 200);
+          msg = extracted || msg;
+        }
+      }
+
       console.error("API Error:", error);
-      showNotification(
-        error?.response?.data?.message ||
-          error?.message ||
-          "Error saving event data",
-        "error",
-      );
+      console.error("API Error response data:", typeof data === "string" ? "(HTML - see extracted message above)" : data);
+      showNotification(msg, "error");
       throw error;
     }
   };
@@ -838,8 +866,8 @@ const MainData = ({
             ? String(attributes.registration_limit)
             : "",
         languageSupport: attributes.secondary_language ? "dual" : "single",
-        primaryLanguage: attributes.primary_language || "english",
-        secondaryLanguage: attributes.secondary_language || "arabic",
+        primaryLanguage: attributes.primary_language === "ar" ? "arabic" : "english",
+        secondaryLanguage: attributes.secondary_language === "ar" ? "arabic" : "english",
       });
 
       console.log("Form populated with event data. Event ID:", eventId);
@@ -915,8 +943,8 @@ const MainData = ({
               languageSupport: attributes.secondary_language
                 ? "dual"
                 : "single",
-              primaryLanguage: attributes.primary_language || "english",
-              secondaryLanguage: attributes.secondary_language || "arabic",
+              primaryLanguage: attributes.primary_language === "ar" ? "arabic" : "english",
+              secondaryLanguage: attributes.secondary_language === "ar" ? "arabic" : "english",
             });
 
             setShowEventData(true);
