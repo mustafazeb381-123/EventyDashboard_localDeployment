@@ -49,6 +49,29 @@ export interface RsvpFormField {
   /** For number: min/max */
   min?: number;
   max?: number;
+  /** Per-field styling (like Advance Registration FieldConfigPanel custom styling) */
+  fieldStyle?: {
+    backgroundColor?: string;
+    borderColor?: string;
+    borderWidth?: string;
+    borderRadius?: string;
+    padding?: string;
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    margin?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    textColor?: string;
+    labelColor?: string;
+    textAlign?: "left" | "center" | "right" | "justify";
+    fontSize?: string;
+    height?: string;
+    width?: string;
+  };
 }
 
 /** @deprecated Use RsvpFormField.type and .name instead */
@@ -73,6 +96,9 @@ export interface RsvpTheme {
   formBackgroundColor?: string;
   formBorderRadius?: string;
   formMaxWidth?: string;
+  formAlignment?: "left" | "center" | "right";
+  formBorderColor?: string;
+  formBackgroundImage?: string | File | null;
   /** Footer banner image at bottom (File or URL string) */
   footerBannerImage?: File | string | null;
   footerEnabled?: boolean;
@@ -94,17 +120,31 @@ export interface RsvpTheme {
   headerTextColor?: string;
   bodyBackgroundColor?: string;
   bodyTextColor?: string;
+  /** Typography: heading (in-form headings), label, body text */
+  headingColor?: string;
   labelColor?: string;
+  textColor?: string;
+  /** Input field styling (like Advance Registration) */
+  inputBorderColor?: string;
+  inputBackgroundColor?: string;
+  inputBorderRadius?: string;
+  inputPadding?: string;
+  inputFocusBorderColor?: string;
+  inputTextColor?: string;
+  inputPlaceholderColor?: string;
+  /** Buttons */
   acceptButtonBackgroundColor?: string;
   acceptButtonTextColor?: string;
   declineButtonBackgroundColor?: string;
   declineButtonTextColor?: string;
+  acceptButtonHoverBackgroundColor?: string;
+  declineButtonHoverBackgroundColor?: string;
+  buttonBorderRadius?: string;
+  buttonPadding?: string;
   acceptButtonText?: string;
   declineButtonText?: string;
   acceptButtonTranslations?: { en?: string; ar?: string };
   declineButtonTranslations?: { en?: string; ar?: string };
-  inputBorderColor?: string;
-  inputBackgroundColor?: string;
 }
 
 export interface RsvpFormBuilderTemplate {
