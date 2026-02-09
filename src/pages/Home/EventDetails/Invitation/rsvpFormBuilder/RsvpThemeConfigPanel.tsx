@@ -120,7 +120,7 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
-                Max Width
+                Max width
               </label>
               <input
                 type="text"
@@ -132,7 +132,7 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
-                Alignment
+                Form alignment
               </label>
               <select
                 value={localTheme.formAlignment ?? "center"}
@@ -146,6 +146,29 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
               >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Fields &amp; buttons alignment (Step 3)
+              </label>
+              <select
+                value={localTheme.formFieldsAlignment ?? ""}
+                onChange={(e) =>
+                  handleUpdate({
+                    formFieldsAlignment: (e.target.value || undefined) as
+                      | "left"
+                      | "center"
+                      | "right"
+                      | undefined,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Default (full width)</option>
                 <option value="left">Left</option>
                 <option value="center">Center</option>
                 <option value="right">Right</option>
@@ -710,6 +733,34 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
                 placeholder="e.g. Decline, No I Can't Attend"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Attend message (shown in form above buttons)
+              </label>
+              <input
+                type="text"
+                value={localTheme.acceptMessage ?? ""}
+                onChange={(e) =>
+                  handleUpdate({ acceptMessage: e.target.value || undefined })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g. Thank you for responding"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Decline message (shown in form above buttons)
+              </label>
+              <input
+                type="text"
+                value={localTheme.declineMessage ?? ""}
+                onChange={(e) =>
+                  handleUpdate({ declineMessage: e.target.value || undefined })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                placeholder="e.g. We'll miss you!"
               />
             </div>
             <div>

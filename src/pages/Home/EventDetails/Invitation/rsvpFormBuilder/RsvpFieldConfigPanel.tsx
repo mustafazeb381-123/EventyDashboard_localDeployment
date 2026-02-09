@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Plus, Trash2, Palette, ChevronDown } from "lucide-react";
+import { X, Plus, Trash2, Palette, ChevronDown, Eye, EyeOff } from "lucide-react";
 import type { RsvpFormField, RsvpFormFieldOption, RsvpFieldType } from "./types";
 
 interface RsvpFieldConfigPanelProps {
@@ -10,7 +10,6 @@ interface RsvpFieldConfigPanelProps {
 
 const FIELD_TYPE_LABELS: Record<RsvpFieldType, string> = {
   text: "Text",
-  email: "Email",
   phone: "Phone",
   number: "Number",
   date: "Date",
@@ -43,6 +42,7 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
   const isLabeled = !["paragraph", "divider", "heading"].includes(config.type);
   const hasOptions = config.type === "select" || config.type === "radio";
   const hasContent = config.type === "paragraph" || config.type === "heading";
+  const isVisible = config.visible !== false;
 
   const updateOption = (index: number, upd: Partial<RsvpFormFieldOption>) => {
     const opts = [...(config.options ?? [])];
@@ -79,6 +79,22 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
       </div>
 
       <div className="p-5 space-y-5">
+        {/* Step 1: Show / Hide field */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
+          <span className="text-sm font-medium text-gray-700">Show in preview</span>
+          <button
+            type="button"
+            onClick={() => setConfig({ ...config, visible: !isVisible })}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              isVisible ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-600"
+            }`}
+            aria-pressed={!isVisible}
+          >
+            {isVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+            {isVisible ? "Visible" : "Hidden"}
+          </button>
+        </div>
+
         {isLabeled && (
           <>
             <div>

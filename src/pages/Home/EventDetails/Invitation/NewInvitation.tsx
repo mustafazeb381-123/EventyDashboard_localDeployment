@@ -365,9 +365,31 @@ function NewInvitation() {
         })()}
       </nav>
 
-      {/* Full-width white card: Basic info + footer with Next/Close on white */}
+      {/* Full-width white card: only Preview gets send buttons at top; content then footer */}
       <div className="flex-1 w-full">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Top bar only on Preview: Send Test Email + Send Invitation */}
+          {showPreviewScreen && (
+            <div className="flex items-center justify-end gap-3 px-6 md:px-10 py-5 border-b border-slate-200 bg-slate-50/50">
+              <button
+                type="button"
+                onClick={handleSendTestEmail}
+                disabled={isSending || isCreatingInvitation}
+                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send Test Email
+              </button>
+              <button
+                type="button"
+                onClick={handleSendInvitationFromPreview}
+                disabled={isSending || isCreatingInvitation || parsedInvitees.length === 0}
+                className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Send Invitation
+              </button>
+            </div>
+          )}
+
           <div className="px-6 md:px-10 py-8 md:py-10">
             {showPreviewScreen ? (
               <PreviewInvitationScreen
@@ -430,7 +452,7 @@ function NewInvitation() {
             )}
           </div>
 
-          {/* Footer: progress bar (when sending) + Next/Close on same white background */}
+          {/* Footer: progress bar (when sending) + Back / Next / Close */}
           <footer className="shrink-0 border-t border-slate-200 bg-white rounded-b-2xl overflow-hidden">
             {showPreviewScreen && isSending && (
               <div className="h-1.5 w-full bg-slate-200">
@@ -441,101 +463,82 @@ function NewInvitation() {
               </div>
             )}
             <div className="flex items-center justify-between gap-4 px-6 md:px-10 py-5">
-            <div>
-              {showPreviewScreen ? (
-                <button
-                  type="button"
-                  onClick={() => setShowPreviewScreen(false)}
-                  className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
-                >
-                  Back
-                </button>
-              ) : (
-                newInvitationActiveTab !== "invitation-details" && (
+              <div>
+                {showPreviewScreen ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (newInvitationActiveTab === "invitees")
-                        setNewInvitationActiveTab(
-                          enableRsvp ? "rsvp-template" : "email-template",
-                        );
-                      else if (newInvitationActiveTab === "rsvp-template")
-                        setNewInvitationActiveTab("email-template");
-                      else setNewInvitationActiveTab("invitation-details");
-                    }}
+                    onClick={() => setShowPreviewScreen(false)}
                     className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
                   >
                     Back
                   </button>
-                )
-              )}
-            </div>
-            <div className="flex items-center gap-3">
-              {showPreviewScreen ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleSendTestEmail}
-                    disabled={isSending || isCreatingInvitation}
-                    className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Send Test Email
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSendInvitationFromPreview}
-                    disabled={isSending || isCreatingInvitation || parsedInvitees.length === 0}
-                    className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Send Invitation
-                  </button>
-                </>
-              ) : (
-                <>
-                  {newInvitationActiveTab === "invitation-details" && (
+                ) : (
+                  newInvitationActiveTab !== "invitation-details" && (
                     <button
                       type="button"
-                      onClick={() => setNewInvitationActiveTab("email-template")}
-                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                      onClick={() => {
+                        if (newInvitationActiveTab === "invitees")
+                          setNewInvitationActiveTab(
+                            enableRsvp ? "rsvp-template" : "email-template",
+                          );
+                        else if (newInvitationActiveTab === "rsvp-template")
+                          setNewInvitationActiveTab("email-template");
+                        else setNewInvitationActiveTab("invitation-details");
+                      }}
+                      className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
                     >
-                      Next
+                      Back
                     </button>
-                  )}
-                  {newInvitationActiveTab === "email-template" && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setNewInvitationActiveTab(
-                          enableRsvp ? "rsvp-template" : "invitees",
-                        )
-                      }
-                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                    >
-                      Next
-                    </button>
-                  )}
-                  {newInvitationActiveTab === "rsvp-template" && (
-                    <button
-                      type="button"
-                      onClick={() => setNewInvitationActiveTab("invitees")}
-                      className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                    >
-                      Next
-                    </button>
-                  )}
-                </>
-              )}
-              <a
-                href={backUrl}
-                onClick={(e) => {
-                  e.preventDefault();
-                  navigate(backUrl);
-                }}
-                className="px-5 py-2.5 border border-slate-300 bg-white text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
-              >
-                Close
-              </a>
-            </div>
+                  )
+                )}
+              </div>
+              <div className="flex items-center gap-3">
+                {showPreviewScreen ? null : (
+                  <>
+                    {newInvitationActiveTab === "invitation-details" && (
+                      <button
+                        type="button"
+                        onClick={() => setNewInvitationActiveTab("email-template")}
+                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                      >
+                        Next
+                      </button>
+                    )}
+                    {newInvitationActiveTab === "email-template" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewInvitationActiveTab(
+                            enableRsvp ? "rsvp-template" : "invitees",
+                          )
+                        }
+                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                      >
+                        Next
+                      </button>
+                    )}
+                    {newInvitationActiveTab === "rsvp-template" && (
+                      <button
+                        type="button"
+                        onClick={() => setNewInvitationActiveTab("invitees")}
+                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                      >
+                        Next
+                      </button>
+                    )}
+                  </>
+                )}
+                <a
+                  href={backUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navigate(backUrl);
+                  }}
+                  className="px-5 py-2.5 border border-slate-300 bg-white text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Close
+                </a>
+              </div>
             </div>
           </footer>
         </div>

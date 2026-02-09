@@ -3,7 +3,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {
   User,
-  Mail,
   Phone,
   Hash,
   Calendar,
@@ -17,6 +16,10 @@ import {
   Edit,
   GripVertical,
   Trash2,
+  EyeOff,
+  Square,
+  LayoutGrid,
+  Columns2,
 } from "lucide-react";
 import type { RsvpFormField, RsvpFieldType } from "./types";
 
@@ -29,7 +32,6 @@ interface RsvpSortableFieldItemProps {
 
 const FIELD_ICONS: Record<RsvpFieldType, React.ReactNode> = {
   text: <User size={16} className="text-slate-600" />,
-  email: <Mail size={16} className="text-slate-600" />,
   phone: <Phone size={16} className="text-slate-600" />,
   number: <Hash size={16} className="text-slate-600" />,
   date: <Calendar size={16} className="text-slate-600" />,
@@ -44,7 +46,6 @@ const FIELD_ICONS: Record<RsvpFieldType, React.ReactNode> = {
 
 const FIELD_TYPE_LABELS: Record<RsvpFieldType, string> = {
   text: "Text",
-  email: "Email",
   phone: "Phone",
   number: "Number",
   date: "Date",
@@ -77,26 +78,51 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
     opacity: isDragging ? 0.5 : 1,
   };
 
-  const typeLabel = FIELD_TYPE_LABELS[field.type] ?? field.type;
-  const displayLabel =
-    field.type === "paragraph" || field.type === "heading" || field.type === "divider"
+  const isLayout = !!field.containerType;
+  const typeLabel = isLayout
+    ? (field.containerType === "container"
+        ? "Container"
+        : field.containerType === "row"
+          ? "Row"
+          : "Column")
+    : (FIELD_TYPE_LABELS[field.type] ?? field.type);
+  const layoutIcon =
+    field.containerType === "container"
+      ? <Square size={16} className="text-purple-600" />
+      : field.containerType === "row"
+        ? <LayoutGrid size={16} className="text-indigo-600" />
+        : field.containerType === "column"
+          ? <Columns2 size={16} className="text-sky-600" />
+          : null;
+  const displayLabel = isLayout
+    ? (field.label || typeLabel)
+    : field.type === "paragraph" || field.type === "heading" || field.type === "divider"
       ? (field.content || field.label || typeLabel)
       : field.label;
-  const snippet =
-    field.type === "paragraph" || field.type === "heading"
+  const snippet = isLayout
+    ? ((field.children?.length ?? 0) > 0 ? `${field.children!.length} item(s)` : "Empty")
+    : field.type === "paragraph" || field.type === "heading"
       ? (field.content?.slice(0, 40) || "—")
       : field.placeholder || "—";
+  const isVisible = field.visible !== false;
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      className="bg-white border-2 rounded-lg border-slate-200 pt-5 p-3 hover:shadow-lg hover:border-indigo-300 transition-all group relative"
+      className={`bg-white border-2 rounded-lg pt-5 p-3 hover:shadow-lg transition-all group relative ${
+        isVisible ? "border-slate-200 hover:border-indigo-300" : "border-slate-200 border-dashed opacity-75"
+      }`}
     >
-      <div className="absolute -top-3 left-4 bg-white px-2">
+      <div className="absolute -top-3 left-4 bg-white px-2 flex items-center gap-1.5">
         <span className="text-xs font-semibold text-gray-700 uppercase tracking-wider">
           {typeLabel}
         </span>
+        {!isVisible && (
+          <span className="text-xs text-slate-500 flex items-center gap-0.5" title="Hidden">
+            <EyeOff size={12} />
+          </span>
+        )}
       </div>
 
       <div className="flex items-center gap-2">
@@ -110,7 +136,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
           <GripVertical size={16} />
         </button>
         <div className="flex items-center gap-2 text-slate-600">
-          {FIELD_ICONS[field.type]}
+          {layoutIcon ?? FIELD_ICONS[field.type]}
           <span className="font-semibold text-gray-800 text-sm truncate">
             {displayLabel}
           </span>

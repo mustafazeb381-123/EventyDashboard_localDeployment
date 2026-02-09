@@ -70,39 +70,40 @@ export function PreviewInvitationScreen({
 
   return (
     <div className="space-y-8">
+      
       <h2 className="text-xl font-bold text-slate-900">Preview Invitation</h2>
 
       {/* Invitation details – left-aligned single column (Figma-style) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-6 max-w-2xl">
+      <div className="rounded-xl border border-slate-200 bg-white p-6 max-w-2xl max-w-none">
         <h3 className="text-lg font-semibold text-slate-900 mb-5">
-          {invitationForm.invitationName || "—"}
+          {invitationForm.invitationName || "Invitation Name"}
         </h3>
         <dl className="flex flex-col gap-4 text-left">
-          <div className="flex flex-col gap-0.5">
+          <div className="flex gap-12 items-center ">
             <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
               Email Subject
             </dt>
             <dd className="text-sm font-medium text-slate-900">
-              {invitationForm.emailSubject || "—"}
+              {invitationForm.emailSubject || "Email Subject"}
             </dd>
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex gap-12 items-center ">
             <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
               Communication Type
             </dt>
             <dd className="text-sm font-medium text-slate-900">
-              {invitationForm.communicationType || "—"}
+              {invitationForm.communicationType || "Communication Type"}
             </dd>
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex gap-12 items-center ">
             <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
               Scheduled For
             </dt>
             <dd className="text-sm font-medium text-slate-900">
-              {formatDateTime(invitationForm.scheduleSendAt)}
+              {formatDateTime(invitationForm.scheduleSendAt) || "Scheduled For"}
             </dd>
           </div>
-          <div className="flex flex-col gap-0.5">
+          <div className="flex gap-12 items-center ">
             <dt className="text-xs font-medium uppercase tracking-wider text-slate-500">
               Event
             </dt>

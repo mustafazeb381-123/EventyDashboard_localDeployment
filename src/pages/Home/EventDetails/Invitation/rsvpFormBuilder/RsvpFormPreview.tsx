@@ -7,6 +7,16 @@ interface RsvpFormPreviewProps {
   formFields: RsvpFormField[];
   theme?: RsvpTheme;
   currentLanguage?: "en" | "ar";
+  /** Step 1: when true, only render fields with visible !== false */
+  visibleOnly?: boolean;
+  /** Step 2: when true, show dynamic variables {{name}} instead of input controls */
+  variableMode?: boolean;
+  /** Step 4: show Attend/Decline buttons in both visible and hidden preview modes */
+  showActionButtons?: boolean;
+  /** Step 4: when Attend is clicked (opens reason popup in builder) */
+  onAttendClick?: () => void;
+  /** Step 4: when Decline is clicked (opens reason popup in builder) */
+  onDeclineClick?: () => void;
   /** When provided, banner/footer areas are clickable to open theme (e.g. in builder preview) */
   onBannerClick?: () => void;
   onFooterClick?: () => void;
@@ -32,12 +42,27 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   formFields,
   theme,
   currentLanguage = "en",
+  visibleOnly = false,
+  variableMode = false,
+  showActionButtons = true,
+  onAttendClick,
+  onDeclineClick,
   onBannerClick,
   onFooterClick,
 }) => {
   const lang = currentLanguage;
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [footerBannerUrl, setFooterBannerUrl] = useState<string | null>(null);
+
+  /** Step 1: filter to visible fields when visibleOnly is true */
+  const displayFields = visibleOnly
+    ? formFields.filter((f) => f.visible !== false)
+    : formFields;
+
+  /** Root fields: exclude any field whose id is in another field's children (for layout containers) */
+  const rootFields = displayFields.filter(
+    (f) => !displayFields.some((other) => (other.children ?? []).includes(f.id))
+  );
 
   const formPaddingVal = theme?.formPadding || "24px";
   const paddingValue =
@@ -149,7 +174,6 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     field.fieldStyle?.labelColor ?? labelColor;
 
   const inputTypeFromField = (field: RsvpFormField): string => {
-    if (field.type === "email") return "email";
     if (field.type === "phone") return "tel";
     if (field.type === "number") return "number";
     if (field.type === "date") return "date";
@@ -164,16 +188,87 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     theme?.declineButtonTranslations?.[lang] ??
     theme?.declineButtonText ??
     "Decline";
+  const attendMessage =
+    theme?.acceptMessageTranslations?.[lang] ?? theme?.acceptMessage ?? "";
+  const declineMessage =
+    theme?.declineMessageTranslations?.[lang] ?? theme?.declineMessage ?? "";
   const acceptBg = theme?.acceptButtonBackgroundColor ?? "#10b981";
   const acceptTextColor = theme?.acceptButtonTextColor ?? "#ffffff";
   const declineBg = theme?.declineButtonBackgroundColor ?? "#ef4444";
   const declineTextColor = theme?.declineButtonTextColor ?? "#ffffff";
 
+  /** Step 2: variable name for dynamic placeholder (e.g. first_name → {{first_name}}) */
+  const variablePlaceholder = (field: RsvpFormField) => `{{${field.name}}}`;
+
   const renderField = (field: RsvpFormField) => {
     const inputCls = "rsvp-preview-input w-full border text-sm outline-none";
     const inputClsFlex = "rsvp-preview-input flex-1 border text-sm outline-none";
 
-    // Paragraph – content only
+    // Layout container: render wrapper with flex styles and child fields (do not render as paragraph)
+    if (field.containerType) {
+      const childIds = field.children ?? [];
+      const childFields = childIds
+        .map((id) => formFields.find((f) => f.id === id))
+        .filter((f): f is RsvpFormField => !!f)
+        .filter((c) => !visibleOnly || displayFields.some((d) => d.id === c.id));
+      const lp = field.layoutProps ?? {};
+      const isEmpty = childFields.length === 0;
+      const containerStyle: React.CSSProperties = {
+        display: "flex",
+        flexDirection: lp.flexDirection ?? (field.containerType === "row" ? "row" : "column"),
+        gap: lp.gap ?? "16px",
+        padding: lp.padding ?? "12px",
+        justifyContent: lp.justifyContent as React.CSSProperties["justifyContent"],
+        alignItems: lp.alignItems as React.CSSProperties["alignItems"],
+        flexWrap: lp.flexWrap as React.CSSProperties["flexWrap"],
+        backgroundColor: lp.backgroundColor ?? (isEmpty ? "rgba(148, 163, 184, 0.08)" : undefined),
+        borderRadius: lp.borderRadius ?? "8px",
+        minHeight: isEmpty ? 56 : undefined,
+        border: isEmpty ? "2px dashed rgba(100, 116, 139, 0.4)" : undefined,
+        ...fieldWrapperStyle(field),
+      };
+      return (
+        <div key={field.id} style={containerStyle} data-layout-type={field.containerType}>
+          {childFields.map((child) => (
+            <React.Fragment key={child.id}>{renderField(child)}</React.Fragment>
+          ))}
+          {isEmpty && (
+            <span className="text-xs text-slate-400 self-center">
+              {field.containerType === "container"
+                ? "Container – add fields inside"
+                : field.containerType === "row"
+                  ? "Row – add fields inside"
+                  : "Column – add fields inside"}
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // Step 2: variable mode – show label + {{name}} instead of input for input-like fields
+    const isInputLike = !["paragraph", "divider", "heading"].includes(field.type);
+    if (variableMode && isInputLike) {
+      const wrapperStyle = fieldWrapperStyle(field);
+      const mergedInputStyle = fieldInputStyle(field);
+      return (
+        <div key={field.id} style={wrapperStyle}>
+          {field.type !== "checkbox" && (
+            <label className="block text-sm font-medium mb-1.5" style={{ color: labelColorFor(field) }}>
+              {getFieldLabel(field, lang)}
+              {field.required && <span className="text-red-500 ml-0.5" aria-hidden>*</span>}
+            </label>
+          )}
+          <div
+            className="inline-block px-3 py-2 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/50 text-indigo-700 text-sm font-mono"
+            style={{ ...mergedInputStyle, minWidth: "120px" }}
+          >
+            {variablePlaceholder(field)}
+          </div>
+        </div>
+      );
+    }
+
+    // Paragraph – content only (containers use type "paragraph" but are handled above via containerType)
     if (field.type === "paragraph") {
       const content = getFieldContent(field, lang);
       if (!content) return null;
@@ -285,8 +380,8 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       );
     }
 
-    // Text, email, phone (single), number, date
-    if (field.type === "text" || field.type === "email" || field.type === "phone" || field.type === "number" || field.type === "date") {
+    // Text, phone (single), number, date
+    if (field.type === "text" || field.type === "phone" || field.type === "number" || field.type === "date") {
       return (
         <div key={field.id} style={wrapperStyle}>
           {labelEl}
@@ -439,44 +534,100 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
         </div>
       </div>
 
-      {/* Form content: fields + Attend/Decline buttons */}
+      {/* Form content: fields + Attend/Decline buttons (Step 3: alignment) */}
       <div
         className="px-6 py-6 pb-8"
-        style={{ backgroundColor: theme?.formBackgroundColor || "#ffffff" }}
+        style={{
+          backgroundColor: theme?.formBackgroundColor || "#ffffff",
+        }}
       >
-        <form className="space-y-4">
-          {formFields.map((field) => (
+        <form
+          className="space-y-4"
+          style={{
+            maxWidth: "100%",
+            ...(theme?.formFieldsAlignment === "center" && {
+              marginLeft: "auto",
+              marginRight: "auto",
+              width: "fit-content",
+              minWidth: "min(100%, 320px)",
+            }),
+            ...(theme?.formFieldsAlignment === "right" && {
+              marginLeft: "auto",
+              width: "fit-content",
+              minWidth: "min(100%, 320px)",
+            }),
+          }}
+        >
+          {rootFields.map((field) => (
             <React.Fragment key={field.id}>{renderField(field)}</React.Fragment>
           ))}
         </form>
 
-        {/* Attend & Decline buttons */}
-        <div className="mt-6 flex flex-col sm:flex-row gap-3">
-          <div
-            className="rsvp-btn-attend inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-default"
-            style={{
-              backgroundColor: acceptBg,
-              color: acceptTextColor,
-              borderRadius: buttonRadius,
-              padding: buttonPaddingVal,
-            }}
-          >
-            <Check className="w-5 h-5 shrink-0" strokeWidth={2.5} />
-            <span>{attendText}</span>
+        {/* Attend & Decline: messages + buttons always shown on form */}
+        {showActionButtons && (
+          <div className="mt-6 space-y-3">
+            <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
+              {/* Attend: message above button */}
+              <div className="flex-1 flex flex-col gap-2">
+                <div
+                  className="text-sm"
+                  style={{ color: theme?.textColor ?? theme?.labelColor ?? "#374151" }}
+                >
+                  <span className="font-medium text-slate-600 block mb-0.5">Attend message</span>
+                  <span className={attendMessage ? "" : "text-slate-400 italic"}>
+                    {attendMessage || "(Add in Theme → Attend & Decline Buttons)"}
+                  </span>
+                </div>
+                <div
+                  role={onAttendClick ? "button" : undefined}
+                  tabIndex={onAttendClick ? 0 : undefined}
+                  onClick={onAttendClick}
+                  onKeyDown={onAttendClick ? (e) => e.key === "Enter" && onAttendClick() : undefined}
+                  className="rsvp-btn-attend inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-default"
+                  style={{
+                    backgroundColor: acceptBg,
+                    color: acceptTextColor,
+                    borderRadius: buttonRadius,
+                    padding: buttonPaddingVal,
+                    cursor: onAttendClick ? "pointer" : "default",
+                  }}
+                >
+                  <Check className="w-5 h-5 shrink-0" strokeWidth={2.5} />
+                  <span>{attendText}</span>
+                </div>
+              </div>
+              {/* Decline: message above button */}
+              <div className="flex-1 flex flex-col gap-2">
+                <div
+                  className="text-sm"
+                  style={{ color: theme?.textColor ?? theme?.labelColor ?? "#374151" }}
+                >
+                  <span className="font-medium text-slate-600 block mb-0.5">Decline message</span>
+                  <span className={declineMessage ? "" : "text-slate-400 italic"}>
+                    {declineMessage || "(Add in Theme → Attend & Decline Buttons)"}
+                  </span>
+                </div>
+                <div
+                  role={onDeclineClick ? "button" : undefined}
+                  tabIndex={onDeclineClick ? 0 : undefined}
+                  onClick={onDeclineClick}
+                  onKeyDown={onDeclineClick ? (e) => e.key === "Enter" && onDeclineClick() : undefined}
+                  className="rsvp-btn-decline inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-default"
+                  style={{
+                    backgroundColor: declineBg,
+                    color: declineTextColor,
+                    borderRadius: buttonRadius,
+                    padding: buttonPaddingVal,
+                    cursor: onDeclineClick ? "pointer" : "default",
+                  }}
+                >
+                  <X className="w-5 h-5 shrink-0" strokeWidth={2.5} />
+                  <span>{declineText}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div
-            className="rsvp-btn-decline inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-default"
-            style={{
-              backgroundColor: declineBg,
-              color: declineTextColor,
-              borderRadius: buttonRadius,
-              padding: buttonPaddingVal,
-            }}
-          >
-            <X className="w-5 h-5 shrink-0" strokeWidth={2.5} />
-            <span>{declineText}</span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Footer image – always visible and scrollable; placeholder when no image; click to upload */}
