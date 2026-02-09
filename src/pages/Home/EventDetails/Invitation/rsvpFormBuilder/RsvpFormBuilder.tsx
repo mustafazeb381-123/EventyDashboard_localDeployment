@@ -1,5 +1,12 @@
 import React, { useRef, useState } from "react";
 import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
   Save,
   Palette as PaletteIcon,
   X,
@@ -7,7 +14,8 @@ import {
   EyeOff,
 } from "lucide-react";
 import type { RsvpFormField, RsvpTheme, RsvpLanguageConfig, RsvpFieldType } from "./types";
-import { getDefaultRsvpFormFields } from "./types";
+import { getDefaultRsvpFormFields, createRsvpFormField } from "./types";
+import { createRsvpLayoutField } from "./RsvpFieldPalette";
 
 function migrateFormFields(fields: RsvpFormField[]): RsvpFormField[] {
   return fields.map((f) => {
@@ -157,12 +165,64 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     }
   };
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const data = active.data.current as
+      | { from: "palette"; fieldType?: RsvpFieldType; layoutType?: "container" | "row" | "column" }
+      | { from: "field"; fieldId: string }
+      | undefined;
+    if (!data) return;
+
+    if (data.from === "palette") {
+      const newField = data.layoutType
+        ? createRsvpLayoutField(data.layoutType)
+        : createRsvpFormField(data.fieldType ?? "text");
+      setFormFields((prev) => {
+        const next = [...prev, newField];
+        if (over.id === "root") return next;
+        const container = next.find((f) => f.id === over.id && f.containerType);
+        if (!container) return next;
+        return next.map((f) =>
+          f.id === over.id ? { ...f, children: [...(f.children ?? []), newField.id] } : f
+        );
+      });
+      setEditingField(newField);
+      return;
+    }
+
+    if (data.from === "field") {
+      const fieldId = data.fieldId;
+      const currentParent = formFields.find((f) => (f.children ?? []).includes(fieldId));
+      const targetIsRoot = over.id === "root";
+      const targetContainer = formFields.find((f) => f.id === over.id && f.containerType);
+
+      setFormFields((prev) =>
+        prev.map((f) => {
+          let children = f.children ?? [];
+          if (f.id === currentParent?.id) {
+            children = children.filter((id) => id !== fieldId);
+          }
+          if (!targetIsRoot && f.id === targetContainer?.id) {
+            if (!children.includes(fieldId)) children = [...children, fieldId];
+          }
+          return { ...f, children };
+        })
+      );
+    }
+  };
+
   const steps: { step: 1 | 3; label: string }[] = [
     { step: 1, label: "Fields" },
     { step: 3, label: "Styling" },
   ];
 
   return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-100">
       {/* Header */}
       <div className="flex-shrink-0 flex flex-col gap-2 px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
@@ -270,6 +330,7 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
                 onDeclineClick={openReasonModal.bind(null, "decline")}
                 onBannerClick={() => bannerInputRef.current?.click()}
                 onFooterClick={() => footerInputRef.current?.click()}
+                builderMode={true}
               />
             </div>
             <input
@@ -366,5 +427,6 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
         </div>
       )}
     </div>
+    </DndContext>
   );
 };

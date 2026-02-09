@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import {
   User,
   Phone,
@@ -26,8 +27,37 @@ import { createRsvpFormField } from "./types";
 
 type PaletteTab = "layout" | "fields";
 
-/** Create a layout field (Container, Row, or Column) for the RSVP form */
-function createRsvpLayoutField(
+/** Wraps a palette button so it can be dragged into the form or into containers. */
+function DraggablePaletteButton({
+  id,
+  data,
+  onClick,
+  className,
+  children,
+}: {
+  id: string;
+  data: { from: "palette"; fieldType?: RsvpFieldType; layoutType?: "container" | "row" | "column" };
+  onClick: () => void;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef } = useDraggable({ id, data });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      onClick={onClick}
+      className={className}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** Create a layout field (Container, Row, or Column) for the RSVP form – exported for DnD in builder */
+export function createRsvpLayoutField(
   containerType: "container" | "row" | "column"
 ): RsvpFormField {
   const id = `${containerType}-${Date.now()}`;
@@ -228,18 +258,19 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
           </p>
           <div className="space-y-2">
             {filteredStructureItems.map((item) => (
-              <button
+              <DraggablePaletteButton
                 key={item.containerType}
-                type="button"
+                id={`palette:layout:${item.containerType}`}
+                data={{ from: "palette", layoutType: item.containerType }}
                 onClick={() => onAddField(createRsvpLayoutField(item.containerType))}
-                className="w-full flex items-start gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-left transition-all"
+                className="w-full flex items-start gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-left transition-all cursor-grab active:cursor-grabbing"
               >
                 <span className="shrink-0 mt-0.5">{item.icon}</span>
                 <div className="min-w-0">
                   <div className="font-medium text-sm text-slate-800">{item.title}</div>
-                  <div className="text-xs text-slate-500 mt-0.5">{item.subtitle}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{item.subtitle} — or drag to form</div>
                 </div>
-              </button>
+              </DraggablePaletteButton>
             ))}
           </div>
           {filteredStructureItems.length === 0 && (
@@ -336,15 +367,16 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
             </p>
             <div className="flex flex-wrap gap-2">
               {filteredFieldOptions.map(({ type, label }) => (
-                <button
+                <DraggablePaletteButton
                   key={type}
-                  type="button"
+                  id={`palette:${type}`}
+                  data={{ from: "palette", fieldType: type }}
                   onClick={() => onAddField(createRsvpFormField(type))}
-                  className="px-3 py-2 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-medium transition-all flex items-center gap-1.5"
+                  className="px-3 py-2 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-medium transition-all flex items-center gap-1.5 cursor-grab active:cursor-grabbing"
                 >
                   {FIELD_ICONS[type]}
                   {label}
-                </button>
+                </DraggablePaletteButton>
               ))}
             </div>
             {filteredFieldOptions.length === 0 && (
