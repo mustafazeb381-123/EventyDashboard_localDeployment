@@ -18,6 +18,7 @@ import {
   IdCard,
   Lock,
   Mail,
+  UserCog,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
@@ -173,6 +174,9 @@ const SideBar = ({
     }
     if (path === "/email-templates" || path.startsWith("/email-templates")) {
       return "Email Templates";
+    }
+    if (path === "/management" || path.startsWith("/management")) {
+      return "Management";
     }
     // if (path === "/TicketManagement" || path.startsWith("/TicketManagement")) {
     //   return "Ticket Management";
@@ -362,6 +366,14 @@ const SideBar = ({
         ? `/email-templates?eventId=${currentEventId}`
         : "/email-templates",
       availableForExpress: false,
+    },
+    {
+      icon: UserCog,
+      label: "Management",
+      path: currentEventId
+        ? `/management?eventId=${currentEventId}`
+        : "/management",
+      availableForExpress: true,
     },
     // {
     //   icon: Ticket,

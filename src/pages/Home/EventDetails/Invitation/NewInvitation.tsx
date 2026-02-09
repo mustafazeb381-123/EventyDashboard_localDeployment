@@ -368,28 +368,6 @@ function NewInvitation() {
       {/* Full-width white card: only Preview gets send buttons at top; content then footer */}
       <div className="flex-1 w-full">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          {/* Top bar only on Preview: Send Test Email + Send Invitation */}
-          {showPreviewScreen && (
-            <div className="flex items-center justify-end gap-3 px-6 md:px-10 py-5 border-b border-slate-200 bg-slate-50/50">
-              <button
-                type="button"
-                onClick={handleSendTestEmail}
-                disabled={isSending || isCreatingInvitation}
-                className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send Test Email
-              </button>
-              <button
-                type="button"
-                onClick={handleSendInvitationFromPreview}
-                disabled={isSending || isCreatingInvitation || parsedInvitees.length === 0}
-                className="px-5 py-2.5 bg-green-600 text-white rounded-xl text-sm font-semibold hover:bg-green-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Send Invitation
-              </button>
-            </div>
-          )}
-
           <div className="px-6 md:px-10 py-8 md:py-10">
             {showPreviewScreen ? (
               <PreviewInvitationScreen
@@ -401,6 +379,8 @@ function NewInvitation() {
                 onBack={() => setShowPreviewScreen(false)}
                 onSendTestEmail={handleSendTestEmail}
                 onSendInvitation={handleSendInvitationFromPreview}
+                isSending={isSending}
+                isCreatingInvitation={isCreatingInvitation}
               />
             ) : (
               <>

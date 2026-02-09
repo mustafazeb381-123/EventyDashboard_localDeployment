@@ -29,6 +29,7 @@ import Onboarding from "@/pages/Home/EventDetails/Onboarding/Onboarding";
 import CheckIn from "@/pages/Home/EventDetails/Attendees/CheckIn";
 import CheckOut from "@/pages/Home/EventDetails/Attendees/CheckOut";
 import EmailTemplates from "@/pages/Home/EventDetails/EmailTemplates/EmailTemplates";
+import Management from "@/pages/Home/Management/Management";
 
 const router = createBrowserRouter([
   {
@@ -98,6 +99,10 @@ const router = createBrowserRouter([
           {
             path: "email-templates",
             element: <EmailTemplates />,
+          },
+          {
+            path: "management",
+            element: <Management />,
           },
           {
             path: "attendees",
