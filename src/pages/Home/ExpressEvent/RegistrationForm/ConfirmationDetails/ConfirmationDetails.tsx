@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Check, MapPin, Info, QrCode, Calendar, Clock, Loader2, Pencil, X } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
+import { Check, MapPin, Info, QrCode, Calendar, Clock, Loader2, Pencil, X, LayoutGrid, Palette } from "lucide-react";
 import { useParams } from "react-router-dom";
 import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ConfirmationTemplateBuilder } from "@/components/ConfirmationTemplateBuilder";
+import type { ConfirmationBlock } from "@/components/ConfirmationTemplateBuilder";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -17,12 +20,20 @@ interface ConfirmationDetailsProps {
   selectedTemplateData?: any;
   onNext?: (eventId: string) => void; // Updated to accept eventId
   onPrevious?: () => void;
+  /** Optional: custom template blocks (for persistence); when set, custom mode can show them */
+  customTemplateBlocks?: ConfirmationBlock[];
+  /** Called when user changes the custom template in the builder */
+  onCustomTemplateChange?: (blocks: ConfirmationBlock[]) => void;
 }
+
+type ConfirmationMode = "toggles" | "custom";
 
 const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   onToggleStatesChange,
   eventId: propEventId,
   onNext,
+  customTemplateBlocks,
+  onCustomTemplateChange,
 }) => {
   // Get effective event ID
   const { id: routeId } = useParams();
@@ -30,6 +41,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
     (propEventId as string | undefined) || (routeId as string | undefined);
 
   console.log("ConfirmationDetails - event id:", effectiveEventId);
+
+  const [confirmationMode, setConfirmationMode] = useState<ConfirmationMode>("toggles");
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
     confirmationMsg: false,
@@ -388,17 +401,14 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
             }`}
           >
             {showQR && enabled ? (
-              <div className="w-20 h-20 bg-white rounded-xl p-2 shadow-inner">
-                <div className="w-full h-full bg-gray-900 rounded-lg grid grid-cols-4 gap-0.5 p-1">
-                  {[...Array(16)].map((_, i) => (
-                    <div
-                      key={i}
-                      className={`rounded-sm transition-all ${
-                        Math.random() > 0.5 ? "bg-white" : "bg-gray-900"
-                      }`}
-                    />
-                  ))}
-                </div>
+              <div className="w-20 h-20 bg-white rounded-xl p-2 shadow-inner flex items-center justify-center">
+                <QRCodeSVG
+                  value="SAMPLE-USER-QR-PREVIEW"
+                  size={72}
+                  level="M"
+                  includeMargin={false}
+                  className="w-full h-full"
+                />
               </div>
             ) : (
               <Icon
@@ -434,6 +444,59 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
         </div>
       )}
 
+      {/* Mode tabs: Quick toggles | Custom template */}
+      <div className="px-8 mb-6">
+        <div className="inline-flex rounded-xl border border-gray-200 bg-gray-50 p-1">
+          <button
+            type="button"
+            onClick={() => setConfirmationMode("toggles")}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              confirmationMode === "toggles"
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <LayoutGrid size={18} />
+            Quick toggles
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmationMode("custom")}
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              confirmationMode === "custom"
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            <Palette size={18} />
+            Custom template
+          </button>
+        </div>
+      </div>
+
+      {confirmationMode === "custom" ? (
+        <div className="px-8">
+          <ConfirmationTemplateBuilder
+            eventData={
+              eventData
+                ? {
+                    eventName: eventData.attributes?.name,
+                    eventDateFrom: eventData.attributes?.event_date_from,
+                    eventDateTo: eventData.attributes?.event_date_to,
+                    eventTimeFrom: eventData.attributes?.event_time_from,
+                    eventTimeTo: eventData.attributes?.event_time_to,
+                    location: eventData.attributes?.location,
+                    about: eventData.attributes?.about,
+                    logoUrl: eventData.attributes?.logo_url,
+                    attendeeName: "John Doe",
+                  }
+                : undefined
+            }
+            initialBlocks={customTemplateBlocks}
+            onTemplateChange={onCustomTemplateChange}
+          />
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-8 max-w-full">
         <div className="space-y-6">
           {isLoading ? (
@@ -606,17 +669,14 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                         Your Event QR Code
                       </span>
                     </div>
-                    <div className="w-32 h-32 mx-auto bg-white rounded-xl p-3 shadow-inner border-2 border-blue-200">
-                      <div className="w-full h-full bg-gray-900 rounded-lg grid grid-cols-4 gap-0.5 p-1">
-                        {[...Array(16)].map((_, i) => (
-                          <div
-                            key={i}
-                            className={`rounded-sm ${
-                              Math.random() > 0.5 ? "bg-white" : "bg-gray-900"
-                            }`}
-                          />
-                        ))}
-                      </div>
+                    <div className="w-32 h-32 mx-auto bg-white rounded-xl p-3 shadow-inner border-2 border-blue-200 flex items-center justify-center">
+                      <QRCodeSVG
+                        value="SAMPLE-USER-QR-PREVIEW"
+                        size={112}
+                        level="M"
+                        includeMargin={false}
+                        className="w-full h-full"
+                      />
                     </div>
                     <p className="text-xs text-blue-600 mt-3">
                       Present this QR code at the event entrance
@@ -736,6 +796,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
       </div>
       </div>
       </div>
+      )}
 
       {/* Edit Event Location Modal */}
       {editModalType === "location" && (
