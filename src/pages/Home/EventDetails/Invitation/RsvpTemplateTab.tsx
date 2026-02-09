@@ -274,6 +274,7 @@ export function RsvpTemplateTab({
                       currentLanguage={
                         template.languageConfig.primaryLanguage ?? "en"
                       }
+                      visibleOnly={true}
                     />
                   </div>
                 </div>
@@ -415,6 +416,7 @@ export function RsvpTemplateTab({
               currentLanguage={
                 previewTemplate.languageConfig.primaryLanguage ?? "en"
               }
+              visibleOnly={true}
             />
           </div>
         </div>

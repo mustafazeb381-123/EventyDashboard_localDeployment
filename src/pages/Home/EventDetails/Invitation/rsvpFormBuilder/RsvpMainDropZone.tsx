@@ -31,8 +31,8 @@ export const RsvpMainDropZone: React.FC<RsvpMainDropZoneProps> = ({
               Your RSVP form
             </p>
             <p className="text-sm text-gray-600 mb-4 max-w-md">
-              This form includes First name, Last name, Email, and Phone number.
-              Select a field on the left to customize label and placeholder.
+              Add layout (Container, Row, Column) or fields from the left panel.
+              Select a field to customize label and placeholder.
             </p>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <GripVertical size={16} />

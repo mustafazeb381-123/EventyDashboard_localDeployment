@@ -7,6 +7,7 @@ import {
 } from "@/components/EmailTemplateBuilder/EmailTemplateBuilderModal";
 
 // ---------- Static Templates ----------
+import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import RejectionTemplateOne from "./Templates/RejectionEmailTemplate/RejectionTemplateOne";
@@ -41,6 +42,21 @@ const rewriteHtmlUrlsToAbsolute = (html: string, baseUrl: string): string => {
     .replace(/href="\/(?!\/)/g, `href="${base}/`);
 };
 
+/** Flow steps config: when approval is required show Welcome, Thanks, Rejection; otherwise only Welcome (Confirmation). */
+const getFlowsConfig = (requireApproval: boolean) => {
+  const welcome = {
+    id: "welcome",
+    label: "Welcome Email (Confirmation)",
+    templates: [] as any[],
+  };
+  if (!requireApproval) return [welcome];
+  return [
+    welcome,
+    { id: "thank_you", label: "Thanks Email", templates: [] as any[] },
+    { id: "rejection", label: "Rejection Email", templates: [] as any[] },
+  ];
+};
+
 // Helper function to create static templates with event data
 const createStaticTemplates = (eventData: any) => {
   console.log(
@@ -49,7 +65,7 @@ const createStaticTemplates = (eventData: any) => {
   );
   if (!eventData) {
     console.warn("createStaticTemplates called without eventData");
-    return { thank_you: [], rejection: [] };
+    return { welcome: [], thank_you: [], rejection: [] };
   }
 
   const eventProps = {
@@ -71,6 +87,18 @@ const createStaticTemplates = (eventData: any) => {
   console.log("Creating templates with eventProps:", eventProps);
 
   return {
+    welcome: [
+      {
+        id: "welcome-template-1",
+        title: "Welcome Template 1",
+        component: <ConfirmationTemplateOne {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "welcome",
+        readyMadeId: "welcome-template-1",
+      },
+    ],
     thank_you: [
       {
         id: "thank-you-template-1",
@@ -509,10 +537,7 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 }) => {
   const effectiveEventId = eventId;
 
-  const [flows, setFlows] = useState<any[]>([
-    { id: "thank_you", label: "Thank You Email", templates: [] },
-    { id: "rejection", label: "Rejection Email", templates: [] },
-  ]);
+  const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false));
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
   const [modalTemplate, setModalTemplate] = useState<any | null>(null);
@@ -548,25 +573,14 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
 
   const currentFlow = flows[currentFlowIndex];
 
-  // Reset selected templates when event changes so we don't show another event's selection
-  useEffect(() => {
-    if (effectiveEventId) {
-      setSelectedTemplates({});
-    }
-  }, [effectiveEventId]);
-
   // Fetch event data when eventId is available - respond to both eventId prop and effectiveEventId changes
   useEffect(() => {
     const fetchEventData = async () => {
       const currentEventId = eventId;
       if (!currentEventId) {
-        setEventData(null); // Clear event data if no eventId
-        // Reset flows when no eventId
-        setFlows([
-          { id: "thank_you", label: "Thank You Email", templates: [] },
-          { id: "rejection", label: "Rejection Email", templates: [] },
-        ]);
-        setSelectedTemplates({});
+        setEventData(null);
+        setFlows(getFlowsConfig(false));
+        setCurrentFlowIndex(0);
         return;
       }
       try {
@@ -574,14 +588,27 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         console.log("response of get show event data", response);
         if (response.data?.data) {
           const newEventData = response.data.data;
+          const requireApproval =
+            newEventData?.attributes?.require_approval === true;
           setEventData(newEventData);
-          console.log("Event data updated:", newEventData);
+          setFlows(getFlowsConfig(requireApproval));
+          setCurrentFlowIndex(0);
+          console.log(
+            "Event data updated:",
+            newEventData,
+            "require_approval:",
+            requireApproval,
+          );
         } else {
           setEventData(null);
+          setFlows(getFlowsConfig(false));
+          setCurrentFlowIndex(0);
         }
       } catch (error) {
         console.error("Failed to fetch event data:", error);
         setEventData(null);
+        setFlows(getFlowsConfig(false));
+        setCurrentFlowIndex(0);
       }
     };
     fetchEventData();
@@ -1069,9 +1096,13 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       showNotification("Please select template", "warning");
       return;
     }
-    if (currentFlowIndex < flows.length - 1)
-      setCurrentFlowIndex(currentFlowIndex + 1);
-    else onNext?.(effectiveEventId || undefined);
+    // Navigate to mobile app visualization area (next section, not next email step)
+    onNext?.(effectiveEventId || undefined);
+  };
+
+  const handleSkip = () => {
+    // Skip email configuration and go to mobile app visualization
+    onNext?.(effectiveEventId || undefined);
   };
 
   const handleSaveFromEditor = async (design: any, html: string) => {
@@ -1383,12 +1414,20 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
         >
           Back
         </button>
-        <button
-          onClick={handleNext}
-          className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white"
-        >
-          Next
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSkip}
+            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleNext}
+            className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       <TemplateModal

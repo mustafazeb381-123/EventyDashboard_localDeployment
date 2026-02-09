@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, Palette, ChevronDown, Eye, EyeOff, LayoutGrid } from "lucide-react";
 import type { RsvpFormField, RsvpFormFieldOption, RsvpFieldType } from "./types";
 
 interface RsvpFieldConfigPanelProps {
@@ -10,7 +10,6 @@ interface RsvpFieldConfigPanelProps {
 
 const FIELD_TYPE_LABELS: Record<RsvpFieldType, string> = {
   text: "Text",
-  email: "Email",
   phone: "Phone",
   number: "Number",
   date: "Date",
@@ -29,6 +28,7 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
   onClose,
 }) => {
   const [config, setConfig] = useState<RsvpFormField>(field);
+  const [isStylingOpen, setIsStylingOpen] = useState(false);
 
   React.useEffect(() => {
     setConfig(field);
@@ -42,6 +42,15 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
   const isLabeled = !["paragraph", "divider", "heading"].includes(config.type);
   const hasOptions = config.type === "select" || config.type === "radio";
   const hasContent = config.type === "paragraph" || config.type === "heading";
+  const isVisible = config.visible !== false;
+  const isLayout = !!config.containerType;
+  const layoutProps = config.layoutProps ?? {};
+  const updateLayoutProps = (updates: Partial<NonNullable<RsvpFormField["layoutProps"]>>) => {
+    setConfig({
+      ...config,
+      layoutProps: { ...layoutProps, ...updates },
+    });
+  };
 
   const updateOption = (index: number, upd: Partial<RsvpFormFieldOption>) => {
     const opts = [...(config.options ?? [])];
@@ -64,7 +73,13 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
       <div className="p-5 border-b sticky top-0 bg-gray-50 z-10 shadow-sm">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-800">
-            Edit {FIELD_TYPE_LABELS[config.type]}
+            Edit {isLayout
+              ? (config.containerType === "container"
+                  ? "Container"
+                  : config.containerType === "row"
+                    ? "Row"
+                    : "Column")
+              : FIELD_TYPE_LABELS[config.type]}
           </h3>
           <button
             type="button"
@@ -78,6 +93,156 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
       </div>
 
       <div className="p-5 space-y-5">
+        {/* Step 1: Show / Hide field */}
+        <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
+          <span className="text-sm font-medium text-gray-700">Show in preview</span>
+          <button
+            type="button"
+            onClick={() => setConfig({ ...config, visible: !isVisible })}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              isVisible ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-600"
+            }`}
+            aria-pressed={!isVisible}
+          >
+            {isVisible ? <Eye size={18} /> : <EyeOff size={18} />}
+            {isVisible ? "Visible" : "Hidden"}
+          </button>
+        </div>
+
+        {isLayout && (
+          <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200">
+            <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4 text-indigo-600" />
+              Layout
+            </h4>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">Gap</label>
+                <input
+                  type="text"
+                  value={layoutProps.gap ?? ""}
+                  onChange={(e) => updateLayoutProps({ gap: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. 20px"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">Padding</label>
+                <input
+                  type="text"
+                  value={layoutProps.padding ?? ""}
+                  onChange={(e) => updateLayoutProps({ padding: e.target.value || undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. 16px"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-600">Flex direction</label>
+              <select
+                value={layoutProps.flexDirection ?? ""}
+                onChange={(e) =>
+                  updateLayoutProps({
+                    flexDirection: (e.target.value || undefined) as "row" | "column" | undefined,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Default ({config.containerType === "row" ? "row" : "column"})</option>
+                <option value="row">Row</option>
+                <option value="column">Column</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-600">Justify content</label>
+              <select
+                value={layoutProps.justifyContent ?? ""}
+                onChange={(e) =>
+                  updateLayoutProps({
+                    justifyContent: e.target.value || undefined,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Default</option>
+                <option value="flex-start">Start</option>
+                <option value="center">Center</option>
+                <option value="flex-end">End</option>
+                <option value="space-between">Space between</option>
+                <option value="space-around">Space around</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-600">Align items</label>
+              <select
+                value={layoutProps.alignItems ?? ""}
+                onChange={(e) =>
+                  updateLayoutProps({
+                    alignItems: e.target.value || undefined,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Default</option>
+                <option value="stretch">Stretch</option>
+                <option value="flex-start">Start</option>
+                <option value="center">Center</option>
+                <option value="flex-end">End</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1 text-gray-600">Flex wrap</label>
+              <select
+                value={layoutProps.flexWrap ?? ""}
+                onChange={(e) =>
+                  updateLayoutProps({
+                    flexWrap: (e.target.value || undefined) as "wrap" | "nowrap" | undefined,
+                  })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="">Default</option>
+                <option value="wrap">Wrap</option>
+                <option value="nowrap">No wrap</option>
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">Background</label>
+                <div className="flex gap-1">
+                  <input
+                    type="color"
+                    value={layoutProps.backgroundColor ?? "#f8fafc"}
+                    onChange={(e) => updateLayoutProps({ backgroundColor: e.target.value })}
+                    className="w-8 h-8 rounded border border-gray-300 cursor-pointer p-0"
+                  />
+                  <input
+                    type="text"
+                    value={layoutProps.backgroundColor ?? ""}
+                    onChange={(e) =>
+                      updateLayoutProps({ backgroundColor: e.target.value || undefined })
+                    }
+                    className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm"
+                    placeholder="#f8fafc"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">Border radius</label>
+                <input
+                  type="text"
+                  value={layoutProps.borderRadius ?? ""}
+                  onChange={(e) =>
+                    updateLayoutProps({ borderRadius: e.target.value || undefined })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  placeholder="e.g. 12px"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {isLabeled && (
           <>
             <div>
@@ -255,6 +420,428 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
             </label>
           </div>
         )}
+
+        {/* Custom Styling (like Advance Registration FieldConfigPanel) */}
+        <div className="pt-4 border-t">
+          <button
+            type="button"
+            onClick={() => setIsStylingOpen((prev) => !prev)}
+            className="flex w-full items-center justify-between text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3 hover:text-indigo-600 transition-colors"
+          >
+            <span>Custom styling</span>
+            <span className="flex items-center gap-1">
+              <Palette size={16} />
+              <ChevronDown
+                size={16}
+                className={`transition-transform ${isStylingOpen ? "rotate-180" : ""}`}
+              />
+            </span>
+          </button>
+          {isStylingOpen && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Width</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.width ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, width: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="100% or 300px"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Padding</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.padding ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, padding: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="8px 12px"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Text color</label>
+                  <div className="flex gap-1">
+                    <input
+                      type="color"
+                      value={config.fieldStyle?.textColor ?? "#000000"}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, textColor: e.target.value },
+                        })
+                      }
+                      className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.fieldStyle?.textColor ?? ""}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, textColor: e.target.value || undefined },
+                        })
+                      }
+                      className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                      placeholder="#000000"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Label color</label>
+                  <div className="flex gap-1">
+                    <input
+                      type="color"
+                      value={config.fieldStyle?.labelColor ?? "#374151"}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, labelColor: e.target.value },
+                        })
+                      }
+                      className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.fieldStyle?.labelColor ?? ""}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, labelColor: e.target.value || undefined },
+                        })
+                      }
+                      className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                      placeholder="#374151"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Background</label>
+                  <div className="flex gap-1">
+                    <input
+                      type="color"
+                      value={config.fieldStyle?.backgroundColor ?? "#ffffff"}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, backgroundColor: e.target.value },
+                        })
+                      }
+                      className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.fieldStyle?.backgroundColor ?? ""}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, backgroundColor: e.target.value || undefined },
+                        })
+                      }
+                      className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                      placeholder="#ffffff"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Border color</label>
+                  <div className="flex gap-1">
+                    <input
+                      type="color"
+                      value={config.fieldStyle?.borderColor ?? "#e2e8f0"}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, borderColor: e.target.value },
+                        })
+                      }
+                      className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.fieldStyle?.borderColor ?? ""}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, borderColor: e.target.value || undefined },
+                        })
+                      }
+                      className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                      placeholder="#e2e8f0"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Border width</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.borderWidth ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, borderWidth: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="1px"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Border radius</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.borderRadius ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, borderRadius: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="8px"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium mb-1 text-gray-600">Margin</label>
+                <input
+                  type="text"
+                  value={config.fieldStyle?.margin ?? ""}
+                  onChange={(e) =>
+                    setConfig({
+                      ...config,
+                      fieldStyle: { ...config.fieldStyle, margin: e.target.value || undefined },
+                    })
+                  }
+                  className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                  placeholder="0 or 8px 0"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Margin top</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.marginTop ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, marginTop: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Margin bottom</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.marginBottom ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, marginBottom: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Margin left</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.marginLeft ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, marginLeft: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Margin right</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.marginRight ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, marginRight: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Padding top</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.paddingTop ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, paddingTop: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Padding bottom</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.paddingBottom ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, paddingBottom: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Padding left</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.paddingLeft ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, paddingLeft: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Padding right</label>
+                  <input
+                    type="text"
+                    value={config.fieldStyle?.paddingRight ?? ""}
+                    onChange={(e) =>
+                      setConfig({
+                        ...config,
+                        fieldStyle: { ...config.fieldStyle, paddingRight: e.target.value || undefined },
+                      })
+                    }
+                    className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              {(config.type === "heading" || config.type === "paragraph") && (
+                <div className="grid grid-cols-2 gap-3">
+                  {config.type === "heading" && (
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-gray-600">Font size</label>
+                      <input
+                        type="text"
+                        value={config.fieldStyle?.fontSize ?? ""}
+                        onChange={(e) =>
+                          setConfig({
+                            ...config,
+                            fieldStyle: { ...config.fieldStyle, fontSize: e.target.value || undefined },
+                          })
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        placeholder="24px"
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label className="block text-xs font-medium mb-1 text-gray-600">Text align</label>
+                    <select
+                      value={config.fieldStyle?.textAlign ?? ""}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: {
+                            ...config.fieldStyle,
+                            textAlign: (e.target.value as "left" | "center" | "right" | "justify") || undefined,
+                          },
+                        })
+                      }
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">Default</option>
+                      <option value="left">Left</option>
+                      <option value="center">Center</option>
+                      <option value="right">Right</option>
+                      <option value="justify">Justify</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {config.type === "divider" && (
+                <div>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Divider color</label>
+                  <div className="flex gap-1">
+                    <input
+                      type="color"
+                      value={config.fieldStyle?.borderColor ?? "#e5e7eb"}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, borderColor: e.target.value },
+                        })
+                      }
+                      className="w-8 h-8 rounded cursor-pointer border border-gray-300 p-0"
+                    />
+                    <input
+                      type="text"
+                      value={config.fieldStyle?.borderColor ?? ""}
+                      onChange={(e) =>
+                        setConfig({
+                          ...config,
+                          fieldStyle: { ...config.fieldStyle, borderColor: e.target.value || undefined },
+                        })
+                      }
+                      className="flex-1 px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                      placeholder="#e5e7eb"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="pt-4 border-t sticky bottom-0 bg-white pb-2">
           <button

@@ -1,39 +1,37 @@
 import React, { useRef, useState } from "react";
 import {
   DndContext,
-  closestCenter,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
+  type DragEndEvent,
 } from "@dnd-kit/core";
 import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
-} from "@dnd-kit/sortable";
-import {
   Save,
-  Eye,
-  EyeOff,
   Palette as PaletteIcon,
   X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import type { RsvpFormField, RsvpTheme, RsvpLanguageConfig, RsvpFieldType } from "./types";
-import { getDefaultRsvpFormFields } from "./types";
+import { getDefaultRsvpFormFields, createRsvpFormField } from "./types";
+import { createRsvpLayoutField } from "./RsvpFieldPalette";
 
 function migrateFormFields(fields: RsvpFormField[]): RsvpFormField[] {
   return fields.map((f) => {
-    if ((f as RsvpFormField & { type?: RsvpFieldType }).type) return f;
-    const name = (f as RsvpFormField & { name: string }).name;
-    const type: RsvpFieldType = name === "email" ? "email" : name === "phone_number" ? "phone" : "text";
-    return { ...f, type };
+    let next = f;
+    if (!(f as RsvpFormField & { type?: RsvpFieldType }).type) {
+      const name = (f as RsvpFormField & { name: string }).name;
+      const type: RsvpFieldType = name === "phone_number" ? "phone" : "text";
+      next = { ...f, type };
+    }
+    if ((next as RsvpFormField & { visible?: boolean }).visible === undefined) {
+      next = { ...next, visible: true };
+    }
+    return next;
   });
 }
 import { RsvpFieldPalette } from "./RsvpFieldPalette";
-import { RsvpMainDropZone } from "./RsvpMainDropZone";
-import { RsvpSortableFieldItem } from "./RsvpSortableFieldItem";
 import { RsvpFieldConfigPanel } from "./RsvpFieldConfigPanel";
 import { RsvpThemeConfigPanel } from "./RsvpThemeConfigPanel";
 import { RsvpFormPreview } from "./RsvpFormPreview";
@@ -79,8 +77,14 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
   );
   const [templateName, setTemplateName] = useState(initialTemplateName);
   const [editingField, setEditingField] = useState<RsvpFormField | null>(null);
-  const [showPreview, setShowPreview] = useState(true);
   const [showThemePanel, setShowThemePanel] = useState(false);
+  /** When true: show all fields in preview. When false: show only visible fields (guest view). */
+  const [showFullPreview, setShowFullPreview] = useState(true);
+  /** Builder steps: 1 = Fields, 3 = Styling (Variables and Actions steps removed) */
+  const [builderStep, setBuilderStep] = useState<1 | 3>(1);
+  /** Reason popup when Attend/Decline is clicked in preview */
+  const [reasonModal, setReasonModal] = useState<{ type: "attend" | "decline" } | null>(null);
+  const [reasonText, setReasonText] = useState("");
   const [theme, setTheme] = useState<RsvpTheme>({
     ...defaultTheme,
     ...initialTheme,
@@ -109,23 +113,6 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     e.target.value = "";
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-  const handleDragEnd = (event: { active: { id: string }; over: { id: string } | null }) => {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const overId = String(over.id);
-    const oldIndex = formFields.findIndex((f) => f.id === active.id);
-    const newIndex = formFields.findIndex((f) => f.id === overId);
-    if (oldIndex === -1 || newIndex === -1) return;
-    setFormFields(arrayMove(formFields, oldIndex, newIndex));
-  };
-
   const handleUpdateField = (updated: RsvpFormField) => {
     setFormFields((prev) =>
       prev.map((f) => (f.id === updated.id ? updated : f))
@@ -143,6 +130,29 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     if (editingField?.id === id) setEditingField(null);
   };
 
+  const handleToggleVisible = (field: RsvpFormField) => {
+    setFormFields((prev) =>
+      prev.map((f) =>
+        f.id === field.id ? { ...f, visible: f.visible === false ? true : false } : f
+      )
+    );
+    if (editingField?.id === field.id) {
+      setEditingField((prev) =>
+        prev ? { ...prev, visible: prev.visible === false ? true : false } : null
+      );
+    }
+  };
+
+  const openReasonModal = (type: "attend" | "decline") => {
+    setReasonText("");
+    setReasonModal({ type });
+  };
+
+  const closeReasonModal = () => {
+    setReasonModal(null);
+    setReasonText("");
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -155,36 +165,89 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     }
   };
 
-  const isEmpty = formFields.length === 0;
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over) return;
+    const data = active.data.current as
+      | { from: "palette"; fieldType?: RsvpFieldType; layoutType?: "container" | "row" | "column" }
+      | { from: "field"; fieldId: string }
+      | undefined;
+    if (!data) return;
+
+    if (data.from === "palette") {
+      const newField = data.layoutType
+        ? createRsvpLayoutField(data.layoutType)
+        : createRsvpFormField(data.fieldType ?? "text");
+      setFormFields((prev) => {
+        const next = [...prev, newField];
+        if (over.id === "root") return next;
+        const container = next.find((f) => f.id === over.id && f.containerType);
+        if (!container) return next;
+        return next.map((f) =>
+          f.id === over.id ? { ...f, children: [...(f.children ?? []), newField.id] } : f
+        );
+      });
+      setEditingField(newField);
+      return;
+    }
+
+    if (data.from === "field") {
+      const fieldId = data.fieldId;
+      const currentParent = formFields.find((f) => (f.children ?? []).includes(fieldId));
+      const targetIsRoot = over.id === "root";
+      const targetContainer = formFields.find((f) => f.id === over.id && f.containerType);
+
+      setFormFields((prev) =>
+        prev.map((f) => {
+          let children = f.children ?? [];
+          if (f.id === currentParent?.id) {
+            children = children.filter((id) => id !== fieldId);
+          }
+          if (!targetIsRoot && f.id === targetContainer?.id) {
+            if (!children.includes(fieldId)) children = [...children, fieldId];
+          }
+          return { ...f, children };
+        })
+      );
+    }
+  };
+
+  const steps: { step: 1 | 3; label: string }[] = [
+    { step: 1, label: "Fields" },
+    { step: 3, label: "Styling" },
+  ];
 
   return (
+    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-100">
       {/* Header */}
-      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 bg-white border-b border-slate-200 shadow-sm flex-wrap gap-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <h2 className="text-lg font-semibold text-slate-800 shrink-0">
-            RSVP Form Builder
-          </h2>
-          <input
-            type="text"
-            value={templateName}
-            onChange={(e) => setTemplateName(e.target.value)}
-            placeholder="Template name"
-            className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 max-w-[200px]"
-          />
-        </div>
-        <div className="flex items-center gap-2">
+      <div className="flex-shrink-0 flex flex-col gap-2 px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-3 min-w-0">
+            <h2 className="text-lg font-semibold text-slate-800 shrink-0">
+              RSVP Form Builder
+            </h2>
+            <input
+              type="text"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="Template name"
+              className="px-3 py-1.5 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 max-w-[200px]"
+            />
+          </div>
+          <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowPreview(!showPreview)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-sm font-medium text-slate-700"
+            onClick={() => setShowFullPreview(!showFullPreview)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
+            title={showFullPreview ? "Show only visible fields (guest view)" : "Show all fields including hidden"}
           >
-            {showPreview ? (
-              <EyeOff size={18} />
-            ) : (
-              <Eye size={18} />
-            )}
-            {showPreview ? "Hide Preview" : "Preview"}
+            {showFullPreview ? <EyeOff size={18} /> : <Eye size={18} />}
+            {showFullPreview ? "Hide preview" : "Show preview"}
           </button>
           <button
             type="button"
@@ -215,80 +278,78 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           >
             <X size={20} />
           </button>
+          </div>
+        </div>
+        {/* Step navigator */}
+        <div className="flex items-center gap-1 flex-wrap">
+          {steps.map(({ step, label }) => (
+            <button
+              key={step}
+              type="button"
+              onClick={() => {
+                setBuilderStep(step);
+                if (step === 3) setShowThemePanel(true);
+              }}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                builderStep === step
+                  ? "bg-indigo-600 text-white"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {step}. {label}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Left: Form fields list */}
+        {/* Left: Form fields list (Step 1 focus) */}
         <div className="w-56 flex-shrink-0 bg-white border-r border-slate-200 overflow-y-auto p-3">
           <RsvpFieldPalette
             formFields={formFields}
             selectedFieldId={editingField?.id ?? null}
             onSelectField={setEditingField}
             onAddField={handleAddField}
+            onToggleVisible={handleToggleVisible}
+            onDeleteField={handleDeleteField}
           />
         </div>
 
-        {/* Center: Canvas or Preview – scrollable so banner, form, and footer image all visible */}
+        {/* Center: Full form in both Preview and Hide Preview – banner, fields, footer, Attend/Decline always visible */}
         <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
-          {showPreview ? (
-            <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-100">
-              <div className="p-6 flex justify-center min-h-full">
-                <RsvpFormPreview
-                  formFields={formFields}
-                  theme={theme}
-                  currentLanguage={languageConfig.primaryLanguage ?? "en"}
-                  onBannerClick={() => bannerInputRef.current?.click()}
-                  onFooterClick={() => footerInputRef.current?.click()}
-                />
-              </div>
-              <input
-                ref={bannerInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleBannerFileChange}
-                className="hidden"
-                aria-hidden
-              />
-              <input
-                ref={footerInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFooterFileChange}
-                className="hidden"
-                aria-hidden
+          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-100">
+            <div className="p-6 flex justify-center min-h-full">
+              <RsvpFormPreview
+                formFields={formFields}
+                theme={theme}
+                currentLanguage={languageConfig.primaryLanguage ?? "en"}
+                visibleOnly={!showFullPreview}
+                variableMode={false}
+                showActionButtons={true}
+                onAttendClick={openReasonModal.bind(null, "attend")}
+                onDeclineClick={openReasonModal.bind(null, "decline")}
+                onBannerClick={() => bannerInputRef.current?.click()}
+                onFooterClick={() => footerInputRef.current?.click()}
+                builderMode={true}
               />
             </div>
-          ) : (
-            <div className="flex-1 min-h-0 overflow-y-auto p-6">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-              >
-                <RsvpMainDropZone isEmpty={isEmpty}>
-                  {formFields.length > 0 && (
-                    <SortableContext
-                      items={formFields.map((f) => f.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
-                      <div className="space-y-3">
-                        {formFields.map((field) => (
-                          <RsvpSortableFieldItem
-                            key={field.id}
-                            field={field}
-                            onEdit={setEditingField}
-                            onUpdate={handleUpdateField}
-                            onDelete={handleDeleteField}
-                          />
-                        ))}
-                      </div>
-                    </SortableContext>
-                  )}
-                </RsvpMainDropZone>
-              </DndContext>
-            </div>
-          )}
+            <input
+              ref={bannerInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleBannerFileChange}
+              className="hidden"
+              aria-hidden
+            />
+            <input
+              ref={footerInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleFooterFileChange}
+              className="hidden"
+              aria-hidden
+            />
+          </div>
         </div>
 
         {/* Right: Config / Theme / Translation panels */}
@@ -307,6 +368,65 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           />
         )}
       </div>
+
+      {/* Step 4: Reason popup when Attend or Decline is clicked */}
+      {reasonModal && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50"
+          onMouseDown={(e) => e.target === e.currentTarget && closeReasonModal()}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900">
+                {reasonModal.type === "attend" ? "Reason for attending" : "Reason for declining"}
+              </h3>
+              <button
+                type="button"
+                onClick={closeReasonModal}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4">
+              <textarea
+                value={reasonText}
+                onChange={(e) => setReasonText(e.target.value)}
+                placeholder={
+                  reasonModal.type === "attend"
+                    ? "e.g. Looking forward to it!"
+                    : "e.g. Sorry, I have a conflict."
+                }
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                rows={4}
+              />
+            </div>
+            <div className="p-4 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeReasonModal}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  closeReasonModal();
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+    </DndContext>
   );
 };

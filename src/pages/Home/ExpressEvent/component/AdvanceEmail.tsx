@@ -1138,9 +1138,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       showNotification("Please select template", "warning");
       return;
     }
-    if (currentFlowIndex < flows.length - 1)
-      setCurrentFlowIndex(currentFlowIndex + 1);
-    else onNext?.(effectiveEventId || undefined);
+    // Navigate to mobile app visualization area (next section, not next email step)
+    onNext?.(effectiveEventId || undefined);
+  };
+
+  const handleSkip = () => {
+    // Skip email configuration and go to mobile app visualization
+    onNext?.(effectiveEventId || undefined);
   };
 
   const handleSaveFromEditor = async (design: any, html: string) => {
@@ -1453,12 +1457,20 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         >
           Back
         </button>
-        <button
-          onClick={handleNext}
-          className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white"
-        >
-          Next
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleSkip}
+            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700"
+          >
+            Skip
+          </button>
+          <button
+            onClick={handleNext}
+            className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white"
+          >
+            Next
+          </button>
+        </div>
       </div>
 
       <TemplateModal

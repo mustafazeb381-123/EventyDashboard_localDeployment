@@ -6,7 +6,6 @@
 /** Field types – like Advance Registration (number, textarea, date, dropdown, checkbox, paragraph, divider, heading). */
 export type RsvpFieldType =
   | "text"
-  | "email"
   | "phone"
   | "number"
   | "date"
@@ -34,6 +33,8 @@ export interface RsvpFormField {
   label: string;
   placeholder?: string;
   required: boolean;
+  /** Step 1: show/hide – when false, field is hidden in preview */
+  visible?: boolean;
   /** Optional translations for dual-language */
   labelTranslations?: { en?: string; ar?: string };
   placeholderTranslations?: { en?: string; ar?: string };
@@ -49,13 +50,50 @@ export interface RsvpFormField {
   /** For number: min/max */
   min?: number;
   max?: number;
+  /** Per-field styling (like Advance Registration FieldConfigPanel custom styling) */
+  fieldStyle?: {
+    backgroundColor?: string;
+    borderColor?: string;
+    borderWidth?: string;
+    borderRadius?: string;
+    padding?: string;
+    paddingTop?: string;
+    paddingRight?: string;
+    paddingBottom?: string;
+    paddingLeft?: string;
+    margin?: string;
+    marginTop?: string;
+    marginRight?: string;
+    marginBottom?: string;
+    marginLeft?: string;
+    textColor?: string;
+    labelColor?: string;
+    textAlign?: "left" | "center" | "right" | "justify";
+    fontSize?: string;
+    height?: string;
+    width?: string;
+  };
+  /** Layout: container / row / column (like Advance Registration). When set, field acts as a wrapper. */
+  containerType?: "row" | "column" | "container";
+  /** IDs of child fields when this field is a container */
+  children?: string[];
+  /** Layout styling for containers */
+  layoutProps?: {
+    gap?: string;
+    padding?: string;
+    justifyContent?: string;
+    alignItems?: string;
+    flexDirection?: "row" | "column";
+    flexWrap?: "wrap" | "nowrap";
+    backgroundColor?: string;
+    borderRadius?: string;
+  };
 }
 
 /** @deprecated Use RsvpFormField.type and .name instead */
 export type RsvpFormFieldName =
   | "first_name"
   | "last_name"
-  | "email"
   | "phone_number";
 
 export type RsvpLanguageMode = "single" | "dual";
@@ -73,6 +111,11 @@ export interface RsvpTheme {
   formBackgroundColor?: string;
   formBorderRadius?: string;
   formMaxWidth?: string;
+  formAlignment?: "left" | "center" | "right";
+  /** Step 3: alignment of form fields + buttons block inside the form */
+  formFieldsAlignment?: "left" | "center" | "right";
+  formBorderColor?: string;
+  formBackgroundImage?: string | File | null;
   /** Footer banner image at bottom (File or URL string) */
   footerBannerImage?: File | string | null;
   footerEnabled?: boolean;
@@ -94,17 +137,36 @@ export interface RsvpTheme {
   headerTextColor?: string;
   bodyBackgroundColor?: string;
   bodyTextColor?: string;
+  /** Typography: heading (in-form headings), label, body text */
+  headingColor?: string;
   labelColor?: string;
+  textColor?: string;
+  /** Input field styling (like Advance Registration) */
+  inputBorderColor?: string;
+  inputBackgroundColor?: string;
+  inputBorderRadius?: string;
+  inputPadding?: string;
+  inputFocusBorderColor?: string;
+  inputTextColor?: string;
+  inputPlaceholderColor?: string;
+  /** Buttons */
   acceptButtonBackgroundColor?: string;
   acceptButtonTextColor?: string;
   declineButtonBackgroundColor?: string;
   declineButtonTextColor?: string;
+  acceptButtonHoverBackgroundColor?: string;
+  declineButtonHoverBackgroundColor?: string;
+  buttonBorderRadius?: string;
+  buttonPadding?: string;
   acceptButtonText?: string;
   declineButtonText?: string;
   acceptButtonTranslations?: { en?: string; ar?: string };
   declineButtonTranslations?: { en?: string; ar?: string };
-  inputBorderColor?: string;
-  inputBackgroundColor?: string;
+  /** Optional message shown in the form above Attend/Decline buttons (e.g. "Thank you for responding") */
+  acceptMessage?: string;
+  declineMessage?: string;
+  acceptMessageTranslations?: { en?: string; ar?: string };
+  declineMessageTranslations?: { en?: string; ar?: string };
 }
 
 export interface RsvpFormBuilderTemplate {
@@ -117,14 +179,9 @@ export interface RsvpFormBuilderTemplate {
   updatedAt?: string;
 }
 
-/** Default form fields: First name, Last name, Email, Phone number (like Advance Registration). */
+/** Default form fields: empty – user adds layout and fields from the palette. */
 export function getDefaultRsvpFormFields(): RsvpFormField[] {
-  return [
-    { id: `first_name-${Date.now()}`, type: "text", name: "first_name", label: "First name", placeholder: "Enter first name", required: true },
-    { id: `last_name-${Date.now()}`, type: "text", name: "last_name", label: "Last name", placeholder: "Enter last name", required: true },
-    { id: `email-${Date.now()}`, type: "email", name: "email", label: "Email", placeholder: "Enter email", required: true },
-    { id: `phone_number-${Date.now()}`, type: "phone", name: "phone_number", label: "Phone number", placeholder: "Enter phone number", required: false, inputVariant: "default" },
-  ];
+  return [];
 }
 
 /** Create a new field of the given type for "Add field" in palette */
@@ -133,7 +190,6 @@ export function createRsvpFormField(type: RsvpFieldType): RsvpFormField {
   const name = ["paragraph", "divider", "heading"].includes(type) ? id : `${type}_${Date.now()}`;
   const defaults: Record<RsvpFieldType, Partial<RsvpFormField>> = {
     text: { label: "Text", placeholder: "Enter text", required: false },
-    email: { label: "Email", placeholder: "Enter email", required: false },
     phone: { label: "Phone number", placeholder: "Enter phone", required: false, inputVariant: "default" },
     number: { label: "Number", placeholder: "0", required: false },
     date: { label: "Date", placeholder: "", required: false },
@@ -153,6 +209,7 @@ export function createRsvpFormField(type: RsvpFieldType): RsvpFormField {
     label: d.label ?? type,
     placeholder: d.placeholder,
     required: d.required ?? false,
+    visible: true,
     options: d.options,
     content: d.content,
     headingLevel: d.headingLevel,
