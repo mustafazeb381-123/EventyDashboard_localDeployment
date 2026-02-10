@@ -74,7 +74,11 @@ function formatInvitationDate(iso: string | undefined): string {
   if (!iso) return "—";
   try {
     const d = new Date(iso);
-    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return d.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
   } catch {
     return "—";
   }
@@ -182,7 +186,7 @@ function Invitations() {
     type: "success" | "error" | "info";
   } | null>(null);
   const [actionsMenuOpenId, setActionsMenuOpenId] = useState<string | null>(
-    null
+    null,
   );
   const actionsMenuRef = useRef<HTMLDivElement>(null);
 
@@ -214,7 +218,7 @@ function Invitations() {
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "info"
+    type: "success" | "error" | "info",
   ) => {
     setNotification({ message, type });
   };
@@ -272,9 +276,16 @@ function Invitations() {
   const fetchInvitations = async (id: string, page: number = 1) => {
     setLoadingInvitations(true);
     try {
-      const response = await getEventInvitations(id, { page, per_page: itemsPerPage });
+      const response = await getEventInvitations(id, {
+        page,
+        per_page: itemsPerPage,
+      });
       const res = response.data as any;
-      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      const list = Array.isArray(res?.data)
+        ? res.data
+        : Array.isArray(res)
+          ? res
+          : [];
       setInvitations(list);
       const meta = res?.meta?.pagination;
       if (meta) {
@@ -307,14 +318,20 @@ function Invitations() {
       const title = (inv.title || "").toLowerCase();
       const subject = (inv.invitation_email_subject || "").toLowerCase();
       const type = (inv.invitation_type || "").toLowerCase();
-      return title.includes(searchLower) || subject.includes(searchLower) || type.includes(searchLower);
+      return (
+        title.includes(searchLower) ||
+        subject.includes(searchLower) ||
+        type.includes(searchLower)
+      );
     });
   }, [invitations, filterType, searchTerm]);
 
   // Stats from invitations API (total from pagination; completed/pending from list)
   const stats = useMemo(() => {
     const total = invitationPagination?.total_count ?? invitations.length;
-    const withInvitees = invitations.filter((inv) => (inv.event_invitation_users_count ?? 0) > 0).length;
+    const withInvitees = invitations.filter(
+      (inv) => (inv.event_invitation_users_count ?? 0) > 0,
+    ).length;
     return {
       total,
       completed: withInvitees,
@@ -339,7 +356,7 @@ function Invitations() {
     if (idsToSend.length === 0) {
       showNotification(
         "Please select at least one user to send invitation.",
-        "error"
+        "error",
       );
       return;
     }
@@ -352,7 +369,7 @@ function Invitations() {
       } else {
         showNotification(
           `Invitation sent to ${idsToSend.length} users successfully!`,
-          "success"
+          "success",
         );
       }
       setSelectedUsers(new Set());
@@ -366,7 +383,7 @@ function Invitations() {
         isSingleUser
           ? "Failed to send invitation to user. Please try again."
           : errorMessage,
-        "error"
+        "error",
       );
     } finally {
       setSendingCredentialsUserId(null);
@@ -406,8 +423,8 @@ function Invitations() {
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
@@ -416,8 +433,7 @@ function Invitations() {
       )}
 
       <div className="min-h-screen bg-gray-50">
-        <div className="px-6 py-6 max-w-[1400px] mx-auto">
-
+        <div className="px-6 py-6 max-w-full mx-auto">
           {/* ── Header ── */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -430,17 +446,17 @@ function Invitations() {
             </div>
             <div className="flex items-center gap-2">
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm">
-                <Download style={{color: "#2B7FFF"}} size={15} />
+                <Download style={{ color: "#2B7FFF" }} size={15} />
                 Export CSV
               </button>
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm">
-                <FileText style={{color: "#2B7FFF"}} size={15} />
+                <FileText style={{ color: "#2B7FFF" }} size={15} />
                 Event Report
               </button>
               <button
                 onClick={() =>
                   navigate(
-                    `/invitation/new${eventId ? `?eventId=${eventId}` : ""}`
+                    `/invitation/new${eventId ? `?eventId=${eventId}` : ""}`,
                   )
                 }
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors"
@@ -455,11 +471,16 @@ function Invitations() {
           <div className="grid grid-cols-4 gap-4 mb-6">
             {/* Total */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:"#FAFAFA"}}>
+              <div
+                className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "#FAFAFA" }}
+              >
                 <UserCheck className="w-5 h-5 text-gray-500" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Total Invitations</p>
+                <p className="text-xs text-gray-500 mb-0.5">
+                  Total Invitations
+                </p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
                   {stats.total || 140}
                 </p>
@@ -468,7 +489,10 @@ function Invitations() {
 
             {/* Completed */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#FAFAFA'}}>
+              <div
+                className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "#FAFAFA" }}
+              >
                 <CheckCircle className="w-5 h-5 text-green-500" />
               </div>
               <div>
@@ -481,7 +505,10 @@ function Invitations() {
 
             {/* In Progress */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#FAFAFA'}}>
+              <div
+                className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "#FAFAFA" }}
+              >
                 <Clock className="w-5 h-5 text-blue-400" />
               </div>
               <div>
@@ -494,7 +521,10 @@ function Invitations() {
 
             {/* Pending */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#FAFAFA'}}>
+              <div
+                className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: "#FAFAFA" }}
+              >
                 <Mail className="w-5 h-5 text-red-400" />
               </div>
               <div>
@@ -648,8 +678,13 @@ function Invitations() {
                   ) : (
                     listToShow.map((invitation) => {
                       const rowKey = `inv-${invitation.id}`;
-                      const isSelected = selectedUsers.has(String(invitation.id));
-                      const status = (invitation.event_invitation_users_count ?? 0) > 0 ? "done" : "pending";
+                      const isSelected = selectedUsers.has(
+                        String(invitation.id),
+                      );
+                      const status =
+                        (invitation.event_invitation_users_count ?? 0) > 0
+                          ? "done"
+                          : "pending";
                       return (
                         <tr
                           key={rowKey}
@@ -661,7 +696,9 @@ function Invitations() {
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => handleInvitationSelect(String(invitation.id))}
+                              onChange={() =>
+                                handleInvitationSelect(String(invitation.id))
+                              }
                               className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
                             />
                           </td>
@@ -682,7 +719,11 @@ function Invitations() {
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center w-8 h-8 rounded-lg border-gray-200 bg-white">
-                              <Mail size={15} className="text-gray-500" style={{ color: "#2B7FFF" }} />
+                              <Mail
+                                size={15}
+                                className="text-gray-500"
+                                style={{ color: "#2B7FFF" }}
+                              />
                             </div>
                           </td>
                           <td className="px-4 py-3">
@@ -714,12 +755,20 @@ function Invitations() {
                               </button>
                               <div
                                 className="relative"
-                                ref={actionsMenuOpenId === rowKey ? actionsMenuRef : undefined}
+                                ref={
+                                  actionsMenuOpenId === rowKey
+                                    ? actionsMenuRef
+                                    : undefined
+                                }
                               >
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    setActionsMenuOpenId(actionsMenuOpenId === rowKey ? null : rowKey)
+                                    setActionsMenuOpenId(
+                                      actionsMenuOpenId === rowKey
+                                        ? null
+                                        : rowKey,
+                                    )
                                   }
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                   title="More actions"
@@ -731,17 +780,25 @@ function Invitations() {
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        navigate(`/invitation/report/${invitation.id}`, {
-                                          state: {
-                                            invitationName: invitation.title,
-                                            createdAt: formatInvitationDate(invitation.created_at),
+                                        navigate(
+                                          `/invitation/report/${invitation.id}`,
+                                          {
+                                            state: {
+                                              invitationName: invitation.title,
+                                              createdAt: formatInvitationDate(
+                                                invitation.created_at,
+                                              ),
+                                            },
                                           },
-                                        });
+                                        );
                                         setActionsMenuOpenId(null);
                                       }}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
-                                      <BarChart2 size={15} className="text-orange-500 flex-shrink-0" />
+                                      <BarChart2
+                                        size={15}
+                                        className="text-orange-500 flex-shrink-0"
+                                      />
                                       Invitation Report
                                     </button>
                                     <button
@@ -749,7 +806,10 @@ function Invitations() {
                                       onClick={() => setActionsMenuOpenId(null)}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
-                                      <Pencil size={15} className="text-green-600 flex-shrink-0" />
+                                      <Pencil
+                                        size={15}
+                                        className="text-green-600 flex-shrink-0"
+                                      />
                                       Edit
                                     </button>
                                     <button
@@ -757,7 +817,10 @@ function Invitations() {
                                       onClick={() => setActionsMenuOpenId(null)}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
-                                      <Copy size={15} className="text-pink-500 flex-shrink-0" />
+                                      <Copy
+                                        size={15}
+                                        className="text-pink-500 flex-shrink-0"
+                                      />
                                       Clone
                                     </button>
                                   </div>
@@ -782,7 +845,8 @@ function Invitations() {
                     ? "No invitations"
                     : (() => {
                         const page = invitationPagination?.current_page ?? 1;
-                        const per = invitationPagination?.per_page ?? itemsPerPage;
+                        const per =
+                          invitationPagination?.per_page ?? itemsPerPage;
                         const start = (page - 1) * per + 1;
                         const end = Math.min(page * per, totalCount);
                         return `Showing ${start} to ${end} of ${totalCount} invitations`;
@@ -817,7 +881,7 @@ function Invitations() {
                         >
                           {page}
                         </button>
-                      )
+                      ),
                     )}
                   </div>
 

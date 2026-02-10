@@ -215,6 +215,7 @@ function NewInvitation() {
         last_name: p.last_name || undefined,
         email: p.email || undefined,
         phone_number: p.phone_number || undefined,
+        user_type: "vip",
       }));
       const event_invitation = {
         title: invitationForm.invitationName,
@@ -248,13 +249,27 @@ function NewInvitation() {
       showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
       navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
     } catch (error: any) {
-      showNotification(
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          error?.message ||
-          "Failed to create invitation.",
-        "error",
-      );
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+      const apiMessage =
+        (typeof data?.message === "string" ? data.message : null) ||
+        (typeof data?.error === "string" ? data.error : null) ||
+        (data?.errors && typeof data.errors === "object" ? JSON.stringify(data.errors) : null);
+      const displayMessage = [
+        status != null ? `Status ${status}` : null,
+        apiMessage || error?.message || "Failed to create invitation.",
+      ]
+        .filter(Boolean)
+        .join(" — ");
+      console.error("Invitation create error:", {
+        message: error?.message,
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        fullError: error,
+      });
+      console.error("Invitation create error (message):", displayMessage);
+      showNotification(displayMessage, "error");
     } finally {
       setIsCreatingInvitation(false);
     }
