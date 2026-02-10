@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
-  BarChart2,
   ArrowLeft,
   Printer,
   MapPin,
@@ -9,14 +8,17 @@ import {
   Users,
   Send,
   UserCheck,
+  UserPlus,
+  UserX,
   Percent,
   Copy,
   Download,
   Search,
   Check,
   Clock,
-  X,
+  Tag,
 } from "lucide-react";
+import { icons } from "@/utils/Assets";
 
 type UserRow = {
   id: number;
@@ -169,38 +171,38 @@ function InvitationReport() {
         <div className="flex items-center justify-center">
           <div
             className={`w-6 h-6 rounded-full flex items-center justify-center ${
-              on ? "bg-green-50 border border-green-500" : "bg-orange-50 border border-orange-500"
+              on
+                ? "bg-green-100 border-2 border-green-500"
+                : "bg-orange-100 border-2 border-orange-400"
             }`}
           >
             {on ? (
-              <Check size={14} className="text-green-600" strokeWidth={3} />
+              <Check size={14} className="text-green-600" strokeWidth={2.5} />
             ) : (
-              <Clock size={14} className="text-orange-600" strokeWidth={2} />
+              <Clock size={14} className="text-orange-500" strokeWidth={2} />
             )}
           </div>
         </div>
       );
     }
+
     const s = status as string;
     const isApproved = s === "approved" || s === "delivered";
-    const isRejected = s === "rejected" || s === "failed";
+    // Rejected/failed show as pending (orange clock) — no red X
+
     return (
       <div className="flex items-center justify-center">
         <div
           className={`w-6 h-6 rounded-full flex items-center justify-center ${
             isApproved
-              ? "bg-green-50 border border-green-500"
-              : isRejected
-                ? "bg-red-50 border border-red-500"
-                : "bg-orange-50 border border-orange-500"
+              ? "bg-green-100 border-2 border-green-500"
+              : "bg-orange-100 border-2 border-orange-400"
           }`}
         >
           {isApproved ? (
-            <Check size={14} className="text-green-600" strokeWidth={3} />
-          ) : isRejected ? (
-            <X size={14} className="text-red-600" strokeWidth={3} />
+            <Check size={14} className="text-green-600" strokeWidth={2.5} />
           ) : (
-            <Clock size={14} className="text-orange-600" strokeWidth={2} />
+            <Clock size={14} className="text-orange-500" strokeWidth={2} />
           )}
         </div>
       </div>
@@ -215,20 +217,20 @@ function InvitationReport() {
       <style>{printStyles}</style>
       <div className="min-h-screen bg-gray-50 p-6">
       {/* Header - White with black text */}
-      <div className="bg-white rounded-xl shadow-sm mb-6">
+      <div className="bg-white rounded-xl shadow-sm mb-6" style={{ backgroundColor: "#F7FAFF" }}>
         <div className="px-6 py-5 border-b border-gray-200">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <BarChart2 size={20} className="text-white" />
+                <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden">
+                  <img src={icons.reports} alt="" className="w-6 h-6 object-contain brightness-0 invert" />
                 </div>
                 <h1 className="text-xl font-bold text-gray-900">Invitation Report</h1>
               </div>
               <p className="text-gray-900 text-base font-medium mb-2">{invitationName}</p>
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                 <span className="inline-flex items-center gap-1.5">
-                  <MapPin size={14} />
+                  <Tag size={14} />
                   {type}
                 </span>
                 <span className="inline-flex items-center gap-1.5">
@@ -260,127 +262,146 @@ function InvitationReport() {
         <div className="p-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Total Invitations */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center">
-                  <Users size={20} className="text-gray-600" />
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                  <Users size={20} className="text-purple-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Total Invitations</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.totalInvitations}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-1">Total Invitations</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalInvitations}</p>
             </div>
 
             {/* Sent */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                  <Send size={20} className="text-blue-600" />
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                  <Send size={20} className="text-cyan-500" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Sent</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.sent}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-1">Sent</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.sent}</p>
             </div>
 
             {/* Registered */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
-                  <UserCheck size={20} className="text-green-600" />
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                  <UserCheck size={20} className="text-green-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Registered</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.registered}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-1">Registered</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.registered}</p>
             </div>
 
             {/* Conversion Rate */}
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-orange-50 flex items-center justify-center">
-                  <Percent size={20} className="text-orange-600" />
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                  <Percent size={20} className="text-orange-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Conversion Rate</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.conversionRate}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-1">Conversion Rate</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.conversionRate}</p>
             </div>
           </div>
 
           {/* Duplicate Emails - Single card */}
           <div className="max-w-xs mb-6">
-            <div className="bg-white rounded-lg border border-gray-200 p-5">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
-                  <Copy size={20} className="text-red-600" />
+                  <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                  <Copy size={20} className="text-red-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Duplicate Emails</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.duplicateEmails}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-1">Duplicate Emails</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.duplicateEmails}</p>
             </div>
           </div>
 
-          {/* Registration Status Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
+          {/* Registration Status Section - background #E3EFF9 */}
+          <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
             <div className="flex items-center gap-2 mb-6">
-              <UserCheck size={20} className="text-gray-600" />
+              <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
               <h2 className="text-lg font-semibold text-gray-900">Registration Status</h2>
             </div>
 
             <div className="space-y-4">
-              {/* Approved */}
+              {/* Approved - icon small circle background emerald/100 */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <UserCheck size={18} className="text-green-600" strokeWidth={2} />
+                    </div>
                     <span className="text-sm font-medium text-gray-700">Approved</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.approved}</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500 rounded-full"
+                <div className="h-2 bg-green-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full transition-all"
                     style={{ width: `${(registrationStatus.approved / registrationStatus.total) * 100}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
 
-              {/* Rejected */}
+              {/* Rejected - icon small circle background pink/50 */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center shrink-0">
+                      <UserX size={18} className="text-red-600" strokeWidth={2} />
+                    </div>
                     <span className="text-sm font-medium text-gray-700">Rejected</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.rejected}</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-red-500 rounded-full"
+                <div className="h-2 bg-red-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-500 rounded-full transition-all"
                     style={{ width: `${(registrationStatus.rejected / registrationStatus.total) * 100}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
 
-              {/* Pending */}
+              {/* Pending - icon small circle background orange/50 */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                    <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
+                      <Clock size={18} className="text-orange-600" strokeWidth={2} />
+                    </div>
                     <span className="text-sm font-medium text-gray-700">Pending</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.pending}</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-orange-500 rounded-full"
+                <div className="h-2 bg-orange-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-orange-500 rounded-full transition-all"
                     style={{ width: `${(registrationStatus.pending / registrationStatus.total) * 100}%` }}
-                  ></div>
+                  />
                 </div>
               </div>
 
-              {/* Conversion Rate */}
-              <div className="pt-3 border-t border-gray-200 mt-4">
+              {/* Conversion Rate - only this section has pri-color/100 background */}
+              <div
+                className="pt-4 pb-4 px-3 -mx-3 rounded-lg border-t border-gray-200 mt-4"
+                style={{ backgroundColor: "#EAF1FF" }}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Conversion Rate:</span>
-                  <span className="text-sm font-bold text-gray-900">{stats.conversionRate}</span>
+                  <span className="text-sm font-regular text-gray-700">Conversion Rate:</span>
+                  <span className="text-sm font-medium text-gray-700">{stats.conversionRate}</span>
                 </div>
               </div>
             </div>
@@ -484,7 +505,7 @@ function InvitationReport() {
                       </td>
                       <td className="px-4 py-3 no-print">
                         <button type="button" className="p-1 hover:bg-gray-100 rounded">
-                          <Copy size={16} className="text-gray-400" />
+                          <img src={icons.copyIcon} alt="Copy" className="w-12 h-12 object-contain" />
                         </button>
                       </td>
                     </tr>

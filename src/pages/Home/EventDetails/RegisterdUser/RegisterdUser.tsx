@@ -420,7 +420,7 @@ function RegisterdUser() {
         count === 1
           ? "User rejected successfully."
           : `Successfully rejected ${count} user(s).`,
-        "success",
+        "error",
       );
       setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
       fetchUsers(eventId, currentPage);

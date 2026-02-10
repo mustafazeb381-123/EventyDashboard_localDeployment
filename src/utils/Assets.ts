@@ -84,7 +84,10 @@ import pendingUsers from '../assets/icons/pending_users.png'
 import todayRegistration from '../assets/icons/today_registration.png'
 import totalRegistration from '../assets/icons/total_registration.png'
 import totalTicket from '../assets/icons/total_ticket.png';
-import totalSold from '../assets/icons/total_sold.png'
+import totalSold from '../assets/icons/total_sold.png';
+import reports from '../assets/icons/reports.png';
+import tickMark from '../assets/icons/tickmark.png';
+import copyIcon from '../assets/icons/copy.png';
 
 // Images object
 export const images = {
@@ -168,8 +171,10 @@ export const icons = {
   todayRegistration,
   totalRegistration,
   totalTicket,
-  totalSold
-
+  totalSold,
+  reports,
+  tickMark,
+  copyIcon,
 } as const;
 
 // Optional temp object
