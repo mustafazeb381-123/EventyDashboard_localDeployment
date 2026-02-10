@@ -70,138 +70,94 @@ const UserAvatar = ({ user }: { user: any }) => {
   );
 };
 
-// Static invitation data (screenshot) - full table layout
+// Static invitation data matching screenshot layout
 const staticInvitations = [
   {
-    id: "58",
-    name: "Copy of Copy of Althenayan Dinner",
-    emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026",
-    channel: "Email",
-    status: "pending",
-    type: "Public-9",
-    scheduled: "Immediate",
-  },
-  {
-    id: "57",
-    name: "Copy of Gather Batch 6 & Reminder",
-    emailSubject: "Guest Information | FMF Premier 26 | Time Sensitive",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "56",
-    name: "Copy of Batch 6",
-    emailSubject: "FMF Premier 2026 | Official Private Invitation",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "55",
-    name: "Copy of Dinner Invite Batch 2",
-    emailSubject: "ESNAD Premier Dinner | Private Invitation",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "54",
-    name: "Copy of Esnad Batch 1",
-    emailSubject: "FMF Premier 2026 | Official Private Invitation",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "53",
-    name: "Copy of AlRushaid Dinner Additional",
-    emailSubject:
-      "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "52",
-    name: "Copy of Althenayan Dinner",
-    emailSubject: "Invitation: Althenayan Exclusive Private Dinner - FMF 2026",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "51",
-    name: "Artar Dinner Additional",
-    emailSubject:
-      "Invitation: ARTAR & GMCG Exclusive Private Dinner - FMF 2026",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "50",
-    name: "AlRushaid Dinner Additional",
-    emailSubject:
-      "Invitation: AlRushaid Group Exclusive Private Dinner - FMF 2026",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "49",
-    name: "Badge Collection",
-    emailSubject: "FMF Premier 2026 | Budge Collection Details",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
+    created: "Jan 18, 2026",
   },
   {
-    id: "48",
-    name: "Additional - FMF",
-    emailSubject: "FMF Premier 2026 | Official Private Invitation",
+    id: "182",
+    name: "VIP Morning Day 5 – 8 الساعة",
+    emailSubject: "ملتقى ميزانية 2026",
     channel: "Email",
     status: "done",
-    type: "Public-9",
-    scheduled: "Immediate",
-  },
-];
-
-// Email Templates
-const templates = [
-  {
-    id: 1,
-    name: "Professional",
-    preview: "Template 1",
-    backgroundColor: "#ffffff",
-  },
-  {
-    id: 2,
-    name: "Colorful",
-    preview: "Template 2",
-    backgroundColor: "#f0f9ff",
-  },
-  {
-    id: 3,
-    name: "Elegant",
-    preview: "Template 3",
-    backgroundColor: "#fef3c7",
+    created: "Jan 18, 2026",
   },
 ];
 
 function Invitations() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedUsers, setSelectedUsers] = useState(new Set());
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [badges, setBadges] = useState<any[]>([]);
@@ -220,7 +176,9 @@ function Invitations() {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
-  const [actionsMenuOpenId, setActionsMenuOpenId] = useState<string | null>(null);
+  const [actionsMenuOpenId, setActionsMenuOpenId] = useState<string | null>(
+    null
+  );
   const actionsMenuRef = useRef<HTMLDivElement>(null);
 
   const itemsPerPage = 10;
@@ -251,7 +209,7 @@ function Invitations() {
 
   const showNotification = (
     message: string,
-    type: "success" | "error" | "info",
+    type: "success" | "error" | "info"
   ) => {
     setNotification({ message, type });
   };
@@ -316,12 +274,10 @@ function Invitations() {
 
   const fetchBadges = async (id: string) => {
     if (!id) return;
-
     setLoadingBadges(true);
     try {
       const response = await getBadgeType(id);
       const result = response.data;
-
       if (result?.data && Array.isArray(result.data)) {
         setBadges(result.data);
       } else {
@@ -368,9 +324,7 @@ function Invitations() {
     badges.forEach((badge: any) => {
       if (badge?.attributes?.default === true) {
         const badgeName = (badge?.attributes?.name || "").toLowerCase();
-        if (badgeName) {
-          defaultNames.add(badgeName);
-        }
+        if (badgeName) defaultNames.add(badgeName);
       }
     });
     return defaultNames;
@@ -379,28 +333,17 @@ function Invitations() {
   // Filter users by type, badge, and search term
   const filteredUsers = users.filter((user: any) => {
     const userType = (user?.attributes?.user_type || "").toLowerCase();
-
-    if (defaultBadgeNames.has(userType)) {
-      return false;
-    }
-
+    if (defaultBadgeNames.has(userType)) return false;
     if (filterType !== "all") {
-      if (userType !== filterType.toLowerCase()) {
-        return false;
-      }
+      if (userType !== filterType.toLowerCase()) return false;
     }
-
-    if (searchTerm.trim() === "") {
-      return true;
-    }
-
+    if (searchTerm.trim() === "") return true;
     const searchLower = searchTerm.toLowerCase().trim();
     const name = (user?.attributes?.name || "").toLowerCase();
     const email = (user?.attributes?.email || "").toLowerCase();
     const phone = (user?.attributes?.phone_number || "").toLowerCase();
     const organization = (user?.attributes?.organization || "").toLowerCase();
     const position = (user?.attributes?.position || "").toLowerCase();
-
     return (
       name.includes(searchLower) ||
       email.includes(searchLower) ||
@@ -415,23 +358,17 @@ function Invitations() {
   const stats = useMemo(() => {
     const total = users.length;
     const completed = users.filter(
-      (u: any) => u?.attributes?.invitation_status === "completed",
+      (u: any) => u?.attributes?.invitation_status === "completed"
     ).length;
     const inProgress = users.filter(
-      (u: any) => u?.attributes?.invitation_status === "in_progress",
+      (u: any) => u?.attributes?.invitation_status === "in_progress"
     ).length;
     const pending = users.filter(
       (u: any) =>
         !u?.attributes?.invitation_status ||
-        u?.attributes?.invitation_status === "pending",
+        u?.attributes?.invitation_status === "pending"
     ).length;
-
-    return {
-      total,
-      completed,
-      inProgress,
-      pending,
-    };
+    return { total, completed, inProgress, pending };
   }, [users]);
 
   const handlePageChange = (page: number) => {
@@ -445,31 +382,25 @@ function Invitations() {
       showNotification("Event ID is missing. Cannot send invitation.", "error");
       return;
     }
-
     const idsToSend: string[] =
       userIds || Array.from(selectedUsers).map((id) => String(id));
     if (idsToSend.length === 0) {
       showNotification(
         "Please select at least one user to send invitation.",
-        "error",
+        "error"
       );
       return;
     }
-
     const isSingleUser = userIds && userIds.length === 1;
-    if (isSingleUser) {
-      setSendingCredentialsUserId(userIds[0]);
-    }
-
+    if (isSingleUser) setSendingCredentialsUserId(userIds[0]);
     try {
-      const response = await sendCredentials(String(idToUse), idsToSend);
-
+      await sendCredentials(String(idToUse), idsToSend);
       if (isSingleUser) {
         showNotification("Invitation sent to user successfully!", "success");
       } else {
         showNotification(
           `Invitation sent to ${idsToSend.length} users successfully!`,
-          "success",
+          "success"
         );
       }
       setSelectedUsers(new Set());
@@ -479,48 +410,23 @@ function Invitations() {
         err?.response?.data?.error ||
         err?.message ||
         "Failed to send invitation. Please try again.";
-
-      if (isSingleUser) {
-        showNotification(
-          "Failed to send invitation to user. Please try again.",
-          "error",
-        );
-      } else {
-        showNotification(errorMessage, "error");
-      }
+      showNotification(
+        isSingleUser
+          ? "Failed to send invitation to user. Please try again."
+          : errorMessage,
+        "error"
+      );
     } finally {
       setSendingCredentialsUserId(null);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const formatDateTime = (dateString: string) => {
-    if (!dateString) return "-";
-    const date = new Date(dateString);
-    return date.toLocaleString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const handleUserSelect = (userId: string) => {
+  const handleUserSelect = (invId: string) => {
     const newSelected = new Set(selectedUsers);
-    if (newSelected.has(userId)) {
-      newSelected.delete(userId);
+    if (newSelected.has(invId)) {
+      newSelected.delete(invId);
     } else {
-      newSelected.add(userId);
+      newSelected.add(invId);
     }
     setSelectedUsers(newSelected);
   };
@@ -530,9 +436,12 @@ function Invitations() {
     if (selectedUsers.size === list.length) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(list.map((inv) => inv.id)));
+      setSelectedUsers(new Set(list.map((_, i) => String(i))));
     }
   };
+
+  const totalPages = pagination?.total_pages || 3;
+  const totalCount = pagination?.total_count ?? 30;
 
   return (
     <>
@@ -553,108 +462,103 @@ function Invitations() {
         </div>
       )}
 
-      <div className="min-h-screen bg-white">
-        <div className="px-8 py-6">
-          {/* Header */}
+      <div className="min-h-screen bg-gray-50">
+        <div className="px-6 py-6 max-w-[1400px] mx-auto">
+
+          {/* ── Header ── */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                <UsersIcon className="w-6 h-6 text-white" />
+              <div className="w-11 h-11 bg-blue-600 rounded-xl flex items-center justify-center shadow-sm">
+                <UsersIcon className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
                 Invitation Users
               </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                <Download size={16} />
+            <div className="flex items-center gap-2">
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm">
+                <Download style={{color: "#2B7FFF"}} size={15} />
                 Export CSV
               </button>
-              <button className="flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                <FileText size={16} />
+              <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors shadow-sm">
+                <FileText style={{color: "#2B7FFF"}} size={15} />
                 Event Report
               </button>
               <button
                 onClick={() =>
                   navigate(
-                    `/invitation/new${eventId ? `?eventId=${eventId}` : ""}`,
+                    `/invitation/new${eventId ? `?eventId=${eventId}` : ""}`
                   )
                 }
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-medium shadow-sm transition-colors"
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors"
               >
-                <Plus size={16} />
-                Create New Invitation
+                <Plus size={15} />
+                + Creat New Invitations
               </button>
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">
-                    Total Invitations
-                  </p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.total}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                  <UserCheck className="w-5 h-5 text-gray-600" />
-                </div>
+          {/* ── Stats Cards ── */}
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            {/* Total */}
+            <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:"#FAFAFA"}}>
+                <UserCheck className="w-5 h-5 text-gray-500" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Total Invitations</p>
+                <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
+                  {stats.total || 140}
+                </p>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Completed</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.completed}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                  <CheckCircle className="w-5 h-5 text-green-600" />
-                </div>
+            {/* Completed */}
+            <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#FAFAFA'}}>
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Completed</p>
+                <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
+                  {stats.completed || 122}
+                </p>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">In Progress</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.inProgress}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Clock className="w-5 h-5 text-blue-600" />
-                </div>
+            {/* In Progress */}
+            <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#FAFAFA'}}>
+                <Clock className="w-5 h-5 text-blue-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">In Progress</p>
+                <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
+                  {stats.inProgress || 0}
+                </p>
               </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-xl p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Pending</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stats.pending}
-                  </p>
-                </div>
-                <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <XCircle className="w-5 h-5 text-red-600" />
-                </div>
+            {/* Pending */}
+            <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
+              <div className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0" style={{backgroundColor:'#FAFAFA'}}>
+                <Mail className="w-5 h-5 text-red-400" />
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Pending</p>
+                <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
+                  {stats.pending || 18}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Search and Filter */}
-          <div className="flex items-center gap-4 mb-6">
+          {/* ── Search & Filter ── */}
+          <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1">
               <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={18}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                size={16}
               />
               <input
                 type="text"
@@ -664,7 +568,7 @@ function Invitations() {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div className="relative">
@@ -675,15 +579,12 @@ function Invitations() {
                   setCurrentPage(1);
                 }}
                 disabled={loadingBadges}
-                className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none bg-white pr-10 disabled:opacity-50 min-w-[150px]"
+                className="appearance-none pl-4 pr-9 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 min-w-[140px] cursor-pointer"
               >
                 <option value="all">All Types</option>
                 {badges.length > 0 ? (
                   badges.map((badge: any) => (
-                    <option
-                      key={badge.id}
-                      value={badge?.attributes?.name || ""}
-                    >
+                    <option key={badge.id} value={badge?.attributes?.name || ""}>
                       {badge?.attributes?.name}
                     </option>
                   ))
@@ -692,88 +593,96 @@ function Invitations() {
                 )}
               </select>
               <ChevronDown
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                size={18}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+                size={15}
               />
             </div>
           </div>
 
-          {/* Table - Invitations (screenshot layout) */}
-          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          {/* ── Table ── */}
+          <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-[#1e3a5f] border-b border-[#1e3a5f]">
-                  <tr>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        # ID
+                <thead>
+                  <tr className="bg-[#1b3a5c]">
+                    {/* Checkbox */}
+                    <th className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        checked={
+                          selectedUsers.size === staticInvitations.length &&
+                          staticInvitations.length > 0
+                        }
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 rounded border-gray-400 accent-white cursor-pointer"
+                      />
+                    </th>
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
+                        ID
                       </span>
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <FileText size={16} />
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
                         Name
                       </span>
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <Mail size={16} />
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
                         Email Subject
                       </span>
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <Share2 size={16} />
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
                         Channel
                       </span>
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <CheckCircle size={16} />
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
                         Status
                       </span>
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <Clock size={16} />
-                        Scheduled
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
+                        Created
                       </span>
                     </th>
-                    <th className="px-6 py-3 text-left">
-                      <span className="inline-flex items-center gap-2 text-xs font-semibold text-white uppercase tracking-wider">
-                        <Settings size={16} />
+                    <th className="px-4 py-3 text-left">
+                      <span className="text-xs font-semibold text-white uppercase tracking-wider">
                         Actions
                       </span>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {loadingUsers ? (
                     Array.from({ length: 10 }).map((_, index) => (
                       <tr key={index}>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-6 w-10 rounded" />
+                        <td className="px-4 py-3">
+                          <Skeleton className="h-4 w-4 rounded" />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
+                          <Skeleton className="h-5 w-12 rounded" />
+                        </td>
+                        <td className="px-4 py-3">
                           <Skeleton className="h-4 w-40" />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <Skeleton className="h-4 w-56" />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
+                          <Skeleton className="h-6 w-8 rounded-full" />
+                        </td>
+                        <td className="px-4 py-3">
                           <Skeleton className="h-6 w-16 rounded-full" />
                         </td>
-                        <td className="px-6 py-4">
-                          <Skeleton className="h-6 w-14 rounded-full" />
-                        </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <Skeleton className="h-4 w-20" />
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-4 py-3">
                           <div className="flex gap-1">
-                            <Skeleton className="w-8 h-8 rounded" />
-                            <Skeleton className="w-8 h-8 rounded" />
-                            <Skeleton className="w-8 h-8 rounded" />
+                            <Skeleton className="w-7 h-7 rounded" />
+                            <Skeleton className="w-7 h-7 rounded" />
                           </div>
                         </td>
                       </tr>
@@ -781,181 +690,250 @@ function Invitations() {
                   ) : staticInvitations.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={7}
-                        className="px-6 py-12 text-center text-gray-500"
+                        colSpan={8}
+                        className="px-6 py-12 text-center text-gray-500 text-sm"
                       >
                         No invitations found
                       </td>
                     </tr>
                   ) : (
-                    staticInvitations.map((invitation) => (
-                      <tr
-                        key={invitation.id}
-                        className="hover:bg-gray-50 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-1 rounded-md bg-blue-600 text-white text-sm font-medium">
-                            {invitation.id}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-900">
-                          {invitation.name}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-700">
-                          {invitation.emailSubject}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                            <Mail size={14} />
-                            {invitation.channel}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {invitation.status === "pending" ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-700 border border-orange-200">
-                              <Clock size={14} />
-                              Pending
+                    staticInvitations.map((invitation, index) => {
+                      const rowKey = `${invitation.id}-${index}`;
+                      const isSelected = selectedUsers.has(String(index));
+                      return (
+                        <tr
+                          key={rowKey}
+                          className={`transition-colors ${
+                            isSelected ? "bg-blue-50" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          {/* Checkbox */}
+                          <td className="px-4 py-3">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={() => handleUserSelect(String(index))}
+                              className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
+                            />
+                          </td>
+
+                          {/* ID — #182 format, no colored badge */}
+                          <td className="px-4 py-3">
+                            <span className="text-sm font-semibold text-gray-700">
+                              #{invitation.id}
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200">
-                              <CheckCircle size={14} />
-                              Done
+                          </td>
+
+                          {/* Name */}
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-900">
+                              {invitation.name}
                             </span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
-                            <Zap size={14} className="text-gray-500" />
-                            {invitation.scheduled}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              className="w-8 h-8 flex items-center justify-center rounded text-gray-700 hover:bg-gray-100 transition-colors"
-                              title="View"
-                              aria-label="View"
-                            >
-                              <Eye size={18} />
-                            </button>
-                            <div
-                              className="relative"
-                              ref={
-                                actionsMenuOpenId === invitation.id
-                                  ? actionsMenuRef
-                                  : undefined
-                              }
-                            >
+                          </td>
+
+                          {/* Email Subject */}
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-700 dir-rtl">
+                              {invitation.emailSubject}
+                            </span>
+                          </td>
+
+                          {/* Channel — icon only inside a small rounded box */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg border-gray-200 bg-white">
+                              <Mail size={15} className="text-gray-500" style={{color:"#2B7FFF"}} />
+                            </div>
+                          </td>
+
+                          {/* Status */}
+                          <td className="px-4 py-3">
+                            {invitation.status === "pending" ? (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                Pending
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                Done
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Created */}
+                          <td className="px-4 py-3">
+                            <span className="text-sm text-gray-600">
+                              {invitation.created}
+                            </span>
+                          </td>
+
+                          {/* Actions */}
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-0.5">
+                              {/* View */}
                               <button
                                 type="button"
-                                onClick={() =>
-                                  setActionsMenuOpenId(
-                                    actionsMenuOpenId === invitation.id
-                                      ? null
-                                      : invitation.id,
-                                  )
-                                }
-                                className="w-8 h-8 flex items-center justify-center rounded text-gray-700 hover:bg-gray-100 transition-colors"
-                                title="More actions"
-                                aria-label="Open actions menu"
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                                title="View"
                               >
-                                <MoreVertical size={18} />
+                                <Eye size={16} />
                               </button>
-                              {actionsMenuOpenId === invitation.id && (
-                                <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] py-1 bg-white border border-gray-200 rounded-lg shadow-lg">
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      navigate(
-                                        `/invitation/report/${invitation.id}`,
-                                        {
-                                          state: {
-                                            invitationName: invitation.name,
-                                            type: invitation.type,
-                                            createdAt:
-                                              "January 27, 2026 at 15:04",
-                                          },
-                                        },
-                                      );
-                                      setActionsMenuOpenId(null);
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                                  >
-                                    <BarChart2 size={16} className="text-orange-500 shrink-0" />
-                                    Invitation Report
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setActionsMenuOpenId(null);
-                                      // Edit action - add your edit navigation/handler here
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                                  >
-                                    <Pencil size={16} className="text-green-600 shrink-0" />
-                                    Edit
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setActionsMenuOpenId(null);
-                                      // Clone action - add your clone handler here
-                                    }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                                  >
-                                    <Copy size={16} className="text-pink-500 shrink-0" />
-                                    Clone
-                                  </button>
-                                </div>
-                              )}
+
+                              {/* More / Three-dot menu */}
+                              <div
+                                className="relative"
+                                ref={
+                                  actionsMenuOpenId === rowKey
+                                    ? actionsMenuRef
+                                    : undefined
+                                }
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setActionsMenuOpenId(
+                                      actionsMenuOpenId === rowKey
+                                        ? null
+                                        : rowKey
+                                    )
+                                  }
+                                  className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                                  title="More actions"
+                                >
+                                  <MoreVertical size={16} />
+                                </button>
+
+                                {actionsMenuOpenId === rowKey && (
+                                  <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] py-1 bg-white border border-gray-200 rounded-xl shadow-lg">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigate(
+                                          `/invitation/report/${invitation.id}`,
+                                          {
+                                            state: {
+                                              invitationName: invitation.name,
+                                              createdAt: invitation.created,
+                                            },
+                                          }
+                                        );
+                                        setActionsMenuOpenId(null);
+                                      }}
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                    >
+                                      <BarChart2
+                                        size={15}
+                                        className="text-orange-500 flex-shrink-0"
+                                      />
+                                      Invitation Report
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionsMenuOpenId(null)
+                                      }
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                    >
+                                      <Pencil
+                                        size={15}
+                                        className="text-green-600 flex-shrink-0"
+                                      />
+                                      Edit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActionsMenuOpenId(null)
+                                      }
+                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                    >
+                                      <Copy
+                                        size={15}
+                                        className="text-pink-500 flex-shrink-0"
+                                      />
+                                      Clone
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination Footer */}
-            <div className="border-t border-gray-200 px-6 py-3 bg-gray-50">
+            {/* ── Pagination Footer ── */}
+            <div className="border-t border-gray-200 px-5 py-3 bg-white">
               <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">
-                  Showing 1 to {staticInvitations.length} of{" "}
-                  {pagination?.total_count ?? staticInvitations.length}{" "}
-                  invitations
+                {/* Left: count info */}
+                <p className="text-sm text-gray-500">
+                  Showing 1 to {staticInvitations.length} of {totalCount} invitations
+                </p>
+
+                {/* Center: page buttons */}
+                <div className="flex items-center gap-2">
+                  {/* Previous */}
+                  <button
+                    onClick={() =>
+                      currentPage > 1 && handlePageChange(currentPage - 1)
+                    }
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ← Previous
+                  </button>
+
+                  {/* Page numbers */}
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${
+                            page === currentPage
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  {/* Next */}
+                  <button
+                    onClick={() =>
+                      currentPage < totalPages &&
+                      handlePageChange(currentPage + 1)
+                    }
+                    disabled={currentPage === totalPages}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next →
+                  </button>
                 </div>
-                {pagination && (
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={pagination.total_pages || 1}
-                    onPageChange={handlePageChange}
-                  />
-                )}
+
+                {/* Right: spacer to balance layout */}
+                <div className="w-[120px]" />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* New Invitation is now a separate page at /invitation/new */}
-
       <style>{`
         @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
+          from { transform: translateX(100%); opacity: 0; }
+          to   { transform: translateX(0);    opacity: 1; }
         }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
+        .animate-slide-in { animation: slide-in 0.3s ease-out; }
+        .dir-rtl { direction: rtl; unicode-bidi: embed; }
       `}</style>
     </>
   );

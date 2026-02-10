@@ -6,6 +6,7 @@ import {
   Edit2,
   Trash2,
   ChevronDown,
+  Plus
 } from "lucide-react";
 import { getAllEvents } from "@/apis/apiHelpers";
 
@@ -160,7 +161,7 @@ export default function Management() {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6">
         {/* Add Management Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-6">
@@ -256,7 +257,7 @@ export default function Management() {
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2"
               >
-                <UserPlus className="w-4 h-4" />
+                <Plus className="w-4 h-4" />
                 Add Member
               </Button>
             </div>
