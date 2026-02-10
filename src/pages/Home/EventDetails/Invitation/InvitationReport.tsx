@@ -269,7 +269,7 @@ function InvitationReport() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-gray-600 mb-0.5">Total Invitations</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalInvitations}</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.totalInvitations}</p>
                 </div>
               </div>
             </div>
@@ -282,7 +282,7 @@ function InvitationReport() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-gray-600 mb-0.5">Sent</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.sent}</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.sent}</p>
                 </div>
               </div>
             </div>
@@ -295,7 +295,7 @@ function InvitationReport() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-gray-600 mb-0.5">Registered</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.registered}</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.registered}</p>
                 </div>
               </div>
             </div>
@@ -308,7 +308,7 @@ function InvitationReport() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-gray-600 mb-0.5">Conversion Rate</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.conversionRate}</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.conversionRate}</p>
                 </div>
               </div>
             </div>
@@ -323,7 +323,7 @@ function InvitationReport() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm text-gray-600 mb-0.5">Duplicate Emails</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.duplicateEmails}</p>
+                  <p className="text-2lg font-bold text-gray-700">{stats.duplicateEmails}</p>
                 </div>
               </div>
             </div>
