@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { getEventbyId } from "@/apis/apiHelpers";
+import { createEventInvitation, type UserImportItem, type SendTo } from "@/apis/invitationService";
 import {
   EmailTemplateBuilderModal,
   type MergeTag,
@@ -29,7 +30,7 @@ function NewInvitation() {
     communicationType: "Email",
     invitationCategory: "",
     event: "",
-    language: "Arabic (العربية)",
+    language: "en",
     scheduleSendAt: "",
     emailSubject: "",
     backgroundColor: "#ffffff",
@@ -58,10 +59,11 @@ function NewInvitation() {
   const [inviteesFile, setInviteesFile] = useState<File | null>(null);
   const inviteesFileInputRef = useRef<HTMLInputElement>(null);
   const [parsedInvitees, setParsedInvitees] = useState<ParsedInvitee[]>([]);
+  const [sendTo, setSendTo] = useState<SendTo>("imported_from_file");
+  const [isVipInvitation, setIsVipInvitation] = useState(false);
   const [showPreviewScreen, setShowPreviewScreen] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [sendProgress, setSendProgress] = useState(0);
-
   const [rsvpEmailSubject, setRsvpEmailSubject] = useState("");
 
   useEffect(() => {
@@ -196,42 +198,59 @@ function NewInvitation() {
       );
       return;
     }
+    if (
+      (sendTo === "imported_from_file" || sendTo === "manually_entered") &&
+      parsedInvitees.length === 0
+    ) {
+      showNotification(
+        "Please add at least one invitee (import from file or add manually in the Invitees tab).",
+        "error",
+      );
+      return;
+    }
     setIsCreatingInvitation(true);
     try {
-      const formData = new FormData();
-      const tenantUuid = localStorage.getItem("tenant_uuid");
-      if (tenantUuid) formData.append("tenant_uuid", tenantUuid);
-      formData.append("invitation[name]", invitationForm.invitationName);
-      formData.append(
-        "invitation[communication_type]",
-        invitationForm.communicationType,
-      );
-      formData.append(
-        "invitation[category]",
-        invitationForm.invitationCategory,
-      );
-      formData.append("invitation[language]", invitationForm.language);
-      formData.append("invitation[subject]", invitationForm.emailSubject);
-      formData.append("invitation[title]", selectedTemplate.title);
-      formData.append("invitation[body]", selectedTemplate.html);
-      formData.append(
-        "invitation[background_color]",
-        invitationForm.backgroundColor,
-      );
-      if (invitationForm.scheduleSendAt)
-        formData.append(
-          "invitation[schedule_send_at]",
-          invitationForm.scheduleSendAt,
-        );
-      console.log("Creating invitation with data:", {
-        ...invitationForm,
-        emailTemplate: selectedTemplate.title,
-      });
-      showNotification("Invitation preview ready!", "success");
+      const userImportObject: UserImportItem[] = parsedInvitees.map((p) => ({
+        first_name: p.first_name || undefined,
+        last_name: p.last_name || undefined,
+        email: p.email || undefined,
+        phone_number: p.phone_number || undefined,
+      }));
+      const event_invitation = {
+        title: invitationForm.invitationName,
+        invitation_type: invitationForm.communicationType || "email",
+        invitation_language: invitationForm.language === "ar" ? "ar" : "en",
+        sender_email: invitationForm.emailSender || undefined,
+        invitation_email_subject: invitationForm.emailSubject,
+        invitation_email_body: selectedTemplate.html,
+        scheduled_send_time: invitationForm.scheduleSendAt
+          ? new Date(invitationForm.scheduleSendAt).toISOString()
+          : undefined,
+        enable_rsvp: enableRsvp,
+        is_vip_invitation: isVipInvitation,
+        send_to: sendTo,
+        user_import_object:
+          (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0
+            ? userImportObject
+            : undefined,
+      };
+      const fullPayload = { eventId, event_invitation };
+      const payloadJson = JSON.stringify(fullPayload, null, 2);
+      console.log("Invitation payload (sent to API):", fullPayload);
+      console.log("Invitation payload (JSON):", payloadJson);
+      try {
+        await navigator.clipboard.writeText(payloadJson);
+        showNotification("Payload copied to clipboard. Sending invitation…", "info");
+      } catch {
+        // ignore clipboard errors
+      }
+      await createEventInvitation(eventId, { event_invitation });
+      showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
       navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
     } catch (error: any) {
       showNotification(
         error?.response?.data?.message ||
+          error?.response?.data?.error ||
           error?.message ||
           "Failed to create invitation.",
         "error",
@@ -385,7 +404,7 @@ function NewInvitation() {
             ) : (
               <>
                 {newInvitationActiveTab === "invitation-details" && (
-                  <InvitationDetailsTab
+                    <InvitationDetailsTab
                     invitationForm={invitationForm}
                     setInvitationForm={setInvitationForm}
                     enableRsvp={enableRsvp}
@@ -421,9 +440,14 @@ function NewInvitation() {
 
                 {newInvitationActiveTab === "invitees" && (
                   <InviteesTab
+                    sendTo={sendTo}
+                    setSendTo={setSendTo}
+                    isVipInvitation={isVipInvitation}
+                    setIsVipInvitation={setIsVipInvitation}
                     inviteesFile={inviteesFile}
                     setInviteesFile={setInviteesFile}
                     inviteesFileInputRef={inviteesFileInputRef}
+                    parsedInvitees={parsedInvitees}
                     onParsedUsersChange={setParsedInvitees}
                     onPreviewClick={() => setShowPreviewScreen(true)}
                   />

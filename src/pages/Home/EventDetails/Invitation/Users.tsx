@@ -24,13 +24,12 @@ import {
   Copy,
   Info,
 } from "lucide-react";
+import { getEventbyId, sendCredentials } from "@/apis/apiHelpers";
 import {
-  getEventUsers,
-  createEventUser,
-  getEventbyId,
-  sendCredentials,
-  getBadgeType,
-} from "@/apis/apiHelpers";
+  getEventInvitations,
+  deleteEventInvitation,
+  type EventInvitation,
+} from "@/apis/invitationService";
 import { Skeleton } from "@/components/ui/skeleton";
 import Pagination from "@/components/Pagination";
 
@@ -70,16 +69,19 @@ const UserAvatar = ({ user }: { user: any }) => {
   );
 };
 
-// Static invitation data matching screenshot layout
-const staticInvitations = [
-  {
-    id: "182",
-    name: "VIP Morning Day 5 – 8 الساعة",
-    emailSubject: "ملتقى ميزانية 2026",
-    channel: "Email",
-    status: "done",
-    created: "Jan 18, 2026",
-  },
+/** Format invitation created_at for display */
+function formatInvitationDate(iso: string | undefined): string {
+  if (!iso) return "—";
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  } catch {
+    return "—";
+  }
+}
+
+// (Static fallback removed — list comes from API)
+const _unused = [
   {
     id: "182",
     name: "VIP Morning Day 5 – 8 الساعة",
@@ -160,15 +162,18 @@ function Invitations() {
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
-  const [badges, setBadges] = useState<any[]>([]);
-  const [loadingBadges, setLoadingBadges] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [eventId, setEventId] = useState<string | null>(null);
   const [actualEventId, setActualEventId] = useState<string | null>(null);
   const [eventData, setEventData] = useState<any>(null);
-  const [users, setUsers] = useState<any[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
-  const [pagination, setPagination] = useState<any>(null);
+  const [invitations, setInvitations] = useState<EventInvitation[]>([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
+  const [invitationPagination, setInvitationPagination] = useState<{
+    current_page: number;
+    total_pages: number;
+    total_count: number;
+    per_page: number;
+  } | null>(null);
   const [sendingCredentialsUserId, setSendingCredentialsUserId] = useState<
     string | null
   >(null);
@@ -241,19 +246,11 @@ function Invitations() {
     }
   }, [eventId]);
 
-  // Fetch badges when we have an eventId
-  useEffect(() => {
-    const idToUse = actualEventId || eventId;
-    if (idToUse) {
-      fetchBadges(idToUse);
-    }
-  }, [actualEventId, eventId]);
-
-  // Fetch users when we have an eventId
+  // Fetch event invitations when we have an eventId (for the list table)
   useEffect(() => {
     const idToUse = actualEventId || eventId;
     if (idToUse && currentPage > 0) {
-      fetchUsers(idToUse, currentPage);
+      fetchInvitations(idToUse, currentPage);
     }
   }, [actualEventId, eventId, currentPage]);
 
@@ -272,104 +269,59 @@ function Invitations() {
     }
   };
 
-  const fetchBadges = async (id: string) => {
-    if (!id) return;
-    setLoadingBadges(true);
+  const fetchInvitations = async (id: string, page: number = 1) => {
+    setLoadingInvitations(true);
     try {
-      const response = await getBadgeType(id);
-      const result = response.data;
-      if (result?.data && Array.isArray(result.data)) {
-        setBadges(result.data);
+      const response = await getEventInvitations(id, { page, per_page: itemsPerPage });
+      const res = response.data as any;
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setInvitations(list);
+      const meta = res?.meta?.pagination;
+      if (meta) {
+        setInvitationPagination({
+          current_page: meta.current_page,
+          total_pages: meta.total_pages ?? 1,
+          total_count: meta.total_count ?? 0,
+          per_page: meta.per_page ?? itemsPerPage,
+        });
       } else {
-        setBadges([]);
+        setInvitationPagination(null);
       }
-    } catch (error) {
-      setBadges([]);
+    } catch {
+      setInvitations([]);
+      setInvitationPagination(null);
     } finally {
-      setLoadingBadges(false);
+      setLoadingInvitations(false);
     }
   };
 
-  const fetchUsers = async (id: string, page: number = 1) => {
-    setLoadingUsers(true);
-    try {
-      const response = await getEventUsers(id, {
-        page,
-        per_page: itemsPerPage,
-      });
-
-      const responseData = response.data?.data || response.data;
-      const allUsers = Array.isArray(responseData)
-        ? responseData
-        : responseData?.data || [];
-
-      setUsers(allUsers);
-
-      const paginationMeta =
-        response.data?.meta?.pagination || response.data?.pagination;
-      if (paginationMeta) {
-        setPagination(paginationMeta);
+  // Filter invitations by channel (invitation_type) and search term
+  const filteredInvitations = useMemo(() => {
+    return invitations.filter((inv) => {
+      if (filterType !== "all") {
+        const type = (inv.invitation_type || "").toLowerCase();
+        if (type !== filterType.toLowerCase()) return false;
       }
-    } catch (error) {
-      setUsers([]);
-      setPagination(null);
-    } finally {
-      setLoadingUsers(false);
-    }
-  };
-
-  // Create a set of default badge names for quick lookup
-  const defaultBadgeNames = useMemo(() => {
-    const defaultNames = new Set<string>();
-    badges.forEach((badge: any) => {
-      if (badge?.attributes?.default === true) {
-        const badgeName = (badge?.attributes?.name || "").toLowerCase();
-        if (badgeName) defaultNames.add(badgeName);
-      }
+      if (!searchTerm.trim()) return true;
+      const searchLower = searchTerm.toLowerCase().trim();
+      const title = (inv.title || "").toLowerCase();
+      const subject = (inv.invitation_email_subject || "").toLowerCase();
+      const type = (inv.invitation_type || "").toLowerCase();
+      return title.includes(searchLower) || subject.includes(searchLower) || type.includes(searchLower);
     });
-    return defaultNames;
-  }, [badges]);
+  }, [invitations, filterType, searchTerm]);
 
-  // Filter users by type, badge, and search term
-  const filteredUsers = users.filter((user: any) => {
-    const userType = (user?.attributes?.user_type || "").toLowerCase();
-    if (defaultBadgeNames.has(userType)) return false;
-    if (filterType !== "all") {
-      if (userType !== filterType.toLowerCase()) return false;
-    }
-    if (searchTerm.trim() === "") return true;
-    const searchLower = searchTerm.toLowerCase().trim();
-    const name = (user?.attributes?.name || "").toLowerCase();
-    const email = (user?.attributes?.email || "").toLowerCase();
-    const phone = (user?.attributes?.phone_number || "").toLowerCase();
-    const organization = (user?.attributes?.organization || "").toLowerCase();
-    const position = (user?.attributes?.position || "").toLowerCase();
-    return (
-      name.includes(searchLower) ||
-      email.includes(searchLower) ||
-      phone.includes(searchLower) ||
-      organization.includes(searchLower) ||
-      position.includes(searchLower) ||
-      userType.includes(searchLower)
-    );
-  });
-
-  // Calculate statistics
+  // Stats from invitations API (total from pagination; completed/pending from list)
   const stats = useMemo(() => {
-    const total = users.length;
-    const completed = users.filter(
-      (u: any) => u?.attributes?.invitation_status === "completed"
-    ).length;
-    const inProgress = users.filter(
-      (u: any) => u?.attributes?.invitation_status === "in_progress"
-    ).length;
-    const pending = users.filter(
-      (u: any) =>
-        !u?.attributes?.invitation_status ||
-        u?.attributes?.invitation_status === "pending"
-    ).length;
-    return { total, completed, inProgress, pending };
-  }, [users]);
+    const total = invitationPagination?.total_count ?? invitations.length;
+    const withInvitees = invitations.filter((inv) => (inv.event_invitation_users_count ?? 0) > 0).length;
+    return {
+      total,
+      completed: withInvitees,
+      inProgress: 0,
+      pending: Math.max(0, total - withInvitees),
+    };
+  }, [invitations, invitationPagination]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -421,7 +373,7 @@ function Invitations() {
     }
   };
 
-  const handleUserSelect = (invId: string) => {
+  const handleInvitationSelect = (invId: string) => {
     const newSelected = new Set(selectedUsers);
     if (newSelected.has(invId)) {
       newSelected.delete(invId);
@@ -432,16 +384,17 @@ function Invitations() {
   };
 
   const handleSelectAll = () => {
-    const list = staticInvitations;
-    if (selectedUsers.size === list.length) {
+    const list = filteredInvitations;
+    if (selectedUsers.size === list.length && list.length > 0) {
       setSelectedUsers(new Set());
     } else {
-      setSelectedUsers(new Set(list.map((_, i) => String(i))));
+      setSelectedUsers(new Set(list.map((inv) => String(inv.id))));
     }
   };
 
-  const totalPages = pagination?.total_pages || 3;
-  const totalCount = pagination?.total_count ?? 30;
+  const totalPages = invitationPagination?.total_pages ?? 1;
+  const totalCount = invitationPagination?.total_count ?? 0;
+  const listToShow = filteredInvitations;
 
   return (
     <>
@@ -578,19 +531,13 @@ function Invitations() {
                   setFilterType(e.target.value);
                   setCurrentPage(1);
                 }}
-                disabled={loadingBadges}
+                disabled={loadingInvitations}
                 className="appearance-none pl-4 pr-9 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 min-w-[140px] cursor-pointer"
               >
                 <option value="all">All Types</option>
-                {badges.length > 0 ? (
-                  badges.map((badge: any) => (
-                    <option key={badge.id} value={badge?.attributes?.name || ""}>
-                      {badge?.attributes?.name}
-                    </option>
-                  ))
-                ) : (
-                  <option value="guest">Guest</option>
-                )}
+                <option value="email">Email</option>
+                <option value="sms">SMS</option>
+                <option value="whatsapp">WhatsApp</option>
               </select>
               <ChevronDown
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -610,8 +557,8 @@ function Invitations() {
                       <input
                         type="checkbox"
                         checked={
-                          selectedUsers.size === staticInvitations.length &&
-                          staticInvitations.length > 0
+                          listToShow.length > 0 &&
+                          selectedUsers.size === listToShow.length
                         }
                         onChange={handleSelectAll}
                         className="w-4 h-4 rounded border-gray-400 accent-white cursor-pointer"
@@ -655,7 +602,7 @@ function Invitations() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {loadingUsers ? (
+                  {loadingInvitations ? (
                     Array.from({ length: 10 }).map((_, index) => (
                       <tr key={index}>
                         <td className="px-4 py-3">
@@ -687,19 +634,22 @@ function Invitations() {
                         </td>
                       </tr>
                     ))
-                  ) : staticInvitations.length === 0 ? (
+                  ) : listToShow.length === 0 ? (
                     <tr>
                       <td
                         colSpan={8}
                         className="px-6 py-12 text-center text-gray-500 text-sm"
                       >
-                        No invitations found
+                        {actualEventId || eventId
+                          ? "No invitations found"
+                          : "Select an event (add ?eventId= to URL or use event from storage)"}
                       </td>
                     </tr>
                   ) : (
-                    staticInvitations.map((invitation, index) => {
-                      const rowKey = `${invitation.id}-${index}`;
-                      const isSelected = selectedUsers.has(String(index));
+                    listToShow.map((invitation) => {
+                      const rowKey = `inv-${invitation.id}`;
+                      const isSelected = selectedUsers.has(String(invitation.id));
+                      const status = (invitation.event_invitation_users_count ?? 0) > 0 ? "done" : "pending";
                       return (
                         <tr
                           key={rowKey}
@@ -707,47 +657,36 @@ function Invitations() {
                             isSelected ? "bg-blue-50" : "hover:bg-gray-50"
                           }`}
                         >
-                          {/* Checkbox */}
                           <td className="px-4 py-3">
                             <input
                               type="checkbox"
                               checked={isSelected}
-                              onChange={() => handleUserSelect(String(index))}
+                              onChange={() => handleInvitationSelect(String(invitation.id))}
                               className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
                             />
                           </td>
-
-                          {/* ID — #182 format, no colored badge */}
                           <td className="px-4 py-3">
                             <span className="text-sm font-semibold text-gray-700">
                               #{invitation.id}
                             </span>
                           </td>
-
-                          {/* Name */}
                           <td className="px-4 py-3">
                             <span className="text-sm text-gray-900">
-                              {invitation.name}
+                              {invitation.title || "—"}
                             </span>
                           </td>
-
-                          {/* Email Subject */}
                           <td className="px-4 py-3">
                             <span className="text-sm text-gray-700 dir-rtl">
-                              {invitation.emailSubject}
+                              {invitation.invitation_email_subject || "—"}
                             </span>
                           </td>
-
-                          {/* Channel — icon only inside a small rounded box */}
                           <td className="px-4 py-3">
                             <div className="flex items-center justify-center w-8 h-8 rounded-lg border-gray-200 bg-white">
-                              <Mail size={15} className="text-gray-500" style={{color:"#2B7FFF"}} />
+                              <Mail size={15} className="text-gray-500" style={{ color: "#2B7FFF" }} />
                             </div>
                           </td>
-
-                          {/* Status */}
                           <td className="px-4 py-3">
-                            {invitation.status === "pending" ? (
+                            {status === "pending" ? (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
                                 Pending
@@ -759,18 +698,13 @@ function Invitations() {
                               </span>
                             )}
                           </td>
-
-                          {/* Created */}
                           <td className="px-4 py-3">
                             <span className="text-sm text-gray-600">
-                              {invitation.created}
+                              {formatInvitationDate(invitation.created_at)}
                             </span>
                           </td>
-
-                          {/* Actions */}
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-0.5">
-                              {/* View */}
                               <button
                                 type="button"
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
@@ -778,79 +712,52 @@ function Invitations() {
                               >
                                 <Eye size={16} />
                               </button>
-
-                              {/* More / Three-dot menu */}
                               <div
                                 className="relative"
-                                ref={
-                                  actionsMenuOpenId === rowKey
-                                    ? actionsMenuRef
-                                    : undefined
-                                }
+                                ref={actionsMenuOpenId === rowKey ? actionsMenuRef : undefined}
                               >
                                 <button
                                   type="button"
                                   onClick={() =>
-                                    setActionsMenuOpenId(
-                                      actionsMenuOpenId === rowKey
-                                        ? null
-                                        : rowKey
-                                    )
+                                    setActionsMenuOpenId(actionsMenuOpenId === rowKey ? null : rowKey)
                                   }
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                   title="More actions"
                                 >
                                   <MoreVertical size={16} />
                                 </button>
-
                                 {actionsMenuOpenId === rowKey && (
                                   <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] py-1 bg-white border border-gray-200 rounded-xl shadow-lg">
                                     <button
                                       type="button"
                                       onClick={() => {
-                                        navigate(
-                                          `/invitation/report/${invitation.id}`,
-                                          {
-                                            state: {
-                                              invitationName: invitation.name,
-                                              createdAt: invitation.created,
-                                            },
-                                          }
-                                        );
+                                        navigate(`/invitation/report/${invitation.id}`, {
+                                          state: {
+                                            invitationName: invitation.title,
+                                            createdAt: formatInvitationDate(invitation.created_at),
+                                          },
+                                        });
                                         setActionsMenuOpenId(null);
                                       }}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
-                                      <BarChart2
-                                        size={15}
-                                        className="text-orange-500 flex-shrink-0"
-                                      />
+                                      <BarChart2 size={15} className="text-orange-500 flex-shrink-0" />
                                       Invitation Report
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        setActionsMenuOpenId(null)
-                                      }
+                                      onClick={() => setActionsMenuOpenId(null)}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
-                                      <Pencil
-                                        size={15}
-                                        className="text-green-600 flex-shrink-0"
-                                      />
+                                      <Pencil size={15} className="text-green-600 flex-shrink-0" />
                                       Edit
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() =>
-                                        setActionsMenuOpenId(null)
-                                      }
+                                      onClick={() => setActionsMenuOpenId(null)}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
-                                      <Copy
-                                        size={15}
-                                        className="text-pink-500 flex-shrink-0"
-                                      />
+                                      <Copy size={15} className="text-pink-500 flex-shrink-0" />
                                       Clone
                                     </button>
                                   </div>
@@ -871,7 +778,15 @@ function Invitations() {
               <div className="flex items-center justify-between">
                 {/* Left: count info */}
                 <p className="text-sm text-gray-500">
-                  Showing 1 to {staticInvitations.length} of {totalCount} invitations
+                  {totalCount === 0
+                    ? "No invitations"
+                    : (() => {
+                        const page = invitationPagination?.current_page ?? 1;
+                        const per = invitationPagination?.per_page ?? itemsPerPage;
+                        const start = (page - 1) * per + 1;
+                        const end = Math.min(page * per, totalCount);
+                        return `Showing ${start} to ${end} of ${totalCount} invitations`;
+                      })()}
                 </p>
 
                 {/* Center: page buttons */}

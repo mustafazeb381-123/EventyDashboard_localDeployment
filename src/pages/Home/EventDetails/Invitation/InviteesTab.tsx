@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
-import { ChevronDown, Upload, Trash2, Search, Download, X } from "lucide-react";
+import { ChevronDown, Upload, Trash2, Search, Download, X, UserPlus, Users, FileSpreadsheet, Edit3 } from "lucide-react";
 import * as XLSX from "xlsx";
+import type { SendTo } from "@/apis/invitationService";
 
 export type ParsedInvitee = {
   id: string;
@@ -81,18 +82,269 @@ function parseExcel(buffer: ArrayBuffer): ParsedInvitee[] {
 const TEMPLATE_CSV = `ID,First Name,Last Name,Email,Phone Number
 #1,Sample,User,sample@example.com,+1234567890`;
 
+function ManualInviteesSection({
+  parsedInvitees,
+  onParsedUsersChange,
+  onPreviewClick,
+}: {
+  parsedInvitees: ParsedInvitee[];
+  onParsedUsersChange?: (users: ParsedInvitee[]) => void;
+  onPreviewClick?: () => void;
+}) {
+  const [first_name, setFirst_name] = useState("");
+  const [last_name, setLast_name] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone_number, setPhone_number] = useState("");
+  const [addError, setAddError] = useState<string | null>(null);
+
+  const handleAdd = useCallback(() => {
+    setAddError(null);
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
+      setAddError("Email is required.");
+      return;
+    }
+    const newUser: ParsedInvitee = {
+      id: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      first_name: first_name.trim(),
+      last_name: last_name.trim(),
+      email: trimmedEmail,
+      phone_number: phone_number.trim(),
+    };
+    onParsedUsersChange?.([...parsedInvitees, newUser]);
+    setFirst_name("");
+    setLast_name("");
+    setEmail("");
+    setPhone_number("");
+  }, [parsedInvitees, first_name, last_name, email, phone_number, onParsedUsersChange]);
+
+  const handleRemove = useCallback(
+    (id: string) => {
+      onParsedUsersChange?.(parsedInvitees.filter((u) => u.id !== id));
+    },
+    [parsedInvitees, onParsedUsersChange]
+  );
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-slate-500">Add invitees one by one. At least email is required.</p>
+
+      {/* Add user form */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h4 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
+          <UserPlus className="w-4 h-4" />
+          Add user
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <input
+            type="text"
+            placeholder="First name"
+            value={first_name}
+            onChange={(e) => setFirst_name(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <input
+            type="text"
+            placeholder="Last name"
+            value={last_name}
+            onChange={(e) => setLast_name(e.target.value)}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <input
+            type="email"
+            placeholder="Email *"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+          <input
+            type="text"
+            placeholder="Phone number"
+            value={phone_number}
+            onChange={(e) => setPhone_number(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
+            className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+          />
+        </div>
+        {addError && <p className="text-sm text-red-600 mt-2">{addError}</p>}
+        <button
+          type="button"
+          onClick={handleAdd}
+          className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+        >
+          <UserPlus className="w-4 h-4" />
+          Add user
+        </button>
+      </div>
+
+      {/* List of manually added users */}
+      {parsedInvitees.length > 0 && (
+        <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
+          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-700">
+              {parsedInvitees.length} user{parsedInvitees.length !== 1 ? "s" : ""} added
+            </p>
+            {onPreviewClick && (
+              <button
+                type="button"
+                onClick={onPreviewClick}
+                className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200"
+              >
+                Preview
+              </button>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">#</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">First name</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">Last name</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">Phone</th>
+                  <th className="px-4 py-2.5 w-20 text-right text-xs font-semibold text-slate-600 uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {parsedInvitees.map((u, idx) => (
+                  <tr key={u.id} className="hover:bg-slate-50">
+                    <td className="px-4 py-2.5 text-sm text-slate-600">{idx + 1}</td>
+                    <td className="px-4 py-2.5 text-sm text-slate-900">{u.first_name || "—"}</td>
+                    <td className="px-4 py-2.5 text-sm text-slate-900">{u.last_name || "—"}</td>
+                    <td className="px-4 py-2.5 text-sm text-slate-900">{u.email || "—"}</td>
+                    <td className="px-4 py-2.5 text-sm text-slate-600">{u.phone_number || "—"}</td>
+                    <td className="px-4 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(u.id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Remove"
+                        aria-label="Remove"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function VipInvitationToggle({
+  isVipInvitation,
+  setIsVipInvitation,
+}: {
+  isVipInvitation: boolean;
+  setIsVipInvitation: (value: boolean) => void;
+}) {
+  return (
+    <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <span className="text-sm font-medium text-slate-700">VIP invitation</span>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isVipInvitation}
+        onClick={() => setIsVipInvitation(!isVipInvitation)}
+        className={`relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+          isVipInvitation ? "bg-indigo-600" : "bg-slate-200"
+        }`}
+      >
+        <span
+          className={`pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition ${
+            isVipInvitation ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+      <span className="text-sm text-slate-600">{isVipInvitation ? "Yes" : "No"}</span>
+      <p className="text-xs text-slate-500 w-full mt-0.5">Mark this invitation as VIP (API: is_vip_invitation true/false)</p>
+    </div>
+  );
+}
+
 type InviteesTabProps = {
+  sendTo: SendTo;
+  setSendTo: (value: SendTo) => void;
+  isVipInvitation: boolean;
+  setIsVipInvitation: (value: boolean) => void;
   inviteesFile: File | null;
   setInviteesFile: (file: File | null) => void;
   inviteesFileInputRef: React.RefObject<HTMLInputElement | null>;
+  parsedInvitees: ParsedInvitee[];
   onParsedUsersChange?: (users: ParsedInvitee[]) => void;
   onPreviewClick?: () => void;
 };
 
+function SendToSelector({
+  sendTo,
+  setSendTo,
+}: {
+  sendTo: SendTo;
+  setSendTo: (value: SendTo) => void;
+}) {
+  return (
+    <div className="mb-6">
+      <h3 className="text-base font-semibold text-gray-800 mb-2">Send to</h3>
+      <p className="text-sm text-slate-500 mb-3">
+        Choose who receives this invitation: all recipients, import from file (Excel/CSV), or add users manually.
+      </p>
+      <div className="flex flex-wrap gap-3">
+        <button
+          type="button"
+          onClick={() => setSendTo("all")}
+          className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-colors ${
+            sendTo === "all"
+              ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          All
+        </button>
+        <button
+          type="button"
+          onClick={() => setSendTo("imported_from_file")}
+          className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-colors ${
+            sendTo === "imported_from_file"
+              ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+          }`}
+        >
+          <FileSpreadsheet className="w-4 h-4" />
+          Import from file (Excel/CSV)
+        </button>
+        <button
+          type="button"
+          onClick={() => setSendTo("manually_entered")}
+          className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-colors ${
+            sendTo === "manually_entered"
+              ? "border-indigo-600 bg-indigo-50 text-indigo-700"
+              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
+          }`}
+        >
+          <Edit3 className="w-4 h-4" />
+          Manually entered
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function InviteesTab({
+  sendTo,
+  setSendTo,
+  isVipInvitation,
+  setIsVipInvitation,
   inviteesFile,
   setInviteesFile,
   inviteesFileInputRef,
+  parsedInvitees,
   onParsedUsersChange,
   onPreviewClick,
 }: InviteesTabProps) {
@@ -268,9 +520,41 @@ export function InviteesTab({
     filteredUsers.length
   );
 
+  // —— Send to: All ——
+  if (sendTo === "all") {
+    return (
+      <div className="space-y-5">
+        <SendToSelector sendTo={sendTo} setSendTo={setSendTo} />
+        <VipInvitationToggle isVipInvitation={isVipInvitation} setIsVipInvitation={setIsVipInvitation} />
+        <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
+          <p className="text-slate-700 font-medium">Invitation will be sent to all recipients.</p>
+          <p className="text-sm text-slate-500 mt-1">No need to add a list — the backend will use the full recipient list.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // —— Send to: Manually entered ——
+  if (sendTo === "manually_entered") {
+    return (
+      <div className="space-y-5">
+        <SendToSelector sendTo={sendTo} setSendTo={setSendTo} />
+        <VipInvitationToggle isVipInvitation={isVipInvitation} setIsVipInvitation={setIsVipInvitation} />
+        <ManualInviteesSection
+          parsedInvitees={parsedInvitees}
+          onParsedUsersChange={onParsedUsersChange}
+          onPreviewClick={onPreviewClick}
+        />
+      </div>
+    );
+  }
+
+  // —— Send to: Imported from file ——
   return (
     <div className="space-y-5">
-      <h3 className="text-base font-semibold text-gray-800">Send to</h3>
+      <SendToSelector sendTo={sendTo} setSendTo={setSendTo} />
+      <VipInvitationToggle isVipInvitation={isVipInvitation} setIsVipInvitation={setIsVipInvitation} />
+      <h3 className="text-base font-semibold text-gray-800">Import from file</h3>
 
       {/* ── Upload Controls ── */}
       <div className="flex flex-wrap items-center gap-3">

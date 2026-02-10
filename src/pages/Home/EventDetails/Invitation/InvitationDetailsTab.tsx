@@ -113,18 +113,20 @@ export function InvitationDetailsTab({
               }
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-slate-900"
             >
-              <option>Arabic (العربية)</option>
-              <option>English</option>
+              <option value="en">English</option>
+              <option value="ar">Arabic (العربية)</option>
             </select>
             <p className="text-xs text-slate-500 mt-1.5">
-              Language for invitation links and email content
+              Language for invitation links and email content (API receives: en / ar)
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
               Email Sender
             </label>
-            <select
+            <input
+              type="email"
+              placeholder="e.g. noreply@yourdomain.com"
               value={invitationForm.emailSender}
               onChange={(e) =>
                 setInvitationForm({
@@ -132,10 +134,11 @@ export function InvitationDetailsTab({
                   emailSender: e.target.value,
                 })
               }
-              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-slate-500"
-            >
-              <option value="">Select Email Sender</option>
-            </select>
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
+            />
+            <p className="text-xs text-slate-500 mt-1.5">
+              Email address that will appear as the sender of invitation emails
+            </p>
           </div>
         </div>
       </div>
