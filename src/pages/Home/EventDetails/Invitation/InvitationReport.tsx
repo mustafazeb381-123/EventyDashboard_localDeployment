@@ -1,9 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   Printer,
-  MapPin,
   Calendar,
   Users,
   Send,
@@ -19,6 +18,31 @@ import {
   Tag,
 } from "lucide-react";
 import { icons } from "@/utils/Assets";
+import { getEventInvitations } from "@/apis/invitationService";
+import type { EventInvitationUser } from "@/apis/invitationService";
+import { Skeleton } from "@/components/ui/skeleton";
+
+/** Parse list response and find invitation by id. List API returns { data: [ { id, type, attributes }, ... ], meta } */
+function findInvitationFromListResponse(
+  body: unknown,
+  invitationId: string
+): Record<string, unknown> | null {
+  if (!body || typeof body !== "object") return null;
+  const raw = body as Record<string, unknown>;
+  const data = raw.data;
+  if (!Array.isArray(data)) return null;
+  const list = data as Array<Record<string, unknown>>;
+  const found = list.find((item) => String(item?.id) === String(invitationId));
+  if (!found || typeof found !== "object") return null;
+  const attrs = found.attributes;
+  if (attrs && typeof attrs === "object") {
+    return { id: found.id, ...(attrs as Record<string, unknown>) };
+  }
+  if ("title" in found || "invitation_type" in found) {
+    return found as Record<string, unknown>;
+  }
+  return null;
+}
 
 type UserRow = {
   id: number;
@@ -31,7 +55,42 @@ type UserRow = {
   delivery: "delivered" | "failed" | "pending";
   registered: boolean;
   confirmed: boolean;
+  source?: string;
+  invitation_sent_at?: string;
 };
+
+function mapInvitationUserToRow(u: EventInvitationUser): UserRow {
+  const name = [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || "—";
+  const sent = !!u.invitation_sent_at;
+  return {
+    id: u.id,
+    name,
+    organization: "—",
+    position: "—",
+    email: u.email ?? "",
+    phone: u.phone_number ?? "—",
+    status: "pending",
+    delivery: sent ? "delivered" : "pending",
+    registered: false,
+    confirmed: false,
+    source: u.source,
+    invitation_sent_at: u.invitation_sent_at,
+  };
+}
+
+function formatDate(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("en-US", {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "—";
+  }
+}
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
@@ -46,46 +105,86 @@ function InvitationReport() {
     eventId?: string | null;
   } | null;
 
-  const invitationName = state?.invitationName ?? "VIP Morning Day 5 - 8 الاحتفال";
-  const type = state?.type ?? "Public-9";
-  const createdAt = state?.createdAt ?? "December 18, 2025 at 10:14";
+  const [invitation, setInvitation] = useState<Record<string, unknown> | null>(null);
+  const [loadingInvitation, setLoadingInvitation] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  // Report stats matching screenshot
-  const stats = {
-    totalInvitations: 70,
-    sent: 67,
-    registered: 21,
-    conversionRate: "30.0%",
-    duplicateEmails: 1,
-  };
+  const eventId = state?.eventId ?? null;
 
-  const registrationStatus = {
-    approved: 21,
-    rejected: 49,
-    pending: 5,
-    total: 70,
-  };
+  useEffect(() => {
+    if (!invitationId || !eventId) {
+      setLoadingInvitation(false);
+      if (!eventId && invitationId) setLoadError("Event ID is missing. Open this report from the invitation list.");
+      return;
+    }
+    setLoadingInvitation(true);
+    setLoadError(null);
+    getEventInvitations(eventId, { page: 1, per_page: 100 })
+      .then((res) => {
+        const data = res.data as unknown;
+        const attrs = findInvitationFromListResponse(data, invitationId);
+        if (attrs) {
+          setInvitation(attrs);
+          setLoadError(null);
+        } else {
+          setInvitation(null);
+          setLoadError("Invitation not found in list.");
+        }
+      })
+      .catch(() => {
+        setInvitation(null);
+        setLoadError("Failed to load invitation.");
+      })
+      .finally(() => setLoadingInvitation(false));
+  }, [invitationId, eventId]);
 
-  // Sample user data (70 to match totalInvitations for pagination)
-  const allUsers: UserRow[] = useMemo(
-    () =>
-      Array.from({ length: 70 }, (_, i) => {
-        const statuses: UserRow["status"][] = ["approved", "rejected", "pending"];
-        const deliveries: UserRow["delivery"][] = ["delivered", "failed", "pending"];
-        return {
-          id: i + 1,
-          name: "منيرة الخالدي",
-          organization: "وزارة المالية",
-          position: "أخصائي برمجة",
-          email: `user${i + 1}@mol.gov.sa`,
-          phone: "0111911965",
-          status: statuses[i % 3],
-          delivery: deliveries[i % 3],
-          registered: i % 3 !== 2,
-          confirmed: i % 3 === 0,
-        };
-      }),
-    []
+  const invitationName = (invitation?.title as string) ?? state?.invitationName ?? "Invitation Report";
+  const type = (invitation?.invitation_type as string) ?? state?.type ?? "—";
+  const createdAt = state?.createdAt ?? (invitation?.created_at ? formatDate(String(invitation.created_at)) : "—");
+
+  const rawUsers: EventInvitationUser[] = useMemo(() => {
+    const list = invitation?.event_invitation_users;
+    if (!Array.isArray(list)) return [];
+    return list as EventInvitationUser[];
+  }, [invitation]);
+
+  const allUsers: UserRow[] = useMemo(() => rawUsers.map(mapInvitationUserToRow), [rawUsers]);
+
+  const sentCount = useMemo(
+    () => rawUsers.filter((u) => u.invitation_sent_at).length,
+    [rawUsers]
+  );
+  const duplicateEmailsCount = useMemo(() => {
+    const emails = rawUsers.map((u) => (u.email ?? "").toLowerCase()).filter(Boolean);
+    const seen = new Set<string>();
+    let dupes = 0;
+    emails.forEach((e) => {
+      if (seen.has(e)) dupes += 1;
+      else seen.add(e);
+    });
+    return dupes;
+  }, [rawUsers]);
+
+  const total = allUsers.length;
+  const stats = useMemo(
+    () => ({
+      totalInvitations: total,
+      sent: sentCount,
+      registered: 0,
+      conversionRate: total > 0 ? `${((0 / total) * 100).toFixed(1)}%` : "0%",
+      duplicateEmails: duplicateEmailsCount,
+    }),
+    [total, sentCount, duplicateEmailsCount]
+  );
+
+  const registrationStatus = useMemo(
+    () => ({
+      approved: 0,
+      rejected: 0,
+      pending: total,
+      total,
+    }),
+    [total]
   );
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
@@ -214,6 +313,52 @@ function InvitationReport() {
 
   const printStyles =
     "@media print{body *{visibility:hidden}#invitation-report-print,#invitation-report-print *{visibility:visible}#invitation-report-print{position:absolute;left:0;top:0;width:100%}.no-print{display:none!important}}";
+
+  if (loadingInvitation) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <Skeleton className="h-10 w-10 rounded-lg" />
+            <Skeleton className="h-7 w-48" />
+          </div>
+          <Skeleton className="h-6 w-64 mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-20 rounded-lg" />
+            ))}
+          </div>
+          <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex gap-4 p-4 border-b border-gray-100 last:border-0">
+                <Skeleton className="h-4 w-4 rounded" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="bg-white rounded-xl shadow-sm p-6">
+          <p className="text-red-600 mb-4">{loadError}</p>
+          <button
+            type="button"
+            onClick={() => navigate(state?.eventId ? `/invitation?eventId=${state.eventId}` : "/invitation")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200"
+          >
+            <ArrowLeft size={18} />
+            Back to List
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -479,7 +624,14 @@ function InvitationReport() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {paginatedUsers.map((user) => (
+                  {paginatedUsers.length === 0 ? (
+                    <tr>
+                      <td colSpan={11} className="px-4 py-12 text-center text-gray-500 text-sm">
+                        {allUsers.length === 0 ? "No invitation users for this invitation." : "No users match your search."}
+                      </td>
+                    </tr>
+                  ) : (
+                  paginatedUsers.map((user) => (
                     <tr key={user.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3 no-print">
                         <input
@@ -512,62 +664,65 @@ function InvitationReport() {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                  ))
+                  )}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination */}
+            {/* Pagination - only show when more than 10 users */}
             <div className="p-4 border-t border-gray-200 no-print">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm text-gray-600">
                   Showing {startItem}–{endItem} of {filteredUsers.length}
                 </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={safePage <= 1}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    Previous
-                  </button>
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1)
-                      .filter((p) => {
-                        if (totalPages <= 7) return true;
-                        if (p === 1 || p === totalPages) return true;
-                        if (Math.abs(p - safePage) <= 1) return true;
-                        return false;
-                      })
-                      .map((p, idx, arr) => (
-                        <span key={p} className="flex items-center gap-1">
-                          {idx > 0 && arr[idx - 1] !== p - 1 && (
-                            <span className="px-1 text-gray-400">…</span>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => setCurrentPage(p)}
-                            className={`min-w-[2rem] px-3 py-1 text-sm font-medium rounded ${
-                              p === safePage
-                                ? "bg-blue-600 text-white"
-                                : "text-gray-700 hover:bg-gray-100"
-                            }`}
-                          >
-                            {p}
-                          </button>
-                        </span>
-                      ))}
+                {filteredUsers.length > 10 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={safePage <= 1}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1)
+                        .filter((p) => {
+                          if (totalPages <= 7) return true;
+                          if (p === 1 || p === totalPages) return true;
+                          if (Math.abs(p - safePage) <= 1) return true;
+                          return false;
+                        })
+                        .map((p, idx, arr) => (
+                          <span key={p} className="flex items-center gap-1">
+                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                              <span className="px-1 text-gray-400">…</span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage(p)}
+                              className={`min-w-[2rem] px-3 py-1 text-sm font-medium rounded ${
+                                p === safePage
+                                  ? "bg-blue-600 text-white"
+                                  : "text-gray-700 hover:bg-gray-100"
+                              }`}
+                            >
+                              {p}
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={safePage >= totalPages}
+                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
+                    >
+                      Next
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={safePage >= totalPages}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
-                  >
-                    Next
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>

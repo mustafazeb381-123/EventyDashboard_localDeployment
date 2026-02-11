@@ -504,7 +504,7 @@ function Invitations() {
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Completed</p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
-                  {stats.completed || 122}
+                  {stats.completed || 0}
                 </p>
               </div>
             </div>
