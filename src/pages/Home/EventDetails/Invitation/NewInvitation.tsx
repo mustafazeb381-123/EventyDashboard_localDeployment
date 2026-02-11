@@ -6,6 +6,7 @@ import {
   createEventInvitation,
   updateEventInvitation,
   getEventInvitation,
+  getEventInvitations,
   type UserImportItem,
   type SendTo,
 } from "@/apis/invitationService";
@@ -60,6 +61,28 @@ function parseInvitationResponse(body: unknown): Record<string, unknown> | null 
     return raw;
   }
 
+  return null;
+}
+
+/** Find invitation by id from list API response { data: [ { id, attributes }, ... ] } */
+function findInvitationFromListResponse(
+  body: unknown,
+  invitationId: string
+): Record<string, unknown> | null {
+  if (!body || typeof body !== "object") return null;
+  const raw = body as Record<string, unknown>;
+  const data = raw.data;
+  if (!Array.isArray(data)) return null;
+  const list = data as Array<Record<string, unknown>>;
+  const found = list.find((item) => String(item?.id) === String(invitationId));
+  if (!found || typeof found !== "object") return null;
+  const attrs = found.attributes;
+  if (attrs && typeof attrs === "object") {
+    return { id: found.id, ...(attrs as Record<string, unknown>) };
+  }
+  if ("title" in found || "invitation_type" in found) {
+    return found as Record<string, unknown>;
+  }
   return null;
 }
 
@@ -139,60 +162,74 @@ function NewInvitation() {
     }
   }, [eventId]);
 
-  // Edit mode: fetch invitation (GET /events/{event_id}/event_invitations/{id}) and prefill form on every screen
+  // Edit mode: fetch invitation (GET single or list fallback) and prefill form for all tabs
   useEffect(() => {
     if (!isEditMode || !eventId || !invitationIdFromRoute) return;
     setLoadingInvitation(true);
+
+    function applyInvitationAttrs(attrs: Record<string, unknown> | null) {
+      if (!attrs) return;
+      const title = String(attrs.title ?? "");
+      const invitationType = (String(attrs.invitation_type ?? "email").toLowerCase()) as InvitationType;
+      const lang = String(attrs.invitation_language ?? "en");
+      const langNorm = lang === "ar" || lang === "english" ? (lang === "english" ? "en" : "ar") : "en";
+      const emailSubject = String(attrs.invitation_email_subject ?? "");
+      const scheduledSendTime = attrs.scheduled_send_time
+        ? new Date(String(attrs.scheduled_send_time)).toISOString().slice(0, 16)
+        : "";
+      const senderEmail = String(attrs.sender_email ?? "");
+      setInvitationForm((prev) => ({
+        ...prev,
+        invitationName: title,
+        communicationType: invitationType === "sms" || invitationType === "whatsapp" ? invitationType : "email",
+        language: langNorm,
+        emailSubject,
+        scheduleSendAt: scheduledSendTime,
+        emailSender: senderEmail,
+      }));
+      setEnableRsvp(Boolean(attrs.enable_rsvp ?? true));
+      const sendToVal = String(attrs.send_to ?? "imported_from_file");
+      setSendTo(
+        sendToVal === "all"
+          ? "all"
+          : sendToVal === "manually_entered"
+            ? "manually_entered"
+            : "imported_from_file"
+      );
+      setIsVipInvitation(Boolean(attrs.is_vip_invitation ?? false));
+      const bodyHtml = String(attrs.invitation_email_body ?? "");
+      if (bodyHtml) {
+        const tplId = `edit-tpl-${invitationIdFromRoute}`;
+        setInvitationEmailTemplates([{ id: tplId, title: "Current email body", html: bodyHtml, design: null }]);
+        setSelectedInvitationEmailTemplateId(tplId);
+      }
+      const rawUsers = (attrs.event_invitation_users as Array<Record<string, unknown>>) ?? [];
+      // Filter out entries with null/undefined id (API sometimes returns duplicates with id: null)
+      const users = rawUsers.filter((u) => u != null && u.id != null && String(u.id).trim() !== "");
+      const parsed: ParsedInvitee[] = users.map((u, i) => ({
+        id: String(u?.id ?? `edit-${i + 1}`),
+        first_name: String(u?.first_name ?? ""),
+        last_name: String(u?.last_name ?? ""),
+        email: String(u?.email ?? ""),
+        phone_number: String(u?.phone_number ?? ""),
+      }));
+      setParsedInvitees(parsed);
+    }
+
     getEventInvitation(eventId, invitationIdFromRoute)
       .then((res) => {
         const body = res.data as unknown;
         const attrs = parseInvitationResponse(body);
-        if (!attrs) return;
-        const title = String(attrs.title ?? "");
-        const invitationType = (String(attrs.invitation_type ?? "email").toLowerCase()) as InvitationType;
-        const lang = String(attrs.invitation_language ?? "en");
-        const langNorm = lang === "ar" || lang === "english" ? (lang === "english" ? "en" : "ar") : "en";
-        const emailSubject = String(attrs.invitation_email_subject ?? "");
-        const scheduledSendTime = attrs.scheduled_send_time
-          ? new Date(String(attrs.scheduled_send_time)).toISOString().slice(0, 16)
-          : "";
-        const senderEmail = String(attrs.sender_email ?? "");
-        setInvitationForm((prev) => ({
-          ...prev,
-          invitationName: title,
-          communicationType: invitationType === "sms" || invitationType === "whatsapp" ? invitationType : "email",
-          language: langNorm,
-          emailSubject,
-          scheduleSendAt: scheduledSendTime,
-          emailSender: senderEmail,
-        }));
-        setEnableRsvp(Boolean(attrs.enable_rsvp ?? true));
-        const sendToVal = String(attrs.send_to ?? "imported_from_file");
-        setSendTo(
-          sendToVal === "all"
-            ? "all"
-            : sendToVal === "manually_entered"
-              ? "manually_entered"
-              : "imported_from_file"
-        );
-        setIsVipInvitation(Boolean(attrs.is_vip_invitation ?? false));
-        const bodyHtml = String(attrs.invitation_email_body ?? "");
-        if (bodyHtml) {
-          const tplId = `edit-tpl-${invitationIdFromRoute}`;
-          setInvitationEmailTemplates([{ id: tplId, title: "Current email body", html: bodyHtml, design: null }]);
-          setSelectedInvitationEmailTemplateId(tplId);
-        }
-        const users = (attrs.event_invitation_users as Array<Record<string, unknown>>) ?? [];
-        const parsed: ParsedInvitee[] = users.map((u, i) => ({
-          id: String(u?.id ?? i + 1),
-          first_name: String(u?.first_name ?? ""),
-          last_name: String(u?.last_name ?? ""),
-          email: String(u?.email ?? ""),
-          phone_number: String(u?.phone_number ?? ""),
-        }));
-        setParsedInvitees(parsed);
+        applyInvitationAttrs(attrs);
       })
-      .catch(() => {})
+      .catch(() => {
+        // Fallback: use list API and find invitation by id (same as InvitationReport)
+        return getEventInvitations(eventId, { page: 1, per_page: 100 }).then((res) => {
+          const data = res.data as unknown;
+          const attrs = findInvitationFromListResponse(data, invitationIdFromRoute);
+          applyInvitationAttrs(attrs);
+        });
+      })
       .finally(() => {
         setLoadingInvitation(false);
       });
@@ -330,6 +367,8 @@ function NewInvitation() {
         phone_number: p.phone_number || undefined,
         user_type: isVipInvitation ? "vip" : "guest",
       }));
+      const hasUserImport =
+        (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0;
       const event_invitation = {
         title: invitationForm.invitationName,
         invitation_type: invitationForm.communicationType || "email",
@@ -342,12 +381,9 @@ function NewInvitation() {
           : undefined,
         enable_rsvp: enableRsvp,
         is_vip_invitation: isVipInvitation,
-        resend_invitations: false,
+        resend_invitations: isEditMode && hasUserImport,
         send_to: sendTo,
-        user_import_object:
-          (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0
-            ? userImportObject
-            : undefined,
+        user_import_object: hasUserImport ? userImportObject : undefined,
       };
       const fullPayload = { eventId, event_invitation };
       const payloadJson = JSON.stringify(fullPayload, null, 2);
@@ -364,6 +400,8 @@ function NewInvitation() {
       if (isEditMode && invitationIdFromRoute) {
         await updateEventInvitation(eventId, invitationIdFromRoute, { event_invitation });
         showNotification("Invitation updated successfully.", "success");
+        // Brief delay so the success toast is visible before redirecting
+        await new Promise((r) => setTimeout(r, 1500));
       } else {
         await createEventInvitation(eventId, { event_invitation });
         showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
