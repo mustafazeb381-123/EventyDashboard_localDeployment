@@ -4,6 +4,9 @@ export type TabId =
   | "rsvp-template"
   | "invitees";
 
+/** API enum: invitation_type */
+export type InvitationType = "email" | "sms" | "whatsapp";
+
 export type InvitationEmailTemplate = {
   id: string;
   title: string;
@@ -13,7 +16,7 @@ export type InvitationEmailTemplate = {
 
 export type InvitationForm = {
   invitationName: string;
-  communicationType: string;
+  communicationType: InvitationType;
   invitationCategory: string;
   event: string;
   language: string;

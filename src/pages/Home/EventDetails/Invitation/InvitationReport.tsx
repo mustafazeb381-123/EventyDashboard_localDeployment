@@ -43,6 +43,7 @@ function InvitationReport() {
     invitationName?: string;
     type?: string;
     createdAt?: string;
+    eventId?: string | null;
   } | null;
 
   const invitationName = state?.invitationName ?? "VIP Morning Day 5 - 8 الاحتفال";
@@ -143,7 +144,9 @@ function InvitationReport() {
   };
 
   const handleBackToList = () => {
-    navigate("/invitation", { state: location.state });
+    const eventId = state?.eventId;
+    const path = eventId ? `/invitation?eventId=${eventId}` : "/invitation";
+    navigate(path, { state: location.state });
   };
 
   const handlePrintReport = () => {

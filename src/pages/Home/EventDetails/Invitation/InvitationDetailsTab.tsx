@@ -1,5 +1,5 @@
 import { Info } from "lucide-react";
-import type { InvitationForm } from "./newInvitationTypes";
+import type { InvitationForm, InvitationType } from "./newInvitationTypes";
 
 type InvitationDetailsTabProps = {
   invitationForm: InvitationForm;
@@ -51,14 +51,14 @@ export function InvitationDetailsTab({
               onChange={(e) =>
                 setInvitationForm({
                   ...invitationForm,
-                  communicationType: e.target.value,
+                  communicationType: e.target.value as InvitationType,
                 })
               }
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-slate-900"
             >
-              <option>Email</option>
-              <option>SMS</option>
-              <option>WhatsApp</option>
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="whatsapp">WhatsApp</option>
             </select>
           </div>
           <div>

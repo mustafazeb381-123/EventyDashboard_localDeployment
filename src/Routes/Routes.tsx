@@ -85,6 +85,10 @@ const router = createBrowserRouter([
             element: <NewInvitation />,
           },
           {
+            path: "invitation/edit/:invitationId",
+            element: <NewInvitation />,
+          },
+          {
             path: "invitation/report/:invitationId",
             element: <InvitationReport />,
           },

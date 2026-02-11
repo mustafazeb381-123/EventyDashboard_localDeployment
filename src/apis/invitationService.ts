@@ -63,6 +63,9 @@ export interface EventInvitationsListResponse {
 /** Backend: send_to enum */
 export type SendTo = "all" | "imported_from_file" | "manually_entered";
 
+/** Backend: invitation_type enum */
+export type InvitationType = "email" | "sms" | "whatsapp";
+
 /** Payload for create/update: user_import_object */
 export interface UserImportItem {
   first_name?: string;
@@ -76,7 +79,7 @@ export interface UserImportItem {
 export interface EventInvitationPayload {
   event_invitation: {
     title?: string;
-    invitation_type?: string;
+    invitation_type?: InvitationType;
     invitation_language?: string;
     sender_email?: string;
     /** all | imported_from_file | manually_entered */

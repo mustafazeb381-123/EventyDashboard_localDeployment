@@ -192,7 +192,7 @@ function Invitations() {
 
   const itemsPerPage = 10;
 
-  // Close actions menu when clicking outside
+  // Close actions menu when clicking outside (use 'click' so menu open state + ref are set before we check)
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -202,8 +202,8 @@ function Invitations() {
         setActionsMenuOpenId(null);
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   // Auto-hide notification after 3 seconds
@@ -280,17 +280,23 @@ function Invitations() {
         page,
         per_page: itemsPerPage,
       });
-      const res = response.data as any;
-      const list = Array.isArray(res?.data)
-        ? res.data
-        : Array.isArray(res)
-          ? res
-          : [];
+      // API returns JSON:API format: { data: [{ id, type, attributes }, ...], meta: { pagination } }
+      const res = response.data as unknown as {
+        data?: Array<{ id: string; type?: string; attributes?: Record<string, unknown> }>;
+        meta?: { pagination?: Record<string, number | null> };
+      };
+      const rawList = Array.isArray(res?.data) ? res.data : [];
+      // Normalize JSON:API format (id + attributes) to flat invitation objects
+      const list: EventInvitation[] = rawList.map((item) =>
+        item.attributes
+          ? { id: Number(item.id) || item.id, ...item.attributes } as EventInvitation
+          : (item as unknown as EventInvitation)
+      );
       setInvitations(list);
       const meta = res?.meta?.pagination;
       if (meta) {
         setInvitationPagination({
-          current_page: meta.current_page,
+          current_page: meta.current_page ?? 1,
           total_pages: meta.total_pages ?? 1,
           total_count: meta.total_count ?? 0,
           per_page: meta.per_page ?? itemsPerPage,
@@ -578,7 +584,7 @@ function Invitations() {
 
           {/* ── Table ── */}
           <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-visible">
               <table className="w-full">
                 <thead>
                   <tr className="bg-[#1b3a5c]">
@@ -635,28 +641,28 @@ function Invitations() {
                   {loadingInvitations ? (
                     Array.from({ length: 10 }).map((_, index) => (
                       <tr key={index}>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-4 w-4 rounded" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-5 w-12 rounded" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-4 w-40" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-4 w-56" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-6 w-8 rounded-full" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-6 w-16 rounded-full" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <Skeleton className="h-4 w-20" />
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-4">
                           <div className="flex gap-1">
                             <Skeleton className="w-7 h-7 rounded" />
                             <Skeleton className="w-7 h-7 rounded" />
@@ -692,7 +698,7 @@ function Invitations() {
                             isSelected ? "bg-blue-50" : "hover:bg-gray-50"
                           }`}
                         >
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             <input
                               type="checkbox"
                               checked={isSelected}
@@ -702,22 +708,22 @@ function Invitations() {
                               className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer"
                             />
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             <span className="text-sm font-semibold text-gray-700">
                               #{invitation.id}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             <span className="text-sm text-gray-900">
                               {invitation.title || "—"}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             <span className="text-sm text-gray-700 dir-rtl">
                               {invitation.invitation_email_subject || "—"}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             <div className="flex items-center justify-center w-8 h-8 rounded-lg border-gray-200 bg-white">
                               <Mail
                                 size={15}
@@ -726,7 +732,7 @@ function Invitations() {
                               />
                             </div>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             {status === "pending" ? (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
@@ -739,12 +745,12 @@ function Invitations() {
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4">
                             <span className="text-sm text-gray-600">
                               {formatInvitationDate(invitation.created_at)}
                             </span>
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-4 align-top overflow-visible relative">
                             <div className="flex items-center gap-0.5">
                               <button
                                 type="button"
@@ -754,7 +760,7 @@ function Invitations() {
                                 <Eye size={16} />
                               </button>
                               <div
-                                className="relative"
+                                className="relative inline-block"
                                 ref={
                                   actionsMenuOpenId === rowKey
                                     ? actionsMenuRef
@@ -763,23 +769,25 @@ function Invitations() {
                               >
                                 <button
                                   type="button"
-                                  onClick={() =>
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setActionsMenuOpenId(
                                       actionsMenuOpenId === rowKey
                                         ? null
                                         : rowKey,
-                                    )
-                                  }
+                                    );
+                                  }}
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                   title="More actions"
                                 >
                                   <MoreVertical size={16} />
                                 </button>
                                 {actionsMenuOpenId === rowKey && (
-                                  <div className="absolute right-0 top-full mt-1 z-20 min-w-[180px] py-1 bg-white border border-gray-200 rounded-xl shadow-lg">
+                                  <div className="absolute right-0 top-full mt-1 z-[100] min-w-[180px] py-1 bg-white border border-gray-200 rounded-xl shadow-lg">
                                     <button
                                       type="button"
                                       onClick={() => {
+                                        const eventIdToPass = actualEventId || eventId;
                                         navigate(
                                           `/invitation/report/${invitation.id}`,
                                           {
@@ -788,6 +796,7 @@ function Invitations() {
                                               createdAt: formatInvitationDate(
                                                 invitation.created_at,
                                               ),
+                                              eventId: eventIdToPass ?? undefined,
                                             },
                                           },
                                         );
@@ -803,7 +812,13 @@ function Invitations() {
                                     </button>
                                     <button
                                       type="button"
-                                      onClick={() => setActionsMenuOpenId(null)}
+                                      onClick={() => {
+                                        const eventIdToPass = actualEventId || eventId;
+                                        navigate(
+                                          `/invitation/edit/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`,
+                                        );
+                                        setActionsMenuOpenId(null);
+                                      }}
                                       className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                     >
                                       <Pencil
@@ -836,72 +851,73 @@ function Invitations() {
               </table>
             </div>
 
-            {/* ── Pagination Footer ── */}
-            <div className="border-t border-gray-200 px-5 py-3 bg-white">
-              <div className="flex items-center justify-between">
-                {/* Left: count info */}
-                <p className="text-sm text-gray-500">
-                  {totalCount === 0
-                    ? "No invitations"
-                    : (() => {
-                        const page = invitationPagination?.current_page ?? 1;
-                        const per =
-                          invitationPagination?.per_page ?? itemsPerPage;
-                        const start = (page - 1) * per + 1;
-                        const end = Math.min(page * per, totalCount);
-                        return `Showing ${start} to ${end} of ${totalCount} invitations`;
-                      })()}
-                </p>
+            {/* ── Pagination Footer (show when there is data; page controls when totalCount >= 10 / multiple pages) ── */}
+            {(totalCount > 0 || listToShow.length > 0) && (
+              <div className="border-t border-gray-200 px-5 py-3 bg-white">
+                <div className="flex items-center justify-between">
+                  {/* Left: count info */}
+                  <p className="text-sm text-gray-500">
+                    {totalCount === 0
+                      ? `Showing ${listToShow.length} invitation${listToShow.length !== 1 ? "s" : ""}`
+                      : (() => {
+                          const page = invitationPagination?.current_page ?? 1;
+                          const per =
+                            invitationPagination?.per_page ?? itemsPerPage;
+                          const start = (page - 1) * per + 1;
+                          const end = Math.min(page * per, totalCount);
+                          return `Showing ${start} to ${end} of ${totalCount} invitations`;
+                        })()}
+                  </p>
 
-                {/* Center: page buttons */}
-                <div className="flex items-center gap-2">
-                  {/* Previous */}
-                  <button
-                    onClick={() =>
-                      currentPage > 1 && handlePageChange(currentPage - 1)
-                    }
-                    disabled={currentPage === 1}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    ← Previous
-                  </button>
+                  {/* Center: page buttons — only when more than one page (e.g. totalCount >= 10) */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() =>
+                          currentPage > 1 && handlePageChange(currentPage - 1)
+                        }
+                        disabled={currentPage === 1}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        ← Previous
+                      </button>
 
-                  {/* Page numbers */}
-                  <div className="flex items-center gap-1">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${
-                            page === currentPage
-                              ? "bg-blue-600 text-white shadow-sm"
-                              : "text-gray-600 hover:bg-gray-100"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ),
-                    )}
-                  </div>
+                      <div className="flex items-center gap-1">
+                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                          (page) => (
+                            <button
+                              key={page}
+                              onClick={() => handlePageChange(page)}
+                              className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${
+                                page === currentPage
+                                  ? "bg-blue-600 text-white shadow-sm"
+                                  : "text-gray-600 hover:bg-gray-100"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ),
+                        )}
+                      </div>
 
-                  {/* Next */}
-                  <button
-                    onClick={() =>
-                      currentPage < totalPages &&
-                      handlePageChange(currentPage + 1)
-                    }
-                    disabled={currentPage === totalPages}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next →
-                  </button>
+                      <button
+                        onClick={() =>
+                          currentPage < totalPages &&
+                          handlePageChange(currentPage + 1)
+                        }
+                        disabled={currentPage === totalPages}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        Next →
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Right: spacer when page controls shown, else empty */}
+                  <div className={totalPages > 1 ? "w-[120px]" : ""} />
                 </div>
-
-                {/* Right: spacer to balance layout */}
-                <div className="w-[120px]" />
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>

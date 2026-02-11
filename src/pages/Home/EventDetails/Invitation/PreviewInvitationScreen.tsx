@@ -14,6 +14,10 @@ type PreviewInvitationScreenProps = {
   onSendInvitation: () => void;
   isSending?: boolean;
   isCreatingInvitation?: boolean;
+  /** Button label on the main submit (e.g. "Update Invitation" for edit mode) */
+  submitButtonLabel?: string;
+  /** When true, submit button is not disabled for empty invitees list (e.g. edit with send_to "all") */
+  allowSendWithoutInvitees?: boolean;
 };
 
 function formatDateTime(value: string) {
@@ -39,9 +43,12 @@ export function PreviewInvitationScreen({
   onSendInvitation,
   isSending = false,
   isCreatingInvitation = false,
+  submitButtonLabel = "Send Invitation",
+  allowSendWithoutInvitees = false,
 }: PreviewInvitationScreenProps) {
   const busy = isSending || isCreatingInvitation;
-  const sendInvitationDisabled = busy || parsedInvitees.length === 0;
+  const sendInvitationDisabled =
+    busy || (!allowSendWithoutInvitees && parsedInvitees.length === 0);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,7 +152,11 @@ export function PreviewInvitationScreen({
                     Communication Type:
                   </span>
                   <span className="text-blue-500 font-medium">
-                    {invitationForm.communicationType || "Email"}
+                    {invitationForm.communicationType === "whatsapp"
+                    ? "WhatsApp"
+                    : invitationForm.communicationType === "sms"
+                      ? "SMS"
+                      : "Email"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -182,10 +193,10 @@ export function PreviewInvitationScreen({
               {busy ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Sending…
+                  {submitButtonLabel.includes("Update") ? "Updating…" : "Sending…"}
                 </span>
               ) : (
-                "Send Invitation"
+                submitButtonLabel
               )}
             </button>
           </div>

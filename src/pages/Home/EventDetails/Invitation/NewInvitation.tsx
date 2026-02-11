@@ -1,33 +1,86 @@
 import { useState, useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { getEventbyId } from "@/apis/apiHelpers";
-import { createEventInvitation, type UserImportItem, type SendTo } from "@/apis/invitationService";
+import {
+  createEventInvitation,
+  updateEventInvitation,
+  getEventInvitation,
+  type UserImportItem,
+  type SendTo,
+} from "@/apis/invitationService";
 import {
   EmailTemplateBuilderModal,
   type MergeTag,
 } from "@/components/EmailTemplateBuilder/EmailTemplateBuilderModal";
-import type { TabId, InvitationEmailTemplate } from "./newInvitationTypes";
+import type { TabId, InvitationEmailTemplate, InvitationType } from "./newInvitationTypes";
 import { InvitationDetailsTab } from "./InvitationDetailsTab";
 import { EmailTemplateTab } from "./EmailTemplateTab";
 import { RsvpTemplateTab } from "./RsvpTemplateTab";
 import { InviteesTab, type ParsedInvitee } from "./InviteesTab";
 import { PreviewInvitationScreen } from "./PreviewInvitationScreen";
 
+/** Extract flat invitation attrs from GET /events/{event_id}/event_invitations/{id} response. */
+function parseInvitationResponse(body: unknown): Record<string, unknown> | null {
+  if (!body || typeof body !== "object") return null;
+  const raw = body as Record<string, unknown>;
+
+  // 1) JSON:API: { data: { id, type, attributes: { title, ... } } }
+  const data = raw.data;
+  if (data && typeof data === "object") {
+    const resource = Array.isArray(data) ? (data as Record<string, unknown>[])[0] : (data as Record<string, unknown>);
+    if (resource && typeof resource === "object") {
+      const attrs = resource.attributes;
+      if (attrs && typeof attrs === "object") {
+        return { id: resource.id, ...(attrs as Record<string, unknown>) };
+      }
+      if ("title" in resource || "invitation_type" in resource) {
+        return resource;
+      }
+    }
+  }
+
+  // 2) Wrapper keys: { event_invitation: { title, ... } } or { invitation: { ... } }
+  const fromEventInvitation = raw.event_invitation as Record<string, unknown> | undefined;
+  if (fromEventInvitation && typeof fromEventInvitation === "object") {
+    return fromEventInvitation;
+  }
+  const fromInvitation = raw.invitation as Record<string, unknown> | undefined;
+  if (fromInvitation && typeof fromInvitation === "object") {
+    return fromInvitation;
+  }
+
+  // 3) Resource at top level with nested attributes: { id, type, attributes: { title, ... } }
+  if (raw.attributes && typeof raw.attributes === "object") {
+    return { id: raw.id, ...(raw.attributes as Record<string, unknown>) };
+  }
+
+  // 4) Flat at top level: { id, title, invitation_type, ... }
+  if ("title" in raw || "invitation_type" in raw) {
+    return raw;
+  }
+
+  return null;
+}
+
 function NewInvitation() {
   const location = useLocation();
   const navigate = useNavigate();
+  const params = useParams<{ invitationId?: string }>();
   const searchParams = new URLSearchParams(location.search);
   const eventIdFromUrl = searchParams.get("eventId");
+  const invitationIdFromRoute = params.invitationId ?? null;
+  const isEditMode = Boolean(invitationIdFromRoute);
 
   const [eventId, setEventId] = useState<string | null>(eventIdFromUrl);
+  const [loadingInvitation, setLoadingInvitation] = useState(isEditMode);
   const [eventData, setEventData] = useState<any>(null);
   const [newInvitationActiveTab, setNewInvitationActiveTab] =
     useState<TabId>("invitation-details");
   const [enableRsvp, setEnableRsvp] = useState(true);
   const [invitationForm, setInvitationForm] = useState({
     invitationName: "",
-    communicationType: "Email",
+    communicationType: "email" as InvitationType,
     invitationCategory: "",
     event: "",
     language: "en",
@@ -85,6 +138,65 @@ function NewInvitation() {
       if (stored) setEventId(stored);
     }
   }, [eventId]);
+
+  // Edit mode: fetch invitation (GET /events/{event_id}/event_invitations/{id}) and prefill form on every screen
+  useEffect(() => {
+    if (!isEditMode || !eventId || !invitationIdFromRoute) return;
+    setLoadingInvitation(true);
+    getEventInvitation(eventId, invitationIdFromRoute)
+      .then((res) => {
+        const body = res.data as unknown;
+        const attrs = parseInvitationResponse(body);
+        if (!attrs) return;
+        const title = String(attrs.title ?? "");
+        const invitationType = (String(attrs.invitation_type ?? "email").toLowerCase()) as InvitationType;
+        const lang = String(attrs.invitation_language ?? "en");
+        const langNorm = lang === "ar" || lang === "english" ? (lang === "english" ? "en" : "ar") : "en";
+        const emailSubject = String(attrs.invitation_email_subject ?? "");
+        const scheduledSendTime = attrs.scheduled_send_time
+          ? new Date(String(attrs.scheduled_send_time)).toISOString().slice(0, 16)
+          : "";
+        const senderEmail = String(attrs.sender_email ?? "");
+        setInvitationForm((prev) => ({
+          ...prev,
+          invitationName: title,
+          communicationType: invitationType === "sms" || invitationType === "whatsapp" ? invitationType : "email",
+          language: langNorm,
+          emailSubject,
+          scheduleSendAt: scheduledSendTime,
+          emailSender: senderEmail,
+        }));
+        setEnableRsvp(Boolean(attrs.enable_rsvp ?? true));
+        const sendToVal = String(attrs.send_to ?? "imported_from_file");
+        setSendTo(
+          sendToVal === "all"
+            ? "all"
+            : sendToVal === "manually_entered"
+              ? "manually_entered"
+              : "imported_from_file"
+        );
+        setIsVipInvitation(Boolean(attrs.is_vip_invitation ?? false));
+        const bodyHtml = String(attrs.invitation_email_body ?? "");
+        if (bodyHtml) {
+          const tplId = `edit-tpl-${invitationIdFromRoute}`;
+          setInvitationEmailTemplates([{ id: tplId, title: "Current email body", html: bodyHtml, design: null }]);
+          setSelectedInvitationEmailTemplateId(tplId);
+        }
+        const users = (attrs.event_invitation_users as Array<Record<string, unknown>>) ?? [];
+        const parsed: ParsedInvitee[] = users.map((u, i) => ({
+          id: String(u?.id ?? i + 1),
+          first_name: String(u?.first_name ?? ""),
+          last_name: String(u?.last_name ?? ""),
+          email: String(u?.email ?? ""),
+          phone_number: String(u?.phone_number ?? ""),
+        }));
+        setParsedInvitees(parsed);
+      })
+      .catch(() => {})
+      .finally(() => {
+        setLoadingInvitation(false);
+      });
+  }, [isEditMode, eventId, invitationIdFromRoute]);
 
   useEffect(() => {
     if (notification) {
@@ -199,6 +311,7 @@ function NewInvitation() {
       return;
     }
     if (
+      !isEditMode &&
       (sendTo === "imported_from_file" || sendTo === "manually_entered") &&
       parsedInvitees.length === 0
     ) {
@@ -215,7 +328,7 @@ function NewInvitation() {
         last_name: p.last_name || undefined,
         email: p.email || undefined,
         phone_number: p.phone_number || undefined,
-        user_type: "vip",
+        user_type: isVipInvitation ? "vip" : "guest",
       }));
       const event_invitation = {
         title: invitationForm.invitationName,
@@ -229,6 +342,7 @@ function NewInvitation() {
           : undefined,
         enable_rsvp: enableRsvp,
         is_vip_invitation: isVipInvitation,
+        resend_invitations: false,
         send_to: sendTo,
         user_import_object:
           (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0
@@ -239,14 +353,21 @@ function NewInvitation() {
       const payloadJson = JSON.stringify(fullPayload, null, 2);
       console.log("Invitation payload (sent to API):", fullPayload);
       console.log("Invitation payload (JSON):", payloadJson);
-      try {
-        await navigator.clipboard.writeText(payloadJson);
-        showNotification("Payload copied to clipboard. Sending invitation…", "info");
-      } catch {
-        // ignore clipboard errors
+      if (!isEditMode) {
+        try {
+          await navigator.clipboard.writeText(payloadJson);
+          showNotification("Payload copied to clipboard. Sending invitation…", "info");
+        } catch {
+          // ignore clipboard errors
+        }
       }
-      await createEventInvitation(eventId, { event_invitation });
-      showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
+      if (isEditMode && invitationIdFromRoute) {
+        await updateEventInvitation(eventId, invitationIdFromRoute, { event_invitation });
+        showNotification("Invitation updated successfully.", "success");
+      } else {
+        await createEventInvitation(eventId, { event_invitation });
+        showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
+      }
       navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
     } catch (error: any) {
       const status = error?.response?.status;
@@ -275,6 +396,8 @@ function NewInvitation() {
     }
   };
 
+  const submitButtonLabel = isEditMode ? "Update Invitation" : "Send Invitation";
+
   const handleSendTestEmail = () => {
     showNotification("Test email sent to your address.", "success");
   };
@@ -302,11 +425,21 @@ function NewInvitation() {
   };
 
   const backUrl = `/invitation${eventId ? `?eventId=${eventId}` : ""}`;
+  const pageTitle = isEditMode ? "Edit Invitation" : "New Invitation";
 
   const selectedTemplate = invitationEmailTemplates.find(
     (t) => t.id === selectedInvitationEmailTemplateId,
   );
   const previewEmailHtml = selectedTemplate?.html ?? "";
+
+  if (loadingInvitation && isEditMode) {
+    return (
+      <div className="min-h-full flex flex-col items-center justify-center gap-4 p-8">
+        <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-600 font-medium">Loading invitation…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full flex flex-col">
@@ -340,7 +473,7 @@ function NewInvitation() {
           >
             <ChevronLeft className="w-5 h-5" />
           </a>
-          <h1 className="text-2xl font-bold text-gray-900">New Invitation</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{pageTitle}</h1>
         </div>
       </div>
 
@@ -415,6 +548,8 @@ function NewInvitation() {
                 onSendInvitation={handleSendInvitationFromPreview}
                 isSending={isSending}
                 isCreatingInvitation={isCreatingInvitation}
+                submitButtonLabel={submitButtonLabel}
+                allowSendWithoutInvitees={isEditMode && sendTo === "all"}
               />
             ) : (
               <>
