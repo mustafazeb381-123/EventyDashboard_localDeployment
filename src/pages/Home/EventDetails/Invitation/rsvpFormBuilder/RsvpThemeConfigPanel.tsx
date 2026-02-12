@@ -289,6 +289,46 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
           </div>
         </div>
 
+        {/* Banner Image Settings */}
+        <div className="space-y-4 pt-4 border-t">
+          <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
+            Banner Image
+          </h4>
+          <p className="text-xs text-gray-500">
+            Configure banner image dimensions. Click the banner in preview to upload an image.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Banner Height
+              </label>
+              <input
+                type="text"
+                value={localTheme.bannerHeight ?? "300px"}
+                onChange={(e) =>
+                  handleUpdate({ bannerHeight: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                placeholder="300px"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1 text-gray-700">
+                Banner Width
+              </label>
+              <input
+                type="text"
+                value={localTheme.bannerWidth ?? "100%"}
+                onChange={(e) =>
+                  handleUpdate({ bannerWidth: e.target.value })
+                }
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                placeholder="100%"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Banner & Footer Margins */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
@@ -763,6 +803,108 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
                 placeholder="e.g. We'll miss you!"
               />
             </div>
+            
+            {/* Reason Fields */}
+            <div className="pt-2 border-t border-gray-200">
+              <h5 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3">
+                Reason Fields
+              </h5>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="acceptReasonRequired"
+                    checked={localTheme.acceptReasonRequired ?? false}
+                    onChange={(e) =>
+                      handleUpdate({ acceptReasonRequired: e.target.checked })
+                    }
+                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                  />
+                  <label htmlFor="acceptReasonRequired" className="text-sm text-gray-700">
+                    Require reason for Attend
+                  </label>
+                </div>
+                {localTheme.acceptReasonRequired && (
+                  <div className="ml-6 space-y-2">
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-gray-600">
+                        Reason label
+                      </label>
+                      <input
+                        type="text"
+                        value={localTheme.acceptReasonLabel ?? "Reason for attending"}
+                        onChange={(e) =>
+                          handleUpdate({ acceptReasonLabel: e.target.value || undefined })
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Reason for attending"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-gray-600">
+                        Reason placeholder
+                      </label>
+                      <input
+                        type="text"
+                        value={localTheme.acceptReasonPlaceholder ?? "Please provide a reason"}
+                        onChange={(e) =>
+                          handleUpdate({ acceptReasonPlaceholder: e.target.value || undefined })
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Please provide a reason"
+                      />
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="declineReasonRequired"
+                    checked={localTheme.declineReasonRequired ?? false}
+                    onChange={(e) =>
+                      handleUpdate({ declineReasonRequired: e.target.checked })
+                    }
+                    className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                  />
+                  <label htmlFor="declineReasonRequired" className="text-sm text-gray-700">
+                    Require reason for Decline
+                  </label>
+                </div>
+                {localTheme.declineReasonRequired && (
+                  <div className="ml-6 space-y-2">
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-gray-600">
+                        Reason label
+                      </label>
+                      <input
+                        type="text"
+                        value={localTheme.declineReasonLabel ?? "Reason for declining"}
+                        onChange={(e) =>
+                          handleUpdate({ declineReasonLabel: e.target.value || undefined })
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Reason for declining"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1 text-gray-600">
+                        Reason placeholder
+                      </label>
+                      <input
+                        type="text"
+                        value={localTheme.declineReasonPlaceholder ?? "Please provide a reason"}
+                        onChange={(e) =>
+                          handleUpdate({ declineReasonPlaceholder: e.target.value || undefined })
+                        }
+                        className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+                        placeholder="Please provide a reason"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700">
                 Attend button color

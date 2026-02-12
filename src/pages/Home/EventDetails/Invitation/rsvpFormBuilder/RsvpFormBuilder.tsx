@@ -1,40 +1,34 @@
 import React, { useRef, useState } from "react";
 import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
   Save,
   Palette as PaletteIcon,
   X,
-  Eye,
-  EyeOff,
+  Trash2,
+  Type,
+  Heading,
+  Minus,
+  Code,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import type { RsvpFormField, RsvpTheme, RsvpLanguageConfig, RsvpFieldType } from "./types";
 import { getDefaultRsvpFormFields, createRsvpFormField } from "./types";
-import { createRsvpLayoutField } from "./RsvpFieldPalette";
-
-function migrateFormFields(fields: RsvpFormField[]): RsvpFormField[] {
-  return fields.map((f) => {
-    let next = f;
-    if (!(f as RsvpFormField & { type?: RsvpFieldType }).type) {
-      const name = (f as RsvpFormField & { name: string }).name;
-      const type: RsvpFieldType = name === "phone_number" ? "phone" : "text";
-      next = { ...f, type };
-    }
-    if ((next as RsvpFormField & { visible?: boolean }).visible === undefined) {
-      next = { ...next, visible: true };
-    }
-    return next;
-  });
-}
-import { RsvpFieldPalette } from "./RsvpFieldPalette";
-import { RsvpFieldConfigPanel } from "./RsvpFieldConfigPanel";
+import { RsvpTextStylingPanel } from "./RsvpTextStylingPanel";
 import { RsvpThemeConfigPanel } from "./RsvpThemeConfigPanel";
 import { RsvpFormPreview } from "./RsvpFormPreview";
+
+const AVAILABLE_VARIABLES = [
+  { label: "First Name", value: "((firstname))" },
+  { label: "Last Name", value: "{{lastname}}" },
+  { label: "Full Name", value: "{{fullname}}" },
+  { label: "Email", value: "{{email}}" },
+  { label: "Company", value: "{{comapny}}" },
+  { label: "Organization", value: "{{organization}}" },
+  { label: "Event Name", value: "{{eventname}}" },
+  { label: "Event Location", value: "{{eventlocation}}" },
+  { label: "Event Start", value: "{{eventstart}}" },
+  { label: "Event End", value: "{{eventend}}" },
+];
 
 export interface RsvpFormBuilderProps {
   initialFormFields?: RsvpFormField[];
@@ -73,18 +67,11 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
   onClose,
 }) => {
   const [formFields, setFormFields] = useState<RsvpFormField[]>(() =>
-    initialFormFields?.length ? migrateFormFields(initialFormFields) : getDefaultRsvpFormFields()
+    initialFormFields?.length ? initialFormFields : getDefaultRsvpFormFields()
   );
   const [templateName, setTemplateName] = useState(initialTemplateName);
   const [editingField, setEditingField] = useState<RsvpFormField | null>(null);
   const [showThemePanel, setShowThemePanel] = useState(false);
-  /** When true: show all fields in preview. When false: show only visible fields (guest view). */
-  const [showFullPreview, setShowFullPreview] = useState(true);
-  /** Builder steps: 1 = Fields, 3 = Styling (Variables and Actions steps removed) */
-  const [builderStep, setBuilderStep] = useState<1 | 3>(1);
-  /** Reason popup when Attend/Decline is clicked in preview */
-  const [reasonModal, setReasonModal] = useState<{ type: "attend" | "decline" } | null>(null);
-  const [reasonText, setReasonText] = useState("");
   const [theme, setTheme] = useState<RsvpTheme>({
     ...defaultTheme,
     ...initialTheme,
@@ -93,6 +80,7 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     initialLanguageConfig ?? { languageMode: "single", primaryLanguage: "en" }
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [showVariables, setShowVariables] = useState(false);
 
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const footerInputRef = useRef<HTMLInputElement>(null);
@@ -120,37 +108,23 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     if (editingField?.id === updated.id) setEditingField(updated);
   };
 
-  const handleAddField = (field: RsvpFormField) => {
-    setFormFields((prev) => [...prev, field]);
-    setEditingField(field);
+  const handleAddField = (type: RsvpFieldType) => {
+    const newField = createRsvpFormField(type);
+    setFormFields((prev) => [...prev, newField]);
+    setEditingField(newField);
+  };
+
+  const handleInsertVariable = (variable: string) => {
+    // Always create a new separate paragraph element with the variable
+    const newField = createRsvpFormField("paragraph");
+    newField.content = variable;
+    setFormFields((prev) => [...prev, newField]);
+    setEditingField(newField);
   };
 
   const handleDeleteField = (id: string) => {
     setFormFields((prev) => prev.filter((f) => f.id !== id));
     if (editingField?.id === id) setEditingField(null);
-  };
-
-  const handleToggleVisible = (field: RsvpFormField) => {
-    setFormFields((prev) =>
-      prev.map((f) =>
-        f.id === field.id ? { ...f, visible: f.visible === false ? true : false } : f
-      )
-    );
-    if (editingField?.id === field.id) {
-      setEditingField((prev) =>
-        prev ? { ...prev, visible: prev.visible === false ? true : false } : null
-      );
-    }
-  };
-
-  const openReasonModal = (type: "attend" | "decline") => {
-    setReasonText("");
-    setReasonModal({ type });
-  };
-
-  const closeReasonModal = () => {
-    setReasonModal(null);
-    setReasonText("");
   };
 
   const handleSave = async () => {
@@ -165,71 +139,14 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     }
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (!over) return;
-    const data = active.data.current as
-      | { from: "palette"; fieldType?: RsvpFieldType; layoutType?: "container" | "row" | "column" }
-      | { from: "field"; fieldId: string }
-      | undefined;
-    if (!data) return;
-
-    if (data.from === "palette") {
-      const newField = data.layoutType
-        ? createRsvpLayoutField(data.layoutType)
-        : createRsvpFormField(data.fieldType ?? "text");
-      setFormFields((prev) => {
-        const next = [...prev, newField];
-        if (over.id === "root") return next;
-        const container = next.find((f) => f.id === over.id && f.containerType);
-        if (!container) return next;
-        return next.map((f) =>
-          f.id === over.id ? { ...f, children: [...(f.children ?? []), newField.id] } : f
-        );
-      });
-      setEditingField(newField);
-      return;
-    }
-
-    if (data.from === "field") {
-      const fieldId = data.fieldId;
-      const currentParent = formFields.find((f) => (f.children ?? []).includes(fieldId));
-      const targetIsRoot = over.id === "root";
-      const targetContainer = formFields.find((f) => f.id === over.id && f.containerType);
-
-      setFormFields((prev) =>
-        prev.map((f) => {
-          let children = f.children ?? [];
-          if (f.id === currentParent?.id) {
-            children = children.filter((id) => id !== fieldId);
-          }
-          if (!targetIsRoot && f.id === targetContainer?.id) {
-            if (!children.includes(fieldId)) children = [...children, fieldId];
-          }
-          return { ...f, children };
-        })
-      );
-    }
-  };
-
-  const steps: { step: 1 | 3; label: string }[] = [
-    { step: 1, label: "Fields" },
-    { step: 3, label: "Styling" },
-  ];
-
   return (
-    <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-100">
       {/* Header */}
       <div className="flex-shrink-0 flex flex-col gap-2 px-4 py-3 bg-white border-b border-slate-200 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <h2 className="text-lg font-semibold text-slate-800 shrink-0">
-              RSVP Form Builder
+              RSVP Template Editor
             </h2>
             <input
               type="text"
@@ -240,82 +157,149 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
             />
           </div>
           <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowFullPreview(!showFullPreview)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
-            title={showFullPreview ? "Show only visible fields (guest view)" : "Show all fields including hidden"}
-          >
-            {showFullPreview ? <EyeOff size={18} /> : <Eye size={18} />}
-            {showFullPreview ? "Hide preview" : "Show preview"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowThemePanel(!showThemePanel)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium ${
-              showThemePanel
-                ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
-            }`}
-          >
-            <PaletteIcon size={18} />
-            Theme
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 text-sm"
-          >
-            <Save size={18} />
-            {isSaving ? "Saving…" : "Save"}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
-            aria-label="Close"
-          >
-            <X size={20} />
-          </button>
-          </div>
-        </div>
-        {/* Step navigator */}
-        <div className="flex items-center gap-1 flex-wrap">
-          {steps.map(({ step, label }) => (
             <button
-              key={step}
               type="button"
-              onClick={() => {
-                setBuilderStep(step);
-                if (step === 3) setShowThemePanel(true);
-              }}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                builderStep === step
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              onClick={() => setShowThemePanel(!showThemePanel)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm font-medium ${
+                showThemePanel
+                  ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                  : "border-slate-200 bg-white hover:bg-slate-50 text-slate-700"
               }`}
             >
-              {step}. {label}
+              <PaletteIcon size={18} />
+              Theme
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 text-sm"
+            >
+              <Save size={18} />
+              {isSaving ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Left: Form fields list (Step 1 focus) */}
-        <div className="w-56 flex-shrink-0 bg-white border-r border-slate-200 overflow-y-auto p-3">
-          <RsvpFieldPalette
-            formFields={formFields}
-            selectedFieldId={editingField?.id ?? null}
-            onSelectField={setEditingField}
-            onAddField={handleAddField}
-            onToggleVisible={handleToggleVisible}
-            onDeleteField={handleDeleteField}
-          />
+        {/* Left: Add text elements */}
+        <div className="w-64 flex-shrink-0 bg-white border-r border-slate-200 overflow-y-auto p-4">
+          <h3 className="text-sm font-semibold text-slate-800 mb-3">Add Text Elements</h3>
+          <div className="space-y-2 mb-4">
+            <button
+              type="button"
+              onClick={() => handleAddField("heading")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all"
+            >
+              <Heading size={18} />
+              Add Heading
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddField("paragraph")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all"
+            >
+              <Type size={18} />
+              Add Paragraph
+            </button>
+            <button
+              type="button"
+              onClick={() => handleAddField("divider")}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all"
+            >
+              <Minus size={18} />
+              Add Divider
+            </button>
+          </div>
+
+          {/* Available Variables */}
+          <div className="border-t border-slate-200 pt-4">
+            <button
+              type="button"
+              onClick={() => setShowVariables(!showVariables)}
+              className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-medium transition-colors mb-2"
+            >
+              <div className="flex items-center gap-2">
+                <Code size={16} />
+                <span>Available Variables</span>
+              </div>
+              {showVariables ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </button>
+            
+            {showVariables && (
+              <div className="space-y-2">
+                {AVAILABLE_VARIABLES.map((variable) => (
+                  <button
+                    key={variable.value}
+                    type="button"
+                    onClick={() => handleInsertVariable(variable.value)}
+                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all text-left"
+                  >
+                    <div className="flex flex-col items-start">
+                      <span className="text-xs font-medium">{variable.label}</span>
+                      <code className="text-xs font-mono text-indigo-600 mt-0.5">
+                        {variable.value}
+                      </code>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Current elements list */}
+          {formFields.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-semibold text-slate-800 mb-3">Text Elements</h3>
+              <div className="space-y-2">
+                {formFields.map((field) => (
+                  <div
+                    key={field.id}
+                    className={`flex items-center justify-between p-2 rounded-lg border-2 transition-all ${
+                      editingField?.id === field.id
+                        ? "border-indigo-500 bg-indigo-50"
+                        : "border-slate-200 hover:border-indigo-300"
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setEditingField(field)}
+                      className="flex-1 text-left text-sm text-slate-700 truncate"
+                    >
+                      {field.type === "heading" ? (
+                        <Heading size={14} className="inline mr-2" />
+                      ) : field.type === "divider" ? (
+                        <Minus size={14} className="inline mr-2" />
+                      ) : (
+                        <Type size={14} className="inline mr-2" />
+                      )}
+                      {field.content?.slice(0, 30) || field.type}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteField(field.id)}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded"
+                      title="Delete"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Center: Full form in both Preview and Hide Preview – banner, fields, footer, Attend/Decline always visible */}
+        {/* Center: Preview */}
         <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-100">
             <div className="p-6 flex justify-center min-h-full">
@@ -323,14 +307,22 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
                 formFields={formFields}
                 theme={theme}
                 currentLanguage={languageConfig.primaryLanguage ?? "en"}
-                visibleOnly={!showFullPreview}
+                visibleOnly={false}
                 variableMode={false}
                 showActionButtons={true}
-                onAttendClick={openReasonModal.bind(null, "attend")}
-                onDeclineClick={openReasonModal.bind(null, "decline")}
                 onBannerClick={() => bannerInputRef.current?.click()}
                 onFooterClick={() => footerInputRef.current?.click()}
                 builderMode={true}
+                editingFieldId={editingField?.id ?? null}
+                onFieldClick={setEditingField}
+                onFieldContentChange={(fieldId, content) => {
+                  setFormFields((prev) =>
+                    prev.map((f) => (f.id === fieldId ? { ...f, content } : f))
+                  );
+                  if (editingField?.id === fieldId) {
+                    setEditingField({ ...editingField, content });
+                  }
+                }}
               />
             </div>
             <input
@@ -352,9 +344,9 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           </div>
         </div>
 
-        {/* Right: Config / Theme / Translation panels */}
+        {/* Right: Styling / Theme panels */}
         {editingField && (
-          <RsvpFieldConfigPanel
+          <RsvpTextStylingPanel
             field={editingField}
             onUpdate={handleUpdateField}
             onClose={() => setEditingField(null)}
@@ -368,65 +360,6 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           />
         )}
       </div>
-
-      {/* Step 4: Reason popup when Attend or Decline is clicked */}
-      {reasonModal && (
-        <div
-          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50"
-          onMouseDown={(e) => e.target === e.currentTarget && closeReasonModal()}
-        >
-          <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-slate-900">
-                {reasonModal.type === "attend" ? "Reason for attending" : "Reason for declining"}
-              </h3>
-              <button
-                type="button"
-                onClick={closeReasonModal}
-                className="p-2 hover:bg-slate-100 rounded-lg"
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="p-4">
-              <textarea
-                value={reasonText}
-                onChange={(e) => setReasonText(e.target.value)}
-                placeholder={
-                  reasonModal.type === "attend"
-                    ? "e.g. Looking forward to it!"
-                    : "e.g. Sorry, I have a conflict."
-                }
-                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                rows={4}
-              />
-            </div>
-            <div className="p-4 border-t border-slate-200 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={closeReasonModal}
-                className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 text-sm font-medium"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  closeReasonModal();
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium"
-              >
-                Submit
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
-    </DndContext>
   );
 };
