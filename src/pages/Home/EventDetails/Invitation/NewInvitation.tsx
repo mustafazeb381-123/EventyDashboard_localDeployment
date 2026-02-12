@@ -527,11 +527,6 @@ function NewInvitation() {
               label: "Invitation Details",
               colorClass: "text-violet-600 border-b-2 border-violet-600",
             },
-            {
-              id: "email-template" as TabId,
-              label: "Email Template",
-              colorClass: "text-red-600 border-b-2 border-red-600",
-            },
             ...(enableRsvp
               ? [
                   {
@@ -541,6 +536,12 @@ function NewInvitation() {
                   },
                 ]
               : []),
+            {
+              id: "email-template" as TabId,
+              label: "Email Template",
+              colorClass: "text-red-600 border-b-2 border-red-600",
+            },
+          
             {
               id: "invitees" as TabId,
               label: "Invitees",
