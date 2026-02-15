@@ -21,8 +21,8 @@ import { RsvpTemplateTab } from "./RsvpTemplateTab";
 import { InviteesTab, type ParsedInvitee } from "./InviteesTab";
 import { PreviewInvitationScreen } from "./PreviewInvitationScreen";
 
-/** Extract flat invitation attrs from GET /events/{event_id}/event_invitations/{id} response. */
-function parseInvitationResponse(body: unknown): Record<string, unknown> | null {
+/** Extract flat invitation attrs from GET /events/{event_id}/event_invitations/{id} response. Exported for InvitationPreviewPage. */
+export function parseInvitationResponse(body: unknown): Record<string, unknown> | null {
   if (!body || typeof body !== "object") return null;
   const raw = body as Record<string, unknown>;
 
@@ -400,13 +400,23 @@ function NewInvitation() {
       if (isEditMode && invitationIdFromRoute) {
         await updateEventInvitation(eventId, invitationIdFromRoute, { event_invitation });
         showNotification("Invitation updated successfully.", "success");
-        // Brief delay so the success toast is visible before redirecting
         await new Promise((r) => setTimeout(r, 1500));
+        // Redirect to preview page so user sees the data from GET API
+        navigate(`/invitation/preview-page/${invitationIdFromRoute}${eventId ? `?eventId=${eventId}` : ""}`);
       } else {
-        await createEventInvitation(eventId, { event_invitation });
+        const createRes = await createEventInvitation(eventId, { event_invitation });
         showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
+        // Get created invitation id from response and redirect to preview (GET will load the saved data)
+        const createdBody = createRes.data as unknown;
+        const createdAttrs = parseInvitationResponse(createdBody);
+        const createdId = createdAttrs && createdAttrs.id != null ? String(createdAttrs.id) : null;
+        if (createdId && eventId) {
+          await new Promise((r) => setTimeout(r, 500));
+          navigate(`/invitation/preview-page/${createdId}?eventId=${eventId}`);
+        } else {
+          navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
+        }
       }
-      navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
     } catch (error: any) {
       const status = error?.response?.status;
       const data = error?.response?.data;

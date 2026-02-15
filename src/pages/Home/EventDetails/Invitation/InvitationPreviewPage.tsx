@@ -1,45 +1,129 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Search, ChevronDown } from "lucide-react";
+import { getEventInvitations, getEventInvitation } from "@/apis/invitationService";
+import { parseInvitationResponse } from "./NewInvitation";
 
-// Static data - will be replaced with dynamic data later
-const STATIC_INVITATION = {
-  title: "Annual Conference 2025",
-  emailSubject: "ملتقى ميزانية 2026",
-  scheduledFor: "-",
-  communicationType: "Email",
-  eventName: "mayar",
-  emailBody: "",
+export type PreviewInvitee = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number: string;
 };
 
-const STATIC_USERS = [
-  { id: "1", first_name: "Liliane", last_name: "Gotling", email: "lgotling0@howstuffworks.com", phone_number: "111-689-9928" },
-  { id: "2", first_name: "Starlene", last_name: "Yegorkin", email: "syegorkin1@cbslocal.com", phone_number: "600-170-4717" },
-  { id: "3", first_name: "Shanda", last_name: "Weathers", email: "sweathers2@chicagotribune.com", phone_number: "521-449-3367" },
-  { id: "4", first_name: "Gardy", last_name: "Wagstaffe", email: "gwagstaffe3@narod.ru", phone_number: "131-496-8497" },
-  { id: "5", first_name: "Alane", last_name: "Etock", email: "aetock4@dot.gov", phone_number: "125-527-9106" },
-  { id: "6", first_name: "Kelcey", last_name: "Antonias", email: "kantonias5@mapy.cz", phone_number: "715-149-5413" },
-  { id: "7", first_name: "Roana", last_name: "Weld", email: "rweld6@fastcompany.com", phone_number: "208-570-3627" },
-  { id: "8", first_name: "Petronella", last_name: "Ritson", email: "pritson7@mozilla.org", phone_number: "406-558-3235" },
-  { id: "9", first_name: "Gillie", last_name: "Zavattieri", email: "gzavattieri8@reverbnation.com", phone_number: "966-977-8288" },
-  { id: "10", first_name: "Rudy", last_name: "Blamires", email: "rblamires9@cornell.edu", phone_number: "667-763-8015" },
-];
+function formatScheduled(value: string | undefined): string {
+  if (!value) return "-";
+  try {
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? String(value) : d.toLocaleString();
+  } catch {
+    return String(value ?? "-");
+  }
+}
 
 function InvitationPreviewPage() {
   const navigate = useNavigate();
+  const params = useParams<{ invitationId: string }>();
+  const [searchParams] = useSearchParams();
+  const invitationId = params.invitationId ?? null;
+  const eventId = searchParams.get("eventId");
+
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [invitationTitle, setInvitationTitle] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [scheduledFor, setScheduledFor] = useState("-");
+  const [communicationType, setCommunicationType] = useState("email");
+  const [eventName, setEventName] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [users, setUsers] = useState<PreviewInvitee[]>([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  // Use static data
-  const users = STATIC_USERS;
-  const invitationTitle = STATIC_INVITATION.title;
-  const emailSubject = STATIC_INVITATION.emailSubject;
-  const scheduledFor = STATIC_INVITATION.scheduledFor;
-  const communicationType = STATIC_INVITATION.communicationType;
-  const eventName = STATIC_INVITATION.eventName;
-  const emailBody = STATIC_INVITATION.emailBody;
+  // Fetch invitations via list GET API, then find the one matching invitationId (POST returns this id)
+  useEffect(() => {
+    if (!eventId || !invitationId) {
+      setLoading(false);
+      setError("Missing event or invitation. Open preview from the invitation list with an event selected.");
+      return;
+    }
+    setError(null);
+    setLoading(true);
+
+    function parseListResponse(body: unknown): Record<string, unknown> | null {
+      if (!body || typeof body !== "object") return null;
+      const raw = body as Record<string, unknown>;
+      const data = raw.data;
+      if (!Array.isArray(data)) return null;
+      const list = data as Array<Record<string, unknown>>;
+      const found = list.find((item) => String(item?.id) === String(invitationId));
+      if (!found || typeof found !== "object") return null;
+      const attrs = found.attributes;
+      if (attrs && typeof attrs === "object") {
+        return { id: found.id, ...(attrs as Record<string, unknown>) };
+      }
+      if ("title" in found || "invitation_type" in found) {
+        return found as Record<string, unknown>;
+      }
+      return null;
+    }
+
+    getEventInvitations(eventId, { page: 1, per_page: 100 })
+      .then(async (res) => {
+        const body = res.data as unknown;
+        let attrs = parseListResponse(body);
+        // Fallback: if not in first page, try single GET (GET /events/{event_id}/event_invitations/{id})
+        if (!attrs) {
+          try {
+            const singleRes = await getEventInvitation(eventId, invitationId);
+            attrs = parseInvitationResponse(singleRes.data as unknown);
+          } catch {
+            setError("Invitation not found. It may be on another page.");
+            return;
+          }
+        }
+        if (!attrs) {
+          setError("Could not read invitation data.");
+          return;
+        }
+        setInvitationTitle(String(attrs.title ?? ""));
+        setEmailSubject(String(attrs.invitation_email_subject ?? ""));
+        setScheduledFor(formatScheduled(attrs.scheduled_send_time as string | undefined));
+        setCommunicationType(String(attrs.invitation_type ?? "email").toLowerCase());
+        setEmailBody(String(attrs.invitation_email_body ?? ""));
+        const raw = attrs as Record<string, unknown>;
+        const rawEventName =
+          raw.event_name ??
+          (typeof raw.event === "object" && raw.event !== null && "name" in raw.event
+            ? (raw.event as { name?: string }).name
+            : undefined);
+        setEventName(rawEventName ? String(rawEventName) : `Event (ID: ${eventId})`);
+
+        const rawUsers = (attrs.event_invitation_users as Array<Record<string, unknown>>) ?? [];
+        const filtered = rawUsers.filter((u) => u != null && u.id != null && String(u.id).trim() !== "");
+        const list: PreviewInvitee[] = filtered.map((u, i) => ({
+          id: String(u?.id ?? `row-${i + 1}`),
+          first_name: String(u?.first_name ?? ""),
+          last_name: String(u?.last_name ?? ""),
+          email: String(u?.email ?? ""),
+          phone_number: String(u?.phone_number ?? ""),
+        }));
+        setUsers(list);
+      })
+      .catch((err: unknown) => {
+        const msg =
+          (err as { response?: { data?: { message?: string }; status?: number } })?.response?.data?.message ??
+          (err as Error)?.message ??
+          "Failed to load invitation.";
+        setError(String(msg));
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [eventId, invitationId]);
 
   // Filter and paginate users
   const filteredUsers = useMemo(() => {
@@ -55,13 +139,10 @@ function InvitationPreviewPage() {
     );
   }, [users, searchTerm]);
 
-  // For static display: show total as 1000 (as per example)
-  const totalUsersCount = 1000;
+  const totalUsersCount = filteredUsers.length;
   const showingFrom = filteredUsers.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
   const showingTo = Math.min(currentPage * itemsPerPage, filteredUsers.length);
-  
-  // Calculate total pages based on total count (1000) for pagination display
-  const totalPagesForPagination = Math.max(1, Math.ceil(totalUsersCount / itemsPerPage));
+  const totalPagesForPagination = Math.max(1, Math.ceil(filteredUsers.length / itemsPerPage));
 
   const paginatedUsers = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -69,13 +150,51 @@ function InvitationPreviewPage() {
   }, [filteredUsers, currentPage, itemsPerPage]);
 
   const handleBack = () => {
-    navigate(`/invitation`);
+    navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex flex-col bg-white items-center justify-center gap-4 p-8 relative">
+        <button
+          onClick={handleBack}
+          className="absolute left-6 top-6 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors z-10 bg-white border border-gray-200 shadow-sm"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
+        <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-gray-600 font-medium">Loading invitation…</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen w-full flex flex-col bg-white items-center justify-center gap-4 p-8">
+        <p className="text-red-600 font-medium">{error}</p>
+        <button
+          onClick={handleBack}
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          <ArrowLeft size={20} />
+          Back to invitations
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen w-full flex flex-col bg-white">
-      {/* ── Title bar ── */}
-      <div className="shrink-0 text-center py-6 border-b border-gray-100">
+    <div className="min-h-screen w-full flex flex-col bg-white relative">
+      {/* ── Title bar with Back button ── */}
+      <div className="shrink-0 flex items-center justify-center py-6 border-b border-gray-100 relative">
+        <button
+          onClick={handleBack}
+          className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors z-10 bg-white border border-gray-200 shadow-sm"
+        >
+          <ArrowLeft size={20} />
+          Back
+        </button>
         <h1 className="text-2xl font-bold text-gray-900">Preview Invitation</h1>
       </div>
 
@@ -325,17 +444,6 @@ function InvitationPreviewPage() {
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Back button */}
-      <div className="absolute top-6 left-6">
-        <button
-          onClick={handleBack}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <ArrowLeft size={20} />
-          Back
-        </button>
       </div>
 
       <style>{`
