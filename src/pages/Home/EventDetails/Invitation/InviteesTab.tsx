@@ -295,18 +295,7 @@ function SendToSelector({
         Choose who receives this invitation: all recipients, import from file (Excel/CSV), or add users manually.
       </p>
       <div className="flex flex-wrap gap-3">
-        <button
-          type="button"
-          onClick={() => setSendTo("all")}
-          className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 text-sm font-medium transition-colors ${
-            sendTo === "all"
-              ? "border-indigo-600 bg-indigo-50 text-indigo-700"
-              : "border-slate-200 bg-white text-slate-700 hover:border-slate-300"
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          All
-        </button>
+      
         <button
           type="button"
           onClick={() => setSendTo("imported_from_file")}
@@ -521,18 +510,7 @@ export function InviteesTab({
   );
 
   // —— Send to: All ——
-  if (sendTo === "all") {
-    return (
-      <div className="space-y-5">
-        <SendToSelector sendTo={sendTo} setSendTo={setSendTo} />
-        <VipInvitationToggle isVipInvitation={isVipInvitation} setIsVipInvitation={setIsVipInvitation} />
-        <div className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 text-center">
-          <p className="text-slate-700 font-medium">Invitation will be sent to all recipients.</p>
-          <p className="text-sm text-slate-500 mt-1">No need to add a list — the backend will use the full recipient list.</p>
-        </div>
-      </div>
-    );
-  }
+ 
 
   // —— Send to: Manually entered ——
   if (sendTo === "manually_entered") {

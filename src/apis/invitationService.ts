@@ -30,6 +30,7 @@ export interface EventInvitation {
   title: string;
   invitation_type: string;
   invitation_language: string;
+  status?: string;
   sender_email?: string;
   send_to?: string;
   invitation_email_subject: string;
