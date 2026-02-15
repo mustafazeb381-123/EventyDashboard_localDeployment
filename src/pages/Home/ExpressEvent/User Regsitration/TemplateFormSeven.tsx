@@ -6,9 +6,11 @@ import RegistrationFormPreview from "./components/RegistrationFormPreview";
 const TemplateFormSeven = ({
   eventData,
   formFields,
+  userTypeFromUrl,
 }: {
   eventData: any;
   formFields: any[];
+  userTypeFromUrl?: string | null;
 }) => {
   console.log("Event Attributes:", eventData?.attributes);
   console.log("Event Form Data Attributes (RAW):", formFields);
@@ -138,6 +140,7 @@ const TemplateFormSeven = ({
           formFields={mappedFormFields}
           eventId={eventData?.id}
           tenantUuid={tenantUuid || undefined}
+          userTypeFromUrl={userTypeFromUrl}
           submitButtonText="Register Now"
         />
       </div>

@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Search, ChevronDown } from "lucide-react";
 import { getEventInvitations, getEventInvitation } from "@/apis/invitationService";
 import { parseInvitationResponse } from "./NewInvitation";
+import { resolveInvitationEmailLinks } from "./resolveInvitationEmailLinks";
 
 export type PreviewInvitee = {
   id: string;
@@ -93,7 +94,8 @@ function InvitationPreviewPage() {
         setEmailSubject(String(attrs.invitation_email_subject ?? ""));
         setScheduledFor(formatScheduled(attrs.scheduled_send_time as string | undefined));
         setCommunicationType(String(attrs.invitation_type ?? "email").toLowerCase());
-        setEmailBody(String(attrs.invitation_email_body ?? ""));
+        const rawBody = String(attrs.invitation_email_body ?? "");
+        setEmailBody(resolveInvitationEmailLinks(rawBody, eventId, { forPreview: true }));
         const raw = attrs as Record<string, unknown>;
         const rawEventName =
           raw.event_name ??

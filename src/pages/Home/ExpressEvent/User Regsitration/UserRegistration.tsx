@@ -5,7 +5,7 @@ import {
   getDefaultRegistrationFormTemplate,
 } from "@/apis/apiHelpers";
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Loader2, Globe, ChevronDown } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
@@ -59,7 +59,11 @@ interface EventData {
 
 function UserRegistration() {
   const { id: routeId } = useParams();
+  const [searchParams] = useSearchParams();
   const { i18n } = useTranslation();
+
+  // When user opens link from email with ?user_type=vip, register them as VIP; otherwise use default (guest)
+  const userTypeFromUrl = searchParams.get("user_type")?.trim().toLowerCase() || null;
   const [isLangDropdownOpen, setIsLangDropdownOpen] = useState(false);
   const langDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -530,6 +534,7 @@ function UserRegistration() {
     const commonProps = {
       eventData: eventData?.data,
       formFields: processedFields,
+      userTypeFromUrl,
     };
 
     // Show message if no active fields
@@ -796,6 +801,7 @@ function UserRegistration() {
             theme={customFormBuilderTemplate.theme}
             eventId={actualEventId} // Use actual event ID from API response (NOT route ID)
             eventData={eventDataForForm} // Pass the data part to match default template structure
+            defaultUserType={userTypeFromUrl} // From URL ?user_type=vip so email VIP link registers as VIP
             onRegistrationSuccess={(message) =>
               showNotification(message, "success")
             }
