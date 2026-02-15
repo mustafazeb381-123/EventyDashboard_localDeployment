@@ -567,6 +567,8 @@ interface FormBuilderTemplateFormProps {
   formBuilderData?: any;
   bannerImage?: File | string | null;
   theme?: FormTheme;
+  /** From URL ?user_type=vip so email VIP link registers as VIP; else "guest" */
+  defaultUserType?: string | null;
   onRegistrationSuccess?: (message: string) => void;
   onRegistrationError?: (message: string) => void;
 }
@@ -580,6 +582,7 @@ export const FormBuilderTemplateForm: React.FC<
   theme,
   eventId,
   eventData,
+  defaultUserType = null,
   onRegistrationSuccess,
   onRegistrationError,
 }: FormBuilderTemplateFormProps) => {
@@ -1201,6 +1204,18 @@ export const FormBuilderTemplateForm: React.FC<
                 ? `File: ${formData[key].name} (${(formData[key].size / 1024).toFixed(2)}KB)`
                 : formData[key],
           })),
+      );
+
+      // ✅ user_type: from URL (e.g. ?user_type=vip from email link) or fallback "guest"
+      const userTypeToSend =
+        defaultUserType && String(defaultUserType).trim() !== ""
+          ? String(defaultUserType).trim()
+          : "guest";
+      formDataToSend.append("event_user[user_type]", userTypeToSend);
+      console.log(
+        "✅ Sending user_type:",
+        userTypeToSend,
+        defaultUserType ? "(from URL)" : "(fallback guest)"
       );
 
       // ✅ Append any other custom fields that don't match standard fields

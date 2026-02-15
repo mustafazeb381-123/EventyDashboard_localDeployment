@@ -20,6 +20,7 @@ import { EmailTemplateTab } from "./EmailTemplateTab";
 import { RsvpTemplateTab } from "./RsvpTemplateTab";
 import { InviteesTab, type ParsedInvitee } from "./InviteesTab";
 import { PreviewInvitationScreen } from "./PreviewInvitationScreen";
+import { resolveInvitationEmailLinks } from "./resolveInvitationEmailLinks";
 
 /** Extract flat invitation attrs from GET /events/{event_id}/event_invitations/{id} response. Exported for InvitationPreviewPage. */
 export function parseInvitationResponse(body: unknown): Record<string, unknown> | null {
@@ -369,13 +370,20 @@ function NewInvitation() {
       }));
       const hasUserImport =
         (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0;
+      // Resolve registration link to same URL as Home Summary "Copy Registration Link" + ?user_type=vip so emails contain clickable links
+      const emailBodyWithResolvedLinks = resolveInvitationEmailLinks(
+        selectedTemplate.html,
+        eventId,
+        { forPreview: false }
+      );
+
       const event_invitation = {
         title: invitationForm.invitationName,
         invitation_type: invitationForm.communicationType || "email",
         invitation_language: invitationForm.language === "ar" ? "ar" : "en",
         sender_email: invitationForm.emailSender || undefined,
         invitation_email_subject: invitationForm.emailSubject,
-        invitation_email_body: selectedTemplate.html,
+        invitation_email_body: emailBodyWithResolvedLinks,
         scheduled_send_time: invitationForm.scheduleSendAt
           ? new Date(invitationForm.scheduleSendAt).toISOString()
           : undefined,
@@ -478,7 +486,12 @@ function NewInvitation() {
   const selectedTemplate = invitationEmailTemplates.find(
     (t) => t.id === selectedInvitationEmailTemplateId,
   );
-  const previewEmailHtml = selectedTemplate?.html ?? "";
+  // Resolve links so preview shows clickable Register (VIP) and RSVP links; same registration URL as Home Summary
+  const previewEmailHtml = resolveInvitationEmailLinks(
+    selectedTemplate?.html ?? "",
+    eventId,
+    { forPreview: true }
+  );
 
   if (loadingInvitation && isEditMode) {
     return (

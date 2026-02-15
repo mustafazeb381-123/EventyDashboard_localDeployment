@@ -108,6 +108,8 @@ interface RegistrationFormPreviewProps {
   submitButtonText?: string;
   eventId: string;
   tenantUuid?: string;
+  /** From URL ?user_type=vip so email VIP link registers as VIP; else use default badge or "guest" */
+  userTypeFromUrl?: string | null;
 }
 
 const RegistrationFormPreview = ({
@@ -115,6 +117,7 @@ const RegistrationFormPreview = ({
   submitButtonText = "Register",
   eventId,
   tenantUuid,
+  userTypeFromUrl = null,
 }: RegistrationFormPreviewProps) => {
   const { t, i18n } = useTranslation("registration");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
@@ -304,18 +307,17 @@ const RegistrationFormPreview = ({
       // Append user data
       formDataToSend.append("event_user[name]", formData.name);
 
-      // ✅ Automatically send default badge NAME as user_type
-      if (defaultBadgeName) {
-        formDataToSend.append("event_user[user_type]", defaultBadgeName);
-        console.log(
-          "✅ Sending default badge name as user_type:",
-          defaultBadgeName
-        );
-      } else {
-        console.warn(
-          "⚠️ No default badge name available, user_type will not be sent"
-        );
-      }
+      // ✅ user_type: from URL (e.g. ?user_type=vip from email link) > default badge > "guest"
+      const userTypeToSend =
+        userTypeFromUrl && userTypeFromUrl.trim() !== ""
+          ? userTypeFromUrl.trim()
+          : defaultBadgeName || "guest";
+      formDataToSend.append("event_user[user_type]", userTypeToSend);
+      console.log(
+        "✅ Sending user_type:",
+        userTypeToSend,
+        userTypeFromUrl ? "(from URL)" : defaultBadgeName ? "(default badge)" : "(fallback guest)"
+      );
 
       formDataToSend.append("event_user[phone_number]", formData.phone_number);
       formDataToSend.append("event_user[email]", formData.email);

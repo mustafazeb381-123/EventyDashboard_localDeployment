@@ -5,9 +5,11 @@ import RegistrationFormPreview from "./components/RegistrationFormPreview";
 const TemplateFormSix = ({
   eventData,
   formFields,
+  userTypeFromUrl,
 }: {
   eventData: any;
   formFields: any[];
+  userTypeFromUrl?: string | null;
 }) => {
   // ✅ Get tenant_uuid from localStorage
   const tenantUuid = localStorage.getItem("tenant_uuid");
@@ -129,6 +131,7 @@ const TemplateFormSix = ({
           formFields={mappedFormFields}
           eventId={eventData?.id}
           tenantUuid={tenantUuid || undefined}
+          userTypeFromUrl={userTypeFromUrl}
           submitButtonText="Register"
         />
       </div>

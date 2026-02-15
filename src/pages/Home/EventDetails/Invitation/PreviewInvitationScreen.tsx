@@ -153,10 +153,10 @@ export function PreviewInvitationScreen({
                   </span>
                   <span className="text-blue-500 font-medium">
                     {invitationForm.communicationType === "whatsapp"
-                    ? "WhatsApp"
-                    : invitationForm.communicationType === "sms"
-                      ? "SMS"
-                      : "Email"}
+                      ? "WhatsApp"
+                      : invitationForm.communicationType === "sms"
+                        ? "SMS"
+                        : "Email"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -193,7 +193,9 @@ export function PreviewInvitationScreen({
               {busy ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  {submitButtonLabel.includes("Update") ? "Updating…" : "Sending…"}
+                  {submitButtonLabel.includes("Update")
+                    ? "Updating…"
+                    : "Sending…"}
                 </span>
               ) : (
                 submitButtonLabel
