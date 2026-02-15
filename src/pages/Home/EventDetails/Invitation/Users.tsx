@@ -293,6 +293,7 @@ function Invitations() {
           : (item as unknown as EventInvitation)
       );
       setInvitations(list);
+      console.log(res.data);
       const meta = res?.meta?.pagination;
       if (meta) {
         setInvitationPagination({
