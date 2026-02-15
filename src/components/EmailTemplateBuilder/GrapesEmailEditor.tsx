@@ -147,6 +147,50 @@ const SOCIAL_BLOCK_ICON =
   '<path fill="currentColor" d="M18 16a3 3 0 0 0-2.39 1.2L8.91 13.7a3.2 3.2 0 0 0 0-3.4l6.7-3.5A3 3 0 1 0 15 5a3 3 0 0 0 .06.6l-6.7 3.5A3 3 0 1 0 9 15a3 3 0 0 0-.06-.6l6.7 3.5A3 3 0 1 0 18 16z"/>' +
   "</svg>";
 
+/** Merge token replaced by backend with registration URL + ?user_type=vip */
+const DEFAULT_REGISTRATION_LINK_VIP_TOKEN = "{{registration_link_vip}}";
+
+/** Merge token replaced by backend with per-invitee RSVP URL (e.g. with rsvp_token). */
+const DEFAULT_RSVP_LINK_TOKEN = "{{rsvp_link}}";
+
+const REGISTRATION_LINK_BLOCK_ICON =
+  '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+  '<path fill="currentColor" d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/>' +
+  "</svg>";
+
+const RSVP_LINK_BLOCK_ICON =
+  '<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' +
+  '<path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>' +
+  "</svg>";
+
+function createRegistrationLinkBlockHtml() {
+  const linkStyle =
+    "display:inline-block;padding:12px 24px;background:#2563eb;color:#ffffff;text-decoration:none;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:600;border-radius:8px;";
+  return `
+    <table data-eventy-registration-link="vip" data-gjs-type="eventy-registration-link" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td align="center" style="padding:10px 0;">
+          <a data-eventy-registration-link="vip" href="${DEFAULT_REGISTRATION_LINK_VIP_TOKEN}" title="VIP Registration" style="${linkStyle}">Register as VIP</a>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function createRsvpLinkBlockHtml() {
+  const linkStyle =
+    "display:inline-block;padding:12px 24px;background:#059669;color:#ffffff;text-decoration:none;font-family:Arial, Helvetica, sans-serif;font-size:14px;font-weight:600;border-radius:8px;";
+  return `
+    <table data-eventy-rsvp-link="1" data-gjs-type="eventy-rsvp-link" role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td align="center" style="padding:10px 0;">
+          <a data-eventy-rsvp-link="1" href="${DEFAULT_RSVP_LINK_TOKEN}" title="RSVP" style="${linkStyle}">RSVP Now</a>
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 function createSocialBlockHtml() {
   const linkStyle =
     "display:block;width:32px;height:32px;line-height:32px;text-align:center;color:#ffffff;text-decoration:none;font-family:Arial, Helvetica, sans-serif;font-size:14px;";
@@ -805,6 +849,106 @@ export function GrapesEmailEditor({
           },
         ),
       });
+
+      // Registration Link (VIP): same as event registration URL but with user_type=vip (backend replaces {{registration_link_vip}}).
+      editor.DomComponents.addType("eventy-registration-link", {
+        isComponent: (el: any) =>
+          el?.tagName === "TABLE" &&
+          (el.getAttribute("data-eventy-registration-link") === "vip" ||
+            el.getAttribute("data-gjs-type") === "eventy-registration-link"),
+        model: defaultType.model.extend(
+          {
+            defaults: {
+              ...defaultType.model.prototype.defaults,
+              traits: [
+                {
+                  type: "text",
+                  name: "registrationLinkText",
+                  label: "Link text",
+                },
+              ],
+              registrationLinkText: "Register as VIP",
+            },
+
+            init() {
+              (defaultType.model.prototype.init || (() => {})).apply(
+                this,
+                arguments as any,
+              );
+              const update = () => {
+                const text =
+                  this.get("registrationLinkText") || "Register as VIP";
+                const links: any[] =
+                  (this as any).find?.(
+                    '[data-eventy-registration-link="vip"]',
+                  ) || [];
+                // Update only the inner <a> (has the attribute); set its content, keep href as merge token.
+                links.forEach((c: any) => {
+                  if (c?.get?.("tagName") === "a" || c?.get?.("tagName") === "A") {
+                    c?.components?.(text);
+                  }
+                });
+              };
+              this.on("change:registrationLinkText", update);
+              update();
+            },
+          },
+          {
+            isComponent: (el: any) =>
+              el?.tagName === "TABLE" &&
+              (el.getAttribute("data-eventy-registration-link") === "vip" ||
+                el.getAttribute("data-gjs-type") === "eventy-registration-link"),
+          },
+        ),
+      });
+
+      // RSVP Link: backend replaces {{rsvp_link}} with per-invitee RSVP URL (e.g. with rsvp_token).
+      editor.DomComponents.addType("eventy-rsvp-link", {
+        isComponent: (el: any) =>
+          el?.tagName === "TABLE" &&
+          (el.getAttribute("data-eventy-rsvp-link") === "1" ||
+            el.getAttribute("data-gjs-type") === "eventy-rsvp-link"),
+        model: defaultType.model.extend(
+          {
+            defaults: {
+              ...defaultType.model.prototype.defaults,
+              traits: [
+                {
+                  type: "text",
+                  name: "rsvpLinkText",
+                  label: "Link text",
+                },
+              ],
+              rsvpLinkText: "RSVP Now",
+            },
+
+            init() {
+              (defaultType.model.prototype.init || (() => {})).apply(
+                this,
+                arguments as any,
+              );
+              const update = () => {
+                const text = this.get("rsvpLinkText") || "RSVP Now";
+                const links: any[] =
+                  (this as any).find?.('[data-eventy-rsvp-link="1"]') || [];
+                links.forEach((c: any) => {
+                  if (c?.get?.("tagName") === "a" || c?.get?.("tagName") === "A") {
+                    c?.components?.(text);
+                  }
+                });
+              };
+              this.on("change:rsvpLinkText", update);
+              update();
+            },
+          },
+          {
+            isComponent: (el: any) =>
+              el?.tagName === "TABLE" &&
+              (el.getAttribute("data-eventy-rsvp-link") === "1" ||
+                el.getAttribute("data-gjs-type") === "eventy-rsvp-link"),
+          },
+        ),
+      });
     } catch {
       // ignore
     }
@@ -1404,6 +1548,20 @@ export function GrapesEmailEditor({
       category: "Eventy",
       media: SOCIAL_BLOCK_ICON,
       content: createSocialBlockHtml(),
+    });
+
+    editor.BlockManager.add("eventy-registration-link", {
+      label: "Registration Link (VIP)",
+      category: "Eventy",
+      media: REGISTRATION_LINK_BLOCK_ICON,
+      content: createRegistrationLinkBlockHtml(),
+    });
+
+    editor.BlockManager.add("eventy-rsvp-link", {
+      label: "RSVP Link",
+      category: "Eventy",
+      media: RSVP_LINK_BLOCK_ICON,
+      content: createRsvpLinkBlockHtml(),
     });
 
     // Start with a placeholder, then replace with a generated QR image.
