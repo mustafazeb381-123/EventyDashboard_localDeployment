@@ -1,73 +1,94 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Check, X, Image as ImageIcon } from "lucide-react";
-import { COUNTRY_DIAL_CODES } from "@/utils/countries";
 import type { RsvpFormField, RsvpTheme } from "./types";
-import { RsvpDropZone } from "./RsvpDropZone";
-import { RsvpDraggableField } from "./RsvpDraggableField";
 
 interface RsvpFormPreviewProps {
   formFields: RsvpFormField[];
   theme?: RsvpTheme;
   currentLanguage?: "en" | "ar";
-  /** Step 1: when true, only render fields with visible !== false */
   visibleOnly?: boolean;
-  /** Step 2: when true, show dynamic variables {{name}} instead of input controls */
   variableMode?: boolean;
-  /** Step 4: show Attend/Decline buttons in both visible and hidden preview modes */
   showActionButtons?: boolean;
-  /** Step 4: when Attend is clicked (opens reason popup in builder) */
   onAttendClick?: () => void;
-  /** Step 4: when Decline is clicked (opens reason popup in builder) */
   onDeclineClick?: () => void;
-  /** When provided, banner/footer areas are clickable to open theme (e.g. in builder preview) */
   onBannerClick?: () => void;
   onFooterClick?: () => void;
-  /** When true, fields and containers are draggable and drop zones are shown for root and containers */
   builderMode?: boolean;
-}
-
-function getFieldLabel(field: RsvpFormField, lang: "en" | "ar"): string {
-  return field.labelTranslations?.[lang] ?? field.label ?? "";
-}
-
-function getFieldPlaceholder(field: RsvpFormField, lang: "en" | "ar"): string {
-  return field.placeholderTranslations?.[lang] ?? field.placeholder ?? "";
+  editingFieldId?: string | null;
+  onFieldClick?: (field: RsvpFormField) => void;
+  onFieldContentChange?: (fieldId: string, content: string) => void;
 }
 
 function getFieldContent(field: RsvpFormField, lang: "en" | "ar"): string {
   return field.contentTranslations?.[lang] ?? field.content ?? "";
 }
 
-function getOptionLabel(opt: { label: string; labelTranslations?: { en?: string; ar?: string } }, lang: "en" | "ar"): string {
-  return opt.labelTranslations?.[lang] ?? opt.label ?? "";
+/** Render text with variables as styled placeholders */
+function renderTextWithVariables(text: string): React.ReactNode {
+  if (!text) return null;
+  
+  // Match both ((variable)) and {{variable}} patterns
+  const variablePattern = /(\(\([^)]+\)\)|\{\{[^}]+\}\})/g;
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match;
+  let keyCounter = 0;
+  
+  while ((match = variablePattern.exec(text)) !== null) {
+    // Add text before the variable
+    if (match.index > lastIndex) {
+      parts.push(text.substring(lastIndex, match.index));
+    }
+    
+    // Add the variable as a styled placeholder
+    const variable = match[0];
+    parts.push(
+      <span
+        key={`var-${keyCounter++}`}
+        className="inline-block px-2 py-0.5 mx-0.5 bg-indigo-100 border border-indigo-300 rounded text-indigo-700 font-mono text-xs font-semibold"
+        contentEditable={false}
+        suppressContentEditableWarning
+        title="Dynamic variable"
+      >
+        {variable}
+      </span>
+    );
+    
+    lastIndex = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.substring(lastIndex));
+  }
+  
+  return parts.length > 0 ? <>{parts}</> : text;
 }
 
 export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   formFields,
   theme,
   currentLanguage = "en",
-  visibleOnly = false,
-  variableMode = false,
   showActionButtons = true,
   onAttendClick,
   onDeclineClick,
   onBannerClick,
   onFooterClick,
   builderMode = false,
+  editingFieldId = null,
+  onFieldClick,
+  onFieldContentChange,
 }) => {
   const lang = currentLanguage;
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [footerBannerUrl, setFooterBannerUrl] = useState<string | null>(null);
+  const contentEditableRefs = useRef<Record<string, HTMLElement | null>>({});
+  const isEditingRef = useRef<Record<string, boolean>>({});
+  const lastContentRef = useRef<Record<string, string>>({});
+  const [reasonModal, setReasonModal] = useState<{ type: "attend" | "decline"; reason: string } | null>(null);
+  const [submittedReasons, setSubmittedReasons] = useState<{ attend?: string; decline?: string }>({});
 
-  /** Step 1: filter to visible fields when visibleOnly is true */
-  const displayFields = visibleOnly
-    ? formFields.filter((f) => f.visible !== false)
-    : formFields;
-
-  /** Root fields: exclude any field whose id is in another field's children (for layout containers) */
-  const rootFields = displayFields.filter(
-    (f) => !displayFields.some((other) => (other.children ?? []).includes(f.id))
-  );
+  const displayFields = formFields;
 
   const formPaddingVal = theme?.formPadding || "24px";
   const paddingValue =
@@ -133,58 +154,6 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     marginRight: formAlignment === "center" ? "auto" : formAlignment === "left" ? "0" : undefined,
   };
 
-  const inputStyle: React.CSSProperties = {
-    borderColor: theme?.inputBorderColor ?? "#e2e8f0",
-    backgroundColor: theme?.inputBackgroundColor ?? "#f8fafc",
-    borderRadius: theme?.inputBorderRadius ?? "12px",
-    padding: theme?.inputPadding ?? "12px 16px",
-    color: theme?.inputTextColor ?? undefined,
-  };
-  const focusRingColor = theme?.inputFocusBorderColor ?? "#6366f1";
-  const labelColor = theme?.labelColor ?? "#374151";
-  const headingColor = theme?.headingColor ?? theme?.labelColor ?? "#1e293b";
-  const paragraphColor = theme?.textColor ?? theme?.bodyTextColor ?? "#374151";
-
-  /** Wrapper style for a field (margin, width from field.fieldStyle) */
-  const fieldWrapperStyle = (field: RsvpFormField): React.CSSProperties => {
-    const fs = field.fieldStyle;
-    if (!fs) return {};
-    return {
-      margin: fs.margin,
-      marginTop: fs.marginTop,
-      marginRight: fs.marginRight,
-      marginBottom: fs.marginBottom,
-      marginLeft: fs.marginLeft,
-      width: fs.width,
-    };
-  };
-
-  /** Merge theme inputStyle with field.fieldStyle for inputs */
-  const fieldInputStyle = (field: RsvpFormField): React.CSSProperties => {
-    const fs = field.fieldStyle;
-    return {
-      ...inputStyle,
-      ...(fs && {
-        backgroundColor: fs.backgroundColor ?? inputStyle.backgroundColor,
-        borderColor: fs.borderColor ?? inputStyle.borderColor,
-        borderWidth: fs.borderWidth,
-        borderRadius: fs.borderRadius ?? inputStyle.borderRadius,
-        padding: fs.padding ?? inputStyle.padding,
-        color: fs.textColor ?? inputStyle.color,
-      }),
-    };
-  };
-
-  const labelColorFor = (field: RsvpFormField) =>
-    field.fieldStyle?.labelColor ?? labelColor;
-
-  const inputTypeFromField = (field: RsvpFormField): string => {
-    if (field.type === "phone") return "tel";
-    if (field.type === "number") return "number";
-    if (field.type === "date") return "date";
-    return "text";
-  };
-
   const attendText =
     theme?.acceptButtonTranslations?.[lang] ??
     theme?.acceptButtonText ??
@@ -202,315 +171,227 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   const declineBg = theme?.declineButtonBackgroundColor ?? "#ef4444";
   const declineTextColor = theme?.declineButtonTextColor ?? "#ffffff";
 
-  /** Step 2: variable name for dynamic placeholder (e.g. first_name → {{first_name}}) */
-  const variablePlaceholder = (field: RsvpFormField) => `{{${field.name}}}`;
+  const handleContentChange = useCallback((fieldId: string, newContent: string) => {
+    onFieldContentChange?.(fieldId, newContent);
+    lastContentRef.current[fieldId] = newContent;
+  }, [onFieldContentChange]);
+
+  // Sync contentEditable content when field content changes externally
+  useEffect(() => {
+    if (!builderMode) return;
+    
+    formFields.forEach((field) => {
+      if (field.type === "heading" || field.type === "paragraph") {
+        const element = contentEditableRefs.current[field.id];
+        const content = getFieldContent(field, lang);
+        const isEditing = isEditingRef.current[field.id];
+        const lastContent = lastContentRef.current[field.id];
+        
+        // Only update if content changed externally (not from user editing)
+        if (element && !isEditing && content !== lastContent) {
+          // Use requestAnimationFrame to avoid React reconciliation conflicts
+          requestAnimationFrame(() => {
+            if (element && element.textContent !== content) {
+              element.textContent = content;
+              lastContentRef.current[field.id] = content;
+            }
+          });
+        }
+      }
+    });
+  }, [formFields, lang, builderMode]);
 
   const renderField = (field: RsvpFormField) => {
-    const inputCls = "rsvp-preview-input w-full border text-sm outline-none transition-colors";
-    const inputClsFlex = "rsvp-preview-input flex-1 border text-sm outline-none transition-colors";
-    const wrap = (node: React.ReactNode) =>
-      builderMode ? <RsvpDraggableField key={field.id} fieldId={field.id}>{node}</RsvpDraggableField> : node;
+    const style = field.fieldStyle ?? {};
+    const isEditing = editingFieldId === field.id;
+    const isSelected = isEditing && builderMode;
 
-    // Layout container: render wrapper with flex styles and child fields (do not render as paragraph)
-    if (field.containerType) {
-      const childIds = field.children ?? [];
-      const childFields = childIds
-        .map((id) => formFields.find((f) => f.id === id))
-        .filter((f): f is RsvpFormField => !!f)
-        .filter((c) => !visibleOnly || displayFields.some((d) => d.id === c.id));
-      const lp = field.layoutProps ?? {};
-      const isEmpty = childFields.length === 0;
-      const isRow = field.containerType === "row";
-      const containerStyle: React.CSSProperties = {
-        display: "flex",
-        flexDirection: lp.flexDirection ?? (isRow ? "row" : "column"),
-        gap: lp.gap ?? "20px",
-        padding: lp.padding ?? (isRow ? "16px" : "20px"),
-        justifyContent: (lp.justifyContent as React.CSSProperties["justifyContent"]) ?? (isRow ? "flex-start" : "stretch"),
-        alignItems: (lp.alignItems as React.CSSProperties["alignItems"]) ?? (isRow ? "center" : "stretch"),
-        flexWrap: (lp.flexWrap as React.CSSProperties["flexWrap"]) ?? (isRow ? "wrap" : "nowrap"),
-        backgroundColor: lp.backgroundColor ?? (isEmpty ? "rgba(241, 245, 249, 0.9)" : "transparent"),
-        borderRadius: lp.borderRadius ?? "12px",
-        minHeight: isEmpty ? 100 : undefined,
-        border: isEmpty ? "2px dashed rgba(148, 163, 184, 0.5)" : "1px solid rgba(226, 232, 240, 0.8)",
-        ...fieldWrapperStyle(field),
-      };
-      const emptyLabel =
-        field.containerType === "container"
-          ? "Container — drag fields here"
-          : field.containerType === "row"
-            ? "Row — drag fields here"
-            : "Column — drag fields here";
-      const inner = (
-        <div key={field.id} className="rsvp-layout-container" style={containerStyle} data-layout-type={field.containerType}>
-          {builderMode ? (
-            <RsvpDropZone
-              id={field.id}
-              minHeight={isEmpty ? "100px" : undefined}
-              className="min-h-full"
-              style={{
-                display: "flex",
-                flexDirection: (lp.flexDirection as React.CSSProperties["flexDirection"]) ?? (isRow ? "row" : "column"),
-                gap: lp.gap ?? "20px",
-                flex: 1,
-                flexWrap: (lp.flexWrap as React.CSSProperties["flexWrap"]) ?? (isRow ? "wrap" : "nowrap"),
-              }}
-            >
-              {childFields.map((child) => (
-                <React.Fragment key={child.id}>{renderField(child)}</React.Fragment>
-              ))}
-              {isEmpty && (
-                <div className="flex flex-col items-center justify-center gap-1.5 w-full py-6 text-slate-500 flex-1">
-                  <span className="text-sm font-medium">{emptyLabel}</span>
-                  <span className="text-xs">Layout: {field.containerType}</span>
-                </div>
-              )}
-            </RsvpDropZone>
-          ) : (
-            <>
-              {childFields.map((child) => (
-                <React.Fragment key={child.id}>{renderField(child)}</React.Fragment>
-              ))}
-              {isEmpty && (
-                <div className="flex flex-col items-center justify-center gap-1.5 w-full py-6 text-slate-500">
-                  <span className="text-sm font-medium">{emptyLabel}</span>
-                  <span className="text-xs">Layout: {field.containerType}</span>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      );
-      return builderMode ? <RsvpDraggableField key={field.id} fieldId={field.id}>{inner}</RsvpDraggableField> : inner;
-    }
+    // Apply all styling
+    const elementStyle: React.CSSProperties = {
+      borderColor: style.borderColor,
+      borderWidth: style.borderWidth,
+      borderStyle: style.borderStyle ?? "solid",
+      borderRadius: style.borderRadius,
+      backgroundColor: style.backgroundColor,
+      padding: style.padding,
+      paddingTop: style.paddingTop,
+      paddingRight: style.paddingRight,
+      paddingBottom: style.paddingBottom,
+      paddingLeft: style.paddingLeft,
+      margin: style.margin,
+      marginTop: style.marginTop,
+      marginRight: style.marginRight,
+      marginBottom: style.marginBottom,
+      marginLeft: style.marginLeft,
+      color: style.textColor,
+      textAlign: style.textAlign,
+      fontSize: style.fontSize,
+      fontWeight: style.fontWeight,
+      fontStyle: style.fontStyle,
+      textDecoration: style.textDecoration,
+      lineHeight: style.lineHeight,
+      letterSpacing: style.letterSpacing,
+      width: style.width,
+      maxWidth: style.maxWidth,
+      ...(isSelected && {
+        outline: "2px solid #6366f1",
+        outlineOffset: "2px",
+      }),
+    };
 
-    // Step 2: variable mode – show label + {{name}} instead of input for input-like fields
-    const isInputLike = !["paragraph", "divider", "heading"].includes(field.type);
-    if (variableMode && isInputLike) {
-      const wrapperStyle = fieldWrapperStyle(field);
-      const mergedInputStyle = fieldInputStyle(field);
-      return wrap(
-        <div key={field.id} style={wrapperStyle}>
-          {field.type !== "checkbox" && (
-            <label className="block text-sm font-medium mb-1.5" style={{ color: labelColorFor(field) }}>
-              {getFieldLabel(field, lang)}
-              {field.required && <span className="text-red-500 ml-0.5" aria-hidden>*</span>}
-            </label>
-          )}
-          <div
-            className="inline-block px-3 py-2 rounded-lg border border-dashed border-indigo-300 bg-indigo-50/50 text-indigo-700 text-sm font-mono"
-            style={{ ...mergedInputStyle, minWidth: "120px" }}
-          >
-            {variablePlaceholder(field)}
-          </div>
-        </div>
-      );
-    }
-
-    // Paragraph – content only (containers use type "paragraph" but are handled above via containerType)
-    if (field.type === "paragraph") {
-      const content = getFieldContent(field, lang);
-      if (!content) return null;
-      const fs = field.fieldStyle;
-      const pStyle: React.CSSProperties = {
-        color: fs?.textColor ?? paragraphColor,
-        textAlign: fs?.textAlign,
-        fontSize: fs?.fontSize,
-        margin: fs?.margin,
-        marginTop: fs?.marginTop,
-        marginRight: fs?.marginRight,
-        marginBottom: fs?.marginBottom,
-        marginLeft: fs?.marginLeft,
-      };
-      return wrap(
-        <div key={field.id} style={fieldWrapperStyle(field)}>
-          <p className="text-sm leading-relaxed" style={pStyle}>
-            {content}
-          </p>
-        </div>
-      );
-    }
-
-    // Divider – horizontal rule
+    // Divider
     if (field.type === "divider") {
-      const fs = field.fieldStyle;
-      const hrStyle: React.CSSProperties = {
-        borderColor: fs?.borderColor ?? "#e5e7eb",
-        margin: fs?.margin ?? "1rem 0",
-        marginTop: fs?.marginTop,
-        marginRight: fs?.marginRight,
-        marginBottom: fs?.marginBottom,
-        marginLeft: fs?.marginLeft,
-      };
-      return wrap(
-        <div key={field.id} style={fieldWrapperStyle(field)}>
-          <hr className="border-t my-4" style={hrStyle} />
+      return (
+        <div
+          key={field.id}
+          onClick={() => builderMode && onFieldClick?.(field)}
+          className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
+          style={elementStyle}
+        >
+          <hr
+            style={{
+              borderColor: style.borderColor ?? "#e5e7eb",
+              borderWidth: style.borderWidth ?? "1px",
+              borderStyle: style.borderStyle ?? "solid",
+              margin: 0,
+            }}
+          />
         </div>
       );
     }
 
-    // Heading – content as heading
+    // Heading
     if (field.type === "heading") {
-      const content = getFieldContent(field, lang) || field.label;
-      if (!content) return null;
+      const content = getFieldContent(field, lang);
       const level = field.headingLevel ?? 3;
       const HeadingTag = `h${level}` as "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
-      const fs = field.fieldStyle;
-      const hStyle: React.CSSProperties = {
-        color: fs?.textColor ?? fs?.labelColor ?? headingColor,
-        fontSize: fs?.fontSize,
-        textAlign: fs?.textAlign,
-        margin: fs?.margin,
-        marginTop: fs?.marginTop ?? "1rem",
-        marginRight: fs?.marginRight,
-        marginBottom: fs?.marginBottom ?? "0.5rem",
-        marginLeft: fs?.marginLeft,
-      };
-      return wrap(
-        <div key={field.id} style={fieldWrapperStyle(field)}>
-          <HeadingTag className="font-semibold" style={hStyle}>
-            {content}
+
+      if (builderMode) {
+        return (
+          <div
+            key={field.id}
+            onClick={() => onFieldClick?.(field)}
+            className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
+            style={elementStyle}
+          >
+            <HeadingTag
+              contentEditable={builderMode}
+              suppressContentEditableWarning
+              onInput={() => {
+                isEditingRef.current[field.id] = true;
+              }}
+              onBlur={(e) => {
+                isEditingRef.current[field.id] = false;
+                const newContent = e.currentTarget.textContent || "";
+                if (newContent !== content) {
+                  handleContentChange(field.id, newContent);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              ref={(el) => {
+                if (el) {
+                  contentEditableRefs.current[field.id] = el as HTMLElement;
+                  // Set initial content
+                  if (el.textContent !== content) {
+                    el.textContent = content || "Click to edit heading";
+                    lastContentRef.current[field.id] = content || "";
+                  }
+                } else {
+                  delete contentEditableRefs.current[field.id];
+                  delete isEditingRef.current[field.id];
+                  delete lastContentRef.current[field.id];
+                }
+              }}
+              style={{
+                margin: 0,
+                outline: "none",
+                minHeight: "1.5em",
+              }}
+              dangerouslySetInnerHTML={undefined}
+            >
+              {builderMode ? undefined : (content || "Click to edit heading")}
+            </HeadingTag>
+          </div>
+        );
+      }
+
+      return (
+        <div key={field.id} style={elementStyle}>
+          <HeadingTag style={{ margin: 0 }}>
+            {renderTextWithVariables(content)}
           </HeadingTag>
         </div>
       );
     }
 
-    // Label for input-like fields (uses field.fieldStyle.labelColor when set)
-    const labelEl = (
-      <label className="block text-sm font-medium mb-1.5" style={{ color: labelColorFor(field) }}>
-        {getFieldLabel(field, lang)}
-        {field.required && <span className="text-red-500 ml-0.5" aria-hidden>*</span>}
-      </label>
-    );
+    // Paragraph
+    if (field.type === "paragraph") {
+      const content = getFieldContent(field, lang);
 
-    const wrapperStyle = fieldWrapperStyle(field);
-    const mergedInputStyle = fieldInputStyle(field);
-
-    // Phone with country code
-    if (field.type === "phone" && field.inputVariant === "phone") {
-      return wrap(
-        <div key={field.id} style={wrapperStyle}>
-          {labelEl}
-          <div className="flex gap-2">
-            <select
-              disabled
-              tabIndex={-1}
-              className="rsvp-preview-input w-[140px] border text-sm outline-none rounded-xl"
-              style={mergedInputStyle}
-              aria-label={`${getFieldLabel(field, lang)} country code`}
-            >
-              <option value="">Code</option>
-              {COUNTRY_DIAL_CODES.map((c) => (
-                <option key={`${c.code}-${c.dialCode}`} value={c.dialCode}>
-                  {c.name} ({c.dialCode})
-                </option>
-              ))}
-            </select>
-            <input
-              type="tel"
-              placeholder={getFieldPlaceholder(field, lang)}
-              required={field.required}
-              className={inputClsFlex + " rounded-xl"}
-              style={mergedInputStyle}
-              readOnly
-              tabIndex={-1}
-              aria-label={getFieldLabel(field, lang)}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // Text, phone (single), number, date
-    if (field.type === "text" || field.type === "phone" || field.type === "number" || field.type === "date") {
-      return wrap(
-        <div key={field.id} style={wrapperStyle}>
-          {labelEl}
-          <input
-            type={inputTypeFromField(field)}
-            placeholder={getFieldPlaceholder(field, lang)}
-            required={field.required}
-            min={field.type === "number" && field.min != null ? field.min : undefined}
-            max={field.type === "number" && field.max != null ? field.max : undefined}
-            className={inputCls + " rounded-xl"}
-            style={mergedInputStyle}
-            readOnly
-            tabIndex={-1}
-            aria-label={getFieldLabel(field, lang)}
-          />
-        </div>
-      );
-    }
-
-    // Textarea
-    if (field.type === "textarea") {
-      return wrap(
-        <div key={field.id} style={wrapperStyle}>
-          {labelEl}
-          <textarea
-            placeholder={getFieldPlaceholder(field, lang)}
-            required={field.required}
-            rows={4}
-            className={inputCls + " resize-none rounded-xl"}
-            style={mergedInputStyle}
-            readOnly
-            tabIndex={-1}
-            aria-label={getFieldLabel(field, lang)}
-          />
-        </div>
-      );
-    }
-
-    // Select / dropdown
-    if (field.type === "select") {
-      return wrap(
-        <div key={field.id} style={wrapperStyle}>
-          {labelEl}
-          <select
-            required={field.required}
-            className={inputCls + " rounded-xl"}
-            style={mergedInputStyle}
-            disabled
-            tabIndex={-1}
-            aria-label={getFieldLabel(field, lang)}
+      if (builderMode) {
+        return (
+          <div
+            key={field.id}
+            onClick={() => onFieldClick?.(field)}
+            className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
+            style={elementStyle}
           >
-            <option value="">{getFieldPlaceholder(field, lang) || "Choose..."}</option>
-            {(field.options ?? []).map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {getOptionLabel(opt, lang)}
-              </option>
-            ))}
-          </select>
-        </div>
-      );
-    }
-
-    // Radio
-    if (field.type === "radio") {
-      return wrap(
-        <div key={field.id} style={wrapperStyle}>
-          {labelEl}
-          <div className="space-y-2">
-            {(field.options ?? []).map((opt) => (
-              <label key={opt.value} className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" name={field.name} value={opt.value} disabled tabIndex={-1} className="rsvp-preview-input rounded-full border-gray-300 text-indigo-600" />
-                <span className="text-sm" style={{ color: labelColorFor(field) }}>{getOptionLabel(opt, lang)}</span>
-              </label>
-            ))}
+            <p
+              contentEditable={builderMode}
+              suppressContentEditableWarning
+              onInput={() => {
+                isEditingRef.current[field.id] = true;
+              }}
+              onBlur={(e) => {
+                isEditingRef.current[field.id] = false;
+                const newContent = e.currentTarget.textContent || "";
+                if (newContent !== content) {
+                  handleContentChange(field.id, newContent);
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  e.currentTarget.blur();
+                }
+              }}
+              ref={(el) => {
+                if (el) {
+                  contentEditableRefs.current[field.id] = el as HTMLElement;
+                  // Set initial content
+                  if (el.textContent !== content) {
+                    el.textContent = content || "Click to edit text";
+                    lastContentRef.current[field.id] = content || "";
+                  }
+                } else {
+                  delete contentEditableRefs.current[field.id];
+                  delete isEditingRef.current[field.id];
+                  delete lastContentRef.current[field.id];
+                }
+              }}
+              style={{
+                margin: 0,
+                outline: "none",
+                minHeight: "1.5em",
+              }}
+              dangerouslySetInnerHTML={undefined}
+            >
+              {builderMode ? undefined : (content ? renderTextWithVariables(content) : "Click to edit text")}
+            </p>
           </div>
-        </div>
-      );
-    }
+        );
+      }
 
-    // Checkbox
-    if (field.type === "checkbox") {
-      return wrap(
-        <div key={field.id} className="flex items-center gap-2" style={wrapperStyle}>
-          <input type="checkbox" id={field.id} disabled tabIndex={-1} className="rsvp-preview-input rounded border-gray-300 text-indigo-600 w-4 h-4" />
-          <label htmlFor={field.id} className="text-sm font-medium" style={{ color: labelColorFor(field) }}>
-            {getFieldLabel(field, lang)}
-            {field.required && <span className="text-red-500 ml-0.5">*</span>}
-          </label>
+      return (
+        <div key={field.id} style={elementStyle}>
+          <p style={{ margin: 0 }}>
+            {renderTextWithVariables(content)}
+          </p>
         </div>
       );
     }
@@ -530,36 +411,18 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       dir={lang === "ar" ? "rtl" : "ltr"}
     >
       <style>{`
-        .rsvp-form-preview-root .rsvp-preview-input {
-          opacity: 1;
-          -webkit-text-fill-color: inherit;
-          color: inherit;
-        }
-        .rsvp-form-preview-root .rsvp-preview-input:read-only,
-        .rsvp-form-preview-root .rsvp-preview-input[readonly] {
-          cursor: default;
-        }
-        .rsvp-form-preview-root .rsvp-preview-input:disabled,
-        .rsvp-form-preview-root select.rsvp-preview-input:disabled {
-          opacity: 1;
-          cursor: default;
-          -webkit-text-fill-color: inherit;
-        }
-        .rsvp-form-preview-root .rsvp-preview-input:focus {
-          border-color: ${focusRingColor};
-          box-shadow: 0 0 0 2px ${focusRingColor}40;
-        }
         .rsvp-form-preview-root .rsvp-btn-attend:hover {
           background-color: ${acceptHoverBg} !important;
         }
         .rsvp-form-preview-root .rsvp-btn-decline:hover {
           background-color: ${declineHoverBg} !important;
         }
-        .rsvp-form-preview-root .rsvp-layout-container {
-          transition: border-color 0.2s, background-color 0.2s;
+        [contenteditable="true"]:focus {
+          outline: 2px solid #6366f1;
+          outline-offset: 2px;
         }
       `}</style>
-      {/* Header banner – always visible; placeholder when no image; click opens theme when in builder */}
+      {/* Header banner */}
       <div
         role={onBannerClick ? "button" : undefined}
         tabIndex={onBannerClick ? 0 : undefined}
@@ -575,8 +438,10 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
         }}
       >
         <div
-          className="w-full h-[300px] overflow-hidden flex items-center justify-center"
+          className="overflow-hidden flex items-center justify-center"
           style={{
+            width: theme?.bannerWidth || "100%",
+            height: theme?.bannerHeight || "300px",
             marginTop: theme?.bannerMarginTop || "0",
             marginRight: theme?.bannerMarginRight || "0",
             marginBottom: theme?.bannerMarginBottom || "0",
@@ -584,7 +449,15 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
           }}
         >
           {bannerUrl ? (
-            <img src={bannerUrl} alt="Header banner" className="w-full h-full object-cover" />
+            <img 
+              src={bannerUrl} 
+              alt="Header banner" 
+              className="w-full h-full object-cover"
+              style={{
+                width: theme?.bannerWidth || "100%",
+                height: theme?.bannerHeight || "300px",
+              }}
+            />
           ) : (
             <div className="flex flex-col items-center justify-center gap-2 text-slate-400 w-full h-full border-2 border-dashed border-slate-300 rounded-lg m-2 bg-slate-50/80">
               <ImageIcon size={40} />
@@ -596,14 +469,14 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
         </div>
       </div>
 
-      {/* Form content: fields + Attend/Decline buttons (Step 3: alignment) */}
+      {/* Form content: text elements + Attend/Decline buttons */}
       <div
         className="px-6 py-6 pb-8"
         style={{
           backgroundColor: theme?.formBackgroundColor || "#ffffff",
         }}
       >
-        <form
+        <div
           className="space-y-5"
           style={{
             maxWidth: "100%",
@@ -620,24 +493,13 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
             }),
           }}
         >
-          {builderMode ? (
-            <RsvpDropZone id="root" className="space-y-5" minHeight="120px">
-              {rootFields.map((field) => (
-                <React.Fragment key={field.id}>{renderField(field)}</React.Fragment>
-              ))}
-            </RsvpDropZone>
-          ) : (
-            rootFields.map((field) => (
-              <React.Fragment key={field.id}>{renderField(field)}</React.Fragment>
-            ))
-          )}
-        </form>
+          {displayFields.map((field) => renderField(field))}
+        </div>
 
-        {/* Attend & Decline: messages + buttons always shown on form */}
+        {/* Attend & Decline buttons */}
         {showActionButtons && (
           <div className="mt-6 space-y-3">
             <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
-              {/* Attend: message above button */}
               <div className="flex-1 flex flex-col gap-2">
                 <div
                   className="text-sm"
@@ -651,8 +513,22 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
                 <div
                   role={onAttendClick ? "button" : undefined}
                   tabIndex={onAttendClick ? 0 : undefined}
-                  onClick={onAttendClick}
-                  onKeyDown={onAttendClick ? (e) => e.key === "Enter" && onAttendClick() : undefined}
+                  onClick={() => {
+                    if (builderMode) {
+                      setReasonModal({ type: "attend", reason: submittedReasons.attend || "" });
+                    } else {
+                      onAttendClick?.();
+                    }
+                  }}
+                  onKeyDown={onAttendClick ? (e) => {
+                    if (e.key === "Enter") {
+                      if (builderMode) {
+                        setReasonModal({ type: "attend", reason: submittedReasons.attend || "" });
+                      } else {
+                        onAttendClick();
+                      }
+                    }
+                  } : undefined}
                   className="rsvp-btn-attend inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-default"
                   style={{
                     backgroundColor: acceptBg,
@@ -665,8 +541,20 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
                   <Check className="w-5 h-5 shrink-0" strokeWidth={2.5} />
                   <span>{attendText}</span>
                 </div>
+                {submittedReasons.attend && (
+                  <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-xs font-medium text-green-800 mb-1">
+                      {theme?.acceptReasonLabel || "Reason for attending"}:
+                    </p>
+                    <p className="text-sm text-green-900">{submittedReasons.attend}</p>
+                  </div>
+                )}
+                {!submittedReasons.attend && theme?.acceptReasonRequired && builderMode && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Click button to provide reason: {theme.acceptReasonLabel || "Reason for attending"}
+                  </p>
+                )}
               </div>
-              {/* Decline: message above button */}
               <div className="flex-1 flex flex-col gap-2">
                 <div
                   className="text-sm"
@@ -680,8 +568,22 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
                 <div
                   role={onDeclineClick ? "button" : undefined}
                   tabIndex={onDeclineClick ? 0 : undefined}
-                  onClick={onDeclineClick}
-                  onKeyDown={onDeclineClick ? (e) => e.key === "Enter" && onDeclineClick() : undefined}
+                  onClick={() => {
+                    if (builderMode) {
+                      setReasonModal({ type: "decline", reason: submittedReasons.decline || "" });
+                    } else {
+                      onDeclineClick?.();
+                    }
+                  }}
+                  onKeyDown={onDeclineClick ? (e) => {
+                    if (e.key === "Enter") {
+                      if (builderMode) {
+                        setReasonModal({ type: "decline", reason: submittedReasons.decline || "" });
+                      } else {
+                        onDeclineClick();
+                      }
+                    }
+                  } : undefined}
                   className="rsvp-btn-decline inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-default"
                   style={{
                     backgroundColor: declineBg,
@@ -694,13 +596,26 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
                   <X className="w-5 h-5 shrink-0" strokeWidth={2.5} />
                   <span>{declineText}</span>
                 </div>
+                {submittedReasons.decline && (
+                  <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-xs font-medium text-red-800 mb-1">
+                      {theme?.declineReasonLabel || "Reason for declining"}:
+                    </p>
+                    <p className="text-sm text-red-900">{submittedReasons.decline}</p>
+                  </div>
+                )}
+                {!submittedReasons.decline && theme?.declineReasonRequired && builderMode && (
+                  <p className="text-xs text-slate-500 mt-1">
+                    Click button to provide reason: {theme.declineReasonLabel || "Reason for declining"}
+                  </p>
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Footer image – always visible and scrollable; placeholder when no image; click to upload */}
+      {/* Footer image */}
       <div
         className="border-t border-slate-200 pb-6"
         style={{
@@ -751,6 +666,76 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Reason Modal */}
+      {reasonModal && builderMode && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50"
+          onMouseDown={(e) => e.target === e.currentTarget && setReasonModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-slate-900">
+                {reasonModal.type === "attend" 
+                  ? (theme?.acceptReasonLabel || "Reason for attending")
+                  : (theme?.declineReasonLabel || "Reason for declining")}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setReasonModal(null)}
+                className="p-2 hover:bg-slate-100 rounded-lg"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-4">
+              <textarea
+                value={reasonModal.reason}
+                onChange={(e) => setReasonModal({ ...reasonModal, reason: e.target.value })}
+                placeholder={
+                  reasonModal.type === "attend"
+                    ? (theme?.acceptReasonPlaceholder || "Please provide a reason for attending")
+                    : (theme?.declineReasonPlaceholder || "Please provide a reason for declining")
+                }
+                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                rows={4}
+              />
+            </div>
+            <div className="p-4 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setReasonModal(null)}
+                className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (reasonModal.reason.trim()) {
+                    if (reasonModal.type === "attend") {
+                      setSubmittedReasons((prev) => ({ ...prev, attend: reasonModal.reason }));
+                      onAttendClick?.();
+                    } else {
+                      setSubmittedReasons((prev) => ({ ...prev, decline: reasonModal.reason }));
+                      onDeclineClick?.();
+                    }
+                    setReasonModal(null);
+                  }
+                }}
+                disabled={!reasonModal.reason.trim()}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

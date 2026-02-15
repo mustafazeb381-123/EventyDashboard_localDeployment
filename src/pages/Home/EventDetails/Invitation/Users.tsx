@@ -754,6 +754,13 @@ function Invitations() {
                             <div className="flex items-center gap-0.5">
                               <button
                                 type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  const eventIdToPass = actualEventId || eventId;
+                                  const previewPath = `/invitation/preview-page/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`;
+                                  navigate(previewPath);
+                                }}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                 title="View"
                               >

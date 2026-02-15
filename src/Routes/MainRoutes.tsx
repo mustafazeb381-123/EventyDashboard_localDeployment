@@ -28,6 +28,7 @@ function MainRoutes() {
     "/user/registration",
     "/print_badges",
     "/invitation",
+    "/invitation/preview-page",
     "/attendees/check-in",
     "/attendees/check-out",
     "/committees",

@@ -20,6 +20,7 @@ import PrintBadges from "@/pages/Home/EventDetails/PrintBadges/PrintBadges";
 import Users from "@/pages/Home/EventDetails/Invitation/Users";
 import NewInvitation from "@/pages/Home/EventDetails/Invitation/NewInvitation";
 import InvitationReport from "@/pages/Home/EventDetails/Invitation/InvitationReport";
+import InvitationPreviewPage from "@/pages/Home/EventDetails/Invitation/InvitationPreviewPage";
 import UserRegistration from "@/pages/Home/ExpressEvent/User Regsitration/UserRegistration";
 import Poll from "@/pages/Home/EventDetails/Poll/Poll";
 import PollDetails from "@/pages/Home/EventDetails/PollDetails/PollDetails";
@@ -77,10 +78,6 @@ const router = createBrowserRouter([
             element: <UserRegistration />,
           },
           {
-            path: "invitation",
-            element: <Users />,
-          },
-          {
             path: "invitation/new",
             element: <NewInvitation />,
           },
@@ -91,6 +88,14 @@ const router = createBrowserRouter([
           {
             path: "invitation/report/:invitationId",
             element: <InvitationReport />,
+          },
+          {
+            path: "invitation/preview-page/:invitationId",
+            element: <InvitationPreviewPage />,
+          },
+          {
+            path: "invitation",
+            element: <Users />,
           },
           {
             path: "TicketManagement",

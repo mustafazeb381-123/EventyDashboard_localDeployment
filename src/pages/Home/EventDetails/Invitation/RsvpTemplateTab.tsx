@@ -16,8 +16,8 @@ type RsvpTemplateTabProps = {
 
 /** RSVP Template Tab – same flow as AdvanceRegistration: Custom Builder card + saved templates only. No default templates. No API calls (you will wire APIs later). */
 export function RsvpTemplateTab({
-  rsvpEmailSubject,
-  setRsvpEmailSubject,
+  rsvpEmailSubject: _rsvpEmailSubject,
+  setRsvpEmailSubject: _setRsvpEmailSubject,
 }: RsvpTemplateTabProps) {
   // Saved RSVP Form Builder templates (local state only; replace with API when ready)
   const [rsvpFormBuilderTemplates, setRsvpFormBuilderTemplates] = useState<
@@ -170,29 +170,8 @@ export function RsvpTemplateTab({
 
   return (
     <div className="space-y-10">
-      {/* RSVP email subject */}
-      <div className="max-w-xl">
-        <label className="block text-sm font-semibold text-slate-800 mb-2">
-          RSVP email subject
-        </label>
-        <input
-          type="text"
-          placeholder="e.g., Please confirm your attendance"
-          value={rsvpEmailSubject}
-          onChange={(e) => setRsvpEmailSubject(e.target.value)}
-          className="w-full px-4 py-3 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm transition-shadow"
-        />
-      </div>
-
       {/* RSVP template grid – Custom Builder first, then saved templates only (no default templates) */}
       <div>
-        <h3 className="text-base font-semibold text-slate-800 mb-1">
-          RSVP email template
-        </h3>
-        <p className="text-sm text-slate-500 mb-5">
-          Create a custom RSVP template or choose one you’ve saved. The selected
-          template defines the wording and layout of the RSVP section.
-        </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {/* First card: Custom RSVP Builder (like AdvanceRegistration) */}
           <div
@@ -283,7 +262,7 @@ export function RsvpTemplateTab({
                     {template.title}
                   </h4>
                   <span className="text-xs text-slate-500">
-                    {template.formFields.length} field
+                    {template.formFields.length} element
                     {template.formFields.length !== 1 ? "s" : ""}
                   </span>
                 </div>

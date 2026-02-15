@@ -1,92 +1,53 @@
 /**
- * RSVP Form Builder types – form with customizable fields (like Advance Registration)
+ * RSVP Template Editor types – simplified text editor with styling
  * plus header banner and footer banner.
  */
 
-/** Field types – like Advance Registration (number, textarea, date, dropdown, checkbox, paragraph, divider, heading). */
-export type RsvpFieldType =
-  | "text"
-  | "phone"
-  | "number"
-  | "date"
-  | "textarea"
-  | "select"
-  | "radio"
-  | "checkbox"
-  | "paragraph"
-  | "divider"
-  | "heading";
-
-/** Optional input variant (e.g. phone with country code) */
-export type RsvpFormFieldInputVariant = "phone" | "default";
-
-export interface RsvpFormFieldOption {
-  label: string;
-  value: string;
-  labelTranslations?: { en?: string; ar?: string };
-}
+/** Text element types – only text-based elements (no form inputs) */
+export type RsvpFieldType = "paragraph" | "heading" | "divider";
 
 export interface RsvpFormField {
   id: string;
   type: RsvpFieldType;
   name: string;
-  label: string;
-  placeholder?: string;
-  required: boolean;
-  /** Step 1: show/hide – when false, field is hidden in preview */
-  visible?: boolean;
-  /** Optional translations for dual-language */
-  labelTranslations?: { en?: string; ar?: string };
-  placeholderTranslations?: { en?: string; ar?: string };
-  /** Like Advance Registration: "phone" for country code + number (when type === "phone") */
-  inputVariant?: RsvpFormFieldInputVariant;
-  /** For select, radio: options list */
-  options?: RsvpFormFieldOption[];
-  /** For paragraph, heading: text content */
+  /** Text content for paragraph and heading */
   content?: string;
   contentTranslations?: { en?: string; ar?: string };
   /** For heading: size/style */
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
-  /** For number: min/max */
-  min?: number;
-  max?: number;
-  /** Per-field styling (like Advance Registration FieldConfigPanel custom styling) */
+  /** Enhanced styling for text elements */
   fieldStyle?: {
-    backgroundColor?: string;
+    /** Border styling */
     borderColor?: string;
     borderWidth?: string;
+    borderStyle?: "solid" | "dashed" | "dotted" | "double" | "none";
     borderRadius?: string;
+    /** Background */
+    backgroundColor?: string;
+    /** Padding */
     padding?: string;
     paddingTop?: string;
     paddingRight?: string;
     paddingBottom?: string;
     paddingLeft?: string;
+    /** Margin */
     margin?: string;
     marginTop?: string;
     marginRight?: string;
     marginBottom?: string;
     marginLeft?: string;
+    /** Text styling */
     textColor?: string;
-    labelColor?: string;
     textAlign?: "left" | "center" | "right" | "justify";
     fontSize?: string;
-    height?: string;
+    fontWeight?: "normal" | "bold" | "lighter" | "bolder" | "100" | "200" | "300" | "400" | "500" | "600" | "700" | "800" | "900";
+    fontStyle?: "normal" | "italic" | "oblique";
+    textDecoration?: "none" | "underline" | "overline" | "line-through";
+    lineHeight?: string;
+    letterSpacing?: string;
+    /** Layout */
     width?: string;
-  };
-  /** Layout: container / row / column (like Advance Registration). When set, field acts as a wrapper. */
-  containerType?: "row" | "column" | "container";
-  /** IDs of child fields when this field is a container */
-  children?: string[];
-  /** Layout styling for containers */
-  layoutProps?: {
-    gap?: string;
-    padding?: string;
-    justifyContent?: string;
-    alignItems?: string;
-    flexDirection?: "row" | "column";
-    flexWrap?: "wrap" | "nowrap";
-    backgroundColor?: string;
-    borderRadius?: string;
+    maxWidth?: string;
   };
 }
 
@@ -107,6 +68,9 @@ export interface RsvpLanguageConfig {
 export interface RsvpTheme {
   /** Header banner image at top (File or URL string) */
   bannerImage?: File | string | null;
+  /** Banner image dimensions */
+  bannerHeight?: string;
+  bannerWidth?: string;
   formPadding?: string;
   formBackgroundColor?: string;
   formBorderRadius?: string;
@@ -167,6 +131,13 @@ export interface RsvpTheme {
   declineMessage?: string;
   acceptMessageTranslations?: { en?: string; ar?: string };
   declineMessageTranslations?: { en?: string; ar?: string };
+  /** Reason fields for Attend/Decline buttons */
+  acceptReasonRequired?: boolean;
+  declineReasonRequired?: boolean;
+  acceptReasonPlaceholder?: string;
+  declineReasonPlaceholder?: string;
+  acceptReasonLabel?: string;
+  declineReasonLabel?: string;
 }
 
 export interface RsvpFormBuilderTemplate {
@@ -179,40 +150,25 @@ export interface RsvpFormBuilderTemplate {
   updatedAt?: string;
 }
 
-/** Default form fields: empty – user adds layout and fields from the palette. */
+/** Default text elements: empty – user adds text elements */
 export function getDefaultRsvpFormFields(): RsvpFormField[] {
   return [];
 }
 
-/** Create a new field of the given type for "Add field" in palette */
+/** Create a new text element */
 export function createRsvpFormField(type: RsvpFieldType): RsvpFormField {
   const id = `${type}-${Date.now()}`;
-  const name = ["paragraph", "divider", "heading"].includes(type) ? id : `${type}_${Date.now()}`;
   const defaults: Record<RsvpFieldType, Partial<RsvpFormField>> = {
-    text: { label: "Text", placeholder: "Enter text", required: false },
-    phone: { label: "Phone number", placeholder: "Enter phone", required: false, inputVariant: "default" },
-    number: { label: "Number", placeholder: "0", required: false },
-    date: { label: "Date", placeholder: "", required: false },
-    textarea: { label: "Message", placeholder: "Enter message", required: false },
-    select: { label: "Select", placeholder: "Choose...", required: false, options: [{ label: "Option 1", value: "opt1" }, { label: "Option 2", value: "opt2" }] },
-    radio: { label: "Choice", required: false, options: [{ label: "Option A", value: "a" }, { label: "Option B", value: "b" }] },
-    checkbox: { label: "Checkbox", required: false },
-    paragraph: { label: "", content: "Paragraph text here.", required: false },
-    divider: { label: "", required: false },
-    heading: { label: "", content: "Heading", required: false, headingLevel: 3 },
+    paragraph: { content: "Click to edit text", name: id },
+    divider: { content: "", name: id },
+    heading: { content: "Heading", headingLevel: 3, name: id },
   };
   const d = defaults[type] ?? {};
   return {
     id,
     type,
-    name: type === "heading" || type === "paragraph" || type === "divider" ? id : name,
-    label: d.label ?? type,
-    placeholder: d.placeholder,
-    required: d.required ?? false,
-    visible: true,
-    options: d.options,
+    name: id,
     content: d.content,
     headingLevel: d.headingLevel,
-    inputVariant: d.inputVariant,
   } as RsvpFormField;
 }
