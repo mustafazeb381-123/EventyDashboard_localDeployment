@@ -2,27 +2,19 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
-  X,
   ChevronDown,
   Mail,
   Search,
   Users as UsersIcon,
-  Upload,
   Eye,
   Pencil,
   MoreVertical,
   FileText,
   Download,
   CheckCircle,
-  Clock,
-  XCircle,
   UserCheck,
   BarChart2,
-  Share2,
-  Zap,
-  Settings,
   Copy,
-  Info,
 } from "lucide-react";
 import { getEventbyId, sendCredentials } from "@/apis/apiHelpers";
 import {
@@ -333,17 +325,19 @@ function Invitations() {
     });
   }, [invitations, filterType, searchTerm]);
 
-  // Stats from invitations API (total from pagination; completed/pending from list)
+  // Stats from API: total from pagination; completed/pending from backend status only
   const stats = useMemo(() => {
     const total = invitationPagination?.total_count ?? invitations.length;
-    const withInvitees = invitations.filter(
-      (inv) => (inv.event_invitation_users_count ?? 0) > 0,
+    const completed = invitations.filter(
+      (inv) => (inv.status ?? "").toLowerCase() === "done",
+    ).length;
+    const pending = invitations.filter(
+      (inv) => (inv.status ?? "").toLowerCase() === "pending",
     ).length;
     return {
       total,
-      completed: withInvitees,
-      inProgress: 0,
-      pending: Math.max(0, total - withInvitees),
+      completed,
+      pending,
     };
   }, [invitations, invitationPagination]);
 
@@ -474,8 +468,8 @@ function Invitations() {
             </div>
           </div>
 
-          {/* ── Stats Cards ── */}
-          <div className="grid grid-cols-4 gap-4 mb-6">
+          {/* ── Stats Cards (done & pending from API only) ── */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
             {/* Total */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
               <div
@@ -489,12 +483,12 @@ function Invitations() {
                   Total Invitations
                 </p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
-                  {stats.total || 140}
+                  {stats.total}
                 </p>
               </div>
             </div>
 
-            {/* Completed */}
+            {/* Completed (done from API) */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
               <div
                 className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
@@ -505,28 +499,12 @@ function Invitations() {
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Completed</p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
-                  {stats.completed || 0}
+                  {stats.completed}
                 </p>
               </div>
             </div>
 
-            {/* In Progress */}
-            <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
-              <div
-                className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: "#FAFAFA" }}
-              >
-                <Clock className="w-5 h-5 text-blue-400" />
-              </div>
-              <div>
-                <p className="text-xs text-gray-500 mb-0.5">In Progress</p>
-                <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
-                  {stats.inProgress || 0}
-                </p>
-              </div>
-            </div>
-
-            {/* Pending */}
+            {/* Pending (from API) */}
             <div className="bg-white border border-gray-200 rounded-xl px-5 py-4 flex items-center gap-4 shadow-sm">
               <div
                 className="w-10 h-10 rounded flex items-center justify-center flex-shrink-0"
@@ -537,7 +515,7 @@ function Invitations() {
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Pending</p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
-                  {stats.pending || 18}
+                  {stats.pending}
                 </p>
               </div>
             </div>
@@ -688,10 +666,9 @@ function Invitations() {
                       const isSelected = selectedUsers.has(
                         String(invitation.id),
                       );
-                      const status =
-                        (invitation.event_invitation_users_count ?? 0) > 0
-                          ? "done"
-                          : "pending";
+                      // Status from API only: "done" | "pending"
+                      const status = (invitation.status ?? "pending").toLowerCase();
+                      const isDone = status === "done";
                       return (
                         <tr
                           key={rowKey}
@@ -734,15 +711,15 @@ function Invitations() {
                             </div>
                           </td>
                           <td className="px-4 py-4">
-                            {status === "pending" ? (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200">
-                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                                Pending
-                              </span>
-                            ) : (
+                            {isDone ? (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
                                 Done
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                                Pending
                               </span>
                             )}
                           </td>

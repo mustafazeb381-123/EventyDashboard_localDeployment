@@ -4,8 +4,14 @@ import {
   Clock,
   AlertCircle,
   Printer,
+  AlertTriangle,
 } from "lucide-react";
 import UserAvatar from "./useAvatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 // Helper functions for status display, extracted for reusability
 const getStatusIcon = (status: string) => {
@@ -107,6 +113,50 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
         <div className="text-sm text-gray-900">
           {formatDate(user.attributes?.created_at)}
         </div>
+      </td>
+      <td className="p-4">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div
+              className={`inline-flex items-center gap-1.5 cursor-default text-sm font-medium ${
+                (user.printCount ?? 0) > 1
+                  ? "text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200"
+                  : "text-gray-900"
+              }`}
+            >
+              {user.printCount ?? 0}
+              {(user.printCount ?? 0) > 1 && (
+                <AlertTriangle size={14} className="shrink-0 text-amber-600" />
+              )}
+            </div>
+          </TooltipTrigger>
+          <TooltipContent
+            side="top"
+            className="max-w-xs rounded-lg px-4 py-3 shadow-lg border bg-gray-900 text-white text-left"
+          >
+            <div className="font-semibold text-white mb-2">Print History</div>
+            {(user.printCount ?? 0) === 0 ? (
+              <p className="text-gray-300 text-xs">No prints yet</p>
+            ) : (
+              <div className="space-y-1.5 text-xs text-gray-300">
+                <div>
+                  <span className="text-gray-400">Last Printed: </span>
+                  {user.printedAt
+                    ? formatDate(user.printedAt)
+                    : "—"}
+                </div>
+                <div>
+                  <span className="text-gray-400">Printed By: </span>
+                  {user.printedBy ?? "—"}
+                </div>
+                <div>
+                  <span className="text-gray-400">Total Prints: </span>
+                  <span className="text-white font-medium">{user.printCount ?? 0}</span>
+                </div>
+              </div>
+            )}
+          </TooltipContent>
+        </Tooltip>
       </td>
       <td className="p-4">
         <div className="flex flex-col gap-1">

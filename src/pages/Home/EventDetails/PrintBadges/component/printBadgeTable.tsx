@@ -102,6 +102,9 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                 Created
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Print Count
+              </th>
+              <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Status
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
@@ -139,6 +142,9 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                       <div className="h-4 bg-gray-200 rounded w-24"></div>
                     </td>
                     <td className="p-4">
+                      <div className="h-4 bg-gray-200 rounded w-8"></div>
+                    </td>
+                    <td className="p-4">
                       <div className="h-6 bg-gray-200 rounded-full w-16"></div>
                     </td>
                     <td className="p-4">
@@ -149,7 +155,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
               </>
             ) : paginatedUsers.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-8 text-center">
+                <td colSpan={10} className="p-8 text-center">
                   <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                     <Users className="w-12 h-12 text-gray-300 mb-3" />
                     <p className="text-sm">No users found</p>

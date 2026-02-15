@@ -118,11 +118,19 @@ function PrintBadges() {
       console.log('response from getEventUsers:', response);
       const users = response.data.data || response.data || [];
       // Augment users with print-specific status fields
-      const usersWithPrintStatus = users.map((user: any) => ({
-        ...user,
-        printStatus: user.attributes?.printed ? "Printed" : "Pending",
-        printedAt: user.attributes?.printed_at || null,
-      }));
+      const usersWithPrintStatus = users.map((user: any) => {
+        const printed = user.attributes?.printed === true;
+        const printedAt = user.attributes?.printed_at || null;
+        const printCount = user.attributes?.print_count ?? (printed ? 1 : 0);
+        const printedBy = user.attributes?.printed_by ?? null;
+        return {
+          ...user,
+          printStatus: printed ? "Printed" : "Pending",
+          printedAt,
+          printCount: typeof printCount === "number" ? printCount : printed ? 1 : 0,
+          printedBy: printedBy ?? "—",
+        };
+      });
       setUsers(usersWithPrintStatus);
     } catch (error) {
       console.error("Error fetching event users:", error);
@@ -142,30 +150,46 @@ function PrintBadges() {
 
     setUpdatingPrintStatus(true);
     try {
-      // Update each user's print status
+      const now = new Date().toISOString();
+      const printedBy =
+        localStorage.getItem("current_user_name")?.trim() ||
+        localStorage.getItem("current_user_email")?.trim() ||
+        "";
+
+      // Update each user's print status (send data so backend can persist and return on next GET)
       const updatePromises = userIds.map(async (userId) => {
+        const user = eventUsers.find((u) => u.id === userId);
+        const nextPrintCount = (user?.printCount ?? user?.attributes?.print_count ?? 0) + 1;
+
         const formData = new FormData();
         formData.append("event_user[printed]", "true");
-        
+        formData.append("event_user[printed_at]", now);
+        formData.append("event_user[print_count]", String(nextPrintCount));
+        if (printedBy) formData.append("event_user[printed_by]", printedBy);
+
         const response = await updateEventUser(eventId, userId, formData);
         return response.data;
       });
 
       await Promise.all(updatePromises);
-      
+
       // Update local state to reflect the changes immediately
-      setUsers(prevUsers => 
-        prevUsers.map(user => 
-          userIds.includes(user.id) 
+      setUsers(prevUsers =>
+        prevUsers.map(user =>
+          userIds.includes(user.id)
             ? {
                 ...user,
                 attributes: {
                   ...user.attributes,
                   printed: true,
-                  printed_at: new Date().toISOString()
+                  printed_at: now,
+                  print_count: (user.attributes?.print_count ?? user.printCount ?? 0) + 1,
+                  printed_by: printedBy || user.attributes?.printed_by,
                 },
                 printStatus: "Printed",
-                printedAt: new Date().toISOString()
+                printedAt: now,
+                printCount: (user.printCount ?? 0) + 1,
+                printedBy: printedBy || user.printedBy || "—",
               }
             : user
         )
@@ -199,6 +223,14 @@ function PrintBadges() {
   const totalPages = Math.ceil(filteredUsers.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const paginatedUsers = filteredUsers.slice(startIndex, startIndex + rowsPerPage);
+
+  // Print stats for header
+  const printCount = eventUsers.filter((u) => u.attributes?.printed === true).length;
+  const lastPrintedAt = eventUsers
+    .filter((u) => u.printedAt || u.attributes?.printed_at)
+    .map((u) => new Date(u.printedAt || u.attributes?.printed_at).getTime())
+    .reduce((max, t) => (t > max ? t : max), 0);
+  const lastPrintedDate = lastPrintedAt ? new Date(lastPrintedAt) : null;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -348,6 +380,8 @@ const handlePrint = useCallback(async () => {
             filteredUsersCount={filteredUsers.length}
             selectedUsersCount={selectedUsers.size}
             searchTerm={searchTerm}
+            printCount={printCount}
+            lastPrintedAt={lastPrintedDate}
             onPreviewSelected={() => {
               if (selectedUsers.size === 0) {
                 showNotification("Please select at least one user to preview", "warning");

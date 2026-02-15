@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { X, Check, ArrowRight } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 interface PricingModalProps {
@@ -7,21 +7,21 @@ interface PricingModalProps {
   onClose: () => void;
   selectedPlan: string;
 }
+
 const PricingModal: React.FC<PricingModalProps> = ({
   isOpen,
   onClose,
   selectedPlan,
 }) => {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const [activePlan, setActivePlan] = useState<string>(selectedPlan || "");
 
+  // Sync active plan when modal opens or selectedPlan changes (e.g. Express vs Advanced from Home)
   useEffect(() => {
-    console.log("selected plan in the pricing modal :", selectedPlan);
-    // Reset to step 1 when modal opens with a new plan
-    if (isOpen) {
-      setCurrentStep(1);
+    if (isOpen && selectedPlan) {
+      setActivePlan(selectedPlan);
     }
-  }, [selectedPlan, isOpen]);
+  }, [isOpen, selectedPlan]);
 
   if (!isOpen) return null;
 
@@ -29,200 +29,195 @@ const PricingModal: React.FC<PricingModalProps> = ({
     {
       id: "express",
       name: "Express",
-      registrations: "300 registrations",
+      price: "$1000",
       features: [
-        "Up to 300 Registration",
-        "Automatic Badge Generation",
-        "Badge Printing",
-        "Email confirmations",
-        "Automatic QR Code Generation",
-        "Attendance Reports",
+        "Up to 400 Registrations",
+        "Invitations & Email Confirmations",
+        "Basic Attendance Reports",
+        "Event Registration Form",
       ],
-      buttonText: 'Get started',
-      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
+      buttonText: "Get started",
+      buttonClass: "bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white",
+      cardClass: "border-pink-200 bg-white",
     },
     {
       id: "advanced",
       name: "Advanced",
-      registrations: "300 registrations",
+      subtitle: "/ with the app",
+      price: "$2000",
       isPopular: true,
       features: [
-        "Up to 300 Registration",
-        "Landing Page",
-        "Automatic Badge Generation",
-        "Automatic QR Code Generation",
-        "Attendance Reports",
+        "Up to 400 Registrations",
+        "Fully Customized Landing Page",
+        "Badge Generation & Printing",
+        "Custom Mobile App (iOS & Android)",
+        "Advanced Reports & Full Branding",
+        "Dedicated Support",
       ],
-      buttonText: 'Get started',
-      buttonClass: 'bg-pink-500 hover:bg-pink-600 text-white cursor-pointer'
- 
-    },
-    {
-      id: "full",
-      name: "Full Package",
-      registrations: "300 registrations",
-      features: [
-        "Up to 300 Registration",
-        "Landing Page",
-        "Automatic Badge Generation",
-        "Automatic QR Code Generation",
-        "Attendance Reports",
-      ],
-      buttonText: 'Get started',
-      buttonClass: 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'
+      buttonText: "Get started",
+      buttonClass: "bg-white hover:bg-gray-50 text-[#1e3a5f]",
+      cardClass: "bg-gradient-to-b from-[#1e3a5f] to-[#2d4f7f] text-white",
     },
     {
       id: "unlimited",
       name: "Unlimited",
-      registrations: "Unlimited registrations",
+      price: "$Custom",
       features: [
-        "Up to 300 Registration",
-        "Landing Page",
-        "Automatic Badge Generation",
-        "Automatic QR Code Generation",
-        "Attendance Reports",
+        "Enterprise / Custom Plan",
+        "Advanced integrations (CRM, payment, APIs)",
+        "On-site & remote technical support",
+        "Custom reports & dashboards",
       ],
-      buttonText: 'Contact Us',
-      buttonClass: 'bg-white hover:bg-gray-50 text-slate-800 border border-slate-800 cursor-pointer'
-    }
+      buttonText: "Contact Us",
+      buttonClass: "bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white",
+      cardClass: "border-pink-200 bg-white",
+    },
   ];
 
-  // const handlePlanSelect = (planId) => {
-  //   setCurrentPlan(planId);
-  //   console.log(`Plan selected: ${planId}`);
-  // };
-
   const handleGetStarted = (plan: any) => {
-    console.log(`Get started with plan: ${plan.name}`);
-  
     if (plan.id === "express") {
-      console.log("navigating to express-event express");
-      navigate("/express-event", { state: { plan: plan.id } });
-    } else {
-      console.log("navigating to express event advance");
-      navigate("/express-event", { state: { plan: plan.id } });
+      navigate("/express-event", { state: { plan: "express" } });
+    } else if (plan.id === "advanced") {
+      // ExpressEvent page expects "advance" (no 'd'), not "advanced"
+      navigate("/express-event", { state: { plan: "advance" } });
     }
     onClose();
   };
 
-  const handleNext = () => {
-    setCurrentStep(2);
-  };
-
   const handleClose = () => {
-    setCurrentStep(1);
     onClose();
   };
 
   return (
-    <div className="fixed bg-black/50 shadow-xl inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}>
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) handleClose();
+      }}
+    >
+      <div className="bg-white rounded-3xl w-full max-w-6xl max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
-        <div className="relative p-6 border-b">
+        <div className="relative p-8 border-b">
           <div className="text-center">
-            <div className="flex items-center justify-center gap-4 mb-2">
-              <h2 className="text-2xl font-semibold text-slate-800">
-                Choose Your Plan
-              </h2>
-              <span
-                className={`${
-                  selectedPlan === "express" ? "bg-green-100" : "bg-sky-100"
-                } ${
-                  selectedPlan === "express" ? "text-green-700" : "text-sky-700"
-                } px-3 py-1 rounded-full text-sm font-medium`}
-              >
-                {selectedPlan === "express" ? "Express Event" : "Advance Event"}
-              </span>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-              <span>Choose Now,</span>
-              <span className="text-pink-500 font-medium">Pay Later</span>
+            <h2 className="text-3xl font-semibold text-slate-800 mb-2">
+              Choose Your Plan
+            </h2>
+            <div className="flex items-center justify-center gap-2 text-base">
+              <span className="text-gray-600">Choose Now,</span>
+              <span className="text-blue-500 font-medium">Pay Later</span>
             </div>
           </div>
           <button
             onClick={handleClose}
-            className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            className="absolute top-8 right-8 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
           >
-            <X size={24} />
+            <X size={28} />
           </button>
         </div>
 
         {/* Plans Grid */}
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {plans.map((plan) => (
+        <div className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {plans.map((plan) => {
+              const isActive = activePlan === plan.id;
+              return (
               <div
                 key={plan.id}
-                // onClick={() => handlePlanSelect(plan.id)}
-                className={`relative border rounded-xl p-6 transition-all duration-200 cursor-pointer flex flex-col h-full ${
-                  plan.isPopular
-                    ? "border-pink-200 bg-pink-50"
-                    : selectedPlan === plan.id
-                    ? "border-blue-300 bg-blue-50 ring-2 ring-blue-200"
-                    : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
+                role="button"
+                tabIndex={0}
+                onClick={() => setActivePlan(plan.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setActivePlan(plan.id);
+                  }
+                }}
+                className={`relative rounded-2xl p-8 transition-all duration-200 flex flex-col h-full cursor-pointer select-none ${
+                  isActive
+                    ? "bg-gradient-to-b from-[#1e3a5f] to-[#2d4f7f] text-white border-2 border-[#1e3a5f] shadow-xl"
+                    : "border-2 border-pink-200 bg-white"
+                } ${!isActive ? "hover:shadow-lg" : ""}`}
               >
                 {/* Popular Badge */}
                 {plan.isPopular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-pink-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Popular
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-white text-[#1e3a5f] px-6 py-1.5 rounded-full text-sm font-medium border-2 border-[#1e3a5f]">
+                      Most Popular
                     </span>
                   </div>
                 )}
 
-                {/* Plan Header */}
-                <div className="mb-6">
-                  <h3 className="text-xl font-semibold text-slate-800 mb-2">
-                    {plan.name}
+                {/* Price */}
+                <div className="mb-4">
+                  <h3
+                    className={`text-4xl font-bold mb-1 ${
+                      isActive ? "text-white" : "text-[#1e3a5f]"
+                    }`}
+                  >
+                    {plan.price}
                   </h3>
-                  <p className="text-gray-600 text-sm">{plan.registrations}</p>
+                </div>
+
+                {/* Plan Name */}
+                <div className="mb-6">
+                  <h4
+                    className={`text-2xl font-semibold ${
+                      isActive ? "text-white" : "text-slate-800"
+                    }`}
+                  >
+                    {plan.name}
+                    {plan.subtitle && (
+                      <span className="text-base font-normal ml-1 opacity-90">
+                        {plan.subtitle}
+                      </span>
+                    )}
+                  </h4>
                 </div>
 
                 {/* Features */}
-                <div className="flex-grow mb-6">
-                  <h4 className="text-sm font-medium text-gray-700 mb-3">
-                    What's included
-                  </h4>
-                  <ul className="space-y-3">
+                <div className="flex-grow mb-8">
+                  <ul className="space-y-4">
                     {plan.features.map((feature, index) => (
                       <li key={index} className="flex items-start gap-3">
-                        <div className="bg-slate-800 rounded-full p-1 mt-0.5 flex-shrink-0">
-                          <Check size={12} className="text-white" />
+                        <div
+                          className={`rounded-full p-1 mt-0.5 flex-shrink-0 ${
+                            isActive ? "bg-white/20" : "bg-[#1e3a5f]"
+                          }`}
+                        >
+                          <Check
+                            size={14}
+                            className="text-white"
+                          />
                         </div>
-                        <span className="text-sm text-gray-700">{feature}</span>
+                        <span
+                          className={`text-sm leading-relaxed ${
+                            isActive ? "text-white" : "text-gray-700"
+                          }`}
+                        >
+                          {feature}
+                        </span>
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Button at bottom */}
+                {/* Button */}
                 <div className="mt-auto">
-                  {currentStep === 1 && selectedPlan === plan.id ? (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNext();
-                      }}
-                      className="w-full py-3 px-4 rounded-lg font-medium transition-colors bg-slate-800 hover:bg-slate-700 text-white cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      Next
-                      <ArrowRight size={18} />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleGetStarted(plan);
-                      }}
-                      className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${plan.buttonClass || 'bg-slate-800 hover:bg-slate-700 text-white cursor-pointer'}`}
-                    >
-                      {plan.buttonText || 'Get started'}
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGetStarted(plan);
+                    }}
+                    className={`w-full py-3.5 px-6 rounded-full font-semibold transition-all duration-200 ${
+                      isActive ? "bg-white hover:bg-gray-50 text-[#1e3a5f]" : "bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white"
+                    }`}
+                  >
+                    {plan.buttonText}
+                  </button>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       </div>

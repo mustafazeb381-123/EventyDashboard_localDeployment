@@ -1,25 +1,40 @@
 import React from "react";
-import { Eye, Settings, Users as UsersIcon } from "lucide-react";
+import { Eye, Printer, Clock, Users as UsersIcon } from "lucide-react";
 
 interface PrintBadgesHeaderProps {
   filteredUsersCount: number;
   selectedUsersCount: number;
   searchTerm: string;
+  printCount: number;
+  lastPrintedAt: Date | null;
   onPreviewSelected: () => void;
   disablePreview: boolean;
   // onSettingsClick: () => void; // Add if Settings button needs functionality
 }
 
+const formatLastPrinted = (date: Date) =>
+  date.toLocaleDateString("en-US", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
 const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
   filteredUsersCount,
   selectedUsersCount,
   searchTerm,
+  printCount,
+  lastPrintedAt,
   onPreviewSelected,
   disablePreview,
 }) => {
   return (
-    <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
-      <div className="flex items-center gap-4">
+    <div className="mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
         <div className="p-3 bg-indigo-600 rounded-xl shadow-lg">
           <UsersIcon className="w-6 h-6 text-white" />
         </div>
@@ -33,9 +48,28 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
               <span className="text-indigo-600"> • Filtered results</span>
             )}
           </p>
+          {/* Print count & last printed below the subtitle */}
+          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+            <span className="flex items-center gap-1.5">
+              <Printer className="w-4 h-4 text-indigo-600" />
+              <span>
+                <span className="font-medium text-indigo-600">{printCount}</span>
+                {" "}badges printed
+              </span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-indigo-600" />
+              <span>
+                Last printed:{" "}
+                <span className="font-medium text-indigo-600">
+                  {lastPrintedAt ? formatLastPrinted(lastPrintedAt) : "Never"}
+                </span>
+              </span>
+            </span>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-3">
+        </div>
+        <div className="flex items-center gap-3">
         <button
           onClick={onPreviewSelected}
           disabled={disablePreview}
@@ -48,6 +82,7 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
           <Settings size={16} />
           Settings 
         </button> */}
+        </div>
       </div>
     </div>
   );
