@@ -32,7 +32,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
   totalPages,
   setCurrentPage,
   filteredUsersCount,
-  rowsPerPage,
+  rowsPerPage: _rowsPerPage,
   startIndex,
 }) => {
   // Logic to generate pagination numbers (kept here as it's tightly coupled with pagination UI)
@@ -163,7 +163,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                 </td>
               </tr>
             ) : (
-              paginatedUsers.map((user) => (
+              paginatedUsers.map((user, index) => (
                 <PrintBadgesTableRow
                   key={user.id}
                   user={user}
@@ -172,18 +172,19 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                   onPerformAction={handleAction}
                   loadingUserId={loadingUserId}
                   formatDate={formatDate}
+                  rowIndex={index}
                 />
               ))
             )}
           </tbody>
         </table>
       </div>
-      {filteredUsersCount >= 10 && (
+      {filteredUsersCount > 0 && (
         <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
           <div className="text-sm text-gray-600">
             Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(startIndex + rowsPerPage, filteredUsersCount)}
+              {startIndex + paginatedUsers.length}
             </span>{" "}
             of <span className="font-medium">{filteredUsersCount}</span> users
           </div>

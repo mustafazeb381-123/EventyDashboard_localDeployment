@@ -47,6 +47,7 @@ interface PrintBadgesTableRowProps {
   onPerformAction: (action: string, userId: string) => void; // Handles preview action
   loadingUserId: string | null; // ID of the user whose action is in progress
   formatDate: (dateString: string) => string;
+  rowIndex?: number; // For alternating row background (white / gray)
 }
 
 const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
@@ -56,11 +57,15 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
   onPerformAction,
   loadingUserId,
   formatDate,
+  rowIndex = 0,
 }) => {
+  const isGrayRow = rowIndex % 2 === 1;
   return (
     <tr
       key={user.id}
-      className="hover:bg-gray-50/50 transition-colors group relative"
+      className={`transition-colors group relative hover:bg-gray-100/70 ${
+        isGrayRow ? "bg-gray-50" : "bg-white"
+      }`}
     >
       <td className="p-4">
         <input
@@ -70,7 +75,7 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
           onChange={() => onSelect(user.id)}
         />
       </td>
-      <td className="p-4 text-sm font-mono text-gray-900">#{user.id}</td>
+      <td className="p-4 text-sm font-mono text-gray-900">{user.id}</td>
       <td className="p-4">
         <div className="flex items-center gap-3">
           <UserAvatar user={user} size="table" />
@@ -87,7 +92,7 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
 
           {/* Use flexible UserAvatar */}
           <div>
-            <div className="font-medium text-gray-900">
+            <div className="text-sm font-medium text-gray-900">
               {user.attributes?.name || "Unknown"}
             </div>
             <div className="text-sm text-gray-500">{user.department}</div>
@@ -110,9 +115,9 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
         </div>
       </td>
       <td className="p-4">
-        <div className="text-sm text-gray-900">
+        <span className="text-sm text-gray-900 whitespace-nowrap">
           {formatDate(user.attributes?.created_at)}
-        </div>
+        </span>
       </td>
       <td className="p-4">
         <Tooltip>
@@ -132,7 +137,7 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
           </TooltipTrigger>
           <TooltipContent
             side="top"
-            className="max-w-xs rounded-lg px-4 py-3 shadow-lg border bg-gray-900 text-white text-left"
+            className="max-w-xs rounded-lg p-4 shadow-lg border bg-gray-900 text-white text-left"
           >
             <div className="font-semibold text-white mb-2">Print History</div>
             {(user.printCount ?? 0) === 0 ? (
@@ -171,9 +176,9 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
             </span>
           </span>
           {user.printedAt && (
-            <div className="text-xs text-gray-500">
+            <span className="text-xs text-gray-500 whitespace-nowrap">
               {formatDate(user.printedAt)}
-            </div>
+            </span>
           )}
         </div>
       </td>

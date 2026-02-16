@@ -114,11 +114,35 @@ function PrintBadges() {
   const fetchUsers = async (id: string) => {
     setLoadingUsers(true);
     try {
-      const response = await getEventUsers(id);
-      console.log('response from getEventUsers:', response);
-      const users = response.data.data || response.data || [];
+      // Use per_page=10 so API returns correct total_pages (e.g. 12 users -> 2 pages). Larger per_page can be capped by backend and total_pages can be wrong.
+      const perPage = 10;
+      const first = await getEventUsers(id, { page: 1, per_page: perPage });
+      const paginationMeta =
+        first.data?.meta?.pagination || first.data?.pagination;
+      const totalPages = paginationMeta?.total_pages ?? 1;
+      const firstData = first.data?.data || first.data;
+      const firstUsers = Array.isArray(firstData)
+        ? firstData
+        : firstData?.data || [];
+      const allUsers: any[] = [...firstUsers];
+
+      if (totalPages > 1) {
+        const pagePromises = [];
+        for (let p = 2; p <= totalPages; p++) {
+          pagePromises.push(
+            getEventUsers(id, { page: p, per_page: perPage })
+          );
+        }
+        const rest = await Promise.all(pagePromises);
+        rest.forEach((r) => {
+          const data = r.data?.data || r.data;
+          const users = Array.isArray(data) ? data : data?.data || [];
+          allUsers.push(...users);
+        });
+      }
+
       // Augment users with print-specific status fields
-      const usersWithPrintStatus = users.map((user: any) => {
+      const usersWithPrintStatus = allUsers.map((user: any) => {
         const printed = user.attributes?.printed === true;
         const printedAt = user.attributes?.printed_at || null;
         const printCount = user.attributes?.print_count ?? (printed ? 1 : 0);
@@ -206,12 +230,17 @@ function PrintBadges() {
     }
   };
 
-  // --- Filtering and Pagination Logic ---
+  // --- Filtering and Pagination Logic (all users loaded; filter + paginate client-side like Registered Users) ---
   const filteredUsers = eventUsers.filter((user) => {
+    const searchLower = searchTerm.toLowerCase().trim();
     const matchesSearch =
-      user.attributes?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.attributes?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.attributes?.organization?.toLowerCase().includes(searchTerm.toLowerCase());
+      !searchLower ||
+      (user.attributes?.name?.toLowerCase().includes(searchLower)) ||
+      (user.attributes?.email?.toLowerCase().includes(searchLower)) ||
+      (user.attributes?.organization?.toLowerCase().includes(searchLower)) ||
+      (user.attributes?.custom_fields?.title?.toLowerCase().includes(searchLower)) ||
+      ((user.attributes?.user_type ?? "").toLowerCase().includes(searchLower)) ||
+      (user.attributes?.phone_number?.toLowerCase().includes(searchLower));
 
     const matchesStatus =
       statusFilter === "all" ||
@@ -311,18 +340,19 @@ function PrintBadges() {
     setUserToDelete(null);
   };
 
-  // Helper for formatting dates
+  // Helper for formatting dates: one row like "Jan 15, 2026, 04:13 PM"
   const formatDate = useCallback((dateString: string) => {
     if (!dateString) return "-";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
+    const month = date.toLocaleString("en-US", { month: "short" });
+    const day = date.getDate();
+    const year = date.getFullYear();
+    const time = date.toLocaleString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: true,
     });
+    return `${month} ${day}, ${year}, ${time}`;
   }, []);
 
   // Determine which users to show in the preview modal
