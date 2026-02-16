@@ -681,7 +681,7 @@ function Invitations() {
                           </td>
                           <td className="px-4 py-4">
                             <span className="text-sm font-semibold text-gray-700">
-                              #{invitation.id}
+                              {invitation.id}
                             </span>
                           </td>
                           <td className="px-4 py-4">

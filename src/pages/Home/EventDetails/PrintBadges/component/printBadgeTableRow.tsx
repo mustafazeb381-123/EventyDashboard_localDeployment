@@ -5,6 +5,7 @@ import {
   AlertCircle,
   Printer,
   AlertTriangle,
+  Edit,
 } from "lucide-react";
 import UserAvatar from "./useAvatar";
 import {
@@ -111,7 +112,9 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
       </td>
       <td className="p-4">
         <div className="text-sm text-gray-900">
-          {user.attributes?.organization || "No organization"}
+          {user.attributes?.organization ??
+            user.attributes?.custom_fields?.title ??
+            "N/A"}
         </div>
       </td>
       <td className="p-4">
@@ -123,10 +126,12 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <div
-              className={`inline-flex items-center gap-1.5 cursor-default text-sm font-medium ${
+              className={`inline-flex items-center gap-1.5 cursor-default px-3 py-1 rounded-full text-xs font-medium border ${
                 (user.printCount ?? 0) > 1
-                  ? "text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200"
-                  : "text-gray-900"
+                  ? "text-amber-700 bg-amber-50 border-amber-200"
+                  : (user.printCount ?? 0) === 1
+                    ? "text-indigo-700 bg-indigo-50 border-indigo-200"
+                    : "text-gray-600 bg-gray-50 border-gray-200"
               }`}
             >
               {user.printCount ?? 0}
@@ -164,23 +169,16 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
         </Tooltip>
       </td>
       <td className="p-4">
-        <div className="flex flex-col gap-1">
-          <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-              user.printStatus
-            )}`}
-          >
-            <span className="flex items-center gap-1.5">
-              {getStatusIcon(user.printStatus)}
-              {user.printStatus}
-            </span>
+        <span
+          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(
+            user.printStatus
+          )}`}
+        >
+          <span className="flex items-center gap-1.5">
+            {getStatusIcon(user.printStatus)}
+            {user.printStatus}
           </span>
-          {user.printedAt && (
-            <span className="text-xs text-gray-500 whitespace-nowrap">
-              {formatDate(user.printedAt)}
-            </span>
-          )}
-        </div>
+        </span>
       </td>
       <td className="p-4">
         {/* <button
@@ -206,6 +204,20 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
     </>
   )}
 </button>
+      </td>
+      <td className="p-4">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPerformAction("edit", user.id);
+          }}
+          disabled={loadingUserId === user.id}
+          className="inline-flex items-center justify-center w-9 h-9 text-gray-600 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Edit user"
+        >
+          <Edit size={18} />
+        </button>
       </td>
     </tr>
   );

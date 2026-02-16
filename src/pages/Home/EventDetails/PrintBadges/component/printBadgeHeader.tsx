@@ -42,18 +42,27 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
             Manage Badges
           </h1>
-          <p className="text-gray-600 mt-1">
-            {filteredUsersCount} users • {selectedUsersCount} selected
+          <p className="text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
+              {filteredUsersCount}
+            </span>
+            users •{" "}
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
+              {selectedUsersCount}
+            </span>
+            selected
             {searchTerm && (
               <span className="text-indigo-600"> • Filtered results</span>
             )}
           </p>
-          {/* Print count & last printed below the subtitle */}
+          {/* Print count & last printed below the subtitle - full-rounded badge like Printed/Pending */}
           <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
             <span className="flex items-center gap-1.5">
               <Printer className="w-4 h-4 text-indigo-600" />
               <span>
-                <span className="font-medium text-indigo-600">{printCount}</span>
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
+                  {printCount}
+                </span>
                 {" "}badges printed
               </span>
             </span>
@@ -61,7 +70,7 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
               <Clock className="w-4 h-4 text-indigo-600" />
               <span>
                 Last printed:{" "}
-                <span className="font-medium text-indigo-600">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
                   {lastPrintedAt ? formatLastPrinted(lastPrintedAt) : "Never"}
                 </span>
               </span>
@@ -76,7 +85,11 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
           className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium shadow-lg shadow-indigo-600/25 hover:shadow-xl hover:shadow-indigo-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
         >
           <Eye size={18} />
-          Preview Selected ({selectedUsersCount})
+          Preview Selected (
+          <span className="inline-flex items-center min-w-[1.5rem] justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 border border-white/30">
+            {selectedUsersCount}
+          </span>
+          )
         </button>
         {/* <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
           <Settings size={16} />
