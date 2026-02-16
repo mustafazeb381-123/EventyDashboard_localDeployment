@@ -8,6 +8,8 @@ import {
   Heading,
   Minus,
   Code,
+  Eye,
+  Copy,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
@@ -81,6 +83,9 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
   );
   const [isSaving, setIsSaving] = useState(false);
   const [showVariables, setShowVariables] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showCodeModal, setShowCodeModal] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const footerInputRef = useRef<HTMLInputElement>(null);
@@ -139,6 +144,18 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     }
   };
 
+  const handleCopyCode = () => {
+    const json = JSON.stringify(
+      { title: templateName, formFields, theme, languageConfig },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(json).then(() => {
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-100">
       {/* Header */}
@@ -157,6 +174,24 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
             />
           </div>
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowPreviewModal(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
+              title="Preview"
+            >
+              <Eye size={18} />
+              Preview
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowCodeModal(true)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm font-medium"
+              title="See code"
+            >
+              <Code size={18} />
+              Code
+            </button>
             <button
               type="button"
               onClick={() => setShowThemePanel(!showThemePanel)}
@@ -360,6 +395,91 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           />
         )}
       </div>
+
+      {/* Preview modal – full preview while building */}
+      {showPreviewModal && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setShowPreviewModal(false);
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800">Preview</h3>
+              <button
+                type="button"
+                onClick={() => setShowPreviewModal(false)}
+                className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto p-6 bg-slate-50">
+              <div className="max-w-md mx-auto">
+                <RsvpFormPreview
+                  formFields={formFields}
+                  theme={theme}
+                  currentLanguage={languageConfig.primaryLanguage ?? "en"}
+                  visibleOnly={true}
+                  variableMode={false}
+                  showActionButtons={true}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Code modal – form definition as JSON */}
+      {showCodeModal && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) setShowCodeModal(false);
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800">Code</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+                >
+                  <Copy size={16} />
+                  {codeCopied ? "Copied!" : "Copy"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCodeModal(false)}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  aria-label="Close"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto p-4">
+              <pre className="text-xs font-mono text-slate-800 bg-slate-50 p-4 rounded-xl overflow-x-auto whitespace-pre-wrap break-words max-h-[70vh]">
+                {JSON.stringify(
+                  { title: templateName, formFields, theme, languageConfig },
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
