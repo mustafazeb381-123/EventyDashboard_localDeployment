@@ -208,6 +208,19 @@ export const sendTestInvitationEmail = (
 };
 
 /**
+ * Duplicate an event invitation.
+ * POST /events/{event_id}/event_invitations/{id}/duplicate
+ */
+export const duplicateEventInvitation = (
+  eventId: string | number,
+  invitationId: string | number
+) => {
+  return axiosInstance.post<{ message: string }>(
+    `/events/${eventId}/event_invitations/${invitationId}/duplicate`
+  );
+};
+
+/**
  * Record RSVP response (public endpoint; may use different base or no auth).
  * POST /api_dashboard/v1/event_invitations/rsvp_response?rsvp_token=...&rsvp_response=accepted|declined|maybe
  */

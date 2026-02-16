@@ -34,7 +34,7 @@ function PrintBadges() {
     type: "success" | "error" | "warning" | "info";
   } | null>(null);
 
-  const rowsPerPage = 8;
+  const rowsPerPage = 10;
 
   // Integrate the custom print styles hook
   usePrintStyles("badges-print-container", isPrinting);

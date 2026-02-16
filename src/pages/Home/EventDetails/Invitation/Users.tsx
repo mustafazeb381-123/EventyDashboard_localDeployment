@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Plus,
@@ -19,7 +19,7 @@ import {
 import { getEventbyId, sendCredentials } from "@/apis/apiHelpers";
 import {
   getEventInvitations,
-  deleteEventInvitation,
+  duplicateEventInvitation,
   type EventInvitation,
 } from "@/apis/invitationService";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -180,23 +180,19 @@ function Invitations() {
   const [actionsMenuOpenId, setActionsMenuOpenId] = useState<string | null>(
     null,
   );
-  const actionsMenuRef = useRef<HTMLDivElement>(null);
+  const [actionsTriggerRect, setActionsTriggerRect] = useState<DOMRect | null>(
+    null,
+  );
+  const [cloningInvitationId, setCloningInvitationId] = useState<string | null>(
+    null,
+  );
 
   const itemsPerPage = 10;
 
-  // Close actions menu when clicking outside (use 'click' so menu open state + ref are set before we check)
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        actionsMenuRef.current &&
-        !actionsMenuRef.current.contains(e.target as Node)
-      ) {
-        setActionsMenuOpenId(null);
-      }
-    };
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
+  const closeActionsMenu = () => {
+    setActionsMenuOpenId(null);
+    setActionsTriggerRect(null);
+  };
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -536,10 +532,10 @@ function Invitations() {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
               />
             </div>
-            <div className="relative">
+            <div className="relative w-full sm:w-40">
               <select
                 value={filterType}
                 onChange={(e) => {
@@ -547,17 +543,14 @@ function Invitations() {
                   setCurrentPage(1);
                 }}
                 disabled={loadingInvitations}
-                className="appearance-none pl-4 pr-9 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 min-w-[140px] cursor-pointer"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm disabled:opacity-50 cursor-pointer"
               >
                 <option value="all">All Types</option>
                 <option value="email">Email</option>
                 <option value="sms">SMS</option>
                 <option value="whatsapp">WhatsApp</option>
               </select>
-              <ChevronDown
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-                size={15}
-              />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
             </div>
           </div>
 
@@ -744,87 +737,171 @@ function Invitations() {
                               >
                                 <Eye size={16} />
                               </button>
-                              <div
-                                className="relative inline-block"
-                                ref={
-                                  actionsMenuOpenId === rowKey
-                                    ? actionsMenuRef
-                                    : undefined
-                                }
-                              >
+                              <div className="relative inline-block">
                                 <button
                                   type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setActionsMenuOpenId(
-                                      actionsMenuOpenId === rowKey
-                                        ? null
-                                        : rowKey,
-                                    );
+                                    if (actionsMenuOpenId === rowKey) {
+                                      closeActionsMenu();
+                                    } else {
+                                      setActionsMenuOpenId(rowKey);
+                                      setActionsTriggerRect(
+                                        (
+                                          e.currentTarget as HTMLElement
+                                        ).getBoundingClientRect(),
+                                      );
+                                    }
                                   }}
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                   title="More actions"
                                 >
                                   <MoreVertical size={16} />
                                 </button>
-                                {actionsMenuOpenId === rowKey && (
-                                  <div className="absolute right-0 top-full mt-1 z-[100] min-w-[180px] py-1 bg-white border border-gray-200 rounded-xl shadow-lg">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const eventIdToPass = actualEventId || eventId;
-                                        navigate(
-                                          `/invitation/report/${invitation.id}`,
-                                          {
-                                            state: {
-                                              invitationName: invitation.title,
-                                              createdAt: formatInvitationDate(
-                                                invitation.created_at,
-                                              ),
-                                              eventId: eventIdToPass ?? undefined,
-                                            },
-                                          },
-                                        );
-                                        setActionsMenuOpenId(null);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                                    >
-                                      <BarChart2
-                                        size={15}
-                                        className="text-orange-500 flex-shrink-0"
+                                {actionsMenuOpenId === rowKey &&
+                                  actionsTriggerRect && (
+                                    <>
+                                      <div
+                                        className="fixed inset-0 z-10"
+                                        aria-hidden
+                                        onClick={closeActionsMenu}
                                       />
-                                      Invitation Report
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const eventIdToPass = actualEventId || eventId;
-                                        navigate(
-                                          `/invitation/edit/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`,
-                                        );
-                                        setActionsMenuOpenId(null);
-                                      }}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                                    >
-                                      <Pencil
-                                        size={15}
-                                        className="text-green-600 flex-shrink-0"
-                                      />
-                                      Edit
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => setActionsMenuOpenId(null)}
-                                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 text-left"
-                                    >
-                                      <Copy
-                                        size={15}
-                                        className="text-pink-500 flex-shrink-0"
-                                      />
-                                      Clone
-                                    </button>
-                                  </div>
-                                )}
+                                      <div
+                                        className="fixed z-20 w-[208px] min-w-[200px] bg-white border border-gray-200 rounded-xl shadow-xl py-1.5 flex flex-col"
+                                        style={(() => {
+                                          const GAP = 6;
+                                          const PAD = 8;
+                                          const menuH = 180;
+                                          const openBelow =
+                                            actionsTriggerRect.bottom +
+                                              menuH +
+                                              GAP <=
+                                            window.innerHeight - PAD;
+                                          const top = openBelow
+                                            ? actionsTriggerRect.bottom + GAP
+                                            : Math.max(
+                                                PAD,
+                                                actionsTriggerRect.top -
+                                                  menuH -
+                                                  GAP,
+                                              );
+                                          let left =
+                                            actionsTriggerRect.right - 208;
+                                          left = Math.max(
+                                            PAD,
+                                            Math.min(
+                                              left,
+                                              window.innerWidth - 208 - PAD,
+                                            ),
+                                          );
+                                          return { top, left };
+                                        })()}
+                                      >
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const eventIdToPass =
+                                              actualEventId || eventId;
+                                            navigate(
+                                              `/invitation/report/${invitation.id}`,
+                                              {
+                                                state: {
+                                                  invitationName:
+                                                    invitation.title,
+                                                  createdAt:
+                                                    formatInvitationDate(
+                                                      invitation.created_at,
+                                                    ),
+                                                  eventId:
+                                                    eventIdToPass ?? undefined,
+                                                },
+                                              },
+                                            );
+                                            closeActionsMenu();
+                                          }}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                        >
+                                          <BarChart2
+                                            size={15}
+                                            className="text-orange-500 flex-shrink-0"
+                                          />
+                                          Invitation Report
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const eventIdToPass =
+                                              actualEventId || eventId;
+                                            navigate(
+                                              `/invitation/edit/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`,
+                                            );
+                                            closeActionsMenu();
+                                          }}
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left"
+                                        >
+                                          <Pencil
+                                            size={15}
+                                            className="text-green-600 flex-shrink-0"
+                                          />
+                                          Edit
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={async () => {
+                                            const idToUse =
+                                              actualEventId || eventId;
+                                            if (!idToUse) {
+                                              showNotification(
+                                                "Event ID is missing.",
+                                                "error",
+                                              );
+                                              return;
+                                            }
+                                            setCloningInvitationId(rowKey);
+                                            try {
+                                              await duplicateEventInvitation(
+                                                idToUse,
+                                                invitation.id,
+                                              );
+                                              showNotification(
+                                                "Event invitation duplicated successfully",
+                                                "success",
+                                              );
+                                              closeActionsMenu();
+                                              fetchInvitations(
+                                                idToUse,
+                                                currentPage,
+                                              );
+                                            } catch (err: unknown) {
+                                              const msg =
+                                                (err as { response?: { data?: { message?: string; error?: string } } })
+                                                  ?.response?.data?.message ||
+                                                (err as { response?: { data?: { error?: string } } })?.response?.data
+                                                  ?.error ||
+                                                "Failed to duplicate invitation.";
+                                              showNotification(msg, "error");
+                                            } finally {
+                                              setCloningInvitationId(null);
+                                            }
+                                          }}
+                                          disabled={
+                                            cloningInvitationId === rowKey
+                                          }
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-left"
+                                        >
+                                          {cloningInvitationId === rowKey ? (
+                                            <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-pink-500 rounded-full animate-spin shrink-0" />
+                                          ) : (
+                                            <Copy
+                                              size={15}
+                                              className="text-pink-500 flex-shrink-0"
+                                            />
+                                          )}
+                                          Clone
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
                               </div>
                             </div>
                           </td>
@@ -836,71 +913,91 @@ function Invitations() {
               </table>
             </div>
 
-            {/* ── Pagination Footer (show when there is data; page controls when totalCount >= 10 / multiple pages) ── */}
-            {(totalCount > 0 || listToShow.length > 0) && (
-              <div className="border-t border-gray-200 px-5 py-3 bg-white">
-                <div className="flex items-center justify-between">
-                  {/* Left: count info */}
-                  <p className="text-sm text-gray-500">
-                    {totalCount === 0
-                      ? `Showing ${listToShow.length} invitation${listToShow.length !== 1 ? "s" : ""}`
-                      : (() => {
-                          const page = invitationPagination?.current_page ?? 1;
-                          const per =
-                            invitationPagination?.per_page ?? itemsPerPage;
-                          const start = (page - 1) * per + 1;
-                          const end = Math.min(page * per, totalCount);
-                          return `Showing ${start} to ${end} of ${totalCount} invitations`;
-                        })()}
-                  </p>
-
-                  {/* Center: page buttons — only when more than one page (e.g. totalCount >= 10) */}
-                  {totalPages > 1 && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() =>
-                          currentPage > 1 && handlePageChange(currentPage - 1)
-                        }
-                        disabled={currentPage === 1}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        ← Previous
-                      </button>
-
-                      <div className="flex items-center gap-1">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                          (page) => (
-                            <button
-                              key={page}
-                              onClick={() => handlePageChange(page)}
-                              className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${
-                                page === currentPage
-                                  ? "bg-blue-600 text-white shadow-sm"
-                                  : "text-gray-600 hover:bg-gray-100"
-                              }`}
-                            >
-                              {page}
-                            </button>
-                          ),
+            {/* ── Pagination Footer (always show when not loading, like RegisterdUser) ── */}
+            {!loadingInvitations && (
+              <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
+                <div className="text-sm text-gray-600">
+                  {invitationPagination ? (
+                    <>
+                      Showing{" "}
+                      <span className="font-medium">
+                        {(currentPage - 1) * itemsPerPage + 1}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-medium">
+                        {Math.min(
+                          currentPage * itemsPerPage,
+                          totalCount || listToShow.length,
                         )}
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          currentPage < totalPages &&
-                          handlePageChange(currentPage + 1)
-                        }
-                        disabled={currentPage === totalPages}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                      >
-                        Next →
-                      </button>
-                    </div>
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-medium">
+                        {totalCount || listToShow.length}
+                      </span>{" "}
+                      invitations
+                    </>
+                  ) : (
+                    <>
+                      Showing{" "}
+                      <span className="font-medium">
+                        {listToShow.length === 0 ? 0 : 1}
+                      </span>{" "}
+                      to{" "}
+                      <span className="font-medium">
+                        {listToShow.length}
+                      </span>{" "}
+                      of{" "}
+                      <span className="font-medium">
+                        {listToShow.length}
+                      </span>{" "}
+                      invitations
+                    </>
                   )}
-
-                  {/* Right: spacer when page controls shown, else empty */}
-                  <div className={totalPages > 1 ? "w-[120px]" : ""} />
                 </div>
+                {/* Pagination controls — only when 10+ invitations (multiple pages), like RegisterdUser */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() =>
+                        currentPage > 1 && handlePageChange(currentPage - 1)
+                      }
+                      disabled={currentPage === 1}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      ← Previous
+                    </button>
+
+                    <div className="flex items-center gap-1">
+                      {Array.from(
+                        { length: totalPages },
+                        (_, i) => i + 1,
+                      ).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => handlePageChange(page)}
+                          className={`w-8 h-8 rounded-lg text-sm font-semibold transition-colors ${
+                            page === currentPage
+                              ? "bg-blue-600 text-white shadow-sm"
+                              : "text-gray-600 hover:bg-gray-100"
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() =>
+                        currentPage < totalPages &&
+                        handlePageChange(currentPage + 1)
+                      }
+                      disabled={currentPage === totalPages}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
