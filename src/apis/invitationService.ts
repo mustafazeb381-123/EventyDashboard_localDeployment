@@ -90,6 +90,8 @@ export interface EventInvitationPayload {
     scheduled_send_time?: string;
     enable_rsvp?: boolean;
     is_vip_invitation?: boolean;
+    /** RSVP form template as JSON string (formFields, theme, languageConfig) */
+    rsvp_template?: string;
     resend_invitations?: boolean;
     user_import_object?: UserImportItem[];
   };

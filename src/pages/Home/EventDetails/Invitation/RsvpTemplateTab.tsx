@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Plus, Edit, Trash2 } from "lucide-react";
+import { Check, X, Plus, Edit, Trash2, Eye, Code, Copy } from "lucide-react";
 import { RsvpFormBuilder } from "./rsvpFormBuilder/RsvpFormBuilder";
 import { RsvpFormPreview } from "./rsvpFormBuilder/RsvpFormPreview";
 import type {
@@ -12,21 +12,87 @@ import type {
 type RsvpTemplateTabProps = {
   rsvpEmailSubject: string;
   setRsvpEmailSubject: (value: string) => void;
+  /** Initial RSVP template JSON from API (event_invitations.rsvp_template) */
+  initialRsvpTemplate?: string | null;
+  /** Called when the selected RSVP template changes; pass JSON string for API */
+  onRsvpTemplateChange?: (rsvpTemplateJson: string | null) => void;
 };
+
+/** Serialize confirmed template to JSON string for API (title, formFields, theme, languageConfig) */
+function serializeRsvpTemplate(template: RsvpFormBuilderTemplate): string {
+  return JSON.stringify({
+    title: template.title,
+    formFields: template.formFields,
+    theme: template.theme,
+    languageConfig: template.languageConfig,
+  });
+}
 
 /** RSVP Template Tab – same flow as AdvanceRegistration: Custom Builder card + saved templates only. No default templates. No API calls (you will wire APIs later). */
 export function RsvpTemplateTab({
   rsvpEmailSubject: _rsvpEmailSubject,
   setRsvpEmailSubject: _setRsvpEmailSubject,
+  initialRsvpTemplate = null,
+  onRsvpTemplateChange,
 }: RsvpTemplateTabProps) {
   // Saved RSVP Form Builder templates (local state only; replace with API when ready)
   const [rsvpFormBuilderTemplates, setRsvpFormBuilderTemplates] = useState<
     RsvpFormBuilderTemplate[]
-  >([]);
+  >(() => {
+    if (!initialRsvpTemplate || typeof initialRsvpTemplate !== "string" || !initialRsvpTemplate.trim())
+      return [];
+    try {
+      const parsed = JSON.parse(initialRsvpTemplate) as {
+        title?: string;
+        formFields?: RsvpFormField[];
+        theme?: RsvpTheme;
+        languageConfig?: RsvpLanguageConfig;
+      };
+      if (!parsed || typeof parsed !== "object") return [];
+      const now = new Date().toISOString();
+      const id = "rsvp-template-initial";
+      const template: RsvpFormBuilderTemplate = {
+        id,
+        title: parsed.title ?? "RSVP Template",
+        formFields: Array.isArray(parsed.formFields) ? parsed.formFields : [],
+        theme: parsed.theme ?? {},
+        languageConfig: parsed.languageConfig ?? { languageMode: "single", primaryLanguage: "en" },
+        createdAt: now,
+        updatedAt: now,
+      };
+      return [template];
+    } catch {
+      return [];
+    }
+  });
   // Which template is selected / "in use" (for preview and submission)
   const [confirmedTemplate, setConfirmedTemplate] = useState<string | null>(
-    null
+    () => {
+      if (!initialRsvpTemplate || typeof initialRsvpTemplate !== "string" || !initialRsvpTemplate.trim())
+        return null;
+      try {
+        JSON.parse(initialRsvpTemplate);
+        return "rsvp-template-initial";
+      } catch {
+        return null;
+      }
+    }
   );
+
+  // Whenever confirmed template or its data changes, notify parent with JSON string for API
+  useEffect(() => {
+    if (!onRsvpTemplateChange) return;
+    if (!confirmedTemplate) {
+      onRsvpTemplateChange(null);
+      return;
+    }
+    const template = rsvpFormBuilderTemplates.find((t) => t.id === confirmedTemplate);
+    if (template) {
+      onRsvpTemplateChange(serializeRsvpTemplate(template));
+    } else {
+      onRsvpTemplateChange(null);
+    }
+  }, [confirmedTemplate, rsvpFormBuilderTemplates, onRsvpTemplateChange]);
 
   // Custom Form Builder modal
   const [isCustomFormBuilderOpen, setIsCustomFormBuilderOpen] = useState(false);
@@ -40,10 +106,16 @@ export function RsvpTemplateTab({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Preview modal (click template card → preview → "Use This Template")
+  // Preview modal (click template card or Preview button → preview → "Use This Template")
   const [previewTemplate, setPreviewTemplate] =
     useState<RsvpFormBuilderTemplate | null>(null);
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+
+  // Code modal – show form definition as JSON
+  const [codeTemplate, setCodeTemplate] =
+    useState<RsvpFormBuilderTemplate | null>(null);
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Notification (same pattern as AdvanceRegistration)
   const [notification, setNotification] = useState<{
@@ -168,6 +240,34 @@ export function RsvpTemplateTab({
     setPreviewTemplate(null);
   };
 
+  const handleOpenPreview = (template: RsvpFormBuilderTemplate) => {
+    setPreviewTemplate(template);
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleOpenCode = (template: RsvpFormBuilderTemplate) => {
+    setCodeTemplate(template);
+    setIsCodeModalOpen(true);
+  };
+
+  const handleCopyCode = () => {
+    if (!codeTemplate) return;
+    const json = JSON.stringify(
+      {
+        title: codeTemplate.title,
+        formFields: codeTemplate.formFields,
+        theme: codeTemplate.theme,
+        languageConfig: codeTemplate.languageConfig,
+      },
+      null,
+      2
+    );
+    navigator.clipboard.writeText(json).then(() => {
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 2000);
+    });
+  };
+
   return (
     <div className="space-y-10">
       {/* RSVP template grid – Custom Builder first, then saved templates only (no default templates) */}
@@ -209,7 +309,29 @@ export function RsvpTemplateTab({
                     : "border-slate-200 hover:border-indigo-500"
                 }`}
               >
-                <div className="absolute top-2 right-2 flex gap-1 z-10">
+                <div className="absolute top-2 right-2 flex flex-wrap gap-1 z-10">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenPreview(template);
+                    }}
+                    className="p-1.5 bg-white rounded-lg shadow-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                    title="Preview"
+                  >
+                    <Eye size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenCode(template);
+                    }}
+                    className="p-1.5 bg-white rounded-lg shadow-sm text-slate-600 hover:bg-slate-50 transition-colors"
+                    title="See code"
+                  >
+                    <Code size={14} />
+                  </button>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -397,6 +519,65 @@ export function RsvpTemplateTab({
               }
               visibleOnly={true}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Code modal – form definition as JSON */}
+      {isCodeModalOpen && codeTemplate && (
+        <div
+          className="fixed inset-0 bg-slate-900/50 flex items-center justify-center p-4 z-50"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setIsCodeModalOpen(false);
+              setCodeTemplate(null);
+            }
+          }}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800">
+                Code – {codeTemplate.title}
+              </h3>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyCode}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
+                >
+                  <Copy size={16} />
+                  {codeCopied ? "Copied!" : "Copy"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCodeModalOpen(false);
+                    setCodeTemplate(null);
+                  }}
+                  className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
+                  aria-label="Close"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+            <div className="flex-1 min-h-0 overflow-auto p-4">
+              <pre className="text-xs font-mono text-slate-800 bg-slate-50 p-4 rounded-xl overflow-x-auto whitespace-pre-wrap break-words max-h-[70vh]">
+                {JSON.stringify(
+                  {
+                    title: codeTemplate.title,
+                    formFields: codeTemplate.formFields,
+                    theme: codeTemplate.theme,
+                    languageConfig: codeTemplate.languageConfig,
+                  },
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
           </div>
         </div>
       )}

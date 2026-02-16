@@ -142,6 +142,10 @@ function NewInvitation() {
   const [isSending, setIsSending] = useState(false);
   const [sendProgress, setSendProgress] = useState(0);
   const [rsvpEmailSubject, setRsvpEmailSubject] = useState("");
+  /** RSVP template JSON string for API (event_invitation.rsvp_template) */
+  const [rsvpTemplateString, setRsvpTemplateString] = useState<string | null>(null);
+  /** When editing: initial rsvp_template from API to restore RSVP tab */
+  const [initialRsvpTemplateFromApi, setInitialRsvpTemplateFromApi] = useState<string | null>(null);
 
   useEffect(() => {
     const id = searchParams.get("eventId");
@@ -215,6 +219,13 @@ function NewInvitation() {
         phone_number: String(u?.phone_number ?? ""),
       }));
       setParsedInvitees(parsed);
+      const rsvpTemplate = attrs.rsvp_template;
+      setInitialRsvpTemplateFromApi(
+        typeof rsvpTemplate === "string" && rsvpTemplate.trim() ? rsvpTemplate : null
+      );
+      if (typeof rsvpTemplate === "string" && rsvpTemplate.trim()) {
+        setRsvpTemplateString(rsvpTemplate);
+      }
     }
 
     getEventInvitation(eventId, invitationIdFromRoute)
@@ -389,6 +400,7 @@ function NewInvitation() {
           : undefined,
         enable_rsvp: enableRsvp,
         is_vip_invitation: isVipInvitation,
+        rsvp_template: rsvpTemplateString ?? undefined,
         resend_invitations: isEditMode && hasUserImport,
         send_to: sendTo,
         user_import_object: hasUserImport ? userImportObject : undefined,
@@ -647,6 +659,8 @@ function NewInvitation() {
                   <RsvpTemplateTab
                     rsvpEmailSubject={rsvpEmailSubject}
                     setRsvpEmailSubject={setRsvpEmailSubject}
+                    initialRsvpTemplate={initialRsvpTemplateFromApi}
+                    onRsvpTemplateChange={setRsvpTemplateString}
                   />
                 )}
 
