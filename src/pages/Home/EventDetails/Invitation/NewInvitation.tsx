@@ -659,8 +659,9 @@ function NewInvitation() {
                   <RsvpTemplateTab
                     rsvpEmailSubject={rsvpEmailSubject}
                     setRsvpEmailSubject={setRsvpEmailSubject}
-                    initialRsvpTemplate={initialRsvpTemplateFromApi}
+                    initialRsvpTemplate={rsvpTemplateString ?? initialRsvpTemplateFromApi ?? null}
                     onRsvpTemplateChange={setRsvpTemplateString}
+                    eventId={eventId}
                   />
                 )}
 

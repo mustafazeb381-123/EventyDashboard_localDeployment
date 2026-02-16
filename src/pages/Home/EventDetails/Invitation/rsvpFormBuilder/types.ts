@@ -1,9 +1,8 @@
 /**
- * RSVP Template Editor types – simplified text editor with styling
- * plus header banner and footer banner.
+ * RSVP Template Editor types – content blocks (text only) plus header/footer.
  */
 
-/** Text element types – only text-based elements (no form inputs) */
+/** Text element types – paragraph, heading, divider */
 export type RsvpFieldType = "paragraph" | "heading" | "divider";
 
 export interface RsvpFormField {
@@ -150,12 +149,12 @@ export interface RsvpFormBuilderTemplate {
   updatedAt?: string;
 }
 
-/** Default text elements: empty – user adds text elements */
+/** Default: empty – user adds content elements */
 export function getDefaultRsvpFormFields(): RsvpFormField[] {
   return [];
 }
 
-/** Create a new text element */
+/** Create a new content element */
 export function createRsvpFormField(type: RsvpFieldType): RsvpFormField {
   const id = `${type}-${Date.now()}`;
   const defaults: Record<RsvpFieldType, Partial<RsvpFormField>> = {

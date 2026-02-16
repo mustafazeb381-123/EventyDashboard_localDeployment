@@ -38,6 +38,8 @@ export interface EventInvitation {
   scheduled_send_time?: string;
   enable_rsvp: boolean;
   is_vip_invitation: boolean;
+  /** RSVP form template as JSON string (formFields, theme, languageConfig) */
+  rsvp_template?: string;
   event_invitation_users_count: number;
   created_at: string;
   updated_at: string;
@@ -105,10 +107,15 @@ export const getEventInvitations = (
   eventId: string | number,
   params?: { page?: number; per_page?: number }
 ) => {
-  return axiosInstance.get<EventInvitationsListResponse>(
-    `/events/${eventId}/event_invitations`,
-    { params: { page: 1, per_page: 10, ...params } }
-  );
+  return axiosInstance
+    .get<EventInvitationsListResponse>(
+      `/events/${eventId}/event_invitations`,
+      { params: { page: 1, per_page: 10, ...params } }
+    )
+    .then((res) => {
+      console.log("[Event Invitation API] getEventInvitations", { eventId, params, data: res.data });
+      return res;
+    });
 };
 
 /**
@@ -119,10 +126,12 @@ export const createEventInvitation = (
   eventId: string | number,
   payload: EventInvitationPayload
 ) => {
-  return axiosInstance.post<EventInvitation>(
-    `/events/${eventId}/event_invitations`,
-    payload
-  );
+  return axiosInstance
+    .post<EventInvitation>(`/events/${eventId}/event_invitations`, payload)
+    .then((res) => {
+      console.log("[Event Invitation API] createEventInvitation", { eventId, payload, data: res.data });
+      return res;
+    });
 };
 
 /**
@@ -133,9 +142,12 @@ export const getEventInvitation = (
   eventId: string | number,
   invitationId: string | number
 ) => {
-  return axiosInstance.get<EventInvitation>(
-    `/events/${eventId}/event_invitations/${invitationId}`
-  );
+  return axiosInstance
+    .get<EventInvitation>(`/events/${eventId}/event_invitations/${invitationId}`)
+    .then((res) => {
+      console.log("[Event Invitation API] getEventInvitation", { eventId, invitationId, data: res.data });
+      return res;
+    });
 };
 
 /**
@@ -147,10 +159,15 @@ export const updateEventInvitation = (
   invitationId: string | number,
   payload: EventInvitationPayload
 ) => {
-  return axiosInstance.put<EventInvitation>(
-    `/events/${eventId}/event_invitations/${invitationId}`,
-    payload
-  );
+  return axiosInstance
+    .put<EventInvitation>(
+      `/events/${eventId}/event_invitations/${invitationId}`,
+      payload
+    )
+    .then((res) => {
+      console.log("[Event Invitation API] updateEventInvitation", { eventId, invitationId, payload, data: res.data });
+      return res;
+    });
 };
 
 /**

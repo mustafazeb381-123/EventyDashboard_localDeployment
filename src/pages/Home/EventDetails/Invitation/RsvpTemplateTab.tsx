@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Check, X, Plus, Edit, Trash2, Eye, Code, Copy } from "lucide-react";
+import { Check, X, Plus, Edit, Trash2, Eye, Code, Copy, Share2 } from "lucide-react";
 import { RsvpFormBuilder } from "./rsvpFormBuilder/RsvpFormBuilder";
 import { RsvpFormPreview } from "./rsvpFormBuilder/RsvpFormPreview";
 import type {
@@ -8,6 +8,7 @@ import type {
   RsvpLanguageConfig,
   RsvpFormBuilderTemplate,
 } from "./rsvpFormBuilder/types";
+import { getDefaultRsvpFormFields } from "./rsvpFormBuilder/types";
 
 type RsvpTemplateTabProps = {
   rsvpEmailSubject: string;
@@ -16,14 +17,41 @@ type RsvpTemplateTabProps = {
   initialRsvpTemplate?: string | null;
   /** Called when the selected RSVP template changes; pass JSON string for API */
   onRsvpTemplateChange?: (rsvpTemplateJson: string | null) => void;
+  /** Event ID for Share RSVP link (copies URL to clipboard) */
+  eventId?: string | null;
 };
+
+/** Default theme for auto-created RSVP template (matches RsvpFormBuilder defaultTheme) */
+const DEFAULT_RSVP_THEME: RsvpTheme = {
+  headerBackgroundColor: "#1e293b",
+  headerTextColor: "#ffffff",
+  bodyBackgroundColor: "#f8fafc",
+  bodyTextColor: "#1e293b",
+  labelColor: "#374151",
+  acceptButtonBackgroundColor: "#10b981",
+  acceptButtonTextColor: "#ffffff",
+  declineButtonBackgroundColor: "#ef4444",
+  declineButtonTextColor: "#ffffff",
+  inputBorderColor: "#e2e8f0",
+  inputBackgroundColor: "#f8fafc",
+};
+
+/** Sanitize theme so image fields are string (base64) or null only – never {} (File stringifies as {}) */
+function sanitizeThemeForJson(theme: RsvpTheme): RsvpTheme {
+  const next = { ...theme };
+  if (typeof next.bannerImage !== "string") next.bannerImage = null;
+  if (typeof next.footerBannerImage !== "string") next.footerBannerImage = null;
+  if (typeof next.formBackgroundImage !== "string") next.formBackgroundImage = null;
+  return next;
+}
 
 /** Serialize confirmed template to JSON string for API (title, formFields, theme, languageConfig) */
 function serializeRsvpTemplate(template: RsvpFormBuilderTemplate): string {
+  const theme = sanitizeThemeForJson(template.theme);
   return JSON.stringify({
     title: template.title,
     formFields: template.formFields,
-    theme: template.theme,
+    theme,
     languageConfig: template.languageConfig,
   });
 }
@@ -34,6 +62,7 @@ export function RsvpTemplateTab({
   setRsvpEmailSubject: _setRsvpEmailSubject,
   initialRsvpTemplate = null,
   onRsvpTemplateChange,
+  eventId = null,
 }: RsvpTemplateTabProps) {
   // Saved RSVP Form Builder templates (local state only; replace with API when ready)
   const [rsvpFormBuilderTemplates, setRsvpFormBuilderTemplates] = useState<
@@ -117,6 +146,10 @@ export function RsvpTemplateTab({
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [codeCopied, setCodeCopied] = useState(false);
 
+  // Inline edit template name on card
+  const [editingTitleTemplateId, setEditingTitleTemplateId] = useState<string | null>(null);
+  const [editingTitleValue, setEditingTitleValue] = useState("");
+
   // Notification (same pattern as AdvanceRegistration)
   const [notification, setNotification] = useState<{
     message: string;
@@ -140,11 +173,26 @@ export function RsvpTemplateTab({
     if (template) {
       setEditingFormBuilderTemplate(template);
       setIsEditFormBuilderMode(true);
+      setIsCustomFormBuilderOpen(true);
     } else {
-      setEditingFormBuilderTemplate(null);
-      setIsEditFormBuilderMode(false);
+      // Auto-generate one RSVP template when user wants to build; open builder to edit name and form
+      const now = new Date().toISOString();
+      const id = `rsvp-template-${Date.now()}`;
+      const newTemplate: RsvpFormBuilderTemplate = {
+        id,
+        title: `RSVP Form ${rsvpFormBuilderTemplates.length + 1}`,
+        formFields: getDefaultRsvpFormFields(),
+        theme: { ...DEFAULT_RSVP_THEME },
+        languageConfig: { languageMode: "single", primaryLanguage: "en" },
+        createdAt: now,
+        updatedAt: now,
+      };
+      setRsvpFormBuilderTemplates((prev) => [...prev, newTemplate]);
+      setConfirmedTemplate(id);
+      setEditingFormBuilderTemplate(newTemplate);
+      setIsEditFormBuilderMode(true);
+      setIsCustomFormBuilderOpen(true);
     }
-    setIsCustomFormBuilderOpen(true);
   };
 
   const handleSaveRsvpForm = (
@@ -194,6 +242,23 @@ export function RsvpTemplateTab({
 
   const handleEditFormBuilderTemplate = (template: RsvpFormBuilderTemplate) => {
     handleOpenCustomFormBuilder(template);
+  };
+
+  const handleStartEditTitle = (e: React.MouseEvent, template: RsvpFormBuilderTemplate) => {
+    e.stopPropagation();
+    setEditingTitleTemplateId(template.id);
+    setEditingTitleValue(template.title);
+  };
+
+  const handleCommitTitleEdit = (templateId: string) => {
+    const trimmed = editingTitleValue.trim();
+    setRsvpFormBuilderTemplates((prev) =>
+      prev.map((t) =>
+        t.id === templateId ? { ...t, title: trimmed || t.title, updatedAt: new Date().toISOString() } : t
+      )
+    );
+    setEditingTitleTemplateId(null);
+    setEditingTitleValue("");
   };
 
   const handleDeleteFormBuilderTemplate = (templateId: string) => {
@@ -268,8 +333,40 @@ export function RsvpTemplateTab({
     });
   };
 
+  const rsvpLinkUrl = eventId ? `${window.location.origin}/rsvp/${eventId}` : null;
+  const handleShareRsvpLink = () => {
+    if (!rsvpLinkUrl) {
+      showNotification("Event ID is missing. Save the invitation first or open from an event.", "warning");
+      return;
+    }
+    navigator.clipboard
+      .writeText(rsvpLinkUrl)
+      .then(() => showNotification("RSVP link copied to clipboard!", "success"))
+      .catch(() => showNotification("Failed to copy link", "error"));
+  };
+
   return (
     <div className="space-y-10">
+      {/* Share RSVP link – copy URL for this event's RSVP page */}
+      {eventId && (
+        <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
+          <div>
+            <h3 className="text-sm font-semibold text-slate-800">RSVP link</h3>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Share this link so invitees can respond (RSVP) to your invitation.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleShareRsvpLink}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+          >
+            <Share2 size={18} />
+            Share RSVP link
+          </button>
+        </div>
+      )}
+
       {/* RSVP template grid – Custom Builder first, then saved templates only (no default templates) */}
       <div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -379,11 +476,35 @@ export function RsvpTemplateTab({
                     />
                   </div>
                 </div>
-                <div className="mt-2 text-center flex-shrink-0">
-                  <h4 className="text-sm font-medium text-slate-900 truncate">
-                    {template.title}
-                  </h4>
-                  <span className="text-xs text-slate-500">
+                <div className="mt-2 text-center shrink-0">
+                  {editingTitleTemplateId === template.id ? (
+                    <input
+                      type="text"
+                      value={editingTitleValue}
+                      onChange={(e) => setEditingTitleValue(e.target.value)}
+                      onBlur={() => handleCommitTitleEdit(template.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") handleCommitTitleEdit(template.id);
+                        if (e.key === "Escape") {
+                          setEditingTitleTemplateId(null);
+                          setEditingTitleValue("");
+                        }
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full text-sm font-medium text-slate-900 border border-indigo-300 rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                      autoFocus
+                      aria-label="Template name"
+                    />
+                  ) : (
+                    <h4
+                      className="text-sm font-medium text-slate-900 truncate cursor-pointer hover:text-indigo-600 hover:underline"
+                      onClick={(e) => handleStartEditTitle(e, template)}
+                      title="Click to edit name"
+                    >
+                      {template.title}
+                    </h4>
+                  )}
+                  <span className="text-xs text-slate-500 block mt-0.5">
                     {template.formFields.length} element
                     {template.formFields.length !== 1 ? "s" : ""}
                   </span>
