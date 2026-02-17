@@ -16,6 +16,8 @@ import {
   Check,
   Clock,
   Tag,
+  CalendarCheck,
+  XCircle,
 } from "lucide-react";
 import { icons } from "@/utils/Assets";
 import { getEventInvitations } from "@/apis/invitationService";
@@ -183,6 +185,17 @@ function InvitationReport() {
       rejected: 0,
       pending: total,
       total,
+    }),
+    [total]
+  );
+
+  // RSVP status — values will be dynamic later
+  const rsvpStatus = useMemo(
+    () => ({
+      attended: 0,
+      decline: 0,
+      pending: 0,
+      total: total || 1,
     }),
     [total]
   );
@@ -477,6 +490,43 @@ function InvitationReport() {
             </div>
           </div>
 
+          {/* RSVP Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                  <CalendarCheck size={20} className="text-green-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Attended</p>
+                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.attended}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                  <XCircle size={20} className="text-red-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Decline</p>
+                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.decline}</p>
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                  <Clock size={20} className="text-amber-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Pending</p>
+                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.pending}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Registration Status Section - background #E3EFF9 */}
           <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
             <div className="flex items-center gap-2 mb-6">
@@ -550,6 +600,73 @@ function InvitationReport() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-regular text-gray-700">Conversion Rate:</span>
                   <span className="text-sm font-medium text-gray-700">{stats.conversionRate}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RSVP Status Section - progress bars (values dynamic later) */}
+          <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div className="flex items-center gap-2 mb-6">
+              <Calendar size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
+              <h2 className="text-lg font-semibold text-gray-900">RSVP Status</h2>
+            </div>
+
+            <div className="space-y-4">
+              {/* Attended */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <CalendarCheck size={18} className="text-green-600" strokeWidth={2} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">Attended</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">{rsvpStatus.attended}</span>
+                </div>
+                <div className="h-2 bg-green-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 rounded-full transition-all"
+                    style={{ width: `${(rsvpStatus.attended / rsvpStatus.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Decline */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+                      <XCircle size={18} className="text-red-600" strokeWidth={2} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">Decline</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">{rsvpStatus.decline}</span>
+                </div>
+                <div className="h-2 bg-red-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-red-500 rounded-full transition-all"
+                    style={{ width: `${(rsvpStatus.decline / rsvpStatus.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Pending */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                      <Clock size={18} className="text-amber-600" strokeWidth={2} />
+                    </div>
+                    <span className="text-sm font-medium text-gray-700">Pending</span>
+                  </div>
+                  <span className="text-sm font-semibold text-gray-900">{rsvpStatus.pending}</span>
+                </div>
+                <div className="h-2 bg-amber-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 rounded-full transition-all"
+                    style={{ width: `${(rsvpStatus.pending / rsvpStatus.total) * 100}%` }}
+                  />
                 </div>
               </div>
             </div>
@@ -766,6 +883,13 @@ function InvitationReport() {
           <p className="text-sm text-gray-600">
             Approved: {registrationStatus.approved} · Rejected: {registrationStatus.rejected} ·
             Pending: {registrationStatus.pending}
+          </p>
+        </div>
+        <div className="mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">RSVP Status</h2>
+          <p className="text-sm text-gray-600">
+            Attended: {rsvpStatus.attended} · Decline: {rsvpStatus.decline} ·
+            Pending: {rsvpStatus.pending}
           </p>
         </div>
         <h3 className="text-base font-semibold text-gray-900 mb-2">

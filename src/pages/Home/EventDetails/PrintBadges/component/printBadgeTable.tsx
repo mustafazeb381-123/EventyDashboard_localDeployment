@@ -32,7 +32,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
   totalPages,
   setCurrentPage,
   filteredUsersCount,
-  rowsPerPage,
+  rowsPerPage: _rowsPerPage,
   startIndex,
 }) => {
   // Logic to generate pagination numbers (kept here as it's tightly coupled with pagination UI)
@@ -110,6 +110,9 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
                 Actions
               </th>
+              <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                Edit
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200/60">
@@ -150,12 +153,15 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                     <td className="p-4">
                       <div className="h-8 w-8 bg-gray-200 rounded"></div>
                     </td>
+                    <td className="p-4">
+                      <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                    </td>
                   </tr>
                 ))}
               </>
             ) : paginatedUsers.length === 0 ? (
               <tr>
-                <td colSpan={10} className="p-8 text-center">
+                <td colSpan={11} className="p-8 text-center">
                   <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                     <Users className="w-12 h-12 text-gray-300 mb-3" />
                     <p className="text-sm">No users found</p>
@@ -163,7 +169,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                 </td>
               </tr>
             ) : (
-              paginatedUsers.map((user) => (
+              paginatedUsers.map((user, index) => (
                 <PrintBadgesTableRow
                   key={user.id}
                   user={user}
@@ -172,18 +178,19 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                   onPerformAction={handleAction}
                   loadingUserId={loadingUserId}
                   formatDate={formatDate}
+                  rowIndex={index}
                 />
               ))
             )}
           </tbody>
         </table>
       </div>
-      {filteredUsersCount >= 10 && (
+      {filteredUsersCount > 0 && (
         <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
           <div className="text-sm text-gray-600">
             Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
             <span className="font-medium">
-              {Math.min(startIndex + rowsPerPage, filteredUsersCount)}
+              {startIndex + paginatedUsers.length}
             </span>{" "}
             of <span className="font-medium">{filteredUsersCount}</span> users
           </div>

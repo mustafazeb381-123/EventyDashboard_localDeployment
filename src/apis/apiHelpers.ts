@@ -302,6 +302,24 @@ export const deleteEventUser = (eventId: string, userId: string | number) => {
   return axiosInstance.delete(`/events/${eventId}/event_users/${userId}`);
 };
 
+// Get a specific event user (e.g. after updating print status)
+export const getEventUser = (
+  eventId: string,
+  userId: string | number
+) => {
+  return axiosInstance.get(`/events/${eventId}/event_users/${userId}`);
+};
+
+// Mark an event user as printed (updates print_count, last_printed_at on server)
+export const markEventUserPrinted = (
+  eventId: string,
+  userId: string | number
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/event_users/${userId}/printed`
+  );
+};
+
 // Update a specific user's details for an event
 export const updateEventUser = (
   eventId: string,

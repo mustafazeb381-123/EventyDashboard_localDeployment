@@ -6,6 +6,7 @@ import { sendCredentials } from "@/apis/apiHelpers";
 import { downloadEventUserTemplate } from "@/apis/apiHelpers";
 import { uploadEventUserTemplate } from "@/apis/apiHelpers";
 import { getEventUsers } from "@/apis/apiHelpers";
+import { getBadgeType } from "@/apis/apiHelpers";
 import { resetCheckInOutStatus } from "@/apis/apiHelpers";
 import { approveEventUsers } from "@/apis/apiHelpers";
 import { rejectEventUsers } from "@/apis/apiHelpers";
@@ -229,6 +230,41 @@ function RegisterdUser() {
     setEditAvatarError(false);
   }, [editingUser]);
 
+  // Fetch badge types when edit modal opens (for Badge Type dropdown)
+  useEffect(() => {
+    const fetchBadgeTypes = async () => {
+      if (!eventId || !editingUser) {
+        if (!editingUser) setBadgeTypes([]);
+        return;
+      }
+      setBadgeTypesLoading(true);
+      try {
+        const response = await getBadgeType(eventId);
+        const data = response?.data?.data ?? response?.data;
+        const list = Array.isArray(data) ? data : [];
+        setBadgeTypes(list);
+        // Sync dropdown selection when user has user_type (name) but no badge_id
+        if (editingUser?.attributes?.user_type && list.length) {
+          const match = list.find(
+            (b: any) =>
+              (b.attributes?.name ?? b.name) === editingUser.attributes.user_type
+          );
+          if (match)
+            setEditForm((prev) => ({
+              ...prev,
+              badge_id: String(match.id ?? match.attributes?.id ?? ""),
+            }));
+        }
+      } catch (err) {
+        console.error("Error fetching badge types:", err);
+        setBadgeTypes([]);
+      } finally {
+        setBadgeTypesLoading(false);
+      }
+    };
+    fetchBadgeTypes();
+  }, [eventId, editingUser]);
+
   // Auto-hide notification after 3 seconds
   useEffect(() => {
     if (notification) {
@@ -255,7 +291,10 @@ function RegisterdUser() {
     position: "",
     user_type: "",
     printed: false,
+    badge_id: "",
   });
+  const [badgeTypes, setBadgeTypes] = useState<any[]>([]);
+  const [badgeTypesLoading, setBadgeTypesLoading] = useState(false);
 
   const handleDownloadTemplate = async () => {
     if (!eventId) return;
@@ -457,6 +496,10 @@ function RegisterdUser() {
       // ✅ Add user_type
       if (editForm.user_type)
         formData.append("event_user[user_type]", editForm.user_type);
+
+      // ✅ Add badge type (badge_id from getBadgeType dropdown)
+      if (editForm.badge_id)
+        formData.append("event_user[badge_id]", editForm.badge_id);
 
       // ✅ Save organization to custom_fields.title instead of event_user[organization]
       if (editForm.organization)
@@ -1781,6 +1824,10 @@ function RegisterdUser() {
                                               printed:
                                                 user?.attributes?.printed ||
                                                 false,
+                                              badge_id:
+                                                user?.attributes?.badge_id != null
+                                                  ? String(user.attributes.badge_id)
+                                                  : user?.attributes?.badge_type ?? "",
                                             });
                                             closeActionsMenu();
                                           }}
@@ -2389,15 +2436,40 @@ function RegisterdUser() {
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       User Type
                     </label>
-                    <input
-                      type="text"
-                      placeholder="User Type"
-                      value={editForm.user_type}
-                      onChange={(e) =>
-                        setEditForm({ ...editForm, user_type: e.target.value })
-                      }
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-                    />
+                    {badgeTypesLoading ? (
+                      <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm">
+                        Loading user types...
+                      </div>
+                    ) : (
+                      <select
+                        value={editForm.badge_id}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          const badge = badgeTypes.find(
+                            (b) =>
+                              String(b.id ?? b.attributes?.id ?? "") === id
+                          );
+                          const name =
+                            badge?.attributes?.name ?? badge?.name ?? "";
+                          setEditForm({
+                            ...editForm,
+                            badge_id: id,
+                            user_type: name,
+                          });
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                      >
+                        <option value="">Select user type</option>
+                        {badgeTypes.map((badge) => (
+                          <option
+                            key={badge.id}
+                            value={badge.id ?? badge.attributes?.id ?? ""}
+                          >
+                            {badge.attributes?.name ?? badge.name ?? `Badge ${badge.id}`}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
 
