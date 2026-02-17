@@ -6,14 +6,16 @@ const TemplateFormSix = ({
   eventData,
   formFields,
   userTypeFromUrl,
+  tenantUuid: tenantUuidFromProps,
+  eventIdForApi,
 }: {
   eventData: any;
   formFields: any[];
   userTypeFromUrl?: string | null;
+  tenantUuid?: string | null;
+  eventIdForApi?: string | number | null;
 }) => {
-  // ✅ Get tenant_uuid from localStorage
-  const tenantUuid = localStorage.getItem("tenant_uuid");
-  console.log("TENANT TEMP SIX:", tenantUuid);
+  const tenantUuid = tenantUuidFromProps ?? (typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null);
 
   // ✅ Fix image fields and move them to the end
   const mappedFormFields = useMemo(() => {
@@ -131,6 +133,7 @@ const TemplateFormSix = ({
           formFields={mappedFormFields}
           eventId={eventData?.id}
           tenantUuid={tenantUuid || undefined}
+          eventIdForApi={eventIdForApi}
           userTypeFromUrl={userTypeFromUrl}
           submitButtonText="Register"
         />

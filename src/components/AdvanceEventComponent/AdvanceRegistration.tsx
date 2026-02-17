@@ -946,11 +946,12 @@ export const FormBuilderTemplateForm: React.FC<
         return;
       }
 
-      // Get tenant_uuid from localStorage (same as default templates)
+      // Get tenant_uuid from localStorage (same as default templates; set at login)
       const tenantUuid =
         typeof window !== "undefined"
           ? localStorage.getItem("tenant_uuid")
           : null;
+      console.log("[AdvanceRegistration] tenant_uuid (from localStorage):", tenantUuid);
 
       if (!actualEventId) {
         console.error(
@@ -2504,7 +2505,8 @@ const AdvanceRegistration = ({
     try {
       if (!effectiveEventId) return;
 
-      const result = await getRegistrationTemplateData(effectiveEventId);
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+      const result = await getRegistrationTemplateData(effectiveEventId, tenantUuid);
       const responseData = result?.data?.data;
 
       if (!responseData) {
@@ -2602,10 +2604,11 @@ const AdvanceRegistration = ({
 
     try {
       // Check both systems in parallel
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
       const [customTemplatesResponse, oldTemplateResponse] =
         await Promise.allSettled([
           getRegistrationFormTemplates(effectiveEventId),
-          getRegistrationTemplateData(effectiveEventId),
+          getRegistrationTemplateData(effectiveEventId, tenantUuid),
         ]);
 
       // Check custom form builder templates - look for default: true
@@ -3985,7 +3988,8 @@ const AdvanceRegistration = ({
   const getFieldAPi = async (id: string) => {
     setIsLoadingFormData(true);
     try {
-      const response = await getRegistrationFieldApi(id);
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+      const response = await getRegistrationFieldApi(id, tenantUuid);
       setFormData(response.data.data);
     } catch (error) {
       showNotification("Failed to load template", "error");

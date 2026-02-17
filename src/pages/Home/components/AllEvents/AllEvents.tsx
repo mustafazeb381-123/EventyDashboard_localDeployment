@@ -112,7 +112,10 @@ function AllEvents() {
   const [loading, setLoading] = useState(true);
   const [searching, setSearching] = useState(false); // loading state when searching
   const [deletingEventId, setDeletingEventId] = useState<string | null>(null); // track which event is being deleted
-  const [eventToDelete, setEventToDelete] = useState<{ id: string; name: string } | null>(null); // track event pending deletion confirmation
+  const [eventToDelete, setEventToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null); // track event pending deletion confirmation
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -306,7 +309,7 @@ function AllEvents() {
                       })
                     : "",
                 };
-              }
+              },
             );
 
             allFetchedEvents = [...allFetchedEvents, ...mappedEvents];
@@ -360,7 +363,7 @@ function AllEvents() {
       } catch (error) {
         console.error(
           "AllEvents - Error fetching all events for search:",
-          error
+          error,
         );
         setAllEvents([]);
       } finally {
@@ -376,7 +379,7 @@ function AllEvents() {
     if (debouncedSearch.trim() && allEvents.length > 0) {
       const searchTerm = debouncedSearch.toLowerCase().trim();
       const filtered = allEvents.filter((e) =>
-        e.name.toLowerCase().includes(searchTerm)
+        e.name.toLowerCase().includes(searchTerm),
       );
       setFilteredEvents(filtered);
     } else {
@@ -390,7 +393,7 @@ function AllEvents() {
       const totalFiltered = filteredEvents.length;
       const totalPagesCalc = Math.max(
         1,
-        Math.ceil(totalFiltered / itemsPerPage)
+        Math.ceil(totalFiltered / itemsPerPage),
       );
       setTotalPages(totalPagesCalc);
 
@@ -469,7 +472,7 @@ function AllEvents() {
                           })
                         : "",
                     };
-                  }
+                  },
                 );
 
                 allFetchedEvents = [...allFetchedEvents, ...mappedEvents];
@@ -549,7 +552,7 @@ function AllEvents() {
                         })
                       : "",
                   };
-                }
+                },
               );
 
               setEvents(mappedEvents);
@@ -590,201 +593,288 @@ function AllEvents() {
       )}
 
       <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
-      <div className="flex flex-col gap-4 mb-6">
-        {/* Title and Counter */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <p className="font-poppins text-md font-medium text-neutral-900">
-              All Events
-            </p>
-            {!isLoading && (
-              <p className="text-sm text-gray-500 mt-1">
-                {searchQuery ? (
-                  <>
-                    Showing {paginatedEvents.length} of {filteredEvents.length}{" "}
-                    event{filteredEvents.length !== 1 ? "s" : ""} found
-                    {filteredEvents.length !== allEvents.length &&
-                      ` (${allEvents.length} total searched)`}
-                  </>
-                ) : (
-                  <>
-                    Showing {paginatedEvents.length} event
-                    {paginatedEvents.length !== 1 ? "s" : ""} on page{" "}
-                    {currentPage} of {totalPages}
-                  </>
-                )}
+        <div className="flex flex-col gap-4 mb-6">
+          {/* Title and Counter */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <p className="font-poppins text-md font-medium text-neutral-900">
+                All Events
               </p>
-            )}
-            {isLoading && <Skeleton className="h-4 w-32 mt-1" />}
-            {searching && (
-              <p className="text-sm text-blue-500 mt-1">
-                Searching through all pages...
-              </p>
-            )}
+              {!isLoading && (
+                <p className="text-sm text-gray-500 mt-1">
+                  {searchQuery ? (
+                    <>
+                      Showing {paginatedEvents.length} of{" "}
+                      {filteredEvents.length} event
+                      {filteredEvents.length !== 1 ? "s" : ""} found
+                      {filteredEvents.length !== allEvents.length &&
+                        ` (${allEvents.length} total searched)`}
+                    </>
+                  ) : (
+                    <>
+                      Showing {paginatedEvents.length} event
+                      {paginatedEvents.length !== 1 ? "s" : ""} on page{" "}
+                      {currentPage} of {totalPages}
+                    </>
+                  )}
+                </p>
+              )}
+              {isLoading && <Skeleton className="h-4 w-32 mt-1" />}
+              {searching && (
+                <p className="text-sm text-blue-500 mt-1">
+                  Searching through all pages...
+                </p>
+              )}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-64">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search events by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                // input is never disabled
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  // button is never disabled
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Search Input */}
-          <div className="relative w-full sm:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search events by name..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
-              // input is never disabled
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                // button is never disabled
-              >
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+          {/* View Mode Toggle */}
+          {!isLoading || events.length > 0 ? (
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-gray-600">
+                Page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={`p-2 rounded-md transition-all duration-200 ${
+                    viewMode === "grid"
+                      ? "bg-white shadow-sm text-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  title="Grid view"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            )}
-          </div>
+                  <Grid3X3 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={`p-2 rounded-md transition-all duration-200 ${
+                    viewMode === "list"
+                      ? "bg-white shadow-sm text-blue-600"
+                      : "text-gray-500 hover:text-gray-700"
+                  }`}
+                  title="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {/* View Mode Toggle */}
-        {!isLoading || events.length > 0 ? (
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Page {currentPage} of {totalPages}
-            </div>
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("grid")}
-                className={`p-2 rounded-md transition-all duration-200 ${
-                  viewMode === "grid"
-                    ? "bg-white shadow-sm text-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                title="Grid view"
-              >
-                <Grid3X3 className="h-4 w-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-md transition-all duration-200 ${
-                  viewMode === "list"
-                    ? "bg-white shadow-sm text-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                title="List view"
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Events Display - Grid or List View */}
-      {isLoading && events.length === 0 ? (
-        // Skeleton loader for initial load
-        viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {[...Array(6)].map((_, index) => (
-              <div
-                key={index}
-                className="flex flex-col bg-neutral-100 rounded-2xl p-6"
-              >
-                <div className="flex flex-row items-center justify-between mb-4">
-                  <Skeleton className="h-8 w-24 rounded-2xl" />
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                </div>
-                <div className="flex flex-col gap-2 mt-6">
-                  <Skeleton className="h-5 w-3/4 rounded" />
-                  <Skeleton className="h-4 w-1/2 rounded" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-3 mt-6">
-            {[...Array(5)].map((_, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl"
-              >
-                <div className="flex items-center gap-4 flex-1">
-                  <Skeleton className="h-10 w-24 rounded-lg" />
-                  <div className="flex flex-col gap-2 flex-1">
+        {/* Events Display - Grid or List View */}
+        {isLoading && events.length === 0 ? (
+          // Skeleton loader for initial load
+          viewMode === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {[...Array(6)].map((_, index) => (
+                <div
+                  key={index}
+                  className="flex flex-col bg-neutral-100 rounded-2xl p-6"
+                >
+                  <div className="flex flex-row items-center justify-between mb-4">
+                    <Skeleton className="h-8 w-24 rounded-2xl" />
+                    <Skeleton className="h-8 w-8 rounded-full" />
+                  </div>
+                  <div className="flex flex-col gap-2 mt-6">
                     <Skeleton className="h-5 w-3/4 rounded" />
                     <Skeleton className="h-4 w-1/2 rounded" />
                   </div>
                 </div>
-                <Skeleton className="h-10 w-10 rounded-full" />
-              </div>
-            ))}
-          </div>
-        )
-      ) : viewMode === "grid" ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
-            {paginatedEvents.map((event) => {
-              const { icon, color, bg, backgroundImage } = getEventStyle(
-                event.type
-              );
-
-              return (
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3 mt-6">
+              {[...Array(5)].map((_, index) => (
                 <div
-                  onClick={() => handleEventClick(event.id)}
-                  key={event.id}
-                  style={{
-                    padding: 24,
-                    backgroundImage,
-                    backgroundRepeat: "no-repeat",
-                    backgroundPosition: "right center",
-                    backgroundSize: "auto 100%",
-                    cursor: "pointer",
-                  }}
-                  className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
+                  key={index}
+                  className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl"
                 >
-                  <div className="flex flex-row items-center justify-between">
-                    <div
-                      className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
-                    >
-                      <img
-                        style={{ width: 8, height: 8 }}
-                        src={icon}
-                        alt="dot"
-                      />
-                      <p
-                        style={{
-                          color,
-                          fontSize: 12,
-                          fontFamily: "Poppins",
-                          fontWeight: "400",
-                          margin: 0,
-                        }}
+                  <div className="flex items-center gap-4 flex-1">
+                    <Skeleton className="h-10 w-24 rounded-lg" />
+                    <div className="flex flex-col gap-2 flex-1">
+                      <Skeleton className="h-5 w-3/4 rounded" />
+                      <Skeleton className="h-4 w-1/2 rounded" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                </div>
+              ))}
+            </div>
+          )
+        ) : viewMode === "grid" ? (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+              {paginatedEvents.map((event) => {
+                const { icon, color, bg, backgroundImage } = getEventStyle(
+                  event.type,
+                );
+
+                return (
+                  <div
+                    onClick={() => handleEventClick(event.id)}
+                    key={event.id}
+                    style={{
+                      padding: 24,
+                      backgroundImage,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right center",
+                      backgroundSize: "auto 100%",
+                      cursor: "pointer",
+                    }}
+                    className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
+                  >
+                    <div className="flex flex-row items-center justify-between">
+                      <div
+                        className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
                       >
-                        {event.type}
-                      </p>
+                        <img
+                          style={{ width: 8, height: 8 }}
+                          src={icon}
+                          alt="dot"
+                        />
+                        <p
+                          style={{
+                            color,
+                            fontSize: 12,
+                            fontFamily: "Poppins",
+                            fontWeight: "400",
+                            margin: 0,
+                          }}
+                        >
+                          {event.type}
+                        </p>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation(); // Prevent parent click
+                          handleDeleteClick(event.id, event.name);
+                        }}
+                        disabled={deletingEventId === event.id}
+                        className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                      >
+                        {deletingEventId === event.id ? (
+                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4 text-white" />
+                        )}
+                      </button>
                     </div>
 
+                    <div className="flex flex-col gap-2 mt-10">
+                      <p className="text-slate-800 font-poppins font-medium text-md">
+                        {event.name}
+                      </p>
+                      <p className="text-neutral-500 font-poppins font-normal text-xs">
+                        {event.date}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Pagination for Grid View */}
+            {!isLoading && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="mt-6"
+              />
+            )}
+          </>
+        ) : (
+          <>
+            <div className="space-y-3 mt-6">
+              {paginatedEvents.map((event) => {
+                const { icon, color, bg } = getEventStyle(event.type);
+
+                return (
+                  <div
+                    onClick={() => handleEventClick(event.id)}
+                    key={event.id}
+                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl hover:bg-white transition-all duration-300 ease-in-out hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200"
+                  >
+                    <div className="flex items-center gap-4 flex-1">
+                      {/* Event Type Badge */}
+                      <div
+                        className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
+                      >
+                        <img
+                          style={{ width: 8, height: 8 }}
+                          src={icon}
+                          alt="dot"
+                        />
+                        <p
+                          style={{
+                            color,
+                            fontSize: 12,
+                            fontFamily: "Poppins",
+                            fontWeight: "400",
+                            margin: 0,
+                          }}
+                        >
+                          {event.type}
+                        </p>
+                      </div>
+
+                      {/* Event Info */}
+                      <div className="flex flex-col gap-1 flex-1 min-w-0">
+                        <p className="text-slate-800 font-poppins font-medium text-md truncate">
+                          {event.name}
+                        </p>
+                        <p className="text-neutral-500 font-poppins font-normal text-xs">
+                          {event.date}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Delete Button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation(); // Prevent parent click
                         handleDeleteClick(event.id, event.name);
                       }}
                       disabled={deletingEventId === event.id}
-                      className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                      className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
                     >
                       {deletingEventId === event.id ? (
                         <Loader2 className="w-4 h-4 text-white animate-spin" />
@@ -793,173 +883,89 @@ function AllEvents() {
                       )}
                     </button>
                   </div>
-
-                  <div className="flex flex-col gap-2 mt-10">
-                    <p className="text-slate-800 font-poppins font-medium text-md">
-                      {event.name}
-                    </p>
-                    <p className="text-neutral-500 font-poppins font-normal text-xs">
-                      {event.date}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Pagination for Grid View */}
-          {!isLoading && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              className="mt-6"
-            />
-          )}
-        </>
-      ) : (
-        <>
-          <div className="space-y-3 mt-6">
-            {paginatedEvents.map((event) => {
-              const { icon, color, bg } = getEventStyle(event.type);
-
-              return (
-                <div
-                  onClick={() => handleEventClick(event.id)}
-                  key={event.id}
-                  className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl hover:bg-white transition-all duration-300 ease-in-out hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200"
-                >
-                  <div className="flex items-center gap-4 flex-1">
-                    {/* Event Type Badge */}
-                    <div
-                      className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
-                    >
-                      <img
-                        style={{ width: 8, height: 8 }}
-                        src={icon}
-                        alt="dot"
-                      />
-                      <p
-                        style={{
-                          color,
-                          fontSize: 12,
-                          fontFamily: "Poppins",
-                          fontWeight: "400",
-                          margin: 0,
-                        }}
-                      >
-                        {event.type}
-                      </p>
-                    </div>
-
-                    {/* Event Info */}
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
-                      <p className="text-slate-800 font-poppins font-medium text-md truncate">
-                        {event.name}
-                      </p>
-                      <p className="text-neutral-500 font-poppins font-normal text-xs">
-                        {event.date}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Delete Button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent parent click
-                      handleDeleteClick(event.id, event.name);
-                    }}
-                    disabled={deletingEventId === event.id}
-                    className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
-                  >
-                    {deletingEventId === event.id ? (
-                      <Loader2 className="w-4 h-4 text-white animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4 text-white" />
-                    )}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Pagination for List View */}
-          {!isLoading && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-              className="mt-6"
-            />
-          )}
-        </>
-      )}
-
-      {/* Empty States */}
-      {!isLoading && events.length === 0 && !searchQuery && (
-        <div className="w-full flex flex-col justify-center items-center py-10">
-          <img
-            className="h-40 w-40"
-            src={Assets.images.eventEmptyCard}
-            alt="No Events"
-          />
-          <p className="text-gray-500 mt-4 text-sm">No events found</p>
-        </div>
-      )}
-
-      {!isLoading && !searching && events.length === 0 && searchQuery && (
-        <div className="w-full flex flex-col justify-center items-center py-10">
-          <Search className="h-16 w-16 text-gray-300 mb-4" />
-          <p className="text-gray-500 text-lg font-medium">No events found</p>
-          <p className="text-gray-400 text-sm mt-2">
-            No events match "{searchQuery}". Try a different search term.
-          </p>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {eventToDelete && (
-        <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
-          onClick={handleCloseDeleteModal}
-        >
-          <div
-            className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl"
-            onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
-          >
-            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
-              <Trash2 className="w-6 h-6 text-red-500" />
+                );
+              })}
             </div>
 
-            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
-              Delete Event?
-            </h3>
-            <p className="text-sm text-gray-600 text-center mb-6">
-              Are you sure you want to delete{" "}
-              <strong>{eventToDelete.name || "this event"}</strong>? This action
-              cannot be undone.
+            {/* Pagination for List View */}
+            {!isLoading && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                className="mt-6"
+              />
+            )}
+          </>
+        )}
+
+        {/* Empty States */}
+        {!isLoading && events.length === 0 && !searchQuery && (
+          <div className="w-full flex flex-col justify-center items-center py-10">
+            <img
+              className="h-40 w-40"
+              src={Assets.images.eventEmptyCard}
+              alt="No Events"
+            />
+            <p className="text-gray-500 mt-4 text-sm">No events found</p>
+          </div>
+        )}
+
+        {!isLoading && !searching && events.length === 0 && searchQuery && (
+          <div className="w-full flex flex-col justify-center items-center py-10">
+            <Search className="h-16 w-16 text-gray-300 mb-4" />
+            <p className="text-gray-500 text-lg font-medium">No events found</p>
+            <p className="text-gray-400 text-sm mt-2">
+              No events match "{searchQuery}". Try a different search term.
             </p>
+          </div>
+        )}
 
-            <div className="flex space-x-3">
-              <button
-                onClick={handleCloseDeleteModal}
-                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deletingEventId === eventToDelete.id}
-                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {deletingEventId === eventToDelete.id ? "Deleting..." : "Delete"}
-              </button>
+        {/* Delete Confirmation Modal */}
+        {eventToDelete && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+            onClick={handleCloseDeleteModal}
+          >
+            <div
+              className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl"
+              onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
+            >
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-500" />
+              </div>
+
+              <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+                Delete Event?
+              </h3>
+              <p className="text-sm text-gray-600 text-center mb-6">
+                Are you sure you want to delete{" "}
+                <strong>{eventToDelete.name || "this event"}</strong>? This
+                action cannot be undone.
+              </p>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleCloseDeleteModal}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deletingEventId === eventToDelete.id}
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deletingEventId === eventToDelete.id
+                    ? "Deleting..."
+                    : "Delete"}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <style>{`
+        <style>{`
         @keyframes slide-in {
           from {
             transform: translateX(100%);
@@ -974,7 +980,7 @@ function AllEvents() {
           animation: slide-in 0.3s ease-out;
         }
       `}</style>
-    </div>
+      </div>
     </>
   );
 }

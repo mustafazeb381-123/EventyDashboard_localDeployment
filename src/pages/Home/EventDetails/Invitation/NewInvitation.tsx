@@ -381,11 +381,12 @@ function NewInvitation() {
       }));
       const hasUserImport =
         (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0;
-      // Resolve registration link to same URL as Home Summary "Copy Registration Link" + ?user_type=vip so emails contain clickable links
+      const eventUuid = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? eventId;
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
       const emailBodyWithResolvedLinks = resolveInvitationEmailLinks(
         selectedTemplate.html,
-        eventId,
-        { forPreview: false }
+        eventUuid ?? eventId,
+        { forPreview: false, tenantUuid, eventId }
       );
 
       const event_invitation = {
@@ -422,7 +423,8 @@ function NewInvitation() {
         showNotification("Invitation updated successfully.", "success");
         await new Promise((r) => setTimeout(r, 1500));
         // Redirect to preview page so user sees the data from GET API
-        navigate(`/invitation/preview-page/${invitationIdFromRoute}${eventId ? `?eventId=${eventId}` : ""}`);
+        const eventUuidForPreview = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
+        navigate(`/invitation/preview-page/${invitationIdFromRoute}${eventId ? `?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}` : ""}`);
       } else {
         const createRes = await createEventInvitation(eventId, { event_invitation });
         showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
@@ -432,7 +434,8 @@ function NewInvitation() {
         const createdId = createdAttrs && createdAttrs.id != null ? String(createdAttrs.id) : null;
         if (createdId && eventId) {
           await new Promise((r) => setTimeout(r, 500));
-          navigate(`/invitation/preview-page/${createdId}?eventId=${eventId}`);
+          const eventUuidForPreview = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
+          navigate(`/invitation/preview-page/${createdId}?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}`);
         } else {
           navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
         }
@@ -498,11 +501,12 @@ function NewInvitation() {
   const selectedTemplate = invitationEmailTemplates.find(
     (t) => t.id === selectedInvitationEmailTemplateId,
   );
-  // Resolve links so preview shows clickable Register (VIP) and RSVP links; same registration URL as Home Summary
+  const eventUuid = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? eventId;
+  const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
   const previewEmailHtml = resolveInvitationEmailLinks(
     selectedTemplate?.html ?? "",
-    eventId,
-    { forPreview: true }
+    eventUuid ?? eventId,
+    { forPreview: true, tenantUuid, eventId }
   );
 
   if (loadingInvitation && isEditMode) {

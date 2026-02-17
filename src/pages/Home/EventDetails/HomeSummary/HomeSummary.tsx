@@ -244,7 +244,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   }, [location.search, location.state, paramId, eventId]);
 
-  // Fetch event data
+  // Fetch event data (called when you click an event in the list). API returns data.data.attributes.uuid.
   const getEventDataById = async (id: string | number) => {
     try {
       const response = await getEventbyId(id);
@@ -1169,7 +1169,15 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div
               onClick={() => {
-                const registrationUrl = `${window.location.origin}/register/${eventId}`;
+                const eventUuid = eventData?.attributes?.uuid ?? eventData?.uuid ?? eventId;
+                const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+                const params = new URLSearchParams();
+                if (tenantUuid) params.set("tenant_uuid", tenantUuid);
+                if (eventId) params.set("event_id", String(eventId));
+                const qs = params.toString();
+                const registrationUrl = eventUuid
+                  ? `${window.location.origin}/register/${eventUuid}${qs ? `?${qs}` : ""}`
+                  : `${window.location.origin}/register/${eventId}`;
                 navigator.clipboard
                   .writeText(registrationUrl)
                   .then(() => {

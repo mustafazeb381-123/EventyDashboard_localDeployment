@@ -7,17 +7,19 @@ const TemplateFormOne = ({
   eventData,
   formFields,
   userTypeFromUrl,
+  tenantUuid: tenantUuidFromProps,
+  eventIdForApi,
 }: {
   eventData: any;
   formFields: any[];
   userTypeFromUrl?: string | null;
+  tenantUuid?: string | null;
+  eventIdForApi?: string | number | null;
 }) => {
   console.log("Event Attributes:", eventData?.attributes);
   console.log("Event Form Data Attributes (RAW):", formFields);
 
-  // ✅ Get tenant_uuid from localStorage
-  const tenantUuid = localStorage.getItem("tenant_uuid");
-  console.log("TENANT TEMP:", tenantUuid);
+  const tenantUuid = tenantUuidFromProps ?? (typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null);
 
   // ✅ Fix the type for image fields and move them to the end
   const mappedFormFields = useMemo(() => {
@@ -138,6 +140,7 @@ const TemplateFormOne = ({
           formFields={mappedFormFields}
           eventId={eventData?.id}
           tenantUuid={tenantUuid || undefined}
+          eventIdForApi={eventIdForApi}
           userTypeFromUrl={userTypeFromUrl}
           submitButtonText="Register Now"
         />

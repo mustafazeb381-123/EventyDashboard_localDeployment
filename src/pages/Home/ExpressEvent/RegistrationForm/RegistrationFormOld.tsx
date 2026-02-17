@@ -328,7 +328,8 @@ const RegistrationForm = ({
         return;
       }
 
-      const result = await getRegistrationTemplateData(effectiveEventId);
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+      const result = await getRegistrationTemplateData(effectiveEventId, tenantUuid);
       const responseData = result?.data?.data;
 
       if (!responseData) {
@@ -605,7 +606,8 @@ const RegistrationForm = ({
   const getFieldAPi = async (id: string) => {
     setIsLoadingFormData(true);
     try {
-      const response = await getRegistrationFieldApi(id);
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+      const response = await getRegistrationFieldApi(id, tenantUuid);
       setFormData(response.data.data);
     } catch (error) {
       console.error("Failed to get registration field:", error);

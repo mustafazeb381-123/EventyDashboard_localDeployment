@@ -90,8 +90,9 @@ export const deleteRegistrationFieldApi = (
   );
 };
 
-export const getRegistrationFieldApi = (id: string) => {
-  return axiosInstance.get(`/events/${id}/registration_fields`);
+export const getRegistrationFieldApi = (id: string, tenantUuid?: string | null) => {
+  const params = tenantUuid ? { tenant_uuid: tenantUuid } : undefined;
+  return axiosInstance.get(`/events/${id}/registration_fields`, { params });
 };
 export const deleteEvent = (id: string | number) => {
   return axiosInstance.delete(`/events/${id}`);
@@ -102,11 +103,12 @@ export const getEventbyId = (id: string | number) => {
 };
 
 /**
- * Get minimal event info by UUID (public, no auth required).
- * GET /events/public/{event_uuid}
- * Use this for public registration page; pass event_uuid from URL (e.g. /register/:uuid).
+ * Get minimal event info by event UUID (public, no auth required).
+ * GET /events/public/{event_uuid}?tenant_uuid={tenant_uuid}
+ * Both event_uuid and tenant_uuid are required for multi-tenancy.
  */
 export interface PublicEventResponse {
+  id?: number;
   uuid: string;
   name: string;
   event_date_from: string;
@@ -120,8 +122,9 @@ export interface PublicEventResponse {
   badge_background_url: string;
 }
 
-export const getEventByUuidPublic = (eventUuid: string) => {
-  return axiosInstance.get<PublicEventResponse>(`/events/public/${eventUuid}`);
+export const getEventByUuidPublic = (eventUuid: string, tenantUuid: string) => {
+  const params = new URLSearchParams({ tenant_uuid: tenantUuid });
+  return axiosInstance.get<PublicEventResponse>(`/events/public/${eventUuid}?${params.toString()}`);
 };
 
 export const updateEventBannerById = (id: string | number, data: FormData) => {
@@ -173,8 +176,9 @@ export const getShowEventData = (id: string | number) => {
   return axiosInstance.get(`/events/${id}`);
 };
 
-export const getRegistrationTemplateData = (id: string | number) => {
-  return axiosInstance.get(`events/${id}/registration_templates/default`);
+export const getRegistrationTemplateData = (id: string | number, tenantUuid?: string | null) => {
+  const params = tenantUuid ? { tenant_uuid: tenantUuid } : undefined;
+  return axiosInstance.get(`/events/${id}/registration_templates/default`, { params });
 };
 
 // Get all registration form templates for an event
@@ -188,12 +192,15 @@ export const getRegistrationFormTemplates = (
   );
 };
 
-// Get the default registration form template for an event (returns either custom or old template)
+// Get the default registration form template for an event (returns either custom or old template). Requires tenant_uuid for multi-tenancy.
 export const getDefaultRegistrationFormTemplate = (
-  eventId: string | number
+  eventId: string | number,
+  tenantUuid?: string | null
 ) => {
+  const params = tenantUuid ? { tenant_uuid: tenantUuid } : undefined;
   return axiosInstance.get(
-    `/events/${eventId}/registration_form_templates/default_template`
+    `/events/${eventId}/registration_form_templates/default_template`,
+    { params }
   );
 };
 
@@ -296,7 +303,7 @@ export const getEventBadges = (id: string | number) => {
 
 export const getBadgeType = (
   id: string | number,
-  params?: { page?: number; per_page?: number }
+  params?: { page?: number; per_page?: number; tenant_uuid?: string | null }
 ) => {
   return axiosInstance.get(`/events/${id}/badges`, { params });
 };
