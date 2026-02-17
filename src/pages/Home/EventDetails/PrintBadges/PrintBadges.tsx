@@ -24,7 +24,8 @@ function PrintBadges() {
   const [showBadgePreviewModal, setShowBadgePreviewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUserForPreview, setSelectedUserForPreview] = useState<any>(null);
-  const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<any>(null); // Store full badge template from API
+  const [selectedBadgeTemplate, setSelectedBadgeTemplate] = useState<any>(null); // Default template from API
+  const [allBadgeTemplates, setAllBadgeTemplates] = useState<any[]>([]); // All templates for this event (same as Badge/Advance Badge page)
   const [eventData, setEventData] = useState<any>(null);
   const [userToDelete, setUserToDelete] = useState<any>(null);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -164,8 +165,21 @@ function PrintBadges() {
     if (idFromQuery) {
       fetchUsers(idFromQuery);
       fetchSelectedBadgeTemplate(idFromQuery);
+      fetchAllBadgeTemplates(idFromQuery);
     }
   }, [location.search]);
+
+  // Fetch all badge templates for this event (same list as Badge/Advance Badge page)
+  const fetchAllBadgeTemplates = async (eventId: string) => {
+    try {
+      const response = await getBadgesApi(parseInt(eventId, 10));
+      const templates = response?.data?.data || [];
+      setAllBadgeTemplates(Array.isArray(templates) ? templates : []);
+    } catch (error) {
+      console.error("Error fetching all badge templates:", error);
+      setAllBadgeTemplates([]);
+    }
+  };
 
   // Fetch selected badge template from API - using default endpoint like registration forms
   const fetchSelectedBadgeTemplate = async (eventId: string) => {
@@ -590,31 +604,35 @@ function PrintBadges() {
     return `${month} ${day}, ${year}, ${time}`;
   }, []);
 
-  // Determine which users to show in the preview modal
-  const usersInPreviewModal = selectedUserForPreview
-    ? [selectedUserForPreview]
-    : getSelectedUsersData();
+  // Show all selected users in the modal grid; only when none selected and opened from row, show that one user
+  const selectedUsersData = getSelectedUsersData();
+  const usersInPreviewModal =
+    selectedUsersData.length > 0
+      ? selectedUsersData
+      : selectedUserForPreview
+        ? [selectedUserForPreview]
+        : [];
 
-  // Direct Browser Print Functionality
-const handlePrint = useCallback(async () => {
-  if (usersInPreviewModal.length === 0) {
-    showNotification("No badges to print.", "warning");
-    return;
-  }
+  // Direct Browser Print Functionality (modal may pass selected users to print only those)
+  const handlePrint = useCallback(async (usersToMarkPrinted?: any[]) => {
+    const usersToUpdate =
+      usersToMarkPrinted && usersToMarkPrinted.length > 0
+        ? usersToMarkPrinted
+        : usersInPreviewModal;
 
-  // Get user IDs to update print status
-  const userIdsToUpdate = usersInPreviewModal.map(user => user.id);
+    if (usersToUpdate.length === 0) {
+      showNotification("No badges to print.", "warning");
+      return;
+    }
 
-  // Update print status immediately when print is clicked
-  const updateSuccess = await updatePrintStatus(userIdsToUpdate);
-  
-  if (!updateSuccess) {
-    showNotification("Failed to update print status. Printing cancelled.", "error");
-    return;
-  }
+    const userIdsToUpdate = usersToUpdate.map((user) => user.id);
+    const updateSuccess = await updatePrintStatus(userIdsToUpdate);
 
-  // showNotification("Print status updated to 'Printed'!", "success");
-}, [usersInPreviewModal]);
+    if (!updateSuccess) {
+      showNotification("Failed to update print status. Printing cancelled.", "error");
+      return;
+    }
+  }, [usersInPreviewModal]);
 
 
   return (
@@ -699,6 +717,7 @@ const handlePrint = useCallback(async () => {
           selectedUserForPreview={selectedUserForPreview}
           eventData={eventData}
           selectedBadgeTemplate={selectedBadgeTemplate}
+          allBadgeTemplates={allBadgeTemplates}
           onPrint={handlePrint}
           setIsPrinting={setIsPrinting}
           updatingPrintStatus={updatingPrintStatus}

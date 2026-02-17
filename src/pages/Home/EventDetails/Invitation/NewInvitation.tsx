@@ -556,27 +556,23 @@ function NewInvitation() {
         aria-label="Invitation steps"
       >
         {(() => {
+          // Order: Invitation Details → RSVP Template → Email Template → Invitees
           const tabs = [
             {
               id: "invitation-details" as TabId,
               label: "Invitation Details",
               colorClass: "text-violet-600 border-b-2 border-violet-600",
             },
-            ...(enableRsvp
-              ? [
-                  {
-                    id: "rsvp-template" as TabId,
-                    label: "RSVP Template",
-                    colorClass: "text-blue-600 border-b-2 border-blue-600",
-                  },
-                ]
-              : []),
+            {
+              id: "rsvp-template" as TabId,
+              label: "RSVP Template",
+              colorClass: "text-blue-600 border-b-2 border-blue-600",
+            },
             {
               id: "email-template" as TabId,
               label: "Email Template",
               colorClass: "text-red-600 border-b-2 border-red-600",
             },
-          
             {
               id: "invitees" as TabId,
               label: "Invitees",
@@ -709,11 +705,11 @@ function NewInvitation() {
                       type="button"
                       onClick={() => {
                         if (newInvitationActiveTab === "invitees")
-                          setNewInvitationActiveTab(
-                            enableRsvp ? "rsvp-template" : "email-template",
-                          );
-                        else if (newInvitationActiveTab === "rsvp-template")
                           setNewInvitationActiveTab("email-template");
+                        else if (newInvitationActiveTab === "email-template")
+                          setNewInvitationActiveTab("rsvp-template");
+                        else if (newInvitationActiveTab === "rsvp-template")
+                          setNewInvitationActiveTab("invitation-details");
                         else setNewInvitationActiveTab("invitation-details");
                       }}
                       className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
@@ -729,6 +725,15 @@ function NewInvitation() {
                     {newInvitationActiveTab === "invitation-details" && (
                       <button
                         type="button"
+                        onClick={() => setNewInvitationActiveTab("rsvp-template")}
+                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
+                      >
+                        Next
+                      </button>
+                    )}
+                    {newInvitationActiveTab === "rsvp-template" && (
+                      <button
+                        type="button"
                         onClick={() => setNewInvitationActiveTab("email-template")}
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
                       >
@@ -736,19 +741,6 @@ function NewInvitation() {
                       </button>
                     )}
                     {newInvitationActiveTab === "email-template" && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setNewInvitationActiveTab(
-                            enableRsvp ? "rsvp-template" : "invitees",
-                          )
-                        }
-                        className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
-                      >
-                        Next
-                      </button>
-                    )}
-                    {newInvitationActiveTab === "rsvp-template" && (
                       <button
                         type="button"
                         onClick={() => setNewInvitationActiveTab("invitees")}
