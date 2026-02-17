@@ -1,13 +1,13 @@
 /**
  * Resolve invitation email link placeholders so recipients get clickable links.
  * Registration link uses the same URL as "Copy Registration Link" in Home Summary.
- * Public API requires event_uuid (path) and tenant_uuid (query) — both are included in the link.
+ * Format: /register/{event_uuid}?tenant_uuid=...&event_id=... (e.g. /register/3a48dbae-...?tenant_uuid=4b0b2af8-...&event_id=171)
  */
 
 export const REGISTRATION_LINK_VIP_TOKEN = "{{registration_link_vip}}";
 export const RSVP_LINK_TOKEN = "{{rsvp_link}}";
 
-/** Build registration URL with event_uuid, tenant_uuid, and event_id (event_id for template/fields APIs). */
+/** Build registration URL: /register/{event_uuid}?tenant_uuid=...&event_id=... (path = event UUID only; event_id in query for template/fields APIs). */
 function buildRegistrationUrl(
   eventUuid: string | null,
   tenantUuid: string | null,

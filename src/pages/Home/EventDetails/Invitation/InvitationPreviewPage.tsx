@@ -97,7 +97,8 @@ function InvitationPreviewPage() {
         setScheduledFor(formatScheduled(attrs.scheduled_send_time as string | undefined));
         setCommunicationType(String(attrs.invitation_type ?? "email").toLowerCase());
         const rawBody = String(attrs.invitation_email_body ?? "");
-        setEmailBody(resolveInvitationEmailLinks(rawBody, eventUuid ?? eventId, { forPreview: true, tenantUuid, eventId }));
+        // Same format as Copy Registration Link: /register/{event_uuid}?tenant_uuid=...&event_id=...
+        setEmailBody(resolveInvitationEmailLinks(rawBody, eventUuid ?? null, { forPreview: true, tenantUuid, eventId }));
         const raw = attrs as Record<string, unknown>;
         const rawEventName =
           raw.event_name ??

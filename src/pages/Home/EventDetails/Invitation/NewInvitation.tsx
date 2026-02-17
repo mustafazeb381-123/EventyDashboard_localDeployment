@@ -381,11 +381,12 @@ function NewInvitation() {
       }));
       const hasUserImport =
         (sendTo === "imported_from_file" || sendTo === "manually_entered") && userImportObject.length > 0;
-      const eventUuid = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? eventId;
+      // Same format as Copy Registration Link: /register/{event_uuid}?tenant_uuid=...&event_id=...
+      const eventUuid = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
       const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
       const emailBodyWithResolvedLinks = resolveInvitationEmailLinks(
         selectedTemplate.html,
-        eventUuid ?? eventId,
+        eventUuid,
         { forPreview: false, tenantUuid, eventId }
       );
 
@@ -501,11 +502,12 @@ function NewInvitation() {
   const selectedTemplate = invitationEmailTemplates.find(
     (t) => t.id === selectedInvitationEmailTemplateId,
   );
-  const eventUuid = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? eventId;
+  // Same format as Copy Registration Link: /register/{event_uuid}?tenant_uuid=...&event_id=...
+  const eventUuid = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
   const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
   const previewEmailHtml = resolveInvitationEmailLinks(
     selectedTemplate?.html ?? "",
-    eventUuid ?? eventId,
+    eventUuid,
     { forPreview: true, tenantUuid, eventId }
   );
 
