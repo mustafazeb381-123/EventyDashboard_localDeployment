@@ -1,5 +1,5 @@
 import {
-  getEventbyId,
+  getEventByUuidPublic,
   getRegistrationTemplateData,
   getRegistrationFieldApi,
   getDefaultRegistrationFormTemplate,
@@ -354,18 +354,46 @@ function UserRegistration() {
     }
   };
 
-  const getEventDataById = async () => {
+  const getEventDataByUuid = async () => {
     if (!effectiveEventId) return;
 
     try {
-      const response = await getEventbyId(effectiveEventId);
+      const response = await getEventByUuidPublic(effectiveEventId);
+      const body = response?.data as any;
+      const raw = body?.data ?? body;
+      if (!raw || !raw.uuid) {
+        setEventData(null);
+        return;
+      }
       console.log(
-        "response event data by id in user registration form ",
-        response,
+        "response event data (public by UUID) in user registration form ",
+        raw,
       );
-      setEventData(response?.data);
+      // Normalize public API shape to match what templates expect: { data: { id, type, attributes } }
+      const normalized = {
+        data: {
+          id: raw.uuid,
+          type: "event",
+          attributes: {
+            id: raw.uuid,
+            name: raw.name,
+            event_date_from: raw.event_date_from,
+            event_date_to: raw.event_date_to,
+            event_time_from: raw.event_time_from,
+            event_time_to: raw.event_time_to,
+            about: raw.about,
+            location: raw.location,
+            logo_url: raw.logo_url,
+            registration_page_banner: raw.registration_page_banner_url,
+            registration_page_banner_url: raw.registration_page_banner_url,
+            badge_background_url: raw.badge_background_url,
+          },
+        },
+      };
+      setEventData(normalized);
     } catch (error: any) {
-      console.log("error in event data by id in registration form ", error);
+      console.log("error in event data (public) in registration form ", error);
+      setEventData(null);
     }
   };
 
@@ -395,7 +423,7 @@ function UserRegistration() {
       try {
         await Promise.all([
           getTemplateData(),
-          getEventDataById(),
+          getEventDataByUuid(),
           getAllRegistrationFields(),
         ]);
       } catch (err: any) {
@@ -635,7 +663,7 @@ function UserRegistration() {
                 Please check the URL and try again.
               </p>
               <p className="text-xs mt-2 text-gray-600">
-                Expected URL format: /register/[eventId]
+                Expected URL format: /register/[event_uuid]
               </p>
             </div>
           </div>
@@ -670,7 +698,7 @@ function UserRegistration() {
                 again.
               </p>
               <p className="text-xs mt-2 text-gray-600">
-                Expected URL format: /register/[eventId]
+                Expected URL format: /register/[event_uuid]
               </p>
             </div>
           </div>

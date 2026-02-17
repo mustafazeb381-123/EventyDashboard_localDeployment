@@ -101,6 +101,29 @@ export const getEventbyId = (id: string | number) => {
   return axiosInstance.get(`/events/${id}`);
 };
 
+/**
+ * Get minimal event info by UUID (public, no auth required).
+ * GET /events/public/{event_uuid}
+ * Use this for public registration page; pass event_uuid from URL (e.g. /register/:uuid).
+ */
+export interface PublicEventResponse {
+  uuid: string;
+  name: string;
+  event_date_from: string;
+  event_date_to: string;
+  event_time_from: string;
+  event_time_to: string;
+  about: string;
+  location: string;
+  logo_url: string;
+  registration_page_banner_url: string;
+  badge_background_url: string;
+}
+
+export const getEventByUuidPublic = (eventUuid: string) => {
+  return axiosInstance.get<PublicEventResponse>(`/events/public/${eventUuid}`);
+};
+
 export const updateEventBannerById = (id: string | number, data: FormData) => {
   return axiosInstance.patch(`/events/${id}`, data, {
     headers: {
