@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useNavigation } from 'react-router-dom';
 
 const TOKEN_KEY = 'token';
 
@@ -20,6 +19,12 @@ const axiosInstance = axios.create({
 // Request Interceptor
 axiosInstance.interceptors.request.use(
   config => {
+    // RSVP endpoints are public — no auth required (rsvp response + rsvp template)
+    const url = config.url ?? '';
+    const isRsvpPublic = url.includes('rsvp_response') || url.includes('rsvp_template');
+    if (isRsvpPublic) {
+      return config;
+    }
     const token = localStorage.getItem(TOKEN_KEY);
     const tenantUuid = typeof window !== 'undefined' ? localStorage.getItem('tenant_uuid') : null;
     if (token) {
@@ -42,9 +47,10 @@ axiosInstance.interceptors.response.use(
   error => {
     if (error.response?.status === 401) {
       const pathname = window.location.pathname || '';
-      // Do NOT redirect to login on public registration page — let the page show "Event not found" or handle 401
+      // Do NOT redirect to login on public pages (registration, RSVP)
       const isPublicRegistration = pathname.startsWith('/register/') || pathname.startsWith('/register');
-      if (!isPublicRegistration) {
+      const isPublicRsvp = pathname.startsWith('/rsvp/') || pathname.startsWith('/rsvp');
+      if (!isPublicRegistration && !isPublicRsvp) {
         localStorage.removeItem("token"); // clear old token
         console.error('Unauthorized: Redirecting to login...');
         window.location.href = '/login'; // force redirect for dashboard routes only
