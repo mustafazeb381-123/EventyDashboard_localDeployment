@@ -85,6 +85,7 @@ function TemplateFormSeven({
   const { id: routeId } = useParams();
   const effectiveEventId =
     (propEventId as string | undefined) || (routeId as string | undefined);
+  const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
 
   // Fetch existing banner on mount
   useEffect(() => {
@@ -236,7 +237,7 @@ function TemplateFormSeven({
 
       setIsLoadingApiData(true);
       try {
-        const response = await getRegistrationFieldApi(effectiveEventId);
+        const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
         const fields = response.data.data || [];
         // Sort by order
         const sortedFields = [...fields].sort((a: any, b: any) => {
@@ -378,7 +379,7 @@ function TemplateFormSeven({
         targetFieldIdNum,
       );
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -445,7 +446,7 @@ function TemplateFormSeven({
 
       await createRegistrationFieldApi(effectiveEventId, fieldPayload);
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -496,7 +497,7 @@ function TemplateFormSeven({
     try {
       await deleteRegistrationFieldApi(effectiveEventId, fieldIdNum);
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {

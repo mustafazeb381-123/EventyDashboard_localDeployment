@@ -89,6 +89,7 @@ function TemplateFormTwo({
   const { id: routeId } = useParams();
   const effectiveEventId =
     (propEventId as string | undefined) || (routeId as string | undefined);
+  const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
 
   useEffect(() => {
     const fetchBanner = async () => {
@@ -185,7 +186,7 @@ function TemplateFormTwo({
 
       setIsLoadingApiData(true);
       try {
-        const response = await getRegistrationFieldApi(effectiveEventId);
+        const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
         console.log(
           "TemplateTwo - getRegistrationFieldApi response:",
           response.data,
@@ -358,7 +359,7 @@ function TemplateFormTwo({
         targetFieldIdNum,
       );
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -425,7 +426,7 @@ function TemplateFormTwo({
 
       await createRegistrationFieldApi(effectiveEventId, fieldPayload);
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -476,7 +477,7 @@ function TemplateFormTwo({
     try {
       await deleteRegistrationFieldApi(effectiveEventId, fieldIdNum);
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {

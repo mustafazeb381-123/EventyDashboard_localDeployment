@@ -21,16 +21,15 @@ const axiosInstance = axios.create({
 axiosInstance.interceptors.request.use(
   config => {
     const token = localStorage.getItem(TOKEN_KEY);
-    // console.log("token in instance", token)
-    //
-    // Retrieve token from localStorage
+    const tenantUuid = typeof window !== 'undefined' ? localStorage.getItem('tenant_uuid') : null;
     if (token) {
-      console.log('token------', token)
+      console.log('token------', token);
       config.headers.Authorization = `Bearer ${token}`;
     } else {
       console.log('No token found, redirecting to login...');
       // Navigate to login if token is not found
     }
+    console.log('tenant_uuid------', tenantUuid);
 
     return config;
   },

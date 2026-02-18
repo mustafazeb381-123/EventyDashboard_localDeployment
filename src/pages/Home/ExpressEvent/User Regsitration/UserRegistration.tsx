@@ -1,5 +1,5 @@
 import {
-  getEventbyId,
+  getEventByUuidPublic,
   getRegistrationTemplateData,
   getRegistrationFieldApi,
   getDefaultRegistrationFormTemplate,
@@ -72,6 +72,7 @@ function UserRegistration() {
   const [eventData, setEventData] = useState<EventData | null>(null);
   const [registrationFields, setRegistrationFields] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFormLoading, setIsFormLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [customFormBuilderTemplate, setCustomFormBuilderTemplate] =
     useState<any>(null);
@@ -164,21 +165,21 @@ function UserRegistration() {
     setNotification({ message, type });
   };
 
-  // Get effective event ID
+  // URL: /register/:event_uuid?tenant_uuid=xxx&event_id=171 — event_uuid+tenant_uuid for public API; event_id for template/fields APIs
   const effectiveEventId = (routeId as string | undefined) || undefined;
+  const tenantUuidFromUrl = searchParams.get("tenant_uuid");
+  const tenantUuidFromStorage = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+  const tenantUuid = tenantUuidFromUrl ?? tenantUuidFromStorage ?? null;
+  const eventIdFromParams = searchParams.get("event_id");
+  console.log("[User Registration] event UUID from URL:", effectiveEventId);
+  console.log("[User Registration] tenant_uuid (from URL or localStorage):", tenantUuid);
+  console.log("[User Registration] event_id from params (for template/fields APIs):", eventIdFromParams);
 
-  const getTemplateData = async () => {
-    if (!effectiveEventId) {
-      const errorMsg = "No event ID found";
-      setError(errorMsg);
-      setIsLoading(false);
-      return;
-    }
-
+  const getTemplateData = async (eventIdForApi: string | number | null) => {
+    if (!eventIdForApi) return;
     try {
-      // First, try to get the default template (which could be custom or old system)
       const defaultTemplateResponse =
-        await getDefaultRegistrationFormTemplate(effectiveEventId);
+        await getDefaultRegistrationFormTemplate(eventIdForApi, tenantUuid);
       console.log(
         "📋 Default template response:",
         defaultTemplateResponse?.data,
@@ -317,7 +318,7 @@ function UserRegistration() {
           console.log("✅ Old system template detected, fetching details...");
           try {
             const oldTemplateResponse =
-              await getRegistrationTemplateData(effectiveEventId);
+              await getRegistrationTemplateData(eventIdForApi, tenantUuid);
             const templateInfo = oldTemplateResponse?.data?.data;
             if (templateInfo) {
               setTemplateData(templateInfo);
@@ -333,7 +334,7 @@ function UserRegistration() {
       } else {
         // Fallback: Try old system
         console.log("⚠️ No default template, trying old system...");
-        const response = await getRegistrationTemplateData(effectiveEventId);
+        const response = await getRegistrationTemplateData(eventIdForApi, tenantUuid);
         console.log("response of get template api ", response);
 
         const templateInfo = response?.data?.data;
@@ -354,26 +355,57 @@ function UserRegistration() {
     }
   };
 
-  const getEventDataById = async () => {
+  // Only this API uses event uuid + tenant_uuid. All other APIs (template, registration fields) use event_id (numeric) only.
+  const getEventDataByUuid = async () => {
     if (!effectiveEventId) return;
+    if (!tenantUuid) {
+      setError("This link is missing tenant_uuid. Please use the full registration link from your invitation or copy link.");
+      return;
+    }
 
     try {
-      const response = await getEventbyId(effectiveEventId);
+      const response = await getEventByUuidPublic(effectiveEventId, tenantUuid);
+      const body = response?.data as any;
+      const raw = body?.data ?? body;
+      if (!raw || !raw.uuid) {
+        setEventData(null);
+        return;
+      }
       console.log(
-        "response event data by id in user registration form ",
-        response,
+        "response event data (public by UUID) in user registration form ",
+        raw,
       );
-      setEventData(response?.data);
+      const normalized = {
+        data: {
+          id: raw.uuid,
+          type: "event",
+          attributes: {
+            id: raw.uuid,
+            name: raw.name,
+            event_date_from: raw.event_date_from,
+            event_date_to: raw.event_date_to,
+            event_time_from: raw.event_time_from,
+            event_time_to: raw.event_time_to,
+            about: raw.about,
+            location: raw.location,
+            logo_url: raw.logo_url,
+            registration_page_banner: raw.registration_page_banner_url,
+            registration_page_banner_url: raw.registration_page_banner_url,
+            badge_background_url: raw.badge_background_url,
+          },
+        },
+      };
+      setEventData(normalized);
     } catch (error: any) {
-      console.log("error in event data by id in registration form ", error);
+      console.log("error in event data (public UUID) in registration form ", error?.response?.status, error?.message);
+      setEventData(null);
     }
   };
 
-  const getAllRegistrationFields = async () => {
-    if (!effectiveEventId) return;
-
+  const getAllRegistrationFields = async (eventIdForApi: string | number | null) => {
+    if (!eventIdForApi) return;
     try {
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(String(eventIdForApi), tenantUuid);
       console.log("All registration fields from API:", response.data);
       const allFields = response.data.data || [];
       // Sort by order
@@ -392,21 +424,30 @@ function UserRegistration() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
+      const numericEventId = eventIdFromParams ?? null;
+      setIsFormLoading(!!numericEventId);
       try {
-        await Promise.all([
-          getTemplateData(),
-          getEventDataById(),
-          getAllRegistrationFields(),
-        ]);
+        const eventPromise = getEventDataByUuid();
+        const formPromise = numericEventId
+          ? Promise.all([
+              getTemplateData(numericEventId),
+              getAllRegistrationFields(numericEventId),
+            ])
+          : Promise.resolve();
+        await eventPromise;
+        setIsLoading(false);
+        await formPromise;
       } catch (err: any) {
         console.error("Error loading registration form:", err);
       } finally {
         setIsLoading(false);
+        setIsFormLoading(false);
       }
     };
 
     fetchData();
-  }, [effectiveEventId]);
+  }, [effectiveEventId, tenantUuid, eventIdFromParams]);
 
   // Function to render the appropriate template based on template name
   const renderTemplate = () => {
@@ -535,6 +576,8 @@ function UserRegistration() {
       eventData: eventData?.data,
       formFields: processedFields,
       userTypeFromUrl,
+      tenantUuid: tenantUuid ?? undefined,
+      eventIdForApi: eventIdFromParams ?? undefined,
     };
 
     // Show message if no active fields
@@ -576,7 +619,7 @@ function UserRegistration() {
     }
   };
 
-  if (isLoading) {
+  if (!eventData && isLoading) {
     return (
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
@@ -614,7 +657,6 @@ function UserRegistration() {
       routeId,
     });
 
-    // Ensure eventId is passed correctly - prioritize routeId from URL params
     const eventIdToPass = routeId || effectiveEventId;
 
     console.log("🔍 Event ID resolution for custom template:", {
@@ -635,7 +677,7 @@ function UserRegistration() {
                 Please check the URL and try again.
               </p>
               <p className="text-xs mt-2 text-gray-600">
-                Expected URL format: /register/[eventId]
+                Expected URL format: /register/[event_uuid]
               </p>
             </div>
           </div>
@@ -670,7 +712,7 @@ function UserRegistration() {
                 again.
               </p>
               <p className="text-xs mt-2 text-gray-600">
-                Expected URL format: /register/[eventId]
+                Expected URL format: /register/[event_uuid]
               </p>
             </div>
           </div>
@@ -809,6 +851,17 @@ function UserRegistration() {
               showNotification(message, "error")
             }
           />
+        </div>
+      </div>
+    );
+  }
+
+  if (eventData && isFormLoading) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
+        <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center py-16">
+          <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mb-4" />
+          <p className="text-gray-600 text-sm">Loading form...</p>
         </div>
       </div>
     );

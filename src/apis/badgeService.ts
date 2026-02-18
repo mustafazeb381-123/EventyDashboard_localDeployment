@@ -58,34 +58,39 @@ export interface UpdateBadgePayload {
 /**
  * List all badges for an event with pagination
  * GET /api_dashboard/v1/events/{event_id}/badges
+ * Requires tenant_uuid for multi-tenancy.
  */
 export const listBadges = (
     eventId: string | number,
-    page: number = 1,
-    perPage: number = 10
+    options?: { page?: number; perPage?: number; tenantUuid?: string | null }
 ): Promise<{ data: ListBadgesResponse }> => {
-    return axiosInstance.get(`/events/${eventId}/badges`, {
-        params: {
-            page,
-            per_page: perPage,
-        },
-    });
+    const page = options?.page ?? 1;
+    const perPage = options?.perPage ?? 10;
+    const params: Record<string, string | number> = { page, per_page: perPage };
+    if (options?.tenantUuid) params.tenant_uuid = options.tenantUuid;
+    return axiosInstance.get(`/events/${eventId}/badges`, { params });
 };
 
 /**
- * Get all badges without pagination (fetch all pages)
- * Useful when you need all badges at once
+ * Get all badges without pagination (fetch first page with high per_page)
+ * Useful when you need all badges at once (e.g. default badge for registration).
+ * Pass tenantUuid for multi-tenancy (required by API).
  */
 export const getAllBadges = async (
-    eventId: string | number
+    eventId: string | number,
+    tenantUuid?: string | null
 ): Promise<Badge[]> => {
     try {
-        const firstPage = await listBadges(eventId, 1, 100);
+        const firstPage = await listBadges(eventId, {
+            page: 1,
+            perPage: 100,
+            tenantUuid: tenantUuid ?? undefined,
+        });
         return firstPage.data.data as Badge[];
     } catch (error) {
         console.error("Error fetching all badges:", error);
         throw error;
-    };
+    }
 }
 
 /**

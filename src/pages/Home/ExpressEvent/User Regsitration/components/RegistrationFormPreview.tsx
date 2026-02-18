@@ -108,6 +108,8 @@ interface RegistrationFormPreviewProps {
   submitButtonText?: string;
   eventId: string;
   tenantUuid?: string;
+  /** Numeric event id from ?event_id= — required for badges API (GET /events/{event_id}/badges). When missing, eventId is used. */
+  eventIdForApi?: string | number | null;
   /** From URL ?user_type=vip so email VIP link registers as VIP; else use default badge or "guest" */
   userTypeFromUrl?: string | null;
 }
@@ -117,8 +119,10 @@ const RegistrationFormPreview = ({
   submitButtonText = "Register",
   eventId,
   tenantUuid,
+  eventIdForApi,
   userTypeFromUrl = null,
 }: RegistrationFormPreviewProps) => {
+  const eventIdForBadgesApi = eventIdForApi != null ? String(eventIdForApi) : eventId;
   const { t, i18n } = useTranslation("registration");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
 
@@ -248,13 +252,13 @@ const RegistrationFormPreview = ({
   // Refs for file inputs
   const fileInputRefs = useRef<Record<string, HTMLInputElement>>({});
 
-  // Fetch default badge on component mount
+  // Fetch default badge on component mount (badges API requires numeric event_id + tenant_uuid)
   useEffect(() => {
     const fetchDefaultBadge = async () => {
-      if (!eventId) return;
+      if (!eventIdForBadgesApi || !tenantUuid) return;
 
       try {
-        const badges = await getAllBadges(eventId);
+        const badges = await getAllBadges(eventIdForBadgesApi, tenantUuid);
         const defaultBadge = badges.find(
           (badge: any) => badge.attributes?.default || badge.default
         );
@@ -273,7 +277,7 @@ const RegistrationFormPreview = ({
     };
 
     fetchDefaultBadge();
-  }, [eventId]);
+  }, [eventIdForBadgesApi, tenantUuid]);
 
   const handleSubmit = async () => {
     try {

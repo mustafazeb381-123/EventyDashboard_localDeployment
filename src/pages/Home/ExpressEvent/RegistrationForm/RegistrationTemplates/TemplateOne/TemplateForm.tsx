@@ -86,6 +86,7 @@ function TemplateFormOne({
   const { id: routeId } = useParams();
   const effectiveEventId =
     (propEventId as string | undefined) || (routeId as string | undefined);
+  const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
 
   useEffect(() => {
     const fetchBanner = async () => {
@@ -195,7 +196,7 @@ function TemplateFormOne({
 
       setIsLoadingApiData(true);
       try {
-        const response = await getRegistrationFieldApi(effectiveEventId);
+        const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
         console.log(
           "TemplateOne - getRegistrationFieldApi response:",
           response.data,
@@ -369,7 +370,7 @@ function TemplateFormOne({
 
       // Always fetch fresh data to ensure we have the latest order
       // The API might return fields, but let's be safe and fetch fresh
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       console.log("Fetched fields after reorder:", refreshedFields);
@@ -465,7 +466,7 @@ function TemplateFormOne({
       await createRegistrationFieldApi(effectiveEventId, fieldPayload);
 
       // Refresh fields list
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -518,7 +519,7 @@ function TemplateFormOne({
       await deleteRegistrationFieldApi(effectiveEventId, fieldIdNum);
 
       // Refresh fields list
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {

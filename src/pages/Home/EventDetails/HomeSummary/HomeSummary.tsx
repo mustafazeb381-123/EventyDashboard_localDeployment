@@ -19,6 +19,7 @@ import {
   getSessionAreaApi,
   getCheckOuts,
 } from "@/apis/apiHelpers";
+import { getRegistrationUrl } from "@/pages/Home/EventDetails/Invitation/resolveInvitationEmailLinks";
 import imageCompression from "browser-image-compression";
 
 // Same logic as SummaryCardData so counts match the card-detail page
@@ -244,7 +245,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   }, [location.search, location.state, paramId, eventId]);
 
-  // Fetch event data
+  // Fetch event data (called when you click an event in the list). API returns data.data.attributes.uuid.
   const getEventDataById = async (id: string | number) => {
     try {
       const response = await getEventbyId(id);
@@ -1169,7 +1170,14 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <div
               onClick={() => {
-                const registrationUrl = `${window.location.origin}/register/${eventId}`;
+                // Same format as invitation registration link: /register/{event_uuid}?tenant_uuid=...&event_id=...
+                const eventUuid = eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
+                const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+                const registrationUrl = getRegistrationUrl(eventUuid, tenantUuid, eventId ?? undefined);
+                if (!registrationUrl) {
+                  showNotification("Registration link not available (event UUID or tenant required)", "warning");
+                  return;
+                }
                 navigator.clipboard
                   .writeText(registrationUrl)
                   .then(() => {

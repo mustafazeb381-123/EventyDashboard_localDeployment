@@ -80,6 +80,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
 
   const { id: routeId } = useParams();
   const effectiveEventId = propEventId || routeId || undefined;
+  const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
 
   // Fetch event and banner
   useEffect(() => {
@@ -207,7 +208,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
     const fetchApiFormData = async () => {
       setIsLoadingApiData(true);
       try {
-        const response = await getRegistrationFieldApi(effectiveEventId);
+        const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
         const fields = response.data.data || [];
         // Sort by order
         const sortedFields = [...fields].sort((a: any, b: any) => {
@@ -343,7 +344,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
         targetFieldIdNum,
       );
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -410,7 +411,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
 
       await createRegistrationFieldApi(effectiveEventId, fieldPayload);
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {
@@ -461,7 +462,7 @@ const TemplateFormSix: React.FC<TemplateFormSixProps> = ({
     try {
       await deleteRegistrationFieldApi(effectiveEventId, fieldIdNum);
 
-      const response = await getRegistrationFieldApi(effectiveEventId);
+      const response = await getRegistrationFieldApi(effectiveEventId, tenantUuid);
       let refreshedFields = response.data.data || [];
 
       const sortedFields = [...refreshedFields].sort((a: any, b: any) => {

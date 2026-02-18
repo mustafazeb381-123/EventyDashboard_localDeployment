@@ -5,7 +5,7 @@
     "errorLoading": "Error loading registration form",
     "noEventId": "Event ID not found",
     "checkUrl": "Please check the URL and try again",
-    "expectedUrl": "Expected URL format: /register/[eventId]",
+    "expectedUrl": "Expected URL format: /register/[event_uuid]",
     "eventDataError": "The event data could not be loaded. Please check the URL and try again",
     "noTemplate": "No registration template found for this event",
     "noActiveFields": "No active form fields",

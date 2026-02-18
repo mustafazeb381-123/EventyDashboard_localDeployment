@@ -745,8 +745,8 @@ const MainData = ({
     try {
       setIsLoadingBadges(true);
       console.log("Fetching badges for event ID:", eventId);
-
-      const response = await getBadgeType(eventId);
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+      const response = await getBadgeType(eventId, { tenant_uuid: tenantUuid ?? undefined });
 
       console.log("Badges API Response:", response);
 
