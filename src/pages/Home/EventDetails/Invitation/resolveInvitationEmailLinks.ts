@@ -18,6 +18,33 @@ export const TENANT_UUID_PLACEHOLDER = "{{tenant_uuid}}";
 /** Backend replaces with per-invitee token when sending emails. */
 export const RSVP_TOKEN_PLACEHOLDER = "{{rsvp_token}}";
 
+/**
+ * Origin for registration and RSVP links (used in emails and "Copy link").
+ * In production, set VITE_APP_PUBLIC_URL to your deployed frontend URL so links in emails are never localhost.
+ * (Vite inlines this at build time – set it in Vercel/hosting env vars and redeploy.)
+ */
+function getPublicOrigin(): string {
+  const envUrl = typeof import.meta !== "undefined" && (import.meta as any).env?.VITE_APP_PUBLIC_URL;
+  if (envUrl && typeof envUrl === "string" && envUrl.trim()) {
+    return envUrl.trim().replace(/\/$/, "");
+  }
+  if (typeof window !== "undefined" && window.location?.origin) {
+    const origin = window.location.origin;
+    // In production build, avoid embedding localhost in saved invitation body (links in emails would be wrong)
+    const isLocalhost =
+      origin === "http://localhost:5173" ||
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("http://127.0.0.1");
+    if (typeof import.meta !== "undefined" && (import.meta as any).env?.PROD && isLocalhost) {
+      console.warn(
+        "[EventyDashboard] Registration/RSVP links will use localhost. Set VITE_APP_PUBLIC_URL to your deployed URL (e.g. in Vercel env) and redeploy so email links are correct."
+      );
+    }
+    return origin;
+  }
+  return "";
+}
+
 /** Build registration URL: /register/{event_uuid}?tenant_uuid=...&event_id=... (path = event UUID only; event_id in query for template/fields APIs). */
 function buildRegistrationUrl(
   eventUuid: string | null,
@@ -29,7 +56,7 @@ function buildRegistrationUrl(
   const params = new URLSearchParams({ tenant_uuid: tenantUuid });
   if (eventId != null) params.set("event_id", String(eventId));
   if (addUserTypeVip) params.set("user_type", "vip");
-  return `${typeof window !== "undefined" ? window.location.origin : ""}/register/${eventUuid}?${params.toString()}`;
+  return `${getPublicOrigin()}/register/${eventUuid}?${params.toString()}`;
 }
 
 /** Same format as Home Summary "Copy Registration Link" + user_type=vip */
@@ -61,7 +88,7 @@ export function getRsvpUrl(
   tenantUuid: string | null,
   includeTokenPlaceholder?: boolean
 ): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const origin = getPublicOrigin();
   let path = "";
   if (includeTokenPlaceholder && eventId) {
     // For email template: use placeholders so backend can inject tenant_uuid and rsvp_token per invitee
