@@ -14,6 +14,17 @@ interface BadgeTemplateProps {
   user?: any;
 }
 
+/** QR value: prefer token; fallback to stable id so every badge shows a QR when template has QR. */
+const getQrValue = (user: any): string => {
+  console.log("user_____", user);
+  const token = user?.attributes?.token ?? user?.token;
+  console.log("token____qr code _____", token);
+  if (token && String(token).trim()) return String(token).trim();
+  const id = user?.id ?? user?.attributes?.id;
+  if (id != null) return `event-user-${id}`;
+  return "";
+};
+
 const getBadgeColors = (template: any, event: any) => {
   const templateData = template?.attributes?.template_data || {};
   const eventColors = event?.attributes || {};
@@ -267,9 +278,9 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             overflow: "hidden",
           }}
         >
-          {user?.attributes?.token ? (
+          {getQrValue(user) ? (
             <QRCode
-              value={user.attributes.token}
+              value={getQrValue(user)}
               size={Math.min(
                 (templateData.qrCodeSize?.width || 120) * scaleX - 8,
                 (templateData.qrCodeSize?.height || 120) * scaleY - 8
@@ -414,9 +425,9 @@ export const ExistingBadgeTemplate1: React.FC<BadgeTemplateProps> = ({
 
         {/* QR Code on front side */}
         <div className="mt-2 bg-white p-3 rounded-lg shadow-md">
-          {user?.attributes?.token ? (
+          {getQrValue(user) ? (
             <QRCode
-              value={user.attributes.token}
+              value={getQrValue(user)}
               size={96}
               style={{ width: "96px", height: "96px" }}
             />
@@ -563,9 +574,9 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
 
         {/* QR Code on front side */}
         <div className="mt-2 bg-white p-3 rounded-lg shadow-md">
-          {user?.attributes?.token ? (
+          {getQrValue(user) ? (
             <QRCode
-              value={user.attributes.token}
+              value={getQrValue(user)}
               size={96}
               style={{ width: "96px", height: "96px" }}
             />

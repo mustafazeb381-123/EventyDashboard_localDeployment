@@ -1,3 +1,55 @@
+// return (
+//   <>
+//     <style>{`
+//       @media print {
+//         @page {
+//           margin: 0;
+//         }
+//         body {
+//           margin: 0;
+//           padding: 0;
+//         }
+//         .print-page {
+//           width: 100vw;
+//           height: 100vh;
+//           display: flex;
+//           align-items: center;
+//           justify-content: center;
+//           page-break-after: always;
+//           break-after: page;
+//         }
+//         .print-page:last-child {
+//           page-break-after: avoid;
+//           break-after: avoid;
+//         }
+//       }
+//     `}</style>
+
+//     <div ref={ref}>
+//       {users.map((user: any) => (
+//         <div
+//           key={user.id}
+//           className="print-page"
+//           style={{
+//             width: "100vw",
+//             height: "100vh",
+//             display: "flex",
+//             alignItems: "center",
+//             justifyContent: "center",
+//             pageBreakAfter: "always",
+//           }}
+//         >
+//           {renderBadgeTemplate(template, eventData, user)}
+//         </div>
+//       ))}
+//     </div>
+//   </>
+// );
+// }
+// );
+
+
+
 import React, { useRef, useState, useEffect, forwardRef } from "react";
 import { X, Download, Printer } from "lucide-react";
 import { useReactToPrint } from "react-to-print";
@@ -5,31 +57,67 @@ import jsPDF from "jspdf";
 import domtoimage from "dom-to-image-more";
 import { renderBadgeTemplate } from "./badgeTemplate";
 
-/** Print content in its own component so it always receives current template prop (avoids stale ref) */
+/** Print content: one badge per page, centered on each page. */
 const PrintContent = forwardRef<HTMLDivElement, { template: any; eventData: any; users: any[] }>(
   function PrintContent({ template, eventData, users }, ref) {
     if (!template) return <div ref={ref} />;
     return (
-      <div ref={ref} className="print-container">
+      <>
         <style>{`
           @media print {
-            @page { size: A4 portrait; margin: 0; }
-            .badge-print-wrapper {
-              display: flex !important;
-              justify-content: center !important;
-              align-items: center !important;
-              height: 100vh !important;
-              page-break-after: always !important;
+            @page {
+              margin: 0;
+              size: letter;
             }
-            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            html, body, .print-root, .print-page {
+              margin: 0 !important;
+              padding: 0 !important;
+              background: #ffffff !important;
+              background-color: #ffffff !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            .print-page {
+              width: 100%;
+              height: 100vh;
+              min-height: 100vh;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              page-break-after: always;
+              break-after: page;
+              box-sizing: border-box;
+            }
+            .print-page:last-child {
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            /* Remove gray shadow/outline around the badge when printing */
+            .print-page > *,
+            .print-root .custom-badge-root,
+            .print-root .rounded-xl {
+              box-shadow: none !important;
+              -webkit-box-shadow: none !important;
+            }
           }
         `}</style>
-        {users.map((user) => (
-          <div key={user.id} className="badge-print-wrapper">
-            {renderBadgeTemplate(template, eventData, user)}
-          </div>
-        ))}
-      </div>
+
+        <div
+          ref={ref}
+          className="print-root"
+          style={{ background: "#fff", backgroundColor: "#fff" }}
+        >
+          {users.map((user: any) => (
+            <div
+              key={user.id}
+              className="print-page"
+              style={{ background: "#fff", backgroundColor: "#fff" }}
+            >
+              {renderBadgeTemplate(template, eventData, user)}
+            </div>
+          ))}
+        </div>
+      </>
     );
   }
 );
@@ -68,7 +156,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   // Template selected in this modal for printing (same list as Badge/Advance Badge page)
   const [selectedTemplateForPrint, setSelectedTemplateForPrint] = useState<any>(null);
 
-  // Users selected for printing: when user clicks a user badge, only that badge is selected for print
+  // Users selected for printing (multi-select); badges for these users shown in column
   const [selectedUsersForPrint, setSelectedUsersForPrint] = useState<any[]>([]);
 
   // Sync when modal opens: do NOT pre-select the template from Badges/AdvanceBadge — user picks in this modal
@@ -111,7 +199,12 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   };
 
   const handleBadgeClick = (user: any) => {
-    setSelectedUsersForPrint([user]);
+    setSelectedUsersForPrint((prev) => {
+      const id = String(user?.id);
+      const isSelected = prev.some((u) => String(u?.id) === id);
+      if (isSelected) return prev.filter((u) => String(u?.id) !== id);
+      return [...prev, user];
+    });
   };
 
   // Explicitly use modal selection; only fall back to event default when nothing selected in modal
@@ -120,6 +213,12 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
   // ✅ react-to-print: trigger after a tick so DOM has latest template selection
   const handlePrintFromHook = useReactToPrint({
     contentRef: printComponentRef,
+    pageStyle: `
+      @page { margin: 0; size: letter; }
+      html, body { margin: 0 !important; padding: 0 !important; background: #ffffff !important; background-color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .print-root, .print-page { background: #ffffff !important; background-color: #ffffff !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+      .print-page > *, .print-root .custom-badge-root, .print-root .rounded-xl { box-shadow: none !important; -webkit-box-shadow: none !important; }
+    `,
     onBeforePrint: async () => {
       onPrint(selectedUsersForPrint);
     },
@@ -238,7 +337,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-2xl w-[95%] max-w-7xl mx-auto relative overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-[50%] mx-auto relative overflow-hidden max-h-[95vh] flex flex-col">
         
         {/* Header Actions */}
         <div className="p-4 border-b flex justify-between items-center bg-white z-10">
@@ -260,84 +359,101 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
         </div>
 
         {/* Scrollable Preview Area */}
-        <div className="p-8 flex-1 overflow-y-auto bg-gray-50">
-          {/* Section 1: Choose template for this print (same templates as Badge/Advance Badge page) - 4 per row */}
-          {allBadgeTemplates.length > 0 && (
-            <div className="mb-8">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">
-                Choose template for this print
-              </h3>
-              <div className="grid grid-cols-4 gap-4">
-                {allBadgeTemplates.map((template: any) => {
-                  const templateId = template?.id ?? template?.attributes?.id;
-                  const sampleUser = usersToPreview[0] || null;
-                  return (
-                    <div
-                      key={templateId}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => handleTemplateClick(template)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          handleTemplateClick(template);
-                        }
-                      }}
-                      className={`flex flex-col items-center cursor-pointer transition-all duration-200 rounded-xl p-2 ${
-                        isTemplateSelected(template)
-                          ? "ring-2 ring-pink-500 ring-offset-2 bg-pink-50/50"
-                          : "hover:bg-gray-100/80"
-                      }`}
-                    >
-                      <div className="bg-white shadow-lg rounded-xl overflow-hidden pointer-events-none transform scale-75 origin-center">
-                        {renderBadgeTemplate(template, eventData, sampleUser)}
-                      </div>
-                    </div>
-                  );
-                })}
+        <div className="p-8 flex-1 overflow-y-auto bg-gray-50 flex flex-col gap-8">
+          {/* Row 1: Template names + Participant names (names only) */}
+          <div className="flex flex-col sm:flex-row gap-6 flex-wrap">
+            {/* Section 1: Choose template – names only */}
+            {allBadgeTemplates.length > 0 && (
+              <div className="flex-shrink-0">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Choose template for this print
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {allBadgeTemplates.map((template: any) => {
+                    const templateId = template?.id ?? template?.attributes?.id;
+                    const templateName =
+                      template?.attributes?.name ?? template?.name ?? `Template ${templateId}`;
+                    return (
+                      <button
+                        key={templateId}
+                        type="button"
+                        onClick={() => handleTemplateClick(template)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          isTemplateSelected(template)
+                            ? "ring-2 ring-pink-500 ring-offset-2 bg-pink-500 text-white"
+                            : "bg-white border border-gray-200 text-gray-700 hover:border-pink-300 hover:bg-pink-50/50"
+                        }`}
+                      >
+                        {templateName}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Section 2: User badges preview - 4 per row, using selected template */}
-          {templateToUse && usersToPreview.length > 0 && (
-            <>
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">Badge preview</h3>
-              <div className="grid grid-cols-4 gap-6">
-                {usersToPreview.map((user) => (
-                  <div
-                    key={user.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => handleBadgeClick(user)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleBadgeClick(user);
-                      }
-                    }}
-                    className={`flex flex-col items-center cursor-pointer transition-all duration-200 rounded-xl p-2 ${
-                      isUserSelectedForPrint(user)
-                        ? "ring-2 ring-pink-500 ring-offset-2 bg-pink-50/50"
-                        : "hover:bg-gray-100/80"
-                    }`}
-                  >
+            {/* Section 2: Participants – multi-select for print */}
+            {/* {templateToUse && usersToPreview.length > 0 && (
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                  Participants
+                </h3>
+                <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto">
+                  {usersToPreview.map((user) => {
+                    const name =
+                      user?.attributes?.name ??
+                      user?.attributes?.email ??
+                      `Participant ${user?.id}`;
+                    const selected = isUserSelectedForPrint(user);
+                    return (
+                      <button
+                        key={user.id}
+                        type="button"
+                        onClick={() => handleBadgeClick(user)}
+                        className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                          selected
+                            ? "ring-2 ring-pink-500 ring-offset-2 bg-pink-500 text-white"
+                            : "bg-white border border-gray-200 text-gray-700 hover:border-pink-300 hover:bg-pink-50/50"
+                        }`}
+                      >
+                        <span className="truncate max-w-[180px]">{name}</span>
+                        {selected && (
+                          <span className="shrink-0 text-xs font-medium opacity-90">
+                            Selected for print
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )} */}
+          </div>
+
+          {/* Row 2: Badge previews – all selected users in a column (always visible) */}
+          {templateToUse && usersForPdfOrPrint.length > 0 && (
+            <div className="w-full">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Badge preview
+              </h3>
+              <div className="flex flex-col gap-6">
+                {usersForPdfOrPrint.map((user) => (
+                  <div key={user.id} className="flex flex-col items-center">
                     <div
                       ref={(el) => {
                         badgeRefs.current[user.id] = el;
                       }}
-                      className="bg-white shadow-xl rounded-xl overflow-hidden pointer-events-none"
+                      className="w-full bg-white shadow-xl rounded-xl overflow-hidden border border-gray-200 p-4 flex items-center justify-center"
                     >
                       {renderBadgeTemplate(templateToUse, eventData, user)}
                     </div>
-                    <p className="mt-2 text-sm text-gray-500 font-medium">{user.attributes?.name}</p>
-                    {isUserSelectedForPrint(user) && (
-                      <p className="text-xs text-pink-600 font-medium mt-0.5">Selected for print</p>
-                    )}
+                    <p className="mt-2 text-sm text-gray-500 font-medium">
+                      {user?.attributes?.name ?? user?.attributes?.email ?? `Participant ${user?.id}`}
+                    </p>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
         </div>
 

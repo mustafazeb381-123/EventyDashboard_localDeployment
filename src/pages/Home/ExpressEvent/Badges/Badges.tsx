@@ -539,6 +539,7 @@ const Badges: React.FC<BadgesProps> = ({
   const [selectedTemplate, setSelectedTemplate] =
     useState<BadgeTemplate | null>(null);
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
   const [editingCustomTemplate, setEditingCustomTemplate] =
     useState<BadgeTemplate | null>(null);
   const [isEditCustomMode, setIsEditCustomMode] = useState(false);
@@ -1378,11 +1379,11 @@ const Badges: React.FC<BadgesProps> = ({
     }
   };
 
-  const handleDeleteCustomTemplate = async (templateId: string) => {
-    if (!confirm("Are you sure you want to delete this template?")) {
-      return;
-    }
+  const handleDeleteCustomTemplate = (templateId: string) => {
+    setTemplateToDelete(templateId);
+  };
 
+  const performDeleteCustomTemplate = async (templateId: string) => {
     if (!effectiveEventId) {
       showNotification("Event ID not found. Cannot delete template.", "error");
       return;
@@ -2356,6 +2357,45 @@ const Badges: React.FC<BadgesProps> = ({
         template={editingCustomTemplate}
         isEditMode={isEditCustomMode}
       />
+
+      {/* Delete Template Confirmation Modal */}
+      {templateToDelete && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div
+            className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+              Delete template?
+            </h3>
+            <p className="text-sm text-gray-600 text-center mb-6">
+              Are you sure you want to delete this template? This action cannot
+              be undone.
+            </p>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setTemplateToDelete(null)}
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  const id = templateToDelete;
+                  setTemplateToDelete(null);
+                  performDeleteCustomTemplate(id);
+                }}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Preview Modals */}
       {previewBadge && (
