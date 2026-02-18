@@ -8,12 +8,14 @@ const TOKEN_KEY = 'token';
 // Your identifier
 // const identifier = storage.getString("identifier"); // Your identifier
 // console.log('Identifier in the axios instance file:', identifier);
-const axiosInstance = axios.create({
-  baseURL: `https://scceventy.dev/en/api_dashboard/v1`, // Your API URL
-  // headers: {
-  //   'Content-Type': 'application/json',
+// In dev, use same-origin path so Vite proxy can forward to API (avoids CORS). In prod, use full API URL.
+const API_BASE =
+  typeof import.meta !== "undefined" && import.meta.env?.DEV
+    ? "/en/api_dashboard/v1"
+    : "https://scceventy.dev/en/api_dashboard/v1";
 
-  // },
+const axiosInstance = axios.create({
+  baseURL: API_BASE,
 });
 
 // Request Interceptor

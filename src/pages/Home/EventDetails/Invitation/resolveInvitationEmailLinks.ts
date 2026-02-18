@@ -5,15 +5,17 @@
  *
  * RSVP LINK FLOW (for backend):
  * 1. Email template has: href="{{rsvp_link}}" (e.g. <a href="{{rsvp_link}}">RSVP Now</a>)
- * 2. Frontend replaces {{rsvp_link}} with /rsvp/ URL + rsvp_token placeholder, e.g.:
- *    https://origin.com/rsvp/167/25?tenant_uuid=xxx&rsvp_token={{rsvp_token}}
- * 3. Backend when sending each email: replace {{rsvp_token}} with that invitee's token.
+ * 2. Frontend replaces {{rsvp_link}} with /rsvp/ URL + placeholders, e.g.:
+ *    https://origin.com/rsvp/167/25?tenant_uuid={{tenant_uuid}}&rsvp_token={{rsvp_token}}
+ * 3. Backend when sending each email: replace {{tenant_uuid}} and {{rsvp_token}} with real values.
  * See BACKEND_RSVP_LINK.md in this folder for full backend guide.
  */
 
 export const REGISTRATION_LINK_VIP_TOKEN = "{{registration_link_vip}}";
 export const RSVP_LINK_TOKEN = "{{rsvp_link}}";
-/** Backend replaces this with per-invitee token when sending emails. */
+/** Backend replaces with tenant UUID when sending emails. */
+export const TENANT_UUID_PLACEHOLDER = "{{tenant_uuid}}";
+/** Backend replaces with per-invitee token when sending emails. */
 export const RSVP_TOKEN_PLACEHOLDER = "{{rsvp_token}}";
 
 /** Build registration URL: /register/{event_uuid}?tenant_uuid=...&event_id=... (path = event UUID only; event_id in query for template/fields APIs). */
@@ -50,7 +52,8 @@ export function getRegistrationUrl(
 
 /**
  * Build RSVP URL for the /rsvp page (dashboard "Share RSVP link").
- * When includeTokenPlaceholder is true, appends &rsvp_token={{rsvp_token}}.
+ * When includeTokenPlaceholder is true, uses placeholders: ?tenant_uuid={{tenant_uuid}}&rsvp_token={{rsvp_token}}
+ * so the backend can replace both when sending each email.
  */
 export function getRsvpUrl(
   eventId: string | number | null,
@@ -60,18 +63,26 @@ export function getRsvpUrl(
 ): string {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
   let path = "";
-  if (!eventId) {
-    path = `${origin}/rsvp`;
-  } else if (invitationId && tenantUuid) {
-    path = `${origin}/rsvp/${eventId}/${invitationId}?tenant_uuid=${encodeURIComponent(tenantUuid)}`;
-  } else if (tenantUuid) {
-    path = `${origin}/rsvp/${eventId}?tenant_uuid=${encodeURIComponent(tenantUuid)}`;
+  if (includeTokenPlaceholder && eventId) {
+    // For email template: use placeholders so backend can inject tenant_uuid and rsvp_token per invitee
+    const base = invitationId
+      ? `${origin}/rsvp/${eventId}/${invitationId}`
+      : `${origin}/rsvp/${eventId}`;
+    path = `${base}?tenant_uuid=${TENANT_UUID_PLACEHOLDER}&rsvp_token=${RSVP_TOKEN_PLACEHOLDER}`;
   } else {
-    path = `${origin}/rsvp/${eventId}`;
-  }
-  if (includeTokenPlaceholder && path) {
-    const sep = path.includes("?") ? "&" : "?";
-    path += `${sep}rsvp_token=${RSVP_TOKEN_PLACEHOLDER}`;
+    if (!eventId) {
+      path = `${origin}/rsvp`;
+    } else if (invitationId && tenantUuid) {
+      path = `${origin}/rsvp/${eventId}/${invitationId}?tenant_uuid=${encodeURIComponent(tenantUuid)}`;
+    } else if (tenantUuid) {
+      path = `${origin}/rsvp/${eventId}?tenant_uuid=${encodeURIComponent(tenantUuid)}`;
+    } else {
+      path = `${origin}/rsvp/${eventId}`;
+    }
+    if (includeTokenPlaceholder && path) {
+      const sep = path.includes("?") ? "&" : "?";
+      path += `${sep}rsvp_token=${RSVP_TOKEN_PLACEHOLDER}`;
+    }
   }
   return path;
 }
@@ -98,7 +109,7 @@ export function resolveInvitationEmailLinks(
 
   const registrationUrl = getRegistrationUrl(eventUuid, tenantUuid, eventId);
   const registrationUrlVip = getRegistrationUrlVip(eventUuid, tenantUuid, eventId);
-  // RSVP link in email: /rsvp/{eventId}/{invitationId}?tenant_uuid=xxx&rsvp_token={{rsvp_token}} (backend replaces {{rsvp_token}} per invitee)
+  // RSVP link in email: /rsvp/{eventId}/{invitationId}?tenant_uuid={{tenant_uuid}}&rsvp_token={{rsvp_token}} (backend replaces both per invitee)
   const rsvpUrl = getRsvpUrl(eventId, invitationId, tenantUuid, true);
 
   let out = html.replace(

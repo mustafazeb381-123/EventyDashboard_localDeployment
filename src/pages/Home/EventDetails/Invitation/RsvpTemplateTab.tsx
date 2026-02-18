@@ -371,7 +371,7 @@ export function RsvpTemplateTab({
     });
   };
 
-  // RSVP link with {{rsvp_token}} placeholder so backend can replace with per-invitee token when sending emails
+  // RSVP link with {{tenant_uuid}} and {{rsvp_token}} placeholders so backend can replace when sending emails
   const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
   const rsvpLinkUrlWithToken = getRsvpUrl(eventId ?? null, invitationId ?? null, tenantUuid, true);
   const rsvpLinkUrl = rsvpLinkUrlWithToken || null;
@@ -388,7 +388,7 @@ export function RsvpTemplateTab({
     }
     navigator.clipboard
       .writeText(rsvpLinkUrlWithToken)
-      .then(() => showNotification("RSVP link (with {{rsvp_token}} placeholder) copied!", "success"))
+      .then(() => showNotification("RSVP link (with {{tenant_uuid}} & {{rsvp_token}} placeholders) copied!", "success"))
       .catch(() => showNotification("Failed to copy link", "error"));
   };
 
@@ -412,7 +412,7 @@ export function RsvpTemplateTab({
                 >
                   Open RSVP page
                 </a>
-                <p className="mt-1 text-xs text-slate-500 break-all" title="Backend will replace {{rsvp_token}} per invitee when sending">
+                <p className="mt-1 text-xs text-slate-500 break-all" title="Backend will replace {{tenant_uuid}} and {{rsvp_token}} per invitee when sending">
                   {rsvpLinkUrlWithToken}
                 </p>
               </>

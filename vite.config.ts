@@ -20,6 +20,14 @@ export default defineConfig({
   server: {
     host: true,            // expose on all hosts
     port: 5173,
-    allowedHosts: ['lvh.me', '*.lvh.me']
+    allowedHosts: ['lvh.me', '*.lvh.me'],
+    // Proxy API to same origin in dev to avoid CORS (backend must allow your origin in production)
+    proxy: {
+      '/en/api_dashboard': {
+        target: 'https://scceventy.dev',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
 })

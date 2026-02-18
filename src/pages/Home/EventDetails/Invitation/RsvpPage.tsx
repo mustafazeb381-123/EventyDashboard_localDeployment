@@ -38,17 +38,17 @@ function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
 }
 
 /**
- * Public RSVP page at /rsvp/:eventId/:invitationId
- * Uses only the public API: GET /events/{event_id}/event_invitations/{id}/rsvp_template?tenant_uuid=...
- * No auth-required APIs (no getEventbyId, no getEventInvitations). eventId and invitationId must come from the URL.
+ * Public RSVP page at /rsvp/:eventId/:invitationId?tenant_uuid=...&rsvp_token=...
+ * tenant_uuid and rsvp_token come from the backend (in the link sent in the invitation email).
+ * We use only these URL params for APIs – no localStorage. GET rsvp_template and POST rsvp_response both use them.
  */
 export default function RsvpPage() {
   const params = useParams<{ eventId?: string; invitationId?: string; id?: string }>();
   const [searchParams] = useSearchParams();
   const eventId = params.eventId ?? params.id ?? undefined;
   const invitationIdParam = params.invitationId;
-  const tenantUuidFromUrl = searchParams.get("tenant_uuid");
-  const tenantUuid = tenantUuidFromUrl ?? (typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null);
+  /** From backend via link – we accept and use only these, no localStorage fallback. */
+  const tenantUuid = searchParams.get("tenant_uuid");
   const rsvpTokenFromUrl = searchParams.get("rsvp_token");
 
   const [rsvpTemplate, setRsvpTemplate] = useState<RsvpFormBuilderTemplate | null>(null);
