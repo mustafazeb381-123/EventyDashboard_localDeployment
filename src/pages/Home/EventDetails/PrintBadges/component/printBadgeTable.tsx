@@ -32,7 +32,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
   totalPages,
   setCurrentPage,
   filteredUsersCount,
-  rowsPerPage: _rowsPerPage,
+  rowsPerPage,
   startIndex,
 }) => {
   // Logic to generate pagination numbers (kept here as it's tightly coupled with pagination UI)
@@ -194,52 +194,54 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
             </span>{" "}
             of <span className="font-medium">{filteredUsersCount}</span> users
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
-                currentPage === 1
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-600 hover:text-gray-900 border border-transparent"
-              }`}
-            >
-              <ChevronLeft size={16} />
-              Previous
-            </button>
+          {filteredUsersCount >= rowsPerPage && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                disabled={currentPage === 1}
+                className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
+                  currentPage === 1
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-600 hover:text-gray-900 border border-transparent"
+                }`}
+              >
+                <ChevronLeft size={16} />
+                Previous
+              </button>
 
-            <div className="flex items-center gap-1">
-              {getPaginationNumbers().map((page, index) => (
-                <button
-                  key={index}
-                  onClick={() => typeof page === "number" && setCurrentPage(page)}
-                  className={`px-3 py-2 text-sm rounded-lg transition-colors ${
-                    page === currentPage
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : page === "..."
-                      ? "text-gray-400 cursor-default"
-                      : "text-gray-600 hover:text-gray-900 border border-transparent"
-                  }`}
-                  disabled={page === "..."}
-                >
-                  {page}
-                </button>
-              ))}
+              <div className="flex items-center gap-1">
+                {getPaginationNumbers().map((page, index) => (
+                  <button
+                    key={index}
+                    onClick={() => typeof page === "number" && setCurrentPage(page)}
+                    className={`px-3 py-2 text-sm rounded-lg transition-colors ${
+                      page === currentPage
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : page === "..."
+                        ? "text-gray-400 cursor-default"
+                        : "text-gray-600 hover:text-gray-900 border border-transparent"
+                    }`}
+                    disabled={page === "..."}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
+                  currentPage === totalPages
+                    ? "text-gray-400 cursor-not-allowed"
+                    : "text-gray-600 hover:text-gray-900 border border-transparent"
+                }`}
+              >
+                Next
+                <ChevronRight size={16} />
+              </button>
             </div>
-
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className={`flex items-center gap-2 px-4 py-2 text-sm rounded-lg transition-colors ${
-                currentPage === totalPages
-                  ? "text-gray-400 cursor-not-allowed"
-                  : "text-gray-600 hover:text-gray-900 border border-transparent"
-              }`}
-            >
-              Next
-              <ChevronRight size={16} />
-            </button>
-          </div>
+          )}
         </div>
       )}
     </div>
