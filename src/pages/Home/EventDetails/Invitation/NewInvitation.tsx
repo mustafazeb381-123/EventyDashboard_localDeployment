@@ -219,13 +219,28 @@ function NewInvitation() {
         phone_number: String(u?.phone_number ?? ""),
       }));
       setParsedInvitees(parsed);
+      // Backend may return rsvp_template as string (JSON) or object; normalize to string for form/API. Do not show if empty (e.g. {}).
       const rsvpTemplate = attrs.rsvp_template;
-      setInitialRsvpTemplateFromApi(
-        typeof rsvpTemplate === "string" && rsvpTemplate.trim() ? rsvpTemplate : null
-      );
+      let rsvpTemplateValue: string | null = null;
       if (typeof rsvpTemplate === "string" && rsvpTemplate.trim()) {
-        setRsvpTemplateString(rsvpTemplate);
+        const trimmed = rsvpTemplate.trim();
+        if (trimmed !== "{}") {
+          try {
+            const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+            if (Object.keys(parsed).length > 0) rsvpTemplateValue = rsvpTemplate;
+          } catch {
+            rsvpTemplateValue = rsvpTemplate;
+          }
+        }
+      } else if (typeof rsvpTemplate === "object" && rsvpTemplate !== null && Object.keys(rsvpTemplate as object).length > 0) {
+        try {
+          rsvpTemplateValue = JSON.stringify(rsvpTemplate);
+        } catch {
+          rsvpTemplateValue = null;
+        }
       }
+      setInitialRsvpTemplateFromApi(rsvpTemplateValue);
+      if (rsvpTemplateValue) setRsvpTemplateString(rsvpTemplateValue);
     }
 
     getEventInvitation(eventId, invitationIdFromRoute)
@@ -387,7 +402,7 @@ function NewInvitation() {
       const emailBodyWithResolvedLinks = resolveInvitationEmailLinks(
         selectedTemplate.html,
         eventUuid,
-        { forPreview: false, tenantUuid, eventId }
+        { tenantUuid, eventId, invitationId: invitationIdFromRoute ?? undefined }
       );
 
       const event_invitation = {
@@ -508,7 +523,7 @@ function NewInvitation() {
   const previewEmailHtml = resolveInvitationEmailLinks(
     selectedTemplate?.html ?? "",
     eventUuid,
-    { forPreview: true, tenantUuid, eventId }
+    { tenantUuid, eventId, invitationId: invitationIdFromRoute ?? undefined }
   );
 
   if (loadingInvitation && isEditMode) {
@@ -664,6 +679,7 @@ function NewInvitation() {
                     initialRsvpTemplate={rsvpTemplateString ?? initialRsvpTemplateFromApi ?? null}
                     onRsvpTemplateChange={setRsvpTemplateString}
                     eventId={eventId}
+                    invitationId={invitationIdFromRoute}
                   />
                 )}
 

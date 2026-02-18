@@ -171,7 +171,7 @@ const router = createBrowserRouter([
     element: <UserRegistration />,
   },
   {
-    path: "/rsvp/:id",
+    path: "/rsvp/:eventId/:invitationId?",
     element: <RsvpPage />,
   },
   {

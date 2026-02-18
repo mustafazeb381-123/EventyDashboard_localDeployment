@@ -11,6 +11,8 @@ interface RsvpFormPreviewProps {
   showActionButtons?: boolean;
   onAttendClick?: () => void;
   onDeclineClick?: () => void;
+  attendButtonDisabled?: boolean;
+  declineButtonDisabled?: boolean;
   onBannerClick?: () => void;
   onFooterClick?: () => void;
   onRemoveBanner?: () => void;
@@ -74,6 +76,8 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   showActionButtons = true,
   onAttendClick,
   onDeclineClick,
+  attendButtonDisabled = false,
+  declineButtonDisabled = false,
   onBannerClick,
   onFooterClick,
   onRemoveBanner,
@@ -510,13 +514,14 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
           {displayFields.map((field) => renderField(field))}
         </div>
 
-        {/* Attend & Decline buttons – always clickable */}
+        {/* Attend & Decline buttons */}
         {showActionButtons && (
           <div className="mt-6 flex flex-col sm:flex-row gap-4 sm:gap-6">
             <button
               type="button"
               onClick={() => onAttendClick?.()}
-              className="rsvp-btn-attend flex-1 inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 active:scale-[0.98]"
+              disabled={attendButtonDisabled}
+              className="rsvp-btn-attend flex-1 inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors border-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               style={{
                 backgroundColor: acceptBg,
                 color: acceptTextColor,
@@ -531,7 +536,8 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
             <button
               type="button"
               onClick={() => onDeclineClick?.()}
-              className="rsvp-btn-decline flex-1 inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors cursor-pointer border-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 active:scale-[0.98]"
+              disabled={declineButtonDisabled}
+              className="rsvp-btn-decline flex-1 inline-flex items-center justify-center gap-2 text-white font-semibold text-sm shadow-sm transition-colors border-0 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
               style={{
                 backgroundColor: declineBg,
                 color: declineTextColor,

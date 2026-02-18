@@ -240,16 +240,36 @@ export const duplicateEventInvitation = (
 };
 
 /**
- * Record RSVP response (public endpoint; may use different base or no auth).
- * POST /api_dashboard/v1/event_invitations/rsvp_response?rsvp_token=...&rsvp_response=accepted|declined|maybe
+ * Get RSVP template for an invitation.
+ * GET /events/{event_id}/event_invitations/{id}/rsvp_template?tenant_uuid=...
+ * Returns { rsvp_template: object } (backend may return object; we also support string for compatibility).
+ */
+export const getRsvpTemplate = (
+  eventId: string | number,
+  invitationId: string | number,
+  tenantUuid?: string | null
+) => {
+  const params = tenantUuid ? { tenant_uuid: tenantUuid } : undefined;
+  return axiosInstance.get<{ rsvp_template: unknown }>(
+    `/events/${eventId}/event_invitations/${invitationId}/rsvp_template`,
+    { params }
+  );
+};
+
+/**
+ * Record RSVP response (public API).
+ * POST .../event_invitations/rsvp_response?tenant_uuid=...&rsvp_token=...&rsvp_response=accepted|declined|maybe
+ * If you get 404, confirm backend path (e.g. singular /event_invitation/rsvp_response or different base URL).
  */
 export const rsvpResponse = (
   rsvpToken: string,
-  rsvpResponse: "accepted" | "declined" | "maybe"
+  rsvpResponse: "accepted" | "declined" | "maybe",
+  tenantUuid?: string | null
 ) => {
-  return axiosInstance.post(
-    `/event_invitations/rsvp_response`,
-    null,
-    { params: { rsvp_token: rsvpToken, rsvp_response: rsvpResponse } }
-  );
+  const params: Record<string, string> = {
+    rsvp_token: rsvpToken,
+    rsvp_response: rsvpResponse,
+  };
+  if (tenantUuid) params.tenant_uuid = tenantUuid;
+  return axiosInstance.post(`/event_invitations/rsvp_response`, null, { params });
 };

@@ -902,7 +902,8 @@ export function GrapesEmailEditor({
         ),
       });
 
-      // RSVP Link: backend replaces {{rsvp_link}} with per-invitee RSVP URL (e.g. with rsvp_token).
+      // RSVP Link: template has href="{{rsvp_link}}". Frontend replaces it with
+      // /rsvp/{eventId}/{invitationId}?tenant_uuid=xxx&rsvp_token={{rsvp_token}}; backend replaces {{rsvp_token}} per invitee.
       editor.DomComponents.addType("eventy-rsvp-link", {
         isComponent: (el: any) =>
           el?.tagName === "TABLE" &&

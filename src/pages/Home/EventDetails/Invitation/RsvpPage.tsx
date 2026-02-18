@@ -1,21 +1,63 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { getEventbyId } from "@/apis/apiHelpers";
-import { getEventInvitations } from "@/apis/invitationService";
+import { getEventInvitations, getRsvpTemplate, rsvpResponse } from "@/apis/invitationService";
 import { RsvpFormPreview } from "./rsvpFormBuilder/RsvpFormPreview";
 import type { RsvpFormBuilderTemplate, RsvpTheme, RsvpLanguageConfig } from "./rsvpFormBuilder/types";
 
 /**
- * Public RSVP page at /rsvp/:eventId
- * Loads event and first invitation with rsvp_template, then shows the RSVP form or a fallback message.
+ * Normalize API rsvp_template (object or string) to RsvpFormBuilderTemplate.
+ * Backend returns { rsvp_template: {} }; if empty (e.g. {}), do not show template.
+ */
+function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
+  if (raw == null) return null;
+  let parsed: { title?: string; formFields?: unknown[]; theme?: RsvpTheme; languageConfig?: RsvpLanguageConfig };
+  if (typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw) as typeof parsed;
+    } catch {
+      return null;
+    }
+  } else if (typeof raw === "object" && raw !== null) {
+    parsed = raw as typeof parsed;
+  } else {
+    return null;
+  }
+  if (!parsed || typeof parsed !== "object") return null;
+  // Do not show template if empty (e.g. {} or no meaningful content)
+  if (Object.keys(parsed).length === 0) return null;
+  return {
+    id: "rsvp-public",
+    title: parsed.title ?? "RSVP",
+    formFields: Array.isArray(parsed.formFields) ? parsed.formFields : [],
+    theme: parsed.theme ?? {},
+    languageConfig: parsed.languageConfig ?? { languageMode: "single", primaryLanguage: "en" },
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+/**
+ * Public RSVP page at /rsvp/:eventId/:invitationId?
+ * Uses GET /events/{event_id}/event_invitations/{id}/rsvp_template?tenant_uuid=... to load the template.
+ * When invitationId is missing, finds the first invitation with RSVP enabled and uses its id.
  */
 export default function RsvpPage() {
-  const { id: eventId } = useParams<{ id: string }>();
+  const params = useParams<{ eventId?: string; invitationId?: string }>();
+  const [searchParams] = useSearchParams();
+  const eventId = params.eventId ?? params.id ?? undefined;
+  const invitationIdParam = params.invitationId;
+  const tenantUuidFromUrl = searchParams.get("tenant_uuid");
+  const tenantUuid = tenantUuidFromUrl ?? (typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null);
+  const rsvpTokenFromUrl = searchParams.get("rsvp_token");
+
   const [eventName, setEventName] = useState<string | null>(null);
   const [rsvpTemplate, setRsvpTemplate] = useState<RsvpFormBuilderTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState<"accepted" | "declined" | null>(null);
+  const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   useEffect(() => {
     if (!eventId) {
@@ -28,55 +70,49 @@ export default function RsvpPage() {
 
     const load = async () => {
       try {
-        const [eventRes, invitationsRes] = await Promise.all([
+        let invitationId: string | number | undefined = invitationIdParam;
+        if (!invitationId) {
+          const invitationsRes = await getEventInvitations(eventId, { page: 1, per_page: 20 });
+          if (cancelled) return;
+          const list = invitationsRes?.data?.data ?? invitationsRes?.data;
+          const invitations = Array.isArray(list) ? list : [];
+          const getAttr = (inv: any, key: string) => inv?.attributes?.[key] ?? inv?.[key];
+          const withRsvp = invitations.find((inv: any) => {
+            const enableRsvp = getAttr(inv, "enable_rsvp");
+            const rsvpTemplateVal = getAttr(inv, "rsvp_template");
+            return enableRsvp && (typeof rsvpTemplateVal === "string" ? rsvpTemplateVal.trim() !== "" : rsvpTemplateVal != null);
+          });
+          if (withRsvp) {
+            const id = withRsvp.id ?? getAttr(withRsvp, "id");
+            invitationId = id != null ? String(id) : undefined;
+          }
+        }
+
+        if (!invitationId) {
+          const eventRes = await getEventbyId(eventId);
+          if (cancelled) return;
+          const eventData = eventRes?.data;
+          const name = eventData?.data?.attributes?.name ?? eventData?.attributes?.name ?? `Event ${eventId}`;
+          setEventName(name);
+          setRsvpTemplate(null);
+          setLoading(false);
+          return;
+        }
+
+        const [eventRes, templateRes] = await Promise.all([
           getEventbyId(eventId),
-          getEventInvitations(eventId, { page: 1, per_page: 20 }),
+          getRsvpTemplate(eventId, invitationId, tenantUuid),
         ]);
 
         if (cancelled) return;
 
         const eventData = eventRes?.data;
-        const name =
-          eventData?.data?.attributes?.name ??
-          eventData?.attributes?.name ??
-          `Event ${eventId}`;
+        const name = eventData?.data?.attributes?.name ?? eventData?.attributes?.name ?? `Event ${eventId}`;
         setEventName(name);
 
-        const list = invitationsRes?.data?.data ?? invitationsRes?.data;
-        const invitations = Array.isArray(list) ? list : [];
-        const getAttr = (inv: any, key: string) => inv?.attributes?.[key] ?? inv?.[key];
-        const withRsvp = invitations.find(
-          (inv: any) => {
-            const enableRsvp = getAttr(inv, "enable_rsvp");
-            const rsvpTemplate = getAttr(inv, "rsvp_template");
-            return enableRsvp && typeof rsvpTemplate === "string" && rsvpTemplate.trim() !== "";
-          }
-        );
-
-        const rsvpTemplateStr = withRsvp ? getAttr(withRsvp, "rsvp_template") : null;
-        if (withRsvp && typeof rsvpTemplateStr === "string" && rsvpTemplateStr.trim() !== "") {
-          try {
-            const parsed = JSON.parse(rsvpTemplateStr) as {
-              title?: string;
-              formFields?: any[];
-              theme?: RsvpTheme;
-              languageConfig?: RsvpLanguageConfig;
-            };
-            if (parsed && typeof parsed === "object") {
-              setRsvpTemplate({
-                id: "rsvp-public",
-                title: parsed.title ?? "RSVP",
-                formFields: Array.isArray(parsed.formFields) ? parsed.formFields : [],
-                theme: parsed.theme ?? {},
-                languageConfig: parsed.languageConfig ?? { languageMode: "single", primaryLanguage: "en" },
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              });
-            }
-          } catch {
-            // ignore parse error
-          }
-        }
+        const raw = templateRes?.data?.rsvp_template;
+        const template = normalizeRsvpTemplate(raw);
+        setRsvpTemplate(template ?? null);
       } catch (err: unknown) {
         if (!cancelled) {
           const message = err && typeof err === "object" && "message" in err ? String((err as Error).message) : "Failed to load RSVP.";
@@ -91,7 +127,49 @@ export default function RsvpPage() {
     return () => {
       cancelled = true;
     };
-  }, [eventId]);
+  }, [eventId, invitationIdParam, tenantUuid]);
+
+  const handleRsvpResponse = useCallback(
+    async (response: "accepted" | "declined") => {
+      if (!rsvpTokenFromUrl || !rsvpTokenFromUrl.trim()) {
+        setSubmitMessage({ type: "error", text: "RSVP link is invalid. Please use the link from your invitation email." });
+        return;
+      }
+      if (!tenantUuid) {
+        setSubmitMessage({ type: "error", text: "Missing tenant. Please use the full link from your invitation email." });
+        return;
+      }
+      setSubmitting(response);
+      setSubmitMessage(null);
+      try {
+        await rsvpResponse(rsvpTokenFromUrl, response, tenantUuid);
+        setSubmitMessage({
+          type: "success",
+          text: response === "accepted" ? "Thank you! Your attendance has been recorded." : "Thank you for letting us know. Your response has been recorded.",
+        });
+      } catch (err: unknown) {
+        const status = err && typeof err === "object" && "response" in err && (err as { response?: { status?: number } }).response?.status;
+        const dataError = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error;
+        const dataMessage = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+        let msg: string;
+        if (status === 404) {
+          msg = "This RSVP link may be invalid or expired. Please use the link from your invitation email.";
+        } else if (dataError) {
+          msg = String(dataError);
+        } else if (dataMessage) {
+          msg = String(dataMessage);
+        } else if (err && typeof err === "object" && "message" in err) {
+          msg = String((err as Error).message);
+        } else {
+          msg = "Failed to record your response. Please try again or use the link from your invitation email.";
+        }
+        setSubmitMessage({ type: "error", text: msg });
+      } finally {
+        setSubmitting(null);
+      }
+    },
+    [rsvpTokenFromUrl, tenantUuid]
+  );
 
   if (loading) {
     return (
@@ -124,19 +202,25 @@ export default function RsvpPage() {
       <div className="max-w-2xl mx-auto">
         {rsvpTemplate ? (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            {submitMessage && (
+              <div
+                className={`mx-4 mt-4 px-4 py-3 rounded-lg text-sm ${
+                  submitMessage.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+                }`}
+              >
+                {submitMessage.text}
+              </div>
+            )}
             <RsvpFormPreview
               formFields={rsvpTemplate.formFields}
               theme={rsvpTemplate.theme}
               currentLanguage={rsvpTemplate.languageConfig?.primaryLanguage ?? "en"}
               visibleOnly={true}
               showActionButtons={true}
-              onAttendClick={() => {
-                // TODO: wire to rsvp_response API when rsvp_token is available (e.g. from email link)
-                window.alert("Thank you! Your response has been recorded. (In production, use the RSVP link from your invitation email.)");
-              }}
-              onDeclineClick={() => {
-                window.alert("Thank you for letting us know. (In production, use the RSVP link from your invitation email.)");
-              }}
+              onAttendClick={() => handleRsvpResponse("accepted")}
+              onDeclineClick={() => handleRsvpResponse("declined")}
+              attendButtonDisabled={submitting !== null}
+              declineButtonDisabled={submitting !== null}
             />
           </div>
         ) : (

@@ -9,6 +9,7 @@ import type {
   RsvpFormBuilderTemplate,
 } from "./rsvpFormBuilder/types";
 import { getDefaultRsvpFormFields } from "./rsvpFormBuilder/types";
+import { getRsvpUrl } from "./resolveInvitationEmailLinks";
 
 type RsvpTemplateTabProps = {
   rsvpEmailSubject: string;
@@ -19,6 +20,8 @@ type RsvpTemplateTabProps = {
   onRsvpTemplateChange?: (rsvpTemplateJson: string | null) => void;
   /** Event ID for Share RSVP link (copies URL to clipboard) */
   eventId?: string | null;
+  /** Invitation ID for Share RSVP link; when set, link is /rsvp/{eventId}/{invitationId}?tenant_uuid=... */
+  invitationId?: string | null;
 };
 
 /** Default theme for auto-created RSVP template (matches RsvpFormBuilder defaultTheme) */
@@ -63,6 +66,7 @@ export function RsvpTemplateTab({
   initialRsvpTemplate = null,
   onRsvpTemplateChange,
   eventId = null,
+  invitationId = null,
 }: RsvpTemplateTabProps) {
   // Saved RSVP Form Builder templates (local state only; replace with API when ready)
   const [rsvpFormBuilderTemplates, setRsvpFormBuilderTemplates] = useState<
@@ -77,7 +81,7 @@ export function RsvpTemplateTab({
         theme?: RsvpTheme;
         languageConfig?: RsvpLanguageConfig;
       };
-      if (!parsed || typeof parsed !== "object") return [];
+      if (!parsed || typeof parsed !== "object" || Object.keys(parsed).length === 0) return [];
       const now = new Date().toISOString();
       const id = "rsvp-template-initial";
       const template: RsvpFormBuilderTemplate = {
@@ -100,13 +104,47 @@ export function RsvpTemplateTab({
       if (!initialRsvpTemplate || typeof initialRsvpTemplate !== "string" || !initialRsvpTemplate.trim())
         return null;
       try {
-        JSON.parse(initialRsvpTemplate);
+        const parsed = JSON.parse(initialRsvpTemplate) as Record<string, unknown>;
+        if (!parsed || typeof parsed !== "object" || Object.keys(parsed).length === 0) return null;
         return "rsvp-template-initial";
       } catch {
         return null;
       }
     }
   );
+
+  // When initialRsvpTemplate is set after load (e.g. edit mode: invitation data loads after mount), sync into local state.
+  // Only sync when we have no templates yet so we don't overwrite user edits.
+  useEffect(() => {
+    if (!initialRsvpTemplate || typeof initialRsvpTemplate !== "string" || !initialRsvpTemplate.trim())
+      return;
+    try {
+      const parsed = JSON.parse(initialRsvpTemplate) as {
+        title?: string;
+        formFields?: RsvpFormField[];
+        theme?: RsvpTheme;
+        languageConfig?: RsvpLanguageConfig;
+      };
+      if (!parsed || typeof parsed !== "object") return;
+      // Do not show template if empty (e.g. {})
+      if (Object.keys(parsed).length === 0) return;
+      const now = new Date().toISOString();
+      const id = "rsvp-template-initial";
+      const template: RsvpFormBuilderTemplate = {
+        id,
+        title: parsed.title ?? "RSVP Template",
+        formFields: Array.isArray(parsed.formFields) ? parsed.formFields : [],
+        theme: parsed.theme ?? {},
+        languageConfig: parsed.languageConfig ?? { languageMode: "single", primaryLanguage: "en" },
+        createdAt: now,
+        updatedAt: now,
+      };
+      setRsvpFormBuilderTemplates((prev) => (prev.length > 0 ? prev : [template]));
+      setConfirmedTemplate((prev) => (prev === null ? id : prev));
+    } catch {
+      // ignore parse error
+    }
+  }, [initialRsvpTemplate]);
 
   // Whenever confirmed template or its data changes, notify parent with JSON string for API
   useEffect(() => {
@@ -333,36 +371,60 @@ export function RsvpTemplateTab({
     });
   };
 
-  const rsvpLinkUrl = eventId ? `${window.location.origin}/rsvp/${eventId}` : null;
+  // RSVP link with {{rsvp_token}} placeholder so backend can replace with per-invitee token when sending emails
+  const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+  const rsvpLinkUrlWithToken = getRsvpUrl(eventId ?? null, invitationId ?? null, tenantUuid, true);
+  const rsvpLinkUrl = rsvpLinkUrlWithToken || null;
+  const rsvpLinkUrlForPreview = getRsvpUrl(eventId ?? null, invitationId ?? null, tenantUuid, false);
   const handleShareRsvpLink = () => {
     if (!rsvpLinkUrl) {
-      showNotification("Event ID is missing. Save the invitation first or open from an event.", "warning");
+      showNotification(
+        invitationId
+          ? "Event ID or tenant is missing. Use the full link from your invitation."
+          : "Save the invitation first to get the RSVP link with invitation ID, or use event-only link.",
+        "warning"
+      );
       return;
     }
     navigator.clipboard
-      .writeText(rsvpLinkUrl)
-      .then(() => showNotification("RSVP link copied to clipboard!", "success"))
+      .writeText(rsvpLinkUrlWithToken)
+      .then(() => showNotification("RSVP link (with {{rsvp_token}} placeholder) copied!", "success"))
       .catch(() => showNotification("Failed to copy link", "error"));
   };
 
   return (
     <div className="space-y-10">
-      {/* Share RSVP link – copy URL for this event's RSVP page */}
+      {/* Share RSVP link – clickable link + copy URL for this event's RSVP page */}
       {eventId && (
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
-          <div>
+          <div className="min-w-0 flex-1">
             <h3 className="text-sm font-semibold text-slate-800">RSVP link</h3>
             <p className="text-xs text-slate-600 mt-0.5">
               Share this link so invitees can respond (RSVP) to your invitation.
             </p>
+            {rsvpLinkUrl && (
+              <>
+                <a
+                  href={rsvpLinkUrlForPreview}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-block text-sm text-indigo-600 hover:text-indigo-800 hover:underline break-all"
+                >
+                  Open RSVP page
+                </a>
+                <p className="mt-1 text-xs text-slate-500 break-all" title="Backend will replace {{rsvp_token}} per invitee when sending">
+                  {rsvpLinkUrlWithToken}
+                </p>
+              </>
+            )}
           </div>
           <button
             type="button"
             onClick={handleShareRsvpLink}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
           >
             <Share2 size={18} />
-            Share RSVP link
+            Copy link
           </button>
         </div>
       )}
