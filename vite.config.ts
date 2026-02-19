@@ -17,6 +17,11 @@ export default defineConfig({
     global: 'globalThis', // Add this line to fix global is not defined
   },
 
+  // Remove console.* and debugger in production builds
+  esbuild: {
+    ...(process.env.NODE_ENV === "production" ? { drop: ["console", "debugger"] } : {}),
+  },
+
   server: {
     host: true,            // expose on all hosts
     port: 5173,
