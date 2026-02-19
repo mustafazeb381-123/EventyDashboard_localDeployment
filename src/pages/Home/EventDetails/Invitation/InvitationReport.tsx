@@ -20,8 +20,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { icons } from "@/utils/Assets";
-import { getEventInvitations } from "@/apis/invitationService";
-import type { EventInvitationUser } from "@/apis/invitationService";
+import { getEventInvitations, getEventInvitationMetrics } from "@/apis/invitationService";
+import type { EventInvitationUser, EventInvitationMetrics } from "@/apis/invitationService";
 import { Skeleton } from "@/components/ui/skeleton";
 
 /** Parse list response and find invitation by id. List API returns { data: [ { id, type, attributes }, ... ], meta } */
@@ -108,6 +108,7 @@ function InvitationReport() {
   } | null;
 
   const [invitation, setInvitation] = useState<Record<string, unknown> | null>(null);
+  const [metrics, setMetrics] = useState<EventInvitationMetrics | null>(null);
   const [loadingInvitation, setLoadingInvitation] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -121,9 +122,13 @@ function InvitationReport() {
     }
     setLoadingInvitation(true);
     setLoadError(null);
-    getEventInvitations(eventId, { page: 1, per_page: 100 })
-      .then((res) => {
-        const data = res.data as unknown;
+    setMetrics(null);
+    Promise.all([
+      getEventInvitations(eventId, { page: 1, per_page: 100 }),
+      getEventInvitationMetrics(eventId, invitationId),
+    ])
+      .then(([invitationsRes, metricsRes]) => {
+        const data = invitationsRes.data as unknown;
         const attrs = findInvitationFromListResponse(data, invitationId);
         if (attrs) {
           setInvitation(attrs);
@@ -132,9 +137,11 @@ function InvitationReport() {
           setInvitation(null);
           setLoadError("Invitation not found in list.");
         }
+        setMetrics(metricsRes.data.metrics);
       })
       .catch(() => {
         setInvitation(null);
+        setMetrics(null);
         setLoadError("Failed to load invitation.");
       })
       .finally(() => setLoadingInvitation(false));
@@ -168,37 +175,46 @@ function InvitationReport() {
   }, [rawUsers]);
 
   const total = allUsers.length;
-  const stats = useMemo(
-    () => ({
-      totalInvitations: total,
-      sent: sentCount,
-      registered: 0,
-      conversionRate: total > 0 ? `${((0 / total) * 100).toFixed(1)}%` : "0%",
+  const stats = useMemo(() => {
+    const reg = metrics?.registered_count ?? 0;
+    const unreg = Math.max(0, metrics?.unregistered_count ?? 0);
+    const totalInv = metrics?.total_invitees_count ?? total;
+    const denom = totalInv > 0 ? totalInv : total || 1;
+    return {
+      totalInvitations: totalInv || total,
+      sent: unreg,
+      registered: reg,
+      conversionRate: denom > 0 ? `${((reg / denom) * 100).toFixed(1)}%` : "0%",
       duplicateEmails: duplicateEmailsCount,
-    }),
-    [total, sentCount, duplicateEmailsCount]
-  );
+    };
+  }, [total, sentCount, duplicateEmailsCount, metrics]);
 
-  const registrationStatus = useMemo(
-    () => ({
-      approved: 0,
-      rejected: 0,
-      pending: total,
-      total,
-    }),
-    [total]
-  );
+  const registrationStatus = useMemo(() => {
+    const reg = metrics?.registered_count ?? 0;
+    const unreg = Math.max(0, metrics?.unregistered_count ?? 0);
+    const totalInv = metrics?.total_invitees_count ?? total;
+    const pend = Math.max(0, (totalInv || total) - reg - unreg);
+    const t = totalInv || total || 1;
+    return {
+      approved: reg,
+      rejected: unreg,
+      pending: pend,
+      total: t,
+    };
+  }, [total, metrics]);
 
-  // RSVP status — values will be dynamic later
-  const rsvpStatus = useMemo(
-    () => ({
-      attended: 0,
-      decline: 0,
-      pending: 0,
-      total: total || 1,
-    }),
-    [total]
-  );
+  const rsvpStatus = useMemo(() => {
+    const accepted = metrics?.accepted_rsvp_count ?? 0;
+    const declined = metrics?.declined_rsvp_count ?? 0;
+    const pending = metrics?.pending_count ?? 0;
+    const totalInv = (metrics?.total_invitees_count ?? total) || 1;
+    return {
+      attended: accepted,
+      decline: declined,
+      pending,
+      total: totalInv,
+    };
+  }, [total, metrics]);
 
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
@@ -408,19 +424,24 @@ function InvitationReport() {
                 <ArrowLeft size={18} />
                 Back to List
               </button>
-              <button
+              {/* <button
                 onClick={handlePrintReport}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
               >
                 <Printer size={18} />
                 Print Report
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
 
+        <div className="flex items-center gap-2 px-6 pt-6 pb-2">
+              <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
+              <h2 className="text-lg font-semibold text-gray-900">Registration Status</h2>
+            </div>
+
         {/* Statistics Cards - Inside white container */}
-        <div className="p-6">
+        <div className="px-6 pb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Total Invitations */}
             <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
@@ -442,7 +463,7 @@ function InvitationReport() {
                   <Send size={20} className="text-cyan-500" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Sent</p>
+                  <p className="text-sm text-gray-600 mb-0.5">Not Registered</p>
                   <p className="text-2lg font-bold text-gray-700">{stats.sent}</p>
                 </div>
               </div>
@@ -462,7 +483,7 @@ function InvitationReport() {
             </div>
 
             {/* Conversion Rate */}
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            {/* <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
                   <Percent size={20} className="text-orange-600" strokeWidth={2} />
@@ -472,11 +493,11 @@ function InvitationReport() {
                   <p className="text-2lg font-bold text-gray-700">{stats.conversionRate}</p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Duplicate Emails - Single card */}
-          <div className="max-w-xs mb-6">
+          {/* <div className="max-w-xs mb-6">
                   <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
@@ -488,17 +509,32 @@ function InvitationReport() {
                 </div>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* RSVP Cards */}
+          <div className="flex items-center gap-2 mb-4">
+              <Calendar size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
+              <h2 className="text-lg font-semibold text-gray-900">RSVP Status</h2>
+            </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                <Users size={20} className="text-purple-600" strokeWidth={2} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-600 mb-0.5">Total Invitations</p>
+                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.total}</p>
+                </div>
+              </div>
+            </div>
             <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
                   <CalendarCheck size={20} className="text-green-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Attended</p>
+                  <p className="text-sm text-gray-600 mb-0.5">Approved</p>
                   <p className="text-2lg font-bold text-gray-700">{rsvpStatus.attended}</p>
                 </div>
               </div>
@@ -509,7 +545,7 @@ function InvitationReport() {
                   <XCircle size={20} className="text-red-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Decline</p>
+                  <p className="text-sm text-gray-600 mb-0.5">Rejected</p>
                   <p className="text-2lg font-bold text-gray-700">{rsvpStatus.decline}</p>
                 </div>
               </div>
@@ -529,7 +565,7 @@ function InvitationReport() {
 
           {/* Registration Status Section - background #E3EFF9 */}
           <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2 mb-6 ">
               <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
               <h2 className="text-lg font-semibold text-gray-900">Registration Status</h2>
             </div>
@@ -542,7 +578,7 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                       <UserCheck size={18} className="text-green-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Approved</span>
+                    <span className="text-sm font-medium text-gray-700">Registered</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.approved}</span>
                 </div>
@@ -554,14 +590,14 @@ function InvitationReport() {
                 </div>
               </div>
 
-              {/* Rejected - icon small circle background pink/50 */}
+              {/* Not Registered - icon small circle background pink/50 */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center shrink-0">
-                      <UserX size={18} className="text-red-600" strokeWidth={2} />
+                      <Send size={18} className="text-red-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Rejected</span>
+                    <span className="text-sm font-medium text-gray-700">Not Registered</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.rejected}</span>
                 </div>
@@ -574,7 +610,7 @@ function InvitationReport() {
               </div>
 
               {/* Pending - icon small circle background orange/50 */}
-              <div>
+              {/* <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
@@ -590,7 +626,7 @@ function InvitationReport() {
                     style={{ width: `${(registrationStatus.pending / registrationStatus.total) * 100}%` }}
                   />
                 </div>
-              </div>
+              </div> */}
 
               {/* Conversion Rate - only this section has pri-color/100 background */}
               <div
@@ -613,14 +649,14 @@ function InvitationReport() {
             </div>
 
             <div className="space-y-4">
-              {/* Attended */}
+              {/* Approved */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                       <CalendarCheck size={18} className="text-green-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Attended</span>
+                    <span className="text-sm font-medium text-gray-700">Approved</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{rsvpStatus.attended}</span>
                 </div>
@@ -632,14 +668,14 @@ function InvitationReport() {
                 </div>
               </div>
 
-              {/* Decline */}
+              {/* Rejected */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
                       <XCircle size={18} className="text-red-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Decline</span>
+                    <span className="text-sm font-medium text-gray-700">Rejected</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{rsvpStatus.decline}</span>
                 </div>
@@ -861,10 +897,10 @@ function InvitationReport() {
             <p className="text-gray-600">Total Invitations</p>
             <p className="text-lg font-bold text-gray-900">{stats.totalInvitations}</p>
           </div>
-          <div>
-            <p className="text-gray-600">Sent</p>
+          {/* <div>
+            <p className="text-gray-600">Not Registered</p>
             <p className="text-lg font-bold text-gray-900">{stats.sent}</p>
-          </div>
+          </div> */}
           <div>
             <p className="text-gray-600">Registered</p>
             <p className="text-lg font-bold text-gray-900">{stats.registered}</p>

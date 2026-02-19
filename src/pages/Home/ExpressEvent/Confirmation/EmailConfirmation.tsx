@@ -1096,7 +1096,12 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       showNotification("Please select template", "warning");
       return;
     }
-    // Navigate to mobile app visualization area (next section, not next email step)
+    // If there are more email flow steps (e.g. Thanks, Rejection), go to next flow first
+    if (currentFlowIndex < flows.length - 1) {
+      setCurrentFlowIndex(currentFlowIndex + 1);
+      return;
+    }
+    // On last email step: navigate to next page (e.g. mobile app visualization)
     onNext?.(effectiveEventId || undefined);
   };
 
