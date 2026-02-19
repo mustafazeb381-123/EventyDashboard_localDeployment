@@ -448,6 +448,20 @@ function NewInvitation() {
         const createdBody = createRes.data as unknown;
         const createdAttrs = parseInvitationResponse(createdBody);
         const createdId = createdAttrs && createdAttrs.id != null ? String(createdAttrs.id) : null;
+        // Re-resolve RSVP link with the new invitation ID so stored body has /rsvp/{eventId}/{invitationId} (required for RSVP to work when recipient clicks link in email)
+        if (createdId && eventId && selectedTemplate?.html) {
+          const emailBodyWithInvitationId = resolveInvitationEmailLinks(selectedTemplate.html, eventUuid, {
+            tenantUuid,
+            eventId,
+            invitationId: createdId,
+          });
+          await updateEventInvitation(eventId, createdId, {
+            event_invitation: {
+              ...event_invitation,
+              invitation_email_body: emailBodyWithInvitationId,
+            },
+          });
+        }
         if (createdId && eventId) {
           await new Promise((r) => setTimeout(r, 500));
           const eventUuidForPreview = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
