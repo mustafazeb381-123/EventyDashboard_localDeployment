@@ -78,6 +78,21 @@ export interface UserImportItem {
   user_type?: string;
 }
 
+/** Metrics response for invitation report */
+export interface EventInvitationMetrics {
+  registered_count: number;
+  unregistered_count: number;
+  accepted_rsvp_count: number;
+  declined_rsvp_count: number;
+  maybe_rsvp_count: number;
+  pending_count: number;
+  total_invitees_count: number;
+}
+
+export interface EventInvitationMetricsResponse {
+  metrics: EventInvitationMetrics;
+}
+
 /** Create/update request body */
 export interface EventInvitationPayload {
   event_invitation: {
@@ -130,6 +145,24 @@ export const createEventInvitation = (
     .post<EventInvitation>(`/events/${eventId}/event_invitations`, payload)
     .then((res) => {
       console.log("[Event Invitation API] createEventInvitation", { eventId, payload, data: res.data });
+      return res;
+    });
+};
+
+/**
+ * Get invitation metrics (registered, RSVP counts, etc.).
+ * GET /events/{event_id}/event_invitations/{id}/metrics
+ */
+export const getEventInvitationMetrics = (
+  eventId: string | number,
+  invitationId: string | number
+) => {
+  return axiosInstance
+    .get<EventInvitationMetricsResponse>(
+      `/events/${eventId}/event_invitations/${invitationId}/metrics`
+    )
+    .then((res) => {
+      console.log("[Event Invitation API] getEventInvitationMetrics", { eventId, invitationId, data: res.data });
       return res;
     });
 };
