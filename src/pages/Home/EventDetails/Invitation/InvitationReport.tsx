@@ -174,6 +174,18 @@ function InvitationReport() {
     return dupes;
   }, [rawUsers]);
 
+  /** Set of emails that appear more than once (for row-level duplicate indicator) */
+  const duplicateEmailsSet = useMemo(() => {
+    const emails = rawUsers.map((u) => (u.email ?? "").toLowerCase()).filter(Boolean);
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
+    emails.forEach((e) => {
+      if (seen.has(e)) duplicates.add(e);
+      else seen.add(e);
+    });
+    return duplicates;
+  }, [rawUsers]);
+
   const total = allUsers.length;
   const stats = useMemo(() => {
     const reg = metrics?.registered_count ?? 0;
@@ -497,7 +509,7 @@ function InvitationReport() {
           </div>
 
           {/* Duplicate Emails - Single card */}
-          {/* <div className="max-w-xs mb-6">
+          <div className="max-w-xs mb-6">
                   <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
@@ -509,7 +521,7 @@ function InvitationReport() {
                 </div>
               </div>
             </div>
-          </div> */}
+          </div>
 
           {/* RSVP Cards */}
           <div className="flex items-center gap-2 mb-4">
@@ -769,8 +781,6 @@ function InvitationReport() {
                     <th className="px-4 py-3 text-left text-sm font-semibold">Position</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Delivery</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Registered</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Confirmed</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold no-print">ACTIONS</th>
@@ -779,7 +789,7 @@ function InvitationReport() {
                 <tbody className="divide-y divide-gray-200">
                   {paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-4 py-12 text-center text-gray-500 text-sm">
+                      <td colSpan={9} className="px-4 py-12 text-center text-gray-500 text-sm">
                         {allUsers.length === 0 ? "No invitation users for this invitation." : "No users match your search."}
                       </td>
                     </tr>
@@ -800,21 +810,23 @@ function InvitationReport() {
                       <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{user.phone}</td>
                       <td className="px-4 py-3">
-                        <StatusIconCell status={user.status} type="status" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusIconCell status={user.delivery} type="delivery" />
-                      </td>
-                      <td className="px-4 py-3">
                         <StatusIconCell status={user.registered} type="bool" />
                       </td>
                       <td className="px-4 py-3">
                         <StatusIconCell status={user.confirmed} type="bool" />
                       </td>
                       <td className="px-4 py-3 no-print">
-                        <button type="button" className="p-1 hover:bg-gray-100 rounded">
-                          <img src={icons.copyIcon} alt="Copy" className="w-12 h-12 object-contain" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {duplicateEmailsSet.has((user.email ?? "").toLowerCase()) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                              <Copy size={12} />
+                              Duplicate email
+                            </span>
+                          )}
+                          <button type="button" className="p-1 hover:bg-gray-100 rounded">
+                            <img src={icons.copyIcon} alt="Copy" className="w-12 h-12 object-contain" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -940,10 +952,9 @@ function InvitationReport() {
                 <th className="px-3 py-2 text-left font-semibold">Position</th>
                 <th className="px-3 py-2 text-left font-semibold">Email</th>
                 <th className="px-3 py-2 text-left font-semibold">Phone</th>
-                <th className="px-3 py-2 text-left font-semibold">Status</th>
-                <th className="px-3 py-2 text-left font-semibold">Delivery</th>
                 <th className="px-3 py-2 text-left font-semibold">Registered</th>
                 <th className="px-3 py-2 text-left font-semibold">Confirmed</th>
+                <th className="px-3 py-2 text-left font-semibold">Duplicate email</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -954,10 +965,9 @@ function InvitationReport() {
                   <td className="px-3 py-2 text-gray-900">{user.position}</td>
                   <td className="px-3 py-2 text-gray-600">{user.email}</td>
                   <td className="px-3 py-2 text-gray-600">{user.phone}</td>
-                  <td className="px-3 py-2 capitalize">{user.status}</td>
-                  <td className="px-3 py-2 capitalize">{user.delivery}</td>
                   <td className="px-3 py-2">{user.registered ? "Yes" : "No"}</td>
                   <td className="px-3 py-2">{user.confirmed ? "Yes" : "No"}</td>
+                  <td className="px-3 py-2">{duplicateEmailsSet.has((user.email ?? "").toLowerCase()) ? "Yes" : "No"}</td>
                 </tr>
               ))}
             </tbody>
