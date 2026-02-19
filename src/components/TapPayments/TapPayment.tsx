@@ -1,33 +1,89 @@
-import React, { useState } from "react";
-import {
-  BenefitPayButton,
-  Edges,
-  Locale,
-} from "@tap-payments/benefit-pay-button";
+import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+
+const CARD_SDK_SCRIPT_URL = "https://tap-sdks.b-cdn.net/card/1.0.2/index.js";
+
+declare global {
+  interface Window {
+    CardSDK?: {
+      renderTapCard: (
+        containerId: string,
+        config: TapCardSdkConfig,
+      ) => { unmount: () => void };
+      tokenize: () => void;
+      Theme?: { LIGHT: string; DARK: string };
+      Currencies?: Record<string, string>;
+      Direction?: { LTR: string; RTL: string };
+      Edges?: { CURVED: string; FLAT: string };
+      Locale?: Record<string, string>;
+    };
+  }
+}
+
+interface TapCardSdkConfig {
+  publicKey: string;
+  merchant?: { id: string };
+  transaction: { amount: number; currency: string };
+  customer?: {
+    id?: string;
+    name?: Array<{
+      lang: string;
+      first: string;
+      last: string;
+      middle?: string;
+    }>;
+    nameOnCard?: string;
+    editable?: boolean;
+    contact?: {
+      email?: string;
+      phone?: { countryCode: string; number: string };
+    };
+  };
+  acceptance?: {
+    supportedBrands?: string[];
+    supportedCards?: string | string[];
+  };
+  fields?: { cardHolder?: boolean };
+  addons?: {
+    loader?: boolean;
+    saveCard?: boolean;
+    displayPaymentBrands?: boolean;
+  };
+  interface?: {
+    locale?: string;
+    theme?: string;
+    edges?: string;
+    direction?: string;
+  };
+  onReady?: () => void;
+  onFocus?: () => void;
+  onBinIdentification?: (data: unknown) => void;
+  onValidInput?: (data: unknown) => void;
+  onInvalidInput?: (data: unknown) => void;
+  onError?: (data: unknown) => void;
+  onSuccess?: (data: TapTokenResponse) => void;
+  onChangeSaveCardLater?: (isSaveCardSelected: boolean) => void;
+}
+
+interface TapTokenResponse {
+  id: string;
+  status?: string;
+  card?: { last_four?: string; brand?: string };
+  [key: string]: unknown;
+}
 
 export interface TapPaymentProps {
-  // Payment details
-  amount: string; // Amount to charge (e.g., "12.50")
-  currency: string; // Currency code (e.g., "BHD", "USD", "SAR")
-  
-  // Event/Order details
+  amount: string;
+  currency: string;
   eventId?: string | number;
-  orderId?: string; // Your internal order ID
-  transactionId?: string; // Your internal transaction ID
-  
-  // Customer information
+  orderId?: string;
+  transactionId?: string;
   customer?: {
     firstName: string;
     lastName: string;
     middleName?: string;
     email?: string;
-    phone?: {
-      countryCode: string; // e.g., "+20", "+966"
-      number: string;
-    };
+    phone?: { countryCode: string; number: string };
   };
-  
-  // Metadata (optional custom data)
   metadata?: {
     udf1?: string;
     udf2?: string;
@@ -35,146 +91,192 @@ export interface TapPaymentProps {
     udf4?: string;
     udf5?: string;
   };
-  
-  // UI Configuration
-  locale?: "en" | "ar"; // "en" or "ar" (maps to Locale.EN or Locale.AR)
-  edges?: "curved" | "straight"; // "curved" or "straight" (maps to Edges.CURVED or Edges.STRAIGHT)
+  locale?: "en" | "ar";
+  edges?: "curved" | "straight";
   debug?: boolean;
-  
-  // Callbacks
   onReady?: () => void;
   onClick?: () => void;
   onCancel?: () => void;
-  onError?: (error: any) => void;
-  onSuccess?: (data: any) => void | Promise<void>;
-  
-  // Loading state (for future use - currently handled internally)
-  // disabled?: boolean;
+  onError?: (error: unknown) => void;
+  onSuccess?: (data: TapTokenResponse) => void | Promise<void>;
 }
 
 /**
- * TapPayment Component
- * 
- * Integrates Tap Payments (Benefit Pay) for event registration payments
- * 
- * Backend Requirements:
- * 1. POST /events/:eventId/payments/initiate
- *    - Returns: { publicKey, merchantId, hashString, transactionId, orderId }
- * 
- * 2. POST /events/:eventId/payments/verify
- *    - Body: { transactionId, tapTransactionId, paymentData }
- *    - Verifies payment and updates order status
- * 
- * 3. POST /events/:eventId/payments/webhook (handled by backend)
- *    - Receives Tap webhook notifications
+ * TapPayment – Web Card SDK v2
+ * Renders Tap Card SDK (card form) and submits via tokenize(); token is returned in onSuccess.
+ * Backend should use the token id in create charge API (source.id).
+ * @see https://developers.tap.company/docs/card-sdk-web-v2
  */
 const TapPayment: React.FC<TapPaymentProps> = ({
   amount,
   currency,
   eventId,
-  orderId,
-  transactionId,
   customer,
-  metadata,
   locale = "en",
   edges = "curved",
-  debug = false,
   onReady,
-  onClick,
-  onCancel,
   onError,
   onSuccess,
 }) => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [sdkReady, setSdkReady] = useState(false);
   const [paymentConfig, setPaymentConfig] = useState<{
     publicKey: string;
     merchantId: string;
-    hashString: string;
   } | null>(null);
+  const unmountRef = useRef<(() => void) | null>(null);
+  const cardContainerId = useId().replace(/:/g, "-") || "tap-card-sdk";
 
-  // Fetch payment configuration from backend when component mounts
-  React.useEffect(() => {
-    const fetchPaymentConfig = async () => {
-      if (!eventId) {
-        console.warn("TapPayment: eventId is required");
-        return;
-      }
-
+  // Fetch payment config (publicKey, merchantId) from backend
+  useEffect(() => {
+    const fetchConfig = async () => {
+      if (!eventId) return;
       try {
-        setIsLoading(true);
-        // Import API function (uncomment when backend is ready)
-        // import { initiateTapPayment } from "@/apis/apiHelpers";
-        
-        // TODO: Replace with actual API call when backend endpoint is ready
-        // const response = await initiateTapPayment(eventId, {
-        //   amount,
-        //   currency,
-        //   orderId,
-        //   transactionId,
-        //   customer,
-        //   metadata,
-        // });
-        // setPaymentConfig({
-        //   publicKey: response.data.data.publicKey,
-        //   merchantId: response.data.data.merchantId,
-        //   hashString: response.data.data.hashString,
-        // });
-        
-        // TEMPORARY: Using placeholder values until backend is ready
-        // Remove this block once backend endpoint is implemented
-        console.warn("TapPayment: Using placeholder config. Backend endpoint not yet implemented.");
+        // TODO: Replace with your backend – e.g. initiateTapPayment(eventId, { amount, currency, orderId, ... })
         setPaymentConfig({
-          publicKey: "pk_test_xxxx", // Will come from backend
-          merchantId: "merchant_xxxx", // Will come from backend
-          hashString: "", // Will be generated by backend
+          publicKey: "pk_test_xxxx",
+          merchantId: "merchant_xxxx",
         });
-      } catch (error) {
-        console.error("Failed to initialize payment:", error);
-        onError?.(error);
-      } finally {
-        setIsLoading(false);
+      } catch (err) {
+        onError?.(err);
       }
     };
+    fetchConfig();
+  }, [eventId, amount, currency, onError]);
 
-    fetchPaymentConfig();
-  }, [eventId, amount, currency]);
+  // Load Card SDK script and render card when config is ready
+  useEffect(() => {
+    if (!paymentConfig) return;
 
-  const handleSuccess = async (data: any) => {
-    try {
-      setIsLoading(true);
-      
-      // Import API function (uncomment when backend is ready)
-      // import { verifyTapPayment } from "@/apis/apiHelpers";
-      
-      // Verify payment with backend
-      // TODO: Replace with actual API call when backend endpoint is ready
-      // const verifyResponse = await verifyTapPayment(eventId, {
-      //   transactionId: transactionId || paymentConfig?.transactionId,
-      //   tapTransactionId: data.id,
-      //   paymentData: data,
-      // });
-      // 
-      // if (verifyResponse.data.data.success) {
-      //   console.log("Payment verified successfully:", verifyResponse.data.data);
-      //   await onSuccess?.(data);
-      // } else {
-      //   throw new Error("Payment verification failed");
-      // }
-      
-      // TEMPORARY: Log success until backend is ready
-      console.warn("TapPayment: Payment success callback fired. Backend verification not yet implemented.");
-      console.log("Payment data:", data);
-      await onSuccess?.(data);
-    } catch (error) {
-      console.error("Payment verification failed:", error);
-      onError?.(error);
-    } finally {
-      setIsLoading(false);
+    const initCard = () => {
+      const CardSDK = window.CardSDK;
+      if (!CardSDK?.renderTapCard) return;
+
+      const Theme = CardSDK.Theme ?? { LIGHT: "light", DARK: "dark" };
+      const Edges = CardSDK.Edges ?? { CURVED: "curved", FLAT: "flat" };
+      const Locale = CardSDK.Locale ?? { EN: "en", AR: "ar" };
+      const Direction = CardSDK.Direction ?? { LTR: "ltr", RTL: "rtl" };
+
+      const cardConfig: TapCardSdkConfig = {
+        publicKey: paymentConfig.publicKey,
+        merchant: { id: paymentConfig.merchantId },
+        transaction: {
+          amount: parseFloat(amount) || 0,
+          currency,
+        },
+        customer: customer
+          ? {
+              name: [
+                {
+                  lang: locale === "ar" ? Locale.AR : Locale.EN,
+                  first: customer.firstName,
+                  last: customer.lastName,
+                  ...(customer.middleName ? { middle: customer.middleName } : {}),
+                },
+              ],
+              nameOnCard: [customer.firstName, customer.lastName].filter(Boolean).join(" "),
+              editable: true,
+              ...(customer.email
+                ? {
+                    contact: {
+                      email: customer.email,
+                      ...(customer.phone
+                        ? {
+                            phone: {
+                              countryCode:
+                                (customer.phone.countryCode || "").replace(/\D/g, "").slice(0, 4) || "20",
+                              number: customer.phone.number || "",
+                            },
+                          }
+                        : {}),
+                    },
+                  }
+                : {}),
+            }
+          : undefined,
+        acceptance: {
+          supportedBrands: ["AMERICAN_EXPRESS", "VISA", "MASTERCARD", "MADA"],
+          supportedCards: "ALL",
+        },
+        fields: { cardHolder: true },
+        addons: {
+          displayPaymentBrands: true,
+          loader: true,
+          saveCard: true,
+        },
+        interface: {
+          locale: locale === "ar" ? Locale.AR : Locale.EN,
+          theme: Theme.LIGHT,
+          edges: edges === "straight" ? Edges.FLAT : Edges.CURVED,
+          direction: locale === "ar" ? Direction.RTL : Direction.LTR,
+        },
+        onReady: () => {
+          setSdkReady(true);
+          onReady?.();
+        },
+        onError: (data) => onError?.(data),
+        onSuccess: async (data: TapTokenResponse) => {
+          try {
+            setIsLoading(true);
+            await onSuccess?.(data);
+          } catch (err) {
+            onError?.(err);
+          } finally {
+            setIsLoading(false);
+          }
+        },
+      };
+
+      const { unmount } = CardSDK.renderTapCard(cardContainerId, cardConfig);
+
+      unmountRef.current = unmount;
+    };
+
+    if (window.CardSDK?.renderTapCard) {
+      initCard();
+      return () => {
+        unmountRef.current?.();
+        unmountRef.current = null;
+      };
     }
-  };
 
-  // Don't render until payment config is loaded
-  if (!paymentConfig || isLoading) {
+    const script = document.createElement("script");
+    script.src = CARD_SDK_SCRIPT_URL;
+    script.async = true;
+    script.onload = () => {
+      initCard();
+    };
+    script.onerror = () => onError?.(new Error("Failed to load Tap Card SDK"));
+    document.head.appendChild(script);
+
+    return () => {
+      unmountRef.current?.();
+      unmountRef.current = null;
+      script.remove();
+    };
+  }, [
+    paymentConfig,
+    amount,
+    currency,
+    customer,
+    locale,
+    edges,
+    cardContainerId,
+    onReady,
+    onError,
+    onSuccess,
+  ]);
+
+  const handleTokenize = useCallback(() => {
+    if (!window.CardSDK?.tokenize) {
+      onError?.(new Error("Card SDK not ready"));
+      return;
+    }
+    setIsLoading(true);
+    window.CardSDK.tokenize();
+  }, [onError]);
+
+  if (!paymentConfig) {
     return (
       <div className="flex items-center justify-center p-4">
         <div className="text-sm text-gray-500">Loading payment...</div>
@@ -183,66 +285,16 @@ const TapPayment: React.FC<TapPaymentProps> = ({
   }
 
   return (
-    <div className="tap-payment-wrapper">
-      <BenefitPayButton
-        operator={{
-          publicKey: paymentConfig.publicKey,
-          hashString: paymentConfig.hashString,
-        }}
-        debug={debug}
-        merchant={{
-          id: paymentConfig.merchantId,
-        }}
-        transaction={{
-          amount,
-          currency,
-          metadata: metadata || {},
-        }}
-        reference={{
-          transaction: transactionId || `txn_${Date.now()}`,
-          order: orderId || `ord_${Date.now()}`,
-        }}
-        customer={
-          customer
-            ? {
-                names: [
-                  {
-                    lang: locale === "ar" ? Locale.AR : Locale.EN,
-                    first: customer.firstName,
-                    last: customer.lastName,
-                    ...(customer.middleName && { middle: customer.middleName }),
-                  },
-                ],
-                ...(customer.email && {
-                  contact: {
-                    email: customer.email,
-                    ...(customer.phone && {
-                      phone: {
-                        countryCode: customer.phone.countryCode,
-                        number: customer.phone.number,
-                      },
-                    }),
-                  },
-                }),
-              }
-            : undefined
-        }
-        interface={{
-          locale: locale === "ar" ? Locale.AR : Locale.EN,
-          edges: edges === "straight" ? Edges.STRAIGHT : Edges.CURVED,
-        }}
-        post={{
-          url: "", // Backend webhook URL (handled server-side)
-        }}
-        onReady={onReady}
-        onClick={onClick}
-        onCancel={onCancel}
-        onError={(err) => {
-          console.error("TapPayment error:", err);
-          onError?.(err);
-        }}
-        onSuccess={handleSuccess}
-      />
+    <div className="tap-payment-wrapper space-y-4">
+      <div id={cardContainerId} />
+      <button
+        type="button"
+        disabled={!sdkReady || isLoading}
+        onClick={handleTokenize}
+        className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:pointer-events-none"
+      >
+        {isLoading ? "Processing…" : "Pay"}
+      </button>
     </div>
   );
 };

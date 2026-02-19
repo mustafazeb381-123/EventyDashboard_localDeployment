@@ -561,7 +561,9 @@ const renderCustomField = (
 // -------------------- FORM BUILDER TEMPLATE FORM COMPONENT --------------------
 interface FormBuilderTemplateFormProps {
   data?: any;
-  eventId?: string;
+  eventId?: string | number;
+  /** Numeric event id for API (e.g. from ?event_id=). Required for createEventUser – API expects integer in path. */
+  eventIdForApi?: string | number | null;
   isUserRegistration?: boolean;
   eventData?: any;
   formBuilderData?: any;
@@ -581,6 +583,7 @@ export const FormBuilderTemplateForm: React.FC<
   bannerImage,
   theme,
   eventId,
+  eventIdForApi,
   eventData,
   defaultUserType = null,
   onRegistrationSuccess,
@@ -903,12 +906,11 @@ export const FormBuilderTemplateForm: React.FC<
       return;
     }
 
-    // Get the actual event ID from eventData - match default template pattern
-    // Default templates use eventData?.id where eventData is the data part
-    // Since we pass eventData?.data as eventDataForForm, eventData.id is the actual event ID
-    // Declare outside try block so it's accessible in catch block for error logging
+    // API expects numeric event_id in path. Prefer eventIdForApi (from ?event_id=) when in user registration.
     const actualEventId: string | number | undefined =
       eventData?.id || effectiveEventId;
+    const eventIdForPath: string | number =
+      isUserRegistration && eventIdForApi != null ? eventIdForApi : (actualEventId as string | number);
 
     try {
       setIsSubmitting(true);
@@ -1278,10 +1280,10 @@ export const FormBuilderTemplateForm: React.FC<
       });
 
       console.log("📤 Submitting to API:", {
-        eventId: actualEventId,
-        eventIdType: typeof actualEventId,
+        eventIdForPath,
+        actualEventId,
         tenantUuid,
-        apiEndpoint: `/events/${actualEventId}/event_users`,
+        apiEndpoint: `/events/${eventIdForPath}/event_users`,
         formDataKeys: Array.from(formDataToSend.keys()),
       });
       console.log("📤 FormData contents:", {
@@ -1302,8 +1304,9 @@ export const FormBuilderTemplateForm: React.FC<
       });
 
       const response = await createEventUser(
-        String(actualEventId),
+        eventIdForPath,
         formDataToSend,
+        { tenant_uuid: tenantUuid || undefined },
       );
 
       console.log("✅ Registration successful:", response);

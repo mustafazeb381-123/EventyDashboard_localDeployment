@@ -1,152 +1,68 @@
-# Tap Payments Component
+# Tap Payments – Web Card SDK v2
 
-## Overview
+This component uses **Tap Web Card SDK v2** for card payments (no Benefit Pay button). It loads the script from Tap’s CDN and renders the card form; the user clicks **Pay** to tokenize the card and receive a token in `onSuccess`.
 
-This component integrates Tap Payments (Benefit Pay) for processing event registration payments.
-
-## Installation
-
-The Tap Payments SDK should already be installed. If not:
-
-```bash
-npm install @tap-payments/benefit-pay-button
-```
+- Docs: [Web Card SDK v2](https://developers.tap.company/docs/card-sdk-web-v2)
+- Script: `https://tap-sdks.b-cdn.net/card/1.0.2/index.js`
 
 ## Usage
 
-### Basic Example
-
 ```tsx
 import TapPayment from "@/components/TapPayments/TapPayment";
-import { Locale, Edges } from "@tap-payments/benefit-pay-button";
 
 function CheckoutPage() {
-  const handlePaymentSuccess = async (data: any) => {
-    console.log("Payment completed:", data);
-    // Redirect to success page, update UI, etc.
+  const handlePaymentSuccess = async (data) => {
+    // data.id is the Tap token (tok_xxx) – send to your backend to create charge
+    await fetch("/api/charges", {
+      method: "POST",
+      body: JSON.stringify({ source: { id: data.id } }),
+    });
   };
 
   return (
     <TapPayment
       amount="50.00"
-      currency="BHD"
+      currency="SAR"
       eventId={123}
       customer={{
         firstName: "John",
         lastName: "Doe",
         email: "john@example.com",
-        phone: {
-          countryCode: "+20",
-          number: "1000000000",
-        },
+        phone: { countryCode: "20", number: "1000000000" },
       }}
       onSuccess={handlePaymentSuccess}
       onError={(error) => console.error("Payment error:", error)}
-      onCancel={() => console.log("Payment cancelled")}
     />
   );
 }
 ```
 
-### With Custom Metadata
-
-```tsx
-<TapPayment
-  amount="100.00"
-  currency="USD"
-  eventId={456}
-  orderId="ord_123456"
-  transactionId="txn_123456"
-  metadata={{
-    udf1: "event_registration",
-    udf2: "user_123",
-    udf3: "vip_ticket",
-  }}
-  customer={{
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane@example.com",
-  }}
-  locale={Locale.AR} // Arabic interface
-  edges={Edges.STRAIGHT}
-  onSuccess={handleSuccess}
-/>
-```
-
 ## Props
 
-See `TapPayment.tsx` for full TypeScript interface documentation.
+- **amount** (string) – Amount to charge (e.g. `"12.50"`).
+- **currency** (string) – Currency code (e.g. `"SAR"`, `"BHD"`, `"USD"`).
+- **eventId** (optional) – Used to fetch payment config (publicKey, merchantId) from your backend.
+- **orderId**, **transactionId** (optional) – Your internal IDs; use in backend when creating the charge.
+- **customer** (optional) – Prefill name, email, phone in the card form.
+- **locale** – `"en"` | `"ar"` (default: `"en"`).
+- **edges** – `"curved"` | `"straight"` (default: `"curved"`).
+- **onReady** – Fired when the card SDK is ready.
+- **onError** – Fired on SDK or payment errors.
+- **onSuccess** – Fired with token payload; **`data.id`** is the Tap token to send to your backend as `source.id` in the create charge API.
 
-### Required Props
-- `amount`: Payment amount as string (e.g., "12.50")
-- `currency`: Currency code (e.g., "BHD", "USD", "SAR")
+## Backend
 
-### Optional Props
-- `eventId`: Event ID for payment tracking
-- `orderId`: Your internal order ID
-- `transactionId`: Your internal transaction ID
-- `customer`: Customer information object
-- `metadata`: Custom metadata (udf1-udf5)
-- `locale`: `Locale.EN` or `Locale.AR` (default: EN)
-- `edges`: `Edges.CURVED` or `Edges.STRAIGHT` (default: CURVED)
-- `debug`: Enable debug mode (default: false)
-- `onReady`: Callback when button is ready
-- `onClick`: Callback when button is clicked
-- `onCancel`: Callback when payment is cancelled
-- `onError`: Callback for errors
-- `onSuccess`: Callback for successful payment
-- `disabled`: Disable the payment button
+1. **Get config** – When `eventId` is set, the component expects payment config (e.g. `publicKey`, `merchantId`). Replace the placeholder in `TapPayment.tsx` with your `initiateTapPayment` (or similar) call.
+2. **Create charge** – In `onSuccess`, send `data.id` (token) to your backend; backend calls Tap’s create charge API with `source.id: data.id`. If 3DS is required, redirect the user to the URL returned by Tap.
+3. **Webhooks** – Handle Tap webhooks on your server as per [Tap docs](https://developers.tap.company/docs/card-sdk-web-v2).
 
-## Backend Integration
-
-**⚠️ IMPORTANT:** The backend endpoints must be implemented before this component will work fully.
-
-See `BACKEND_API_REQUIREMENTS.md` for detailed backend API specifications.
-
-### Current Status
-
-- ✅ Component structure created
-- ✅ API helper functions created
-- ⏳ Backend endpoints need to be implemented
-- ⏳ Component uses placeholder values until backend is ready
-
-### Once Backend is Ready
-
-1. Uncomment the API calls in `TapPayment.tsx`:
-   - Line ~45: `initiateTapPayment()` call
-   - Line ~95: `verifyTapPayment()` call
-
-2. Import the API functions:
-   ```tsx
-   import { initiateTapPayment, verifyTapPayment } from "@/apis/apiHelpers";
-   ```
-
-3. Remove placeholder values
-
-4. Test with Tap test credentials
-
-## Integration Points
-
-This component should be integrated into:
-
-1. **Event Registration Flow** - After user fills registration form
-2. **Ticket Purchase Flow** - When purchasing event tickets
-3. **Checkout Page** - As part of checkout process
+See `BACKEND_API_REQUIREMENTS.md` for more detail.
 
 ## Testing
 
-### Test Mode
-- Set `debug={true}` prop
-- Use Tap test credentials
-- Use test card numbers from Tap documentation
+- Use Tap test keys (`pk_test_...`).
+- Use test card numbers from Tap documentation.
 
-### Production Mode
-- Set `debug={false}` prop
-- Use Tap production credentials
-- Ensure webhook is configured in Tap dashboard
+## Live mode
 
-## Support
-
-For Tap Payments documentation:
-- https://docs.tap.company/
-- Contact Tap support for merchant account setup
+For production, use the API key for your registered domain and ensure your domain is registered with Tap ([docs](https://developers.tap.company/docs/card-sdk-web-v2)).
