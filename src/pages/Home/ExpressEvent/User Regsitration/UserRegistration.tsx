@@ -842,6 +842,7 @@ function UserRegistration() {
             bannerImage={customFormBuilderTemplate.bannerImage}
             theme={customFormBuilderTemplate.theme}
             eventId={actualEventId} // Use actual event ID from API response (NOT route ID)
+            eventIdForApi={eventIdFromParams ?? (typeof actualEventId === "number" ? actualEventId : undefined)}
             eventData={eventDataForForm} // Pass the data part to match default template structure
             defaultUserType={userTypeFromUrl} // From URL ?user_type=vip so email VIP link registers as VIP
             onRegistrationSuccess={(message) =>

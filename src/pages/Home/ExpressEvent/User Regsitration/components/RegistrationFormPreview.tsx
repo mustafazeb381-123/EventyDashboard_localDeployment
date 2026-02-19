@@ -337,7 +337,11 @@ const RegistrationFormPreview = ({
       if (formData.image)
         formDataToSend.append("event_user[image]", formData.image);
 
-      const response = await createEventUser(eventId, formDataToSend);
+      // API requires numeric event_id in path and tenant_uuid in query
+      const eventIdForPath = eventIdForApi != null ? String(eventIdForApi) : eventId;
+      const response = await createEventUser(eventIdForPath, formDataToSend, {
+        tenant_uuid: tenantUuid || undefined,
+      });
 
       showNotification(t("registrationForm.registrationSuccess"), "success");
       console.log("✅ User created:", response);

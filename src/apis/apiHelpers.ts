@@ -308,10 +308,19 @@ export const getBadgeType = (
   return axiosInstance.get(`/events/${id}/badges`, { params });
 };
 
-// Create a new user for a specific event, with optional tenant UUID and image upload
-export const createEventUser = (eventId: string, formData: FormData) => {
-  // Don't set Content-Type manually - axios will set it automatically with boundary for FormData
-  return axiosInstance.post(`/events/${eventId}/event_users`, formData);
+// Create a new user for a specific event.
+// API expects: event_id (path) = integer, tenant_uuid (query) = required for multi-tenancy.
+// Pass the numeric event id (integer), not the event UUID.
+export const createEventUser = (
+  eventId: string | number,
+  formData: FormData,
+  options?: { tenant_uuid?: string | null }
+) => {
+  const params: Record<string, string> = {};
+  if (options?.tenant_uuid) params.tenant_uuid = options.tenant_uuid;
+  return axiosInstance.post(`/events/${eventId}/event_users`, formData, {
+    params: Object.keys(params).length ? params : undefined,
+  });
 };
 
 // Get all users for a specific event with pagination
