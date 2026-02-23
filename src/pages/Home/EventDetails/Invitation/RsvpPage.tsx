@@ -3,7 +3,12 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
 import { getRsvpTemplate, rsvpResponse } from "@/apis/invitationService";
 import { RsvpFormPreview } from "./rsvpFormBuilder/RsvpFormPreview";
-import type { RsvpFormBuilderTemplate, RsvpFormField, RsvpTheme, RsvpLanguageConfig } from "./rsvpFormBuilder/types";
+import type {
+  RsvpFormBuilderTemplate,
+  RsvpFormField,
+  RsvpTheme,
+  RsvpLanguageConfig,
+} from "./rsvpFormBuilder/types";
 
 /**
  * Normalize API rsvp_template (object or string) to RsvpFormBuilderTemplate.
@@ -11,7 +16,12 @@ import type { RsvpFormBuilderTemplate, RsvpFormField, RsvpTheme, RsvpLanguageCon
  */
 function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
   if (raw == null) return null;
-  let parsed: { title?: string; formFields?: unknown[]; theme?: RsvpTheme; languageConfig?: RsvpLanguageConfig };
+  let parsed: {
+    title?: string;
+    formFields?: unknown[];
+    theme?: RsvpTheme;
+    languageConfig?: RsvpLanguageConfig;
+  };
   if (typeof raw === "string") {
     try {
       parsed = JSON.parse(raw) as typeof parsed;
@@ -29,9 +39,14 @@ function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
   return {
     id: "rsvp-public",
     title: parsed.title ?? "RSVP",
-    formFields: (Array.isArray(parsed.formFields) ? parsed.formFields : []) as RsvpFormField[],
+    formFields: (Array.isArray(parsed.formFields)
+      ? parsed.formFields
+      : []) as RsvpFormField[],
     theme: parsed.theme ?? {},
-    languageConfig: parsed.languageConfig ?? { languageMode: "single", primaryLanguage: "en" },
+    languageConfig: parsed.languageConfig ?? {
+      languageMode: "single",
+      primaryLanguage: "en",
+    },
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -43,33 +58,61 @@ function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
  * We use only these URL params for APIs – no localStorage. GET rsvp_template and POST rsvp_response both use them.
  */
 export default function RsvpPage() {
-  const params = useParams<{ eventId?: string; invitationId?: string; id?: string }>();
+  const params = useParams<{
+    eventId?: string;
+    invitationId?: string;
+    id?: string;
+  }>();
   const [searchParams] = useSearchParams();
   const eventId = params.eventId ?? params.id ?? undefined;
-  const invitationIdParam = params.invitationId;
+  // const invitationIdParam = params.invitationId;
+  const invitationIdParam =
+    params.invitationId ?? searchParams.get("invitation_id") ?? undefined;
+
   /** From backend via link – we accept and use only these, no localStorage fallback. */
   const tenantUuid = searchParams.get("tenant_uuid");
   const rsvpTokenFromUrl = searchParams.get("rsvp_token");
 
-  const [rsvpTemplate, setRsvpTemplate] = useState<RsvpFormBuilderTemplate | null>(null);
+  const [rsvpTemplate, setRsvpTemplate] =
+    useState<RsvpFormBuilderTemplate | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState<"accepted" | "declined" | null>(null);
-  const [submitMessage, setSubmitMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState<"accepted" | "declined" | null>(
+    null,
+  );
+  const [submitMessage, setSubmitMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   useEffect(() => {
+    console.log("[RSVP] URL params:", {
+      eventId,
+      invitationIdParam,
+      tenantUuid: tenantUuid ? `${tenantUuid.slice(0, 8)}...` : null,
+      rsvpTokenFromUrl: rsvpTokenFromUrl ? `${rsvpTokenFromUrl.slice(0, 8)}...` : null,
+      fullUrl: typeof window !== "undefined" ? window.location.href : "",
+    });
+
     if (!eventId) {
-      setError("Event ID is missing. Please use the full RSVP link from your invitation email.");
+      setError(
+        "Event ID is missing. Please use the full RSVP link from your invitation email.",
+      );
       setLoading(false);
       return;
     }
     if (!invitationIdParam) {
-      setError("Invitation ID is missing. Please use the full RSVP link from your invitation email.");
+      const currentPath = typeof window !== "undefined" ? window.location.pathname + window.location.search : "";
+      setError(
+        `Invitation ID is missing. Your link is "${currentPath}" but it must include the invitation ID after the event ID, e.g. /rsvp/167/25?tenant_uuid=...&rsvp_token=... (the "25" is the invitation ID). The sender needs to re-save the invitation and send again so emails contain the full link.`,
+      );
       setLoading(false);
       return;
     }
     if (!tenantUuid) {
-      setError("Tenant is missing. Please use the full RSVP link from your invitation email.");
+      setError(
+        "Tenant is missing. Please use the full RSVP link from your invitation email.",
+      );
       setLoading(false);
       return;
     }
@@ -79,19 +122,47 @@ export default function RsvpPage() {
 
     const load = async () => {
       try {
-        const templateRes = await getRsvpTemplate(eventId, invitationId, tenantUuid);
+        console.log("[RSVP] Requesting template:", { eventId, invitationId, hasTenantUuid: !!tenantUuid });
+        const templateRes = await getRsvpTemplate(
+          eventId,
+          invitationId,
+          tenantUuid,
+        );
         if (cancelled) return;
+        console.log("[RSVP] Template response:", { hasData: !!templateRes?.data, hasRsvpTemplate: !!templateRes?.data?.rsvp_template });
 
         const raw = templateRes?.data?.rsvp_template;
         const template = normalizeRsvpTemplate(raw);
         setRsvpTemplate(template ?? null);
       } catch (err: unknown) {
         if (!cancelled) {
-          const ax = err as { response?: { status?: number; data?: { error?: string; message?: string } } };
+          const ax = err as {
+            response?: {
+              status?: number;
+              statusText?: string;
+              data?: { error?: string; message?: string };
+              config?: { url?: string; baseURL?: string };
+            };
+          };
           const status = ax?.response?.status;
           const data = ax?.response?.data;
-          const msg = data?.error ?? data?.message ?? (err && typeof err === "object" && "message" in err ? String((err as Error).message) : "Failed to load RSVP.");
-          setError(status === 404 ? "This RSVP link may be invalid or expired. Please use the link from your invitation email." : msg);
+          console.log("[RSVP] Error:", {
+            status,
+            statusText: ax?.response?.statusText,
+            data,
+            requestUrl: ax?.response?.config?.baseURL && ax?.response?.config?.url ? `${ax.response.config.baseURL}${ax.response.config.url}` : null,
+          });
+          const msg =
+            data?.error ??
+            data?.message ??
+            (err && typeof err === "object" && "message" in err
+              ? String((err as Error).message)
+              : "Failed to load RSVP.");
+          setError(
+            status === 404
+              ? "This RSVP link may be invalid or expired. Please use the link from your invitation email."
+              : msg,
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -107,11 +178,17 @@ export default function RsvpPage() {
   const handleRsvpResponse = useCallback(
     async (response: "accepted" | "declined") => {
       if (!rsvpTokenFromUrl || !rsvpTokenFromUrl.trim()) {
-        setSubmitMessage({ type: "error", text: "RSVP link is invalid. Please use the link from your invitation email." });
+        setSubmitMessage({
+          type: "error",
+          text: "RSVP link is invalid. Please use the link from your invitation email.",
+        });
         return;
       }
       if (!tenantUuid) {
-        setSubmitMessage({ type: "error", text: "Missing tenant. Please use the full link from your invitation email." });
+        setSubmitMessage({
+          type: "error",
+          text: "Missing tenant. Please use the full link from your invitation email.",
+        });
         return;
       }
       setSubmitting(response);
@@ -120,15 +197,36 @@ export default function RsvpPage() {
         await rsvpResponse(rsvpTokenFromUrl, response, tenantUuid);
         setSubmitMessage({
           type: "success",
-          text: response === "accepted" ? "Thank you! Your attendance has been recorded." : "Thank you for letting us know. Your response has been recorded.",
+          text:
+            response === "accepted"
+              ? "Thank you! Your attendance has been recorded."
+              : "Thank you for letting us know. Your response has been recorded.",
         });
       } catch (err: unknown) {
-        const status = err && typeof err === "object" && "response" in err && (err as { response?: { status?: number } }).response?.status;
-        const dataError = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { error?: string; message?: string } } }).response?.data?.error;
-        const dataMessage = err && typeof err === "object" && "response" in err && (err as { response?: { data?: { message?: string } } }).response?.data?.message;
+        const status =
+          err &&
+          typeof err === "object" &&
+          "response" in err &&
+          (err as { response?: { status?: number } }).response?.status;
+        const dataError =
+          err &&
+          typeof err === "object" &&
+          "response" in err &&
+          (
+            err as {
+              response?: { data?: { error?: string; message?: string } };
+            }
+          ).response?.data?.error;
+        const dataMessage =
+          err &&
+          typeof err === "object" &&
+          "response" in err &&
+          (err as { response?: { data?: { message?: string } } }).response?.data
+            ?.message;
         let msg: string;
         if (status === 404) {
-          msg = "This RSVP link may be invalid or expired. Please use the link from your invitation email.";
+          msg =
+            "This RSVP link may be invalid or expired. Please use the link from your invitation email.";
         } else if (dataError) {
           msg = String(dataError);
         } else if (dataMessage) {
@@ -136,14 +234,15 @@ export default function RsvpPage() {
         } else if (err && typeof err === "object" && "message" in err) {
           msg = String((err as Error).message);
         } else {
-          msg = "Failed to record your response. Please try again or use the link from your invitation email.";
+          msg =
+            "Failed to record your response. Please try again or use the link from your invitation email.";
         }
         setSubmitMessage({ type: "error", text: msg });
       } finally {
         setSubmitting(null);
       }
     },
-    [rsvpTokenFromUrl, tenantUuid]
+    [rsvpTokenFromUrl, tenantUuid],
   );
 
   if (loading) {
@@ -180,7 +279,9 @@ export default function RsvpPage() {
             {submitMessage && (
               <div
                 className={`mx-4 mt-4 px-4 py-3 rounded-lg text-sm ${
-                  submitMessage.type === "success" ? "bg-green-50 text-green-800" : "bg-red-50 text-red-800"
+                  submitMessage.type === "success"
+                    ? "bg-green-50 text-green-800"
+                    : "bg-red-50 text-red-800"
                 }`}
               >
                 {submitMessage.text}
@@ -189,7 +290,9 @@ export default function RsvpPage() {
             <RsvpFormPreview
               formFields={rsvpTemplate.formFields}
               theme={rsvpTemplate.theme}
-              currentLanguage={rsvpTemplate.languageConfig?.primaryLanguage ?? "en"}
+              currentLanguage={
+                rsvpTemplate.languageConfig?.primaryLanguage ?? "en"
+              }
               visibleOnly={true}
               showActionButtons={true}
               onAttendClick={() => handleRsvpResponse("accepted")}
@@ -204,7 +307,8 @@ export default function RsvpPage() {
               RSVP for Event {eventId}
             </h1>
             <p className="text-slate-600">
-              No RSVP form is available for this event yet. If you received an invitation email, use the RSVP link in that email to respond.
+              No RSVP form is available for this event yet. If you received an
+              invitation email, use the RSVP link in that email to respond.
             </p>
           </div>
         )}
