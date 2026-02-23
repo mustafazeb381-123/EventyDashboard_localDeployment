@@ -233,7 +233,7 @@ function Recents() {
   };
 
   return (
-    <div className="bg-white w-full rounded-2xl p-6">
+    <div className="bg-white w-full rounded-2xl p-6 shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md">
       <p className="font-poppins text-md font-medium text-neutral-900 mb-4">
         Recents
       </p>
@@ -243,7 +243,7 @@ function Recents() {
           {[...Array(2)].map((_, index) => (
             <div
               key={index}
-              className="flex flex-col w-full sm:w-[48%] bg-gradient-to-br from-[#2E3166] to-[#202242] rounded-2xl p-6"
+              className="flex flex-col w-full sm:w-[48%] bg-gradient-to-br from-[#2E3166] to-[#202242] rounded-2xl p-6 animate-pulse"
             >
               <Skeleton className="h-8 w-24 mb-10" />
               <Skeleton className="h-5 w-3/4 mb-2" />
@@ -257,26 +257,15 @@ function Recents() {
             {recentEvents.map((event) => {
               const { icon, color } = getEventStyle(event.type);
 
-              // Debug: Log each event being rendered
-              console.log("Recents - Rendering event:", {
-                id: event.id,
-                type: event.type,
-                name: event.name,
-                date: event.date,
-                created_at: event.created_at,
-                icon,
-                color,
-              });
-
               return (
                 <div
                   key={event.id}
                   onClick={() => handleEventClick(event.id)}
-                  className="flex flex-col w-full sm:w-[48%] bg-gradient-to-br from-[#2E3166] to-[#202242] rounded-2xl p-6 cursor-pointer hover:opacity-90 transition-opacity"
+                  className="flex flex-col w-full sm:w-[48%] bg-gradient-to-br from-[#2E3166] to-[#202242] rounded-2xl p-6 cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/20 active:scale-[0.99] group"
                 >
                   <div className="flex">
                     <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-2xl"
+                      className="flex items-center gap-2 px-3 py-2 rounded-2xl transition-all duration-300 group-hover:bg-white/15"
                       style={{
                         backgroundColor: "#EBF7FF33",
                         width: "auto",
@@ -287,6 +276,7 @@ function Recents() {
                           style={{ width: 8, height: 8 }}
                           src={icon}
                           alt="dot"
+                          className="transition-transform duration-300 group-hover:scale-110"
                         />
                       )}
                       <p
@@ -308,7 +298,7 @@ function Recents() {
                   </div>
 
                   <div className="flex flex-col gap-2 mt-10">
-                    <p className="text-neutral-100 font-poppins font-medium text-md">
+                    <p className="text-neutral-100 font-poppins font-medium text-md group-hover:text-white transition-colors duration-300">
                       {event.name || "Unnamed Event"}
                     </p>
                     <p className="text-neutral-300 font-poppins font-normal text-xs">
