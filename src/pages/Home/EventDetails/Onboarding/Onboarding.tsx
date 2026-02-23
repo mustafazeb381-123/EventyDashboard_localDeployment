@@ -106,6 +106,7 @@ function Onboarding() {
         per_page: itemsPerPage,
       });
       const responseData = response.data?.data || response.data;
+      console.log("responseData", responseData);
       const areas = Array.isArray(responseData)
         ? responseData
         : responseData?.data || [];

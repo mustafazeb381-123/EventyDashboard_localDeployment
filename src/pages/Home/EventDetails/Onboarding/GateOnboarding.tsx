@@ -107,6 +107,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 if (view === "registered_users") {
                     // ✅ Get users who need check-in for this session area
                     response = await getCheckIns(eventId, sessionAreaId);
+                    console.log("response", response.data);
                 } else {
                     // ✅ Get users who need check-out for this session area
                     response = await getCheckOuts(eventId, sessionAreaId);
