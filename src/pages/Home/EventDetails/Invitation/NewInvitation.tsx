@@ -450,17 +450,22 @@ function NewInvitation() {
         const createdId = createdAttrs && createdAttrs.id != null ? String(createdAttrs.id) : null;
         // Re-resolve RSVP link with the new invitation ID so stored body has /rsvp/{eventId}/{invitationId} (required for RSVP to work when recipient clicks link in email)
         if (createdId && eventId && selectedTemplate?.html) {
-          const emailBodyWithInvitationId = resolveInvitationEmailLinks(selectedTemplate.html, eventUuid, {
-            tenantUuid,
-            eventId,
-            invitationId: createdId,
-          });
-          await updateEventInvitation(eventId, createdId, {
-            event_invitation: {
-              ...event_invitation,
-              invitation_email_body: emailBodyWithInvitationId,
-            },
-          });
+          try {
+            const emailBodyWithInvitationId = resolveInvitationEmailLinks(selectedTemplate.html, eventUuid, {
+              tenantUuid,
+              eventId,
+              invitationId: createdId,
+            });
+            await updateEventInvitation(eventId, createdId, {
+              event_invitation: {
+                ...event_invitation,
+                invitation_email_body: emailBodyWithInvitationId,
+              },
+            });
+          } catch (updateErr) {
+            console.error("Failed to update invitation with RSVP link (invitation ID in link). Please edit and save again.", updateErr);
+            showNotification("Invitation created. Please edit and save again so the RSVP link in emails works correctly.", "warning");
+          }
         }
         if (createdId && eventId) {
           await new Promise((r) => setTimeout(r, 500));

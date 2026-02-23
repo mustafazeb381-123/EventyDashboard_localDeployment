@@ -783,7 +783,6 @@ function InvitationReport() {
                     <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Registered</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Confirmed</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold no-print">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -823,9 +822,7 @@ function InvitationReport() {
                               Duplicate email
                             </span>
                           )}
-                          <button type="button" className="p-1 hover:bg-gray-100 rounded">
-                            <img src={icons.copyIcon} alt="Copy" className="w-12 h-12 object-contain" />
-                          </button>
+                         
                         </div>
                       </td>
                     </tr>

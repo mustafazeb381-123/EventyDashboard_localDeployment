@@ -371,19 +371,22 @@ export function RsvpTemplateTab({
     });
   };
 
-  // RSVP link with {{tenant_uuid}} and {{rsvp_token}} placeholders so backend can replace when sending emails
+  // RSVP link must include invitation ID so recipients can load the form. Without it, link in emails won't work.
   const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
   const rsvpLinkUrlWithToken = getRsvpUrl(eventId ?? null, invitationId ?? null, tenantUuid, true);
-  const rsvpLinkUrl = rsvpLinkUrlWithToken || null;
+  const rsvpLinkHasInvitationId = Boolean(invitationId);
+  const rsvpLinkUrl = rsvpLinkHasInvitationId ? rsvpLinkUrlWithToken : null;
   const rsvpLinkUrlForPreview = getRsvpUrl(eventId ?? null, invitationId ?? null, tenantUuid, false);
   const handleShareRsvpLink = () => {
-    if (!rsvpLinkUrl) {
+    if (!rsvpLinkHasInvitationId) {
       showNotification(
-        invitationId
-          ? "Event ID or tenant is missing. Use the full link from your invitation."
-          : "Save the invitation first to get the RSVP link with invitation ID, or use event-only link.",
+        "Save the invitation first so the RSVP link includes your invitation. Links without it won’t work for recipients.",
         "warning"
       );
+      return;
+    }
+    if (!rsvpLinkUrl) {
+      showNotification("Event ID or tenant is missing. Use the full link from your invitation.", "warning");
       return;
     }
     navigator.clipboard
@@ -401,8 +404,13 @@ export function RsvpTemplateTab({
             <h3 className="text-sm font-semibold text-slate-800">RSVP link</h3>
             <p className="text-xs text-slate-600 mt-0.5">
               Share this link so invitees can respond (RSVP) to your invitation.
+              {!rsvpLinkHasInvitationId && (
+                <span className="mt-1 block font-medium text-amber-700">
+                  Save the invitation first — the link will then include your invitation and work in emails.
+                </span>
+              )}
             </p>
-            {rsvpLinkUrl && (
+            {rsvpLinkUrl ? (
               <>
                 <a
                   href={rsvpLinkUrlForPreview}
@@ -416,12 +424,15 @@ export function RsvpTemplateTab({
                   {rsvpLinkUrlWithToken}
                 </p>
               </>
+            ) : rsvpLinkHasInvitationId ? null : (
+              <p className="mt-2 text-xs text-amber-700">Link will appear here after you save the invitation.</p>
             )}
           </div>
           <button
             type="button"
             onClick={handleShareRsvpLink}
-            className="flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm"
+            className="flex shrink-0 items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:pointer-events-none"
+            disabled={!rsvpLinkHasInvitationId}
           >
             <Share2 size={18} />
             Copy link

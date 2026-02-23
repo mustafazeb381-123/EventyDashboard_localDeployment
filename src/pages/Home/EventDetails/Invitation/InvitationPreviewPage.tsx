@@ -256,7 +256,7 @@ function InvitationPreviewPage() {
           </div>
 
           {/* ── Two-Column: Email Preview (left) | Imported Users (right) ── */}
-          <div className="grid grid-cols-2 gap-5 items-start">
+          <div className="items-start">
             {/* ── Left: Email Preview ── */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">
@@ -275,7 +275,7 @@ function InvitationPreviewPage() {
             </div>
 
             {/* ── Right: Imported Users ── */}
-            <div>
+            <div className="mt-5">
               {/* Header row: "Imported Users" + Show in page + Search */}
               <div className="flex items-center gap-3 mb-3">
                 <h3 className="text-sm font-semibold text-gray-700 flex-shrink-0">

@@ -39,14 +39,17 @@ function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
 
 /**
  * Public RSVP page at /rsvp/:eventId/:invitationId?tenant_uuid=...&rsvp_token=...
+ * or /rsvp/:eventId?invitation_id=...&tenant_uuid=...&rsvp_token=...
  * tenant_uuid and rsvp_token come from the backend (in the link sent in the invitation email).
+ * invitationId can be in the path or in the query as invitation_id (so links work the first time from email).
  * We use only these URL params for APIs – no localStorage. GET rsvp_template and POST rsvp_response both use them.
  */
 export default function RsvpPage() {
   const params = useParams<{ eventId?: string; invitationId?: string; id?: string }>();
   const [searchParams] = useSearchParams();
   const eventId = params.eventId ?? params.id ?? undefined;
-  const invitationIdParam = params.invitationId;
+  /** Invitation ID from path (e.g. /rsvp/171/25) or query (e.g. ?invitation_id=25) so both link formats work. */
+  const invitationIdParam = params.invitationId ?? searchParams.get("invitation_id") ?? undefined;
   /** From backend via link – we accept and use only these, no localStorage fallback. */
   const tenantUuid = searchParams.get("tenant_uuid");
   const rsvpTokenFromUrl = searchParams.get("rsvp_token");
@@ -59,17 +62,21 @@ export default function RsvpPage() {
 
   useEffect(() => {
     if (!eventId) {
-      setError("Event ID is missing. Please use the full RSVP link from your invitation email.");
+      setError("This link is incomplete (event ID is missing). Please use the full link from your invitation email.");
       setLoading(false);
       return;
     }
     if (!invitationIdParam) {
-      setError("Invitation ID is missing. Please use the full RSVP link from your invitation email.");
+      setError(
+        "This RSVP link is incomplete — it’s missing the invitation reference. " +
+          "Full links look like: …/rsvp/171/25?tenant_uuid=…&rsvp_token=… (with a number after the event ID). " +
+          "If your email had a shorter link, ask the event organizer to re-save the invitation and send it again so you get a working link."
+      );
       setLoading(false);
       return;
     }
     if (!tenantUuid) {
-      setError("Tenant is missing. Please use the full RSVP link from your invitation email.");
+      setError("This link is incomplete (tenant is missing). Please use the full link from your invitation email.");
       setLoading(false);
       return;
     }
