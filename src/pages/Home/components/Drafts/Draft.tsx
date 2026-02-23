@@ -44,7 +44,7 @@ function Draft() {
   }
 
   return (
-    <div className='bg-white w-full rounded-2xl p-6'>
+    <div className='bg-white w-full rounded-2xl p-6 shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md'>
       <p className='font-poppins text-md font-medium text-neutral-900 mb-4'>Draft</p>
 
       <div className='flex flex-col md:flex-row md:flex-wrap md:justify-between gap-4'>
@@ -60,13 +60,13 @@ function Draft() {
                 backgroundPosition: 'right center',
                 backgroundSize: 'auto 100%',
               }}
-              className='flex flex-col rounded-2xl bg-neutral-100 w-full md:w-[48%] p-6 hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md'
+              className='flex flex-col rounded-2xl bg-neutral-100 w-full md:w-[48%] p-6 cursor-pointer transition-all duration-300 ease-out hover:bg-white hover:shadow-lg hover:shadow-slate-200/60 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.99] group border border-transparent hover:border-slate-200'
             >
               <div className='flex'>
                 <div
-                  className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
+                  className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2 transition-all duration-300 group-hover:shadow-sm`}
                 >
-                  <img style={{ width: 8, height: 8 }} src={icon} alt="dot" />
+                  <img style={{ width: 8, height: 8 }} src={icon} alt="dot" className="transition-transform duration-300 group-hover:scale-110" />
                   <p
                     style={{
                       color: color,
@@ -82,7 +82,7 @@ function Draft() {
               </div>
 
               <div className='flex flex-col gap-2 mt-10'>
-                <p className='text-slate-800 font-poppins font-medium text-md'>
+                <p className='text-slate-800 font-poppins font-medium text-md group-hover:text-slate-900 transition-colors duration-300'>
                   {event.name}
                 </p>
                 <p className='text-neutral-500 font-poppins font-normal text-xs'>

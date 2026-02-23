@@ -592,7 +592,7 @@ function AllEvents() {
         </div>
       )}
 
-      <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl">
+      <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md">
         <div className="flex flex-col gap-4 mb-6">
           {/* Title and Counter */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -746,9 +746,14 @@ function AllEvents() {
                   event.type,
                 );
 
+                const isDeleting = deletingEventId === event.id;
+
                 return (
                   <div
-                    onClick={() => handleEventClick(event.id)}
+                    onClick={() => {
+                      if (isDeleting) return;
+                      handleEventClick(event.id);
+                    }}
                     key={event.id}
                     style={{
                       padding: 24,
@@ -756,18 +761,35 @@ function AllEvents() {
                       backgroundRepeat: "no-repeat",
                       backgroundPosition: "right center",
                       backgroundSize: "auto 100%",
-                      cursor: "pointer",
+                      cursor: isDeleting ? "wait" : "pointer",
                     }}
-                    className="flex flex-col bg-neutral-100 rounded-2xl hover:bg-[#ffffff] transition-all duration-300 ease-in-out hover:shadow-md"
+                    className={`relative flex flex-col bg-neutral-100 rounded-2xl transition-all duration-300 ease-out border border-transparent group overflow-hidden ${isDeleting ? "pointer-events-none" : "hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.99] hover:border-slate-200"}`}
                   >
+                    {/* Deleting overlay – blocks navigation and shows loading state */}
+                    {isDeleting && (
+                      <div
+                        className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-sm z-10"
+                        aria-live="polite"
+                        aria-busy="true"
+                      >
+                        <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
+                        <div className="text-center px-2">
+                          <p className="text-slate-700 font-medium text-sm">Deleting...</p>
+                          <p className="text-slate-500 text-xs mt-0.5 truncate max-w-[180px]" title={event.name}>
+                            {event.name}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex flex-row items-center justify-between">
                       <div
-                        className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2`}
+                        className={`${bg} rounded-2xl flex flex-row items-center gap-2 px-3 py-2 transition-shadow duration-300 group-hover:shadow-sm`}
                       >
                         <img
                           style={{ width: 8, height: 8 }}
                           src={icon}
                           alt="dot"
+                          className="transition-transform duration-300 group-hover:scale-110"
                         />
                         <p
                           style={{
@@ -787,19 +809,20 @@ function AllEvents() {
                           e.stopPropagation(); // Prevent parent click
                           handleDeleteClick(event.id, event.name);
                         }}
-                        disabled={deletingEventId === event.id}
-                        className="p-1 rounded-full cursor-pointer bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                        disabled={isDeleting}
+                        title="Delete event"
+                        className="flex items-center justify-center w-9 h-9 rounded-xl cursor-pointer bg-rose-50 text-rose-500 border border-rose-200/80 hover:bg-rose-500 hover:text-white hover:border-rose-500 hover:shadow-md hover:shadow-rose-200/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-50 disabled:hover:text-rose-500 disabled:hover:border-rose-200/80 disabled:hover:shadow-none transition-all duration-200 hover:scale-105 active:scale-95"
                       >
-                        {deletingEventId === event.id ? (
-                          <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        {isDeleting ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <Trash2 className="w-4 h-4 text-white" />
+                          <Trash2 className="w-4 h-4" strokeWidth={2} />
                         )}
                       </button>
                     </div>
 
                     <div className="flex flex-col gap-2 mt-10">
-                      <p className="text-slate-800 font-poppins font-medium text-md">
+                      <p className="text-slate-800 font-poppins font-medium text-md group-hover:text-slate-900 transition-colors duration-300">
                         {event.name}
                       </p>
                       <p className="text-neutral-500 font-poppins font-normal text-xs">
@@ -826,22 +849,43 @@ function AllEvents() {
             <div className="space-y-3 mt-6">
               {paginatedEvents.map((event) => {
                 const { icon, color, bg } = getEventStyle(event.type);
+                const isDeleting = deletingEventId === event.id;
 
                 return (
                   <div
-                    onClick={() => handleEventClick(event.id)}
+                    onClick={() => {
+                      if (isDeleting) return;
+                      handleEventClick(event.id);
+                    }}
                     key={event.id}
-                    className="flex items-center justify-between p-4 bg-neutral-50 rounded-xl hover:bg-white transition-all duration-300 ease-in-out hover:shadow-md cursor-pointer border border-transparent hover:border-gray-200"
+                    className={`relative flex items-center justify-between p-4 rounded-xl border border-transparent group overflow-hidden ${isDeleting ? "bg-neutral-100 cursor-wait pointer-events-none" : "bg-neutral-50 cursor-pointer transition-all duration-300 ease-out hover:bg-white hover:shadow-md hover:shadow-slate-200/40 hover:scale-[1.01] hover:border-slate-200"}`}
                   >
+                    {/* Deleting overlay – blocks navigation and shows loading state */}
+                    {isDeleting && (
+                      <div
+                        className="absolute inset-0 rounded-xl flex flex-row items-center justify-center gap-3 bg-white/80 backdrop-blur-sm z-10"
+                        aria-live="polite"
+                        aria-busy="true"
+                      >
+                        <Loader2 className="w-6 h-6 text-rose-500 animate-spin shrink-0" />
+                        <div className="text-center min-w-0">
+                          <p className="text-slate-700 font-medium text-sm">Deleting...</p>
+                          <p className="text-slate-500 text-xs truncate" title={event.name}>
+                            {event.name}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex items-center gap-4 flex-1">
                       {/* Event Type Badge */}
                       <div
-                        className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0`}
+                        className={`${bg} rounded-lg flex flex-row items-center gap-2 px-3 py-2 shrink-0 transition-shadow duration-300 group-hover:shadow-sm`}
                       >
                         <img
                           style={{ width: 8, height: 8 }}
                           src={icon}
                           alt="dot"
+                          className="transition-transform duration-300 group-hover:scale-110"
                         />
                         <p
                           style={{
@@ -858,7 +902,7 @@ function AllEvents() {
 
                       {/* Event Info */}
                       <div className="flex flex-col gap-1 flex-1 min-w-0">
-                        <p className="text-slate-800 font-poppins font-medium text-md truncate">
+                        <p className="text-slate-800 font-poppins font-medium text-md truncate group-hover:text-slate-900 transition-colors duration-300">
                           {event.name}
                         </p>
                         <p className="text-neutral-500 font-poppins font-normal text-xs">
@@ -873,13 +917,17 @@ function AllEvents() {
                         e.stopPropagation(); // Prevent parent click
                         handleDeleteClick(event.id, event.name);
                       }}
-                      disabled={deletingEventId === event.id}
-                      className="p-2 rounded-full cursor-pointer shrink-0 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                      disabled={isDeleting}
+                      title="Delete event"
+                      className="flex items-center justify-center gap-1.5 shrink-0 min-w-9 h-9 px-3 rounded-xl cursor-pointer bg-rose-50 text-rose-500 border border-rose-200/80 hover:bg-rose-500 hover:text-white hover:border-rose-500 hover:shadow-md hover:shadow-rose-200/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-rose-50 disabled:hover:text-rose-500 disabled:hover:border-rose-200/80 disabled:hover:shadow-none transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                     >
                       {deletingEventId === event.id ? (
-                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                        <Loader2 className="w-4 h-4 animate-spin" />
                       ) : (
-                        <Trash2 className="w-4 h-4 text-white" />
+                        <>
+                          <Trash2 className="w-4 h-4" strokeWidth={2} />
+                          <span className="text-xs font-medium hidden sm:inline">Delete</span>
+                        </>
                       )}
                     </button>
                   </div>

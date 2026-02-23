@@ -40,32 +40,35 @@ const Home = () => {
             backgroundRepeat: "no-repeat",
             backgroundPosition: "right center",
             backgroundSize: "contain",
-            transition: "all 0.3s ease, background-position 0.3s ease",
           }}
-          //  onMouseEnter={(e) => {
-          //   e.target.style.backgroundPosition = 'right 10px center';
-          // }}
-          // onMouseLeave={(e) => {
-          //   e.target.style.backgroundPosition = 'right center';
-          // }}
-          className="cursor-pointer border border-transparent hover:border-sky-700 transition-all duration-300 ease-in-out w-full md:w-[100%] rounded-3xl bg-sky-100 flex justify-between items-center p-4 shadow-md"
+          className="
+            cursor-pointer w-full md:w-[100%] rounded-3xl bg-sky-100 flex justify-between items-center p-4
+            border border-sky-200/80
+            shadow-md hover:shadow-xl hover:shadow-sky-200/40
+            transition-all duration-300 ease-out
+            hover:scale-[1.02] hover:-translate-y-0.5 hover:border-sky-400
+            active:scale-[0.99] active:translate-y-0
+            group
+          "
         >
           <div className="flex items-center gap-4">
-            <div className="bg-sky-50 p-6 rounded">
+            <div className="bg-sky-50 p-6 rounded-2xl shadow-sm transition-all duration-300 group-hover:bg-white group-hover:shadow-md group-hover:scale-105">
               <img
                 src={Assets.icons.setting}
                 alt="Setting Icon"
-                className="w-10 h-10"
+                className="w-10 h-10 transition-transform duration-300 group-hover:rotate-12"
               />
             </div>
             <div>
-              <p className="text-lg font-semibold text-sky-800">Create Event</p>
-              <p className="font-poppins font-normal text-xs text-sky-950">
+              <p className="text-lg font-semibold text-sky-800 group-hover:text-sky-900 transition-colors duration-300">
+                Create Event
+              </p>
+              <p className="font-poppins font-normal text-xs text-sky-950/90">
                 Start setting up your event now.
               </p>
             </div>
           </div>
-          <div className="pr-4 md:pr-10">
+          <div className="pr-4 md:pr-10 transition-transform duration-300 group-hover:translate-x-1 group-hover:scale-110">
             <img src={Assets.icons.plusBlue} alt="plus" className="w-6 h-6" />
           </div>
         </div>
