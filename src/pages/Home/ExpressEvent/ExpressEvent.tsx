@@ -5,10 +5,13 @@ import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
-import EmailConfirmation, { type EmailConfirmationHandle } from "./Confirmation/EmailConfirmation";
+import EmailConfirmation, {
+  type EmailConfirmationHandle,
+} from "./Confirmation/EmailConfirmation";
 import AdvanceAppManagement from "./component/AdvanceAppManagement";
 import AdvanceEmail from "./component/AdvanceEmail";
 import AdvanceEventContent from "./component/AdvanceEventContent";
+import Payment from "./Payment/Payment";
 
 export interface ToggleStates {
   confirmationMsg: boolean;
@@ -351,6 +354,18 @@ const ExpressEvent = () => {
             eventId={finalEventId}
             onComplete={handleNext}
             onPrevious={handlePrevious}
+          />
+        );
+      case 5:
+        return (
+          <Payment
+            plan={plan}
+            toggleStates={toggleStates}
+            eventId={finalEventId}
+            onNext={(id?: string | number, _plan?: string) => handleNext(id)}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
           />
         );
       default:

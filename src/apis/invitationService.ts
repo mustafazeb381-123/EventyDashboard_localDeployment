@@ -12,6 +12,14 @@ export interface EventInvitationUser {
   invitation_sent_at?: string;
   created_at: string;
   updated_at: string;
+  /** Set by backend when user has registered for the event */
+  registered?: boolean;
+  /** Set by backend when user has confirmed (e.g. RSVP accepted) */
+  confirmed?: boolean;
+  /** RSVP status per user: approved | pending | rejected */
+  rsvp_status?: "approved" | "pending" | "rejected";
+  /** When present, user is typically considered registered */
+  user_id?: number;
 }
 
 /** Invitation sender */

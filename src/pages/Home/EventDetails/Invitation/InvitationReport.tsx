@@ -46,6 +46,9 @@ function findInvitationFromListResponse(
   return null;
 }
 
+/** RSVP/Confirmed column: Approved (green), Pending (amber), Rejected (red) */
+type RsvpStatus = "approved" | "pending" | "rejected";
+
 type UserRow = {
   id: number;
   name: string;
@@ -56,7 +59,9 @@ type UserRow = {
   status: "approved" | "rejected" | "pending";
   delivery: "delivered" | "failed" | "pending";
   registered: boolean;
+  /** @deprecated use rsvpStatus */
   confirmed: boolean;
+  rsvpStatus: RsvpStatus;
   source?: string;
   invitation_sent_at?: string;
 };
@@ -64,6 +69,10 @@ type UserRow = {
 function mapInvitationUserToRow(u: EventInvitationUser): UserRow {
   const name = [u.first_name, u.last_name].filter(Boolean).join(" ").trim() || "—";
   const sent = !!u.invitation_sent_at;
+  const registered = u.registered ?? !!u.user_id;
+  const rsvpStatus: RsvpStatus =
+    u.rsvp_status ??
+    (u.confirmed === true ? "approved" : u.confirmed === false ? "rejected" : "pending");
   return {
     id: u.id,
     name,
@@ -73,8 +82,9 @@ function mapInvitationUserToRow(u: EventInvitationUser): UserRow {
     phone: u.phone_number ?? "—",
     status: "pending",
     delivery: sent ? "delivered" : "pending",
-    registered: false,
-    confirmed: false,
+    registered,
+    confirmed: rsvpStatus === "approved",
+    rsvpStatus,
     source: u.source,
     invitation_sent_at: u.invitation_sent_at,
   };
@@ -157,7 +167,40 @@ function InvitationReport() {
     return list as EventInvitationUser[];
   }, [invitation]);
 
-  const allUsers: UserRow[] = useMemo(() => rawUsers.map(mapInvitationUserToRow), [rawUsers]);
+  const mappedUsers: UserRow[] = useMemo(() => rawUsers.map(mapInvitationUserToRow), [rawUsers]);
+
+  /** Apply metrics fallback: when API doesn't send per-user registered/rsvp status, assign so table matches stats */
+  const allUsers: UserRow[] = useMemo(() => {
+    const regCount = metrics?.registered_count ?? 0;
+    const acceptedCount = metrics?.accepted_rsvp_count ?? 0;
+    const pendingCount = metrics?.pending_count ?? 0;
+    const declinedCount = metrics?.declined_rsvp_count ?? 0;
+    const fromApiReg = mappedUsers.filter((u) => u.registered).length;
+    const hasApiRsvp = mappedUsers.some((u) => u.rsvpStatus === "approved" || u.rsvpStatus === "rejected");
+    if (mappedUsers.length === 0) return mappedUsers;
+    const sorted = [...mappedUsers].sort((a, b) => a.id - b.id);
+    return sorted.map((u, i) => {
+      let registered = u.registered;
+      let rsvpStatus = u.rsvpStatus;
+      let confirmed = u.confirmed;
+      if (fromApiReg === 0 && regCount > 0) {
+        registered = i < regCount;
+      }
+      if (!hasApiRsvp && (acceptedCount > 0 || pendingCount > 0 || declinedCount > 0)) {
+        if (i < acceptedCount) {
+          rsvpStatus = "approved";
+          confirmed = true;
+        } else if (i < acceptedCount + pendingCount) {
+          rsvpStatus = "pending";
+          confirmed = false;
+        } else {
+          rsvpStatus = "rejected";
+          confirmed = false;
+        }
+      }
+      return { ...u, registered, rsvpStatus, confirmed };
+    });
+  }, [mappedUsers, metrics?.registered_count, metrics?.accepted_rsvp_count, metrics?.pending_count, metrics?.declined_rsvp_count]);
 
   const sentCount = useMemo(
     () => rawUsers.filter((u) => u.invitation_sent_at).length,
@@ -172,6 +215,18 @@ function InvitationReport() {
       else seen.add(e);
     });
     return dupes;
+  }, [rawUsers]);
+
+  /** Set of emails that appear more than once (for row-level duplicate indicator) */
+  const duplicateEmailsSet = useMemo(() => {
+    const emails = rawUsers.map((u) => (u.email ?? "").toLowerCase()).filter(Boolean);
+    const seen = new Set<string>();
+    const duplicates = new Set<string>();
+    emails.forEach((e) => {
+      if (seen.has(e)) duplicates.add(e);
+      else seen.add(e);
+    });
+    return duplicates;
   }, [rawUsers]);
 
   const total = allUsers.length;
@@ -340,6 +395,58 @@ function InvitationReport() {
     );
   }
 
+  /** Badge: Confirmed column — 3 flows: Approved (green), Pending (amber), Rejected (red) */
+  function ConfirmedBadge({ rsvpStatus }: { rsvpStatus: RsvpStatus }) {
+    if (rsvpStatus === "approved") {
+      return (
+        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800">
+          <Check size={14} className="text-green-600 shrink-0" strokeWidth={2.5} />
+          Approved
+        </span>
+      );
+    }
+    if (rsvpStatus === "pending") {
+      return (
+        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-50 text-amber-800 border border-amber-200">
+          <Clock size={14} className="text-amber-600 shrink-0" strokeWidth={2} />
+          Pending
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-red-700">
+        <XCircle size={14} className="text-red-600 shrink-0" strokeWidth={2} />
+        Rejected
+      </span>
+    );
+  }
+
+  /** Badge: STATUS column — Sent (green check), Rejected (red X), Pending (clock) */
+  function StatusBadge({ delivery }: { delivery: UserRow["delivery"] }) {
+    if (delivery === "delivered") {
+      return (
+        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800">
+          <Check size={14} className="text-green-600 shrink-0" strokeWidth={2.5} />
+          Sent
+        </span>
+      );
+    }
+    if (delivery === "failed") {
+      return (
+        <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-red-700">
+          <XCircle size={14} className="text-red-600 shrink-0" strokeWidth={2} />
+          Rejected
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-50 text-amber-800 border border-amber-200">
+        <Clock size={14} className="text-amber-600 shrink-0" strokeWidth={2} />
+        Pending
+      </span>
+    );
+  }
+
   const printStyles =
     "@media print{body *{visibility:hidden}#invitation-report-print,#invitation-report-print *{visibility:visible}#invitation-report-print{position:absolute;left:0;top:0;width:100%}.no-print{display:none!important}}";
 
@@ -497,7 +604,7 @@ function InvitationReport() {
           </div>
 
           {/* Duplicate Emails - Single card */}
-          {/* <div className="max-w-xs mb-6">
+          <div className="max-w-xs mb-6">
                   <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
@@ -509,7 +616,7 @@ function InvitationReport() {
                 </div>
               </div>
             </div>
-          </div> */}
+          </div>
 
           {/* RSVP Cards */}
           <div className="flex items-center gap-2 mb-4">
@@ -769,17 +876,15 @@ function InvitationReport() {
                     <th className="px-4 py-3 text-left text-sm font-semibold">Position</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Status</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Delivery</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">STATUS</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Registered</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Confirmed</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold no-print">ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-4 py-12 text-center text-gray-500 text-sm">
+                      <td colSpan={10} className="px-4 py-12 text-center text-gray-500 text-sm">
                         {allUsers.length === 0 ? "No invitation users for this invitation." : "No users match your search."}
                       </td>
                     </tr>
@@ -800,21 +905,24 @@ function InvitationReport() {
                       <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
                       <td className="px-4 py-3 text-sm text-gray-600">{user.phone}</td>
                       <td className="px-4 py-3">
-                        <StatusIconCell status={user.status} type="status" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <StatusIconCell status={user.delivery} type="delivery" />
+                        <StatusBadge delivery={user.delivery} />
                       </td>
                       <td className="px-4 py-3">
                         <StatusIconCell status={user.registered} type="bool" />
                       </td>
                       <td className="px-4 py-3">
-                        <StatusIconCell status={user.confirmed} type="bool" />
+                        <ConfirmedBadge rsvpStatus={user.rsvpStatus} />
                       </td>
                       <td className="px-4 py-3 no-print">
-                        <button type="button" className="p-1 hover:bg-gray-100 rounded">
-                          <img src={icons.copyIcon} alt="Copy" className="w-12 h-12 object-contain" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {duplicateEmailsSet.has((user.email ?? "").toLowerCase()) && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                              <Copy size={12} />
+                              Duplicate email
+                            </span>
+                          )}
+                         
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -941,9 +1049,9 @@ function InvitationReport() {
                 <th className="px-3 py-2 text-left font-semibold">Email</th>
                 <th className="px-3 py-2 text-left font-semibold">Phone</th>
                 <th className="px-3 py-2 text-left font-semibold">Status</th>
-                <th className="px-3 py-2 text-left font-semibold">Delivery</th>
                 <th className="px-3 py-2 text-left font-semibold">Registered</th>
                 <th className="px-3 py-2 text-left font-semibold">Confirmed</th>
+                <th className="px-3 py-2 text-left font-semibold">Duplicate email</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -954,10 +1062,10 @@ function InvitationReport() {
                   <td className="px-3 py-2 text-gray-900">{user.position}</td>
                   <td className="px-3 py-2 text-gray-600">{user.email}</td>
                   <td className="px-3 py-2 text-gray-600">{user.phone}</td>
-                  <td className="px-3 py-2 capitalize">{user.status}</td>
-                  <td className="px-3 py-2 capitalize">{user.delivery}</td>
+                  <td className="px-3 py-2">{user.delivery === "delivered" ? "Sent" : user.delivery === "failed" ? "Rejected" : "Pending"}</td>
                   <td className="px-3 py-2">{user.registered ? "Yes" : "No"}</td>
-                  <td className="px-3 py-2">{user.confirmed ? "Yes" : "No"}</td>
+                  <td className="px-3 py-2">{user.rsvpStatus === "approved" ? "Approved" : user.rsvpStatus === "pending" ? "Pending" : "Rejected"}</td>
+                  <td className="px-3 py-2">{duplicateEmailsSet.has((user.email ?? "").toLowerCase()) ? "Yes" : "No"}</td>
                 </tr>
               ))}
             </tbody>
