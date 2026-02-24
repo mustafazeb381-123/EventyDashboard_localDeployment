@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { ChevronLeft, Check } from "lucide-react";
+import { ChevronLeft, Check, Plus, Edit, Trash2, Loader2, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import TemplateOne from "./RegistrationTemplates/TemplateOne/TemplateOne";
 import TemplateTwo from "./RegistrationTemplates/TemplateTwo/TemplateTwo";
@@ -10,8 +10,12 @@ import TemplateFour from "./RegistrationTemplates/TemplateFour/TemplateFour";
 import TemplateFive from "./RegistrationTemplates/TemplateFive/TemplateFive";
 import TemplateSix from "./RegistrationTemplates/TemplateSix/TemplateSix";
 import TemplateSeven from "./RegistrationTemplates/TemplateSeven/TemplateSeven";
-import { X } from "lucide-react";
 import ConfirmationDetails from "./ConfirmationDetails/ConfirmationDetails";
+import CustomFormBuilder from "@/components/AdvanceEventComponent/CustomFormBuilder";
+import {
+  FormBuilderTemplateForm,
+} from "@/components/AdvanceEventComponent/AdvanceRegistration";
+import type { CustomFormField, FormTheme } from "@/components/AdvanceEventComponent/CustomFormBuilder/types";
 import TemplateFormOne from "./RegistrationTemplates/TemplateOne/TemplateForm";
 import TemplateFormTwo from "./RegistrationTemplates/TemplateTwo/TemplateForm";
 import TemplateFormThree from "./RegistrationTemplates/TemplateThree/TemplateForm";
@@ -26,6 +30,12 @@ import {
   postRegistrationTemplateFieldApi,
   updateEventById,
   getEventbyId,
+  getRegistrationFormTemplates,
+  createRegistrationFormTemplate,
+  updateRegistrationFormTemplate,
+  updateRegistrationFormTemplateImage,
+  deleteRegistrationFormTemplate,
+  setRegistrationFormTemplateAsDefault,
 } from "@/apis/apiHelpers";
 // import AdvacedTicket from "@/components/AdvanceTicket/AdvanceTickt";
 import AdvanceEvent from "../component/AdvanceEvent";
@@ -36,6 +46,19 @@ type ToggleStates = {
   location: boolean;
   eventDetails: boolean;
 };
+
+/** Custom form builder template (same shape as in AdvanceRegistration) */
+interface CustomFormTemplate {
+  id: string;
+  title: string;
+  data: Array<{ id: string; type: string; label: string; required?: boolean; [key: string]: any }>;
+  formBuilderData?: any;
+  bannerImage?: File | string | null;
+  theme?: FormTheme;
+  createdAt: string;
+  updatedAt?: string;
+  isCustom?: boolean;
+}
 
 type ModalProps = {
   selectedTemplate: string | null;
@@ -220,6 +243,18 @@ const RegistrationForm = ({
   const [eventData, setEventData] = useState<any>(null);
   const [isLoadingEventData, setIsLoadingEventData] = useState(false);
 
+  // Custom form builder state (express: same as advance)
+  const [formBuilderTemplates, setFormBuilderTemplates] = useState<CustomFormTemplate[]>([]);
+  const [isCustomFormBuilderOpen, setIsCustomFormBuilderOpen] = useState(false);
+  const [editingFormBuilderTemplate, setEditingFormBuilderTemplate] = useState<CustomFormTemplate | null>(null);
+  const [isEditFormBuilderMode, setIsEditFormBuilderMode] = useState(false);
+  const [deleteFormBuilderCandidate, setDeleteFormBuilderCandidate] = useState<CustomFormTemplate | null>(null);
+  const [isDeleteFormBuilderModalOpen, setIsDeleteFormBuilderModalOpen] = useState(false);
+  const [isDeletingFormBuilder, setIsDeletingFormBuilder] = useState(false);
+  const [isFormBuilderPreviewModalOpen, setIsFormBuilderPreviewModalOpen] = useState(false);
+  const [previewFormBuilderTemplate, setPreviewFormBuilderTemplate] = useState<CustomFormTemplate | null>(null);
+  const [lastSelectedSystem, setLastSelectedSystem] = useState<"default" | "custom" | null>(null);
+
   // Notification state
   const [notification, setNotification] = useState<{
     message: string;
@@ -311,9 +346,335 @@ const RegistrationForm = ({
     }
   }, [effectiveEventId]);
 
+  // -------------------- Custom form builder helpers (express: same as advance) --------------------
+  const mapFormBuilderTypeForValidation = (fbType: string): string => {
+    const typeMap: Record<string, string> = {
+      text: "text", email: "email", number: "number", select: "select",
+      textarea: "textarea", checkbox: "checkbox", radio: "radio",
+      header: "header", paragraph: "paragraph", date: "date", file: "file",
+    };
+    return typeMap[fbType] || "text";
+  };
+
+  const convertFormBuilderToFieldsForValidation = (jsonData: any): CustomFormTemplate["data"] => {
+    if (!jsonData) return [];
+    const formDataArray = jsonData.formData && Array.isArray(jsonData.formData)
+      ? jsonData.formData
+      : Array.isArray(jsonData) ? jsonData : [];
+    if (formDataArray.length === 0) return [];
+    return formDataArray.map((item: any, index: number) => ({
+      id: item.id || `field-${Date.now()}-${index}`,
+      type: mapFormBuilderTypeForValidation(item.type || item.fieldType),
+      label: item.label || item.name || "Field",
+      required: item.required || false,
+      ...item,
+    }));
+  };
+
+  const transformApiTemplateToComponent = useCallback((apiTemplate: any): CustomFormTemplate => {
+    const attrs = apiTemplate.attributes || {};
+    const formData = attrs.form_template_data || {};
+    const fields =
+      formData.formBuilderData?.formData ||
+      formData.fields ||
+      (Array.isArray(formData.formData) ? formData.formData : []) ||
+      [];
+    const bannerImage = attrs.banner_image || null;
+    const themeFromFormData = formData.theme || formData.formBuilderData?.theme || {};
+    const theme: FormTheme = {
+      ...themeFromFormData,
+      formBackgroundImage: attrs.form_background_image ?? themeFromFormData.formBackgroundImage ?? null,
+      footerBannerImage: attrs.footer_banner_image ?? themeFromFormData.footerBannerImage ?? null,
+    };
+    const formBuilderData = {
+      formData: fields,
+      bannerImage,
+      theme,
+      languageMode: formData.formBuilderData?.languageMode ?? "single",
+      primaryLanguage: formData.formBuilderData?.primaryLanguage,
+    };
+    return {
+      id: String(apiTemplate.id),
+      title: attrs.name || "Untitled Template",
+      data: fields.length > 0 ? convertFormBuilderToFieldsForValidation({ formData: fields }) : [],
+      formBuilderData,
+      bannerImage,
+      theme,
+      createdAt: attrs.created_at || new Date().toISOString(),
+      updatedAt: attrs.updated_at || new Date().toISOString(),
+      isCustom: true,
+    };
+  }, []);
+
+  const checkAndSetDefaultTemplate = useCallback(async () => {
+    if (!effectiveEventId) return;
+    try {
+      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
+      const [customRes, oldRes] = await Promise.allSettled([
+        getRegistrationFormTemplates(effectiveEventId),
+        getRegistrationTemplateData(effectiveEventId, tenantUuid),
+      ]);
+      let defaultCustom = null;
+      if (customRes.status === "fulfilled") {
+        const list = customRes.value?.data?.data || [];
+        defaultCustom = list.find((t: any) => t.attributes?.default === true);
+      }
+      let defaultOld = null;
+      if (oldRes.status === "fulfilled") {
+        const data = oldRes.value?.data?.data;
+        if (data?.attributes?.default === true) defaultOld = data;
+      }
+      if (defaultOld && defaultCustom) {
+        const useCustom = lastSelectedSystem === "custom" || (
+          defaultCustom.attributes?.updated_at && defaultOld.attributes?.updated_at &&
+          new Date(defaultCustom.attributes.updated_at) > new Date(defaultOld.attributes.updated_at)
+        );
+        setConfirmedTemplate(useCustom ? String(defaultCustom.id) : (defaultOld.attributes?.name ?? null));
+      } else if (defaultOld) {
+        setConfirmedTemplate(defaultOld.attributes?.name ?? null);
+      } else if (defaultCustom) {
+        setConfirmedTemplate(String(defaultCustom.id));
+      } else {
+        setConfirmedTemplate(null);
+      }
+    } catch (_e) {
+      // ignore
+    }
+  }, [effectiveEventId, lastSelectedSystem]);
+
+  const loadFormBuilderTemplates = useCallback(async () => {
+    if (!effectiveEventId) return;
+    try {
+      setIsLoadingFormData(true);
+      const response = await getRegistrationFormTemplates(effectiveEventId);
+      const list = response?.data?.data || [];
+      const transformed = list.map((t: any) => transformApiTemplateToComponent(t));
+      setFormBuilderTemplates(transformed);
+      await checkAndSetDefaultTemplate();
+    } catch (err) {
+      showNotification("Failed to load custom form templates", "error");
+      setFormBuilderTemplates([]);
+    } finally {
+      setIsLoadingFormData(false);
+    }
+  }, [effectiveEventId, transformApiTemplateToComponent, checkAndSetDefaultTemplate]);
+
   useEffect(() => {
-    getCreateTemplateApiData();
-  }, [getCreateTemplateApiData]);
+    const init = async () => {
+      await getCreateTemplateApiData();
+      if (plan !== "advance") await loadFormBuilderTemplates();
+    };
+    if (effectiveEventId) init();
+  }, [effectiveEventId, plan]);
+
+  // -------------------- Custom form builder handlers (express) --------------------
+  const handleOpenCustomFormBuilder = useCallback((template?: CustomFormTemplate) => {
+    if (!effectiveEventId) {
+      showNotification("Event ID not found. Cannot open form builder.", "error");
+      return;
+    }
+    if (template) {
+      setEditingFormBuilderTemplate(template);
+      setIsEditFormBuilderMode(true);
+    } else {
+      setEditingFormBuilderTemplate(null);
+      setIsEditFormBuilderMode(false);
+    }
+    setIsCustomFormBuilderOpen(true);
+  }, [effectiveEventId]);
+
+  const handleSaveFormBuilderTemplate = useCallback(async (template: CustomFormTemplate) => {
+    if (!effectiveEventId) return;
+    const fields = Array.isArray(template.formBuilderData?.formData)
+      ? template.formBuilderData.formData
+      : [];
+    const normalizedBannerImage =
+      typeof template.bannerImage === "string"
+        ? template.bannerImage
+        : template.bannerImage instanceof File
+          ? await new Promise<string>((res, rej) => {
+              const r = new FileReader();
+              r.onloadend = () => res(r.result as string);
+              r.onerror = () => rej(new Error("Failed to read image"));
+              r.readAsDataURL(template.bannerImage as File);
+            })
+          : null;
+    const cleanTheme: any = {
+      formBackgroundColor: "#ffffff",
+      formPadding: "24px",
+      primaryColor: "#3B82F6",
+      secondaryColor: "#10B981",
+      ...(template.theme && typeof template.theme === "object"
+        ? Object.fromEntries(
+            Object.entries(template.theme).filter(
+              ([_, v]) => v != null && typeof v !== "object" && !(v instanceof File)
+            )
+          )
+        : {}),
+    };
+    if (template.theme?.formBackgroundImage && typeof template.theme.formBackgroundImage === "string") {
+      cleanTheme.formBackgroundImage = template.theme.formBackgroundImage;
+    }
+    if (template.theme?.footerBannerImage && typeof template.theme.footerBannerImage === "string") {
+      cleanTheme.footerBannerImage = template.theme.footerBannerImage;
+    }
+    const payload = {
+      registration_form_template: {
+        name: template.title.trim() || "Custom Form",
+        default: !isEditFormBuilderMode && confirmedTemplate === template.id,
+        form_template_data: {
+          fields,
+          formBuilderData: {
+            formData: fields,
+            ...(normalizedBannerImage ? { bannerImage: normalizedBannerImage } : {}),
+            theme: cleanTheme,
+            languageMode: template.formBuilderData?.languageMode ?? "single",
+            primaryLanguage: template.formBuilderData?.primaryLanguage,
+          },
+          ...(normalizedBannerImage ? { bannerImage: normalizedBannerImage } : {}),
+          theme: cleanTheme,
+        },
+      },
+    };
+    if (isEditFormBuilderMode && editingFormBuilderTemplate?.id) {
+      await updateRegistrationFormTemplate(effectiveEventId, editingFormBuilderTemplate.id, payload);
+      if (normalizedBannerImage && (template as any)._shouldUpdateBannerImage !== false) {
+        try {
+          await updateRegistrationFormTemplateImage(
+            effectiveEventId,
+            editingFormBuilderTemplate.id,
+            "banner_image",
+            normalizedBannerImage
+          );
+        } catch (_) {}
+      }
+    } else {
+      const createRes = await createRegistrationFormTemplate(effectiveEventId, payload);
+      const newId = createRes?.data?.data?.id ?? createRes?.data?.id;
+      if (newId != null) {
+        setLastSelectedSystem("custom");
+        setConfirmedTemplate(String(newId));
+      }
+    }
+    await loadFormBuilderTemplates();
+    showNotification("Template saved successfully", "success");
+  }, [effectiveEventId, isEditFormBuilderMode, editingFormBuilderTemplate, confirmedTemplate, loadFormBuilderTemplates]);
+
+  const handleSaveCustomForm = useCallback(
+    async (
+      customFields: CustomFormField[],
+      bannerImage?: File | string,
+      theme?: FormTheme,
+      templateName?: string,
+      languageConfig?: { languageMode?: string; primaryLanguage?: string }
+    ) => {
+      if (!effectiveEventId) return;
+      let normalizedBanner: string | null = null;
+      if (bannerImage instanceof File) {
+        normalizedBanner = await new Promise<string>((res, rej) => {
+          const r = new FileReader();
+          r.onloadend = () => res(r.result as string);
+          r.onerror = () => rej(new Error("Failed to read image"));
+          r.readAsDataURL(bannerImage);
+        });
+      } else if (typeof bannerImage === "string") {
+        normalizedBanner = bannerImage;
+      }
+      const formBuilderData = {
+        formData: customFields,
+        bannerImage: normalizedBanner,
+        theme: theme || undefined,
+        languageMode: languageConfig?.languageMode ?? "single",
+        primaryLanguage: languageConfig?.primaryLanguage,
+      };
+      const templateData: CustomFormTemplate = {
+        id: editingFormBuilderTemplate?.id || `custom-form-${Date.now()}`,
+        title: templateName?.trim() || editingFormBuilderTemplate?.title || "Custom Form",
+        data: convertFormBuilderToFieldsForValidation({ formData: customFields }),
+        formBuilderData,
+        bannerImage: normalizedBanner,
+        theme: theme,
+        createdAt: editingFormBuilderTemplate?.createdAt || new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isCustom: true,
+      };
+      (templateData as any)._shouldUpdateBannerImage = true;
+      await handleSaveFormBuilderTemplate(templateData);
+      setIsCustomFormBuilderOpen(false);
+      setEditingFormBuilderTemplate(null);
+      setIsEditFormBuilderMode(false);
+    },
+    [effectiveEventId, editingFormBuilderTemplate, handleSaveFormBuilderTemplate, convertFormBuilderToFieldsForValidation]
+  );
+
+  const handleEditFormBuilderTemplate = useCallback((template: CustomFormTemplate) => {
+    if (template.formBuilderData?.formData && Array.isArray(template.formBuilderData.formData)) {
+      handleOpenCustomFormBuilder(template);
+    } else {
+      showNotification("This template cannot be edited in the form builder.", "info");
+    }
+  }, [handleOpenCustomFormBuilder]);
+
+  const handleSelectFormBuilderTemplate = useCallback((templateId: string) => {
+    const template = formBuilderTemplates.find((t) => t.id === templateId);
+    if (template) {
+      setPreviewFormBuilderTemplate(template);
+      setIsFormBuilderPreviewModalOpen(true);
+    }
+  }, [formBuilderTemplates]);
+
+  const handleUseFormBuilderTemplate = useCallback(async (templateId: string) => {
+    if (!effectiveEventId) return;
+    const template = formBuilderTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+    setIsLoading(true);
+    try {
+      setLastSelectedSystem("custom");
+      await setRegistrationFormTemplateAsDefault(effectiveEventId, templateId);
+      setConfirmedTemplate(templateId);
+      setSelectedTemplateData(template.formBuilderData || { name: template.title });
+      showNotification("Template applied successfully", "success");
+      setIsFormBuilderPreviewModalOpen(false);
+      setPreviewFormBuilderTemplate(null);
+      await loadFormBuilderTemplates();
+    } catch (err: any) {
+      showNotification(err?.message || "Failed to apply template", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [effectiveEventId, formBuilderTemplates, loadFormBuilderTemplates]);
+
+  const handleDeleteFormBuilderTemplate = useCallback((templateId: string) => {
+    const template = formBuilderTemplates.find((t) => t.id === templateId) ?? null;
+    setDeleteFormBuilderCandidate(template);
+    setIsDeleteFormBuilderModalOpen(true);
+  }, [formBuilderTemplates]);
+
+  const cancelDeleteFormBuilderTemplate = useCallback(() => {
+    setIsDeleteFormBuilderModalOpen(false);
+    setDeleteFormBuilderCandidate(null);
+  }, []);
+
+  const confirmDeleteFormBuilderTemplate = useCallback(async () => {
+    if (!deleteFormBuilderCandidate || !effectiveEventId) {
+      cancelDeleteFormBuilderTemplate();
+      return;
+    }
+    const { id } = deleteFormBuilderCandidate;
+    setIsDeletingFormBuilder(true);
+    try {
+      await deleteRegistrationFormTemplate(effectiveEventId, id);
+      setFormBuilderTemplates((prev) => prev.filter((t) => t.id !== id));
+      if (confirmedTemplate === id) setConfirmedTemplate(null);
+      await loadFormBuilderTemplates();
+      showNotification("Template deleted successfully", "success");
+    } catch (err: any) {
+      showNotification(err?.message || "Failed to delete template", "error");
+    } finally {
+      setIsDeletingFormBuilder(false);
+      cancelDeleteFormBuilderTemplate();
+    }
+  }, [deleteFormBuilderCandidate, effectiveEventId, confirmedTemplate, loadFormBuilderTemplates, cancelDeleteFormBuilderTemplate]);
 
   // Memoize getFieldAPi function
   const getFieldAPi = useCallback(async (id: string) => {
@@ -789,8 +1150,106 @@ const RegistrationForm = ({
                   </div>
                 </div>
               ) : (
-                /* Template Grid */
+                /* Template Grid: Custom Form Builder + custom templates + default templates */
                 <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {/* Custom Form Builder card (same as advance) */}
+                  <div
+                    onClick={() => handleOpenCustomFormBuilder()}
+                    className="relative border-2 border-dashed border-pink-300 rounded-3xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center h-[240px]"
+                  >
+                    <div className="absolute top-2 right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full hidden sm:block">
+                      New
+                    </div>
+                    <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-2">
+                      <Plus className="text-pink-600" size={28} />
+                    </div>
+                    <h3 className="text-base font-medium mb-1 text-center text-pink-600">
+                      Custom Form Builder
+                    </h3>
+                    <p className="text-xs text-gray-500 text-center line-clamp-2">
+                      Fully customizable with drag and drop, conditions, validation and more
+                    </p>
+                  </div>
+
+                  {/* Custom form builder templates */}
+                  {formBuilderTemplates.map((template) => {
+                    const hasPreviewData =
+                      Array.isArray(template.formBuilderData?.formData) &&
+                      template.formBuilderData.formData.length > 0;
+                    const FormBuilderPreview = () => (
+                      <FormBuilderTemplateForm
+                        data={template.data}
+                        eventId={effectiveEventId}
+                        formBuilderData={template.formBuilderData}
+                        bannerImage={template.bannerImage}
+                        theme={template.theme}
+                      />
+                    );
+                    const templateIdStr = String(template.id);
+                    const isSelected = confirmedTemplate === templateIdStr;
+                    return (
+                      <div
+                        key={template.id}
+                        className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors flex flex-col relative overflow-hidden ${
+                          isSelected ? "border-pink-500 bg-pink-50" : "border-gray-200 hover:border-pink-500"
+                        }`}
+                      >
+                        <div className="absolute top-2 right-2 flex gap-1 z-10">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditFormBuilderTemplate(template);
+                            }}
+                            className="p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50"
+                            title="Edit"
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFormBuilderTemplate(template.id);
+                            }}
+                            className="p-1.5 bg-white rounded-lg shadow-sm text-red-500 hover:bg-red-50"
+                            title="Delete"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <div
+                          onClick={() => !isLoadingFormData && handleSelectFormBuilderTemplate(template.id)}
+                          className="w-full h-40 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative shrink-0"
+                        >
+                          {hasPreviewData ? (
+                            <div style={{ scale: 0.22 }} className="transform pointer-events-none origin-top-left absolute top-0 left-0">
+                              <div className="w-[1200px]">
+                                <FormBuilderPreview />
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center gap-1 p-3 text-center">
+                              <p className="text-sm font-medium text-gray-700 truncate w-full">{template.title}</p>
+                              <p className="text-xs text-gray-500">Click to use or edit to add fields</p>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 shrink-0">
+                          <h4 className="text-sm font-medium text-gray-900 truncate">{template.title}</h4>
+                          <span className="text-xs text-gray-500">{template.data?.length ?? template.formBuilderData?.formData?.length ?? 0} fields</span>
+                        </div>
+                        {isSelected && (
+                          <div className="mt-1 flex items-center justify-center shrink-0">
+                            <Check size={14} className="text-pink-500 mr-1" />
+                            <span className="text-xs text-pink-500 font-medium">Selected</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Default templates (template-one ... template-seven) */}
                   {templates.map((tpl) => (
                     <div
                       key={tpl.id}
@@ -805,8 +1264,7 @@ const RegistrationForm = ({
                         isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
                       }`}
                     >
-                      {/* Render the template preview */}
-                      <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
+                      <div className="w-full h-40 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
                         <div className="transform scale-[0.15] pointer-events-none">
                           <div className="w-[1200px]">{tpl.component}</div>
                         </div>
@@ -849,6 +1307,134 @@ const RegistrationForm = ({
               isLoadingFormData={isLoadingFormData}
               eventId={effectiveEventId}
             />
+          )}
+
+          {/* Custom Form Builder modal (express) */}
+          {isCustomFormBuilderOpen && (
+            <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+              <div className="bg-white w-full h-full max-w-[95vw] max-h-[95vh] rounded-2xl shadow-2xl overflow-hidden">
+                <CustomFormBuilder
+                  initialFields={
+                    editingFormBuilderTemplate?.formBuilderData?.formData &&
+                    Array.isArray(editingFormBuilderTemplate.formBuilderData.formData)
+                      ? (editingFormBuilderTemplate.formBuilderData.formData as CustomFormField[])
+                      : []
+                  }
+                  initialBannerImage={editingFormBuilderTemplate?.bannerImage ?? null}
+                  initialTheme={editingFormBuilderTemplate?.theme ?? undefined}
+                  initialTemplateName={
+                    editingFormBuilderTemplate?.title ||
+                    `Custom Form ${formBuilderTemplates.length + 1}`
+                  }
+                  initialLanguageConfig={
+                    editingFormBuilderTemplate?.formBuilderData?.languageMode
+                      ? {
+                          languageMode: editingFormBuilderTemplate.formBuilderData.languageMode,
+                          primaryLanguage: editingFormBuilderTemplate.formBuilderData.primaryLanguage,
+                        }
+                      : undefined
+                  }
+                  onSave={handleSaveCustomForm}
+                  onClose={() => {
+                    setIsCustomFormBuilderOpen(false);
+                    setEditingFormBuilderTemplate(null);
+                    setIsEditFormBuilderMode(false);
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Custom form preview modal (express) */}
+          {isFormBuilderPreviewModalOpen && previewFormBuilderTemplate && (
+            <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-40">
+              <div className="bg-white rounded-3xl p-6 md:p-8 w-[80%] max-h-[90vh] overflow-y-auto">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800">
+                    {previewFormBuilderTemplate.title}
+                  </h2>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => handleUseFormBuilderTemplate(previewFormBuilderTemplate.id)}
+                      disabled={isLoading}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium ${
+                        isLoading
+                          ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          : "bg-pink-500 hover:bg-pink-600 text-white"
+                      }`}
+                    >
+                      {isLoading ? "Applying..." : "Use This Template"}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsFormBuilderPreviewModalOpen(false);
+                        setPreviewFormBuilderTemplate(null);
+                      }}
+                      disabled={isLoading}
+                      className="text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 disabled:opacity-50"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+                <FormBuilderTemplateForm
+                  data={previewFormBuilderTemplate.data}
+                  eventId={effectiveEventId}
+                  formBuilderData={previewFormBuilderTemplate.formBuilderData}
+                  bannerImage={previewFormBuilderTemplate.bannerImage}
+                  theme={previewFormBuilderTemplate.theme}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Delete custom form template confirmation (express) */}
+          {isDeleteFormBuilderModalOpen && (
+            <div
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) cancelDeleteFormBuilderTemplate();
+              }}
+            >
+              <div
+                className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+                onMouseDown={(e) => e.stopPropagation()}
+              >
+                <div className="p-4 border-b flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900">Delete Template</h3>
+                  <button
+                    onClick={cancelDeleteFormBuilderTemplate}
+                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    aria-label="Close"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <p className="text-sm text-gray-700">
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold">{deleteFormBuilderCandidate?.title ?? "this template"}</span>?
+                  </p>
+                  <p className="text-xs text-gray-500 mt-2">This action cannot be undone.</p>
+                </div>
+                <div className="p-4 border-t flex items-center justify-end gap-3">
+                  <button
+                    onClick={cancelDeleteFormBuilderTemplate}
+                    disabled={isDeletingFormBuilder}
+                    className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteFormBuilderTemplate}
+                    disabled={isDeletingFormBuilder}
+                    className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50"
+                  >
+                    {isDeletingFormBuilder ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Navigation Buttons */}

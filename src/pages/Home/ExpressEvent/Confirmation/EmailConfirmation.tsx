@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { Check, ChevronLeft, X, Pencil, Trash2, Eye } from "lucide-react";
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
+import { useNavigate } from "react-router-dom";
+import { Check, ChevronLeft, X, Pencil, Trash2, Eye, CheckCircle } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -525,16 +526,25 @@ const TemplateThumbnail = ({ template, eventDataKey }: any) => {
 };
 
 // ---------- Main Component ----------
+export interface EmailConfirmationHandle {
+  finish: () => void;
+}
+
 interface EmailConfirmationProps {
   onNext: (eventId?: string | number) => void;
   onPrevious?: () => void;
   eventId?: string | number;
+  /** When true (e.g. express flow), show "Finish event" and navigate to home on complete */
+  isLastStep?: boolean;
 }
-const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
+
+const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationProps>(({
   onNext,
   onPrevious,
   eventId,
-}) => {
+  isLastStep = false,
+}, ref) => {
+  const navigate = useNavigate();
   const effectiveEventId = eventId;
 
   const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false));
@@ -1101,14 +1111,34 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       setCurrentFlowIndex(currentFlowIndex + 1);
       return;
     }
-    // On last email step: navigate to next page (e.g. mobile app visualization)
+    // On last email step: notify parent and optionally finish (express flow)
     onNext?.(effectiveEventId || undefined);
+    if (isLastStep) {
+      navigate("/", { replace: true });
+    }
+  };
+
+  const handleFinish = () => {
+    if (!selectedTemplates[currentFlow.id]) {
+      showNotification("Please select a template to finish", "warning");
+      return;
+    }
+    onNext?.(effectiveEventId || undefined);
+    navigate("/", { replace: true });
   };
 
   const handleSkip = () => {
-    // Skip email configuration and go to mobile app visualization
     onNext?.(effectiveEventId || undefined);
+    if (isLastStep) {
+      navigate("/", { replace: true });
+    }
   };
+
+  useImperativeHandle(
+    ref,
+    () => ({ finish: handleFinish }),
+    [handleFinish],
+  );
 
   const handleSaveFromEditor = async (design: any, html: string) => {
     if (!effectiveEventId) return;
@@ -1415,22 +1445,31 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       <div className="flex justify-between gap-4">
         <button
           onClick={handleBack}
-          className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100"
+          className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
         >
           Back
         </button>
         <div className="flex items-center gap-3">
+          {!isLastStep && (
+            <button
+              onClick={handleSkip}
+              className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
+            >
+              Skip
+            </button>
+          )}
           <button
-            onClick={handleSkip}
-            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700"
+            onClick={isLastStep ? handleFinish : handleNext}
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-medium transition-all duration-200 hover:shadow-md hover:shadow-pink-200/50 active:scale-[0.98]"
           >
-            Skip
-          </button>
-          <button
-            onClick={handleNext}
-            className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white"
-          >
-            Next
+            {isLastStep ? (
+              <>
+                <CheckCircle className="w-5 h-5" />
+                Finish event
+              </>
+            ) : (
+              "Next"
+            )}
           </button>
         </div>
       </div>
@@ -1598,6 +1637,8 @@ const EmailConfirmation: React.FC<EmailConfirmationProps> = ({
       `}</style>
     </div>
   );
-};
+});
+
+EmailConfirmation.displayName = "EmailConfirmation";
 
 export default EmailConfirmation;

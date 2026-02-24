@@ -1,12 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
-import Areas from "./Areas/Areas";
-import EmailConfirmation from "./Confirmation/EmailConfirmation";
+import EmailConfirmation, { type EmailConfirmationHandle } from "./Confirmation/EmailConfirmation";
 import AdvanceAppManagement from "./component/AdvanceAppManagement";
 import AdvanceEmail from "./component/AdvanceEmail";
 import AdvanceEventContent from "./component/AdvanceEventContent";
@@ -81,17 +80,16 @@ const ExpressEvent = () => {
           label: "Email Management",
           description: "Confirm event details",
         },
-    plan === "advance"
-      ? {
-          id: "Mobile-App-Management",
-          label: "Mobile App Management",
-          description: "Manage mobile app settings for event",
-        }
-      : {
-          id: "areas",
-          label: "Areas",
-          description: "Define event areas",
-        },
+    // Advance only: Mobile App Management. Express flow ends after Email Management.
+    ...(plan === "advance"
+      ? [
+          {
+            id: "Mobile-App-Management",
+            label: "Mobile App Management",
+            description: "Manage mobile app settings for event",
+          },
+        ]
+      : []),
   ];
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
@@ -100,6 +98,10 @@ const ExpressEvent = () => {
     location: false,
     eventDetails: false,
   });
+
+  const emailConfirmationRef = useRef<EmailConfirmationHandle>(null);
+  const isExpressLastStep =
+    plan !== "advance" && steps.length > 0 && currentStep === steps.length - 1;
 
   // --- Step-based API fetchers ---
   const stepEventFetchers: Record<string, (eventId: string) => void> = {
@@ -130,10 +132,6 @@ const ExpressEvent = () => {
     "Mobile-App-Management": (eventId) => {
       console.log("Fetching mobile app management for event:", eventId);
       // fetchMobileAppManagement(eventId);
-    },
-    areas: (eventId) => {
-      console.log("Fetching areas for event:", eventId);
-      // fetchAreas(eventId);
     },
   };
 
@@ -184,7 +182,16 @@ const ExpressEvent = () => {
             </span>
           </Button>
         </div>
-        <div className="col-auto">
+        <div className="col-auto flex items-center gap-2">
+          {isExpressLastStep && (
+            <Button
+              onClick={() => emailConfirmationRef.current?.finish()}
+              className="flex items-center gap-2 text-sm font-poppins font-medium px-4 py-2 rounded-md cursor-pointer bg-teal-600 hover:bg-teal-700 text-white"
+            >
+              <CheckCircle size={18} />
+              <span>Finish event</span>
+            </Button>
+          )}
           <Button
             onClick={() => navigation("/")}
             className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
@@ -331,25 +338,19 @@ const ExpressEvent = () => {
           />
         ) : (
           <EmailConfirmation
+            ref={emailConfirmationRef}
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
+            isLastStep
           />
         );
       case 4:
-        return plan === "advance" ? (
+        return (
           <AdvanceAppManagement
             eventId={finalEventId}
             onComplete={handleNext}
             onPrevious={handlePrevious}
-          />
-        ) : (
-          <Areas
-            eventId={finalEventId}
-            onNext={handleNext}
-            onPrevious={handlePrevious}
-            currentStep={currentStep}
-            totalSteps={steps.length}
           />
         );
       default:
