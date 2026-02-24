@@ -10,6 +10,7 @@ import EmailConfirmation from "./Confirmation/EmailConfirmation";
 import AdvanceAppManagement from "./component/AdvanceAppManagement";
 import AdvanceEmail from "./component/AdvanceEmail";
 import AdvanceEventContent from "./component/AdvanceEventContent";
+import Payment from "./Payment/Payment";
 
 export interface ToggleStates {
   confirmationMsg: boolean;
@@ -92,6 +93,11 @@ const ExpressEvent = () => {
           label: "Areas",
           description: "Define event areas",
         },
+    {
+      id: "payment",
+      label: "Payment",
+      description: "Complete payment for your event",
+    },
   ];
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
@@ -134,6 +140,10 @@ const ExpressEvent = () => {
     areas: (eventId) => {
       console.log("Fetching areas for event:", eventId);
       // fetchAreas(eventId);
+    },
+    payment: (eventId) => {
+      console.log("Fetching payment for event:", eventId);
+      // fetchPayment(eventId);
     },
   };
 
@@ -347,6 +357,18 @@ const ExpressEvent = () => {
           <Areas
             eventId={finalEventId}
             onNext={handleNext}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
+          />
+        );
+      case 5:
+        return (
+          <Payment
+            plan={plan}
+            toggleStates={toggleStates}
+            eventId={finalEventId}
+            onNext={(id?: string | number, _plan?: string) => handleNext(id)}
             onPrevious={handlePrevious}
             currentStep={currentStep}
             totalSteps={steps.length}

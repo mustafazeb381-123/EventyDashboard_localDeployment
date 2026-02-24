@@ -517,7 +517,12 @@ export const getCheckIns = (eventId: string | number, sessionAreaId: string | nu
 
 export const getCheckOuts = (eventId: string | number, sessionAreaId: string | number) => {
   return axiosInstance.get(`/events/${eventId}/session_areas/${sessionAreaId}/need_check_out`);
-}
+};
+
+// Users who have already checked out from this session area
+export const getCheckedOut = (eventId: string | number, sessionAreaId: string | number) => {
+  return axiosInstance.get(`/events/${eventId}/session_areas/${sessionAreaId}/checked_out`);
+};
 
 // ✅ Post Check-Ins
 export const postCheckIns = (

@@ -1518,42 +1518,6 @@ const MainData = ({
               </div>
             </label>
           </div>
-          {/* Require Ticket */}
-          {plan === "advance" ? (
-            <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <label className="text-sm font-medium text-gray-700">
-                  Ticket
-                </label>
-                {/* <Info size={14} className="text-gray-400" /> */}
-              </div>
-
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={ticket}
-                  onChange={(e) => {
-                    const isChecked = e.target.checked;
-                    console.log("Require ticket toggled:", isChecked);
-                    setTicket(isChecked);
-                    handleInputChange("requiredTicket", isChecked);
-                  }}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-11 h-6 rounded-full transition-colors duration-200 ${
-                    ticket ? "bg-teal-500" : "bg-gray-200"
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 mt-0.5 ${
-                      ticket ? "translate-x-5" : "translate-x-0.5"
-                    }`}
-                  />
-                </div>
-              </label>
-            </div>
-          ) : null}
         </div>
 
         {/* Event Details Section */}

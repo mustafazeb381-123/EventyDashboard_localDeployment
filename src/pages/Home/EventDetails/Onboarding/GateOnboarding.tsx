@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, FileDown, FileSpreadsheet } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import Search from "@/components/Search";
 import Pagination from "@/components/Pagination";
 import {
     getCheckIns,
     getCheckOuts,
+    getCheckedOut,
+    getEventUsers,
     postCheckIns,
     postCheckOuts,
     QRCheckIn,
     QRCheckOut,
-
 } from "@/apis/apiHelpers";
 
 
@@ -29,11 +30,12 @@ interface GateOnboardingProps {
 interface EnrolledUser {
     id: string | number;
     attributes: {
-        name: string;
-        email: string;
-        user_type: string;
+        name?: string;
+        email?: string;
+        user_type?: string;
         check_in?: string | null;
         check_user_area_statuses?: {
+            session_area_id?: string | number;
             check_in?: string | null;
             check_out?: string | null;
         }[];
@@ -44,7 +46,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
     const [enrolledUsers, setEnrolledUsers] = useState<EnrolledUser[]>([]);
     const [loading, setLoading] = useState(true);
-    const [view, setView] = useState<"registered_users" | "checked_in">("registered_users");
+    const [view, setView] = useState<"registered_users" | "checked_in" | "checked_out">("registered_users");
     const [selectedUsers, setSelectedUsers] = useState<(string | number)[]>([]);
     const [isCameraActive, setIsCameraActive] = useState(false);
     const [scannedData, setScannedData] = useState<string | null>(null);
@@ -55,6 +57,8 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
 
     const [showInput, setShowInput] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const [exportingCsv, setExportingCsv] = useState(false);
+    const [exportingExcel, setExportingExcel] = useState(false);
     const [notification, setNotification] = useState<{
         message: string;
         type: "success" | "error" | "warning" | "info";
@@ -102,22 +106,51 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
             setLoading(true);
 
             try {
-                let response;
+                let list: EnrolledUser[] = [];
 
                 if (view === "registered_users") {
-                    // ✅ Get users who need check-in for this session area
-                    response = await getCheckIns(eventId, sessionAreaId);
-                    console.log("response", response.data);
+                    const response = await getCheckIns(eventId, sessionAreaId);
+                    list = response?.data?.data || [];
+                } else if (view === "checked_in") {
+                    const response = await getCheckOuts(eventId, sessionAreaId);
+                    list = response?.data?.data || [];
                 } else {
-                    // ✅ Get users who need check-out for this session area
-                    response = await getCheckOuts(eventId, sessionAreaId);
+                    // checked_out: users who have already checked out
+                    try {
+                        const response = await getCheckedOut(eventId, sessionAreaId);
+                        list = response?.data?.data || [];
+                    } catch (err: any) {
+                        if (err?.response?.status === 404) {
+                            const all: any[] = [];
+                            let page = 1;
+                            let hasMore = true;
+                            while (hasMore) {
+                                const res = await getEventUsers(String(eventId), { page, per_page: 100 });
+                                const data = res?.data?.data || res?.data;
+                                const items = Array.isArray(data) ? data : data?.data || [];
+                                if (items.length === 0) break;
+                                all.push(...items);
+                                const meta = res?.data?.meta?.pagination || res?.data?.pagination;
+                                hasMore = meta?.next_page != null && items.length === 100;
+                                page++;
+                            }
+                            list = all.filter((u: any) => {
+                                const statuses = u?.attributes?.check_user_area_statuses;
+                                if (!Array.isArray(statuses)) return false;
+                                return statuses.some(
+                                    (s: any) =>
+                                        String(s?.session_area_id ?? "") === String(sessionAreaId) && s?.check_out
+                                );
+                            });
+                        } else throw err;
+                    }
                 }
 
-                setEnrolledUsers(response?.data?.data || []);
-                console.log("📦 Users fetched:", response?.data);
+                setEnrolledUsers(list);
             } catch (err) {
                 console.error("Error fetching users:", err);
                 showNotification("Failed to fetch users.", "error");
+                setEnrolledUsers([]);
             } finally {
                 setLoading(false);
             }
@@ -385,6 +418,165 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
     };
 
+    const formatDateTime = (dateString: string) => {
+        if (!dateString) return "—";
+        const date = new Date(dateString);
+        const day = date.getDate();
+        const month = date.getMonth() + 1;
+        const year = date.getFullYear();
+        const hours = date.getHours();
+        const mins = date.getMinutes();
+        const ampm = hours >= 12 ? "PM" : "AM";
+        const h12 = hours % 12 || 12;
+        const m = mins < 10 ? `0${mins}` : mins;
+        return `${day}/${month}/${year}, ${h12}:${m} ${ampm}`;
+    };
+
+    const getCheckOutTime = (user: EnrolledUser) => {
+        const statuses = user?.attributes?.check_user_area_statuses;
+        if (!Array.isArray(statuses) || !sessionAreaId) return null;
+        const forArea = statuses.find(
+            (s: any) => String(s?.session_area_id ?? "") === String(sessionAreaId)
+        );
+        return forArea?.check_out ?? null;
+    };
+
+    const getCheckInTime = (user: EnrolledUser) => {
+        const statuses = user?.attributes?.check_user_area_statuses;
+        if (!Array.isArray(statuses) || !sessionAreaId) return null;
+        const forArea = statuses.find(
+            (s: any) => String(s?.session_area_id ?? "") === String(sessionAreaId)
+        );
+        return forArea?.check_in ?? null;
+    };
+
+    const getFilteredUsersForExport = () => filteredUsers;
+
+    const escapeCsvCell = (val: string | number): string => {
+        const s = String(val ?? "").replace(/"/g, '""');
+        return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+    };
+
+    const handleExportCsv = () => {
+        if (!eventId || !sessionAreaId) {
+            showNotification("Missing event or session area.", "error");
+            return;
+        }
+        setExportingCsv(true);
+        try {
+            const users = getFilteredUsersForExport();
+            const suffix =
+                view === "registered_users"
+                    ? "need_check_in"
+                    : view === "checked_in"
+                    ? "need_check_out"
+                    : "checked_out";
+            const baseHeaders = [
+                "ID",
+                "Name",
+                "Email",
+                "User Type",
+                "Status",
+                "Check-In Time",
+                "Check-Out Time",
+            ];
+            const rows = users.map((user: EnrolledUser) => {
+                const status =
+                    view === "registered_users"
+                        ? "Not Checked In"
+                        : view === "checked_in"
+                        ? "Checked In"
+                        : "Checked Out";
+                const checkIn = getCheckInTime(user);
+                const checkOut = getCheckOutTime(user);
+                return [
+                    user.id,
+                    user.attributes?.name ?? "",
+                    user.attributes?.email ?? "",
+                    user.attributes?.user_type ?? "",
+                    status,
+                    checkIn ? formatDateTime(checkIn) : "",
+                    checkOut ? formatDateTime(checkOut) : "",
+                ].map(escapeCsvCell);
+            });
+            const csv = [baseHeaders.join(","), ...rows.map((r) => r.join(","))].join("\n");
+            const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `gate_${suffix}_${eventId}_${sessionAreaId}_${new Date().toISOString().slice(0, 10)}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification(`Exported ${users.length} users (CSV).`, "success");
+        } catch (e) {
+            console.error(e);
+            showNotification("Export failed.", "error");
+        } finally {
+            setExportingCsv(false);
+        }
+    };
+
+    const handleExportExcel = () => {
+        if (!eventId || !sessionAreaId) {
+            showNotification("Missing event or session area.", "error");
+            return;
+        }
+        setExportingExcel(true);
+        try {
+            const users = getFilteredUsersForExport();
+            const suffix =
+                view === "registered_users"
+                    ? "need_check_in"
+                    : view === "checked_in"
+                    ? "need_check_out"
+                    : "checked_out";
+            const baseHeaders = [
+                "ID",
+                "Name",
+                "Email",
+                "User Type",
+                "Status",
+                "Check-In Time",
+                "Check-Out Time",
+            ];
+            const rows = users.map((user: EnrolledUser) => {
+                const status =
+                    view === "registered_users"
+                        ? "Not Checked In"
+                        : view === "checked_in"
+                        ? "Checked In"
+                        : "Checked Out";
+                const checkIn = getCheckInTime(user);
+                const checkOut = getCheckOutTime(user);
+                return [
+                    user.id,
+                    user.attributes?.name ?? "",
+                    user.attributes?.email ?? "",
+                    user.attributes?.user_type ?? "",
+                    status,
+                    checkIn ? formatDateTime(checkIn) : "",
+                    checkOut ? formatDateTime(checkOut) : "",
+                ].join("\t");
+            });
+            const tsv = [baseHeaders.join("\t"), ...rows].join("\n");
+            const blob = new Blob(["\uFEFF" + tsv], {
+                type: "application/vnd.ms-excel;charset=utf-8",
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `gate_${suffix}_${eventId}_${sessionAreaId}_${new Date().toISOString().slice(0, 10)}.xls`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification(`Exported ${users.length} users (Excel).`, "success");
+        } catch (e) {
+            console.error(e);
+            showNotification("Export failed.", "error");
+        } finally {
+            setExportingExcel(false);
+        }
+    };
+
     return (
         <div className="min-h-screen  from-gray-50 to-gray-100 animate-fade-in relative">
             {/* Toast Notification - Top Right */}
@@ -446,6 +638,31 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 {/* Content */}
                 <div className="bg-white p-6 shadow-sm rounded-b-2xl mt-1">
 
+                    {/* Export CSV / Excel - on top */}
+                    <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                        <p className="text-sm text-gray-600 mb-3">
+                            Export respects current tab and search filter.
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <button
+                                onClick={handleExportCsv}
+                                disabled={exportingCsv || loading}
+                                className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+                            >
+                                <FileDown className="w-4 h-4" />
+                                {exportingCsv ? "Exporting…" : "Export CSV"}
+                            </button>
+                            <button
+                                onClick={handleExportExcel}
+                                disabled={exportingExcel || loading}
+                                className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+                            >
+                                <FileSpreadsheet className="w-4 h-4" />
+                                {exportingExcel ? "Exporting…" : "Export Excel"}
+                            </button>
+                        </div>
+                    </div>
+
                     {/* View Toggle */}
                     <div className="flex gap-2 mb-4">
                         <button
@@ -459,6 +676,12 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             onClick={() => setView("checked_in")}
                         >
                             Checked-In
+                        </button>
+                        <button
+                            className={`px-4 py-2 rounded-lg ${view === "checked_out" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
+                            onClick={() => setView("checked_out")}
+                        >
+                            Checked Out
                         </button>
                     </div>
 
@@ -555,7 +778,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     <div>
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-base font-semibold text-gray-800">
-                                {view === "registered_users" ? `Registered Users ${notCheckedInUsers.length}` : `Checked-In Users ${enrolledUsers.length}`}
+                                {view === "registered_users"
+                                    ? `Registered Users ${notCheckedInUsers.length}`
+                                    : view === "checked_in"
+                                    ? `Checked-In Users ${enrolledUsers.length}`
+                                    : `Checked Out Users ${enrolledUsers.length}`}
                             </h3>
                             <Search
                                 value={searchTerm}
@@ -567,7 +794,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             />
                         </div>
 
-                        {selectedUsers.length > 0 && (
+                        {selectedUsers.length > 0 && view !== "checked_out" && (
                             <div className="flex mb-4">
                                 {view === "registered_users" ? (
                                     <button
@@ -592,23 +819,32 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
-                                            <th className="px-4 py-3">
-                                                <div className="h-4 w-4 bg-gray-200 rounded"></div>
-                                            </th>
+                                            {view !== "checked_out" && (
+                                                <th className="px-4 py-3">
+                                                    <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                                                </th>
+                                            )}
                                             <th className="px-4 py-3 text-left">ID</th>
                                             <th className="px-4 py-3 text-left">Name</th>
                                             <th className="px-4 py-3 text-left">Email</th>
                                             <th className="px-4 py-3 text-left">User type</th>
                                             <th className="px-4 py-3 text-left">Status</th>
-                                            <th className="px-4 py-3 text-left">Action</th>
+                                            {view === "checked_out" && (
+                                                <th className="px-4 py-3 text-left">Check-Out Time</th>
+                                            )}
+                                            {view !== "checked_out" && (
+                                                <th className="px-4 py-3 text-left">Action</th>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-200">
                                         {[1, 2, 3, 4, 5].map((index) => (
                                             <tr key={index} className="animate-pulse">
-                                                <td className="px-4 py-3 text-center">
-                                                    <div className="h-4 w-4 bg-gray-200 rounded"></div>
-                                                </td>
+                                                {view !== "checked_out" && (
+                                                    <td className="px-4 py-3 text-center">
+                                                        <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                                                    </td>
+                                                )}
                                                 <td className="px-4 py-3">
                                                     <div className="h-4 bg-gray-200 rounded w-12"></div>
                                                 </td>
@@ -624,9 +860,16 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                 <td className="px-4 py-3">
                                                     <div className="h-6 bg-gray-200 rounded-full w-28"></div>
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="h-8 bg-gray-200 rounded-lg w-20"></div>
-                                                </td>
+                                                {view === "checked_out" && (
+                                                    <td className="px-4 py-3">
+                                                        <div className="h-4 bg-gray-200 rounded w-28"></div>
+                                                    </td>
+                                                )}
+                                                {view !== "checked_out" && (
+                                                    <td className="px-4 py-3">
+                                                        <div className="h-8 bg-gray-200 rounded-lg w-20"></div>
+                                                    </td>
+                                                )}
                                             </tr>
                                         ))}
                                     </tbody>
@@ -637,78 +880,104 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 <table className="w-full">
                                     <thead className="bg-gray-50 border-b border-gray-200">
                                         <tr>
-                                            <th className="px-4 py-3">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={enrolledUsers.length > 0 && selectedUsers.length === enrolledUsers.length}
-                                                    onChange={toggleSelectAll}
-                                                />
-                                            </th>
+                                            {view !== "checked_out" && (
+                                                <th className="px-4 py-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={enrolledUsers.length > 0 && selectedUsers.length === enrolledUsers.length}
+                                                        onChange={toggleSelectAll}
+                                                    />
+                                                </th>
+                                            )}
                                             <th className="px-4 py-3 text-left">ID</th>
                                             <th className="px-4 py-3 text-left">Name</th>
                                             <th className="px-4 py-3 text-left">Email</th>
                                             <th className="px-4 py-3 text-left">User type</th>
                                             <th className="px-4 py-3 text-left">Status</th>
-                                            <th className="px-4 py-3 text-left">Action</th>
+                                            {view === "checked_out" && (
+                                                <th className="px-4 py-3 text-left">Check-Out Time</th>
+                                            )}
+                                            {view !== "checked_out" && (
+                                                <th className="px-4 py-3 text-left">Action</th>
+                                            )}
                                         </tr>
                                     </thead>
 
                                     <tbody className="divide-y divide-gray-200">
                                         {filteredUsers.length === 0 ? (
                                             <tr>
-                                                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                                                <td
+                                                    colSpan={view === "checked_out" ? 6 : 7}
+                                                    className="px-4 py-8 text-center text-gray-500"
+                                                >
                                                     No users found
                                                 </td>
                                             </tr>
                                         ) : (
-                                            currentUsers.map((user) => (
-                                                <tr key={user.id} className="hover:bg-gray-50 transition">
-                                                    <td className="px-4 py-3 text-center">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={selectedUsers.includes(user.id)}
-                                                            onChange={() => toggleUserSelection(user.id)}
-                                                        />
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600">{user.id}</td>
-                                                    <td className="px-4 py-3 text-sm font-medium text-gray-800">{user.attributes.name}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600">{user.attributes.email}</td>
-                                                    <td className="px-4 py-3 text-sm text-gray-600">{user.attributes.user_type}</td>
-                                                    <td className="px-4 py-3 text-sm">
-                                                        {view === "registered_users" ? (
-                                                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">
-                                                                Not Checked In
-                                                            </span>
-                                                        ) : (
-                                                            <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                                                                {formatCheckIn(user.attributes?.check_user_area_statuses?.[0]?.check_in)}
-                                                            </span>
+                                            currentUsers.map((user) => {
+                                                const checkOutTime = getCheckOutTime(user);
+                                                return (
+                                                    <tr key={user.id} className="hover:bg-gray-50 transition">
+                                                        {view !== "checked_out" && (
+                                                            <td className="px-4 py-3 text-center">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={selectedUsers.includes(user.id)}
+                                                                    onChange={() => toggleUserSelection(user.id)}
+                                                                />
+                                                            </td>
                                                         )}
-                                                    </td>
-                                                    <td className="px-4 py-3">
-                                                        {view === "registered_users" ? (
-                                                            <button
-                                                                className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
-                                                                onClick={() => handleAreaCheckIn([user.id], user.attributes.name)}
-                                                            >
-                                                                Check-In
-                                                            </button>
-                                                        ) : (
-                                                            <button
-                                                                className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
-                                                                onClick={() =>
-                                                                    handleAreaCheckOut(
-                                                                        [user.id],
-                                                                        user.attributes.name
-                                                                    )
-                                                                }
-                                                            >
-                                                                Check-Out
-                                                            </button>
+                                                        <td className="px-4 py-3 text-sm text-gray-600">{user.id}</td>
+                                                        <td className="px-4 py-3 text-sm font-medium text-gray-800">{user.attributes.name}</td>
+                                                        <td className="px-4 py-3 text-sm text-gray-600">{user.attributes.email}</td>
+                                                        <td className="px-4 py-3 text-sm text-gray-600">{user.attributes.user_type}</td>
+                                                        <td className="px-4 py-3 text-sm">
+                                                            {view === "registered_users" ? (
+                                                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">
+                                                                    Not Checked In
+                                                                </span>
+                                                            ) : view === "checked_in" ? (
+                                                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                                                                    {formatCheckIn(user.attributes?.check_user_area_statuses?.[0]?.check_in)}
+                                                                </span>
+                                                            ) : (
+                                                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                                                                    Checked Out
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                        {view === "checked_out" && (
+                                                            <td className="px-4 py-3 text-sm text-gray-600">
+                                                                {checkOutTime ? formatDateTime(checkOutTime) : "—"}
+                                                            </td>
                                                         )}
-                                                    </td>
-                                                </tr>
-                                            ))
+                                                        {view !== "checked_out" && (
+                                                            <td className="px-4 py-3">
+                                                                {view === "registered_users" ? (
+                                                                    <button
+                                                                        className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
+                                                                        onClick={() => handleAreaCheckIn([user.id], user.attributes.name)}
+                                                                    >
+                                                                        Check-In
+                                                                    </button>
+                                                                ) : (
+                                                                    <button
+                                                                        className="px-2 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition"
+                                                                        onClick={() =>
+                                                                            handleAreaCheckOut(
+                                                                                [user.id],
+                                                                                user.attributes.name
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        Check-Out
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        )}
+                                                    </tr>
+                                                );
+                                            })
                                         )}
                                     </tbody>
                                 </table>
