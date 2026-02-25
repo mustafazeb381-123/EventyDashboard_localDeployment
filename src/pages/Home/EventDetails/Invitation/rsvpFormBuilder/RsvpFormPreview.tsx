@@ -1,5 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Check, X, Image as ImageIcon } from "lucide-react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useDroppable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { Check, X, Image as ImageIcon, Square, LayoutGrid, Columns2, Sparkles, Upload } from "lucide-react";
 import type { RsvpFormField, RsvpTheme } from "./types";
 
 interface RsvpFormPreviewProps {
@@ -21,10 +25,157 @@ interface RsvpFormPreviewProps {
   editingFieldId?: string | null;
   onFieldClick?: (field: RsvpFormField) => void;
   onFieldContentChange?: (fieldId: string, content: string) => void;
+  /** When provided, image/icon fields show "Click to upload" and trigger this for file upload */
+  onImageUploadRequest?: (fieldId: string) => void;
 }
 
 function getFieldContent(field: RsvpFormField, lang: "en" | "ar"): string {
   return field.contentTranslations?.[lang] ?? field.content ?? "";
+}
+
+/** Wraps a field in sortable for DnD in builder mode */
+function SortableFieldNode({
+  field,
+  children,
+}: {
+  field: RsvpFormField;
+  children: React.ReactNode;
+}) {
+  const { setNodeRef, transform, transition, isDragging } = useSortable({
+    id: field.id,
+  });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      {children}
+    </div>
+  );
+}
+
+const CONTAINER_STYLES: Record<
+  "container" | "row" | "column",
+  { borderColor: string; headerColor: string; iconColor: string; Icon: React.ComponentType<{ size?: number; className?: string }> }
+> = {
+  container: { borderColor: "#c4b5fd", headerColor: "#a78bfa", iconColor: "text-purple-400", Icon: Square },
+  row: { borderColor: "#93c5fd", headerColor: "#60a5fa", iconColor: "text-blue-400", Icon: LayoutGrid },
+  column: { borderColor: "#93c5fd", headerColor: "#60a5fa", iconColor: "text-blue-400", Icon: Columns2 },
+};
+
+/** Renders a container as droppable and its children as sortable in builder mode (screenshot design) */
+function DroppableContainerNode({
+  field,
+  formFields,
+  getChildFields,
+  renderField,
+}: {
+  field: RsvpFormField;
+  formFields: RsvpFormField[];
+  getChildFields: (f: RsvpFormField) => RsvpFormField[];
+  renderField: (f: RsvpFormField) => React.ReactNode;
+}) {
+  const childFields = getChildFields(field);
+  const { setNodeRef, isOver } = useDroppable({ id: "container:" + field.id });
+  const type = field.containerType ?? "container";
+  const { borderColor, headerColor, iconColor, Icon } = CONTAINER_STYLES[type];
+  const layout = field.layoutProps ?? {};
+  const contentStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: (layout.flexDirection as React.CSSProperties["flexDirection"]) ?? (type === "row" ? "row" : "column"),
+    gap: layout.gap ?? "8px",
+    flexWrap: layout.flexWrap as React.CSSProperties["flexWrap"],
+    alignItems: layout.alignItems as React.CSSProperties["alignItems"],
+    justifyContent: layout.justifyContent as React.CSSProperties["justifyContent"],
+    minHeight: "40px",
+  };
+
+  return (
+    <div className="w-full" style={{ marginBottom: 12 }}>
+      {/* Header: CONTAINER / ROW / COLUMN + thin line */}
+      <div
+        className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1"
+        style={{ color: headerColor }}
+      >
+        {type}
+      </div>
+      <div
+        style={{
+          borderTop: `1px solid ${borderColor}`,
+          marginLeft: -2,
+          marginRight: -2,
+          marginBottom: 8,
+        }}
+      />
+      {/* Title bar: icon + label, solid border */}
+      <div
+        style={{
+          border: `1px solid ${borderColor}`,
+          borderRadius: 6,
+          padding: "8px 10px",
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          backgroundColor: "#fff",
+        }}
+      >
+        <Icon size={18} className={iconColor} />
+        <span className="text-sm font-medium text-slate-700 capitalize">{type}</span>
+      </div>
+      {/* Main body: white, solid border, inner dashed drop zone */}
+      <div
+        style={{
+          border: `1px solid ${borderColor}`,
+          borderTop: "none",
+          borderTopLeftRadius: 0,
+          borderTopRightRadius: 0,
+          borderRadius: 6,
+          padding: 12,
+          backgroundColor: "#fff",
+          minHeight: 56,
+        }}
+      >
+        <div
+          ref={setNodeRef}
+          style={{
+            ...contentStyle,
+            border: "1px dashed #d1d5db",
+            borderRadius: 4,
+            padding: childFields.length === 0 ? 16 : 8,
+            backgroundColor: isOver ? "rgba(99, 102, 241, 0.06)" : "#fafafa",
+          }}
+          className={isOver ? "ring-2 ring-indigo-400" : ""}
+        >
+          {childFields.length === 0 ? (
+            <span className="text-sm italic text-slate-400 w-full text-center block">Drop fields here</span>
+          ) : (
+            <SortableContext
+              items={childFields.map((f) => f.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {childFields.map((child) =>
+                child.containerType ? (
+                  <DroppableContainerNode
+                    key={child.id}
+                    field={child}
+                    formFields={formFields}
+                    getChildFields={getChildFields}
+                    renderField={renderField}
+                  />
+                ) : (
+                  <SortableFieldNode key={child.id} field={child}>
+                    {renderField(child)}
+                  </SortableFieldNode>
+                )
+              )}
+            </SortableContext>
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /** Render text with variables as styled placeholders */
@@ -86,6 +237,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   editingFieldId = null,
   onFieldClick,
   onFieldContentChange,
+  onImageUploadRequest,
 }) => {
   const lang = currentLanguage;
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
@@ -94,7 +246,19 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   const isEditingRef = useRef<Record<string, boolean>>({});
   const lastContentRef = useRef<Record<string, string>>({});
 
-  const displayFields = formFields;
+  /** Root fields = not in any field's children; used for tree rendering and DnD */
+  const { rootFields, getChildFields } = useMemo(() => {
+    const childIds = new Set(
+      formFields.flatMap((f) => f.children ?? [])
+    );
+    const root = formFields.filter((f) => !childIds.has(f.id));
+    const getChildFields = (field: RsvpFormField): RsvpFormField[] =>
+      (field.children ?? [])
+        .map((id) => formFields.find((f) => f.id === id))
+        .filter((f): f is RsvpFormField => !!f);
+    return { rootFields: root, getChildFields };
+  }, [formFields]);
+
 
   const formPaddingVal = theme?.formPadding || "24px";
   const paddingValue =
@@ -173,10 +337,13 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   const declineBg = theme?.declineButtonBackgroundColor ?? "#ef4444";
   const declineTextColor = theme?.declineButtonTextColor ?? "#ffffff";
 
+  const mainDropZone = useDroppable({ id: "rsvp-main-drop-zone" });
+
   const handleContentChange = useCallback((fieldId: string, newContent: string) => {
     onFieldContentChange?.(fieldId, newContent);
     lastContentRef.current[fieldId] = newContent;
   }, [onFieldContentChange]);
+
 
   // Sync contentEditable content when field content changes externally
   useEffect(() => {
@@ -258,6 +425,78 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
               margin: 0,
             }}
           />
+        </div>
+      );
+    }
+
+    // Image – content holds image URL (data URL or external)
+    if (field.type === "image") {
+      const src = field.content?.trim() || null;
+      const isPlaceholder = !src;
+      return (
+        <div
+          key={field.id}
+          onClick={() => {
+            if (builderMode) {
+              if (onImageUploadRequest) onImageUploadRequest(field.id);
+              else onFieldClick?.(field);
+            }
+          }}
+          className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
+          style={{ ...elementStyle, maxWidth: style.maxWidth ?? "100%" }}
+        >
+          {isPlaceholder ? (
+            <div
+              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-8 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600"
+              style={{ minHeight: 120 }}
+            >
+              <Upload size={32} />
+              <span className="text-sm font-medium">Click to upload image</span>
+            </div>
+          ) : (
+            <img
+              src={src}
+              alt=""
+              className="max-w-full h-auto rounded-lg"
+              style={{ maxHeight: 320, objectFit: "contain" }}
+            />
+          )}
+        </div>
+      );
+    }
+
+    // Icon – content holds icon image URL (data URL or external)
+    if (field.type === "icon") {
+      const src = field.content?.trim() || null;
+      const isPlaceholder = !src;
+      return (
+        <div
+          key={field.id}
+          onClick={() => {
+            if (builderMode) {
+              if (onImageUploadRequest) onImageUploadRequest(field.id);
+              else onFieldClick?.(field);
+            }
+          }}
+          className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
+          style={elementStyle}
+        >
+          {isPlaceholder ? (
+            <div
+              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-6 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600"
+              style={{ minHeight: 80 }}
+            >
+              <Sparkles size={28} />
+              <span className="text-sm font-medium">Click to upload icon</span>
+            </div>
+          ) : (
+            <img
+              src={src}
+              alt=""
+              className="max-w-full h-auto rounded"
+              style={{ maxWidth: 64, maxHeight: 64, objectFit: "contain" }}
+            />
+          )}
         </div>
       );
     }
@@ -401,6 +640,138 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     return null;
   };
 
+  /** Renders a container and its children (no DnD) – same screenshot design */
+  const renderContainerBlock = (field: RsvpFormField): React.ReactNode => {
+    const childFields = getChildFields(field);
+    const type = field.containerType ?? "container";
+    const { borderColor, headerColor, iconColor, Icon } = CONTAINER_STYLES[type];
+    const layout = field.layoutProps ?? {};
+    const contentStyle: React.CSSProperties = {
+      display: "flex",
+      flexDirection: (layout.flexDirection as React.CSSProperties["flexDirection"]) ?? (type === "row" ? "row" : "column"),
+      gap: layout.gap ?? "8px",
+      flexWrap: layout.flexWrap as React.CSSProperties["flexWrap"],
+      alignItems: layout.alignItems as React.CSSProperties["alignItems"],
+      justifyContent: layout.justifyContent as React.CSSProperties["justifyContent"],
+      minHeight: childFields.length === 0 ? 40 : undefined,
+      padding: childFields.length === 0 ? 16 : 8,
+    };
+    return (
+      <div key={field.id} className="w-full" style={{ marginBottom: 12 }}>
+        <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: headerColor }}>
+          {type}
+        </div>
+        <div style={{ borderTop: `1px solid ${borderColor}`, marginLeft: -2, marginRight: -2, marginBottom: 8 }} />
+        <div
+          style={{
+            border: `1px solid ${borderColor}`,
+            borderRadius: 6,
+            padding: "8px 10px",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            backgroundColor: "#fff",
+          }}
+        >
+          <Icon size={18} className={iconColor} />
+          <span className="text-sm font-medium text-slate-700 capitalize">{type}</span>
+        </div>
+        <div
+          style={{
+            border: `1px solid ${borderColor}`,
+            borderTop: "none",
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            borderRadius: 6,
+            padding: 12,
+            backgroundColor: "#fff",
+            minHeight: 56,
+          }}
+        >
+          <div
+            style={{
+              ...contentStyle,
+              border: "1px dashed #d1d5db",
+              borderRadius: 4,
+              backgroundColor: "#fafafa",
+            }}
+          >
+            {childFields.length === 0 ? (
+              <span className="text-sm italic text-slate-400 w-full text-center block">Drop fields here</span>
+            ) : (
+              childFields.map((child) =>
+                child.containerType ? renderContainerBlock(child) : renderField(child)
+              )
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /** Form body: tree of root fields, with optional DnD in builder mode */
+  const formBodyContent = builderMode ? (
+    <div
+      ref={mainDropZone.setNodeRef}
+      className={`space-y-5 ${mainDropZone.isOver ? "ring-2 ring-indigo-400 rounded-lg bg-indigo-50/50" : ""}`}
+      style={{
+        maxWidth: "100%",
+        minHeight: rootFields.length === 0 ? 80 : undefined,
+        ...(theme?.formFieldsAlignment === "center" && {
+          marginLeft: "auto",
+          marginRight: "auto",
+          width: "fit-content",
+          minWidth: "min(100%, 320px)",
+        }),
+        ...(theme?.formFieldsAlignment === "right" && {
+          marginLeft: "auto",
+          width: "fit-content",
+          minWidth: "min(100%, 320px)",
+        }),
+      }}
+    >
+      <SortableContext items={rootFields.map((f) => f.id)} strategy={verticalListSortingStrategy}>
+        {rootFields.map((field) =>
+          field.containerType ? (
+            <DroppableContainerNode
+              key={field.id}
+              field={field}
+              formFields={formFields}
+              getChildFields={getChildFields}
+              renderField={renderField}
+            />
+          ) : (
+            <SortableFieldNode key={field.id} field={field}>
+              {renderField(field)}
+            </SortableFieldNode>
+          )
+        )}
+      </SortableContext>
+    </div>
+  ) : (
+    <div
+      className="space-y-5"
+      style={{
+        maxWidth: "100%",
+        ...(theme?.formFieldsAlignment === "center" && {
+          marginLeft: "auto",
+          marginRight: "auto",
+          width: "fit-content",
+          minWidth: "min(100%, 320px)",
+        }),
+        ...(theme?.formFieldsAlignment === "right" && {
+          marginLeft: "auto",
+          width: "fit-content",
+          minWidth: "min(100%, 320px)",
+        }),
+      }}
+    >
+      {rootFields.map((field) =>
+        field.containerType ? renderContainerBlock(field) : renderField(field)
+      )}
+    </div>
+  );
+
   const buttonRadius = theme?.buttonBorderRadius ?? "12px";
   const buttonPaddingVal = theme?.buttonPadding ?? "12px 20px";
   const acceptHoverBg = theme?.acceptButtonHoverBackgroundColor ?? "#059669";
@@ -494,25 +865,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
           backgroundColor: theme?.formBackgroundColor || "#ffffff",
         }}
       >
-        <div
-          className="space-y-5"
-          style={{
-            maxWidth: "100%",
-            ...(theme?.formFieldsAlignment === "center" && {
-              marginLeft: "auto",
-              marginRight: "auto",
-              width: "fit-content",
-              minWidth: "min(100%, 320px)",
-            }),
-            ...(theme?.formFieldsAlignment === "right" && {
-              marginLeft: "auto",
-              width: "fit-content",
-              minWidth: "min(100%, 320px)",
-            }),
-          }}
-        >
-          {displayFields.map((field) => renderField(field))}
-        </div>
+        {formBodyContent}
 
         {/* Attend & Decline buttons */}
         {showActionButtons && (

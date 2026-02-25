@@ -21,11 +21,21 @@ import {
   Square,
   Search,
   Palette,
+  Image as ImageIcon,
+  Sparkles,
 } from "lucide-react";
 import type { RsvpFormField, RsvpFieldType } from "./types";
-import { createRsvpFormField } from "./types";
+import { createRsvpFormField, createRsvpLayoutField } from "./types";
 
 type PaletteTab = "layout" | "fields";
+
+/** Drag data for palette items – createField() is called on drop to create the new field. */
+export type RsvpPaletteDragData = {
+  type: "palette-item";
+  createField: () => RsvpFormField;
+  fieldType?: RsvpFieldType;
+  layoutType?: "container" | "row" | "column";
+};
 
 /** Wraps a palette button so it can be dragged into the form or into containers. */
 function DraggablePaletteButton({
@@ -36,7 +46,7 @@ function DraggablePaletteButton({
   children,
 }: {
   id: string;
-  data: { from: "palette"; fieldType?: RsvpFieldType; layoutType?: "container" | "row" | "column" };
+  data: RsvpPaletteDragData;
   onClick: () => void;
   className: string;
   children: React.ReactNode;
@@ -56,44 +66,22 @@ function DraggablePaletteButton({
   );
 }
 
-/** Create a layout field (Container, Row, or Column) for the RSVP form – exported for DnD in builder */
-export function createRsvpLayoutField(
-  containerType: "container" | "row" | "column"
-): RsvpFormField {
-  const id = `${containerType}-${Date.now()}`;
-  const label =
-    containerType === "container"
-      ? "Container"
-      : containerType === "row"
-        ? "Row"
-        : "Column";
-  const isRow = containerType === "row";
-  return {
-    id,
-    type: "paragraph",
-    name: id,
-    label,
-    required: false,
-    visible: true,
-    content: "",
-    containerType,
-    children: [],
-    layoutProps: {
-      gap: "16px",
-      padding: isRow ? "12px" : "16px",
-      justifyContent: "flex-start",
-      alignItems: isRow ? "center" : "stretch",
-      flexDirection: isRow ? "row" : "column",
-      flexWrap: isRow ? "wrap" : "nowrap",
-    },
-  };
-}
+/** Content-only types for RSVP builder (no form inputs like text/phone) */
+const CONTENT_OPTIONS: { type: RsvpFieldType; label: string }[] = [
+  { type: "heading", label: "Heading" },
+  { type: "paragraph", label: "Paragraph" },
+  { type: "divider", label: "Divider" },
+  { type: "image", label: "Image" },
+  { type: "icon", label: "Icon" },
+];
 
 interface RsvpFieldPaletteProps {
   formFields: RsvpFormField[];
   selectedFieldId: string | null;
   onSelectField: (field: RsvpFormField) => void;
   onAddField: (field: RsvpFormField) => void;
+  /** When true, only show Layout (Container, Row, Column) + Content (Heading, Paragraph, Divider) for drag-drop canvas */
+  layoutAndContentOnly?: boolean;
   /** Step 1: toggle show/hide for a field (both visible and hidden have edit/delete) */
   onToggleVisible?: (field: RsvpFormField) => void;
   /** Delete a field – available for both visible and hidden fields */
@@ -112,6 +100,8 @@ const FIELD_ICONS: Record<RsvpFieldType, React.ReactNode> = {
   paragraph: <Type size={18} className="text-slate-600" />,
   divider: <Minus size={18} className="text-slate-600" />,
   heading: <Heading size={18} className="text-slate-600" />,
+  image: <ImageIcon size={18} className="text-slate-600" />,
+  icon: <Sparkles size={18} className="text-slate-600" />,
 };
 
 /** Step 1: all field types available with show/hide options */
@@ -127,6 +117,8 @@ const ADD_FIELD_OPTIONS: { type: RsvpFieldType; label: string }[] = [
   { type: "paragraph", label: "Paragraph" },
   { type: "divider", label: "Divider" },
   { type: "heading", label: "Heading" },
+  { type: "image", label: "Image" },
+  { type: "icon", label: "Icon" },
 ];
 
 const STRUCTURE_ITEMS: {
@@ -164,6 +156,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
   selectedFieldId,
   onSelectField,
   onAddField,
+  layoutAndContentOnly = false,
   onToggleVisible,
   onDeleteField,
 }) => {
@@ -197,6 +190,63 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
       return label.includes(q) || type.includes(q) || layoutLabel.includes(q);
     });
   }, [formFields, searchQuery]);
+
+  if (layoutAndContentOnly) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Palette size={18} className="text-slate-600 shrink-0" />
+          <h3 className="text-sm font-semibold text-slate-800">Layout & Content</h3>
+        </div>
+        <p className="text-[11px] text-slate-500">Drag into the form or click to add.</p>
+        <div>
+          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Layout</p>
+          <div className="space-y-2">
+            {STRUCTURE_ITEMS.map((item) => (
+              <DraggablePaletteButton
+                key={item.containerType}
+                id={`palette:layout:${item.containerType}`}
+                data={{
+                  type: "palette-item",
+                  createField: () => createRsvpLayoutField(item.containerType),
+                  layoutType: item.containerType,
+                }}
+                onClick={() => onAddField(createRsvpLayoutField(item.containerType))}
+                className="w-full flex items-start gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-left transition-all cursor-grab active:cursor-grabbing"
+              >
+                <span className="shrink-0 mt-0.5">{item.icon}</span>
+                <div className="min-w-0">
+                  <div className="font-medium text-sm text-slate-800">{item.title}</div>
+                  <div className="text-xs text-slate-500 mt-0.5">{item.subtitle} — or drag to form</div>
+                </div>
+              </DraggablePaletteButton>
+            ))}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Content</p>
+          <div className="space-y-2">
+            {CONTENT_OPTIONS.map(({ type, label }) => (
+              <DraggablePaletteButton
+                key={type}
+                id={`palette:${type}`}
+                data={{
+                  type: "palette-item",
+                  createField: () => createRsvpFormField(type),
+                  fieldType: type,
+                }}
+                onClick={() => onAddField(createRsvpFormField(type))}
+                className="w-full flex items-center gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-left transition-all cursor-grab active:cursor-grabbing"
+              >
+                <span className="shrink-0">{FIELD_ICONS[type]}</span>
+                <span className="font-medium text-sm text-slate-800">{label}</span>
+              </DraggablePaletteButton>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -261,7 +311,11 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
               <DraggablePaletteButton
                 key={item.containerType}
                 id={`palette:layout:${item.containerType}`}
-                data={{ from: "palette", layoutType: item.containerType }}
+                data={{
+                  type: "palette-item",
+                  createField: () => createRsvpLayoutField(item.containerType),
+                  layoutType: item.containerType,
+                }}
                 onClick={() => onAddField(createRsvpLayoutField(item.containerType))}
                 className="w-full flex items-start gap-3 p-3 rounded-lg border-2 border-slate-200 hover:border-purple-300 hover:bg-purple-50/50 text-left transition-all cursor-grab active:cursor-grabbing"
               >
@@ -370,7 +424,11 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
                 <DraggablePaletteButton
                   key={type}
                   id={`palette:${type}`}
-                  data={{ from: "palette", fieldType: type }}
+                  data={{
+                    type: "palette-item",
+                    createField: () => createRsvpFormField(type),
+                    fieldType: type,
+                  }}
                   onClick={() => onAddField(createRsvpFormField(type))}
                   className="px-3 py-2 rounded-lg border-2 border-dashed border-slate-300 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-xs font-medium transition-all flex items-center gap-1.5 cursor-grab active:cursor-grabbing"
                 >
