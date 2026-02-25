@@ -9,6 +9,8 @@ interface RsvpFormPreviewProps {
   visibleOnly?: boolean;
   variableMode?: boolean;
   showActionButtons?: boolean;
+  /** When true, show "Thanks for your response" instead of Attend/Decline buttons (e.g. after successful submit). */
+  responseSubmitted?: boolean;
   onAttendClick?: () => void;
   onDeclineClick?: () => void;
   attendButtonDisabled?: boolean;
@@ -74,6 +76,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   theme,
   currentLanguage = "en",
   showActionButtons = true,
+  responseSubmitted = false,
   onAttendClick,
   onDeclineClick,
   attendButtonDisabled = false,
@@ -514,8 +517,12 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
           {displayFields.map((field) => renderField(field))}
         </div>
 
-        {/* Attend & Decline buttons */}
-        {showActionButtons && (
+        {/* Thanks message after successful response, or Attend & Decline buttons */}
+        {responseSubmitted ? (
+          <div className="mt-6 py-4 px-4 rounded-xl bg-green-50 border border-green-200 text-center">
+            <p className="text-green-800 font-medium text-base">Thanks for your response.</p>
+          </div>
+        ) : showActionButtons ? (
           <div className="mt-6 flex flex-col sm:flex-row gap-4 sm:gap-6">
             <button
               type="button"
@@ -550,7 +557,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
               <span>{declineText}</span>
             </button>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Footer image – only show when there is an image or builder can add one */}

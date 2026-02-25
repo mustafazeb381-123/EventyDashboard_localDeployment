@@ -194,8 +194,14 @@ export default function RsvpPage() {
       }
       setSubmitting(response);
       setSubmitMessage(null);
+      console.log("[RSVP] Attend/Decline API – request:", {
+        response: response,
+        rsvp_token: rsvpTokenFromUrl ? `${rsvpTokenFromUrl.slice(0, 8)}...` : null,
+        tenant_uuid: tenantUuid ? `${tenantUuid.slice(0, 8)}...` : null,
+      });
       try {
-        await rsvpResponse(rsvpTokenFromUrl, response, tenantUuid);
+        const res = await rsvpResponse(rsvpTokenFromUrl, response, tenantUuid);
+        console.log("[RSVP] Attend/Decline API – success:", res?.data);
         setSubmitMessage({
           type: "success",
           text:
@@ -204,6 +210,12 @@ export default function RsvpPage() {
               : "Thank you for letting us know. Your response has been recorded.",
         });
       } catch (err: unknown) {
+        const errResp = err && typeof err === "object" && "response" in err ? (err as { response?: { data?: unknown; status?: number } }).response : undefined;
+        console.log("[RSVP] Attend/Decline API – error:", {
+          status: errResp?.status,
+          data: errResp?.data,
+          fullError: err,
+        });
         const status =
           err &&
           typeof err === "object" &&
@@ -277,14 +289,8 @@ export default function RsvpPage() {
       <div className="max-w-2xl mx-auto">
         {rsvpTemplate ? (
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-            {submitMessage && (
-              <div
-                className={`mx-4 mt-4 px-4 py-3 rounded-lg text-sm ${
-                  submitMessage.type === "success"
-                    ? "bg-green-50 text-green-800"
-                    : "bg-red-50 text-red-800"
-                }`}
-              >
+            {submitMessage && submitMessage.type !== "success" && (
+              <div className="mx-4 mt-4 px-4 py-3 rounded-lg text-sm bg-red-50 text-red-800">
                 {submitMessage.text}
               </div>
             )}
@@ -295,7 +301,8 @@ export default function RsvpPage() {
                 rsvpTemplate.languageConfig?.primaryLanguage ?? "en"
               }
               visibleOnly={true}
-              showActionButtons={true}
+              showActionButtons={submitMessage?.type !== "success"}
+              responseSubmitted={submitMessage?.type === "success"}
               onAttendClick={() => handleRsvpResponse("accepted")}
               onDeclineClick={() => handleRsvpResponse("declined")}
               attendButtonDisabled={submitting !== null}

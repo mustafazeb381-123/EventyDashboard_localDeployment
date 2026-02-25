@@ -15,11 +15,14 @@ import {
   UserCheck,
   BarChart2,
   Copy,
+  Trash2,
+  X,
 } from "lucide-react";
 import { getEventbyId, sendCredentials } from "@/apis/apiHelpers";
 import {
   getEventInvitations,
   duplicateEventInvitation,
+  deleteEventInvitation,
   type EventInvitation,
 } from "@/apis/invitationService";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -186,6 +189,13 @@ function Invitations() {
   const [cloningInvitationId, setCloningInvitationId] = useState<string | null>(
     null,
   );
+  const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null);
+  const [deleteModalInvitation, setDeleteModalInvitation] = useState<{
+    eventId: string;
+    invitationId: number;
+    title: string;
+    rowKey: string;
+  } | null>(null);
 
   const itemsPerPage = 10;
 
@@ -899,6 +909,41 @@ function Invitations() {
                                           )}
                                           Clone
                                         </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const idToUse =
+                                              actualEventId || eventId;
+                                            if (!idToUse) {
+                                              showNotification(
+                                                "Event ID is missing.",
+                                                "error",
+                                              );
+                                              return;
+                                            }
+                                            closeActionsMenu();
+                                            setDeleteModalInvitation({
+                                              eventId: idToUse,
+                                              invitationId: invitation.id,
+                                              title: invitation.title || "Untitled",
+                                              rowKey,
+                                            });
+                                          }}
+                                          disabled={
+                                            deletingInvitationId === rowKey
+                                          }
+                                          className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 text-left disabled:opacity-50"
+                                        >
+                                          {deletingInvitationId === rowKey ? (
+                                            <span className="inline-block w-4 h-4 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin shrink-0" />
+                                          ) : (
+                                            <Trash2
+                                              size={15}
+                                              className="text-red-500 flex-shrink-0"
+                                            />
+                                          )}
+                                          Delete
+                                        </button>
                                       </div>
                                     </>
                                   )}
@@ -1003,6 +1048,98 @@ function Invitations() {
           </div>
         </div>
       </div>
+
+      {/* Delete invitation confirmation modal */}
+      {deleteModalInvitation && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => !deletingInvitationId && setDeleteModalInvitation(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-invitation-modal-title"
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 animate-slide-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  !deletingInvitationId && setDeleteModalInvitation(null)
+                }
+                disabled={!!deletingInvitationId}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <h2
+              id="delete-invitation-modal-title"
+              className="text-lg font-semibold text-gray-900 mb-1"
+            >
+              Delete invitation
+            </h2>
+            <p className="text-gray-600 text-sm mb-6">
+              Are you sure you want to delete &quot;{deleteModalInvitation.title}&quot;? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() =>
+                  !deletingInvitationId && setDeleteModalInvitation(null)
+                }
+                disabled={!!deletingInvitationId}
+                className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const { eventId: idToUse, invitationId, rowKey } =
+                    deleteModalInvitation;
+                  setDeletingInvitationId(rowKey);
+                  try {
+                    await deleteEventInvitation(idToUse, invitationId);
+                    showNotification(
+                      "Invitation deleted successfully",
+                      "success",
+                    );
+                    setDeleteModalInvitation(null);
+                    fetchInvitations(idToUse, currentPage);
+                  } catch (err: unknown) {
+                    const msg =
+                      (err as { response?: { data?: { message?: string; error?: string } } })
+                        ?.response?.data?.message ||
+                      (err as { response?: { data?: { error?: string } } })?.response?.data
+                        ?.error ||
+                      "Failed to delete invitation.";
+                    showNotification(msg, "error");
+                  } finally {
+                    setDeletingInvitationId(null);
+                  }
+                }}
+                disabled={!!deletingInvitationId}
+                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deletingInvitationId === deleteModalInvitation.rowKey ? (
+                  <>
+                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  "Delete"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes slide-in {
