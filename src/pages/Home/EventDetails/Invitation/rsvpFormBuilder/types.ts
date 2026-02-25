@@ -1,19 +1,63 @@
 /**
- * RSVP Template Editor types – content blocks (text only) plus header/footer.
+ * RSVP Template Editor types – content blocks, form fields, and layout containers.
  */
 
-/** Text element types – paragraph, heading, divider */
-export type RsvpFieldType = "paragraph" | "heading" | "divider";
+/** All field types: form inputs + content + layout (layout uses containerType) */
+export type RsvpFieldType =
+  | "text"
+  | "phone"
+  | "number"
+  | "date"
+  | "textarea"
+  | "select"
+  | "radio"
+  | "checkbox"
+  | "paragraph"
+  | "divider"
+  | "heading"
+  | "image"
+  | "icon";
+
+export interface RsvpLayoutProps {
+  gap?: string;
+  padding?: string;
+  margin?: string;
+  justifyContent?: string;
+  alignItems?: string;
+  flexDirection?: "row" | "column";
+  flexWrap?: "wrap" | "nowrap";
+  minHeight?: string;
+  backgroundColor?: string;
+  borderRadius?: string;
+  borderColor?: string;
+  borderWidth?: string;
+  borderStyle?: "solid" | "dashed" | "dotted" | "none";
+}
 
 export interface RsvpFormField {
   id: string;
   type: RsvpFieldType;
   name: string;
+  /** Display label for form fields */
+  label?: string;
+  /** Placeholder for inputs */
+  placeholder?: string;
+  required?: boolean;
+  /** If false, hidden in final form (builder-only) */
+  visible?: boolean;
   /** Text content for paragraph and heading */
   content?: string;
   contentTranslations?: { en?: string; ar?: string };
   /** For heading: size/style */
   headingLevel?: 1 | 2 | 3 | 4 | 5 | 6;
+  /** Layout container: container (column), row, or column */
+  containerType?: "container" | "row" | "column";
+  /** Child field IDs when this is a container */
+  children?: string[];
+  /** Layout styling when containerType is set */
+  layoutProps?: RsvpLayoutProps;
+  /** Options for select, radio, checkbox */
+  options?: { label: string; value: string }[];
   /** Enhanced styling for text elements */
   fieldStyle?: {
     /** Border styling */
@@ -154,20 +198,98 @@ export function getDefaultRsvpFormFields(): RsvpFormField[] {
   return [];
 }
 
-/** Create a new content element */
+/** Create a new form or content element */
 export function createRsvpFormField(type: RsvpFieldType): RsvpFormField {
   const id = `${type}-${Date.now()}`;
+  const name = id.replace(/-/g, "_");
   const defaults: Record<RsvpFieldType, Partial<RsvpFormField>> = {
+    text: { label: "Text", placeholder: "Enter text", name },
+    phone: { label: "Phone", placeholder: "+1 (555) 000-0000", name: "phone_number" },
+    number: { label: "Number", placeholder: "0", name },
+    date: { label: "Date", placeholder: "", name },
+    textarea: { label: "Textarea", placeholder: "Enter text", name },
+    select: {
+      label: "Dropdown",
+      placeholder: "Select...",
+      name,
+      options: [
+        { label: "Option 1", value: "option_1" },
+        { label: "Option 2", value: "option_2" },
+      ],
+    },
+    radio: {
+      label: "Radio",
+      placeholder: "",
+      name,
+      options: [
+        { label: "Option 1", value: "option_1" },
+        { label: "Option 2", value: "option_2" },
+      ],
+    },
+    checkbox: {
+      label: "Checkbox",
+      placeholder: "",
+      name,
+      options: [
+        { label: "Option 1", value: "option_1" },
+        { label: "Option 2", value: "option_2" },
+      ],
+    },
     paragraph: { content: "Click to edit text", name: id },
     divider: { content: "", name: id },
     heading: { content: "Heading", headingLevel: 3, name: id },
+    image: { content: "", name: id },
+    icon: { content: "", name: id },
   };
   const d = defaults[type] ?? {};
   return {
     id,
     type,
-    name: id,
+    name: d.name ?? name,
+    label: d.label,
+    placeholder: d.placeholder,
+    required: false,
+    visible: true,
     content: d.content,
     headingLevel: d.headingLevel,
+    options: d.options,
   } as RsvpFormField;
+}
+
+/** Create a layout field (Container, Row, or Column) for the RSVP form builder */
+export function createRsvpLayoutField(
+  containerType: "container" | "row" | "column"
+): RsvpFormField {
+  const id = `${containerType}-${Date.now()}`;
+  const label =
+    containerType === "container"
+      ? "Container"
+      : containerType === "row"
+        ? "Row"
+        : "Column";
+  const isRow = containerType === "row";
+  return {
+    id,
+    type: "paragraph",
+    name: id,
+    label,
+    required: false,
+    visible: true,
+    content: "",
+    containerType,
+    children: [],
+    layoutProps: {
+      gap: "16px",
+      padding: isRow ? "12px" : "16px",
+      justifyContent: "flex-start",
+      alignItems: isRow ? "center" : "stretch",
+      flexDirection: isRow ? "row" : "column",
+      flexWrap: isRow ? "wrap" : "nowrap",
+      borderWidth: "1px",
+      borderColor: containerType === "container" ? "#c4b5fd" : containerType === "row" ? "#93c5fd" : "#67e8f9",
+      borderStyle: "dashed",
+      borderRadius: "8px",
+      minHeight: "48px",
+    },
+  };
 }

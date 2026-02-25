@@ -83,7 +83,7 @@ const ExpressEvent = () => {
           label: "Email Management",
           description: "Confirm event details",
         },
-    // Advance only: Mobile App Management. Express flow ends after Email Management.
+    // Advance only: Mobile App Management
     ...(plan === "advance"
       ? [
           {
@@ -93,6 +93,12 @@ const ExpressEvent = () => {
           },
         ]
       : []),
+    // Payment: last step for both Express and Advance
+    {
+      id: "payment",
+      label: "Payment",
+      description: "Configure payment options for your event",
+    },
   ];
 
   const [toggleStates, setToggleStates] = useState<ToggleStates>({
@@ -103,8 +109,7 @@ const ExpressEvent = () => {
   });
 
   const emailConfirmationRef = useRef<EmailConfirmationHandle>(null);
-  const isExpressLastStep =
-    plan !== "advance" && steps.length > 0 && currentStep === steps.length - 1;
+  const isLastStep = steps.length > 0 && currentStep === steps.length - 1;
 
   // --- Step-based API fetchers ---
   const stepEventFetchers: Record<string, (eventId: string) => void> = {
@@ -135,6 +140,9 @@ const ExpressEvent = () => {
     "Mobile-App-Management": (eventId) => {
       console.log("Fetching mobile app management for event:", eventId);
       // fetchMobileAppManagement(eventId);
+    },
+    payment: (eventId) => {
+      console.log("Fetching payment for event:", eventId);
     },
   };
 
@@ -186,9 +194,16 @@ const ExpressEvent = () => {
           </Button>
         </div>
         <div className="col-auto flex items-center gap-2">
-          {isExpressLastStep && (
+          {isLastStep && (
             <Button
-              onClick={() => emailConfirmationRef.current?.finish()}
+              onClick={() => {
+                const step = steps[currentStep];
+                if (step?.id === "payment" && finalEventId) {
+                  navigation(`/home/${finalEventId}`, { state: { eventId: finalEventId } });
+                } else {
+                  emailConfirmationRef.current?.finish();
+                }
+              }}
               className="flex items-center gap-2 text-sm font-poppins font-medium px-4 py-2 rounded-md cursor-pointer bg-teal-600 hover:bg-teal-700 text-white"
             >
               <CheckCircle size={18} />
@@ -345,15 +360,25 @@ const ExpressEvent = () => {
             eventId={finalEventId}
             onNext={handleNext}
             onPrevious={handlePrevious}
-            isLastStep
+            isLastStep={false}
           />
         );
       case 4:
-        return (
+        return plan === "advance" ? (
           <AdvanceAppManagement
             eventId={finalEventId}
             onComplete={handleNext}
             onPrevious={handlePrevious}
+          />
+        ) : (
+          <Payment
+            plan={plan}
+            toggleStates={toggleStates}
+            eventId={finalEventId}
+            onNext={(id?: string | number, _plan?: string) => handleNext(id)}
+            onPrevious={handlePrevious}
+            currentStep={currentStep}
+            totalSteps={steps.length}
           />
         );
       case 5:

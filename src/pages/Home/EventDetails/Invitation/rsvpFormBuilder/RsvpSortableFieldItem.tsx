@@ -20,6 +20,8 @@ import {
   Square,
   LayoutGrid,
   Columns2,
+  Image,
+  Sparkles,
 } from "lucide-react";
 import type { RsvpFormField, RsvpFieldType } from "./types";
 
@@ -42,6 +44,8 @@ const FIELD_ICONS: Record<RsvpFieldType, React.ReactNode> = {
   paragraph: <Type size={16} className="text-slate-600" />,
   divider: <Minus size={16} className="text-slate-600" />,
   heading: <Heading size={16} className="text-slate-600" />,
+  image: <Image size={16} className="text-slate-600" />,
+  icon: <Sparkles size={16} className="text-slate-600" />,
 };
 
 const FIELD_TYPE_LABELS: Record<RsvpFieldType, string> = {
@@ -56,6 +60,8 @@ const FIELD_TYPE_LABELS: Record<RsvpFieldType, string> = {
   paragraph: "Paragraph",
   divider: "Divider",
   heading: "Heading",
+  image: "Image",
+  icon: "Icon",
 };
 
 export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({

@@ -20,6 +20,8 @@ const FIELD_TYPE_LABELS: Record<RsvpFieldType, string> = {
   paragraph: "Paragraph",
   divider: "Divider",
   heading: "Heading",
+  image: "Image",
+  icon: "Icon",
 };
 
 export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({

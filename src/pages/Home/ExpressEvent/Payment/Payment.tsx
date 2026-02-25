@@ -1,21 +1,32 @@
 import React, { useState } from "react";
-import { ChevronLeft, ChevronRight, Send, ArrowRightLeft, Loader2, AlertTriangle } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { updateEventById } from "@/apis/apiHelpers";
-import type { ToggleStates } from "../ExpressEvent";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+
+const VAT_RATE = 0.15;
+const VAT_ERROR_MSG =
+  "Saudi VAT number must start and end with 3.";
+
+type BillingType = "individual" | "company";
+type SupportLevel = "none" | "basic" | "standard" | "premium";
+
+const DEFAULT_CONTACT = {
+  name: "Abdullah Saleh",
+  email: "abdt23@gmail.com",
+  phone: "+358 50 1234567",
+};
 
 interface PaymentProps {
-  toggleStates?: ToggleStates;
-  onNext: (eventId?: string | number, plan?: string) => void;
+  onNext: (id?: string | number, _plan?: string) => void;
   onPrevious: () => void;
   currentStep: number;
   totalSteps?: number;
-  eventId?: string | number;
   plan?: string;
-  /** Called after event is converted to Advance (parent should navigate with plan: "advance") */
-  onConvertToAdvance?: () => void;
-  /** Called when user requests Express (e.g. navigate with plan: "express"); backend may not support */
-  onConvertToExpress?: () => void;
+  toggleStates?: unknown;
+  eventId?: string;
 }
 
 const Payment: React.FC<PaymentProps> = ({
@@ -23,227 +34,508 @@ const Payment: React.FC<PaymentProps> = ({
   onPrevious,
   currentStep,
   totalSteps = 0,
-  eventId,
-  plan,
-  onConvertToAdvance,
-  onConvertToExpress,
 }) => {
-  const [publishing, setPublishing] = useState(false);
-  const [converting, setConverting] = useState(false);
-  const [showConvertModal, setShowConvertModal] = useState<"advance" | "express" | null>(null);
-  const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [contact] = useState(DEFAULT_CONTACT);
+  const [billingType, setBillingType] = useState<BillingType>("individual");
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const handleNext = () => {
-    onNext(eventId, plan);
+  const [companyName, setCompanyName] = useState("");
+  const [vatNumber, setVatNumber] = useState("");
+  const [vatError, setVatError] = useState("");
+  const [country, setCountry] = useState("");
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+  const [buildingNo, setBuildingNo] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [additionalInfo, setAdditionalInfo] = useState("");
+
+  const [badgePrinting, setBadgePrinting] = useState(false);
+  const [needSupportContact, setNeedSupportContact] = useState(false);
+  const [supportLevel, setSupportLevel] = useState<SupportLevel>("none");
+
+  const planName = "Standard Plan";
+  const planPrice = 99;
+  const supportLevelPrice: Record<SupportLevel, number> = {
+    none: 0,
+    basic: 25,
+    standard: 50,
+    premium: 100,
   };
+  const supportTotal = supportLevelPrice[supportLevel];
+  const subtotal = planPrice + supportTotal;
+  const vatAmount = subtotal * VAT_RATE;
+  const totalAmount = subtotal + vatAmount;
 
-  const handlePublishEvent = () => {
-    setPublishing(true);
-    // Placeholder – wire to publish API when backend is ready
-    setTimeout(() => {
-      setPublishing(false);
-      setNotification({ message: "Publish option will be available soon.", type: "success" });
-    }, 800);
-  };
+  function validateSaudiVat(value: string): boolean {
+    if (!value.trim()) return false;
+    const digits = value.replace(/\D/g, "");
+    if (digits.length !== 15) return false;
+    if (digits[0] !== "3" || digits[14] !== "3") return false;
+    return /^\d+$/.test(digits);
+  }
 
-  const handleConvertToAdvanceConfirm = async () => {
-    if (!eventId) return;
-    setConverting(true);
-    try {
-      const fd = new FormData();
-      fd.append("event[event_type]", "advance");
-      await updateEventById(eventId, fd);
-      setNotification({ message: "Event converted to Advance.", type: "success" });
-      setShowConvertModal(null);
-      onConvertToAdvance?.();
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.response?.data?.error || "Failed to convert.";
-      setNotification({ message: msg, type: "error" });
-    } finally {
-      setConverting(false);
+  function handleVatChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value;
+    setVatNumber(value);
+    if (!value.trim()) {
+      setVatError("");
+      return;
     }
-  };
+    if (!validateSaudiVat(value)) {
+      setVatError(VAT_ERROR_MSG);
+    } else {
+      setVatError("");
+    }
+  }
 
-  const handleConvertToExpressConfirm = () => {
-    // Backend may not support; placeholder for now
-    setShowConvertModal(null);
-    setNotification({ message: "Switch to Express may be available later.", type: "success" });
-    onConvertToExpress?.();
-  };
+  const isCompanyValid =
+    billingType !== "company" ||
+    (companyName.trim() !== "" &&
+      vatNumber.trim() !== "" &&
+      !vatError &&
+      validateSaudiVat(vatNumber) &&
+      country.trim() !== "" &&
+      city.trim() !== "" &&
+      district.trim() !== "" &&
+      buildingNo.trim() !== "" &&
+      postalCode.trim() !== "");
+
+  const canPay = isCompanyValid && termsAccepted;
+
+  function handlePayNow() {
+    if (!canPay) return;
+    console.log("Billing payload (API not connected yet):", {
+      billing_type: billingType,
+      company_details: billingType === "company" ? { companyName, vatNumber, country, city, district, buildingNo, postalCode, additionalInfo } : undefined,
+      support_level: supportLevel,
+      subtotal,
+      vat: vatAmount,
+      total_amount: totalAmount,
+      customer_email: contact.email,
+    });
+  }
 
   return (
-    <div className="w-full flex flex-col lg:flex-row gap-6 lg:gap-8">
-      {/* Main content */}
-      <div className="flex-1 min-w-0 bg-white rounded-xl shadow-lg p-6 md:p-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Settings</h2>
-          <p className="text-gray-600">
-            Configure payment options for your event. This section will be updated with payment integration details.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <div className="border border-gray-200 rounded-lg p-6 bg-gray-50">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-teal-100 rounded-lg flex items-center justify-center">
-                <svg
-                  className="w-6 h-6 text-teal-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800">Payment Integration</h3>
-                <p className="text-sm text-gray-500">Payment gateway configuration coming soon</p>
-              </div>
-            </div>
-            <div className="mt-4 p-4 bg-white rounded-md border border-gray-200">
-              <p className="text-sm text-gray-600">
-                This section will be configured with payment gateway settings once the company provides the integration details.
-              </p>
-            </div>
+    <div className="w-full min-h-[calc(100vh-140px)] bg-gray-100/80 rounded-2xl p-4 md:p-6">
+      {/* Process flow indicator – circles with connecting lines (screenshot style) */}
+      <div className="w-full flex items-start mb-8">
+        {/* 01 Plan */}
+        <div className="flex flex-col items-center shrink-0">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-semibold tabular-nums">
+            01
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-700 mb-2">Payment Methods</h4>
-              <p className="text-sm text-gray-500">Configure accepted payment methods</p>
-            </div>
-            <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-700 mb-2">Pricing</h4>
-              <p className="text-sm text-gray-500">Set event pricing and ticket costs</p>
-            </div>
-          </div>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Plan</span>
         </div>
-
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
-          <Button onClick={onPrevious} variant="outline" className="flex items-center gap-2">
-            <ChevronLeft size={20} />
-            Previous
-          </Button>
-          <span className="text-sm text-gray-500">Step {currentStep + 1} of {totalSteps}</span>
-          <Button onClick={handleNext} className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700">
-            Next
-            <ChevronRight size={20} />
-          </Button>
+        <div className="flex-1 h-0.5 mt-5 mx-1 bg-gray-300 rounded" aria-hidden />
+        {/* 02 Billing */}
+        <div className="flex flex-col items-center shrink-0">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-pink-500 text-white flex items-center justify-center text-sm font-semibold tabular-nums shadow-md">
+            02
+          </div>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Billing</span>
+        </div>
+        <div className="flex-1 h-0.5 mt-5 mx-1 bg-gray-300 rounded" aria-hidden />
+        {/* 03 Payment */}
+        <div className="flex flex-col items-center shrink-0">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-semibold tabular-nums">
+            03
+          </div>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Payment</span>
+        </div>
+        <div className="flex-1 h-0.5 mt-5 mx-1 bg-gray-300 rounded" aria-hidden />
+        {/* 04 Confirmation */}
+        <div className="flex flex-col items-center shrink-0">
+          <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-sky-200 text-sky-900 flex items-center justify-center text-sm font-semibold tabular-nums">
+            04
+          </div>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Confirmation</span>
         </div>
       </div>
 
-      {/* Sidebar: Publish & Event type */}
-      <aside className="w-full lg:w-72 shrink-0 space-y-4">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-3">Publish & plan</h3>
-          <div className="space-y-3">
-            <Button
-              onClick={handlePublishEvent}
-              disabled={publishing}
-              className="w-full justify-center gap-2 bg-teal-600 hover:bg-teal-700"
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+        Billing & Checkout
+      </h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+        {/* Left: Billing Form */}
+        <div className="lg:col-span-2 space-y-5">
+          {/* Contact Summary */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">
+              Contact Summary
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-500 block mb-0.5">Name</span>
+                <span className="text-gray-900 font-medium">{contact.name}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block mb-0.5">Email</span>
+                <span className="text-gray-900 font-medium">{contact.email}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 block mb-0.5">Phone</span>
+                <span className="text-gray-900 font-medium">{contact.phone}</span>
+              </div>
+            </div>
+            <Link
+              to="/"
+              className="inline-block mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              {publishing ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-              Publish event
-            </Button>
-            <p className="text-xs text-gray-500">
-              Make your event live. Options will be updated when the feature is ready.
-            </p>
+              Edit Profile
+            </Link>
+          </div>
+
+          {/* Billing Type + Selected Add-ons */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-3">
+              Billing Type
+            </h2>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="billingType"
+                  checked={billingType === "individual"}
+                  onChange={() => setBillingType("individual")}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-gray-800">Individual</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="billingType"
+                  checked={billingType === "company"}
+                  onChange={() => setBillingType("company")}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <span className="text-gray-800">Company</span>
+              </label>
+            </div>
+            {billingType === "individual" && (
+              <p className="text-gray-500 text-sm mt-2">
+                No billing details required.
+              </p>
+            )}
+
+            <div className="mt-6 pt-5 border-t border-gray-100">
+              <h3 className="text-base font-semibold text-gray-800 mb-3">
+                Selected Add-ons
+              </h3>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={badgePrinting}
+                    onCheckedChange={(c) => setBadgePrinting(c === true)}
+                  />
+                  <span className="text-gray-800 text-sm">
+                    On-site badge printing
+                  </span>
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                >
+                  Contact Us
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Billing Information (Company) */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">
+              Billing Information
+            </h2>
+            <div className="flex gap-4 mb-4">
+              <button
+                type="button"
+                onClick={() => setBillingType("individual")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  billingType === "individual"
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Individual
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingType("company")}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  billingType === "company"
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                Company
+              </button>
+            </div>
+
+            {billingType === "company" && (
+              <div className="space-y-4 pt-2">
+                <div>
+                  <Label htmlFor="companyName" className="text-gray-700 text-sm">
+                    Company Name *
+                  </Label>
+                  <Input
+                    id="companyName"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="-"
+                    className="mt-1.5 h-10 rounded-lg border-gray-300"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="vatNumber" className="text-gray-700 text-sm">
+                      VAT Number *
+                    </Label>
+                    <span
+                      className="text-gray-400 cursor-help"
+                      title="15 digits, numeric, must start and end with 3"
+                    >
+                      <Info className="w-4 h-4" />
+                    </span>
+                  </div>
+                  <Input
+                    id="vatNumber"
+                    value={vatNumber}
+                    onChange={handleVatChange}
+                    placeholder="-"
+                    className={`mt-1.5 h-10 rounded-lg max-w-xs ${
+                      vatError ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300"
+                    }`}
+                    maxLength={15}
+                    aria-invalid={!!vatError}
+                  />
+                  {vatError && (
+                    <p className="text-red-600 text-xs mt-1 flex items-center gap-1" role="alert">
+                      {vatError}
+                    </p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 text-sm">Country *</Label>
+                    <select
+                      value={country}
+                      onChange={(e) => setCountry(e.target.value)}
+                      className="mt-1.5 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm"
+                    >
+                      <option value="">-</option>
+                      <option value="SA">Saudi Arabia</option>
+                      <option value="AE">UAE</option>
+                      <option value="KW">Kuwait</option>
+                      <option value="BH">Bahrain</option>
+                      <option value="OM">Oman</option>
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 text-sm">City *</Label>
+                    <select
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="mt-1.5 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm"
+                    >
+                      <option value="">-</option>
+                      <option value="RUH">Riyadh</option>
+                      <option value="JED">Jeddah</option>
+                      <option value="DMM">Dammam</option>
+                      <option value="MEC">Mecca</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 text-sm">District *</Label>
+                    <Input
+                      value={district}
+                      onChange={(e) => setDistrict(e.target.value)}
+                      placeholder="-"
+                      className="mt-1.5 h-10 rounded-lg border-gray-300"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700 text-sm">Building No *</Label>
+                    <Input
+                      value={buildingNo}
+                      onChange={(e) => setBuildingNo(e.target.value)}
+                      placeholder="-"
+                      className="mt-1.5 h-10 rounded-lg border-gray-300"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-gray-700 text-sm">Postal Code *</Label>
+                    <Input
+                      value={postalCode}
+                      onChange={(e) => setPostalCode(e.target.value)}
+                      placeholder="-"
+                      className="mt-1.5 h-10 rounded-lg border-gray-300"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label className="text-gray-700 text-sm">
+                      Additional Info (Optional)
+                    </Label>
+                    <Input
+                      value={additionalInfo}
+                      onChange={(e) => setAdditionalInfo(e.target.value)}
+                      placeholder="-"
+                      className="mt-1.5 h-10 rounded-lg border-gray-300"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Additional Services */}
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-4">
+              Additional Services
+            </h2>
+            <div className="space-y-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <Checkbox
+                  checked={needSupportContact}
+                  onCheckedChange={(c) => setNeedSupportContact(c === true)}
+                />
+                <span className="text-gray-800 text-sm pt-0.5">
+                  Need our team to manage the event setup?
+                </span>
+              </label>
+              <div>
+                <Label className="text-gray-700 text-sm block mb-2">
+                  Support Level
+                </Label>
+                <select
+                  value={supportLevel}
+                  onChange={(e) =>
+                    setSupportLevel(e.target.value as SupportLevel)
+                  }
+                  className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm w-full max-w-xs"
+                >
+                  <option value="none">None</option>
+                  <option value="basic">Basic Support</option>
+                  <option value="standard">Standard Support</option>
+                  <option value="premium">Premium Support</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2 flex items-center gap-2">
-            <ArrowRightLeft size={16} />
-            Event type
-          </h3>
-          <p className="text-xs text-gray-500 mb-3">
-            Currently: <span className="font-medium text-gray-700">{plan === "advance" ? "Advance" : "Express"}</span>
-          </p>
-          {plan === "express" ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setShowConvertModal("advance")}
-            >
-              Switch to Advance
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => setShowConvertModal("express")}
-            >
-              Switch to Express
-            </Button>
-          )}
-          <p className="text-xs text-gray-500 mt-2">
-            Change event type to get different features and steps.
-          </p>
-        </div>
-      </aside>
-
-      {/* Convert modals */}
-      {showConvertModal === "advance" && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-            <div className="flex justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-4">
-              <AlertTriangle className="w-6 h-6 text-blue-500" />
+        {/* Right: Order Summary */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6 sticky top-24">
+            <h2 className="text-lg font-semibold text-gray-900 mb-5">
+              Order Summary
+            </h2>
+            <ul className="space-y-2 text-sm text-gray-700">
+              <li>
+                <span className="font-medium text-gray-800">Plan:</span>{" "}
+                {planName} – ${planPrice}/mo
+              </li>
+              <li>
+                <span className="font-medium text-gray-800">Billing Type:</span>{" "}
+                {billingType === "individual" ? "Individual" : "Company"}
+              </li>
+              {badgePrinting && (
+                <li>
+                  <span className="font-medium text-gray-800">Add-ons:</span>{" "}
+                  On-site badge printing
+                </li>
+              )}
+              <li>
+                <span className="font-medium text-gray-800">Venue & Timing:</span>{" "}
+                1 Day
+              </li>
+            </ul>
+            <div className="mt-5 pt-4 border-t border-gray-200 space-y-2">
+              <div className="flex justify-between text-sm text-gray-700">
+                <span>Subtotal</span>
+                <span>${subtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-700">
+                <span>VAT (15%)</span>
+                <span>${vatAmount.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-lg font-bold text-gray-900 pt-2">
+                <span>Total</span>
+                <span>${totalAmount.toFixed(2)}</span>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">Switch to Advance?</h3>
-            <p className="text-sm text-gray-600 text-center mb-4">
-              This event will use Advance steps and features. You can’t switch back to Express later.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowConvertModal(null)} disabled={converting}>
-                Cancel
-              </Button>
-              <Button className="flex-1 gap-2" onClick={handleConvertToAdvanceConfirm} disabled={converting}>
-                {converting ? <Loader2 size={16} className="animate-spin" /> : null}
-                Switch to Advance
-              </Button>
+
+            <div className="mt-6 flex items-start gap-3">
+              <Checkbox
+                id="terms"
+                checked={termsAccepted}
+                onCheckedChange={(c) => setTermsAccepted(c === true)}
+              />
+              <Label
+                htmlFor="terms"
+                className="text-sm text-gray-600 cursor-pointer leading-tight"
+              >
+                I agree to the Terms of Service and Privacy Policy
+              </Label>
+            </div>
+
+            <Button
+              onClick={handlePayNow}
+              disabled={!canPay}
+              className="w-full mt-4 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none rounded-xl"
+            >
+              Pay Now
+            </Button>
+
+            <div className="mt-5 pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-2">Payment methods</p>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-[10px] font-semibold px-2 py-1 rounded bg-gray-100 text-gray-600">
+                  VISA
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-1 rounded bg-gray-100 text-gray-600">
+                  PayPal
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-1 rounded bg-gray-100 text-gray-600">
+                  Apple Pay
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-1 rounded bg-gray-100 text-gray-600">
+                  STC Pay
+                </span>
+              </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {showConvertModal === "express" && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl">
-            <div className="flex justify-center w-12 h-12 bg-amber-100 rounded-full mx-auto mb-4">
-              <AlertTriangle className="w-6 h-6 text-amber-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">Switch to Express?</h3>
-            <p className="text-sm text-gray-600 text-center mb-4">
-              Switching to Express may not be supported yet. Contact support if you need this.
-            </p>
-            <div className="flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowConvertModal(null)}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={handleConvertToExpressConfirm}>
-                Continue
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {notification && (
-        <div
-          className={`fixed top-4 right-4 z-[100] px-4 py-2 rounded-lg shadow-lg text-sm ${
-            notification.type === "success" ? "bg-green-600 text-white" : "bg-red-600 text-white"
-          }`}
+      {/* Step navigation */}
+      <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+        <Button
+          onClick={onPrevious}
+          variant="outline"
+          className="flex items-center gap-2 rounded-lg"
         >
-          {notification.message}
-        </div>
-      )}
+          <ChevronLeft size={20} />
+          Previous
+        </Button>
+        <span className="text-sm text-gray-500">
+          Step {currentStep + 1} of {totalSteps}
+        </span>
+        <Button
+          onClick={() => onNext()}
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 rounded-lg"
+        >
+          Next
+          <ChevronRight size={20} />
+        </Button>
+      </div>
     </div>
   );
 };

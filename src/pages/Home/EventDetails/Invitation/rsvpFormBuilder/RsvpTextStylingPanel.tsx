@@ -77,7 +77,16 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
       </div>
 
       <div className="p-5 space-y-5">
+        {/* Image / Icon: upload via form preview */}
+        {(field.type === "image" || field.type === "icon") && (
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">
+            <p className="font-medium text-slate-700 mb-1">{field.type === "image" ? "Image" : "Icon"}</p>
+            <p>Click on the {field.type} in the form preview to upload or replace.</p>
+          </div>
+        )}
+
         {/* Text Content */}
+        {field.type !== "image" && field.type !== "icon" && (
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-sm font-medium text-gray-700">
@@ -153,6 +162,7 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
             </div>
           )}
         </div>
+        )}
 
         {/* Border */}
         <div className="pt-4 border-t">

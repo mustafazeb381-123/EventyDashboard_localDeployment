@@ -1,12 +1,19 @@
 import React, { useRef, useState, useEffect } from "react";
 import {
+  DndContext,
+  useDraggable,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import { arrayMove } from "@dnd-kit/sortable";
+import {
   Save,
   Palette as PaletteIcon,
   X,
   Trash2,
-  Type,
-  Heading,
-  Minus,
   Code,
   Eye,
   Copy,
@@ -15,11 +22,12 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type { RsvpFormField, RsvpTheme, RsvpLanguageConfig, RsvpFieldType } from "./types";
+import type { RsvpFormField, RsvpTheme, RsvpLanguageConfig } from "./types";
 import { getDefaultRsvpFormFields, createRsvpFormField } from "./types";
 import { RsvpTextStylingPanel } from "./RsvpTextStylingPanel";
 import { RsvpThemeConfigPanel } from "./RsvpThemeConfigPanel";
 import { RsvpFormPreview } from "./RsvpFormPreview";
+import { RsvpFieldPalette } from "./RsvpFieldPalette";
 
 const AVAILABLE_VARIABLES = [
   { label: "First Name", value: "((firstname))" },
@@ -33,6 +41,42 @@ const AVAILABLE_VARIABLES = [
   { label: "Event Start", value: "{{eventstart}}" },
   { label: "Event End", value: "{{eventend}}" },
 ];
+
+/** Draggable variable button: click adds to form, drag-and-drop onto page or into containers */
+function DraggableVariableButton({
+  variable,
+  onClick,
+}: {
+  variable: { label: string; value: string };
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `variable:${variable.value}`,
+    data: {
+      type: "palette-item",
+      createField: () => {
+        const f = createRsvpFormField("paragraph");
+        f.content = variable.value;
+        return f;
+      },
+    },
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      onClick={onClick}
+      className="w-full flex items-center justify-between px-3 py-2 rounded-lg border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all text-left cursor-grab active:cursor-grabbing"
+      {...attributes}
+      {...listeners}
+    >
+      <div className="flex flex-col items-start">
+        <span className="text-xs font-medium">{variable.label}</span>
+        <code className="text-xs font-mono text-indigo-600 mt-0.5">{variable.value}</code>
+      </div>
+    </button>
+  );
+}
 
 export interface RsvpFormBuilderProps {
   initialFormFields?: RsvpFormField[];
@@ -188,6 +232,12 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
   const [codeCopied, setCodeCopied] = useState(false);
   /** JSON string for Code modal (theme images as base64); set when modal opens */
   const [codeModalJson, setCodeModalJson] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<RsvpFormField | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+  );
 
   useEffect(() => {
     if (!showCodeModal) {
@@ -213,6 +263,8 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
 
   const bannerInputRef = useRef<HTMLInputElement>(null);
   const footerInputRef = useRef<HTMLInputElement>(null);
+  const imageUploadRef = useRef<HTMLInputElement>(null);
+  const pendingImageFieldIdRef = useRef<string | null>(null);
 
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -230,6 +282,27 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     e.target.value = "";
   };
 
+  const handleImageUploadRequest = (fieldId: string) => {
+    pendingImageFieldIdRef.current = fieldId;
+    imageUploadRef.current?.click();
+  };
+
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const fieldId = pendingImageFieldIdRef.current;
+    e.target.value = "";
+    pendingImageFieldIdRef.current = null;
+    if (!file || !fieldId || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setFormFields((prev) =>
+        prev.map((f) => (f.id === fieldId ? { ...f, content: dataUrl } : f))
+      );
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleRemoveBanner = () => {
     setTheme((prev) => ({ ...prev, bannerImage: null }));
   };
@@ -245,14 +318,12 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     if (editingField?.id === updated.id) setEditingField(updated);
   };
 
-  const handleAddField = (type: RsvpFieldType) => {
-    const newField = createRsvpFormField(type);
-    setFormFields((prev) => [...prev, newField]);
-    setEditingField(newField);
+  const handleAddField = (field: RsvpFormField) => {
+    setFormFields((prev) => [...prev, field]);
+    setEditingField(field);
   };
 
   const handleInsertVariable = (variable: string) => {
-    // Always create a new separate paragraph element with the variable
     const newField = createRsvpFormField("paragraph");
     newField.content = variable;
     setFormFields((prev) => [...prev, newField]);
@@ -260,18 +331,227 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
   };
 
   const handleDeleteField = (id: string) => {
-    setFormFields((prev) => prev.filter((f) => f.id !== id));
+    const candidate = formFields.find((f) => f.id === id) ?? null;
+    setDeleteCandidate(candidate);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteField = () => {
+    if (!deleteCandidate) {
+      setShowDeleteModal(false);
+      return;
+    }
+    const id = deleteCandidate.id;
+    setFormFields((prev) =>
+      prev
+        .filter((f) => f.id !== id)
+        .map((f) =>
+          f.children
+            ? { ...f, children: f.children.filter((c) => c !== id) }
+            : f
+        )
+    );
     if (editingField?.id === id) setEditingField(null);
+    setShowDeleteModal(false);
+    setDeleteCandidate(null);
+  };
+
+  const cancelDeleteField = () => {
+    setShowDeleteModal(false);
+    setDeleteCandidate(null);
+  };
+
+  /** Root field IDs = not in any field's children (for elements list and move) */
+  const childIds = new Set(
+    formFields
+      .filter((f) => f.children?.length)
+      .flatMap((f) => f.children ?? [])
+  );
+  const rootFields = formFields.filter((f) => !childIds.has(f.id));
+
+  const getContainerIdFromOverId = (id: string) =>
+    id.startsWith("container:") ? id.replace("container:", "") : null;
+
+  const findParentContainerId = (fieldId: string) =>
+    formFields.find((f) => f.children?.includes(fieldId))?.id ?? null;
+
+  const isDescendant = (ancestorId: string, possibleDescendantId: string) => {
+    const ancestor = formFields.find((f) => f.id === ancestorId);
+    if (!ancestor?.children?.length) return false;
+    const queue = [...ancestor.children];
+    const visited = new Set<string>();
+    while (queue.length) {
+      const current = queue.shift()!;
+      if (current === possibleDescendantId) return true;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      const node = formFields.find((f) => f.id === current);
+      if (node?.children?.length) queue.push(...node.children);
+    }
+    return false;
+  };
+
+  const handleDragStart = () => {
+    document.body.style.cursor = "grabbing";
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    document.body.style.cursor = "";
+
+    if (!over) {
+      if (active.data?.current?.type === "palette-item" && active.data.current.createField) {
+        const newField = active.data.current.createField();
+        setFormFields((prev) => [...prev, newField]);
+      }
+      return;
+    }
+
+    const overId = String(over.id);
+
+    if (active.data?.current?.type === "palette-item" && active.data.current.createField) {
+      const newField = active.data.current.createField();
+
+      if (overId === "rsvp-main-drop-zone") {
+        setFormFields((prev) => [...prev, newField]);
+        return;
+      }
+
+      const containerTargetId = getContainerIdFromOverId(overId);
+      if (containerTargetId) {
+        setFormFields((prev) => {
+          const updated = prev.map((f) =>
+            f.id === containerTargetId
+              ? { ...f, children: [...(f.children || []), newField.id] }
+              : f
+          );
+          return [...updated, newField];
+        });
+        return;
+      }
+
+      const overField = formFields.find((f) => f.id === overId);
+      if (overField?.containerType) {
+        setFormFields((prev) => {
+          const updated = prev.map((f) =>
+            f.id === overId
+              ? { ...f, children: [...(f.children || []), newField.id] }
+              : f
+          );
+          return [...updated, newField];
+        });
+        return;
+      }
+
+      const overIndex = formFields.findIndex((f) => f.id === overId);
+      if (overIndex !== -1) {
+        const updated = [...formFields];
+        updated.splice(overIndex + 1, 0, newField);
+        setFormFields(updated);
+      } else {
+        setFormFields((prev) => [...prev, newField]);
+      }
+      return;
+    }
+
+    const activeIdStr = String(active.id);
+    if (activeIdStr === overId) return;
+
+    const containerTargetId = getContainerIdFromOverId(overId);
+    const sourceParentId = findParentContainerId(activeIdStr);
+
+    if (containerTargetId) {
+      const activeField = formFields.find((f) => f.id === activeIdStr);
+      if (activeField?.containerType) {
+        if (containerTargetId === activeIdStr) return;
+        if (isDescendant(activeIdStr, containerTargetId)) return;
+      }
+      setFormFields((prev) => {
+        let next = prev.map((f) =>
+          f.children?.includes(activeIdStr)
+            ? { ...f, children: f.children.filter((id) => id !== activeIdStr) }
+            : f
+        );
+        next = next.map((f) =>
+          f.id === containerTargetId
+            ? { ...f, children: [...(f.children || []), activeIdStr] }
+            : f
+        );
+        return next;
+      });
+      return;
+    }
+
+    if (overId === "rsvp-main-drop-zone") {
+      if (!sourceParentId) return;
+      setFormFields((prev) =>
+        prev.map((f) =>
+          f.id === sourceParentId
+            ? { ...f, children: (f.children || []).filter((id) => id !== activeIdStr) }
+            : f
+        )
+      );
+      return;
+    }
+
+    const overFieldId = overId;
+    const targetParentId = findParentContainerId(overFieldId);
+
+    if (targetParentId) {
+      const activeField = formFields.find((f) => f.id === activeIdStr);
+      if (activeField?.containerType) {
+        if (targetParentId === activeIdStr) return;
+        if (isDescendant(activeIdStr, targetParentId)) return;
+      }
+      setFormFields((prev) => {
+        let next = prev.map((f) =>
+          f.children?.includes(activeIdStr)
+            ? { ...f, children: f.children.filter((id) => id !== activeIdStr) }
+            : f
+        );
+        next = next.map((f) => {
+          if (f.id !== targetParentId) return f;
+          const children = [...(f.children || [])];
+          const overIndex = children.indexOf(overFieldId);
+          const insertIndex = overIndex === -1 ? children.length : overIndex + 1;
+          if (children.includes(activeIdStr)) {
+            const oldIndex = children.indexOf(activeIdStr);
+            return {
+              ...f,
+              children: arrayMove(
+                children,
+                oldIndex,
+                insertIndex > oldIndex ? insertIndex - 1 : insertIndex
+              ),
+            };
+          }
+          children.splice(insertIndex, 0, activeIdStr);
+          return { ...f, children };
+        });
+        return next;
+      });
+      return;
+    }
+
+    const oldIndex = formFields.findIndex((f) => f.id === activeIdStr);
+    const newIndex = formFields.findIndex((f) => f.id === overFieldId);
+    if (oldIndex !== -1 && newIndex !== -1) {
+      setFormFields(arrayMove(formFields, oldIndex, newIndex));
+    }
   };
 
   const handleMoveField = (index: number, direction: "up" | "down") => {
     const newIndex = direction === "up" ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= formFields.length) return;
-    setFormFields((prev) => {
-      const next = [...prev];
-      [next[index], next[newIndex]] = [next[newIndex], next[index]];
-      return next;
-    });
+    if (newIndex < 0 || newIndex >= rootFields.length) return;
+    const rootIds = rootFields.map((f) => f.id);
+    const movedId = rootIds[index];
+    const targetId = rootIds[newIndex];
+    const flatIndexMoved = formFields.findIndex((f) => f.id === movedId);
+    const flatIndexTarget = formFields.findIndex((f) => f.id === targetId);
+    if (flatIndexMoved === -1 || flatIndexTarget === -1) return;
+    const next = [...formFields];
+    [next[flatIndexMoved], next[flatIndexTarget]] = [next[flatIndexTarget], next[flatIndexMoved]];
+    setFormFields(next);
   };
 
   const applyPreset = (preset: typeof THEME_PRESETS[0]) => {
@@ -301,10 +581,12 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           2
         )
       ));
-    navigator.clipboard.writeText(json).then(() => {
+    if (json) {
+      navigator.clipboard.writeText(json).then(() => {
       setCodeCopied(true);
       setTimeout(() => setCodeCopied(false), 2000);
     });
+    }
   };
 
   return (
@@ -389,27 +671,23 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
         </div>
       </div>
 
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+      >
       <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Left: Content palette */}
+        {/* Left: Layout & Content palette (drag or click) + variables + elements list */}
         <div className="w-64 flex-shrink-0 bg-white border-r border-slate-200 overflow-y-auto p-4 shadow-sm">
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Content</h3>
-          <div className="space-y-2 mb-4">
-            <button type="button" onClick={() => handleAddField("heading")} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all">
-              <Heading size={18} />
-              Heading
-            </button>
-            <button type="button" onClick={() => handleAddField("paragraph")} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all">
-              <Type size={18} />
-              Paragraph
-            </button>
-            <button type="button" onClick={() => handleAddField("divider")} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all">
-              <Minus size={18} />
-              Divider
-            </button>
-          </div>
-
-          {/* Available Variables */}
-          <div className="border-t border-slate-200 pt-4">
+          <RsvpFieldPalette
+            formFields={formFields}
+            selectedFieldId={editingField?.id ?? null}
+            onSelectField={setEditingField}
+            onAddField={handleAddField}
+            layoutAndContentOnly
+          />
+          <div className="border-t border-slate-200 pt-4 mt-4">
             <button
               type="button"
               onClick={() => setShowVariables(!showVariables)}
@@ -421,34 +699,25 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
               </div>
               {showVariables ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </button>
-            
             {showVariables && (
               <div className="space-y-2">
+                <p className="text-[11px] text-slate-500 mb-1">Click to add at end, or drag onto the form or into containers.</p>
                 {AVAILABLE_VARIABLES.map((variable) => (
-                  <button
+                  <DraggableVariableButton
                     key={variable.value}
-                    type="button"
+                    variable={variable}
                     onClick={() => handleInsertVariable(variable.value)}
-                    className="w-full flex items-center justify-between px-3 py-2 rounded-lg border-2 border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 text-sm font-medium transition-all text-left"
-                  >
-                    <div className="flex flex-col items-start">
-                      <span className="text-xs font-medium">{variable.label}</span>
-                      <code className="text-xs font-mono text-indigo-600 mt-0.5">
-                        {variable.value}
-                      </code>
-                    </div>
-                  </button>
+                  />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Current elements list with reorder */}
-          {formFields.length > 0 && (
+          {rootFields.length > 0 && (
             <div className="mt-6 border-t border-slate-200 pt-4">
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Elements ({formFields.length})</h3>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Elements ({rootFields.length})</h3>
               <div className="space-y-1.5">
-                {formFields.map((field, index) => (
+                {rootFields.map((field, index) => (
                   <div
                     key={field.id}
                     className={`flex items-center gap-1 p-2 rounded-lg border transition-all ${
@@ -459,15 +728,18 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
                       <button type="button" onClick={() => handleMoveField(index, "up")} disabled={index === 0} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" title="Move up" aria-label="Move up">
                         <ChevronLeft size={14} className="rotate-[-90deg]" />
                       </button>
-                      <button type="button" onClick={() => handleMoveField(index, "down")} disabled={index === formFields.length - 1} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" title="Move down" aria-label="Move down">
+                      <button type="button" onClick={() => handleMoveField(index, "down")} disabled={index === rootFields.length - 1} className="p-0.5 text-slate-400 hover:text-slate-600 disabled:opacity-30" title="Move down" aria-label="Move down">
                         <ChevronRight size={14} className="rotate-[-90deg]" />
                       </button>
                     </div>
                     <button type="button" onClick={() => setEditingField(field)} className="flex-1 min-w-0 text-left text-sm text-slate-700 truncate">
-                      {field.type === "heading" && <Heading size={14} className="inline mr-2 shrink-0" />}
-                      {field.type === "paragraph" && <Type size={14} className="inline mr-2 shrink-0" />}
-                      {field.type === "divider" && <Minus size={14} className="inline mr-2 shrink-0" />}
-                      <span className="truncate">{field.content?.slice(0, 24) || field.type}</span>
+                      {field.containerType ? (
+                        <span className="truncate">{field.containerType} – {field.children?.length ?? 0}</span>
+                      ) : field.type === "image" || field.type === "icon" ? (
+                        <span className="truncate">{field.type === "image" ? "Image" : "Icon"}{field.content ? " (uploaded)" : ""}</span>
+                      ) : (
+                        <span className="truncate">{field.content?.slice(0, 24) || field.type}</span>
+                      )}
                     </button>
                     <button type="button" onClick={() => handleDeleteField(field.id)} className="p-1 text-red-500 hover:bg-red-50 rounded shrink-0" title="Delete" aria-label="Delete">
                       <Trash2 size={14} />
@@ -479,34 +751,35 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           )}
         </div>
 
-        {/* Center: Preview */}
+        {/* Center: Form preview (banner, footer, Attend/Decline, fields) with DnD drop zones for containers */}
         <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
           <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-slate-100">
-            <div className="p-6 flex justify-center min-h-full">
-              <RsvpFormPreview
-                formFields={formFields}
-                theme={theme}
-                currentLanguage={languageConfig.primaryLanguage ?? "en"}
-                visibleOnly={false}
-                variableMode={false}
-                showActionButtons={true}
-                onBannerClick={() => bannerInputRef.current?.click()}
-                onFooterClick={() => footerInputRef.current?.click()}
-                onRemoveBanner={handleRemoveBanner}
-                onRemoveFooter={handleRemoveFooter}
-                builderMode={true}
-                editingFieldId={editingField?.id ?? null}
-                onFieldClick={setEditingField}
-                onFieldContentChange={(fieldId, content) => {
-                  setFormFields((prev) =>
-                    prev.map((f) => (f.id === fieldId ? { ...f, content } : f))
-                  );
-                  if (editingField?.id === fieldId) {
-                    setEditingField({ ...editingField, content });
-                  }
-                }}
-              />
-            </div>
+              <div className="p-6 flex justify-center min-h-full">
+                <RsvpFormPreview
+                  formFields={formFields}
+                  theme={theme}
+                  currentLanguage={languageConfig.primaryLanguage ?? "en"}
+                  visibleOnly={false}
+                  variableMode={false}
+                  showActionButtons={true}
+                  onBannerClick={() => bannerInputRef.current?.click()}
+                  onFooterClick={() => footerInputRef.current?.click()}
+                  onRemoveBanner={handleRemoveBanner}
+                  onRemoveFooter={handleRemoveFooter}
+                  builderMode={true}
+                  editingFieldId={editingField?.id ?? null}
+                  onFieldClick={setEditingField}
+                  onFieldContentChange={(fieldId, content) => {
+                    setFormFields((prev) =>
+                      prev.map((f) => (f.id === fieldId ? { ...f, content } : f))
+                    );
+                    if (editingField?.id === fieldId) {
+                      setEditingField({ ...editingField, content });
+                    }
+                  }}
+                  onImageUploadRequest={handleImageUploadRequest}
+                />
+              </div>
             <input
               ref={bannerInputRef}
               type="file"
@@ -520,6 +793,14 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
               type="file"
               accept="image/*"
               onChange={handleFooterFileChange}
+              className="hidden"
+              aria-hidden
+            />
+            <input
+              ref={imageUploadRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageFileChange}
               className="hidden"
               aria-hidden
             />
@@ -538,6 +819,43 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           />
         )}
       </div>
+      </DndContext>
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) cancelDeleteField();
+          }}
+        >
+          <div
+            className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">Remove field?</h3>
+            <p className="text-sm text-slate-600 mb-4">
+              This will remove the field from the form. This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={cancelDeleteField}
+                className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 text-sm font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteField}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 text-sm font-medium"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Preview modal – full preview while building */}
       {showPreviewModal && (
@@ -571,6 +889,10 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
                   visibleOnly={true}
                   variableMode={false}
                   showActionButtons={true}
+                  onBannerClick={() => bannerInputRef.current?.click()}
+                  onFooterClick={() => footerInputRef.current?.click()}
+                  onRemoveBanner={handleRemoveBanner}
+                  onRemoveFooter={handleRemoveFooter}
                 />
               </div>
             </div>
