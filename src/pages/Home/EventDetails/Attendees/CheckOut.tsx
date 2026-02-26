@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { FileDown, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 import { getCheckOuts, getSessionAreaApi } from "@/apis/apiHelpers";
 import Pagination from "@/components/Pagination";
 import Search from "@/components/Search";
@@ -55,6 +57,8 @@ function CheckOut() {
   const [pagination, setPagination] = useState<any>(null);
   const itemsPerPage = 10;
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error";
@@ -205,6 +209,98 @@ function CheckOut() {
     }
   };
 
+  const getFilteredUsersForExport = () => {
+    if (!debouncedSearchTerm) return allUsers;
+    const searchLower = debouncedSearchTerm.toLowerCase();
+    return allUsers.filter((user: any) => {
+      const name = user.attributes?.name?.toLowerCase() || "";
+      const email = user.attributes?.email?.toLowerCase() || "";
+      const organization = user.attributes?.organization?.toLowerCase() || "";
+      const phoneNumber = user.attributes?.phone_number?.toLowerCase() || "";
+      return (
+        name.includes(searchLower) ||
+        email.includes(searchLower) ||
+        organization.includes(searchLower) ||
+        phoneNumber.includes(searchLower)
+      );
+    });
+  };
+
+  const escapeCsvCell = (val: string | number): string => {
+    const s = String(val ?? "").replace(/"/g, '""');
+    return s.includes(",") || s.includes("\n") || s.includes('"') ? `"${s}"` : s;
+  };
+
+  const handleExportCsv = () => {
+    if (!eventId || !sessionAreaId) {
+      showNotification("Missing event or session area.", "error");
+      return;
+    }
+    setExportingCsv(true);
+    try {
+      const users = getFilteredUsersForExport();
+      const baseHeaders = ["ID", "Name", "Email", "User type"];
+      const rows = users.map((user: any) =>
+        [
+          user.id,
+          user.attributes?.name ?? "",
+          user.attributes?.email ?? "",
+          user.attributes?.user_type ?? "",
+        ].map(escapeCsvCell)
+      );
+      const csvContent = [baseHeaders.join(","), ...rows.map((r: string[]) => r.join(","))].join("\n");
+      const blob = new Blob(["\uFEFFsep=,\n" + csvContent], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `check_out_need_check_out_${eventId}_${sessionAreaId}_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showNotification(`Exported ${users.length} users (CSV).`, "success");
+    } catch (e) {
+      console.error(e);
+      showNotification("Export failed.", "error");
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
+  const handleExportExcel = () => {
+    if (!eventId || !sessionAreaId) {
+      showNotification("Missing event or session area.", "error");
+      return;
+    }
+    setExportingExcel(true);
+    try {
+      const users = getFilteredUsersForExport();
+      const headers = ["ID", "Name", "Email", "User type"];
+      const dataRows = users.map((user: any) => [
+        user.id,
+        user.attributes?.name ?? "",
+        user.attributes?.email ?? "",
+        user.attributes?.user_type ?? "",
+      ]);
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...dataRows]);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Users");
+      const xlsxBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" }) as number[] | ArrayBuffer;
+      const blob = new Blob([xlsxBuffer instanceof ArrayBuffer ? xlsxBuffer : new Uint8Array(xlsxBuffer)], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `check_out_need_check_out_${eventId}_${sessionAreaId}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showNotification(`Exported ${users.length} users (Excel).`, "success");
+    } catch (e) {
+      console.error(e);
+      showNotification("Export failed.", "error");
+    } finally {
+      setExportingExcel(false);
+    }
+  };
 
   return (
     <div className="bg-white min-h-screen p-6">
@@ -265,6 +361,30 @@ function CheckOut() {
           </div>
         </div>
 
+        {/* Export CSV / Excel */}
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+          <p className="text-sm text-gray-600 mb-3">
+            Export respects current search filter.
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              disabled={exportingCsv || loadingUsers || !sessionAreaId}
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+            >
+              <FileDown className="w-4 h-4" />
+              {exportingCsv ? "Exporting…" : "Export CSV"}
+            </button>
+            <button
+              onClick={handleExportExcel}
+              disabled={exportingExcel || loadingUsers || !sessionAreaId}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              {exportingExcel ? "Exporting…" : "Export Excel"}
+            </button>
+          </div>
+        </div>
 
         <div className="flex justify-between mb-4">
           <div className="relative w-1/3">
@@ -376,9 +496,6 @@ function CheckOut() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       User type
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
-                    </th>
                   </tr>
                 </thead>
 
@@ -440,11 +557,6 @@ function CheckOut() {
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {user?.attributes?.user_type || "Guest"}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Checked In
                           </span>
                         </td>
                       </tr>

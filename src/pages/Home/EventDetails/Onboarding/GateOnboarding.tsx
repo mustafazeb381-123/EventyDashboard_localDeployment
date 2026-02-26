@@ -64,11 +64,9 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         type: "success" | "error" | "warning" | "info";
     } | null>(null);
 
-    const notCheckedInUsers = enrolledUsers.filter(user => !user.attributes.check_in);
-
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const usersPerPage = 5; // 👈 change if you want larger/smaller pages
+    const usersPerPage = 10; // 👈 change if you want larger/smaller pages
 
     // Filter users by search term
     const filteredUsers = enrolledUsers.filter((user) => {
@@ -109,8 +107,45 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 let list: EnrolledUser[] = [];
 
                 if (view === "registered_users") {
-                    const response = await getCheckIns(eventId, sessionAreaId);
-                    list = response?.data?.data || [];
+                    // Fetch all users: not checked in + checked in + checked out, then merge by id
+                    const [notCheckedInRes, checkedInRes] = await Promise.all([
+                        getCheckIns(eventId, sessionAreaId),
+                        getCheckOuts(eventId, sessionAreaId),
+                    ]);
+                    let checkedOutList: EnrolledUser[] = [];
+                    try {
+                        const checkedOutRes = await getCheckedOut(eventId, sessionAreaId);
+                        checkedOutList = checkedOutRes?.data?.data || [];
+                    } catch (err: any) {
+                        if (err?.response?.status === 404) {
+                            const all: any[] = [];
+                            let page = 1;
+                            let hasMore = true;
+                            while (hasMore) {
+                                const res = await getEventUsers(String(eventId), { page, per_page: 100 });
+                                const data = res?.data?.data || res?.data;
+                                const items = Array.isArray(data) ? data : data?.data || [];
+                                if (items.length === 0) break;
+                                all.push(...items);
+                                const meta = res?.data?.meta?.pagination || res?.data?.pagination;
+                                hasMore = meta?.next_page != null && items.length === 100;
+                                page++;
+                            }
+                            checkedOutList = all.filter((u: any) => {
+                                const statuses = u?.attributes?.check_user_area_statuses;
+                                if (!Array.isArray(statuses)) return false;
+                                return statuses.some(
+                                    (s: any) =>
+                                        String(s?.session_area_id ?? "") === String(sessionAreaId) && s?.check_out
+                                );
+                            });
+                        } else throw err;
+                    }
+                    const notCheckedIn = notCheckedInRes?.data?.data || [];
+                    const checkedIn = checkedInRes?.data?.data || [];
+                    const byId = new Map<string | number, EnrolledUser>();
+                    [...notCheckedIn, ...checkedIn, ...checkedOutList].forEach((u) => byId.set(u.id, u));
+                    list = Array.from(byId.values());
                 } else if (view === "checked_in") {
                     const response = await getCheckOuts(eventId, sessionAreaId);
                     list = response?.data?.data || [];
@@ -319,10 +354,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
     };
 
     const toggleSelectAll = () => {
-        if (selectedUsers.length === enrolledUsers.length) {
+        const idsToToggle = view === "registered_users" ? notCheckedInUserIds : enrolledUsers.map((u) => u.id);
+        if (selectedUsers.length === idsToToggle.length) {
             setSelectedUsers([]);
         } else {
-            setSelectedUsers(enrolledUsers.map(u => u.id));
+            setSelectedUsers(idsToToggle);
         }
     };
 
@@ -399,25 +435,6 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         }
     }, [showInput]);
 
-    const formatCheckIn = (checkIn?: string | null) => {
-        if (!checkIn) return "N/A";
-
-        const date = new Date(checkIn);
-
-        // Format as: day short-month year, 12-hour time
-        const day = date.getDate(); // 1-31
-        const month = date.toLocaleString("en-US", { month: "short" }); // Jan, Feb, etc.
-        const year = date.getFullYear();
-
-        let hours = date.getHours();
-        const minutes = date.getMinutes().toString().padStart(2, "0");
-        const ampm = hours >= 12 ? "PM" : "AM";
-        hours = hours % 12;
-        hours = hours ? hours : 12; // the hour '0' should be '12'
-
-        return `${day} ${month} ${year}, ${hours}:${minutes} ${ampm}`;
-    };
-
     const formatDateTime = (dateString: string) => {
         if (!dateString) return "—";
         const date = new Date(dateString);
@@ -449,6 +466,21 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
         );
         return forArea?.check_in ?? null;
     };
+
+    /** Status for Registered Users tab: "Not Checked-In" | "Checked-In" | "Checked Out" */
+    const getRegisteredUserStatus = (user: EnrolledUser) => {
+        const checkOut = getCheckOutTime(user);
+        if (checkOut) return "Checked Out";
+        const checkIn = getCheckInTime(user);
+        if (checkIn) return "Checked-In";
+        return "Not Checked-In";
+    };
+
+    /** In Registered Users tab, only these users can be selected for bulk check-in */
+    const notCheckedInUserIds =
+        view === "registered_users"
+            ? enrolledUsers.filter((u) => getRegisteredUserStatus(u) === "Not Checked-In").map((u) => u.id)
+            : [];
 
     const getFilteredUsersForExport = () => filteredUsers;
 
@@ -779,7 +811,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-base font-semibold text-gray-800">
                                 {view === "registered_users"
-                                    ? `Registered Users ${notCheckedInUsers.length}`
+                                    ? `Registered Users ${enrolledUsers.length}`
                                     : view === "checked_in"
                                     ? `Checked-In Users ${enrolledUsers.length}`
                                     : `Checked Out Users ${enrolledUsers.length}`}
@@ -828,7 +860,9 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                             <th className="px-4 py-3 text-left">Name</th>
                                             <th className="px-4 py-3 text-left">Email</th>
                                             <th className="px-4 py-3 text-left">User type</th>
-                                            <th className="px-4 py-3 text-left">Status</th>
+                                            {view === "registered_users" && (
+                                                <th className="px-4 py-3 text-left">Status</th>
+                                            )}
                                             {view === "checked_out" && (
                                                 <th className="px-4 py-3 text-left">Check-Out Time</th>
                                             )}
@@ -857,9 +891,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                 <td className="px-4 py-3">
                                                     <div className="h-4 bg-gray-200 rounded w-24"></div>
                                                 </td>
-                                                <td className="px-4 py-3">
-                                                    <div className="h-6 bg-gray-200 rounded-full w-28"></div>
-                                                </td>
+                                                {view === "registered_users" && (
+                                                    <td className="px-4 py-3">
+                                                        <div className="h-6 bg-gray-200 rounded-full w-28"></div>
+                                                    </td>
+                                                )}
                                                 {view === "checked_out" && (
                                                     <td className="px-4 py-3">
                                                         <div className="h-4 bg-gray-200 rounded w-28"></div>
@@ -884,7 +920,11 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                 <th className="px-4 py-3">
                                                     <input
                                                         type="checkbox"
-                                                        checked={enrolledUsers.length > 0 && selectedUsers.length === enrolledUsers.length}
+                                                        checked={
+                                                            view === "registered_users"
+                                                                ? notCheckedInUserIds.length > 0 && selectedUsers.length === notCheckedInUserIds.length
+                                                                : enrolledUsers.length > 0 && selectedUsers.length === enrolledUsers.length
+                                                        }
                                                         onChange={toggleSelectAll}
                                                     />
                                                 </th>
@@ -893,7 +933,9 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                             <th className="px-4 py-3 text-left">Name</th>
                                             <th className="px-4 py-3 text-left">Email</th>
                                             <th className="px-4 py-3 text-left">User type</th>
-                                            <th className="px-4 py-3 text-left">Status</th>
+                                            {view === "registered_users" && (
+                                                <th className="px-4 py-3 text-left">Status</th>
+                                            )}
                                             {view === "checked_out" && (
                                                 <th className="px-4 py-3 text-left">Check-Out Time</th>
                                             )}
@@ -907,7 +949,10 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                         {filteredUsers.length === 0 ? (
                                             <tr>
                                                 <td
-                                                    colSpan={view === "checked_out" ? 6 : 7}
+                                                    colSpan={
+                                                        view === "registered_users" ? 7 :
+                                                        view === "checked_in" ? 6 : 5
+                                                    }
                                                     className="px-4 py-8 text-center text-gray-500"
                                                 >
                                                     No users found
@@ -920,32 +965,51 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                     <tr key={user.id} className="hover:bg-gray-50 transition">
                                                         {view !== "checked_out" && (
                                                             <td className="px-4 py-3 text-center">
-                                                                <input
-                                                                    type="checkbox"
-                                                                    checked={selectedUsers.includes(user.id)}
-                                                                    onChange={() => toggleUserSelection(user.id)}
-                                                                />
+                                                                {view === "registered_users" ? (
+                                                                    getRegisteredUserStatus(user) === "Not Checked-In" ? (
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={selectedUsers.includes(user.id)}
+                                                                            onChange={() => toggleUserSelection(user.id)}
+                                                                        />
+                                                                    ) : (
+                                                                        <span className="inline-block w-4 h-4" aria-hidden />
+                                                                    )
+                                                                ) : (
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={selectedUsers.includes(user.id)}
+                                                                        onChange={() => toggleUserSelection(user.id)}
+                                                                    />
+                                                                )}
                                                             </td>
                                                         )}
                                                         <td className="px-4 py-3 text-sm text-gray-600">{user.id}</td>
                                                         <td className="px-4 py-3 text-sm font-medium text-gray-800">{user.attributes.name}</td>
                                                         <td className="px-4 py-3 text-sm text-gray-600">{user.attributes.email}</td>
                                                         <td className="px-4 py-3 text-sm text-gray-600">{user.attributes.user_type}</td>
-                                                        <td className="px-4 py-3 text-sm">
-                                                            {view === "registered_users" ? (
-                                                                <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">
-                                                                    Not Checked In
-                                                                </span>
-                                                            ) : view === "checked_in" ? (
-                                                                <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                                                                    {formatCheckIn(user.attributes?.check_user_area_statuses?.[0]?.check_in)}
-                                                                </span>
-                                                            ) : (
-                                                                <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                                                                    Checked Out
-                                                                </span>
-                                                            )}
-                                                        </td>
+                                                        {view === "registered_users" && (() => {
+                                                            const status = getRegisteredUserStatus(user);
+                                                            return (
+                                                                <td className="px-4 py-3 text-sm">
+                                                                    {status === "Not Checked-In" && (
+                                                                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">
+                                                                            Not Checked-In
+                                                                        </span>
+                                                                    )}
+                                                                    {status === "Checked-In" && (
+                                                                        <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+                                                                            Checked-In
+                                                                        </span>
+                                                                    )}
+                                                                    {status === "Checked Out" && (
+                                                                        <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                                                                            Checked Out
+                                                                        </span>
+                                                                    )}
+                                                                </td>
+                                                            );
+                                                        })()}
                                                         {view === "checked_out" && (
                                                             <td className="px-4 py-3 text-sm text-gray-600">
                                                                 {checkOutTime ? formatDateTime(checkOutTime) : "—"}

@@ -147,6 +147,13 @@ function NewInvitation() {
   /** When editing: initial rsvp_template from API to restore RSVP tab */
   const [initialRsvpTemplateFromApi, setInitialRsvpTemplateFromApi] = useState<string | null>(null);
 
+  // When RSVP is disabled and user is on RSVP tab, switch to invitation details
+  useEffect(() => {
+    if (!enableRsvp && newInvitationActiveTab === "rsvp-template") {
+      setNewInvitationActiveTab("invitation-details");
+    }
+  }, [enableRsvp, newInvitationActiveTab]);
+
   useEffect(() => {
     const id = searchParams.get("eventId");
     if (id) setEventId(id);
@@ -596,8 +603,8 @@ function NewInvitation() {
         aria-label="Invitation steps"
       >
         {(() => {
-          // Order: Invitation Details → RSVP Template → Email Template → Invitees
-          const tabs = [
+          // Order: Invitation Details → [RSVP Template if enabled] → Email Template → Invitees
+          const allTabs = [
             {
               id: "invitation-details" as TabId,
               label: "Invitation Details",
@@ -619,6 +626,9 @@ function NewInvitation() {
               colorClass: "text-green-600 border-b-2 border-green-600",
             },
           ];
+          const tabs = enableRsvp
+            ? allTabs
+            : allTabs.filter((t) => t.id !== "rsvp-template");
           const currentIndex = tabs.findIndex((t) => t.id === newInvitationActiveTab);
           return tabs.map((item, index) => {
             const isNext = index > currentIndex;
@@ -691,7 +701,7 @@ function NewInvitation() {
                   />
                 )}
 
-                {newInvitationActiveTab === "rsvp-template" && (
+                {enableRsvp && newInvitationActiveTab === "rsvp-template" && (
                   <RsvpTemplateTab
                     rsvpEmailSubject={rsvpEmailSubject}
                     setRsvpEmailSubject={setRsvpEmailSubject}
@@ -748,7 +758,7 @@ function NewInvitation() {
                         if (newInvitationActiveTab === "invitees")
                           setNewInvitationActiveTab("email-template");
                         else if (newInvitationActiveTab === "email-template")
-                          setNewInvitationActiveTab("rsvp-template");
+                          setNewInvitationActiveTab(enableRsvp ? "rsvp-template" : "invitation-details");
                         else if (newInvitationActiveTab === "rsvp-template")
                           setNewInvitationActiveTab("invitation-details");
                         else setNewInvitationActiveTab("invitation-details");
@@ -766,7 +776,9 @@ function NewInvitation() {
                     {newInvitationActiveTab === "invitation-details" && (
                       <button
                         type="button"
-                        onClick={() => setNewInvitationActiveTab("rsvp-template")}
+                        onClick={() =>
+                          setNewInvitationActiveTab(enableRsvp ? "rsvp-template" : "email-template")
+                        }
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
                       >
                         Next
