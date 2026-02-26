@@ -223,7 +223,7 @@ const Payment: React.FC<PaymentProps> = ({
               <h3 className="text-base font-semibold text-gray-800 mb-3">
                 Selected Add-ons
               </h3>
-              <div className="flex flex-wrap items-center gap-3">
+              {/* <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <Checkbox
                     checked={badgePrinting}
@@ -241,7 +241,7 @@ const Payment: React.FC<PaymentProps> = ({
                 >
                   Contact Us
                 </Button>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -446,12 +446,12 @@ const Payment: React.FC<PaymentProps> = ({
                 <span className="font-medium text-gray-800">Billing Type:</span>{" "}
                 {billingType === "individual" ? "Individual" : "Company"}
               </li>
-              {badgePrinting && (
+              {/* {badgePrinting && (
                 <li>
                   <span className="font-medium text-gray-800">Add-ons:</span>{" "}
                   On-site badge printing
                 </li>
-              )}
+              )} */}
               <li>
                 <span className="font-medium text-gray-800">Venue & Timing:</span>{" "}
                 1 Day
