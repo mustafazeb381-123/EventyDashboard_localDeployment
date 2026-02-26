@@ -25,6 +25,13 @@ const getQrValue = (user: any): string => {
   return "";
 };
 
+/** Event font for the badge card only (printed content). Not applied to the rest of the Print Badges page. API uses font_name. */
+const getBadgeEventFont = (event: any): string | undefined => {
+  const font = event?.attributes?.font_name;
+  if (typeof font !== "string" || !font.trim()) return undefined;
+  return `"${font.trim()}", sans-serif`;
+};
+
 const getBadgeColors = (template: any, event: any) => {
   const templateData = template?.attributes?.template_data || {};
   const eventColors = event?.attributes || {};
@@ -92,6 +99,8 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
     ? badgeColors.backgroundColor
     : "#ffffff";
 
+  const eventFont = getBadgeEventFont(event);
+
   return (
     <div
       className="custom-badge-root"
@@ -106,6 +115,7 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
         backgroundPosition: "center",
         position: "relative",
         overflow: "hidden",
+        ...(eventFont && { fontFamily: eventFont }),
       }}
     >
       {templateData.hasPersonalPhoto && (
@@ -309,7 +319,8 @@ export const ExistingBadgeTemplate1: React.FC<BadgeTemplateProps> = ({
   const badgeColors = getBadgeColors(template, event);
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = badgeColors.backgroundColor || "white";
-  
+  const eventFont = getBadgeEventFont(event);
+
   return (
     <div
       className="flex flex-col rounded-xl overflow-hidden shadow-lg"
@@ -317,6 +328,7 @@ export const ExistingBadgeTemplate1: React.FC<BadgeTemplateProps> = ({
         backgroundColor: secondaryColor,
         width: "350px",
         height: "550px",
+        ...(eventFont && { fontFamily: eventFont }),
       }}
     >
       {/* Header Section - Fixed height container */}
@@ -458,7 +470,8 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
   const badgeColors = getBadgeColors(template, event);
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = badgeColors.backgroundColor || "white";
-  
+  const eventFont = getBadgeEventFont(event);
+
   return (
     <div
       className="flex flex-col rounded-xl overflow-hidden shadow-lg"
@@ -466,6 +479,7 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
         backgroundColor: secondaryColor,
         width: "350px",
         height: "550px",
+        ...(eventFont && { fontFamily: eventFont }),
       }}
     >
       {/* Header Section - Fixed height container */}

@@ -120,6 +120,8 @@ export interface PublicEventResponse {
   logo_url: string;
   registration_page_banner_url: string;
   badge_background_url: string;
+  /** Font for registration page and badge; empty = app default */
+  font_name?: string;
 }
 
 export const getEventByUuidPublic = (eventUuid: string, tenantUuid: string) => {
@@ -160,8 +162,9 @@ export const reorderRegistrationFieldApi = (
 };
 
 export const updateEventById = (id: string | number, data: any) => {
-  // For FormData, do not set Content-Type — axios sets multipart/form-data with boundary
-  return axiosInstance.patch(`/events/${id}`, data);
+  // PUT /events/:id – send FormData with event[name], event[about], event[font_name], etc.
+  // (Rails expects params[:event] as a Hash from multipart fields, not a single JSON string)
+  return axiosInstance.put(`/events/${id}`, data);
 };
 
 export const createTemplatePostApi = (data: any, id: string) => {

@@ -10,6 +10,7 @@ import {
   Loader2,
   Star,
   AlertTriangle,
+  ChevronDown,
 } from "lucide-react";
 import {
   eventPostAPi,
@@ -50,6 +51,69 @@ type MainDataProps = {
   onEventCreated?: (id: string) => void;
 };
 
+/** Font options for event (registration page & badge). font_name is sent to API and used as font-family in user registration and print badges. Empty string = app default. */
+export const EVENT_FONT_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Default (app font)" },
+  { value: "Inter", label: "Inter" },
+  { value: "Roboto", label: "Roboto" },
+  { value: "Open Sans", label: "Open Sans" },
+  { value: "Poppins", label: "Poppins" },
+  { value: "Lato", label: "Lato" },
+  { value: "Montserrat", label: "Montserrat" },
+  { value: "Nunito", label: "Nunito" },
+  { value: "Source Sans 3", label: "Source Sans 3" },
+  { value: "Playfair Display", label: "Playfair Display" },
+  { value: "Oswald", label: "Oswald" },
+  { value: "Raleway", label: "Raleway" },
+  { value: "Merriweather", label: "Merriweather" },
+  { value: "PT Sans", label: "PT Sans" },
+  { value: "Ubuntu", label: "Ubuntu" },
+  { value: "Noto Sans", label: "Noto Sans" },
+  { value: "Noto Sans Arabic", label: "Noto Sans Arabic" },
+  { value: "Work Sans", label: "Work Sans" },
+  { value: "DM Sans", label: "DM Sans" },
+  { value: "Manrope", label: "Manrope" },
+  { value: "Plus Jakarta Sans", label: "Plus Jakarta Sans" },
+  { value: "Figtree", label: "Figtree" },
+  { value: "Outfit", label: "Outfit" },
+  { value: "Lexend", label: "Lexend" },
+  { value: "Sora", label: "Sora" },
+  { value: "Space Grotesk", label: "Space Grotesk" },
+  { value: "Rubik", label: "Rubik" },
+  { value: "Quicksand", label: "Quicksand" },
+  { value: "Karla", label: "Karla" },
+  { value: "Barlow", label: "Barlow" },
+  { value: "Barlow Condensed", label: "Barlow Condensed" },
+  { value: "Josefin Sans", label: "Josefin Sans" },
+  { value: "Libre Baskerville", label: "Libre Baskerville" },
+  { value: "Crimson Text", label: "Crimson Text" },
+  { value: "Lora", label: "Lora" },
+  { value: "PT Serif", label: "PT Serif" },
+  { value: "Source Serif 4", label: "Source Serif 4" },
+  { value: "IBM Plex Sans", label: "IBM Plex Sans" },
+  { value: "IBM Plex Serif", label: "IBM Plex Serif" },
+  { value: "Fira Sans", label: "Fira Sans" },
+  { value: "Fira Code", label: "Fira Code" },
+  { value: "JetBrains Mono", label: "JetBrains Mono" },
+  { value: "Inconsolata", label: "Inconsolata" },
+  { value: "Dancing Script", label: "Dancing Script" },
+  { value: "Pacifico", label: "Pacifico" },
+  { value: "Caveat", label: "Caveat" },
+  { value: "Comfortaa", label: "Comfortaa" },
+  { value: "Nunito Sans", label: "Nunito Sans" },
+  { value: "Mulish", label: "Mulish" },
+  { value: "Red Hat Display", label: "Red Hat Display" },
+  { value: "Bebas Neue", label: "Bebas Neue" },
+  { value: "Anton", label: "Anton" },
+  { value: "Archivo", label: "Archivo" },
+  { value: "Archivo Narrow", label: "Archivo Narrow" },
+  { value: "Titillium Web", label: "Titillium Web" },
+  { value: "Exo 2", label: "Exo 2" },
+  { value: "Abel", label: "Abel" },
+  { value: "Kanit", label: "Kanit" },
+  { value: "Prompt", label: "Prompt" },
+];
+
 type MainFormData = {
   eventName: string;
   description: string;
@@ -65,6 +129,8 @@ type MainFormData = {
   existingLogoUrl: string | null;
   primaryColor: string;
   secondaryColor: string;
+  /** Font for registration page and badge. Empty = app default. Sent as event[font_name] to API. */
+  fontFamily: string;
   // Optional (API supports both plans)
   registrationLimit?: string;
   languageSupport?: "single" | "dual";
@@ -160,6 +226,7 @@ const MainData = ({
     existingLogoUrl: null,
     primaryColor: "#00A7B5",
     secondaryColor: "#202242",
+    fontFamily: "",
     registrationLimit: "",
     languageSupport: "single",
     primaryLanguage: "english",
@@ -174,6 +241,21 @@ const MainData = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const requireApprovalTooltipRef = useRef<HTMLDivElement | null>(null);
   const duplicateRegTooltipRef = useRef<HTMLDivElement | null>(null);
+  const [fontDropdownOpen, setFontDropdownOpen] = useState(false);
+  const fontDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Close font dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (fontDropdownRef.current && !fontDropdownRef.current.contains(e.target as Node)) {
+        setFontDropdownOpen(false);
+      }
+    };
+    if (fontDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [fontDropdownOpen]);
 
   const handleInputChange = <K extends keyof MainFormData>(
     field: K,
@@ -538,6 +620,10 @@ const MainData = ({
         existingLogoUrl: attributes.logo_url || null,
         primaryColor: attributes.primary_color || "#00A7B5",
         secondaryColor: attributes.secondary_color || "#202242",
+        fontFamily:
+          typeof (attributes as any).font_name === "string"
+            ? (attributes as any).font_name
+            : "",
         registrationLimit:
           attributes.registration_limit !== undefined &&
           attributes.registration_limit !== null
@@ -681,8 +767,13 @@ const MainData = ({
     fd.append("event[display_event_details]", "true");
     fd.append("locale", "en");
 
-    // Debug log
+    // Font for registration page and badge – sent in both POST (create) and PATCH (update)
+    const fontNameValue = formData.fontFamily?.trim() ?? "";
+    fd.append("event[font_name]", fontNameValue);
+
+    // Debug log – ensure font_name is visible in payload
     console.log("User types being sent (array):", userTypesArray);
+    console.log("[Main Data] event[font_name] being sent (POST/PATCH):", fontNameValue || "(empty = app default)");
     console.log("=== FORM DATA ===");
     for (let [key, value] of fd.entries()) {
       console.log(key, value);
@@ -692,14 +783,22 @@ const MainData = ({
       let response;
 
       if (eventId) {
-        console.log("Updating existing event with ID:", eventId);
+        console.log("Updating existing event with ID:", eventId, "– PATCH payload includes event[font_name]:", fontNameValue || "(empty)");
         response = await updateEventById(eventId, fd);
         console.log("Event updated successfully:", response.data);
+        const attrsPatch = response?.data?.data?.attributes ?? response?.data?.attributes;
+        if (attrsPatch != null) {
+          console.log("[Main Data] PATCH API returned event attributes (check font_name):", { font_name: attrsPatch?.font_name, ...attrsPatch });
+        }
         showNotification("Event updated successfully", "success");
       } else {
-        console.log("Creating new event");
+        console.log("Creating new event – POST payload includes event[font_name]:", fontNameValue || "(empty)");
         response = await eventPostAPi(fd);
         console.log("API Response:", response.data);
+        if (response?.data?.data?.attributes != null || response?.data?.attributes != null) {
+          const attrs = response?.data?.data?.attributes ?? response?.data?.attributes;
+          console.log("[Main Data] API returned event attributes (check font_name):", { font_name: attrs?.font_name, ...attrs });
+        }
 
         // Support both response shapes: { data: { id } } or { id } at top level
         const newEventId =
@@ -860,6 +959,10 @@ const MainData = ({
         existingLogoUrl: attributes.logo_url || null,
         primaryColor: attributes.primary_color || "#00A7B5",
         secondaryColor: attributes.secondary_color || "#202242",
+        fontFamily:
+          typeof (attributes as any).font_name === "string"
+            ? (attributes as any).font_name
+            : "",
         registrationLimit:
           attributes.registration_limit !== undefined &&
           attributes.registration_limit !== null
@@ -935,6 +1038,10 @@ const MainData = ({
               existingLogoUrl: attributes.logo_url || null,
               primaryColor: attributes.primary_color || "#00A7B5",
               secondaryColor: attributes.secondary_color || "#202242",
+              fontFamily:
+                typeof (attributes as any).font_name === "string"
+                  ? (attributes as any).font_name
+                  : "",
               registrationLimit:
                 attributes.registration_limit !== undefined &&
                 attributes.registration_limit !== null
@@ -1673,6 +1780,50 @@ const MainData = ({
                 {validationErrors.location}
               </p>
             )}
+          </div>
+
+          {/* Font for registration page and badge – font_name used as font-family in user registration and print badges. Custom dropdown with fixed max height so list doesn't fill screen. */}
+          <div ref={fontDropdownRef} className="relative">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Font (registration & badge)
+            </label>
+            <button
+              type="button"
+              onClick={() => setFontDropdownOpen((prev) => !prev)}
+              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-white text-left flex items-center justify-between gap-2"
+            >
+              <span>
+                {EVENT_FONT_OPTIONS.find((o) => o.value === (formData.fontFamily ?? ""))?.label ?? "Default (app font)"}
+              </span>
+              <ChevronDown className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${fontDropdownOpen ? "rotate-180" : ""}`} />
+            </button>
+            {fontDropdownOpen && (
+              <div
+                className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg overflow-hidden"
+                style={{ maxHeight: "220px" }}
+              >
+                <div className="overflow-y-auto py-1" style={{ maxHeight: "216px" }}>
+                  {EVENT_FONT_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value || "default"}
+                      type="button"
+                      onClick={() => {
+                        handleInputChange("fontFamily", opt.value);
+                        setFontDropdownOpen(false);
+                      }}
+                      className={`w-full px-3 sm:px-4 py-2.5 text-left text-sm hover:bg-gray-100 transition-colors ${
+                        (formData.fontFamily ?? "") === opt.value ? "bg-teal-50 text-teal-700 font-medium" : "text-gray-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="mt-1 text-xs text-gray-500">
+              Applied to the public registration form and printed badges. Default uses the app font.
+            </p>
           </div>
 
           {/* Registration Limit – optional, both express & advance */}

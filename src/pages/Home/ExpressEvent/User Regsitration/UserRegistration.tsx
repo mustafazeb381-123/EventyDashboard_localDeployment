@@ -57,6 +57,13 @@ interface EventData {
   };
 }
 
+/** Get event font from attributes; empty = use app default. API uses font_name. */
+function getEventFontFamily(attributes: { font_name?: string } | null | undefined): string | undefined {
+  const font = attributes?.font_name;
+  if (typeof font !== "string" || !font.trim()) return undefined;
+  return `"${font.trim()}", sans-serif`;
+}
+
 function UserRegistration() {
   const { id: routeId } = useParams();
   const [searchParams] = useSearchParams();
@@ -108,6 +115,23 @@ function UserRegistration() {
       });
     setIsLangDropdownOpen(false);
   };
+
+  // Load Google Font when event has a custom font (for registration page)
+  const eventFont = eventData?.data?.attributes?.font_name;
+  useEffect(() => {
+    if (typeof eventFont !== "string" || !eventFont.trim()) return;
+    const id = "event-font-" + eventFont.trim().replace(/[^a-z0-9]/gi, "");
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${eventFont.trim().replace(/\s+/g, "+")}&display=swap`;
+    document.head.appendChild(link);
+    return () => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    };
+  }, [eventFont]);
 
   // Close language dropdown when clicking outside
   useEffect(() => {
@@ -392,6 +416,7 @@ function UserRegistration() {
             registration_page_banner: raw.registration_page_banner_url,
             registration_page_banner_url: raw.registration_page_banner_url,
             badge_background_url: raw.badge_background_url,
+            font_name: raw.font_name ?? "",
           },
         },
       };
@@ -767,8 +792,15 @@ function UserRegistration() {
       customFormBuilderTemplate?.formBuilderData?.languageMode ?? "dual";
     const isDualLanguage = formLanguageMode === "dual";
 
+    const registrationFontStyle = getEventFontFamily(eventData?.data?.attributes)
+      ? { fontFamily: getEventFontFamily(eventData?.data?.attributes) }
+      : undefined;
+
     return (
-      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
+      <div
+        className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6"
+        style={registrationFontStyle}
+      >
         {/* Notification Toast - Only shows on submit */}
         {notification && (
           <div
@@ -880,8 +912,15 @@ function UserRegistration() {
     );
   }
 
+  const defaultTemplateFontStyle = getEventFontFamily(eventData?.data?.attributes)
+    ? { fontFamily: getEventFontFamily(eventData?.data?.attributes) }
+    : undefined;
+
   return (
-    <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
+    <div
+      className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6"
+      style={defaultTemplateFontStyle}
+    >
       {/* Notification Toast - Only shows on submit */}
       {notification && (
         <div

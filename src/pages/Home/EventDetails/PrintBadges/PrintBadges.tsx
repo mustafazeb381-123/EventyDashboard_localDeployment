@@ -99,6 +99,23 @@ function PrintBadges() {
   // Integrate the custom print styles hook
   usePrintStyles("badges-print-container", isPrinting);
 
+  // Load Google Font when event has a custom font – used only by the badge templates (printed content), not by the rest of the Print Badges page
+  const eventFont = eventData?.attributes?.font_name;
+  useEffect(() => {
+    if (typeof eventFont !== "string" || !eventFont.trim()) return;
+    const id = "print-badge-font-" + eventFont.trim().replace(/[^a-z0-9]/gi, "");
+    if (document.getElementById(id)) return;
+    const link = document.createElement("link");
+    link.id = id;
+    link.rel = "stylesheet";
+    link.href = `https://fonts.googleapis.com/css2?family=${eventFont.trim().replace(/\s+/g, "+")}&display=swap`;
+    document.head.appendChild(link);
+    return () => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    };
+  }, [eventFont]);
+
   // Auto-hide notification after 3 seconds
   useEffect(() => {
     if (notification) {
@@ -184,26 +201,33 @@ function PrintBadges() {
   // Fetch selected badge template from API - using default endpoint like registration forms
   const fetchSelectedBadgeTemplate = async (eventId: string) => {
     try {
-      // Get event data
+      // Get event data (API response logged; font_name from event is applied only to badge content when printing)
       const eventResponse = await getEventbyId(eventId);
+      console.log("[Print Badges] GET event API – response:", eventResponse?.data);
       const eventData = eventResponse?.data?.data;
       setEventData(eventData);
+      if (eventData?.attributes) {
+        console.log("[Print Badges] GET event API – event attributes (font_name for badges):", {
+          font_name: eventData.attributes.font_name,
+          name: eventData.attributes.name,
+        });
+      }
 
       // Get the default badge template directly (same pattern as registration templates)
       const templateResponse = await getBadgeApi(eventId);
+      console.log("[Print Badges] GET default badge template API – response:", templateResponse?.data);
       const templateData = templateResponse?.data?.data;
 
       if (templateData) {
         setSelectedBadgeTemplate(templateData);
-        console.log("=== Badge Template Selection (Default Endpoint) ===");
-        console.log("Selected template name:", templateData?.attributes?.name);
-        console.log("Selected template ID:", templateData?.id);
-        console.log("Is default:", templateData?.attributes?.default);
-        console.log("Template type:", templateData?.attributes?.template_data?.type);
-        console.log("Background image URL:", templateData?.attributes?.background_image);
-        console.log("Template data bgImage:", templateData?.attributes?.template_data?.bgImage);
+        console.log("[Print Badges] Badge template selected:", {
+          name: templateData?.attributes?.name,
+          id: templateData?.id,
+          default: templateData?.attributes?.default,
+          type: templateData?.attributes?.template_data?.type,
+        });
       } else {
-        console.log("No default badge template found!");
+        console.log("[Print Badges] No default badge template found");
         setSelectedBadgeTemplate(null);
       }
     } catch (error) {
@@ -232,6 +256,7 @@ function PrintBadges() {
       // Use per_page=10 so API returns correct total_pages (e.g. 12 users -> 2 pages). Larger per_page can be capped by backend and total_pages can be wrong.
       const perPage = 10;
       const first = await getEventUsers(id, { page: 1, per_page: perPage });
+      console.log("[Print Badges] GET event users API (page 1) – response:", first?.data);
       const paginationMeta =
         first.data?.meta?.pagination || first.data?.pagination;
       const totalPages = paginationMeta?.total_pages ?? 1;
