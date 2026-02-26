@@ -432,9 +432,10 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       );
     }
 
-    // Image – content holds image URL (data URL or external)
+    // Image – content holds image URL (data URL or external). In preview (non-builder), hide when no image.
     if (field.type === "image") {
       const src = field.content?.trim() || null;
+      if (!builderMode && !src) return null;
       const isPlaceholder = !src;
       return (
         <div
@@ -468,9 +469,10 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       );
     }
 
-    // Icon – content holds icon image URL (data URL or external)
+    // Icon – content holds icon image URL (data URL or external). In preview (non-builder), hide when no image.
     if (field.type === "icon") {
       const src = field.content?.trim() || null;
+      if (!builderMode && !src) return null;
       const isPlaceholder = !src;
       return (
         <div
@@ -643,11 +645,11 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     return null;
   };
 
-  /** Renders a container and its children (no DnD) – same screenshot design */
+  /** Renders a container in preview: only the laid-out children, no CONTAINER/ROW/COLUMN chrome */
   const renderContainerBlock = (field: RsvpFormField): React.ReactNode => {
     const childFields = getChildFields(field);
+    if (childFields.length === 0) return null;
     const type = field.containerType ?? "container";
-    const { borderColor, headerColor, iconColor, Icon } = CONTAINER_STYLES[type];
     const layout = field.layoutProps ?? {};
     const contentStyle: React.CSSProperties = {
       display: "flex",
@@ -656,58 +658,12 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       flexWrap: layout.flexWrap as React.CSSProperties["flexWrap"],
       alignItems: layout.alignItems as React.CSSProperties["alignItems"],
       justifyContent: layout.justifyContent as React.CSSProperties["justifyContent"],
-      minHeight: childFields.length === 0 ? 40 : undefined,
-      padding: childFields.length === 0 ? 16 : 8,
     };
     return (
-      <div key={field.id} className="w-full" style={{ marginBottom: 12 }}>
-        <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: headerColor }}>
-          {type}
-        </div>
-        <div style={{ borderTop: `1px solid ${borderColor}`, marginLeft: -2, marginRight: -2, marginBottom: 8 }} />
-        <div
-          style={{
-            border: `1px solid ${borderColor}`,
-            borderRadius: 6,
-            padding: "8px 10px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            backgroundColor: "#fff",
-          }}
-        >
-          <Icon size={18} className={iconColor} />
-          <span className="text-sm font-medium text-slate-700 capitalize">{type}</span>
-        </div>
-        <div
-          style={{
-            border: `1px solid ${borderColor}`,
-            borderTop: "none",
-            borderTopLeftRadius: 0,
-            borderTopRightRadius: 0,
-            borderRadius: 6,
-            padding: 12,
-            backgroundColor: "#fff",
-            minHeight: 56,
-          }}
-        >
-          <div
-            style={{
-              ...contentStyle,
-              border: "1px dashed #d1d5db",
-              borderRadius: 4,
-              backgroundColor: "#fafafa",
-            }}
-          >
-            {childFields.length === 0 ? (
-              <span className="text-sm italic text-slate-400 w-full text-center block">Drop fields here</span>
-            ) : (
-              childFields.map((child) =>
-                child.containerType ? renderContainerBlock(child) : renderField(child)
-              )
-            )}
-          </div>
-        </div>
+      <div key={field.id} className="w-full" style={{ marginBottom: 12, ...contentStyle }}>
+        {childFields.map((child) =>
+          child.containerType ? renderContainerBlock(child) : renderField(child)
+        )}
       </div>
     );
   };
@@ -798,8 +754,8 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
           outline-offset: 2px;
         }
       `}</style>
-      {/* Header banner – only show when there is an image or builder can add one */}
-      {(bannerUrl || onBannerClick) && (
+      {/* Header banner – show only when there is an image; in builder mode also show placeholder so user can add */}
+      {(bannerUrl || (builderMode && onBannerClick)) && (
         <div
           role={onBannerClick ? "button" : undefined}
           tabIndex={onBannerClick ? 0 : undefined}
@@ -913,8 +869,8 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
         ) : null}
       </div>
 
-      {/* Footer image – only show when there is an image or builder can add one */}
-      {(footerBannerUrl || onFooterClick) && (
+      {/* Footer image – show only when there is an image; in builder mode also show placeholder so user can add */}
+      {(footerBannerUrl || (builderMode && onFooterClick)) && (
         <div
           className="border-t border-slate-200 pb-6"
           style={{
