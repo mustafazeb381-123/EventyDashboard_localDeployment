@@ -19,6 +19,11 @@ import {
   Lock,
   Mail,
   UserCog,
+  LayoutTemplate,
+  Mic,
+  Building2,
+  Handshake,
+  MapPin,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Assets from "@/utils/Assets";
@@ -151,6 +156,14 @@ const SideBar = ({
     if (path.includes("/galleries")) {
       return "Galleries";
     }
+    if (path.includes("/event-content")) {
+      if (path.endsWith("/speakers")) return "Speakers";
+      if (path.endsWith("/exhibitors")) return "Exhibitors";
+      if (path.endsWith("/partners")) return "Partners";
+      if (path.endsWith("/agenda")) return "Event Content Agenda";
+      if (path.endsWith("/area")) return "Area";
+      return "Event Content";
+    }
     if (
       path === "/user/registration" ||
       path.startsWith("/user/registration")
@@ -210,6 +223,9 @@ const SideBar = ({
       currentPath.includes("/communication/QA")
     ) {
       setExpandedMenus((prev) => ({ ...prev, Communications: true }));
+    }
+    if (currentPath.includes("/event-content")) {
+      setExpandedMenus((prev) => ({ ...prev, "Event Content": true }));
     }
 
     // Get registered users count when route or eventId changes
@@ -277,6 +293,61 @@ const SideBar = ({
       label: "Galleries",
       path: currentEventId ? `/home/${currentEventId}/galleries` : "/galleries",
       availableForExpress: false,
+    },
+    {
+      icon: LayoutTemplate,
+      label: "Event Content",
+      path: currentEventId
+        ? `/home/${currentEventId}/event-content`
+        : "#",
+      availableForExpress: false,
+      submenu: [
+        {
+          label: "Speakers",
+          icon: Mic,
+          path: currentEventId
+            ? `/home/${currentEventId}/event-content/speakers`
+            : "#",
+          availableForExpress: false,
+          sidebarActiveKey: "Speakers",
+        },
+        {
+          label: "Exhibitors",
+          icon: Building2,
+          path: currentEventId
+            ? `/home/${currentEventId}/event-content/exhibitors`
+            : "#",
+          availableForExpress: false,
+          sidebarActiveKey: "Exhibitors",
+        },
+        {
+          label: "Partners",
+          icon: Handshake,
+          path: currentEventId
+            ? `/home/${currentEventId}/event-content/partners`
+            : "#",
+          availableForExpress: false,
+          sidebarActiveKey: "Partners",
+        },
+        {
+          label: "Agenda",
+          icon: NotepadText,
+          path: currentEventId
+            ? `/home/${currentEventId}/event-content/agenda`
+            : "#",
+          availableForExpress: false,
+          sidebarActiveKey: "Event Content Agenda",
+        },
+        {
+          label: "Area",
+          icon: MapPin,
+          path: currentEventId
+            ? `/home/${currentEventId}/event-content/area`
+            : "#",
+          availableForExpress: false,
+          sidebarActiveKey: "Area",
+        },
+      ],
     },
     // {
     //   icon: UserCircle,
@@ -549,7 +620,14 @@ const SideBar = ({
                       <div className="ml-6 mt-1 space-y-1">
                         {item.submenu.map((subItem, subIndex) => {
                           const SubIcon = subItem.icon;
-                          const isSubActive = activeItem === subItem.label;
+                          const subActiveKey =
+                            "sidebarActiveKey" in subItem &&
+                            typeof (subItem as { sidebarActiveKey?: string })
+                              .sidebarActiveKey === "string"
+                              ? (subItem as { sidebarActiveKey: string })
+                                  .sidebarActiveKey
+                              : subItem.label;
+                          const isSubActive = activeItem === subActiveKey;
                           const isSubDisabled =
                             isExpressEvent && !subItem.availableForExpress;
                           return (

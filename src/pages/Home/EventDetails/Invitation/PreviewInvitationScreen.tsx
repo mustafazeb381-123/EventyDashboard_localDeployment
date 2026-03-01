@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, X } from "lucide-react";
+import toast, { Toaster } from "react-hot-toast";
 import type { ParsedInvitee } from "./InviteesTab";
 import type { InvitationForm } from "./newInvitationTypes";
 
@@ -38,8 +39,8 @@ export function PreviewInvitationScreen({
   eventId,
   emailHtml,
   parsedInvitees,
-  onBack,
-  onSendTestEmail,
+  onBack: _onBack,
+  onSendTestEmail: _onSendTestEmail,
   onSendInvitation,
   isSending = false,
   isCreatingInvitation = false,
@@ -54,6 +55,31 @@ export function PreviewInvitationScreen({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showTestEmailModal, setShowTestEmailModal] = useState(false);
+  const [testEmail, setTestEmail] = useState("");
+
+  const handleSendTestEmailSubmit = () => {
+    const trimmed = testEmail.trim();
+    if (!trimmed) {
+      toast.error("Please enter an email address.");
+      return;
+    }
+    // Simple email format check
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(trimmed)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    // Static UI: show success toast only (API will be implemented later)
+    toast.success(`Test email sent to ${trimmed}`);
+    setTestEmail("");
+    setShowTestEmailModal(false);
+  };
+
+  const closeTestEmailModal = () => {
+    setShowTestEmailModal(false);
+    setTestEmail("");
+  };
 
   const filteredUsers = useMemo(() => {
     if (!searchTerm.trim()) return parsedInvitees;
@@ -111,6 +137,7 @@ export function PreviewInvitationScreen({
 
   return (
     <div className="min-h-screen w-full flex flex-col bg-white">
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       {/* ── Title bar ── */}
       <div className="shrink-0 text-center py-6 border-b border-gray-100">
         <h1 className="text-2xl font-bold text-gray-900">Preview Invitation</h1>
@@ -178,7 +205,7 @@ export function PreviewInvitationScreen({
           <div className="flex items-center justify-end gap-3">
             <button
               type="button"
-              onClick={onSendTestEmail}
+              onClick={() => setShowTestEmailModal(true)}
               disabled={busy}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -425,6 +452,73 @@ export function PreviewInvitationScreen({
           </div>
         </div>
       </div>
+
+      {/* Send Test Email modal */}
+      {showTestEmailModal && (
+        <div
+          className="fixed inset-0 z-[60] bg-slate-900/60 flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) closeTestEmailModal();
+          }}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+              <h3 className="text-lg font-semibold text-slate-800">
+                Send Test Email
+              </h3>
+              <button
+                type="button"
+                onClick={closeTestEmailModal}
+                className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-slate-600">
+              Send a test invitation to this address.
+              </p>
+              <div>
+                <label
+                  htmlFor="test-email-input"
+                  className="block text-sm font-medium text-slate-700 mb-1.5"
+                >
+                  Email address
+                </label>
+                <input
+                  id="test-email-input"
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="e.g. you@example.com"
+                  className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  autoFocus
+                />
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50">
+              <button
+                type="button"
+                onClick={closeTestEmailModal}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSendTestEmailSubmit}
+                className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              >
+                Send Test Email
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         .dir-rtl {

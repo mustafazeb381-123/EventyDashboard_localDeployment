@@ -1,27 +1,34 @@
-import AdvanceBadge from "@/components/AdvanceEventComponent/AdvanceBadge";
-import AdvanceConfirmation from "@/components/AdvanceEventComponent/AdvanceConfirmation";
-import AdvanceRegistration from "@/components/AdvanceEventComponent/AdvanceRegistration";
-import AdvanceTicket from "@/components/AdvanceEventComponent/AdvanceTickt";
 import AdvanceAgenda from "@/components/AdvanceEventContent/AdvanceAgenda";
 import AdvanceArea from "@/components/AdvanceEventContent/AdvanceArea";
 import AdvanceExhibitors from "@/components/AdvanceEventContent/AdvanceExhibitors";
 import AdvancePartners from "@/components/AdvanceEventContent/AdvancePartners";
 import AdvanceSpeaker from "@/components/AdvanceEventContent/AdvanceSpeaker";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 interface AdvanceEventProps {
   onComplete?: (eventId?: string | number) => void;
   onPrevious?: () => void;
   eventId?: string | number;
   plan?: string;
+  /** When used from sidebar routes, open at this step (0=Speakers, 1=Exhibitors, 2=Partners, 3=Agenda, 4=Area). */
+  initialStep?: number;
 }
 
 const AdvanceEventContent: React.FC<AdvanceEventProps> = ({
   onComplete,
   onPrevious,
   eventId,
+  initialStep = 0,
 }) => {
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(
+    Math.max(0, Math.min(4, initialStep))
+  );
+
+  // Sync step when initialStep changes (e.g. sidebar navigation to another section)
+  useEffect(() => {
+    const step = Math.max(0, Math.min(4, initialStep));
+    setCurrentStep(step);
+  }, [initialStep]);
 
   const steps = [
     { component: AdvanceSpeaker, name: "Advance Speaker" },

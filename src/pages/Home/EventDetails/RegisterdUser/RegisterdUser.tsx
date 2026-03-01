@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import * as XLSX from "xlsx";
 import { deleteEventUser } from "@/apis/apiHelpers";
 import { updateEventUser } from "@/apis/apiHelpers";
 import { sendCredentials } from "@/apis/apiHelpers";
@@ -1087,7 +1088,7 @@ function RegisterdUser() {
         ...baseHeaders,
         ...customKeys.map((k) => `Custom: ${k}`),
       ];
-      const rows = users.map((user: any) => {
+      const rowArrays = users.map((user: any) => {
         const status = getApprovalStatus(user);
         const org =
           user?.attributes?.custom_fields?.title ||
@@ -1126,16 +1127,23 @@ function RegisterdUser() {
         const customValues = customKeys.map((k) =>
           formatCustomFieldValue(user?.attributes?.custom_fields?.[k]),
         );
-        return [...baseValues, ...customValues].join("\t");
+        return [...baseValues, ...customValues];
       });
-      const tsv = [headers.join("\t"), ...rows].join("\n");
-      const blob = new Blob(["\uFEFF" + tsv], {
-        type: "application/vnd.ms-excel;charset=utf-8",
+      const sheetData: (string | number)[][] = [headers, ...rowArrays];
+      const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Registered Users");
+      const wbout = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      }) as number[];
+      const blob = new Blob([new Uint8Array(wbout)], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `registered_users_${eventId}_${new Date().toISOString().slice(0, 10)}.xls`;
+      a.download = `registered_users_${eventId}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
       showNotification(`Exported ${users.length} users (Excel).`, "success");

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, FileDown, FileSpreadsheet } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
+import * as XLSX from "xlsx";
 import Search from "@/components/Search";
 import Pagination from "@/components/Pagination";
 import {
@@ -571,7 +572,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                 "Check-In Time",
                 "Check-Out Time",
             ];
-            const rows = users.map((user: EnrolledUser) => {
+            const rowArrays = users.map((user: EnrolledUser) => {
                 const status =
                     view === "registered_users"
                         ? "Not Checked In"
@@ -588,16 +589,23 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     status,
                     checkIn ? formatDateTime(checkIn) : "",
                     checkOut ? formatDateTime(checkOut) : "",
-                ].join("\t");
+                ];
             });
-            const tsv = [baseHeaders.join("\t"), ...rows].join("\n");
-            const blob = new Blob(["\uFEFF" + tsv], {
-                type: "application/vnd.ms-excel;charset=utf-8",
+            const sheetData: (string | number)[][] = [baseHeaders, ...rowArrays];
+            const worksheet = XLSX.utils.aoa_to_sheet(sheetData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Gate");
+            const wbout = XLSX.write(workbook, {
+                bookType: "xlsx",
+                type: "array",
+            }) as number[];
+            const blob = new Blob([new Uint8Array(wbout)], {
+                type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = `gate_${suffix}_${eventId}_${sessionAreaId}_${new Date().toISOString().slice(0, 10)}.xls`;
+            a.download = `gate_${suffix}_${eventId}_${sessionAreaId}_${new Date().toISOString().slice(0, 10)}.xlsx`;
             a.click();
             URL.revokeObjectURL(url);
             showNotification(`Exported ${users.length} users (Excel).`, "success");
