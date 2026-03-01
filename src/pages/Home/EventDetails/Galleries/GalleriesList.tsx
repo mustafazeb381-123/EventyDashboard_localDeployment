@@ -5,6 +5,7 @@ import {
   Search,
   Trash2,
   Image as ImageIcon,
+  ImageOff,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -71,6 +72,12 @@ export default function GalleriesList() {
     type: "success" | "error";
   } | null>(null);
 
+  // Track cover images that failed to load (e.g. expired Active Storage URLs)
+  const [brokenCoverImageIds, setBrokenCoverImageIds] = useState<Set<number>>(new Set());
+  const markCoverBroken = (imageId: number) => {
+    setBrokenCoverImageIds((prev) => new Set(prev).add(imageId));
+  };
+
   // Form State
   const [formData, setFormData] = useState({
     title: "",
@@ -92,6 +99,8 @@ export default function GalleriesList() {
       // Handle nested JSON:API structure: response.data.data or response.data
       const responseData = output.data?.data || output.data;
       const galleriesArray = Array.isArray(responseData) ? responseData : [];
+
+      setBrokenCoverImageIds(new Set()); // Reset when galleries are re-fetched (fresh URLs)
 
       const mappedGalleries = galleriesArray.map((item: any) => {
         // Handle JSON:API format with attributes
@@ -319,11 +328,29 @@ export default function GalleriesList() {
                 {/* Cover Image */}
                 <div className="h-52 bg-gradient-to-br from-gray-100 to-gray-50 relative overflow-hidden">
                   {coverImage ? (
-                    <img
-                      src={coverImage.url}
-                      alt={gallery.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
+                    brokenCoverImageIds.has(coverImage.id) ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-500">
+                        <ImageOff className="w-12 h-12 mb-1" />
+                        <span className="text-xs mb-1">Image unavailable</span>
+                        <a
+                          href={coverImage.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Open in new tab
+                        </a>
+                      </div>
+                    ) : (
+                      <img
+                        src={coverImage.url}
+                        alt={gallery.title}
+                        onError={() => markCoverBroken(coverImage.id)}
+                        referrerPolicy="no-referrer"
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                    )
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <div className="text-center">

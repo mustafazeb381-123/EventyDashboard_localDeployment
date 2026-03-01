@@ -11,6 +11,7 @@ import {
   Loader2,
   Eye,
   Maximize2,
+  ImageOff,
 } from "lucide-react";
 import imageCompression from "browser-image-compression";
 import {
@@ -65,9 +66,16 @@ function Galleries() {
   const [showImageViewer, setShowImageViewer] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
+  // Track images that failed to load (e.g. expired Active Storage URLs)
+  const [brokenImageIds, setBrokenImageIds] = useState<Set<number>>(new Set());
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const imagesPerPage = 12;
+
+  const markImageBroken = (id: number) => {
+    setBrokenImageIds((prev) => new Set(prev).add(id));
+  };
 
   // Upload
   const [uploadingFiles, setUploadingFiles] = useState<
@@ -128,6 +136,7 @@ function Galleries() {
       if (Array.isArray(imagesList) && imagesList.length > 0) {
         console.log("Setting images:", imagesList);
         setImages(imagesList.map((img: any) => ({ ...img, selected: false })));
+        setBrokenImageIds(new Set()); // Reset when gallery is re-fetched (fresh URLs)
       } else {
         // If not provided, maybe empty or need different call. Warn log.
         console.warn("No images found in gallery response", galleryData);
@@ -662,12 +671,30 @@ function Galleries() {
                           : ""
                       }`}
                     >
-                      <img
-                        src={image.url}
-                        alt={image.filename}
-                        onClick={() => openImageViewer(globalIndex)}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
-                      />
+                      {brokenImageIds.has(image.id) ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-500 p-2">
+                          <ImageOff className="w-10 h-10 mb-1 shrink-0" />
+                          <span className="text-xs text-center line-clamp-2 mb-1">Image unavailable</span>
+                          <a
+                            href={image.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-blue-600 hover:underline"
+                          >
+                            Open in new tab
+                          </a>
+                        </div>
+                      ) : (
+                        <img
+                          src={image.url}
+                          alt={image.filename}
+                          onClick={() => openImageViewer(globalIndex)}
+                          onError={() => markImageBroken(image.id)}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
+                        />
+                      )}
 
                       {/* Selection overlay */}
                       <div
@@ -826,11 +853,29 @@ function Galleries() {
 
               {/* Main image */}
               <div className="max-w-7xl max-h-full flex flex-col items-center">
-                <img
-                  src={images[currentImageIndex]?.url}
-                  alt={images[currentImageIndex]?.filename || "Gallery image"}
-                  className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
-                />
+                {images[currentImageIndex] && brokenImageIds.has(images[currentImageIndex].id) ? (
+                  <div className="max-w-full max-h-[75vh] flex flex-col items-center justify-center bg-gray-800/80 rounded-lg p-12 min-h-[300px]">
+                    <ImageOff className="w-20 h-20 text-gray-400 mb-3" />
+                    <p className="text-gray-400 text-sm">Image unavailable in page</p>
+                    <p className="text-gray-500 text-xs mt-1">Server may block embed. Open link in a new tab to view.</p>
+                    <a
+                      href={images[currentImageIndex]?.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+                    >
+                      Open in new tab
+                    </a>
+                  </div>
+                ) : (
+                  <img
+                    src={images[currentImageIndex]?.url}
+                    alt={images[currentImageIndex]?.filename || "Gallery image"}
+                    onError={() => images[currentImageIndex] && markImageBroken(images[currentImageIndex].id)}
+                    referrerPolicy="no-referrer"
+                    className="max-w-full max-h-[75vh] object-contain rounded-lg shadow-2xl"
+                  />
+                )}
 
                 {/* Image info */}
                 <div className="mt-4 text-center text-white">
@@ -867,11 +912,19 @@ function Galleries() {
                             : "border-transparent opacity-60 hover:opacity-100"
                         }`}
                       >
-                        <img
-                          src={img.url}
-                          alt={img.filename}
-                          className="w-full h-full object-cover"
-                        />
+                        {brokenImageIds.has(img.id) ? (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-700 text-gray-500">
+                            <ImageOff className="w-6 h-6" />
+                          </div>
+                        ) : (
+                          <img
+                            src={img.url}
+                            alt={img.filename}
+                            onError={() => markImageBroken(img.id)}
+                            referrerPolicy="no-referrer"
+                            className="w-full h-full object-cover"
+                          />
+                        )}
                       </button>
                     ))}
                   </div>
