@@ -5,9 +5,11 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  pointerWithin,
+  rectIntersection,
 } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
+import type { CollisionDetection } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import {
   Save,
@@ -391,6 +393,26 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
     return false;
   };
 
+  /** Prefer innermost container when pointer is in nested drop zones (e.g. row > container). */
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args);
+    if (pointerCollisions.length === 0) return rectIntersection(args);
+    if (pointerCollisions.length <= 1) return pointerCollisions;
+    const { droppableRects } = args;
+    const containerIds = pointerCollisions.filter((c) => String(c.id).startsWith("container:"));
+    if (containerIds.length <= 1) return pointerCollisions;
+    containerIds.sort((a, b) => {
+      const rectA = droppableRects.get(a.id);
+      const rectB = droppableRects.get(b.id);
+      if (!rectA || !rectB) return 0;
+      const areaA = rectA.width * rectA.height;
+      const areaB = rectB.width * rectB.height;
+      return areaA - areaB;
+    });
+    const nonContainer = pointerCollisions.filter((c) => !String(c.id).startsWith("container:"));
+    return [...containerIds, ...nonContainer];
+  };
+
   const handleDragStart = () => {
     document.body.style.cursor = "grabbing";
   };
@@ -439,6 +461,26 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
               : f
           );
           return [...updated, newField];
+        });
+        return;
+      }
+
+      // Dropped on a non-container field: insert into its parent (or at root after it)
+      const parentId = findParentContainerId(overId);
+      if (parentId) {
+        setFormFields((prev) => {
+          const parent = prev.find((f) => f.id === parentId);
+          if (!parent) return [...prev, newField];
+          const children = [...(parent.children || [])];
+          const idx = children.indexOf(overId);
+          const insertAt = idx === -1 ? children.length : idx + 1;
+          children.splice(insertAt, 0, newField.id);
+          return [
+            ...prev.map((f) =>
+              f.id === parentId ? { ...f, children } : f
+            ),
+            newField,
+          ];
         });
         return;
       }
@@ -673,7 +715,7 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={collisionDetection}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >

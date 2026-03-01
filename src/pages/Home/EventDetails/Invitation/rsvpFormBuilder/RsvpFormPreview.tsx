@@ -146,6 +146,8 @@ function DroppableContainerNode({
             border: "1px dashed #d1d5db",
             borderRadius: 4,
             padding: childFields.length === 0 ? 16 : 8,
+            paddingBottom: childFields.length > 0 ? 56 : 10,
+            minHeight: childFields.length > 0 ? 64 : undefined,
             backgroundColor: isOver ? "rgba(99, 102, 241, 0.06)" : "#fafafa",
           }}
           className={isOver ? "ring-2 ring-indigo-400" : ""}
@@ -668,7 +670,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     );
   };
 
-  /** Form body: tree of root fields, with optional DnD in builder mode */
+  /** Form body: tree of root fields, with optional DnD in builder mode. Extra padding when items exist so you can drop multiple fields (invisible drop area, no "Drop fields here" box). */
   const formBodyContent = builderMode ? (
     <div
       ref={mainDropZone.setNodeRef}
@@ -676,6 +678,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       style={{
         maxWidth: "100%",
         minHeight: rootFields.length === 0 ? 80 : undefined,
+        paddingBottom: rootFields.length > 0 ? 48 : undefined,
         ...(theme?.formFieldsAlignment === "center" && {
           marginLeft: "auto",
           marginRight: "auto",

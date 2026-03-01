@@ -344,6 +344,13 @@ function InvitationReport() {
   const startItem = (safePage - 1) * pageSize + 1;
   const endItem = Math.min(safePage * pageSize, filteredUsers.length);
 
+  /** Hide Registered column when both Registered and Not Registered counts are 0 */
+  const showRegisteredColumn = (stats.registered > 0 || stats.sent > 0);
+  /** Hide Confirmed column when all RSVP counts (Approved, Pending, Rejected) are 0 */
+  const showConfirmedColumn =
+    rsvpStatus.attended > 0 || rsvpStatus.pending > 0 || rsvpStatus.decline > 0;
+  const tableColumnCount = 10 - (showRegisteredColumn ? 0 : 1) - (showConfirmedColumn ? 0 : 1);
+
   function StatusIconCell({
     status,
     type,
@@ -877,14 +884,18 @@ function InvitationReport() {
                     <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
                     <th className="px-4 py-3 text-left text-sm font-semibold">STATUS</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Registered</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Confirmed</th>
+                    {showRegisteredColumn && (
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Registered</th>
+                    )}
+                    {showConfirmedColumn && (
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Confirmed</th>
+                    )}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-4 py-12 text-center text-gray-500 text-sm">
+                      <td colSpan={tableColumnCount} className="px-4 py-12 text-center text-gray-500 text-sm">
                         {allUsers.length === 0 ? "No invitation users for this invitation." : "No users match your search."}
                       </td>
                     </tr>
@@ -907,12 +918,16 @@ function InvitationReport() {
                       <td className="px-4 py-3">
                         <StatusBadge delivery={user.delivery} />
                       </td>
-                      <td className="px-4 py-3">
-                        <StatusIconCell status={user.registered} type="bool" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <ConfirmedBadge rsvpStatus={user.rsvpStatus} />
-                      </td>
+                      {showRegisteredColumn && (
+                        <td className="px-4 py-3">
+                          <StatusIconCell status={user.registered} type="bool" />
+                        </td>
+                      )}
+                      {showConfirmedColumn && (
+                        <td className="px-4 py-3">
+                          <ConfirmedBadge rsvpStatus={user.rsvpStatus} />
+                        </td>
+                      )}
                       <td className="px-4 py-3 no-print">
                         <div className="flex items-center gap-2">
                           {duplicateEmailsSet.has((user.email ?? "").toLowerCase()) && (
@@ -1049,8 +1064,12 @@ function InvitationReport() {
                 <th className="px-3 py-2 text-left font-semibold">Email</th>
                 <th className="px-3 py-2 text-left font-semibold">Phone</th>
                 <th className="px-3 py-2 text-left font-semibold">Status</th>
-                <th className="px-3 py-2 text-left font-semibold">Registered</th>
-                <th className="px-3 py-2 text-left font-semibold">Confirmed</th>
+                {showRegisteredColumn && (
+                  <th className="px-3 py-2 text-left font-semibold">Registered</th>
+                )}
+                {showConfirmedColumn && (
+                  <th className="px-3 py-2 text-left font-semibold">Confirmed</th>
+                )}
                 <th className="px-3 py-2 text-left font-semibold">Duplicate email</th>
               </tr>
             </thead>
@@ -1063,8 +1082,12 @@ function InvitationReport() {
                   <td className="px-3 py-2 text-gray-600">{user.email}</td>
                   <td className="px-3 py-2 text-gray-600">{user.phone}</td>
                   <td className="px-3 py-2">{user.delivery === "delivered" ? "Sent" : user.delivery === "failed" ? "Rejected" : "Pending"}</td>
-                  <td className="px-3 py-2">{user.registered ? "Yes" : "No"}</td>
-                  <td className="px-3 py-2">{user.rsvpStatus === "approved" ? "Approved" : user.rsvpStatus === "pending" ? "Pending" : "Rejected"}</td>
+                  {showRegisteredColumn && (
+                    <td className="px-3 py-2">{user.registered ? "Yes" : "No"}</td>
+                  )}
+                  {showConfirmedColumn && (
+                    <td className="px-3 py-2">{user.rsvpStatus === "approved" ? "Approved" : user.rsvpStatus === "pending" ? "Pending" : "Rejected"}</td>
+                  )}
                   <td className="px-3 py-2">{duplicateEmailsSet.has((user.email ?? "").toLowerCase()) ? "Yes" : "No"}</td>
                 </tr>
               ))}
