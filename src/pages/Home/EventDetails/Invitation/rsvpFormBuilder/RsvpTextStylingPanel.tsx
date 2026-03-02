@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { X, Code, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Code, ChevronDown, ChevronUp, Upload } from "lucide-react";
 import type { RsvpFormField } from "./types";
 
 interface RsvpTextStylingPanelProps {
   field: RsvpFormField;
   onUpdate: (field: RsvpFormField) => void;
   onClose: () => void;
+  /** When provided for image/icon fields, shows an Upload button to change the image */
+  onImageUploadRequest?: (fieldId: string) => void;
 }
 
 const AVAILABLE_VARIABLES = [
@@ -25,6 +27,7 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
   field,
   onUpdate,
   onClose,
+  onImageUploadRequest,
 }) => {
   const style = field.fieldStyle ?? {};
   const [showVariables, setShowVariables] = useState(false);
@@ -77,11 +80,21 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
       </div>
 
       <div className="p-5 space-y-5">
-        {/* Image / Icon: upload via form preview */}
+        {/* Image / Icon: upload from panel so click on preview = select only */}
         {(field.type === "image" || field.type === "icon") && (
-          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600">
-            <p className="font-medium text-slate-700 mb-1">{field.type === "image" ? "Image" : "Icon"}</p>
-            <p>Click on the {field.type} in the form preview to upload or replace.</p>
+          <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-sm text-slate-600 space-y-2">
+            <p className="font-medium text-slate-700">{field.type === "image" ? "Image" : "Icon"}</p>
+            <p>Upload or replace the {field.type} below.</p>
+            {onImageUploadRequest && (
+              <button
+                type="button"
+                onClick={() => onImageUploadRequest(field.id)}
+                className="flex items-center gap-2 w-full justify-center px-3 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-medium transition-colors"
+              >
+                <Upload size={18} />
+                {field.content?.trim() ? "Change image" : "Upload image"}
+              </button>
+            )}
           </div>
         )}
 
@@ -534,15 +547,32 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium mb-1 text-gray-600">Max width</label>
+              <label className="block text-xs font-medium mb-1 text-gray-600">Height</label>
               <input
                 type="text"
-                value={style.maxWidth ?? ""}
-                onChange={(e) => updateStyle({ maxWidth: e.target.value || undefined })}
+                value={style.height ?? ""}
+                onChange={(e) => updateStyle({ height: e.target.value || undefined })}
                 className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                placeholder="100%"
+                placeholder="e.g. 120px or auto"
               />
             </div>
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs font-medium mb-1 text-gray-600">Alignment</label>
+            <select
+              value={style.alignment ?? ""}
+              onChange={(e) =>
+                updateStyle({
+                  alignment: (e.target.value as "left" | "center" | "right") || undefined,
+                })
+              }
+              className="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
+            >
+              <option value="">Default</option>
+              <option value="left">Left</option>
+              <option value="center">Center</option>
+              <option value="right">Right</option>
+            </select>
           </div>
         </div>
 

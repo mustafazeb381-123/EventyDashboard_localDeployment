@@ -301,6 +301,9 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
       setFormFields((prev) =>
         prev.map((f) => (f.id === fieldId ? { ...f, content: dataUrl } : f))
       );
+      if (editingField?.id === fieldId) {
+        setEditingField((prev) => (prev ? { ...prev, content: dataUrl } : null));
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -315,9 +318,36 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
 
   const handleUpdateField = (updated: RsvpFormField) => {
     setFormFields((prev) =>
-      prev.map((f) => (f.id === updated.id ? updated : f))
+      prev.map((f) => {
+        if (f.id !== updated.id) return f;
+        // Merge so we never lose content (image/icon data URL) when panel sends style-only updates
+        const hasNewContent =
+          updated.content !== undefined &&
+          updated.content !== null &&
+          String(updated.content).trim() !== "";
+        const merged: RsvpFormField = {
+          ...f,
+          ...updated,
+          content: hasNewContent ? updated.content : f.content,
+          fieldStyle: { ...f.fieldStyle, ...updated.fieldStyle },
+        };
+        return merged;
+      })
     );
-    if (editingField?.id === updated.id) setEditingField(updated);
+    if (editingField?.id === updated.id) {
+      const existing = formFields.find((f) => f.id === updated.id);
+      const hasNewContent =
+        updated.content !== undefined &&
+        updated.content !== null &&
+        String(updated.content).trim() !== "";
+      const merged: RsvpFormField = {
+        ...existing,
+        ...updated,
+        content: hasNewContent ? updated.content : existing?.content,
+        fieldStyle: { ...existing?.fieldStyle, ...updated.fieldStyle },
+      } as RsvpFormField;
+      setEditingField(merged);
+    }
   };
 
   const handleAddField = (field: RsvpFormField) => {
@@ -851,7 +881,7 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
 
         {/* Right: Text styling or Theme */}
         {editingField && (
-          <RsvpTextStylingPanel field={editingField} onUpdate={handleUpdateField} onClose={() => setEditingField(null)} />
+          <RsvpTextStylingPanel field={editingField} onUpdate={handleUpdateField} onClose={() => setEditingField(null)} onImageUploadRequest={handleImageUploadRequest} />
         )}
         {showThemePanel && !editingField && (
           <RsvpThemeConfigPanel
@@ -908,7 +938,7 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
           }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
             onMouseDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
@@ -923,12 +953,12 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
               </button>
             </div>
             <div className="flex-1 min-h-0 overflow-auto p-6 bg-slate-50">
-              <div className="max-w-md mx-auto">
+              <div className="w-full max-w-[min(768px,100%)] mx-auto">
                 <RsvpFormPreview
                   formFields={formFields}
                   theme={theme}
                   currentLanguage={languageConfig.primaryLanguage ?? "en"}
-                  visibleOnly={true}
+                  visibleOnly={false}
                   variableMode={false}
                   showActionButtons={true}
                   onBannerClick={() => bannerInputRef.current?.click()}

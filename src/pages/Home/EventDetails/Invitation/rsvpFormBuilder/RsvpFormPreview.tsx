@@ -27,7 +27,7 @@ interface RsvpFormPreviewProps {
   editingFieldId?: string | null;
   onFieldClick?: (field: RsvpFormField) => void;
   onFieldContentChange?: (fieldId: string, content: string) => void;
-  /** When provided, image/icon fields show "Click to upload" and trigger this for file upload */
+  /** When provided, clicking the upload icon on image/icon opens file picker for this field */
   onImageUploadRequest?: (fieldId: string) => void;
 }
 
@@ -35,7 +35,7 @@ function getFieldContent(field: RsvpFormField, lang: "en" | "ar"): string {
   return field.contentTranslations?.[lang] ?? field.content ?? "";
 }
 
-/** Wraps a field in sortable for DnD in builder mode */
+/** Wraps a field in sortable for DnD in builder mode. */
 function SortableFieldNode({
   field,
   children,
@@ -43,17 +43,20 @@ function SortableFieldNode({
   field: RsvpFormField;
   children: React.ReactNode;
 }) {
-  const { setNodeRef, transform, transition, isDragging } = useSortable({
+  const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({
     id: field.id,
   });
+  const isImageOrIcon = field.type === "image" || field.type === "icon";
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    position: "relative",
+    ...(isImageOrIcon && { width: "100%", minWidth: 0 }),
   };
   return (
-    <div ref={setNodeRef} style={style}>
-      {children}
+    <div ref={setNodeRef} style={style} className="rsvp-sortable-field-node">
+      <div {...attributes} {...listeners}>{children}</div>
     </div>
   );
 }
@@ -77,21 +80,23 @@ function DroppableContainerNode({
   field: RsvpFormField;
   formFields: RsvpFormField[];
   getChildFields: (f: RsvpFormField) => RsvpFormField[];
-  renderField: (f: RsvpFormField) => React.ReactNode;
+  renderField: (f: RsvpFormField, parentContainerType?: "container" | "row" | "column") => React.ReactNode;
 }) {
   const childFields = getChildFields(field);
   const { setNodeRef, isOver } = useDroppable({ id: "container:" + field.id });
   const type = field.containerType ?? "container";
   const { borderColor, headerColor, iconColor, Icon } = CONTAINER_STYLES[type];
   const layout = field.layoutProps ?? {};
+  const isRow = type === "row";
   const contentStyle: React.CSSProperties = {
     display: "flex",
-    flexDirection: (layout.flexDirection as React.CSSProperties["flexDirection"]) ?? (type === "row" ? "row" : "column"),
+    flexDirection: (layout.flexDirection as React.CSSProperties["flexDirection"]) ?? (isRow ? "row" : "column"),
     gap: layout.gap ?? "8px",
-    flexWrap: layout.flexWrap as React.CSSProperties["flexWrap"],
+    flexWrap: isRow ? "nowrap" : (layout.flexWrap as React.CSSProperties["flexWrap"]),
     alignItems: layout.alignItems as React.CSSProperties["alignItems"],
-    justifyContent: layout.justifyContent as React.CSSProperties["justifyContent"],
+    justifyContent: (isRow ? "flex-start" : layout.justifyContent) as React.CSSProperties["justifyContent"],
     minHeight: "40px",
+    width: "100%",
   };
 
   return (
@@ -159,8 +164,11 @@ function DroppableContainerNode({
               items={childFields.map((f) => f.id)}
               strategy={verticalListSortingStrategy}
             >
-              {childFields.map((child) =>
-                child.containerType ? (
+              {childFields.map((child) => {
+                const cellStyle: React.CSSProperties = isRow
+                  ? { flex: "0 0 31.5%", width: "31.5%", minWidth: 0, boxSizing: "border-box" }
+                  : {};
+                const inner = child.containerType ? (
                   <DroppableContainerNode
                     key={child.id}
                     field={child}
@@ -170,10 +178,17 @@ function DroppableContainerNode({
                   />
                 ) : (
                   <SortableFieldNode key={child.id} field={child}>
-                    {renderField(child)}
+                    {renderField(child, type)}
                   </SortableFieldNode>
-                )
-              )}
+                );
+                return isRow ? (
+                  <div key={child.id} style={cellStyle}>
+                    <div style={{ width: "100%", minWidth: 0 }}>{inner}</div>
+                  </div>
+                ) : (
+                  inner
+                );
+              })}
             </SortableContext>
           )}
         </div>
@@ -375,10 +390,35 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     });
   }, [formFields, lang, builderMode]);
 
-  const renderField = (field: RsvpFormField) => {
+  const renderField = (
+    field: RsvpFormField,
+    parentContainerType?: "container" | "row" | "column"
+  ) => {
     const style = field.fieldStyle ?? {};
     const isEditing = editingFieldId === field.id;
     const isSelected = isEditing && builderMode;
+
+    // Map alignment to flex alignSelf and to margins (so it works in both flex and block parents)
+    const alignSelf =
+      style.alignment === "left"
+        ? "flex-start"
+        : style.alignment === "right"
+          ? "flex-end"
+          : style.alignment === "center"
+            ? "center"
+            : undefined;
+    const alignmentMargin: React.CSSProperties =
+      style.alignment === "right"
+        ? { marginLeft: "auto" }
+        : style.alignment === "center"
+          ? { marginLeft: "auto", marginRight: "auto" }
+          : {};
+    // When Layout alignment is right/center, block must not be full width or margin has no effect
+    const effectiveWidth =
+      (style.alignment === "right" || style.alignment === "center") &&
+      (!style.width || String(style.width).trim() === "100%")
+        ? "fit-content"
+        : style.width;
 
     // Apply all styling
     const elementStyle: React.CSSProperties = {
@@ -405,8 +445,11 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       textDecoration: style.textDecoration,
       lineHeight: style.lineHeight,
       letterSpacing: style.letterSpacing,
-      width: style.width,
+      width: effectiveWidth,
       maxWidth: style.maxWidth,
+      height: style.height,
+      alignSelf,
+      ...alignmentMargin,
       ...(isSelected && {
         outline: "2px solid #6366f1",
         outlineOffset: "2px",
@@ -434,75 +477,273 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       );
     }
 
+    // Pixel minimums so flex + alignment never collapse the box (fixes image/icon disappearing).
+    const pixelMin = (v: string | undefined, fallbackPx: number): string =>
+      v && /^\d+(\.\d+)?\s*px$/i.test(String(v).trim()) ? String(v).trim() : `${fallbackPx}px`;
+
     // Image – content holds image URL (data URL or external). In preview (non-builder), hide when no image.
+    // Use a dedicated wrapper style (no elementStyle) so width/height/alignment never collapse or hide the image.
     if (field.type === "image") {
       const src = field.content?.trim() || null;
       if (!builderMode && !src) return null;
       const isPlaceholder = !src;
+      const inRow = parentContainerType === "row";
+      const rawW = style.width;
+      const rawH = style.height;
+      const isPercentOrAuto = (v: string | undefined) =>
+        !v || String(v).includes("%") || String(v).trim().toLowerCase() === "auto";
+      const defaultW = inRow ? "80px" : undefined;
+      const defaultH = isPlaceholder ? "120px" : inRow ? "80px" : "80px";
+      const w = inRow && isPercentOrAuto(rawW) ? "31.5%" : (rawW || defaultW);
+      const h = inRow && isPercentOrAuto(rawH) ? (isPlaceholder ? "120px" : "80px") : (rawH || defaultH);
+      // Every image in a row gets 31.5% width (first, second, third, etc.)
+      const effectiveW = inRow ? "31.5%" : w;
+      const minW = inRow ? "200px" : pixelMin(typeof w === "string" ? w : undefined, 80);
+      const minH = pixelMin(typeof h === "string" ? h : undefined, isPlaceholder ? 120 : 80);
+      const imageWrapperStyle: React.CSSProperties = {
+        borderColor: style.borderColor,
+        borderWidth: style.borderWidth,
+        borderStyle: style.borderStyle ?? "solid",
+        borderRadius: style.borderRadius,
+        backgroundColor: style.backgroundColor,
+        padding: style.padding,
+        paddingTop: style.paddingTop,
+        paddingRight: style.paddingRight,
+        paddingBottom: style.paddingBottom,
+        paddingLeft: style.paddingLeft,
+        margin: style.margin,
+        marginTop: style.marginTop,
+        marginRight: style.marginRight,
+        marginBottom: style.marginBottom,
+        marginLeft: style.marginLeft,
+        width: effectiveW,
+        height: h,
+        minWidth: minW,
+        minHeight: minH,
+        flexShrink: 0,
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        position: "relative",
+        alignSelf,
+        ...(style.alignment === "right" ? { marginLeft: "auto" as const } : style.alignment === "center" ? { marginLeft: "auto", marginRight: "auto" } : {}),
+        ...(isSelected && { outline: "2px solid #6366f1", outlineOffset: "2px" }),
+      };
       return (
         <div
           key={field.id}
-          onClick={() => {
-            if (builderMode) {
-              if (onImageUploadRequest) onImageUploadRequest(field.id);
-              else onFieldClick?.(field);
-            }
+          data-field-id={field.id}
+          data-field-type="image"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (builderMode) onFieldClick?.(field);
           }}
-          className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
-          style={{ ...elementStyle, maxWidth: style.maxWidth ?? "100%" }}
+          onPointerDown={(e) => e.stopPropagation()}
+          role={builderMode ? "button" : undefined}
+          className={`${builderMode ? "cursor-pointer" : ""} transition-all flex items-center justify-center overflow-hidden rounded-lg`}
+          style={{ ...imageWrapperStyle, zIndex: 1 }}
         >
           {isPlaceholder ? (
             <div
-              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-8 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600"
-              style={{ minHeight: 120 }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600"
+              style={{
+                minHeight: 120,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+              }}
             >
-              <Upload size={32} />
-              <span className="text-sm font-medium">Click to upload image</span>
+              {builderMode && onImageUploadRequest ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onImageUploadRequest(field.id);
+                  }}
+                  className="flex flex-col items-center justify-center gap-2 rounded-lg p-2 -m-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100/50 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full h-full"
+                  title="Upload image"
+                  aria-label="Upload image"
+                  style={{ minHeight: "100%", justifyContent: "center" }}
+                >
+                  <Upload size={32} />
+                  <span className="text-sm font-medium">Click to upload image</span>
+                </button>
+              ) : (
+                <>
+                  <Upload size={32} />
+                  <span className="text-sm font-medium">Click to upload image</span>
+                </>
+              )}
             </div>
           ) : (
-            <img
-              src={src}
-              alt=""
-              className="max-w-full h-auto rounded-lg"
-              style={{ maxHeight: 320, objectFit: "contain" }}
-            />
+            <>
+              <img
+                src={src}
+                alt=""
+                className="rounded-lg object-contain"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                }}
+              />
+              {builderMode && onImageUploadRequest && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onImageUploadRequest(field.id);
+                  }}
+                  className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white/95 text-slate-500 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  title="Change image"
+                  aria-label="Change image"
+                >
+                  <Upload size={18} />
+                </button>
+              )}
+            </>
           )}
         </div>
       );
     }
 
     // Icon – content holds icon image URL (data URL or external). In preview (non-builder), hide when no image.
+    // Dedicated wrapper style so alignment/width/height never collapse or hide the icon; each field is individually editable.
     if (field.type === "icon") {
       const src = field.content?.trim() || null;
       if (!builderMode && !src) return null;
       const isPlaceholder = !src;
+      const inRow = parentContainerType === "row";
+      const isPercentOrAuto = (v: string | undefined) =>
+        !v || String(v).includes("%") || String(v).trim().toLowerCase() === "auto";
+      const defaultW = inRow ? "80px" : isPlaceholder ? undefined : "64px";
+      const defaultH = inRow ? "80px" : isPlaceholder ? "80px" : "64px";
+      const rawW = style.width;
+      const rawH = style.height;
+      const w = inRow && isPercentOrAuto(rawW) ? "31.5%" : (rawW || defaultW);
+      const h = inRow && isPercentOrAuto(rawH) ? defaultH : (rawH || defaultH);
+      // Every icon in a row gets 31.5% width (first, second, third, etc.)
+      const effectiveW = inRow ? "31.5%" : w;
+      const minW = inRow ? "200px" : pixelMin(typeof w === "string" ? w : undefined, isPlaceholder ? 80 : 64);
+      const minH = pixelMin(typeof h === "string" ? h : undefined, isPlaceholder ? 80 : 64);
+      const iconWrapperStyle: React.CSSProperties = {
+        borderColor: style.borderColor,
+        borderWidth: style.borderWidth,
+        borderStyle: style.borderStyle ?? "solid",
+        borderRadius: style.borderRadius,
+        backgroundColor: style.backgroundColor,
+        padding: style.padding,
+        paddingTop: style.paddingTop,
+        paddingRight: style.paddingRight,
+        paddingBottom: style.paddingBottom,
+        paddingLeft: style.paddingLeft,
+        margin: style.margin,
+        marginTop: style.marginTop,
+        marginRight: style.marginRight,
+        marginBottom: style.marginBottom,
+        marginLeft: style.marginLeft,
+        width: effectiveW,
+        height: h,
+        minWidth: minW,
+        minHeight: minH,
+        flexShrink: 0,
+        maxWidth: "100%",
+        boxSizing: "border-box",
+        position: "relative",
+        alignSelf,
+        ...(style.alignment === "right" ? { marginLeft: "auto" as const } : style.alignment === "center" ? { marginLeft: "auto", marginRight: "auto" } : {}),
+        ...(isSelected && { outline: "2px solid #6366f1", outlineOffset: "2px" }),
+      };
       return (
         <div
           key={field.id}
-          onClick={() => {
-            if (builderMode) {
-              if (onImageUploadRequest) onImageUploadRequest(field.id);
-              else onFieldClick?.(field);
-            }
+          data-field-id={field.id}
+          data-field-type="icon"
+          onClick={(e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            if (builderMode) onFieldClick?.(field);
           }}
-          className={`${builderMode ? "cursor-pointer" : ""} transition-all`}
-          style={elementStyle}
+          onPointerDown={(e) => e.stopPropagation()}
+          role={builderMode ? "button" : undefined}
+          className={`${builderMode ? "cursor-pointer" : ""} transition-all flex items-center justify-center overflow-hidden rounded`}
+          style={{ ...iconWrapperStyle, zIndex: 1 }}
         >
           {isPlaceholder ? (
             <div
-              className="flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 py-6 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600"
-              style={{ minHeight: 80 }}
+              className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 text-slate-500 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600"
+              style={{
+                minHeight: 80,
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+              }}
             >
-              <Sparkles size={28} />
-              <span className="text-sm font-medium">Click to upload icon</span>
+              {builderMode && onImageUploadRequest ? (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onImageUploadRequest(field.id);
+                  }}
+                  className="flex flex-col items-center justify-center gap-2 rounded-lg p-2 -m-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-100/50 focus:outline-none focus:ring-2 focus:ring-indigo-400 w-full h-full"
+                  title="Upload icon"
+                  aria-label="Upload icon"
+                  style={{ minHeight: "100%", justifyContent: "center" }}
+                >
+                  <Upload size={28} />
+                  <span className="text-sm font-medium">Click to upload icon</span>
+                </button>
+              ) : (
+                <>
+                  <Sparkles size={28} />
+                  <span className="text-sm font-medium">Click to upload icon</span>
+                </>
+              )}
             </div>
           ) : (
-            <img
-              src={src}
-              alt=""
-              className="max-w-full h-auto rounded"
-              style={{ maxWidth: 64, maxHeight: 64, objectFit: "contain" }}
-            />
+            <>
+              <img
+                src={src}
+                alt=""
+                className="rounded object-contain"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  display: "block",
+                }}
+              />
+              {builderMode && onImageUploadRequest && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    onImageUploadRequest(field.id);
+                  }}
+                  className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white/95 text-slate-500 shadow-sm hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  title="Change icon"
+                  aria-label="Change icon"
+                >
+                  <Upload size={18} />
+                </button>
+              )}
+            </>
           )}
         </div>
       );
@@ -653,19 +894,31 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
     if (childFields.length === 0) return null;
     const type = field.containerType ?? "container";
     const layout = field.layoutProps ?? {};
+    const isRow = type === "row";
     const contentStyle: React.CSSProperties = {
       display: "flex",
-      flexDirection: (layout.flexDirection as React.CSSProperties["flexDirection"]) ?? (type === "row" ? "row" : "column"),
+      flexDirection: (layout.flexDirection as React.CSSProperties["flexDirection"]) ?? (isRow ? "row" : "column"),
       gap: layout.gap ?? "8px",
-      flexWrap: layout.flexWrap as React.CSSProperties["flexWrap"],
+      flexWrap: isRow ? "nowrap" : (layout.flexWrap as React.CSSProperties["flexWrap"]),
       alignItems: layout.alignItems as React.CSSProperties["alignItems"],
-      justifyContent: layout.justifyContent as React.CSSProperties["justifyContent"],
+      justifyContent: (isRow ? "flex-start" : layout.justifyContent) as React.CSSProperties["justifyContent"],
+      width: "100%",
     };
+    const cellStyle: React.CSSProperties = isRow
+      ? { flex: "0 0 31.5%", width: "31.5%", minWidth: 0, boxSizing: "border-box" }
+      : {};
     return (
       <div key={field.id} className="w-full" style={{ marginBottom: 12, ...contentStyle }}>
-        {childFields.map((child) =>
-          child.containerType ? renderContainerBlock(child) : renderField(child)
-        )}
+        {childFields.map((child) => {
+          const inner = child.containerType ? renderContainerBlock(child) : renderField(child, type);
+          return isRow ? (
+            <div key={child.id} style={cellStyle}>
+              <div style={{ width: "100%", minWidth: 0 }}>{inner}</div>
+            </div>
+          ) : (
+            <React.Fragment key={child.id}>{inner}</React.Fragment>
+          );
+        })}
       </div>
     );
   };
@@ -704,7 +957,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
             />
           ) : (
             <SortableFieldNode key={field.id} field={field}>
-              {renderField(field)}
+              {renderField(field, undefined)}
             </SortableFieldNode>
           )
         )}
@@ -729,7 +982,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
       }}
     >
       {rootFields.map((field) =>
-        field.containerType ? renderContainerBlock(field) : renderField(field)
+        field.containerType ? renderContainerBlock(field) : renderField(field, undefined)
       )}
     </div>
   );

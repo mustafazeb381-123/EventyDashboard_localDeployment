@@ -91,6 +91,10 @@ export interface RsvpFormField {
     /** Layout */
     width?: string;
     maxWidth?: string;
+    /** Height (e.g. for images/icons; avoids hiding when width is constrained) */
+    height?: string;
+    /** Element alignment in flex layouts (left = flex-start, center = center, right = flex-end) */
+    alignment?: "left" | "center" | "right";
   };
 }
 
