@@ -18,6 +18,8 @@ function MainRoutes() {
   // --- Check if we have eventId (param or query) ---
   const urlParams = new URLSearchParams(location.search);
   const eventIdFromQuery = urlParams.get("eventId");
+  // On /communication/poll and /communication/poll/:id, params.id is the poll id, not event id — use query only
+  const isPollRoute = location.pathname.startsWith("/communication/poll");
   const isEventRelatedPage = Boolean(eventIdFromQuery) || Boolean(params.id);
 
   // --- Event-related paths that should expand sidebar ---
@@ -38,13 +40,16 @@ function MainRoutes() {
     "/Onboarding",
     "/email-templates",
     "/management",
+    "/settings",
   ];
 
   // --- FIXED: use startsWith() instead of includes() ---
   // Invitation pages (list + new) always show sidebar/top bar like Figma
   const isInvitationPage = location.pathname.startsWith("/invitation");
+  const isSettingsPage = location.pathname.startsWith("/settings");
   const isEventContextPage =
     isInvitationPage ||
+    isSettingsPage ||
     (eventRelatedPaths.some((path) => location.pathname.startsWith(path)) &&
       isEventRelatedPage);
 
@@ -111,7 +116,9 @@ function MainRoutes() {
         setIsExpanded={setIsExpanded}
         isRTL={isRTL}
         canToggle={canToggleSidebar}
-        currentEventId={params.id || eventIdFromQuery || undefined}
+        currentEventId={
+          isPollRoute ? eventIdFromQuery || undefined : (params.id || eventIdFromQuery || undefined)
+        }
       />
 
       {/* Header */}

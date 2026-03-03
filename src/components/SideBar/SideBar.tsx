@@ -191,6 +191,12 @@ const SideBar = ({
     if (path === "/management" || path.startsWith("/management")) {
       return "Management";
     }
+    if (path === "/settings" || path.startsWith("/settings")) {
+      return "Settings";
+    }
+    if (path.match(/^\/home\/[^/]+\/settings/)) {
+      return "Settings";
+    }
     // if (path === "/TicketManagement" || path.startsWith("/TicketManagement")) {
     //   return "Ticket Management";
     // }
@@ -682,9 +688,20 @@ const SideBar = ({
         <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
           <Button
             variant="ghost"
+            onClick={() =>
+              navigate(
+                currentEventId
+                  ? `/home/${currentEventId}/settings`
+                  : "/settings"
+              )
+            }
             className={`w-full ${
               isExpanded ? "justify-start px-3" : "justify-center px-3"
-            } py-2.5 text-slate-300 hover:bg-slate-700/50 hover:text-white rounded-lg`}
+            } py-2.5 rounded-lg ${
+              activeItem === "Settings"
+                ? "bg-blue-600/30 text-white border border-blue-500/30"
+                : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+            }`}
           >
             <Settings className="h-4 w-4" />
             {isExpanded && (

@@ -33,6 +33,11 @@ import CheckIn from "@/pages/Home/EventDetails/Attendees/CheckIn";
 import CheckOut from "@/pages/Home/EventDetails/Attendees/CheckOut";
 import EmailTemplates from "@/pages/Home/EventDetails/EmailTemplates/EmailTemplates";
 import Management from "@/pages/Home/Management/Management";
+import Settings from "@/pages/Settings/Settings";
+import SettingsProfile from "@/pages/Settings/Profile";
+import SettingsBilling from "@/pages/Settings/Billing";
+import SettingsSecurity from "@/pages/Settings/Security";
+import SettingsSenderManagement from "@/pages/Settings/SenderManagement";
 
 const router = createBrowserRouter([
   {
@@ -78,6 +83,26 @@ const router = createBrowserRouter([
           {
             path: "home/:id/galleries/:galleryId",
             element: <Galleries />,
+          },
+          {
+            path: "home/:id/settings",
+            element: <Settings />,
+          },
+          {
+            path: "home/:id/settings/profile",
+            element: <SettingsProfile />,
+          },
+          {
+            path: "home/:id/settings/billing",
+            element: <SettingsBilling />,
+          },
+          {
+            path: "home/:id/settings/security",
+            element: <SettingsSecurity />,
+          },
+          {
+            path: "home/:id/settings/senders",
+            element: <SettingsSenderManagement />,
           },
           {
             path: "print_badges",
@@ -157,6 +182,26 @@ const router = createBrowserRouter([
           {
             path: "express-event/:id?",
             element: <ExpressEvent />,
+          },
+          {
+            path: "settings",
+            element: <Settings />,
+          },
+          {
+            path: "settings/profile",
+            element: <SettingsProfile />,
+          },
+          {
+            path: "settings/billing",
+            element: <SettingsBilling />,
+          },
+          {
+            path: "settings/security",
+            element: <SettingsSecurity />,
+          },
+          {
+            path: "settings/senders",
+            element: <SettingsSenderManagement />,
           },
           {
             path: "about",
