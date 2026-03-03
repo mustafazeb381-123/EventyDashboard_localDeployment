@@ -4,6 +4,7 @@ export type {
   ConfirmationBlock,
   ConfirmationBlockType,
   ConfirmationBlockOptions,
+  ConfirmationContainerLayoutProps,
   ConfirmationTemplateConfig,
   ConfirmationPreviewData,
   BlockAlignment,

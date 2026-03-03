@@ -124,6 +124,7 @@ type MainFormData = {
   location: string;
   requireApproval: boolean;
   duplicateRegistration: boolean;
+  enableRegistrationLink: boolean;
   guestTypes: string[];
   eventLogo: File | null;
   existingLogoUrl: string | null;
@@ -190,7 +191,7 @@ const MainData = ({
     useState<boolean>(false);
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [openInfoTooltip, setOpenInfoTooltip] = useState<
-    "requireApproval" | "duplicateRegistration" | null
+    "requireApproval" | "duplicateRegistration" | "enableRegistrationLink" | null
   >(null);
 
   // Image cropping states
@@ -221,6 +222,7 @@ const MainData = ({
     location: "",
     requireApproval: false,
     duplicateRegistration: false,
+    enableRegistrationLink: true,
     guestTypes: ["Guest"], // Default "Guest" for new events; user can add more, change default, or delete when editing
     eventLogo: null,
     existingLogoUrl: null,
@@ -608,6 +610,7 @@ const MainData = ({
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
         duplicateRegistration: attributes.duplicate_registration || false,
+        enableRegistrationLink: attributes.enable_registration_link !== false,
         guestTypes:
           Array.isArray(attributes.user_types) &&
           attributes.user_types.length > 0
@@ -685,6 +688,10 @@ const MainData = ({
     fd.append(
       "event[duplicate_registration]",
       String(formData.duplicateRegistration),
+    );
+    fd.append(
+      "event[enable_registration_link]",
+      String(formData.enableRegistrationLink),
     );
     fd.append("event[primary_color]", formData.primaryColor);
     fd.append("event[secondary_color]", formData.secondaryColor);
@@ -949,6 +956,7 @@ const MainData = ({
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
         duplicateRegistration: attributes.duplicate_registration || false,
+        enableRegistrationLink: attributes.enable_registration_link !== false,
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
@@ -1017,6 +1025,7 @@ const MainData = ({
               location: attributes.location || "",
               requireApproval: attributes.require_approval || false,
               duplicateRegistration: attributes.duplicate_registration || false,
+              enableRegistrationLink: attributes.enable_registration_link !== false,
               guestTypes:
                 Array.isArray(attributes.user_types) &&
                 attributes.user_types.length > 0
@@ -1618,6 +1627,55 @@ const MainData = ({
                 <div
                   className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
                     formData.duplicateRegistration
+                      ? "translate-x-5"
+                      : "translate-x-0.5"
+                  } mt-0.5`}
+                />
+              </div>
+            </label>
+          </div>
+          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenInfoTooltip((prev) =>
+                    prev === "enableRegistrationLink"
+                      ? null
+                      : "enableRegistrationLink",
+                  )
+                }
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                title="Allow attendees to register via a public link."
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Enable Registration Link
+                </span>
+                <Info size={17} className="text-gray-400 flex-shrink-0" />
+              </button>
+              {openInfoTooltip === "enableRegistrationLink" && (
+                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                  Allow Users to register via a public link.
+                </div>
+              )}
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.enableRegistrationLink}
+                onChange={(e) =>
+                  handleInputChange("enableRegistrationLink", e.target.checked)
+                }
+                className="sr-only"
+              />
+              <div
+                className={`w-11 h-6 rounded-full transition-colors ${
+                  formData.enableRegistrationLink ? "bg-teal-500" : "bg-gray-200"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    formData.enableRegistrationLink
                       ? "translate-x-5"
                       : "translate-x-0.5"
                   } mt-0.5`}

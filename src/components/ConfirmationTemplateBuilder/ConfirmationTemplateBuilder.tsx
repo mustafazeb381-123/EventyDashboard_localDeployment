@@ -1,5 +1,17 @@
 import React, { useState, useCallback } from "react";
 import {
+  DndContext,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDraggable,
+  useDroppable,
+  pointerWithin,
+  rectIntersection,
+} from "@dnd-kit/core";
+import type { DragEndEvent } from "@dnd-kit/core";
+import type { CollisionDetection } from "@dnd-kit/core";
+import {
   GripVertical,
   Trash2,
   ChevronUp,
@@ -9,14 +21,15 @@ import {
   MapPin,
   Info,
   Calendar,
-  Clock,
   Type,
   Minus,
   Square,
   User,
   LayoutTemplate,
+  LayoutGrid,
   Image as ImageIcon,
   Settings,
+  X,
 } from "lucide-react";
 import { ConfirmationPreview } from "./ConfirmationPreview";
 import {
@@ -54,6 +67,9 @@ import type {
 } from "./types";
 
 const BLOCK_ICONS: Record<ConfirmationBlockType, React.ComponentType<{ size?: number; className?: string }>> = {
+  container: LayoutGrid,
+  row: LayoutGrid,
+  column: LayoutGrid,
   success_badge: Check,
   confirmation_message: Check,
   qr_code: QrCode,
@@ -67,6 +83,11 @@ const BLOCK_ICONS: Record<ConfirmationBlockType, React.ComponentType<{ size?: nu
   spacer: Square,
   custom_text: Type,
 };
+
+const CONTAINER_BLOCK_TYPES = ["container", "row", "column"] as const;
+function isContainerBlockType(t: ConfirmationBlockType): t is "container" | "row" | "column" {
+  return CONTAINER_BLOCK_TYPES.includes(t as (typeof CONTAINER_BLOCK_TYPES)[number]);
+}
 
 /** Normalize to #rrggbb for type="color"; expand #abc to #aabbcc */
 function toHexColor(s: string | undefined): string | undefined {
@@ -176,7 +197,7 @@ export function ConfirmationTemplateBuilder({
     setBlocks(next);
     notifyChange(next);
     if (type === "custom_text") setEditingCustomTextId(block.id);
-    setSelectedBlockId(block.id);
+    // Do not open sidebar when adding via Add block buttons — only open when selecting from Order list
   };
 
   const removeBlock = (id: string) => {
@@ -228,7 +249,7 @@ export function ConfirmationTemplateBuilder({
 
   return (
     <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${className}`}>
-      {/* Left: Add blocks + list */}
+      {/* Left: Add blocks + Order list only */}
       <div className="lg:col-span-4 space-y-4">
         <h3 className="text-sm font-semibold text-gray-700">Add block</h3>
         <p className="text-xs text-gray-500">
@@ -310,444 +331,9 @@ export function ConfirmationTemplateBuilder({
             </ul>
           )}
         </div>
-
-        {/* Block settings panel */}
-        {selectedBlock && (
-          <div className="mt-6 p-4 rounded-xl border-2 border-blue-200 bg-blue-50/50 space-y-4">
-            <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
-              <Settings size={16} />
-              Customize block
-            </h3>
-
-            {/* — Layout — */}
-            {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Padding</label>
-                <select
-                  value={selectedBlock.options?.paddingSize ?? "md"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      paddingSize: e.target.value as PaddingSize,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {PADDING_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* — Border & shadow — */}
-            {["confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Border width</label>
-                  <select
-                    value={selectedBlock.options?.borderWidth ?? "2"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        borderWidth: e.target.value as BorderWidth,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {BORDER_WIDTH_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Border radius</label>
-                  <select
-                    value={selectedBlock.options?.borderRadius ?? "lg"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        borderRadius: e.target.value as BorderRadius,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {BORDER_RADIUS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Shadow</label>
-                  <select
-                    value={selectedBlock.options?.shadow ?? "sm"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        shadow: e.target.value as ShadowSize,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {SHADOW_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </>
-            )}
-
-            {/* — Colors — */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Background</label>
-              <ColorPickerField
-                value={selectedBlock.options?.backgroundColor ?? ""}
-                onChange={(v) => updateBlockOptions(selectedBlock.id, { backgroundColor: v })}
-                placeholder="#f0f9ff"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Text color (preset)</label>
-              <select
-                value={
-                  selectedBlock.options?.textColor && !selectedBlock.options.textColor.startsWith("#")
-                    ? selectedBlock.options.textColor
-                    : "default"
-                }
-                onChange={(e) =>
-                  updateBlockOptions(selectedBlock.id, {
-                    textColor: e.target.value as TextColorPreset,
-                  })
-                }
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {TEXT_COLOR_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Text color (override)</label>
-              <ColorPickerField
-                value={
-                  selectedBlock.options?.textColor?.startsWith("#")
-                    ? selectedBlock.options.textColor
-                    : ""
-                }
-                onChange={(v) => updateBlockOptions(selectedBlock.id, { textColor: v || undefined })}
-                placeholder="#374151"
-              />
-            </div>
-            {BLOCKS_WITH_THEME.includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Icon background</label>
-                <ColorPickerField
-                  value={selectedBlock.options?.iconBackgroundColor ?? ""}
-                  onChange={(v) => updateBlockOptions(selectedBlock.id, { iconBackgroundColor: v })}
-                  placeholder="#10b981"
-                />
-              </div>
-            )}
-            {["success_badge", "confirmation_message", "location"].includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Icon color (checkmark/pin)</label>
-                <ColorPickerField
-                  value={selectedBlock.options?.iconColor ?? ""}
-                  onChange={(v) => updateBlockOptions(selectedBlock.id, { iconColor: v })}
-                  placeholder="#ffffff"
-                />
-              </div>
-            )}
-            {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "attendee_name", "event_date_time"].includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Sublabel / secondary text color</label>
-                <ColorPickerField
-                  value={selectedBlock.options?.sublabelColor ?? ""}
-                  onChange={(v) => updateBlockOptions(selectedBlock.id, { sublabelColor: v })}
-                  placeholder="#6b7280"
-                />
-              </div>
-            )}
-            {["confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Border color</label>
-                <ColorPickerField
-                  value={selectedBlock.options?.borderColor ?? ""}
-                  onChange={(v) => updateBlockOptions(selectedBlock.id, { borderColor: v })}
-                  placeholder="#e5e7eb"
-                />
-              </div>
-            )}
-
-            {/* Theme (for card-style blocks) */}
-            {BLOCKS_WITH_THEME.includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Theme / color</label>
-                <select
-                  value={selectedBlock.options?.theme ?? "green"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      theme: e.target.value as BlockTheme,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {(Object.entries(THEME_LABELS) as [BlockTheme, string][]).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* — Typography — */}
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Text alignment</label>
-              <p className="text-xs text-gray-500 mb-1.5">Align text and content left, center, or right</p>
-              <select
-                value={selectedBlock.options?.alignment ?? "center"}
-                onChange={(e) =>
-                  updateBlockOptions(selectedBlock.id, {
-                    alignment: e.target.value as ConfirmationBlockOptions["alignment"],
-                  })
-                }
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                {ALIGNMENT_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "event_name", "attendee_name", "custom_text"].includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Font weight</label>
-                <select
-                  value={selectedBlock.options?.fontWeight ?? "normal"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      fontWeight: e.target.value as FontWeight,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {FONT_WEIGHT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {selectedBlock.type === "custom_text" && (
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={!!selectedBlock.options?.italic}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, { italic: e.target.checked })
-                  }
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-700">Italic</span>
-              </label>
-            )}
-
-            {/* Heading size */}
-            {BLOCKS_WITH_HEADING_SIZE.includes(selectedBlock.type) && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Heading size</label>
-                <select
-                  value={selectedBlock.options?.headingSize ?? "md"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      headingSize: e.target.value as BlockHeadingSize,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {HEADING_SIZE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Spacer size */}
-            {selectedBlock.type === "spacer" && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Spacer size</label>
-                <select
-                  value={selectedBlock.options?.spacerSize ?? "md"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      spacerSize: e.target.value as BlockSpacerSize,
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {SPACER_SIZE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Divider style, thickness, color */}
-            {selectedBlock.type === "divider" && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Line style</label>
-                  <select
-                    value={selectedBlock.options?.dividerStyle ?? "solid"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        dividerStyle: e.target.value as DividerStyle,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {DIVIDER_STYLE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Line thickness</label>
-                  <select
-                    value={selectedBlock.options?.dividerThickness ?? "1"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        dividerThickness: e.target.value as "1" | "2" | "3",
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {DIVIDER_THICKNESS_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Line color</label>
-                  <ColorPickerField
-                    value={selectedBlock.options?.dividerColor ?? ""}
-                    onChange={(v) => updateBlockOptions(selectedBlock.id, { dividerColor: v })}
-                    placeholder="#d1d5db"
-                  />
-                </div>
-              </>
-            )}
-
-            {/* QR size */}
-            {selectedBlock.type === "qr_code" && (
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">QR size</label>
-                <select
-                  value={selectedBlock.options?.qrSize ?? "md"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      qrSize: e.target.value as "sm" | "md" | "lg",
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {QR_SIZE_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>{o.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Custom text: size + bold */}
-            {selectedBlock.type === "custom_text" && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Text size</label>
-                  <select
-                    value={selectedBlock.options?.textSize ?? "md"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        textSize: e.target.value as CustomTextSize,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="sm">Small</option>
-                    <option value="md">Medium</option>
-                    <option value="lg">Large</option>
-                  </select>
-                </div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!selectedBlock.options?.bold}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, { bold: e.target.checked })
-                    }
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">Bold</span>
-                </label>
-              </>
-            )}
-
-            {/* — Block labels — */}
-            {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "attendee_name"].includes(
-              selectedBlock.type
-            ) && (
-              <>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Custom label (optional)</label>
-                  <input
-                    type="text"
-                    value={selectedBlock.options?.label ?? ""}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, { label: e.target.value || undefined })
-                    }
-                    placeholder="Override default title"
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  />
-                </div>
-                {selectedBlock.type === "success_badge" && (
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Sublabel (optional)</label>
-                    <input
-                      type="text"
-                      value={selectedBlock.options?.sublabel ?? ""}
-                      onChange={(e) =>
-                        updateBlockOptions(selectedBlock.id, { sublabel: e.target.value || undefined })
-                      }
-                      placeholder="e.g. You're registered"
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )}
-
-        {/* Edit custom text content when selected */}
-        {editingCustomTextId && blocks.some((b) => b.id === editingCustomTextId) && (() => {
-          const block = blocks.find((b) => b.id === editingCustomTextId);
-          if (block?.type !== "custom_text") return null;
-          return (
-            <div className="mt-4 p-3 rounded-lg border border-gray-200 bg-gray-50">
-              <label className="block text-xs font-medium text-gray-600 mb-1">Custom text content</label>
-              <textarea
-                value={block.text ?? ""}
-                onChange={(e) => updateBlock(block.id, { text: e.target.value })}
-                rows={3}
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Your custom text"
-              />
-            </div>
-          );
-        })()}
       </div>
 
-      {/* Right: Preview */}
+      {/* Right: Preview only (unchanged UI, full width) */}
       <div className="lg:col-span-8">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">Preview</h3>
         <div className="bg-linear-to-br from-gray-50 to-gray-100 rounded-2xl p-6 shadow-inner border border-gray-200">
@@ -766,6 +352,460 @@ export function ConfirmationTemplateBuilder({
           </div>
         </div>
       </div>
+
+      {/* Customize block panel — slide-in overlay on the right, no layout space when hidden */}
+      {selectedBlockId && selectedBlock && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/20 z-40 lg:bg-transparent"
+            aria-hidden
+            onClick={() => setSelectedBlockId(null)}
+          />
+          <div
+            key="customize-panel"
+            className="fixed top-0 right-0 bottom-0 w-full max-w-sm sm:max-w-md bg-white border-l border-gray-200 shadow-xl z-50 flex flex-col animate-in slide-in-from-right duration-200"
+            role="dialog"
+            aria-label="Customize block"
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-blue-50/50">
+              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-2">
+                <Settings size={16} />
+                Customize block
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedBlockId(null)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* Custom text content — when selected block is custom_text */}
+              {selectedBlock.type === "custom_text" && (
+                <div className="p-3 rounded-lg border border-gray-200 bg-white">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Custom text content</label>
+                  <textarea
+                    value={selectedBlock.text ?? ""}
+                    onChange={(e) => updateBlock(selectedBlock.id, { text: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Your custom text"
+                  />
+                </div>
+              )}
+
+              {/* — Layout — */}
+              {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Padding</label>
+                  <select
+                    value={selectedBlock.options?.paddingSize ?? "md"}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, {
+                        paddingSize: e.target.value as PaddingSize,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {PADDING_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* — Border & shadow — */}
+              {["confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Border width</label>
+                    <select
+                      value={selectedBlock.options?.borderWidth ?? "2"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          borderWidth: e.target.value as BorderWidth,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {BORDER_WIDTH_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Border radius</label>
+                    <select
+                      value={selectedBlock.options?.borderRadius ?? "lg"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          borderRadius: e.target.value as BorderRadius,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {BORDER_RADIUS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Shadow</label>
+                    <select
+                      value={selectedBlock.options?.shadow ?? "sm"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          shadow: e.target.value as ShadowSize,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {SHADOW_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+
+              {/* — Colors — */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Background</label>
+                <ColorPickerField
+                  value={selectedBlock.options?.backgroundColor ?? ""}
+                  onChange={(v) => updateBlockOptions(selectedBlock.id, { backgroundColor: v })}
+                  placeholder="#f0f9ff"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Text color (preset)</label>
+                <select
+                  value={
+                    selectedBlock.options?.textColor && !selectedBlock.options.textColor.startsWith("#")
+                      ? selectedBlock.options.textColor
+                      : "default"
+                  }
+                  onChange={(e) =>
+                    updateBlockOptions(selectedBlock.id, {
+                      textColor: e.target.value as TextColorPreset,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {TEXT_COLOR_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Text color (override)</label>
+                <ColorPickerField
+                  value={
+                    selectedBlock.options?.textColor?.startsWith("#")
+                      ? selectedBlock.options.textColor
+                      : ""
+                  }
+                  onChange={(v) => updateBlockOptions(selectedBlock.id, { textColor: v || undefined })}
+                  placeholder="#374151"
+                />
+              </div>
+              {BLOCKS_WITH_THEME.includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Icon background</label>
+                  <ColorPickerField
+                    value={selectedBlock.options?.iconBackgroundColor ?? ""}
+                    onChange={(v) => updateBlockOptions(selectedBlock.id, { iconBackgroundColor: v })}
+                    placeholder="#10b981"
+                  />
+                </div>
+              )}
+              {["success_badge", "confirmation_message", "location"].includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Icon color (checkmark/pin)</label>
+                  <ColorPickerField
+                    value={selectedBlock.options?.iconColor ?? ""}
+                    onChange={(v) => updateBlockOptions(selectedBlock.id, { iconColor: v })}
+                    placeholder="#ffffff"
+                  />
+                </div>
+              )}
+              {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "attendee_name", "event_date_time"].includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Sublabel / secondary text color</label>
+                  <ColorPickerField
+                    value={selectedBlock.options?.sublabelColor ?? ""}
+                    onChange={(v) => updateBlockOptions(selectedBlock.id, { sublabelColor: v })}
+                    placeholder="#6b7280"
+                  />
+                </div>
+              )}
+              {["confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Border color</label>
+                  <ColorPickerField
+                    value={selectedBlock.options?.borderColor ?? ""}
+                    onChange={(v) => updateBlockOptions(selectedBlock.id, { borderColor: v })}
+                    placeholder="#e5e7eb"
+                  />
+                </div>
+              )}
+
+              {/* Theme (for card-style blocks) */}
+              {BLOCKS_WITH_THEME.includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Theme / color</label>
+                  <select
+                    value={selectedBlock.options?.theme ?? "green"}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, {
+                        theme: e.target.value as BlockTheme,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {(Object.entries(THEME_LABELS) as [BlockTheme, string][]).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* — Typography — */}
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Text alignment</label>
+                <p className="text-xs text-gray-500 mb-1.5">Align text and content left, center, or right</p>
+                <select
+                  value={selectedBlock.options?.alignment ?? "center"}
+                  onChange={(e) =>
+                    updateBlockOptions(selectedBlock.id, {
+                      alignment: e.target.value as ConfirmationBlockOptions["alignment"],
+                    })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {ALIGNMENT_OPTIONS.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "event_name", "attendee_name", "custom_text"].includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Font weight</label>
+                  <select
+                    value={selectedBlock.options?.fontWeight ?? "normal"}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, {
+                        fontWeight: e.target.value as FontWeight,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {FONT_WEIGHT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {selectedBlock.type === "custom_text" && (
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={!!selectedBlock.options?.italic}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, { italic: e.target.checked })
+                    }
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Italic</span>
+                </label>
+              )}
+
+              {/* Heading size */}
+              {BLOCKS_WITH_HEADING_SIZE.includes(selectedBlock.type) && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Heading size</label>
+                  <select
+                    value={selectedBlock.options?.headingSize ?? "md"}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, {
+                        headingSize: e.target.value as BlockHeadingSize,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {HEADING_SIZE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Spacer size */}
+              {selectedBlock.type === "spacer" && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Spacer size</label>
+                  <select
+                    value={selectedBlock.options?.spacerSize ?? "md"}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, {
+                        spacerSize: e.target.value as BlockSpacerSize,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {SPACER_SIZE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Divider style, thickness, color */}
+              {selectedBlock.type === "divider" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Line style</label>
+                    <select
+                      value={selectedBlock.options?.dividerStyle ?? "solid"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          dividerStyle: e.target.value as DividerStyle,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {DIVIDER_STYLE_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Line thickness</label>
+                    <select
+                      value={selectedBlock.options?.dividerThickness ?? "1"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          dividerThickness: e.target.value as "1" | "2" | "3",
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {DIVIDER_THICKNESS_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Line color</label>
+                    <ColorPickerField
+                      value={selectedBlock.options?.dividerColor ?? ""}
+                      onChange={(v) => updateBlockOptions(selectedBlock.id, { dividerColor: v })}
+                      placeholder="#d1d5db"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* QR size */}
+              {selectedBlock.type === "qr_code" && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">QR size</label>
+                  <select
+                    value={selectedBlock.options?.qrSize ?? "md"}
+                    onChange={(e) =>
+                      updateBlockOptions(selectedBlock.id, {
+                        qrSize: e.target.value as "sm" | "md" | "lg",
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    {QR_SIZE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Custom text: size + bold */}
+              {selectedBlock.type === "custom_text" && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Text size</label>
+                    <select
+                      value={selectedBlock.options?.textSize ?? "md"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          textSize: e.target.value as CustomTextSize,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="sm">Small</option>
+                      <option value="md">Medium</option>
+                      <option value="lg">Large</option>
+                    </select>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={!!selectedBlock.options?.bold}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, { bold: e.target.checked })
+                      }
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700">Bold</span>
+                  </label>
+                </>
+              )}
+
+              {/* — Block labels — */}
+              {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "attendee_name"].includes(
+                selectedBlock.type
+              ) && (
+                <>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Custom label (optional)</label>
+                    <input
+                      type="text"
+                      value={selectedBlock.options?.label ?? ""}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, { label: e.target.value || undefined })
+                      }
+                      placeholder="Override default title"
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  {selectedBlock.type === "success_badge" && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Sublabel (optional)</label>
+                      <input
+                        type="text"
+                        value={selectedBlock.options?.sublabel ?? ""}
+                        onChange={(e) =>
+                          updateBlockOptions(selectedBlock.id, { sublabel: e.target.value || undefined })
+                        }
+                        placeholder="e.g. You're registered"
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
