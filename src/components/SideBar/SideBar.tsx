@@ -5,8 +5,6 @@ import {
   UserCheck,
   Settings,
   LogOut,
-  CheckCircle,
-  Clock,
   HomeIcon,
   Image,
   NotepadText,
@@ -126,12 +124,6 @@ const SideBar = ({
     if (path.includes("/invitation")) {
       return "Invitation";
     }
-    if (path.includes("/attendees/check-in")) {
-      return "Check In";
-    }
-    if (path.includes("/attendees/check-out")) {
-      return "Check Out";
-    }
     if (path.includes("/communication/poll")) {
       return "Poll";
     }
@@ -176,9 +168,6 @@ const SideBar = ({
     if (path.startsWith("/invitation")) {
       return "Inviation";
     }
-    if (path.startsWith("/attendees")) {
-      return "Attendees";
-    }
     if (path.startsWith("/communication")) {
       return "Communications";
     }
@@ -217,12 +206,6 @@ const SideBar = ({
     // Expand submenus based on current path
     if (currentPath.includes("/invitation")) {
       setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
-    }
-    if (
-      currentPath.includes("/attendees/check-in") ||
-      currentPath.includes("/attendees/check-out")
-    ) {
-      setExpandedMenus((prev) => ({ ...prev, Attendees: true }));
     }
     if (
       currentPath.includes("/communication/poll") ||
@@ -402,29 +385,6 @@ const SideBar = ({
             ? `/communication/QA?eventId=${currentEventId}`
             : "/communication/QA",
           availableForExpress: false,
-        },
-      ],
-    },
-    {
-      icon: CheckCircle,
-      label: "Attendees",
-      availableForExpress: true,
-      submenu: [
-        {
-          label: "Check In",
-          icon: CheckCircle,
-          path: currentEventId
-            ? `/attendees/check-in?eventId=${currentEventId}`
-            : "/attendees/check-in",
-          availableForExpress: true,
-        },
-        {
-          label: "Check Out",
-          icon: Clock,
-          path: currentEventId
-            ? `/attendees/check-out?eventId=${currentEventId}`
-            : "/attendees/check-out",
-          availableForExpress: true,
         },
       ],
     },

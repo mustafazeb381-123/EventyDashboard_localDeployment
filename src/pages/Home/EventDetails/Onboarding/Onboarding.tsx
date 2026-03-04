@@ -57,7 +57,7 @@ function Onboarding() {
     name: "",
     location: "",
     type: "",
-    guestNumbers: "",
+    // guestNumbers: "",
   });
   const [editLoading, setEditLoading] = useState(false);
 
@@ -81,7 +81,10 @@ function Onboarding() {
     }
   }, [notification]);
 
-  const showNotification = (message: string, type: "success" | "error" | "warning" | "info") => {
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "warning" | "info",
+  ) => {
     setNotification({ message, type });
   };
 
@@ -179,9 +182,9 @@ function Onboarding() {
       name: newArea.name ? "" : "Name is required",
       location: newArea.location ? "" : "Location is required",
       type: newArea.type ? "" : "Type is required",
-      guestNumbers: newArea.guestNumbers ? "" : "Guest numbers are required",
+      guestNumbers: "", // optional
     };
-    setValidationErrors(errors);
+    setValidationErrors(errors as any);
     if (Object.values(errors).some((err) => err !== "")) {
       showNotification("Please fill all required fields", "error");
       return;
@@ -199,7 +202,9 @@ function Onboarding() {
           name: newArea.name,
           location: newArea.location,
           user_type: newArea.type,
-          guest_number: newArea.guestNumbers,
+          ...(newArea.guestNumbers.trim() !== "" && {
+            guest_number: newArea.guestNumbers.trim(),
+          }),
           event_id: eventId,
         },
       };
@@ -226,7 +231,7 @@ function Onboarding() {
         ...area.attributes,
         event_id: eventId, // Pass the event ID
         type: area.attributes?.name || "Area", // Use area name as type
-      }
+      },
     };
 
     console.log("Gate object being passed:", gateObject);
@@ -242,7 +247,12 @@ function Onboarding() {
       type: area?.attributes?.user_type ?? "",
       guestNumbers: String(area?.attributes?.guest_number ?? ""),
     });
-    setEditValidationErrors({ name: "", location: "", type: "", guestNumbers: "" });
+    setEditValidationErrors({
+      name: "",
+      location: "",
+      type: "",
+      // guestNumbers: "",
+    });
     setIsEditModalOpen(true);
   };
 
@@ -250,7 +260,12 @@ function Onboarding() {
     setIsEditModalOpen(false);
     setEditingArea(null);
     setEditForm({ name: "", location: "", type: "", guestNumbers: "" });
-    setEditValidationErrors({ name: "", location: "", type: "", guestNumbers: "" });
+    setEditValidationErrors({
+      name: "",
+      location: "",
+      type: "",
+      // guestNumbers: "",
+    });
   };
 
   const handleUpdateArea = async () => {
@@ -258,7 +273,7 @@ function Onboarding() {
       name: editForm.name ? "" : "Name is required",
       location: editForm.location ? "" : "Location is required",
       type: editForm.type ? "" : "Type is required",
-      guestNumbers: editForm.guestNumbers ? "" : "Guest numbers are required",
+      guestNumbers: "", // optional
     };
     setEditValidationErrors(errors);
     if (Object.values(errors).some((err) => err !== "")) {
@@ -276,7 +291,9 @@ function Onboarding() {
           name: editForm.name,
           location: editForm.location,
           user_type: editForm.type,
-          guest_number: editForm.guestNumbers,
+          ...(String(editForm.guestNumbers).trim() !== "" && {
+            guest_number: editForm.guestNumbers,
+          }),
         },
       };
       await updateSessionAreaApi(eventId, editingArea.id, payload);
@@ -286,7 +303,9 @@ function Onboarding() {
     } catch (err: any) {
       console.error("Error updating area:", err);
       showNotification(
-        err?.response?.data?.error || err?.response?.data?.message || "Failed to update area.",
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to update area.",
         "error",
       );
     } finally {
@@ -316,7 +335,9 @@ function Onboarding() {
     } catch (err: any) {
       console.error("Error deleting area:", err);
       showNotification(
-        err?.response?.data?.error || err?.response?.data?.message || "Failed to delete area.",
+        err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to delete area.",
         "error",
       );
     } finally {
@@ -333,7 +354,8 @@ function Onboarding() {
     const link = `${window.location.origin}/gate-onboarding?eventId=${eventId}&areaId=${area.id}`;
 
     if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(link)
+      navigator.clipboard
+        .writeText(link)
         .then(() => showNotification("Link copied to clipboard!", "success"))
         .catch(() => showNotification("Failed to copy link", "error"));
     } else {
@@ -351,9 +373,6 @@ function Onboarding() {
       document.body.removeChild(textArea);
     }
   };
-
-
-
 
   if (showGateOnboarding) {
     return selectedArea ? (
@@ -398,11 +417,21 @@ function Onboarding() {
               <table className="w-full">
                 <thead className="bg-gray-50/80 border-b border-gray-200/60">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Area Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Edit</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Delete</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      ID
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Area Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Actions
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Edit
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Delete
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200/60">
@@ -438,16 +467,29 @@ function Onboarding() {
               <table className="w-full">
                 <thead className="bg-gray-50/80 border-b border-gray-200/60">
                   <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Area Name</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Edit</th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Delete</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      ID
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Area Name
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Actions
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Edit
+                    </th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                      Delete
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200/60">
                   {areasData.map((area) => (
-                    <tr key={area.id} className="hover:bg-gray-50/50 transition-colors group">
+                    <tr
+                      key={area.id}
+                      className="hover:bg-gray-50/50 transition-colors group"
+                    >
                       <td className="px-6 py-4 text-sm font-medium text-gray-900">
                         {area.id}
                       </td>
@@ -583,7 +625,10 @@ function Onboarding() {
                   placeholder="Enter area location"
                   value={newArea.location}
                   onChange={(e) =>
-                    setNewArea((prev) => ({ ...prev, location: e.target.value }))
+                    setNewArea((prev) => ({
+                      ...prev,
+                      location: e.target.value,
+                    }))
                   }
                   className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
                     validationErrors.location
@@ -618,10 +663,7 @@ function Onboarding() {
                     </option>
                   ) : (
                     badges.map((badge) => (
-                      <option
-                        key={badge.id}
-                        value={badge.attributes.name}
-                      >
+                      <option key={badge.id} value={badge.attributes.name}>
                         {badge.attributes.name}
                       </option>
                     ))
@@ -635,7 +677,7 @@ function Onboarding() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Guest numbers <span className="text-red-500">*</span>
+                  Guest numbers <span className="text-gray-400 text-xs">(optional)</span>
                 </label>
                 <input
                   type="number"
@@ -718,7 +760,9 @@ function Onboarding() {
                     setEditForm((prev) => ({ ...prev, name: e.target.value }))
                   }
                   className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
-                    editValidationErrors.name ? "border-red-500" : "border-gray-300"
+                    editValidationErrors.name
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                 />
                 {editValidationErrors.name && (
@@ -736,7 +780,10 @@ function Onboarding() {
                   placeholder="Enter area location"
                   value={editForm.location}
                   onChange={(e) =>
-                    setEditForm((prev) => ({ ...prev, location: e.target.value }))
+                    setEditForm((prev) => ({
+                      ...prev,
+                      location: e.target.value,
+                    }))
                   }
                   className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
                     editValidationErrors.location
@@ -760,7 +807,9 @@ function Onboarding() {
                     setEditForm((prev) => ({ ...prev, type: e.target.value }))
                   }
                   className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 bg-white ${
-                    editValidationErrors.type ? "border-red-500" : "border-gray-300"
+                    editValidationErrors.type
+                      ? "border-red-500"
+                      : "border-gray-300"
                   }`}
                 >
                   <option value="">Select User Type</option>
@@ -771,10 +820,7 @@ function Onboarding() {
                     </option>
                   ) : (
                     badges.map((badge) => (
-                      <option
-                        key={badge.id}
-                        value={badge.attributes.name}
-                      >
+                      <option key={badge.id} value={badge.attributes.name}>
                         {badge.attributes.name}
                       </option>
                     ))
@@ -788,7 +834,7 @@ function Onboarding() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Guest numbers <span className="text-red-500">*</span>
+                  Guest numbers <span className="text-gray-400 text-xs">(optional)</span>
                 </label>
                 <input
                   type="number"
@@ -800,17 +846,17 @@ function Onboarding() {
                       guestNumbers: e.target.value,
                     }))
                   }
-                  className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
-                    editValidationErrors.guestNumbers
-                      ? "border-red-500"
-                      : "border-gray-300"
-                  }`}
+                  // className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 ${
+                  //   editValidationErrors.guestNumbers
+                  //     ? "border-red-500"
+                  //     : "border-gray-300"
+                  // }`}
                 />
-                {editValidationErrors.guestNumbers && (
+                {/* {editValidationErrors.guestNumbers && (
                   <p className="text-red-500 text-xs mt-1">
                     {editValidationErrors.guestNumbers}
                   </p>
-                )}
+                )} */}
               </div>
             </div>
             <div className="flex gap-3 mt-6 justify-end">
@@ -902,10 +948,10 @@ function Onboarding() {
               notification.type === "success"
                 ? "bg-green-500 text-white"
                 : notification.type === "error"
-                ? "bg-red-500 text-white"
-                : notification.type === "warning"
-                ? "bg-yellow-500 text-white"
-                : "bg-blue-500 text-white"
+                  ? "bg-red-500 text-white"
+                  : notification.type === "warning"
+                    ? "bg-yellow-500 text-white"
+                    : "bg-blue-500 text-white"
             }`}
           >
             {notification.message}
