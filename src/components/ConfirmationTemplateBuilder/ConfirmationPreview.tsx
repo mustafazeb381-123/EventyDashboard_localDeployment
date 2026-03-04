@@ -1,6 +1,7 @@
 import React from "react";
+import { useDroppable } from "@dnd-kit/core";
 import { QRCodeSVG } from "qrcode.react";
-import { Check, MapPin, Info, QrCode, Calendar, Clock, Image } from "lucide-react";
+import { Check, MapPin, QrCode, Calendar, Clock, Image } from "lucide-react";
 import type {
   ConfirmationBlock,
   ConfirmationBlockOptions,
@@ -14,9 +15,9 @@ import type {
 import {
   getContainerClasses,
   getBlockContainerStyle,
+  getMarginClass,
   getFontWeightClass,
   getTextColorClass,
-  getIconBgStyle,
   getSublabelStyle,
   getIconColorStyle,
 } from "./styleHelpers";
@@ -156,7 +157,10 @@ export function ConfirmationPreview({
   const getTheme = (block: ConfirmationBlock): BlockTheme =>
     (block.options?.theme as BlockTheme) || "green";
 
-  const containerClass = (opts: ConfirmationBlockOptions, themeStyles: typeof THEME_STYLES[BlockTheme]) => {
+  const containerClass = (
+    opts: ConfirmationBlockOptions,
+    themeStyles: Record<BlockTheme, { bg: string; border: string; icon: string; text: string; textMuted: string }>
+  ) => {
     const base = getContainerClasses(opts);
     const theme = (opts.theme as BlockTheme) || "green";
     const t = themeStyles[theme];
@@ -165,15 +169,29 @@ export function ConfirmationPreview({
 
   const QR_SIZES = { sm: 80, md: 112, lg: 144 } as const;
 
-  const renderBlock = (block: ConfirmationBlock) => {
+  const renderBlock = (block: ConfirmationBlock): React.ReactNode => {
     const opts = block.options ?? {};
     const align = opts.alignment ?? "center";
     const theme = getTheme(block);
     const styles = THEME_STYLES[theme];
     const containerStyle = getBlockContainerStyle(opts);
-    const iconStyle = getIconBgStyle(opts);
 
     switch (block.type) {
+      case "container": {
+        return (
+          <ContainerLayoutBlock key={block.id} block={block} allBlocks={blocks} renderBlock={renderBlock} />
+        );
+      }
+      case "row": {
+        return (
+          <RowLayoutBlock key={block.id} block={block} allBlocks={blocks} renderBlock={renderBlock} />
+        );
+      }
+      case "column": {
+        return (
+          <ColumnLayoutBlock key={block.id} block={block} allBlocks={blocks} renderBlock={renderBlock} />
+        );
+      }
       case "success_badge": {
         const badgeTheme = (opts.theme as BlockTheme) || "green";
         const s = THEME_STYLES[badgeTheme];
@@ -183,7 +201,7 @@ export function ConfirmationPreview({
         const innerAlign =
           align === "left" ? "items-start text-left" : align === "right" ? "items-end text-right" : "items-center text-center";
         return (
-          <div key={block.id} className={`flex ${flexAlignClass(align)} py-6`}>
+          <div key={block.id} className={`flex ${flexAlignClass(align)} py-6 ${getMarginClass(opts)}`}>
             <div className={`flex flex-col ${innerAlign} w-full max-w-md`}>
               <div
                 className={`w-20 h-20 mb-3 rounded-full flex items-center justify-center shadow-lg shrink-0 ${iconBg ? "" : s.icon} ${Object.keys(iconColorStyle).length ? "" : "text-white"}`}
@@ -213,7 +231,7 @@ export function ConfirmationPreview({
         return (
           <div
             key={block.id}
-            className={`flex items-center gap-3 ${containerClass(opts, THEME_STYLES)} ${opts.backgroundColor ? "" : styles.bg} ${opts.borderColor ? "" : styles.border}`}
+            className={`flex items-center gap-3 ${containerClass(opts, THEME_STYLES)} ${opts.backgroundColor ? "" : styles.bg} ${opts.borderColor ? "" : styles.border} ${getMarginClass(opts)}`}
             style={Object.keys(containerStyle).length ? containerStyle : undefined}
           >
             <div
@@ -246,7 +264,7 @@ export function ConfirmationPreview({
         return (
           <div
             key={block.id}
-            className={`text-center ${containerClass(opts, THEME_STYLES)} ${opts.backgroundColor ? "" : styles.bg} ${opts.borderColor ? "" : styles.border}`}
+            className={`text-center ${containerClass(opts, THEME_STYLES)} ${opts.backgroundColor ? "" : styles.bg} ${opts.borderColor ? "" : styles.border} ${getMarginClass(opts)}`}
             style={Object.keys(containerStyle).length ? containerStyle : undefined}
           >
             <div
@@ -274,9 +292,15 @@ export function ConfirmationPreview({
           </div>
         );
       }
-      case "event_name":
+      case "event_name": {
+        const wrapStyle = getBlockContainerStyle(opts);
+        const hasWrapStyle = Object.keys(wrapStyle).length > 0;
         return (
-          <div key={block.id} className={`${alignmentClass(align)} py-4`}>
+          <div
+            key={block.id}
+            className={`${alignmentClass(align)} ${getContainerClasses(opts)} ${getMarginClass(opts)}`}
+            style={hasWrapStyle ? wrapStyle : undefined}
+          >
             <h2
               className={`${getFontWeightClass(opts)} ${getTextColorClass(opts) || "text-gray-900"} ${
                 opts.headingSize ? HEADING_CLASSES[opts.headingSize] : "text-2xl"
@@ -287,14 +311,16 @@ export function ConfirmationPreview({
             </h2>
           </div>
         );
+      }
       case "event_date_time": {
         const textStyle = opts.textColor?.startsWith("#") ? { color: opts.textColor } : undefined;
         const mutedStyle = getSublabelStyle(opts);
+        const wrapStyle = getBlockContainerStyle(opts);
         return (
           <div
             key={block.id}
-            className={`flex gap-4 text-sm flex-wrap ${flexAlignClass(align)} ${getTextColorClass(opts) || "text-gray-600"}`}
-            style={textStyle}
+            className={`flex gap-4 text-sm flex-wrap ${flexAlignClass(align)} ${getContainerClasses(opts)} ${getTextColorClass(opts) || "text-gray-600"} ${getMarginClass(opts)}`}
+            style={{ ...wrapStyle, ...textStyle }}
           >
             <div className="flex items-center gap-1.5">
               <Calendar size={16} className="shrink-0" style={Object.keys(mutedStyle).length ? mutedStyle : { color: "var(--tw-text-opacity, #9ca3af)" }} />
@@ -313,7 +339,7 @@ export function ConfirmationPreview({
         return (
           <div
             key={block.id}
-            className={`flex items-center gap-3 ${containerClass(opts, THEME_STYLES)} ${opts.backgroundColor ? "" : styles.bg} ${opts.borderColor ? "" : styles.border}`}
+            className={`flex items-center gap-3 ${containerClass(opts, THEME_STYLES)} ${opts.backgroundColor ? "" : styles.bg} ${opts.borderColor ? "" : styles.border} ${getMarginClass(opts)}`}
             style={Object.keys(containerStyle).length ? containerStyle : undefined}
           >
             <div
@@ -344,7 +370,7 @@ export function ConfirmationPreview({
         return (
           <div
             key={block.id}
-            className={`${getContainerClasses(opts)} ${opts.backgroundColor ? "" : "bg-gray-50"} border border-gray-200`}
+            className={`${getContainerClasses(opts)} ${opts.backgroundColor ? "" : "bg-gray-50"} border border-gray-200 ${getMarginClass(opts)}`}
             style={Object.keys(containerStyle).length ? containerStyle : undefined}
           >
             <h3
@@ -364,8 +390,13 @@ export function ConfirmationPreview({
       }
       case "attendee_name": {
         const sublabelStyle = getSublabelStyle(opts);
+        const wrapStyleAn = getBlockContainerStyle(opts);
         return (
-          <div key={block.id} className={`${alignmentClass(align)} py-2`}>
+          <div
+            key={block.id}
+            className={`${alignmentClass(align)} ${getContainerClasses(opts)} ${getMarginClass(opts)}`}
+            style={Object.keys(wrapStyleAn).length ? wrapStyleAn : undefined}
+          >
             <p
               className={`${getTextColorClass(opts) || "text-gray-700"} ${getFontWeightClass(opts)} ${
                 opts.headingSize ? HEADING_CLASSES[opts.headingSize] : ""
@@ -380,9 +411,14 @@ export function ConfirmationPreview({
           </div>
         );
       }
-      case "event_logo":
+      case "event_logo": {
+        const wrapStyleLogo = getBlockContainerStyle(opts);
         return (
-          <div key={block.id} className={`flex ${flexAlignClass(align)} py-4`}>
+          <div
+            key={block.id}
+            className={`flex ${flexAlignClass(align)} ${getContainerClasses(opts)} ${getMarginClass(opts)}`}
+            style={Object.keys(wrapStyleLogo).length ? wrapStyleLogo : undefined}
+          >
             {logoUrl ? (
               <img
                 src={logoUrl}
@@ -396,6 +432,7 @@ export function ConfirmationPreview({
             )}
           </div>
         );
+      }
       case "divider": {
         const divStyle = (opts.dividerStyle as DividerStyle) || "solid";
         const thickness = (opts.dividerThickness as "1" | "2" | "3") || "1";
@@ -410,7 +447,7 @@ export function ConfirmationPreview({
         return (
           <hr
             key={block.id}
-            className={`my-4 border-gray-300 ${borderClass}`}
+            className={`border-gray-300 ${borderClass} ${getMarginClass(opts)}`}
             style={hrStyle}
           />
         );
@@ -418,7 +455,7 @@ export function ConfirmationPreview({
       case "spacer": {
         const size = (opts.spacerSize as BlockSpacerSize) || "md";
         return (
-          <div key={block.id} className={SPACER_HEIGHTS[size]} />
+          <div key={block.id} className={`${SPACER_HEIGHTS[size]} ${getMarginClass(opts)}`} />
         );
       }
       case "custom_text": {
@@ -426,7 +463,7 @@ export function ConfirmationPreview({
         return (
           <div
             key={block.id}
-            className={`${getContainerClasses(opts)} ${opts.backgroundColor ? "" : "bg-gray-50"} border border-gray-200 ${alignmentClass(align)}`}
+            className={`${getContainerClasses(opts)} ${opts.backgroundColor ? "" : "bg-gray-50"} border border-gray-200 ${alignmentClass(align)} ${getMarginClass(opts)}`}
             style={Object.keys(containerStyle).length ? containerStyle : undefined}
           >
             <p
@@ -443,11 +480,111 @@ export function ConfirmationPreview({
     }
   };
 
+  const { setNodeRef, isOver } = useDroppable({ id: "confirmation-main-drop-zone" });
+
   return (
     <div className={`p-6 bg-white rounded-xl border border-gray-200 ${className}`}>
-      <div className="space-y-4">
-        {blocks.map((block) => renderBlock(block))}
+      <div
+        ref={setNodeRef}
+        className={`space-y-4 rounded-xl ${isOver ? "ring-2 ring-indigo-400 bg-indigo-50/40" : ""}`}
+      >
+        {blocks
+          ?.filter((block) => !block.parentId)
+          ?.map((block) => renderBlock(block))}
       </div>
+    </div>
+  );
+}
+
+interface LayoutBlockProps {
+  block: ConfirmationBlock;
+  allBlocks: ConfirmationBlock[];
+  renderBlock: (block: ConfirmationBlock) => React.ReactNode;
+}
+
+function ContainerLayoutBlock({ block, allBlocks, renderBlock }: LayoutBlockProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: `container:${block.id}` });
+  const children = allBlocks.filter((b) => b.parentId === block.id);
+  const opts = block.options ?? {};
+  const containerStyle = getBlockContainerStyle(opts);
+  const hasCustomStyle = Object.keys(containerStyle).length > 0;
+  return (
+    <div
+      className={`rounded-2xl border border-dashed border-gray-300 bg-gray-50/60 space-y-3 ${getContainerClasses(opts)} ${getMarginClass(opts)} ${
+        isOver ? "ring-2 ring-indigo-400 bg-indigo-50" : ""
+      }`}
+      style={hasCustomStyle ? containerStyle : undefined}
+      ref={setNodeRef}
+    >
+      {children.length === 0 ? (
+        <p className="text-xs text-gray-400 text-center">Drag blocks into this container</p>
+      ) : (
+        children.map((child) => renderBlock(child))
+      )}
+    </div>
+  );
+}
+
+function RowLayoutBlock({ block, allBlocks, renderBlock }: LayoutBlockProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: `container:${block.id}` });
+  // All direct children (columns and content blocks) — no limit
+  const allChildren = allBlocks.filter((b) => b.parentId === block.id);
+
+  const opts = block.options ?? {};
+  const containerStyle = getBlockContainerStyle(opts);
+  const hasCustomStyle = Object.keys(containerStyle).length > 0;
+  if (!allChildren.length) {
+    return (
+      <div
+        ref={setNodeRef}
+        className={`rounded-xl border border-dashed border-gray-300 bg-gray-50/40 text-xs text-gray-400 text-center ${getContainerClasses(opts)} ${getMarginClass(opts)} ${
+          isOver ? "ring-2 ring-indigo-400 bg-indigo-50" : ""
+        }`}
+        style={hasCustomStyle ? containerStyle : undefined}
+      >
+        Drag columns or blocks into this row
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`grid grid-cols-1 md:grid-cols-2 border-gray-300 lg:grid-cols-3 gap-4 ${getContainerClasses(opts)} ${getMarginClass(opts)} ${
+        isOver ? "ring-2 ring-indigo-400 bg-indigo-50/60 rounded-xl p-2 -m-2" : ""
+      }`}
+      style={hasCustomStyle ? containerStyle : undefined}
+    >
+      {allChildren.map((child) => (
+        <div key={child.id} className="space-y-3 min-w-0">
+          {renderBlock(child)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ColumnLayoutBlock({ block, allBlocks, renderBlock }: LayoutBlockProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: `container:${block.id}` });
+  const children = allBlocks.filter((b) => b.parentId === block.id);
+  const opts = block.options ?? {};
+  const containerStyle = getBlockContainerStyle(opts);
+  const hasCustomStyle = Object.keys(containerStyle).length > 0;
+  return (
+    <div
+      ref={setNodeRef}
+      className={`space-y-3 rounded-xl ${getContainerClasses(opts)} ${getMarginClass(opts)} ${
+        isOver ? "ring-2 ring-indigo-400 bg-indigo-50/60 p-2 -m-2" : ""
+      }`}
+      style={hasCustomStyle ? containerStyle : undefined}
+    >
+      {children.length ? (
+        children.map((child) => renderBlock(child))
+      ) : (
+        <div className="rounded-lg border border-dashed border-gray-300 p-3 text-xs text-gray-400 text-center">
+          Drag blocks into this column
+        </div>
+      )}
     </div>
   );
 }

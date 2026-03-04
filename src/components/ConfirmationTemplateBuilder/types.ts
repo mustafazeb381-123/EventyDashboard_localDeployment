@@ -3,6 +3,9 @@
  * Data for these comes from event/registration — no manual input in the builder.
  */
 export type ConfirmationBlockType =
+  | "container"
+  | "row"
+  | "column"
   | "success_badge"
   | "confirmation_message"
   | "qr_code"
@@ -31,7 +34,9 @@ export type CustomTextSize = "sm" | "md" | "lg";
 
 // Advanced styling
 export type PaddingSize = "none" | "sm" | "md" | "lg";
+export type MarginSize = "none" | "sm" | "md" | "lg";
 export type BorderWidth = "0" | "1" | "2" | "4";
+export type BorderStyle = "solid" | "dashed" | "dotted";
 export type BorderRadius = "none" | "sm" | "md" | "lg" | "xl" | "full";
 export type ShadowSize = "none" | "sm" | "md" | "lg";
 export type FontWeight = "normal" | "medium" | "semibold" | "bold";
@@ -61,8 +66,9 @@ export interface ConfirmationBlockOptions {
 
   // Advanced: layout & container
   paddingSize?: PaddingSize;
+  marginSize?: MarginSize;
   borderWidth?: BorderWidth;
-  borderColor?: string;
+  borderStyle?: BorderStyle;
   borderRadius?: BorderRadius;
   shadow?: ShadowSize;
 
@@ -83,6 +89,8 @@ export interface ConfirmationBlock {
   type: ConfirmationBlockType;
   text?: string;
   options?: ConfirmationBlockOptions;
+  /** Optional parent container (container, row, or column). Null/undefined = top level */
+  parentId?: string | null;
 }
 
 export interface ConfirmationTemplateConfig {
@@ -103,6 +111,9 @@ export interface ConfirmationPreviewData {
 }
 
 export const BLOCK_LABELS: Record<ConfirmationBlockType, string> = {
+  container: "Container",
+  row: "Row",
+  column: "Column",
   success_badge: "Success badge",
   confirmation_message: "Confirmation message",
   qr_code: "QR code",
@@ -155,6 +166,19 @@ export const PADDING_OPTIONS: { value: PaddingSize; label: string }[] = [
   { value: "sm", label: "Small" },
   { value: "md", label: "Medium" },
   { value: "lg", label: "Large" },
+];
+
+export const MARGIN_OPTIONS: { value: MarginSize; label: string }[] = [
+  { value: "none", label: "None" },
+  { value: "sm", label: "Small" },
+  { value: "md", label: "Medium" },
+  { value: "lg", label: "Large" },
+];
+
+export const BORDER_STYLE_OPTIONS: { value: BorderStyle; label: string }[] = [
+  { value: "solid", label: "Solid" },
+  { value: "dashed", label: "Dashed" },
+  { value: "dotted", label: "Dotted" },
 ];
 
 export const BORDER_WIDTH_OPTIONS: { value: BorderWidth; label: string }[] = [

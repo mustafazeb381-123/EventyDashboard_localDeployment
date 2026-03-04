@@ -1,5 +1,5 @@
 import type { ConfirmationBlockOptions } from "./types";
-import type { PaddingSize, BorderWidth, BorderRadius, ShadowSize, FontWeight, TextColorPreset } from "./types";
+import type { PaddingSize, MarginSize, BorderWidth, BorderStyle, BorderRadius, ShadowSize, FontWeight, TextColorPreset } from "./types";
 
 const PADDING_CLASSES: Record<NonNullable<PaddingSize>, string> = {
   none: "p-0",
@@ -8,11 +8,24 @@ const PADDING_CLASSES: Record<NonNullable<PaddingSize>, string> = {
   lg: "p-6",
 };
 
+const MARGIN_CLASSES: Record<NonNullable<MarginSize>, string> = {
+  none: "my-0",
+  sm: "my-2",
+  md: "my-4",
+  lg: "my-6",
+};
+
 const BORDER_WIDTH_CLASSES: Record<NonNullable<BorderWidth>, string> = {
   "0": "border-0",
   "1": "border",
   "2": "border-2",
   "4": "border-4",
+};
+
+const BORDER_STYLE_CLASSES: Record<NonNullable<BorderStyle>, string> = {
+  solid: "border-solid",
+  dashed: "border-dashed",
+  dotted: "border-dotted",
 };
 
 const BORDER_RADIUS_CLASSES: Record<NonNullable<BorderRadius>, string> = {
@@ -51,9 +64,16 @@ export function getContainerClasses(opts: ConfirmationBlockOptions): string {
   const parts: string[] = [];
   parts.push(PADDING_CLASSES[opts.paddingSize ?? "md"]);
   parts.push(BORDER_WIDTH_CLASSES[opts.borderWidth ?? "2"]);
+  parts.push(BORDER_STYLE_CLASSES[opts.borderStyle ?? "solid"]);
+  // Default border color to gray when no custom borderColor (hex) is set
+  if (!opts.borderColor?.startsWith("#")) parts.push("border-gray-200");
   parts.push(BORDER_RADIUS_CLASSES[opts.borderRadius ?? "lg"]);
   parts.push(SHADOW_CLASSES[opts.shadow ?? "sm"]);
   return parts.filter(Boolean).join(" ");
+}
+
+export function getMarginClass(opts: ConfirmationBlockOptions): string {
+  return MARGIN_CLASSES[opts.marginSize ?? "md"];
 }
 
 export function getFontWeightClass(opts: ConfirmationBlockOptions): string {
@@ -74,6 +94,7 @@ export function getBlockContainerStyle(opts: ConfirmationBlockOptions): React.CS
     style.borderColor = opts.borderColor;
     if (!opts.borderWidth || opts.borderWidth !== "0") style.borderWidth = `${opts.borderWidth ?? 2}px`;
   }
+  if (opts.borderStyle) style.borderStyle = opts.borderStyle;
   if (opts.textColor?.startsWith("#")) style.color = opts.textColor;
   return style;
 }

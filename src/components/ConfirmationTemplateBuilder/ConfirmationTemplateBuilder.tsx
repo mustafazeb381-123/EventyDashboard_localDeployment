@@ -1,16 +1,6 @@
 import React, { useState, useCallback } from "react";
-import {
-  DndContext,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDraggable,
-  useDroppable,
-  pointerWithin,
-  rectIntersection,
-} from "@dnd-kit/core";
+import { DndContext, PointerSensor, useSensor, useSensors, useDraggable } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
-import type { CollisionDetection } from "@dnd-kit/core";
 import {
   GripVertical,
   Trash2,
@@ -44,7 +34,9 @@ import {
   SPACER_SIZE_OPTIONS,
   DIVIDER_STYLE_OPTIONS,
   PADDING_OPTIONS,
+  MARGIN_OPTIONS,
   BORDER_WIDTH_OPTIONS,
+  BORDER_STYLE_OPTIONS,
   BORDER_RADIUS_OPTIONS,
   SHADOW_OPTIONS,
   FONT_WEIGHT_OPTIONS,
@@ -59,7 +51,9 @@ import type {
   DividerStyle,
   CustomTextSize,
   PaddingSize,
+  MarginSize,
   BorderWidth,
+  BorderStyle,
   BorderRadius,
   ShadowSize,
   FontWeight,
@@ -149,6 +143,120 @@ function generateId() {
   return `block-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+const PALETTE_PREFIX = "palette:";
+
+/** Draggable block type button: click adds at end, drag onto preview (or into container) to add there */
+function DraggableBlockButton({
+  type,
+  onClick,
+  className,
+  children,
+}: {
+  type: ConfirmationBlockType;
+  onClick: () => void;
+  className: string;
+  children: React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef } = useDraggable({
+    id: `${PALETTE_PREFIX}${type}`,
+    data: { type: "palette-item", blockType: type },
+  });
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      onClick={onClick}
+      className={className}
+      {...attributes}
+      {...listeners}
+    >
+      {children}
+    </button>
+  );
+}
+
+interface OrderListItemProps {
+  block: ConfirmationBlock;
+  index: number;
+  isSelected: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  onSelect: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onRemove: () => void;
+}
+
+function OrderListItem({
+  block,
+  index,
+  isSelected,
+  canMoveUp,
+  canMoveDown,
+  onSelect,
+  onMoveUp,
+  onMoveDown,
+  onRemove,
+}: OrderListItemProps) {
+  const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
+    id: block.id,
+    data: { kind: "block", index },
+  });
+
+  return (
+    <li
+      ref={setDragRef}
+      onClick={onSelect}
+      className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors group ${
+        isSelected
+          ? "border-blue-500 bg-blue-50"
+          : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+      } ${isDragging ? "opacity-60" : ""}`}
+      {...attributes}
+      {...listeners}
+    >
+      <GripVertical size={14} className="text-gray-400 shrink-0" />
+      <span className="text-sm text-gray-700 truncate flex-1 min-w-0">
+        {block.type === "custom_text"
+          ? (block.text || "Custom text").slice(0, 20) +
+            (block.text && block.text.length > 20 ? "…" : "")
+          : BLOCK_LABELS[block.type]}
+      </span>
+      <div
+        className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onMoveUp}
+          disabled={!canMoveUp}
+          className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-label="Move up"
+        >
+          <ChevronUp size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={onMoveDown}
+          disabled={!canMoveDown}
+          className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+          aria-label="Move down"
+        >
+          <ChevronDown size={14} />
+        </button>
+        <button
+          type="button"
+          onClick={onRemove}
+          className="p-1 rounded hover:bg-red-50 text-red-600"
+          aria-label="Remove"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </li>
+  );
+}
+
 interface ConfirmationTemplateBuilderProps {
   eventData?: ConfirmationPreviewData | null;
   initialBlocks?: ConfirmationBlock[];
@@ -167,6 +275,9 @@ export function ConfirmationTemplateBuilder({
   );
   const [editingCustomTextId, setEditingCustomTextId] = useState<string | null>(null);
   const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+  );
 
   const previewData: ConfirmationPreviewData = {
     eventName: eventData?.eventName ?? "Sample Event",
@@ -232,6 +343,9 @@ export function ConfirmationTemplateBuilder({
 
   const selectedBlock = selectedBlockId ? blocks.find((b) => b.id === selectedBlockId) : null;
 
+  type AddBlockTab = "blocks" | "layout";
+  const [addBlockTab, setAddBlockTab] = useState<AddBlockTab>("blocks");
+
   const blockTypes: ConfirmationBlockType[] = [
     "success_badge",
     "confirmation_message",
@@ -247,30 +361,147 @@ export function ConfirmationTemplateBuilder({
     "custom_text",
   ];
 
+  const layoutTypes: ConfirmationBlockType[] = ["container", "row", "column"];
+
+  const addBlockAt = (type: ConfirmationBlockType, parentId: string | null) => {
+    const block: ConfirmationBlock = {
+      id: generateId(),
+      type,
+      ...(type === "custom_text" ? { text: "Your custom text" } : {}),
+      ...(parentId != null ? { parentId } : {}),
+    };
+    const next = [...blocks, block];
+    setBlocks(next);
+    notifyChange(next);
+    if (type === "custom_text") setEditingCustomTextId(block.id);
+  };
+
   return (
-    <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${className}`}>
-      {/* Left: Add blocks + Order list only */}
-      <div className="lg:col-span-4 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-700">Add block</h3>
-        <p className="text-xs text-gray-500">
-          Data comes from your event and registration — no manual input.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {blockTypes.map((type) => {
-            const Icon = BLOCK_ICONS[type];
-            return (
-              <button
-                key={type}
-                type="button"
-                onClick={() => addBlock(type)}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
-              >
-                <Icon size={16} className="text-gray-500" />
-                {BLOCK_LABELS[type]}
-              </button>
-            );
-          })}
+    <DndContext
+      sensors={sensors}
+      onDragEnd={(event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over) return;
+        const activeId = String(active.id);
+        const overId = String(over.id);
+        if (!activeId || !overId || activeId === overId) return;
+
+        // Drag from Blocks/Layout palette → add new block at drop target
+        if (activeId.startsWith(PALETTE_PREFIX)) {
+          const blockType = activeId.slice(PALETTE_PREFIX.length) as ConfirmationBlockType;
+          if (!blockType) return;
+          let parentId: string | null = null;
+          if (overId === "confirmation-main-drop-zone") {
+            parentId = null;
+          } else if (overId.startsWith("container:")) {
+            const containerId = overId.slice("container:".length);
+            const containerBlock = blocks.find((b) => b.id === containerId);
+            if (!containerBlock || !isContainerBlockType(containerBlock.type)) return;
+            parentId = containerId;
+          } else {
+            return;
+          }
+          addBlockAt(blockType, parentId);
+          return;
+        }
+
+        // Drag existing block from Order list → move into container or back to root
+        const draggedBlock = blocks.find((b) => b.id === activeId);
+        if (!draggedBlock) return;
+        if (isContainerBlockType(draggedBlock.type)) return;
+
+        let nextParentId: string | null = draggedBlock.parentId ?? null;
+        if (overId === "confirmation-main-drop-zone") {
+          nextParentId = null;
+        } else if (overId.startsWith("container:")) {
+          const containerId = overId.slice("container:".length);
+          const containerBlock = blocks.find((b) => b.id === containerId);
+          if (!containerBlock || !isContainerBlockType(containerBlock.type)) return;
+          nextParentId = containerId;
+        } else {
+          return;
+        }
+        if (nextParentId === (draggedBlock.parentId ?? null)) return;
+
+        const next = blocks.map((b) =>
+          b.id === activeId ? { ...b, parentId: nextParentId } : b
+        );
+        setBlocks(next);
+        notifyChange(next);
+      }}
+    >
+      <div className={`grid grid-cols-1 lg:grid-cols-12 gap-6 ${className}`}>
+        {/* Left: Tabs (Blocks | Layout) + Add block buttons + Order list */}
+        <div className="lg:col-span-4 space-y-4">
+        {/* Tabs: Blocks | Layout */}
+        <div className="flex rounded-lg border border-gray-200 bg-gray-50/80 p-0.5">
+          <button
+            type="button"
+            onClick={() => setAddBlockTab("blocks")}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              addBlockTab === "blocks"
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Blocks
+          </button>
+          <button
+            type="button"
+            onClick={() => setAddBlockTab("layout")}
+            className={`flex-1 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              addBlockTab === "layout"
+                ? "bg-white text-gray-900 shadow-sm border border-gray-200"
+                : "text-gray-600 hover:text-gray-900"
+            }`}
+          >
+            Layout
+          </button>
         </div>
+
+        <p className="text-xs text-gray-500">
+          {addBlockTab === "blocks"
+            ? "Drag a block into the preview (or into a container) to add it there, or click to add at the end."
+            : "Drag Container, Row, or Column into the preview to add layout; click to add at the end."}
+        </p>
+
+        {addBlockTab === "blocks" && (
+          <div className="grid grid-cols-2 gap-2">
+            {blockTypes.map((type) => {
+              const Icon = BLOCK_ICONS[type];
+              return (
+                <DraggableBlockButton
+                  key={type}
+                  type={type}
+                  onClick={() => addBlock(type)}
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors text-left cursor-grab active:cursor-grabbing"
+                >
+                  <Icon size={20} className="text-gray-500 shrink-0" />
+                  <span className="font-medium text-gray-700">{BLOCK_LABELS[type]}</span>
+                </DraggableBlockButton>
+              );
+            })}
+          </div>
+        )}
+
+        {addBlockTab === "layout" && (
+          <div className="grid grid-cols-2 gap-2">
+            {layoutTypes.map((type) => {
+              const Icon = BLOCK_ICONS[type];
+              return (
+                <DraggableBlockButton
+                  key={type}
+                  type={type}
+                  onClick={() => addBlock(type)}
+                  className="flex items-center gap-3 w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-colors text-left cursor-grab active:cursor-grabbing"
+                >
+                  <Icon size={20} className="text-gray-500 shrink-0" />
+                  <span className="font-medium text-gray-700">{BLOCK_LABELS[type]}</span>
+                </DraggableBlockButton>
+              );
+            })}
+          </div>
+        )}
 
         {/* Block list */}
         <div className="mt-6">
@@ -280,53 +511,18 @@ export function ConfirmationTemplateBuilder({
           ) : (
             <ul className="space-y-2">
               {blocks.map((block, index) => (
-                <li
+                <OrderListItem
                   key={block.id}
-                  onClick={() => setSelectedBlockId(block.id)}
-                  className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors group ${
-                    selectedBlockId === block.id
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-                  }`}
-                >
-                  <GripVertical size={14} className="text-gray-400 shrink-0" />
-                  <span className="text-sm text-gray-700 truncate flex-1 min-w-0">
-                    {block.type === "custom_text"
-                      ? (block.text || "Custom text").slice(0, 20) + (block.text && block.text.length > 20 ? "…" : "")
-                      : BLOCK_LABELS[block.type]}
-                  </span>
-                  <div
-                    className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(index, "up")}
-                      disabled={index === 0}
-                      className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                      aria-label="Move up"
-                    >
-                      <ChevronUp size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => moveBlock(index, "down")}
-                      disabled={index === blocks.length - 1}
-                      className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                      aria-label="Move down"
-                    >
-                      <ChevronDown size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeBlock(block.id)}
-                      className="p-1 rounded hover:bg-red-50 text-red-600"
-                      aria-label="Remove"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </li>
+                  block={block}
+                  index={index}
+                  isSelected={selectedBlockId === block.id}
+                  canMoveUp={index > 0}
+                  canMoveDown={index < blocks.length - 1}
+                  onSelect={() => setSelectedBlockId(block.id)}
+                  onMoveUp={() => moveBlock(index, "up")}
+                  onMoveDown={() => moveBlock(index, "down")}
+                  onRemove={() => removeBlock(block.id)}
+                />
               ))}
             </ul>
           )}
@@ -397,87 +593,174 @@ export function ConfirmationTemplateBuilder({
               )}
 
               {/* — Layout — */}
-              {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Padding</label>
-                  <select
-                    value={selectedBlock.options?.paddingSize ?? "md"}
-                    onChange={(e) =>
-                      updateBlockOptions(selectedBlock.id, {
-                        paddingSize: e.target.value as PaddingSize,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    {PADDING_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </select>
+              <div className="pt-1 border-t border-gray-100">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Layout</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Alignment</label>
+                    <select
+                      value={selectedBlock.options?.alignment ?? "center"}
+                      onChange={(e) =>
+                        updateBlockOptions(selectedBlock.id, {
+                          alignment: e.target.value as ConfirmationBlockOptions["alignment"],
+                        })
+                      }
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {ALIGNMENT_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "custom_text", "event_name", "attendee_name", "event_date_time", "event_logo", "container", "row", "column"].includes(selectedBlock.type) && (
+                    <>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Padding</label>
+                        <select
+                          value={selectedBlock.options?.paddingSize ?? "md"}
+                          onChange={(e) =>
+                            updateBlockOptions(selectedBlock.id, {
+                              paddingSize: e.target.value as PaddingSize,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {PADDING_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Margin</label>
+                        <select
+                          value={selectedBlock.options?.marginSize ?? "md"}
+                          onChange={(e) =>
+                            updateBlockOptions(selectedBlock.id, {
+                              marginSize: e.target.value as MarginSize,
+                            })
+                          }
+                          className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          {MARGIN_OPTIONS.map((o) => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </>
+                  )}
+                  {["divider", "spacer"].includes(selectedBlock.type) && (
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Margin</label>
+                      <select
+                        value={selectedBlock.options?.marginSize ?? "md"}
+                        onChange={(e) =>
+                          updateBlockOptions(selectedBlock.id, {
+                            marginSize: e.target.value as MarginSize,
+                          })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {MARGIN_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* — Border & shadow — */}
+              {["confirmation_message", "qr_code", "location", "event_details", "custom_text", "container", "row", "column"].includes(selectedBlock.type) && (
+                <div className="pt-1 border-t border-gray-100">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Border</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Border width</label>
+                      <select
+                        value={selectedBlock.options?.borderWidth ?? "2"}
+                        onChange={(e) =>
+                          updateBlockOptions(selectedBlock.id, {
+                            borderWidth: e.target.value as BorderWidth,
+                          })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {BORDER_WIDTH_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Border style</label>
+                      <select
+                        value={selectedBlock.options?.borderStyle ?? "solid"}
+                        onChange={(e) =>
+                          updateBlockOptions(selectedBlock.id, {
+                            borderStyle: e.target.value as BorderStyle,
+                          })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {BORDER_STYLE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Border color</label>
+                      <ColorPickerField
+                        value={selectedBlock.options?.borderColor ?? ""}
+                        onChange={(v) => updateBlockOptions(selectedBlock.id, { borderColor: v })}
+                        placeholder="#e5e7eb"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Border radius</label>
+                      <select
+                        value={selectedBlock.options?.borderRadius ?? "lg"}
+                        onChange={(e) =>
+                          updateBlockOptions(selectedBlock.id, {
+                            borderRadius: e.target.value as BorderRadius,
+                          })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {BORDER_RADIUS_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Shadow</label>
+                      <select
+                        value={selectedBlock.options?.shadow ?? "sm"}
+                        onChange={(e) =>
+                          updateBlockOptions(selectedBlock.id, {
+                            shadow: e.target.value as ShadowSize,
+                          })
+                        }
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        {SHADOW_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* — Border & shadow — */}
-              {["confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
-                <>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Border width</label>
-                    <select
-                      value={selectedBlock.options?.borderWidth ?? "2"}
-                      onChange={(e) =>
-                        updateBlockOptions(selectedBlock.id, {
-                          borderWidth: e.target.value as BorderWidth,
-                        })
-                      }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {BORDER_WIDTH_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Border radius</label>
-                    <select
-                      value={selectedBlock.options?.borderRadius ?? "lg"}
-                      onChange={(e) =>
-                        updateBlockOptions(selectedBlock.id, {
-                          borderRadius: e.target.value as BorderRadius,
-                        })
-                      }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {BORDER_RADIUS_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Shadow</label>
-                    <select
-                      value={selectedBlock.options?.shadow ?? "sm"}
-                      onChange={(e) =>
-                        updateBlockOptions(selectedBlock.id, {
-                          shadow: e.target.value as ShadowSize,
-                        })
-                      }
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      {SHADOW_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
-
-              {/* — Colors — */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Background</label>
-                <ColorPickerField
-                  value={selectedBlock.options?.backgroundColor ?? ""}
-                  onChange={(v) => updateBlockOptions(selectedBlock.id, { backgroundColor: v })}
-                  placeholder="#f0f9ff"
-                />
+              {/* — Background — */}
+              <div className="pt-1 border-t border-gray-100">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Background</h4>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Background color</label>
+                  <ColorPickerField
+                    value={selectedBlock.options?.backgroundColor ?? ""}
+                    onChange={(v) => updateBlockOptions(selectedBlock.id, { backgroundColor: v })}
+                    placeholder="#f0f9ff"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">Text color (preset)</label>
@@ -541,16 +824,6 @@ export function ConfirmationTemplateBuilder({
                   />
                 </div>
               )}
-              {["confirmation_message", "qr_code", "location", "event_details", "custom_text"].includes(selectedBlock.type) && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Border color</label>
-                  <ColorPickerField
-                    value={selectedBlock.options?.borderColor ?? ""}
-                    onChange={(v) => updateBlockOptions(selectedBlock.id, { borderColor: v })}
-                    placeholder="#e5e7eb"
-                  />
-                </div>
-              )}
 
               {/* Theme (for card-style blocks) */}
               {BLOCKS_WITH_THEME.includes(selectedBlock.type) && (
@@ -574,26 +847,10 @@ export function ConfirmationTemplateBuilder({
                 </div>
               )}
 
-              {/* — Typography — */}
-              <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">Text alignment</label>
-                <p className="text-xs text-gray-500 mb-1.5">Align text and content left, center, or right</p>
-                <select
-                  value={selectedBlock.options?.alignment ?? "center"}
-                  onChange={(e) =>
-                    updateBlockOptions(selectedBlock.id, {
-                      alignment: e.target.value as ConfirmationBlockOptions["alignment"],
-                    })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {ALIGNMENT_OPTIONS.map((o) => (
-                    <option key={o.value} value={o.value}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {/* — Text style — */}
+              <div className="pt-1 border-t border-gray-100">
+                <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Text style</h4>
+                <div className="space-y-3">
               {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "event_name", "attendee_name", "custom_text"].includes(selectedBlock.type) && (
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">Font weight</label>
@@ -768,6 +1025,8 @@ export function ConfirmationTemplateBuilder({
                   </label>
                 </>
               )}
+                </div>
+              </div>
 
               {/* — Block labels — */}
               {["success_badge", "confirmation_message", "qr_code", "location", "event_details", "attendee_name"].includes(
@@ -806,6 +1065,7 @@ export function ConfirmationTemplateBuilder({
           </div>
         </>
       )}
-    </div>
+      </div>
+    </DndContext>
   );
 }

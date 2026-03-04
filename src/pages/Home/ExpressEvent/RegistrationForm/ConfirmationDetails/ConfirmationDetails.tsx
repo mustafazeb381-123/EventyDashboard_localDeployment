@@ -497,7 +497,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
           />
         </div>
       ) : (
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 px-8 max-w-full">
+      <div className="grid grid-cols-1 bg-red-500 lg:grid-cols-2 gap-12 px-8 max-w-full">
         <div className="space-y-6">
           {isLoading ? (
             <div className="grid grid-cols-2 gap-4">
