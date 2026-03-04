@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Check, ChevronLeft, X, Pencil, Trash2, Eye } from "lucide-react";
+import { Check, ChevronLeft, X, Pencil, Trash2, Eye, MailX } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -307,6 +307,30 @@ const matchesReadyMadeTemplate = (
   return false;
 };
 
+/** Toggle switch for enabling/disabling email sending per flow. */
+const EmailSendingSwitch = ({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+}) => (
+  <div className="flex items-center gap-3">
+    <span className="text-sm font-medium text-gray-700">{label}</span>
+    <label className="relative inline-flex items-center cursor-pointer">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500" />
+    </label>
+  </div>
+);
+
 // ---------- Modals ----------
 const EmailEditorModal = ({
   open,
@@ -587,6 +611,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   const [eventData, setEventData] = useState<any>(null);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [customTemplateName, setCustomTemplateName] = useState("");
+  /** Per-flow toggle: when false, skip sending emails for that workflow. TODO: persist via API. */
+  const [emailSendingEnabled, setEmailSendingEnabled] = useState<Record<string, boolean>>({});
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "warning";
@@ -652,6 +678,18 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     };
     fetchEventData();
   }, [eventId, effectiveEventId]); // respond to eventId changes
+
+  // Initialize email sending enabled per flow (default ON). TODO: load/save via API when backend supports it.
+  const flowIds = flows.map((f) => f.id).join(",");
+  useEffect(() => {
+    setEmailSendingEnabled((prev) => {
+      const next = { ...prev };
+      flows.forEach((f) => {
+        if (next[f.id] === undefined) next[f.id] = true;
+      });
+      return next;
+    });
+  }, [flowIds, flows]);
 
   // Update modal template when eventData or flows change to ensure it shows latest data
   useEffect(() => {
@@ -1134,7 +1172,8 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
     else onPrevious?.();
   };
   const handleNext = () => {
-    if (!selectedTemplates[currentFlow.id]) {
+    const sendingEnabled = emailSendingEnabled[currentFlow.id];
+    if (sendingEnabled && !selectedTemplates[currentFlow.id]) {
       showNotification("Please select template", "warning");
       return;
     }
@@ -1332,11 +1371,30 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
             onClick={onPrevious}
           />
           <h2 className="text-xl font-semibold">{currentFlow.label}</h2>
+          {currentFlow && (
+            <EmailSendingSwitch
+              checked={Boolean(emailSendingEnabled[currentFlow.id])}
+              onChange={(enabled) =>
+                setEmailSendingEnabled((prev) => ({
+                  ...prev,
+                  [currentFlow.id]: enabled,
+                }))
+              }
+              label="Send emails"
+            />
+          )}
+          {currentFlow && !emailSendingEnabled[currentFlow.id] && (
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+              <MailX size={14} />
+              Emails disabled
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1">
           {flows.map((f, idx) => {
-            const active = idx === currentFlowIndex,
-              done = Boolean(selectedTemplates[f.id]);
+            const active = idx === currentFlowIndex;
+            const sendingOff = !emailSendingEnabled[f.id];
+            const done = Boolean(selectedTemplates[f.id]) || sendingOff;
             return (
               <React.Fragment key={f.id}>
                 <div className="flex flex-col items-center flex-shrink-0">
@@ -1370,6 +1428,12 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                   >
                     {f.label}
                   </span>
+                  {sendingOff && (
+                    <span className="flex items-center gap-0.5 mt-0.5 text-[10px] text-amber-600 font-medium" title="Email sending disabled">
+                      <MailX size={10} />
+                      Off
+                    </span>
+                  )}
                 </div>
                 {idx !== flows.length - 1 && (
                   <div
@@ -1384,6 +1448,18 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           })}
         </div>
       </div>
+
+      {currentFlow && !emailSendingEnabled[currentFlow.id] && (
+        <div
+          className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800"
+          role="status"
+        >
+          <MailX size={20} className="shrink-0 text-amber-600" />
+          <p className="text-sm font-medium">
+            Email sending is <strong>disabled</strong> for {currentFlow.label}. No emails will be sent for this step. You can still choose a template for when you turn it back on.
+          </p>
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex justify-center py-8">
