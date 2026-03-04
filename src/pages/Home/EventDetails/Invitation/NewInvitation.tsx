@@ -698,6 +698,7 @@ function NewInvitation() {
                     onCreateNewTemplate={handleInvitationCreateNewTemplate}
                     onEditTemplate={handleInvitationEditTemplate}
                     onDeleteTemplate={handleInvitationDeleteTemplate}
+                    eventId={eventId}
                   />
                 )}
 
