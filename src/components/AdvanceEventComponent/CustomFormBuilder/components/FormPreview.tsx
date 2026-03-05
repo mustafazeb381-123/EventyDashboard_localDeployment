@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AlertCircle, X, FileText, Image as ImageIcon } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { CustomFormField, FormTheme, FieldType } from "../types";
+import type { CustomFormField, FormTheme } from "../types";
 import { FormHeader } from "./FormHeader";
 import { FormButtonField } from "./FormButtonField";
 import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
@@ -765,10 +765,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       case "divider":
         return (
           <hr
-            className="my-4"
             style={{
-              borderColor: theme?.formBorderColor || "#e5e7eb",
-              borderWidth: "1px",
+              border: "none",
+              borderTop: `1px solid ${theme?.formBorderColor || "#e5e7eb"}`,
+              margin: 0,
+              width: "100%",
             }}
           />
         );
@@ -960,7 +961,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       className="w-full rounded-xl shadow-lg overflow-hidden"
       style={formLayoutStyle}
     >
-      {/* Banner - full-bleed (touch top and sides), optional theme margins */}
+      {/* Banner - full-bleed (touch top and sides); space below = form padding-top */}
       {bannerImage && (
         <div
           className="w-full bg-gray-100 overflow-hidden"
@@ -989,16 +990,17 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         </div>
       )}
 
-      <FormHeader theme={theme} />
+      <div style={{ paddingTop: formPadding }}>
+        <FormHeader theme={theme} />
 
-      <div
-        style={{
-          backgroundColor: theme?.formBackgroundColor || "#ffffff",
-        }}
-      >
-        <form
+        <div
+          style={{
+            backgroundColor: theme?.formBackgroundColor || "#ffffff",
+          }}
+        >
+          <form
           onSubmit={handleSubmit}
-          className="space-y-6"
+          className="flex flex-col gap-6"
           style={{ width: "100%" }}
         >
           {(() => {
@@ -1039,7 +1041,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   gap: field.layoutProps?.gap || "16px",
                   padding:
                     field.layoutProps?.padding || (isRowLayout ? "0" : "16px"),
-                  margin: field.layoutProps?.margin || "0",
+                  margin: 0,
                   backgroundColor:
                     field.layoutProps?.backgroundColor || "transparent",
                   borderRadius: field.layoutProps?.borderRadius || "0px",
@@ -1094,28 +1096,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
                           // Apply per-field spacing so custom margins/paddings are respected
                           const fieldSpacing: React.CSSProperties = {
-                            margin: childField.fieldStyle?.margin || undefined,
+                            // Keep padding and width customizations, but avoid
+                            // per-field margins so vertical spacing stays
+                            // visually consistent in the preview.
                             padding:
                               childField.fieldStyle?.padding || undefined,
                             width: childField.fieldStyle?.width || "100%",
-                            ...(childField.fieldStyle?.marginTop
-                              ? { marginTop: childField.fieldStyle.marginTop }
-                              : {}),
-                            ...(childField.fieldStyle?.marginRight
-                              ? {
-                                  marginRight:
-                                    childField.fieldStyle.marginRight,
-                                }
-                              : {}),
-                            ...(childField.fieldStyle?.marginBottom
-                              ? {
-                                  marginBottom:
-                                    childField.fieldStyle.marginBottom,
-                                }
-                              : {}),
-                            ...(childField.fieldStyle?.marginLeft
-                              ? { marginLeft: childField.fieldStyle.marginLeft }
-                              : {}),
                             ...(childField.fieldStyle?.paddingTop
                               ? { paddingTop: childField.fieldStyle.paddingTop }
                               : {}),
@@ -1254,21 +1240,10 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   <div
                     key={field.id}
                     style={{
-                      margin: field.fieldStyle?.margin || undefined,
+                      // Avoid custom margins here so headings align with the
+                      // same vertical rhythm as other fields.
                       padding: field.fieldStyle?.padding || undefined,
                       width: field.fieldStyle?.width || "100%",
-                      ...(field.fieldStyle?.marginTop
-                        ? { marginTop: field.fieldStyle.marginTop }
-                        : {}),
-                      ...(field.fieldStyle?.marginRight
-                        ? { marginRight: field.fieldStyle.marginRight }
-                        : {}),
-                      ...(field.fieldStyle?.marginBottom
-                        ? { marginBottom: field.fieldStyle.marginBottom }
-                        : {}),
-                      ...(field.fieldStyle?.marginLeft
-                        ? { marginLeft: field.fieldStyle.marginLeft }
-                        : {}),
                       ...(field.fieldStyle?.paddingTop
                         ? { paddingTop: field.fieldStyle.paddingTop }
                         : {}),
@@ -1294,21 +1269,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   <div
                     key={field.id}
                     style={{
-                      margin: field.fieldStyle?.margin || undefined,
+                      // Use padding/width only for consistent spacing.
                       padding: field.fieldStyle?.padding || undefined,
                       width: field.fieldStyle?.width || "100%",
-                      ...(field.fieldStyle?.marginTop
-                        ? { marginTop: field.fieldStyle.marginTop }
-                        : {}),
-                      ...(field.fieldStyle?.marginRight
-                        ? { marginRight: field.fieldStyle.marginRight }
-                        : {}),
-                      ...(field.fieldStyle?.marginBottom
-                        ? { marginBottom: field.fieldStyle.marginBottom }
-                        : {}),
-                      ...(field.fieldStyle?.marginLeft
-                        ? { marginLeft: field.fieldStyle.marginLeft }
-                        : {}),
                       ...(field.fieldStyle?.paddingTop
                         ? { paddingTop: field.fieldStyle.paddingTop }
                         : {}),
@@ -1334,21 +1297,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   <div
                     key={field.id}
                     style={{
-                      margin: field.fieldStyle?.margin || undefined,
+                      // Keep vertical rhythm uniform; ignore custom margins.
                       padding: field.fieldStyle?.padding || undefined,
                       width: field.fieldStyle?.width || "100%",
-                      ...(field.fieldStyle?.marginTop
-                        ? { marginTop: field.fieldStyle.marginTop }
-                        : {}),
-                      ...(field.fieldStyle?.marginRight
-                        ? { marginRight: field.fieldStyle.marginRight }
-                        : {}),
-                      ...(field.fieldStyle?.marginBottom
-                        ? { marginBottom: field.fieldStyle.marginBottom }
-                        : {}),
-                      ...(field.fieldStyle?.marginLeft
-                        ? { marginLeft: field.fieldStyle.marginLeft }
-                        : {}),
                       ...(field.fieldStyle?.paddingTop
                         ? { paddingTop: field.fieldStyle.paddingTop }
                         : {}),
@@ -1371,23 +1322,10 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               return (
                 <div
                   key={field.id}
-                  className="space-y-2"
+                  className="flex flex-col gap-2"
                   style={{
-                    margin: field.fieldStyle?.margin || undefined,
                     padding: field.fieldStyle?.padding || undefined,
                     width: field.fieldStyle?.width || "100%",
-                    ...(field.fieldStyle?.marginTop
-                      ? { marginTop: field.fieldStyle.marginTop }
-                      : {}),
-                    ...(field.fieldStyle?.marginRight
-                      ? { marginRight: field.fieldStyle.marginRight }
-                      : {}),
-                    ...(field.fieldStyle?.marginBottom
-                      ? { marginBottom: field.fieldStyle.marginBottom }
-                      : {}),
-                    ...(field.fieldStyle?.marginLeft
-                      ? { marginLeft: field.fieldStyle.marginLeft }
-                      : {}),
                     ...(field.fieldStyle?.paddingTop
                       ? { paddingTop: field.fieldStyle.paddingTop }
                       : {}),
@@ -1501,6 +1439,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

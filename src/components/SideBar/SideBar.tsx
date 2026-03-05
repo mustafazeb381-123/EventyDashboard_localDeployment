@@ -213,7 +213,7 @@ const SideBar = ({
     ) {
       setExpandedMenus((prev) => ({ ...prev, Communications: true }));
     }
-    if (currentPath.includes("/event-content")) {
+    if (currentPath.includes("/event-content") || currentPath.includes("/galleries")) {
       setExpandedMenus((prev) => ({ ...prev, "Event Content": true }));
     }
 
@@ -271,18 +271,13 @@ const SideBar = ({
         : "/regesterd_user",
       availableForExpress: true,
     },
-    {
-      icon: NotepadText,
-      label: "Agenda",
-      path: currentEventId ? `/agenda?eventId=${currentEventId}` : "/agenda",
-      availableForExpress: false,
-    },
-    {
-      icon: Image,
-      label: "Galleries",
-      path: currentEventId ? `/home/${currentEventId}/galleries` : "/galleries",
-      availableForExpress: false,
-    },
+    // Agenda hidden for now (outside Event Content)
+    // {
+    //   icon: NotepadText,
+    //   label: "Agenda",
+    //   path: currentEventId ? `/agenda?eventId=${currentEventId}` : "/agenda",
+    //   availableForExpress: false,
+    // },
     {
       icon: LayoutTemplate,
       label: "Event Content",
@@ -291,6 +286,15 @@ const SideBar = ({
         : "#",
       availableForExpress: false,
       submenu: [
+        {
+          label: "Galleries",
+          icon: Image,
+          path: currentEventId
+            ? `/home/${currentEventId}/galleries`
+            : "/galleries",
+          availableForExpress: false,
+          sidebarActiveKey: "Galleries",
+        },
         {
           label: "Speakers",
           icon: Mic,

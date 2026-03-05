@@ -15,7 +15,11 @@ import CustomFormBuilder from "@/components/AdvanceEventComponent/CustomFormBuil
 import {
   FormBuilderTemplateForm,
 } from "@/components/AdvanceEventComponent/AdvanceRegistration";
-import type { CustomFormField, FormTheme } from "@/components/AdvanceEventComponent/CustomFormBuilder/types";
+import type {
+  CustomFormField,
+  FormTheme,
+  FormLanguageConfig,
+} from "@/components/AdvanceEventComponent/CustomFormBuilder/types";
 import TemplateFormOne from "./RegistrationTemplates/TemplateOne/TemplateForm";
 import TemplateFormTwo from "./RegistrationTemplates/TemplateTwo/TemplateForm";
 import TemplateFormThree from "./RegistrationTemplates/TemplateThree/TemplateForm";
@@ -194,7 +198,7 @@ const Modal = ({
 };
 
 type RegistrationFormProps = {
-  onNext: (eventId?: string | number, plan: string) => void;
+  onNext: (eventId?: string | number, plan?: string) => void;
   onPrevious: () => void;
   currentStep: any;
   totalSteps: any;
@@ -312,15 +316,21 @@ const RegistrationForm = ({
     fetchEventData();
   }, [fetchEventData]);
 
-  // Memoize API call function
+  // Memoize API call function (old/default template system)
   const getCreateTemplateApiData = useCallback(async () => {
     try {
       if (!effectiveEventId) {
         return;
       }
 
-      const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
-      const result = await getRegistrationTemplateData(effectiveEventId, tenantUuid);
+      const tenantUuid =
+        typeof window !== "undefined"
+          ? localStorage.getItem("tenant_uuid")
+          : null;
+      const result = await getRegistrationTemplateData(
+        effectiveEventId,
+        tenantUuid,
+      );
       const responseData = result?.data?.data;
 
       if (!responseData) {
@@ -338,7 +348,8 @@ const RegistrationForm = ({
 
       const nameOfTemplate = responseData.attributes?.name;
       setSelectedTemplateName(nameOfTemplate);
-      setConfirmedTemplate(nameOfTemplate);
+      // Do NOT set confirmedTemplate here – let checkAndSetDefaultTemplate
+      // decide based on the API's `default` flags across both systems.
       setGetTemplatesData(templateData);
     } catch (error) {
       showNotification("Failed to fetch template data", "error");
@@ -563,10 +574,10 @@ const RegistrationForm = ({
   const handleSaveCustomForm = useCallback(
     async (
       customFields: CustomFormField[],
-      bannerImage?: File | string,
+      bannerImage?: File | string | null,
       theme?: FormTheme,
       templateName?: string,
-      languageConfig?: { languageMode?: string; primaryLanguage?: string }
+      languageConfig?: FormLanguageConfig,
     ) => {
       if (!effectiveEventId) return;
       let normalizedBanner: string | null = null;
@@ -855,7 +866,7 @@ const RegistrationForm = ({
     }
   }, [isLoading]);
 
-  // Memoize handleUseTemplate to prevent unnecessary re-renders
+  // Memoize handleUseTemplate to mirror AdvanceRegistration flow (old template system)
   const handleUseTemplate = useCallback(
     async (templateId: string) => {
       setIsLoading(true);
@@ -904,14 +915,70 @@ const RegistrationForm = ({
           },
         };
 
-        const response = await createTemplatePostApi(payload, savedEventId);
-        showNotification("Event template added successfully!", "success");
+        // Track that we just selected a default (old system) template
+        setLastSelectedSystem("default");
+
+        // Set default template via API - this sets old template system as default
+        const response = await createTemplatePostApi(
+          payload,
+          savedEventId as string,
+        );
+
+        // After setting a default in the old system, explicitly unset any
+        // custom form-builder templates that might still have default: true
+        try {
+          const customTemplatesResponse = await getRegistrationFormTemplates(
+            savedEventId as string,
+          );
+          const customTemplates = customTemplatesResponse?.data?.data || [];
+          const defaultCustomTemplates = customTemplates.filter(
+            (t: any) => t.attributes?.default === true,
+          );
+
+          for (const customTemplate of defaultCustomTemplates) {
+            try {
+              await updateRegistrationFormTemplate(
+                savedEventId as string,
+                customTemplate.id,
+                {
+                  registration_form_template: {
+                    name: customTemplate.attributes?.name,
+                    default: false,
+                    form_template_data:
+                      customTemplate.attributes?.form_template_data || {},
+                  },
+                },
+              );
+            } catch (err) {
+              console.error(
+                `Failed to unset default for custom template ${customTemplate.id}:`,
+                err,
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Error unsetting custom templates:", err);
+        }
+
+        // Optimistically mark this template as selected in the UI
         setSelectedTemplateData(templateData);
         setConfirmedTemplate(templateId);
+        showNotification("Event template added successfully!", "success");
+
+        // Close modal and advance internal step after a short delay
         setTimeout(() => {
           setInternalStep(1);
           handleCloseModal();
         }, 1000);
+
+        // Reload both systems to ensure state is in sync
+        await Promise.all([
+          loadFormBuilderTemplates(), // will call checkAndSetDefaultTemplate
+          getCreateTemplateApiData(),
+        ]);
+
+        // Final safeguard: ensure confirmedTemplate reflects API `default` flags
+        await checkAndSetDefaultTemplate();
       } catch (error: any) {
         console.error("Error creating template:", error);
         if (error.response?.status === 400) {
@@ -933,7 +1000,14 @@ const RegistrationForm = ({
         setIsLoading(false);
       }
     },
-    [effectiveEventId, formData, handleCloseModal],
+    [
+      effectiveEventId,
+      formData,
+      handleCloseModal,
+      loadFormBuilderTemplates,
+      getCreateTemplateApiData,
+      checkAndSetDefaultTemplate,
+    ],
   );
 
   // Memoize toggle handler

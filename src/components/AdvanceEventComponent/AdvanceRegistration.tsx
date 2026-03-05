@@ -1763,32 +1763,12 @@ export const FormBuilderTemplateForm: React.FC<
                             let fieldWrapperStyle: React.CSSProperties = {};
 
                             const fieldSpacing: React.CSSProperties = {
-                              margin:
-                                childField.fieldStyle?.margin || undefined,
+                              // Keep padding and width customizations, but avoid
+                              // per-field margins so vertical spacing stays
+                              // consistent across all fields in the preview.
                               padding:
                                 childField.fieldStyle?.padding || undefined,
                               width: childField.fieldStyle?.width || "100%",
-                              ...(childField.fieldStyle?.marginTop
-                                ? { marginTop: childField.fieldStyle.marginTop }
-                                : {}),
-                              ...(childField.fieldStyle?.marginRight
-                                ? {
-                                    marginRight:
-                                      childField.fieldStyle.marginRight,
-                                  }
-                                : {}),
-                              ...(childField.fieldStyle?.marginBottom
-                                ? {
-                                    marginBottom:
-                                      childField.fieldStyle.marginBottom,
-                                  }
-                                : {}),
-                              ...(childField.fieldStyle?.marginLeft
-                                ? {
-                                    marginLeft:
-                                      childField.fieldStyle.marginLeft,
-                                  }
-                                : {}),
                               ...(childField.fieldStyle?.paddingTop
                                 ? {
                                     paddingTop:
@@ -1932,21 +1912,10 @@ export const FormBuilderTemplateForm: React.FC<
                       key={`${field.id}-${currentLanguage}`}
                       className="space-y-2"
                       style={{
-                        margin: field.fieldStyle?.margin || undefined,
+                        // Keep padding and width customizations, but avoid
+                        // per-field margins so vertical spacing stays consistent.
                         padding: field.fieldStyle?.padding || undefined,
                         width: field.fieldStyle?.width || "100%",
-                        ...(field.fieldStyle?.marginTop
-                          ? { marginTop: field.fieldStyle.marginTop }
-                          : {}),
-                        ...(field.fieldStyle?.marginRight
-                          ? { marginRight: field.fieldStyle.marginRight }
-                          : {}),
-                        ...(field.fieldStyle?.marginBottom
-                          ? { marginBottom: field.fieldStyle.marginBottom }
-                          : {}),
-                        ...(field.fieldStyle?.marginLeft
-                          ? { marginLeft: field.fieldStyle.marginLeft }
-                          : {}),
                         ...(field.fieldStyle?.paddingTop
                           ? { paddingTop: field.fieldStyle.paddingTop }
                           : {}),
