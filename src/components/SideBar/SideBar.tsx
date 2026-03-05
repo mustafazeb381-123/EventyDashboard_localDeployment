@@ -406,7 +406,7 @@ const SideBar = ({
     },
     {
       icon: UserCog,
-      label: "Management",
+      label: "Event Admin",
       path: currentEventId
         ? `/management?eventId=${currentEventId}`
         : "/management",

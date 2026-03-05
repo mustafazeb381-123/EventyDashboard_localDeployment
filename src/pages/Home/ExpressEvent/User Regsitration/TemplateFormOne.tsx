@@ -65,7 +65,7 @@ const TemplateFormOne = ({
           width: "100%",
           backgroundImage: eventData?.attributes?.registration_page_banner
             ? `url(${eventData.attributes.registration_page_banner})`
-            : `url(${Assets.images.uploadBackground2})`,
+            : `url(${Assets.images.uploadBackground})`,
         }}
         className="w-full h-[400px] flex items-center justify-center border rounded-3xl from-white/50 to-transparent border-gray-200 sm:p-5 bg-cover bg-center bg-no-repeat relative"
       >

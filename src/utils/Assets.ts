@@ -29,6 +29,7 @@ import sccLogo from '../assets/images/scc_logo.png';
 import temp1 from '../assets/images/temp1.png';
 import temp2 from '../assets/images/temp2.png';
 import loginbg from '../assets/images/loginbg.jpeg';
+import advanceBanner from '../assets/images/advanceBanner.png';
 
 
 // Badge variations
@@ -141,7 +142,8 @@ export const images = {
   card_footer,
   card_header2,
   card_footer2,
-  loginbg
+  loginbg,
+  advanceBanner,
 } as const;
 
 // Icons object

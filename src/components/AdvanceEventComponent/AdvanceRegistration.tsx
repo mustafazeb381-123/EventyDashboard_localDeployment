@@ -45,6 +45,7 @@ import type {
 import { FormHeader } from "./CustomFormBuilder/components/FormHeader";
 import { FormButtonField } from "./CustomFormBuilder/components/FormButtonField";
 import { COUNTRIES, COUNTRY_DIAL_CODES } from "@/utils/countries";
+import Assets from "@/utils/Assets";
 import { useTranslation } from "react-i18next";
 import {
   getTranslatedLabel,
@@ -1494,12 +1495,13 @@ export const FormBuilderTemplateForm: React.FC<
       })),
     });
 
+    // Custom form: show default advance banner when no banner image is set
     const bannerUrl =
       bannerImage &&
       typeof bannerImage === "string" &&
       bannerImage.trim() !== ""
         ? bannerImage
-        : bannerBlobUrl;
+        : bannerBlobUrl || Assets.images.advanceBanner;
 
     const backgroundImageUrl =
       theme?.formBackgroundImage &&
@@ -2913,7 +2915,7 @@ const AdvanceRegistration = ({
 
   const handleSaveCustomForm = async (
     customFields: CustomFormField[],
-    bannerImage?: File | string,
+    bannerImage?: File | string | null,
     theme?: FormTheme,
     templateName?: string,
     languageConfig?: FormLanguageConfig,
@@ -3312,25 +3314,37 @@ const AdvanceRegistration = ({
             fields: fields, // Complete CustomFormField[] with all properties (id, type, label, name, placeholder, required, fieldStyle, layoutProps, etc.)
             formBuilderData: {
               formData: fields, // Store complete field data with all properties
-              // Only include bannerImage when creating (not when updating)
+              // When creating: include bannerImage if set. When editing: include new image or null when user removed it
               ...(isEditFormBuilderMode
-                ? {}
-                : normalizedBannerImage &&
+                ? normalizedBannerImage === null
+                  ? { bannerImage: null }
+                  : normalizedBannerImage &&
                     typeof normalizedBannerImage === "string" &&
                     normalizedBannerImage.trim() !== ""
                   ? { bannerImage: normalizedBannerImage }
-                  : {}),
+                  : {}
+                : normalizedBannerImage &&
+                  typeof normalizedBannerImage === "string" &&
+                  normalizedBannerImage.trim() !== ""
+                ? { bannerImage: normalizedBannerImage }
+                : {}),
               theme: cleanTheme,
               languageMode: normalizedFormBuilderData?.languageMode ?? "single",
               primaryLanguage:
                 normalizedFormBuilderData?.primaryLanguage ?? undefined,
             },
-            // Only include bannerImage when creating (not when updating)
+            // When creating: include bannerImage if set. When editing: include new image or null when user removed it
             ...(isEditFormBuilderMode
-              ? {}
-              : normalizedBannerImage &&
+              ? normalizedBannerImage === null
+                ? { bannerImage: null }
+                : normalizedBannerImage &&
                   typeof normalizedBannerImage === "string" &&
                   normalizedBannerImage.trim() !== ""
+                ? { bannerImage: normalizedBannerImage }
+                : {}
+              : normalizedBannerImage &&
+                typeof normalizedBannerImage === "string" &&
+                normalizedBannerImage.trim() !== ""
                 ? { bannerImage: normalizedBannerImage }
                 : {}),
             theme: cleanTheme,
@@ -3431,11 +3445,23 @@ const AdvanceRegistration = ({
               );
             }
           } else if (normalizedBannerImage === null) {
-            // User removed the banner - we might want to handle this case
-            // For now, we'll skip updating (banner remains as is)
-            console.log(
-              "Banner image was removed - skipping update (banner will remain)",
-            );
+            // User explicitly removed the banner - clear it on the server
+            try {
+              console.log("Clearing banner image (user removed)");
+              await updateRegistrationFormTemplateImage(
+                effectiveEventId,
+                editingFormBuilderTemplate.id,
+                "banner_image",
+                "",
+              );
+              console.log("✅ Banner image cleared successfully");
+            } catch (clearError: any) {
+              console.error("❌ Error clearing banner image:", clearError);
+              showNotification(
+                "Banner was removed from this template, but clearing it on the server failed. You may still see the old image until the backend supports clearing.",
+                "warning",
+              );
+            }
           }
         } else {
           console.log(
@@ -4358,7 +4384,9 @@ const AdvanceRegistration = ({
                     : []
                 }
                 initialBannerImage={
-                  editingFormBuilderTemplate?.bannerImage ?? null
+                  editingFormBuilderTemplate?.bannerImage ??
+                  editingFormBuilderTemplate?.formBuilderData?.bannerImage ??
+                  null
                 }
                 initialTheme={editingFormBuilderTemplate?.theme ?? undefined}
                 initialTemplateName={

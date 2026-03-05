@@ -40,6 +40,63 @@ interface Speaker {
   };
 }
 
+// Image validation limits
+const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024; // 2MB
+const MAX_IMAGE_WIDTH = 2000;
+const MAX_IMAGE_HEIGHT = 2000;
+const MIN_IMAGE_WIDTH = 100;
+const MIN_IMAGE_HEIGHT = 100;
+
+function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({ width: img.naturalWidth, height: img.naturalHeight });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Failed to load image"));
+    };
+    img.src = url;
+  });
+}
+
+async function validateSpeakerImage(file: File): Promise<{ valid: boolean; error?: string }> {
+  if (!file.type.startsWith("image/")) {
+    return { valid: false, error: "Please upload a valid image file (e.g. JPG, PNG, WebP)." };
+  }
+  if (file.size > MAX_IMAGE_SIZE_BYTES) {
+    const maxMB = (MAX_IMAGE_SIZE_BYTES / (1024 * 1024)).toFixed(1);
+    return {
+      valid: false,
+      error: `Image size is incorrect. Maximum file size is ${maxMB}MB. Please upload a smaller image.`,
+    };
+  }
+  try {
+    const { width, height } = await getImageDimensions(file);
+    if (width < MIN_IMAGE_WIDTH || height < MIN_IMAGE_HEIGHT) {
+      return {
+        valid: false,
+        error: `Image size is incorrect. Minimum dimensions are ${MIN_IMAGE_WIDTH}×${MIN_IMAGE_HEIGHT}px. Please upload an image with the required dimensions.`,
+      };
+    }
+    if (width > MAX_IMAGE_WIDTH || height > MAX_IMAGE_HEIGHT) {
+      return {
+        valid: false,
+        error: `Image size is incorrect. Maximum dimensions are ${MAX_IMAGE_WIDTH}×${MAX_IMAGE_HEIGHT}px. Please upload an image with the required dimensions.`,
+      };
+    }
+  } catch {
+    return {
+      valid: false,
+      error: "Image size is incorrect. Please upload a valid image with the required dimensions.",
+    };
+  }
+  return { valid: true };
+}
+
 function AdvanceSpeaker({
   onNext,
   onPrevious,
@@ -68,6 +125,7 @@ function AdvanceSpeaker({
   });
 
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [isValidatingImage, setIsValidatingImage] = useState(false);
 
   // Loading states
   const [isFetchingSpeakers, setIsFetchingSpeakers] = useState(false);
@@ -674,21 +732,38 @@ function AdvanceSpeaker({
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Upload Profile Picture
                 </label>
+                <p className="text-xs text-gray-500 mb-1.5">
+                  Max 2MB. Dimensions between 100×100px and 2000×2000px.
+                </p>
                 <div className="relative">
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files[0]) {
-                        const file = e.target.files[0];
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setIsValidatingImage(true);
+                      setSelectedImageFile(null);
+                      const result = await validateSpeakerImage(file);
+                      setIsValidatingImage(false);
+                      if (result.valid) {
                         setSelectedImageFile(file);
+                      } else {
+                        showNotification(result.error ?? "Image size is incorrect. Please upload an image with the required dimensions.", "error");
+                        e.target.value = "";
                       }
                     }}
-                    disabled={isAddingSpeaker}
+                    disabled={isAddingSpeaker || isValidatingImage}
                     className="w-full p-2.5 border border-gray-300 rounded-md text-sm text-gray-600 file:mr-4 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
-                {selectedImageFile && (
+                {isValidatingImage && (
+                  <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Validating image...
+                  </p>
+                )}
+                {selectedImageFile && !isValidatingImage && (
                   <p className="text-xs text-gray-500 mt-1">
                     Selected: {selectedImageFile.name} (
                     {(selectedImageFile.size / 1024).toFixed(0)} KB)
@@ -841,19 +916,36 @@ function AdvanceSpeaker({
                 <label className="block text-sm font-medium text-gray-700 mb-1.5">
                   Upload New Profile Picture
                 </label>
+                <p className="text-xs text-gray-500 mb-1.5">
+                  Max 2MB. Dimensions between 100×100px and 2000×2000px.
+                </p>
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files && e.target.files[0]) {
-                      const file = e.target.files[0];
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setIsValidatingImage(true);
+                    setEditSelectedImageFile(null);
+                    const result = await validateSpeakerImage(file);
+                    setIsValidatingImage(false);
+                    if (result.valid) {
                       setEditSelectedImageFile(file);
+                    } else {
+                      showNotification(result.error ?? "Image size is incorrect. Please upload an image with the required dimensions.", "error");
+                      e.target.value = "";
                     }
                   }}
-                  disabled={isUpdatingSpeaker}
+                  disabled={isUpdatingSpeaker || isValidatingImage}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                 />
-                {editSelectedImageFile && (
+                {isValidatingImage && (
+                  <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Validating image...
+                  </p>
+                )}
+                {editSelectedImageFile && !isValidatingImage && (
                   <p className="text-xs text-gray-500 mt-1">
                     Selected: {editSelectedImageFile.name} (
                     {(editSelectedImageFile.size / 1024).toFixed(0)} KB)

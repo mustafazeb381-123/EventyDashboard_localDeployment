@@ -216,7 +216,7 @@ export const createRegistrationFormTemplate = (
       default?: boolean;
       form_template_data: {
         fields?: any[];
-        bannerImage?: string;
+        bannerImage?: string | null;
         theme?: {
           logo?: string;
           formBackgroundImage?: string;
@@ -245,7 +245,7 @@ export const updateRegistrationFormTemplate = (
       default?: boolean;
       form_template_data: {
         fields?: any[];
-        bannerImage?: string;
+        bannerImage?: string | null;
         theme?: {
           logo?: string;
           formBackgroundImage?: string;

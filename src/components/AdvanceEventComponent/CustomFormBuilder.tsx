@@ -53,6 +53,7 @@ import {
   makeAutoPlaceholderFromLabel,
   makeFieldNameFromLabel,
 } from "./CustomFormBuilder/utils/fieldAuto";
+import Assets from "@/utils/Assets";
 
 interface CustomFormBuilderProps {
   initialFields?: CustomFormField[];
@@ -62,7 +63,7 @@ interface CustomFormBuilderProps {
   initialLanguageConfig?: FormLanguageConfig;
   onSave: (
     fields: CustomFormField[],
-    bannerImage?: File | string,
+    bannerImage?: File | string | null,
     theme?: FormTheme,
     templateName?: string,
     languageConfig?: FormLanguageConfig
@@ -796,12 +797,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     }
   };
 
-  const handleRemoveBanner = () => {
-    setBannerImage(null);
-    setBannerPreview(null);
-    if (bannerInputRef.current) {
-      bannerInputRef.current.value = "";
-    }
+  const handleEditBanner = () => {
+    bannerInputRef.current?.click();
   };
 
   const handleFooterBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -815,11 +812,8 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
     }
   };
 
-  const handleRemoveFooterBanner = () => {
-    setTheme((prev) => ({ ...prev, footerBannerImage: null }));
-    if (footerBannerInputRef.current) {
-      footerBannerInputRef.current.value = "";
-    }
+  const handleEditFooterBanner = () => {
+    footerBannerInputRef.current?.click();
   };
 
   const handleSave = async () => {
@@ -864,7 +858,7 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
 
       await onSave(
         fieldsToSave,
-        bannerImage || undefined,
+        bannerImage === null ? null : bannerImage || undefined,
         theme,
         templateName.trim(),
         languageConfig
@@ -1096,38 +1090,58 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                         </h3>
                         {bannerPreview && (
                           <button
-                            onClick={handleRemoveBanner}
-                            className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            type="button"
+                            onClick={handleEditBanner}
+                            className="px-3 py-1.5 text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
                           >
-                            Remove
+                            Edit
                           </button>
                         )}
                       </div>
                     </div>
+                    {/* Single always-mounted file input so ref is always valid for Edit */}
+                    <input
+                      ref={bannerInputRef}
+                      id="banner-image-file-input"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleBannerImageChange}
+                      className="hidden"
+                    />
                     {bannerPreview ? (
-                      <div className="relative w-full h-64 bg-gray-100">
+                      <div className="relative w-full h-64 bg-gray-100 group">
                         <img
                           src={bannerPreview}
                           alt="Banner preview"
                           className="w-full h-full object-cover"
                         />
+                        <button
+                          type="button"
+                          onClick={handleEditBanner}
+                          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white font-medium rounded-lg"
+                        >
+                          Click to change banner image
+                        </button>
                       </div>
                     ) : (
-                      <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all">
-                        <ImageIcon className="w-12 h-12 text-gray-400 mb-2" />
-                        <span className="text-sm font-medium text-gray-600">
-                          Click to upload banner image
-                        </span>
-                        <span className="text-xs text-gray-500 mt-1">
-                          Recommended: 1200x400px
-                        </span>
-                        <input
-                          ref={bannerInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleBannerImageChange}
-                          className="hidden"
+                      <label
+                        htmlFor="banner-image-file-input"
+                        className="relative flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all overflow-hidden group"
+                      >
+                        <img
+                          src={Assets.images.advanceBanner}
+                          alt="Default banner"
+                          className="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-70 transition-opacity"
                         />
+                        <div className="relative z-10 flex flex-col items-center justify-center rounded-lg bg-white/80 px-4 py-3 backdrop-blur-sm">
+                          <ImageIcon className="w-10 h-10 text-gray-500 mb-2" />
+                          <span className="text-sm font-medium text-gray-700">
+                            Click to upload banner image
+                          </span>
+                          <span className="text-xs text-gray-500 mt-1">
+                            Recommended: 1200x400px
+                          </span>
+                        </div>
                       </label>
                     )}
                   </div>
@@ -1142,21 +1156,36 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
                         </h3>
                         {footerBannerPreview && (
                           <button
-                            onClick={handleRemoveFooterBanner}
-                            className="px-3 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                            type="button"
+                            onClick={handleEditFooterBanner}
+                            className="px-3 py-1.5 text-sm bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition-colors"
                           >
-                            Remove
+                            Edit
                           </button>
                         )}
                       </div>
                     </div>
                     {footerBannerPreview ? (
-                      <div className="relative w-full h-64 bg-gray-100">
+                      <div className="relative w-full h-64 bg-gray-100 group">
                         <img
                           src={footerBannerPreview}
                           alt="Footer banner preview"
                           className="w-full h-full object-cover"
                         />
+                        <input
+                          ref={footerBannerInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFooterBannerChange}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleEditFooterBanner}
+                          className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity text-white font-medium rounded-lg"
+                        >
+                          Click to change footer banner image
+                        </button>
                       </div>
                     ) : (
                       <label className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-gray-300 cursor-pointer hover:border-pink-400 hover:bg-pink-50/50 transition-all">

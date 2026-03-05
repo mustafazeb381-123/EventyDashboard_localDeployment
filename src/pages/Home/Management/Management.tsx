@@ -168,7 +168,7 @@ export default function Management() {
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Add Management</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Add Event Admin</h2>
           </div>
 
           <form onSubmit={handleAddMember}>
