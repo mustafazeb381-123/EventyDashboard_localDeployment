@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from "react";
 import { useNavigate } from "react-router-dom";
-import { Check, ChevronLeft, X, Pencil, Trash2, Eye, CheckCircle, MailX } from "lucide-react";
+import { Check, ChevronLeft, X, Pencil, Trash2, Eye, CheckCircle, Mail } from "lucide-react";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -473,30 +473,6 @@ const TemplateModal = ({
   );
 };
 
-/** Toggle switch for enabling/disabling email sending per flow. */
-const EmailSendingSwitch = ({
-  checked,
-  onChange,
-  label,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-  label: string;
-}) => (
-  <div className="flex items-center gap-3">
-    <span className="text-sm font-medium text-gray-700">{label}</span>
-    <label className="relative inline-flex items-center cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="sr-only peer"
-      />
-      <div className="w-11 h-6 bg-gray-200 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-pink-500" />
-    </label>
-  </div>
-);
-
 const TemplateThumbnail = ({ template, eventDataKey }: any) => {
   const scale = 0.5;
   const scaledWidth = `${100 / scale}%`,
@@ -582,8 +558,6 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   const [eventData, setEventData] = useState<any>(null);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [customTemplateName, setCustomTemplateName] = useState("");
-  /** Per-flow toggle: when false, skip sending emails for that workflow. TODO: persist via API. */
-  const [emailSendingEnabled, setEmailSendingEnabled] = useState<Record<string, boolean>>({});
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "warning";
@@ -608,6 +582,10 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   }, [notification]);
 
   const currentFlow = flows[currentFlowIndex];
+
+  // Event-level email enabled from getShowEventData (set in MainData as "Enable email")
+  const emailEnabledFromEvent =
+    (eventData?.attributes?.email_enabled ?? (eventData?.attributes as any)?.enable_email) !== false;
 
   // Fetch event data when eventId is available - respond to both eventId prop and effectiveEventId changes
   useEffect(() => {
@@ -650,18 +628,6 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
     fetchEventData();
   }, [eventId, effectiveEventId]); // respond to eventId changes
 
-  // Initialize email sending enabled per flow (default ON). TODO: load/save via API when backend supports it.
-  const flowIds = flows.map((f) => f.id).join(",");
-  useEffect(() => {
-    setEmailSendingEnabled((prev) => {
-      const next = { ...prev };
-      flows.forEach((f) => {
-        if (next[f.id] === undefined) next[f.id] = true;
-      });
-      return next;
-    });
-  }, [flowIds, flows]);
-
   // Update modal template when eventData or flows change to ensure it shows latest data
   useEffect(() => {
     if (modalTemplate && eventData && currentFlow) {
@@ -677,8 +643,9 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   }, [eventData, flows, currentFlowIndex, modalTemplate?.id]);
 
   useEffect(() => {
-    // Only load templates if we have both eventId and eventData
-    if (effectiveEventId && eventData) {
+    // Only load templates when email is enabled and we have eventId and eventData
+    const emailOn = (eventData?.attributes?.email_enabled ?? (eventData?.attributes as any)?.enable_email) !== false;
+    if (effectiveEventId && eventData && emailOn) {
       loadTemplatesFromAPI();
     }
   }, [effectiveEventId, currentFlowIndex, eventData]);
@@ -691,6 +658,8 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       );
       return;
     }
+    const emailOn = (eventData?.attributes?.email_enabled ?? (eventData?.attributes as any)?.enable_email) !== false;
+    if (!emailOn) return;
     setIsLoading(true);
     try {
       console.log("Loading templates with eventData:", eventData);
@@ -1140,8 +1109,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
     else onPrevious?.();
   };
   const handleNext = () => {
-    const sendingEnabled = emailSendingEnabled[currentFlow.id];
-    if (sendingEnabled && !selectedTemplates[currentFlow.id]) {
+    if (emailEnabledFromEvent && !selectedTemplates[currentFlow.id]) {
       showNotification("Please select template", "warning");
       return;
     }
@@ -1158,8 +1126,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   };
 
   const handleFinish = () => {
-    const sendingEnabled = emailSendingEnabled[currentFlow.id];
-    if (sendingEnabled && !selectedTemplates[currentFlow.id]) {
+    if (emailEnabledFromEvent && !selectedTemplates[currentFlow.id]) {
       showNotification("Please select a template to finish", "warning");
       return;
     }
@@ -1333,6 +1300,75 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
     }
   };
 
+  // When email is disabled for the event, show full-page popup like UserRegistration "Registration is closed"
+  if (eventData && !emailEnabledFromEvent) {
+    return (
+      <div className="w-full max-w-full mx-auto p-4 bg-white rounded-2xl shadow-sm">
+        {notification && (
+          <div className="fixed top-4 right-4 z-50 animate-slide-in">
+            <div
+              className={`px-6 py-3 rounded-lg shadow-lg ${
+                notification.type === "success"
+                  ? "bg-green-500 text-white"
+                  : notification.type === "error"
+                    ? "bg-red-500 text-white"
+                    : "bg-yellow-500 text-white"
+              }`}
+            >
+              {notification.message}
+            </div>
+          </div>
+        )}
+        <div className="flex items-center justify-center min-h-[360px] p-6">
+          <div className="max-w-md w-full text-center">
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 sm:p-10">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-100 flex items-center justify-center">
+                <Mail className="w-8 h-8 text-amber-600" />
+              </div>
+              <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+                Email is disabled
+              </h1>
+              <p className="text-gray-600 text-sm sm:text-base">
+                Email is disabled for this event. No confirmation or notification emails will be sent. Enable it in <strong>Event Details</strong> (first step) to send emails.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-between gap-4 mt-6">
+          <button
+            onClick={handleBack}
+            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
+          >
+            Back
+          </button>
+          <div className="flex items-center gap-3">
+            {!isLastStep && (
+              <button
+                onClick={handleSkip}
+                className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
+              >
+                Skip
+              </button>
+            )}
+            <button
+              onClick={isLastStep ? handleFinish : handleNext}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-medium transition-all duration-200"
+            >
+              {isLastStep ? (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  Finish event
+                </>
+              ) : (
+                "Next"
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-full mx-auto p-4 bg-white rounded-2xl shadow-sm">
       {/* Notification Toast */}
@@ -1360,30 +1396,11 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
             onClick={onPrevious}
           />
           <h2 className="text-xl font-semibold">{currentFlow.label}</h2>
-          {currentFlow && (
-            <EmailSendingSwitch
-              checked={Boolean(emailSendingEnabled[currentFlow.id])}
-              onChange={(enabled) =>
-                setEmailSendingEnabled((prev) => ({
-                  ...prev,
-                  [currentFlow.id]: enabled,
-                }))
-              }
-              label="Send emails"
-            />
-          )}
-          {currentFlow && !emailSendingEnabled[currentFlow.id] && (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
-              <MailX size={14} />
-              Emails disabled
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-1">
           {flows.map((f, idx) => {
             const active = idx === currentFlowIndex;
-            const sendingOff = !emailSendingEnabled[f.id];
-            const done = Boolean(selectedTemplates[f.id]) || sendingOff;
+            const done = Boolean(selectedTemplates[f.id]);
             return (
               <React.Fragment key={f.id}>
                 <div className="flex flex-col items-center flex-shrink-0">
@@ -1417,12 +1434,6 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                   >
                     {f.label}
                   </span>
-                  {sendingOff && (
-                    <span className="flex items-center gap-0.5 mt-0.5 text-[10px] text-amber-600 font-medium" title="Email sending disabled">
-                      <MailX size={10} />
-                      Off
-                    </span>
-                  )}
                 </div>
                 {idx !== flows.length - 1 && (
                   <div
@@ -1438,25 +1449,13 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
         </div>
       </div>
 
-      {currentFlow && !emailSendingEnabled[currentFlow.id] && (
-        <div
-          className="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800"
-          role="status"
-        >
-          <MailX size={20} className="shrink-0 text-amber-600" />
-          <p className="text-sm font-medium">
-            Email sending is <strong>disabled</strong> for {currentFlow.label}. No emails will be sent for this step. You can still choose a template for when you turn it back on.
-          </p>
-        </div>
-      )}
-
-      {isLoading && (
+      {emailEnabledFromEvent && isLoading && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500" />
         </div>
       )}
 
-      {!isLoading && (
+      {emailEnabledFromEvent && !isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div
             onClick={handleCreateNewTemplate}

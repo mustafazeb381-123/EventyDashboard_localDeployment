@@ -122,6 +122,8 @@ export interface PublicEventResponse {
   badge_background_url: string;
   /** Font for registration page and badge; empty = app default */
   font_name?: string;
+  /** When false, registration page shows "Registration is closed". Must be returned by GET /events/public/:uuid */
+  new_registration_enabled?: boolean;
 }
 
 export const getEventByUuidPublic = (eventUuid: string, tenantUuid: string) => {

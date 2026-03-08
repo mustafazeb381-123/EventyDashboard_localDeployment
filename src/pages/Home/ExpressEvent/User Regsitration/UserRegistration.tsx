@@ -1,5 +1,6 @@
 import {
   getEventByUuidPublic,
+  getShowEventData,
   getRegistrationTemplateData,
   getRegistrationFieldApi,
   getDefaultRegistrationFormTemplate,
@@ -87,6 +88,8 @@ function UserRegistration() {
     message: string;
     type: "success" | "error" | "info";
   } | null>(null);
+  /** When event_id is in URL, we fetch GET /events/:id and use its new_registration_enabled; null = not fetched or no event_id */
+  const [newRegistrationEnabledFromDashboard, setNewRegistrationEnabledFromDashboard] = useState<boolean | null>(null);
 
   const languages = [
     { code: "en", name: "English", flag: "🇬🇧" },
@@ -391,7 +394,10 @@ function UserRegistration() {
       const response = await getEventByUuidPublic(effectiveEventId, tenantUuid);
       const body = response?.data as any;
       const raw = body?.data ?? body;
-      if (!raw || !raw.uuid) {
+      // Support both flat response and JSON:API (attributes nested)
+      const attrs = raw?.attributes ?? raw;
+      const uuid = attrs.uuid ?? raw?.uuid;
+      if (!raw || !uuid) {
         setEventData(null);
         return;
       }
@@ -399,24 +405,27 @@ function UserRegistration() {
         "response event data (public by UUID) in user registration form ",
         raw,
       );
+      // Backend must return new_registration_enabled on the public event endpoint; read from attrs or top-level
+      const newRegistrationEnabled = attrs.new_registration_enabled ?? raw.new_registration_enabled;
       const normalized = {
         data: {
-          id: raw.uuid,
+          id: uuid,
           type: "event",
           attributes: {
-            id: raw.uuid,
-            name: raw.name,
-            event_date_from: raw.event_date_from,
-            event_date_to: raw.event_date_to,
-            event_time_from: raw.event_time_from,
-            event_time_to: raw.event_time_to,
-            about: raw.about,
-            location: raw.location,
-            logo_url: raw.logo_url,
-            registration_page_banner: raw.registration_page_banner_url,
-            registration_page_banner_url: raw.registration_page_banner_url,
-            badge_background_url: raw.badge_background_url,
-            font_name: raw.font_name ?? "",
+            id: uuid,
+            name: attrs.name ?? raw.name,
+            event_date_from: attrs.event_date_from ?? raw.event_date_from,
+            event_date_to: attrs.event_date_to ?? raw.event_date_to,
+            event_time_from: attrs.event_time_from ?? raw.event_time_from,
+            event_time_to: attrs.event_time_to ?? raw.event_time_to,
+            about: attrs.about ?? raw.about,
+            location: attrs.location ?? raw.location,
+            logo_url: attrs.logo_url ?? raw.logo_url,
+            registration_page_banner: attrs.registration_page_banner_url ?? raw.registration_page_banner_url ?? raw.registration_page_banner,
+            registration_page_banner_url: attrs.registration_page_banner_url ?? raw.registration_page_banner_url ?? raw.registration_page_banner,
+            badge_background_url: attrs.badge_background_url ?? raw.badge_background_url,
+            font_name: attrs.font_name ?? raw.font_name ?? "",
+            new_registration_enabled: newRegistrationEnabled !== false,
           },
         },
       };
@@ -450,6 +459,7 @@ function UserRegistration() {
     const fetchData = async () => {
       setIsLoading(true);
       setError(null);
+      setNewRegistrationEnabledFromDashboard(null);
       const numericEventId = eventIdFromParams ?? null;
       setIsFormLoading(!!numericEventId);
       try {
@@ -463,6 +473,19 @@ function UserRegistration() {
         await eventPromise;
         setIsLoading(false);
         await formPromise;
+
+        // When event_id is in URL, fetch event by ID (dashboard API) and use its new_registration_enabled
+        if (numericEventId) {
+          try {
+            const res = await getShowEventData(numericEventId);
+            const attrs = res?.data?.data?.attributes ?? res?.data?.attributes;
+            const enabled = attrs?.new_registration_enabled;
+            setNewRegistrationEnabledFromDashboard(enabled === false ? false : true);
+          } catch (_) {
+            // e.g. 401 when guest has no token; keep null so we use eventData from public API
+            setNewRegistrationEnabledFromDashboard(null);
+          }
+        }
       } catch (err: any) {
         console.error("Error loading registration form:", err);
       } finally {
@@ -667,6 +690,31 @@ function UserRegistration() {
           <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
             <p className="font-medium">Error loading registration form</p>
             <p className="text-sm mt-1">{error}</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Registration is closed – use GET /events/:id (getShowEventData) when event_id in URL, else eventData from public API
+  const newRegistrationEnabled =
+    newRegistrationEnabledFromDashboard ?? eventData?.data?.attributes?.new_registration_enabled;
+  if (eventData && newRegistrationEnabled === false) {
+    return (
+      <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 sm:p-10">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-amber-100 flex items-center justify-center">
+              <svg className="w-8 h-8 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
+              Registration is closed
+            </h1>
+            <p className="text-gray-600 text-sm sm:text-base">
+              Registration for this event is not currently accepting new submissions. Please contact the event organizer if you have questions.
+            </p>
           </div>
         </div>
       </div>

@@ -125,6 +125,7 @@ type MainFormData = {
   requireApproval: boolean;
   duplicateRegistration: boolean;
   enableRegistrationLink: boolean;
+  enableEmail: boolean;
   guestTypes: string[];
   eventLogo: File | null;
   existingLogoUrl: string | null;
@@ -191,7 +192,7 @@ const MainData = ({
     useState<boolean>(false);
   const [isConverting, setIsConverting] = useState<boolean>(false);
   const [openInfoTooltip, setOpenInfoTooltip] = useState<
-    "requireApproval" | "duplicateRegistration" | "enableRegistrationLink" | null
+    "requireApproval" | "duplicateRegistration" | "enableRegistrationLink" | "enableEmail" | null
   >(null);
 
   // Image cropping states
@@ -223,6 +224,7 @@ const MainData = ({
     requireApproval: false,
     duplicateRegistration: false,
     enableRegistrationLink: true,
+    enableEmail: true,
     guestTypes: ["Guest"], // Default "Guest" for new events; user can add more, change default, or delete when editing
     eventLogo: null,
     existingLogoUrl: null,
@@ -609,8 +611,10 @@ const MainData = ({
         timeTo: formatTimeFromISO(attributes.event_time_to) || "17:00",
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
+        
         duplicateRegistration: attributes.duplicate_registration || false,
-        enableRegistrationLink: attributes.enable_registration_link !== false,
+        enableRegistrationLink: (attributes.new_registration_enabled ?? (attributes as any).enable_registration_link) !== false,
+        enableEmail: (attributes.email_enabled ?? (attributes as any).enable_email) !== false,
         guestTypes:
           Array.isArray(attributes.user_types) &&
           attributes.user_types.length > 0
@@ -690,12 +694,14 @@ const MainData = ({
       String(formData.duplicateRegistration),
     );
     fd.append(
-      "event[enable_registration_link]",
+      "event[new_registration_enabled]",
       String(formData.enableRegistrationLink),
     );
+    fd.append("event[email_enabled]", String(formData.enableEmail));
     fd.append("event[primary_color]", formData.primaryColor);
     fd.append("event[secondary_color]", formData.secondaryColor);
     fd.append("event[event_type]", plan);
+    
 
     // API expects user_types as array of strings e.g. ["guest", "vip"] (lowercase)
     // When editing: use badges if API returned any; else use formData.guestTypes (from event.user_types)
@@ -956,7 +962,8 @@ const MainData = ({
         location: attributes.location || "",
         requireApproval: attributes.require_approval || false,
         duplicateRegistration: attributes.duplicate_registration || false,
-        enableRegistrationLink: attributes.enable_registration_link !== false,
+        enableRegistrationLink: (attributes.new_registration_enabled ?? (attributes as any).enable_registration_link) !== false,
+        enableEmail: (attributes.email_enabled ?? (attributes as any).enable_email) !== false,
         guestTypes:
           attributes.badges && attributes.badges.length > 0
             ? attributes.badges
@@ -1025,7 +1032,8 @@ const MainData = ({
               location: attributes.location || "",
               requireApproval: attributes.require_approval || false,
               duplicateRegistration: attributes.duplicate_registration || false,
-              enableRegistrationLink: attributes.enable_registration_link !== false,
+              enableRegistrationLink: (attributes.new_registration_enabled ?? (attributes as any).enable_registration_link) !== false,
+              enableEmail: (attributes.email_enabled ?? (attributes as any).enable_email) !== false,
               guestTypes:
                 Array.isArray(attributes.user_types) &&
                 attributes.user_types.length > 0
@@ -1676,6 +1684,55 @@ const MainData = ({
                 <div
                   className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
                     formData.enableRegistrationLink
+                      ? "translate-x-5"
+                      : "translate-x-0.5"
+                  } mt-0.5`}
+                />
+              </div>
+            </label>
+          </div>
+
+          {/* Enable Email Toggle */}
+          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() =>
+                  setOpenInfoTooltip((prev) =>
+                    prev === "enableEmail" ? null : "enableEmail",
+                  )
+                }
+                className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+                title="Send email notifications for registrations and updates."
+              >
+                <span className="text-sm font-medium text-gray-700">
+                  Enable email
+                </span>
+                <Info size={17} className="text-gray-400 flex-shrink-0" />
+              </button>
+              {openInfoTooltip === "enableEmail" && (
+                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                  Send email notifications for registrations.
+                </div>
+              )}
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={formData.enableEmail}
+                onChange={(e) =>
+                  handleInputChange("enableEmail", e.target.checked)
+                }
+                className="sr-only"
+              />
+              <div
+                className={`w-11 h-6 rounded-full transition-colors ${
+                  formData.enableEmail ? "bg-teal-500" : "bg-gray-200"
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                    formData.enableEmail
                       ? "translate-x-5"
                       : "translate-x-0.5"
                   } mt-0.5`}

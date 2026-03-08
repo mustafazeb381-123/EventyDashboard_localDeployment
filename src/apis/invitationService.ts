@@ -314,3 +314,34 @@ export const rsvpResponse = (
   if (tenantUuid) params.tenant_uuid = tenantUuid;
   return axiosInstance.post(`/event_invitations/rsvp_response`, null, { params });
 };
+
+/**
+ * Request sender email verification (sends OTP to the given email).
+ * GET /events/{event_id}/event_invitations/{id}/request_sender_email_verification?sender_email={sender_email}
+ */
+export const requestSenderEmailVerification = (
+  eventId: string | number,
+  invitationId: string | number,
+  senderEmail: string
+) => {
+  return axiosInstance.get(
+    `/events/${eventId}/event_invitations/${invitationId}/request_sender_email_verification`,
+    { params: { sender_email: senderEmail } }
+  );
+};
+
+/**
+ * Authorize sender email with the verification code.
+ * POST /events/{event_id}/event_invitations/{id}/authorize_sender_email
+ * Body: { sender_email: string, verification_code: string }
+ */
+export const authorizeSenderEmail = (
+  eventId: string | number,
+  invitationId: string | number,
+  body: { sender_email: string; verification_code: string }
+) => {
+  return axiosInstance.post(
+    `/events/${eventId}/event_invitations/${invitationId}/authorize_sender_email`,
+    body
+  );
+};
