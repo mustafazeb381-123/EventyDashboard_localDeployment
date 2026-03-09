@@ -1076,8 +1076,10 @@ const CustomFormBuilder: React.FC<CustomFormBuilderProps> = ({
               <FieldPalette onAddField={handleAddField} />
             </div>
 
-            {/* Main Canvas */}
-            <div className="flex-1 overflow-y-auto p-6 bg-linear-to-br from-gray-50 to-white">
+            {/* Main Canvas - no overall background in preview so template background shows */}
+            <div
+              className={`flex-1 overflow-y-auto p-6 ${!showPreview ? "bg-linear-to-br from-gray-50 to-white" : ""}`}
+            >
               {!showPreview ? (
                 <div className="max-w-4xl mx-auto space-y-6">
                   {/* Banner Image Section */}

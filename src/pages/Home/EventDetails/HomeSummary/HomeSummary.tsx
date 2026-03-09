@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import Assets from "../../../../utils/Assets";
 import {
   Clock,
   Edit,
@@ -8,21 +7,50 @@ import {
   Share2,
   XCircle,
   UserX,
+  ArrowUp,
+  Plus,
+  QrCode,
+  MailCheck,
+  FileText,
+  Star,
+  UserCheck,
+  Users,
+  CheckCircle,
+  AlertCircle,
+  Printer,
+  UserCog,
+  Crown,
+  UserPlus,
+  Send,
 } from "lucide-react";
-import RegistrationChart from "./components/RegsitrationChart";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from "recharts";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import {
   getEventbyId,
   updateEventById,
-  getEventUserMetrics,
+  getEventMetrics,
   getEventUsers,
   getSessionAreaApi,
   getCheckOuts,
 } from "@/apis/apiHelpers";
 import { getRegistrationUrl } from "@/pages/Home/EventDetails/Invitation/resolveInvitationEmailLinks";
 import imageCompression from "browser-image-compression";
+import Assets from "@/utils/Assets";
 
-// Same logic as SummaryCardData so counts match the card-detail page
+// ─── helpers ────────────────────────────────────────────────────────────────
+
 const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
   const status = user?.attributes?.approval_status;
   const approved = user?.attributes?.approved;
@@ -31,23 +59,418 @@ const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
   return "pending";
 };
 
+// ─── types ───────────────────────────────────────────────────────────────────
+
 type HomeSummaryProps = {
   chartData?: Array<Record<string, any>>;
   onTimeRangeChange?: (range: string) => void;
 };
+
+// ─── sub-components ──────────────────────────────────────────────────────────
+
+/** Stat card shown in the grid below the event header */
+const StatCard = ({
+  label,
+  value,
+  icon: Icon,
+  iconColor,
+  bgColor,
+  onClick,
+}: {
+  label: string;
+  value: number | string;
+  icon: React.ElementType;
+  iconColor: string;
+  bgColor: string;
+  onClick?: () => void;
+}) => (
+  <div
+    role={onClick ? "button" : undefined}
+    tabIndex={onClick ? 0 : undefined}
+    onClick={onClick}
+    onKeyDown={
+      onClick
+        ? (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onClick();
+            }
+          }
+        : undefined
+    }
+    className={`bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm border border-gray-50 ${onClick ? "cursor-pointer hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500" : ""}`}
+  >
+    <div className={`${bgColor} p-2.5 rounded-xl shrink-0`}>
+      <Icon size={18} className={iconColor} />
+    </div>
+    <div className="min-w-0 flex-1">
+      <p className="text-xs text-[#656C95] leading-tight line-clamp-2">{label}</p>
+      <p className="text-lg font-semibold text-[#202242] mt-0.5 leading-tight">
+        {typeof value === "number" ? value.toLocaleString() : value}
+      </p>
+    </div>
+  </div>
+);
+
+/** Registration capacity semi-circle gauge card — matches screenshot exactly */
+const CapacityCard = ({
+  percent,
+  used,
+  total,
+  remaining,
+  onUpgrade,
+}: {
+  percent: number;
+  used: number;
+  total: number;
+  remaining: number;
+  onUpgrade: () => void;
+}) => {
+  // SVG half-circle gauge
+  // viewBox 160×100: cx=80, cy=90, r=70
+  // The arc goes from left (10,90) to right (150,90)
+  // Total arc length = π * r = π * 70 ≈ 219.9
+  const r = 70;
+  const cx = 80;
+  const cy = 90;
+  const totalArc = Math.PI * r; // ≈ 219.9
+  const filled = (Math.min(100, Math.max(0, percent)) / 100) * totalArc;
+
+  return (
+    <div className="bg-white rounded-2xl p-5 flex flex-col shadow-sm border border-gray-50">
+      {/* Title */}
+      <p className="text-sm font-medium text-[#656C95] mb-3">Registration Capacity</p>
+
+      {/* Gauge — centered */}
+      <div className="relative mx-auto" style={{ width: 160, height: 92 }}>
+        <svg viewBox="0 0 160 100" width="160" height="92">
+          {/* Track (grey) */}
+          <path
+            d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+            fill="none"
+            stroke="#E5E7EB"
+            strokeWidth="16"
+            strokeLinecap="round"
+          />
+          {/* Filled (dark navy) */}
+          <path
+            d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
+            fill="none"
+            stroke="#202242"
+            strokeWidth="16"
+            strokeLinecap="round"
+            strokeDasharray={`${filled} ${totalArc}`}
+          />
+        </svg>
+        {/* Percent label centered inside arc */}
+        <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
+          <span className="text-2xl font-bold text-[#202242] leading-none">
+            {total > 0 ? `${percent}%` : "0%"}
+          </span>
+        </div>
+      </div>
+
+      {/* used / total */}
+      <p className="text-center text-sm font-semibold text-[#202242] mt-1">
+        {used.toLocaleString()} / {total > 0 ? total.toLocaleString() : "—"}
+      </p>
+
+      {/* dots row */}
+      {total > 0 && (
+        <p className="text-center text-xs text-[#656C95] mt-1.5 flex items-center justify-center gap-3">
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#202242] inline-block" />
+            {remaining.toLocaleString()} spots remaining
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
+            {used.toLocaleString()} spots used
+          </span>
+        </p>
+      )}
+
+      {/* Upgrade link */}
+      <button
+        type="button"
+        onClick={onUpgrade}
+        className="mt-3 flex items-center justify-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+      >
+        <ArrowUp size={12} />
+        Upgrade Plan
+      </button>
+    </div>
+  );
+};
+
+/** Registrations Activity chart — background bars + smooth dark line + peak pill badge */
+const RegistrationsActivityChart = ({
+  data,
+  onRangeChange,
+}: {
+  data: Array<{ label: string; registered: number }>;
+  onRangeChange?: (r: string) => void;
+}) => {
+  const [range, setRange] = useState("6 Month");
+
+  const peak = useMemo(
+    () =>
+      data.reduce(
+        (best, d) => (d.registered > best.registered ? d : best),
+        data[0] ?? { label: "", registered: 0 },
+      ),
+    [data],
+  );
+
+  // Custom bar + line combo using SVG rendered inside a ResponsiveContainer via a custom chart
+  // We use ComposedChart from recharts with Bar (light lavender) + Line (dark)
+  // Import Bar, Line, ComposedChart at the top — we'll use inline recharts primitives here
+
+  return (
+    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <h3 className="text-base font-semibold text-[#202242]">Registrations Activity</h3>
+          <span className="flex items-center gap-1.5 text-xs text-[#656C95]">
+            <span className="w-2 h-2 rounded-full bg-[#202242] inline-block" />
+            Registered
+          </span>
+        </div>
+        <select
+          value={range}
+          onChange={(e) => {
+            setRange(e.target.value);
+            onRangeChange?.(e.target.value);
+          }}
+          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none"
+        >
+          <option>6 Month</option>
+          <option>3 Month</option>
+          <option>1 Year</option>
+        </select>
+      </div>
+
+      {/* Chart */}
+      <_ActivityChart data={data} peak={peak} />
+    </div>
+  );
+};
+
+/** Inner chart rendered with recharts ComposedChart */
+const _ActivityChart = ({
+  data,
+  peak,
+}: {
+  data: Array<{ label: string; registered: number }>;
+  peak: { label: string; registered: number };
+}) => {
+  const [activeBar, setActiveBar] = useState<string | null>(null);
+
+  const CustomDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    if (payload.label !== peak.label) return null;
+    const labelText = peak.registered.toLocaleString();
+    const pillW = Math.max(44, labelText.length * 8 + 16);
+    return (
+      <g>
+        {/* Dark pill badge */}
+        <rect x={cx - pillW / 2} y={cy - 34} width={pillW} height={24} rx={12} fill="#202242" />
+        <text x={cx} y={cy - 17} textAnchor="middle" fill="#fff" fontSize={12} fontWeight={700}>
+          {labelText}
+        </text>
+        {/* White circle with dark border */}
+        <circle cx={cx} cy={cy} r={7} fill="#fff" stroke="#202242" strokeWidth={2.5} />
+      </g>
+    );
+  };
+
+  const BarShape = (props: any) => {
+    const { x, y, width, height, payload } = props;
+    if (!height || height <= 0) return null;
+    const isActive = activeBar === payload.label;
+    // Narrower bars: ~55% of cell width, centered
+    const barW = width * 0.7;
+    const barX = x + (width - barW) / 2;
+    return (
+      <rect
+        x={barX}
+        y={y}
+        width={barW}
+        height={height}
+        rx={8}
+        ry={8}
+        fill={isActive ? "#B8C4F0" : "#E8EEFF"}
+      />
+    );
+  };
+
+  const yTicks = [0, 20, 50, 100, 300, 500, 800];
+
+  return (
+    <ResponsiveContainer width="100%" height={290}>
+      <ComposedChart
+        data={data}
+        margin={{ top: 40, right: 10, left: -16, bottom: 0 }}
+        barCategoryGap="30%"
+        onMouseLeave={() => setActiveBar(null)}
+      >
+        <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F8" vertical={false} />
+        <XAxis
+          dataKey="label"
+          tick={{ fontSize: 11, fill: "#9CA3AF", fontWeight: 500 }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          ticks={yTicks}
+          tick={{ fontSize: 11, fill: "#9CA3AF" }}
+          axisLine={false}
+          tickLine={false}
+          width={36}
+        />
+        <Tooltip
+          cursor={{ stroke: "#C4C9E8", strokeWidth: 1, fill: "transparent" }}
+          contentStyle={{
+            background: "#fff",
+            border: "none",
+            borderRadius: 12,
+            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            fontSize: 13,
+            padding: "10px 16px",
+          }}
+          labelStyle={{ fontWeight: 600, color: "#202242", marginBottom: 4 }}
+          formatter={(v: unknown) => [
+            `${typeof v === "number" ? v.toLocaleString() : v}`,
+            "Registered",
+          ]}
+          separator=" : "
+        />
+        {/* Background bars — narrower columns */}
+        <Bar
+          dataKey="registered"
+          shape={<BarShape />}
+          isAnimationActive={false}
+          onMouseEnter={(data: any) => setActiveBar(data.label)}
+        />
+        {/* Dark smooth line on top */}
+        <Line
+          type="monotone"
+          dataKey="registered"
+          stroke="#202242"
+          strokeWidth={2.5}
+          dot={<CustomDot />}
+          activeDot={{ r: 5, fill: "#202242", strokeWidth: 0 }}
+          isAnimationActive={false}
+        />
+      </ComposedChart>
+    </ResponsiveContainer>
+  );
+};
+
+/** Donut chart helper for Sources & Status */
+const DonutChart = ({
+  data,
+  totalLabel,
+  totalValue,
+  legendItems,
+}: {
+  data: Array<{ name: string; value: number; color: string }>;
+  totalLabel: string;
+  totalValue: number | string;
+  legendItems: Array<{ label: string; value?: number | string; percent?: string; color: string }>;
+}) => {
+  const hasData = data.some((d) => d.value > 0);
+  const displayData = hasData ? data : [{ name: "No data", value: 1, color: "#E5E7EB" }];
+
+  return (
+    <div className="flex flex-col items-center">
+      <div className="relative w-full" style={{ height: 180 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={displayData}
+              cx="50%"
+              cy="50%"
+              innerRadius={58}
+              outerRadius={82}
+              paddingAngle={hasData ? 2 : 0}
+              dataKey="value"
+              startAngle={90}
+              endAngle={-270}
+            >
+              {displayData.map((d, i) => (
+                <Cell key={i} fill={d.color} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                background: "#fff",
+                border: "none",
+                borderRadius: 8,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.10)",
+                fontSize: 12,
+              }}
+              formatter={(v: unknown, name: unknown) =>
+                name === "No data" ? [] : [typeof v === "number" ? v.toLocaleString() : v, String(name ?? "")]
+              }
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        {/* Center label */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-xl font-bold text-[#202242]">
+            {typeof totalValue === "number" ? totalValue.toLocaleString() : totalValue}
+          </span>
+          <span className="text-[10px] text-[#656C95] text-center leading-tight max-w-[72px]">
+            {totalLabel}
+          </span>
+        </div>
+      </div>
+      {/* Legend */}
+      <div className="w-full mt-1 space-y-1.5">
+        {legendItems.map((item) => (
+          <div key={item.label} className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 text-[#656C95]">
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
+              {item.label}
+            </span>
+            <span className="font-semibold" style={{ color: item.color }}>
+              {item.percent ?? (item.value !== undefined ? item.value : "")}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ─── Skeleton ────────────────────────────────────────────────────────────────
+
+const SkeletonLoader = () => (
+  <div className="w-full px-4 sm:px-6 lg:px-8 animate-pulse space-y-6">
+    <div className="h-8 w-40 bg-gray-200 rounded-lg" />
+    <div className="bg-white rounded-2xl p-6 h-40 w-full" />
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {[...Array(8)].map((_, i) => (
+        <div key={i} className="bg-white rounded-2xl h-20" />
+      ))}
+    </div>
+    <div className="bg-white rounded-2xl h-72 w-full" />
+  </div>
+);
+
+// ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 
 function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const [eventData, setEventData] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [metrics, setMetrics] = useState<any>(null);
   const [eventUsers, setEventUsers] = useState<any[]>([]);
-  // Attending count from check-out API (users currently checked in = "need check out" per area)
-  const [attendingCountFromApi, setAttendingCountFromApi] = useState<
-    number | null
-  >(null);
+  const [attendingCountFromApi, setAttendingCountFromApi] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
+  const quickActionsRef = useRef<HTMLDivElement>(null);
 
-  // Notification state
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "warning" | "info";
@@ -55,162 +478,68 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
   useEffect(() => {
     if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null);
-      }, 3000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setNotification(null), 3000);
+      return () => clearTimeout(t);
     }
   }, [notification]);
+
+  useEffect(() => {
+    if (!quickActionsOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (quickActionsRef.current && !quickActionsRef.current.contains(e.target as Node)) {
+        setQuickActionsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [quickActionsOpen]);
 
   const showNotification = (
     message: string,
     type: "success" | "error" | "warning" | "info",
-  ) => {
-    setNotification({ message, type });
-  };
+  ) => setNotification({ message, type });
 
-  // Default chart data if none provided
+  // ── chart data ──────────────────────────────────────────────────────────
+
   const defaultChartData = useMemo(
     () => [
-      { label: "Jan", registered: 45 },
-      { label: "Feb", registered: 120 },
-      { label: "Mar", registered: 155 },
-      { label: "Apr", registered: 60 },
-      { label: "May", registered: 85 },
-      { label: "Jun", registered: 200 },
+      { label: "JAN", registered: 300 },
+      { label: "FEB", registered: 200 },
+      { label: "MAR", registered: 350 },
+      { label: "APR", registered: 750 },
+      { label: "MAY", registered: 420 },
+      { label: "JUN", registered: 480 },
     ],
     [],
   );
 
-  // Derive chart data from metrics API with fallbacks
   const derivedChartData = useMemo(() => {
-    const normalizePoint = (item: any, index: number) => {
+    const normalize = (item: any, idx: number) => {
       const rawLabel =
-        item?.label ||
-        item?.date ||
-        item?.day ||
-        item?.month ||
-        item?.period ||
-        item?.name ||
-        `Day ${index + 1}`;
-
-      // Format date-like labels to shorter month/day
+        item?.label ?? item?.date ?? item?.day ?? item?.month ?? item?.period ?? item?.name ?? `Day ${idx + 1}`;
       let label = rawLabel;
       if (typeof rawLabel === "string" && /\d{4}-\d{2}-\d{2}/.test(rawLabel)) {
-        label = new Date(rawLabel).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-        });
+        label = new Date(rawLabel).toLocaleDateString("en-US", { month: "short" }).toUpperCase();
       }
-
-      const value =
-        item?.registered ??
-        item?.count ??
-        item?.total ??
-        item?.value ??
-        item?.registration ??
-        item?.registrations ??
-        item?.users ??
-        0;
-
-      return {
-        label: label || rawLabel || `Day ${index + 1}`,
-        registered: Number(value) || 0,
-      };
+      const value = item?.registered ?? item?.count ?? item?.total ?? item?.value ?? item?.registrations ?? 0;
+      return { label: String(label), registered: Number(value) || 0 };
     };
 
-    const metricsSeries =
-      // Common keys from API responses
-      metrics?.registrations_by_day ||
-      metrics?.registration_chart ||
-      metrics?.registration_trend ||
-      metrics?.daily_registration ||
-      metrics?.chart ||
-      // Some backends nest arrays under a generic data key
-      metrics?.data ||
-      // If the whole metrics payload is already an array, use it directly
+    const series =
+      metrics?.registrations_by_day ??
+      metrics?.registration_chart ??
+      metrics?.registration_trend ??
+      metrics?.daily_registration ??
+      metrics?.chart ??
+      metrics?.data ??
       (Array.isArray(metrics) ? metrics : null);
 
-    if (Array.isArray(metricsSeries) && metricsSeries.length) {
-      return metricsSeries
-        .map(normalizePoint)
-        .filter((d) => !Number.isNaN(d.registered));
-    }
-
-    // Handle object maps like { "2024-01-01": 12, "2024-01-02": 4 }
-    if (
-      metricsSeries &&
-      typeof metricsSeries === "object" &&
-      !Array.isArray(metricsSeries)
-    ) {
-      const entries = Object.entries(metricsSeries).map(([key, value], idx) =>
-        normalizePoint({ label: key, registered: value }, idx),
-      );
-
-      if (entries.length) {
-        return entries.filter((d) => !Number.isNaN(d.registered));
-      }
-    }
-
-    // If no time series is present, build a simple series from aggregate metrics
-    const hasAggregateMetrics =
-      metrics &&
-      (metrics.total_registration !== undefined ||
-        metrics.todays_registration !== undefined ||
-        metrics.approved_registration !== undefined ||
-        metrics.pending_users !== undefined);
-
-    if (hasAggregateMetrics) {
-      const aggregateSeries = [
-        {
-          label: "Total",
-          registered: Number(metrics?.total_registration) || 0,
-        },
-        {
-          label: "Today",
-          registered: Number(metrics?.todays_registration) || 0,
-        },
-        {
-          label: "Approved",
-          registered: Number(metrics?.approved_registration) || 0,
-        },
-        { label: "Pending", registered: Number(metrics?.pending_users) || 0 },
-      ];
-
-      return aggregateSeries.filter((d) => !Number.isNaN(d.registered));
-    }
-
-    if (chartData && chartData.length) {
-      return chartData
-        .map((item, index) => normalizePoint(item, index))
-        .filter((d) => !Number.isNaN(d.registered));
-    }
-
+    if (Array.isArray(series) && series.length) return series.map(normalize);
+    if (chartData?.length) return chartData.map(normalize);
     return defaultChartData;
   }, [metrics, chartData, defaultChartData]);
 
-  // Image cropping states
-  console.log("Derived chart data:", derivedChartData); // Light logging
-
-  const useDefaultFallback = false; // New prop to avoid dummy chart data
-  const [isCropping, setIsCropping] = useState<boolean>(false);
-  const [originalImageSrc, setOriginalImageSrc] = useState<string>("");
-  const [cropArea, setCropArea] = useState({
-    x: 0,
-    y: 0,
-    width: 100,
-    height: 100,
-  });
-  const [imageDimensions, setImageDimensions] = useState({
-    width: 0,
-    height: 0,
-  });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isResizing, setIsResizing] = useState(false);
-  const [resizeCorner, setResizeCorner] = useState<string | null>(null);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  // ── routing ─────────────────────────────────────────────────────────────
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -219,111 +548,57 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     (location.state as any)?.eventId || paramId,
   );
 
-  // Keep eventId in sync with params, search, or localStorage so metrics fetch fires with a valid ID.
   useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const fromQuery = searchParams.get("eventId");
+    const sp = new URLSearchParams(location.search);
+    const fromQuery = sp.get("eventId");
     const fromState = (location.state as any)?.eventId;
-
-    if (fromQuery && fromQuery !== eventId) {
-      setEventId(fromQuery);
-      return;
-    }
-
-    if (fromState && fromState !== eventId) {
-      setEventId(fromState);
-      return;
-    }
-
+    if (fromQuery && fromQuery !== eventId) { setEventId(fromQuery); return; }
+    if (fromState && fromState !== eventId) { setEventId(fromState); return; }
     if (!fromQuery && !fromState && !eventId) {
-      const stored =
-        localStorage.getItem("create_eventId") ||
-        localStorage.getItem("edit_eventId");
-      if (stored) {
-        setEventId(stored);
-      }
+      const stored = localStorage.getItem("create_eventId") || localStorage.getItem("edit_eventId");
+      if (stored) setEventId(stored);
     }
   }, [location.search, location.state, paramId, eventId]);
 
-  // Fetch event data (called when you click an event in the list). API returns data.data.attributes.uuid.
+  // ── data fetchers ───────────────────────────────────────────────────────
+
   const getEventDataById = async (id: string | number) => {
-    try {
-      const response = await getEventbyId(id);
-      setEventData(response.data.data);
-    } catch (error) {
-      console.error("Error fetching event by ID:", error);
-    }
+    try { setEventData((await getEventbyId(id)).data.data); }
+    catch (e) { console.error(e); }
   };
 
-  // Fetch metrics data
   const fetchEventMetrics = async (id: string | number) => {
-    try {
-      const response = await getEventUserMetrics(id);
-      console.log("Metrics response:", response.data);
-
-      // Accept common response shapes: { metrics: ... } or { data: { metrics: ... } } or { data: [...] }
-      const metricsPayload =
-        response?.data?.metrics ||
-        response?.data?.data?.metrics ||
-        response?.data?.data ||
-        response?.data;
-
-      setMetrics(metricsPayload);
-    } catch (error) {
-      console.error("Error fetching event metrics:", error);
-    }
+    try { setMetrics((await getEventMetrics(id))?.data?.metrics ?? null); }
+    catch { setMetrics(null); }
   };
 
-  // Fetch all event users (all pages) so summary counts match the card-detail page
   const fetchEventUsersForSummary = async (id: string) => {
     try {
-      const perPage = 100;
-      const first = await getEventUsers(id, { page: 1, per_page: perPage });
-      const data = first?.data?.data || first?.data;
-      const list = Array.isArray(data) ? data : data?.data || [];
-      const pagination =
-        first?.data?.meta?.pagination || first?.data?.pagination;
+      const pp = 100;
+      const first = await getEventUsers(id, { page: 1, per_page: pp });
+      const d = first?.data?.data || first?.data;
+      const list = Array.isArray(d) ? d : d?.data || [];
+      const pagination = first?.data?.meta?.pagination || first?.data?.pagination;
       const totalPages = pagination?.total_pages ?? 1;
       const all: any[] = [...list];
-      if (totalPages > 1) {
-        for (let p = 2; p <= totalPages; p++) {
-          const res = await getEventUsers(id, { page: p, per_page: perPage });
-          const d = res?.data?.data || res?.data;
-          const users = Array.isArray(d) ? d : d?.data || [];
-          all.push(...users);
-        }
+      for (let p = 2; p <= totalPages; p++) {
+        const res = await getEventUsers(id, { page: p, per_page: pp });
+        const rd = res?.data?.data || res?.data;
+        all.push(...(Array.isArray(rd) ? rd : rd?.data || []));
       }
       setEventUsers(all);
-    } catch (error) {
-      console.error("Error fetching event users for summary:", error);
-      setEventUsers([]);
-    }
+    } catch { setEventUsers([]); }
   };
 
-  // Fetch Attending count using check-in/check-out APIs:
-  // getCheckOuts(area) = users who need to check out = currently checked in to that area.
-  // We fetch all session areas, then getCheckOuts for each, and count unique user ids.
   const fetchAttendingCount = async (id: string) => {
     try {
-      const areasRes = await getSessionAreaApi(id);
-      const areas = areasRes?.data?.data || [];
-      if (areas.length === 0) {
-        setAttendingCountFromApi(0);
-        return;
-      }
-      const checkOutResponses = await Promise.all(
-        areas.map((area: any) => getCheckOuts(id, area.id)),
-      );
-      const uniqueUserIds = new Set<string | number>();
-      checkOutResponses.forEach((res: any) => {
-        const users = res?.data?.data || [];
-        users.forEach((u: any) => uniqueUserIds.add(u.id));
-      });
-      setAttendingCountFromApi(uniqueUserIds.size);
-    } catch (error) {
-      console.error("Error fetching attending count:", error);
-      setAttendingCountFromApi(null);
-    }
+      const areas = (await getSessionAreaApi(id))?.data?.data || [];
+      if (!areas.length) { setAttendingCountFromApi(0); return; }
+      const responses = await Promise.all(areas.map((a: any) => getCheckOuts(id, a.id)));
+      const ids = new Set<string | number>();
+      responses.forEach((r: any) => (r?.data?.data || []).forEach((u: any) => ids.add(u.id)));
+      setAttendingCountFromApi(ids.size);
+    } catch { setAttendingCountFromApi(null); }
   };
 
   useEffect(() => {
@@ -335,721 +610,318 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     }
   }, [eventId]);
 
-  // Skeleton Loader Component
-  const SkeletonLoader = () => (
-    <div className="w-full px-4 sm:px-6 lg:px-8 animate-pulse">
-      {/* Event Details Skeleton */}
-      <div className="p-4 sm:p-6 lg:p-6 bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
-        {/* Logo and Event Name Skeleton */}
-        <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
-          {/* Logo Skeleton */}
-          <div className="h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-gray-200 rounded-2xl shrink-0"></div>
+  // ── derived counts ──────────────────────────────────────────────────────
 
-          {/* Text Details Skeleton */}
-          <div className="items-center text-center sm:text-left w-full sm:w-auto">
-            {/* Event Type Badge Skeleton */}
-            <div className="h-8 w-32 bg-gray-200 rounded-3xl mx-auto sm:mx-0"></div>
-
-            {/* Event Name Skeleton */}
-            <div className="mt-4 lg:mt-4 h-6 w-48 sm:w-64 bg-gray-200 rounded-lg mx-auto sm:mx-0"></div>
-
-            {/* Date Skeleton */}
-            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-4">
-              <div className="h-5 w-5 bg-gray-200 rounded"></div>
-              <div className="h-4 w-48 sm:w-64 bg-gray-200 rounded"></div>
-            </div>
-
-            {/* Location Skeleton */}
-            <div className="flex items-center justify-center sm:justify-start gap-2 mt-3 lg:mt-4">
-              <div className="h-5 w-5 bg-gray-200 rounded"></div>
-              <div className="h-4 w-40 sm:w-56 bg-gray-200 rounded"></div>
-            </div>
-
-            {/* Last Edit Skeleton */}
-            <div className="mt-4 lg:mt-[23px] h-4 w-32 bg-gray-200 rounded mx-auto sm:mx-0"></div>
-          </div>
-        </div>
-
-        {/* Buttons Skeleton */}
-        <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-          <div className="h-10 w-full sm:w-40 bg-gray-200 rounded-2xl"></div>
-          <div className="h-10 w-full sm:w-32 bg-gray-200 rounded-2xl"></div>
-        </div>
-      </div>
-
-      {/* Stats Cards Skeleton */}
-      <div className="mt-6 lg:mt-6 gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-        {[1, 2, 3, 4].map((item) => (
-          <div
-            key={item}
-            className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm"
-          >
-            {/* Icon Skeleton */}
-            <div className="p-3 lg:p-4 bg-gray-200 rounded-xl shrink-0">
-              <div className="h-5 w-5 sm:h-6 sm:w-6 bg-gray-300 rounded"></div>
-            </div>
-            {/* Text Skeleton */}
-            <div className="justify-between flex flex-col min-w-0 flex-1 gap-2">
-              <div className="h-4 w-24 sm:w-32 bg-gray-200 rounded"></div>
-              <div className="h-5 w-16 sm:w-20 bg-gray-200 rounded"></div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Chart Skeleton */}
-      <div className="mt-6 lg:mt-6 bg-white rounded-2xl p-4 sm:p-6 lg:p-6 shadow-sm">
-        {/* Chart Title Skeleton */}
-        <div className="h-6 w-48 bg-gray-200 rounded-lg mb-4"></div>
-
-        {/* Chart Area Skeleton */}
-        <div className="h-80 w-full bg-gray-100 rounded-lg flex items-center justify-center">
-          <div className="flex items-end gap-2 sm:gap-4 h-full w-full px-4 pb-4">
-            {[1, 2, 3, 4, 5, 6].map((bar) => (
-              <div
-                key={bar}
-                className="flex-1 bg-gray-200 rounded-t"
-                style={{
-                  height: `${Math.random() * 60 + 20}%`,
-                }}
-              ></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Derived counts from eventUsers (same logic as SummaryCardData) so summary and card-detail match
   const derivedCounts = useMemo(() => {
     const list = Array.isArray(eventUsers) ? eventUsers : [];
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-    let total = list.length;
-    let today = 0;
-    let pending = 0;
-    let approved = 0;
-    let rejected = 0;
-    let printed = 0;
-    list.forEach((user: any) => {
-      const created = user?.attributes?.created_at;
-      if (created) {
-        const t = new Date(created).getTime();
-        if (t >= todayStart.getTime() && t <= todayEnd.getTime()) today++;
-      }
-      const status = getApprovalStatus(user);
-      if (status === "pending") pending++;
-      else if (status === "approved") approved++;
-      else if (status === "rejected") rejected++;
-      if (user?.attributes?.printed) printed++;
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date(); todayEnd.setHours(23, 59, 59, 999);
+    let total = list.length, today = 0, pending = 0, approved = 0, rejected = 0, printed = 0;
+    list.forEach((u: any) => {
+      const t = u?.attributes?.created_at ? new Date(u.attributes.created_at).getTime() : 0;
+      if (t >= todayStart.getTime() && t <= todayEnd.getTime()) today++;
+      const s = getApprovalStatus(u);
+      if (s === "pending") pending++;
+      else if (s === "approved") approved++;
+      else if (s === "rejected") rejected++;
+      if (u?.attributes?.printed) printed++;
     });
-    return {
-      total,
-      today,
-      pending,
-      approved,
-      rejected,
-      printed,
-    };
+    return { total, today, pending, approved, rejected, printed };
   }, [eventUsers]);
 
-  // Derive user types and counts from event users API – each event has different user types
   const userTypeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return counts;
-    eventUsers.forEach((user: any) => {
-      const type = user?.attributes?.user_type;
-      if (type != null && String(type).trim() !== "") {
-        const key = String(type).toLowerCase().trim();
-        counts[key] = (counts[key] ?? 0) + 1;
+    eventUsers.forEach((u: any) => {
+      const type = u?.attributes?.user_type;
+      if (type != null && String(type).trim()) {
+        const k = String(type).toLowerCase().trim();
+        counts[k] = (counts[k] ?? 0) + 1;
       }
     });
     return counts;
   }, [eventUsers]);
 
-  const uniqueUserTypes = useMemo(() => {
-    const types = Object.keys(userTypeCounts);
-    return types.sort((a, b) => a.localeCompare(b));
-  }, [userTypeCounts]);
+  const uniqueUserTypes = useMemo(() =>
+    Object.keys(userTypeCounts).sort((a, b) => a.localeCompare(b)),
+    [userTypeCounts],
+  );
 
-  // Printed count from getEventUsers (attributes.printed === true)
-  const printedCountFromUsers = useMemo(() => {
-    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
-    return eventUsers.filter((u: any) => u?.attributes?.printed === true)
-      .length;
-  }, [eventUsers]);
+  const printedCountFromUsers = useMemo(
+    () => eventUsers.filter((u: any) => u?.attributes?.printed === true).length,
+    [eventUsers],
+  );
 
-  // Attending: currently checked in.
-  // Source 1: metrics API (attending_count / checked_in_count) if backend returns it.
-  // Source 2: getCheckOuts API — we call getSessionAreaApi + getCheckOuts(area) for each area; "need check out" = currently in that area; we count unique users.
-  // Source 3: fallback from event users (getEventUsers) if attributes include check_user_area_statuses.
-  const attendingCountFromUsers = useMemo(() => {
-    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
-    return eventUsers.filter((u: any) => {
-      const statuses = u?.attributes?.check_user_area_statuses;
-      if (Array.isArray(statuses)) {
-        return statuses.some(
-          (s: any) =>
-            s?.check_in != null &&
-            s?.check_in !== "" &&
-            (s?.check_out == null || s?.check_out === ""),
-        );
-      }
+  const attendingCountFromUsers = useMemo(
+    () => eventUsers.filter((u: any) => {
+      const ss = u?.attributes?.check_user_area_statuses;
+      if (Array.isArray(ss)) return ss.some((s: any) => s?.check_in && !s?.check_out);
       return u?.attributes?.check_in != null && u?.attributes?.check_in !== "";
-    }).length;
-  }, [eventUsers]);
+    }).length,
+    [eventUsers],
+  );
 
-  // Attended: have checked out. No dedicated API; we use metrics (attended_count / checked_out_count) or derive from event users.
-  const attendedCountFromUsers = useMemo(() => {
-    if (!Array.isArray(eventUsers) || eventUsers.length === 0) return 0;
-    return eventUsers.filter((u: any) => {
-      const statuses = u?.attributes?.check_user_area_statuses;
-      if (Array.isArray(statuses)) {
-        return statuses.some(
-          (s: any) => s?.check_out != null && s?.check_out !== "",
-        );
-      }
-      return (
-        u?.attributes?.check_out != null && u?.attributes?.check_out !== ""
-      );
-    }).length;
-  }, [eventUsers]);
+  const attendedCountFromUsers = useMemo(
+    () => eventUsers.filter((u: any) => {
+      const ss = u?.attributes?.check_user_area_statuses;
+      if (Array.isArray(ss)) return ss.some((s: any) => s?.check_out);
+      return u?.attributes?.check_out != null && u?.attributes?.check_out !== "";
+    }).length,
+    [eventUsers],
+  );
 
-  // Display label: capitalize first letter (e.g. "guest" -> "Guest", "great" -> "Great")
-  const formatUserTypeLabel = (key: string) =>
-    key.charAt(0).toUpperCase() + key.slice(1).toLowerCase();
+  const capacity = useMemo(() => {
+    const total = metrics?.total_user_capacity ?? 0;
+    const used = metrics?.registration_count ?? derivedCounts.total;
+    const remaining = Math.max(0, total - used);
+    const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+    return { total, used, remaining, percent };
+  }, [metrics, derivedCounts.total]);
 
-  const guestTypeColors = [
-    "bg-indigo-50",
-    "bg-purple-50",
-    "bg-sky-50",
-    "bg-violet-50",
-    "bg-fuchsia-50",
-    "bg-teal-50",
-    "bg-amber-50",
-  ];
-  const guestTypeIcons = [
-    Assets.icons.todayRegistration,
-    Assets.icons.approvedRegistration,
-    Assets.icons.invitationRegistration,
-    Assets.icons.totalRegistration,
-    Assets.icons.pendingUsers,
-    Assets.icons.rejectionEmailOne,
-    Assets.icons.confirmationEmailOne,
-  ];
+  // ── stats grid items ────────────────────────────────────────────────────
 
-  // Stats: derived from eventUsers (same logic as SummaryCardData) so counts match card-detail page
-  const stats = useMemo(() => {
-    const base: Array<{
-      label: string;
-      value: number;
-      icon: string;
-      bgColor: string;
-      filterKey: string;
-      userTypeKey?: string;
-    }> = [
-      {
-        label: "Total Registrations",
-        value: derivedCounts.total,
-        icon: Assets.icons.totalRegistration,
-        bgColor: "bg-blue-50",
-        filterKey: "all",
-      },
-      {
-        label: "Today Registrations",
-        value: derivedCounts.today,
-        icon: Assets.icons.todayRegistration,
-        bgColor: "bg-emerald-50",
-        filterKey: "today",
-      },
-      {
-        label: "Pending Users",
-        value: derivedCounts.pending,
-        icon: Assets.icons.pendingUsers,
-        bgColor: "bg-amber-50",
-        filterKey: "pending",
-      },
-      {
-        label: "Approved Users",
-        value: derivedCounts.approved,
-        icon: Assets.icons.approvedRegistration,
-        bgColor: "bg-teal-50",
-        filterKey: "approved",
-      },
-      {
-        label: "Rejected Users",
-        value: derivedCounts.rejected,
-        icon: Assets.icons.rejectionEmailOne,
-        bgColor: "bg-red-50",
-        filterKey: "rejected",
-      },
-      {
-        label: "Printed Users",
-        value: derivedCounts.printed,
-        icon: Assets.icons.totalRegistration,
-        bgColor: "bg-slate-50",
-        filterKey: "printed",
-      },
+  const formatLabel = (k: string) => k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
+
+  const statItems = useMemo(() => {
+    const totalRegistrations = metrics?.registration_count ?? derivedCounts.total;
+    const base = [
+      { label: "Total Registrations", value: totalRegistrations, icon: Users, iconColor: "text-blue-600", bgColor: "bg-blue-50", filterKey: "all" },
+      { label: "Today's Registration", value: derivedCounts.today, icon: UserCheck, iconColor: "text-emerald-600", bgColor: "bg-emerald-50", filterKey: "today" },
+      { label: "Pending Users", value: derivedCounts.pending, icon: AlertCircle, iconColor: "text-amber-500", bgColor: "bg-amber-50", filterKey: "pending" },
+      { label: "Approved Users", value: derivedCounts.approved, icon: CheckCircle, iconColor: "text-teal-600", bgColor: "bg-teal-50", filterKey: "approved" },
+      { label: "Registered Users", value: derivedCounts.total, icon: Users, iconColor: "text-slate-600", bgColor: "bg-slate-50", filterKey: "all" },
+      { label: "Printed Users", value: printedCountFromUsers || derivedCounts.printed, icon: Printer, iconColor: "text-violet-600", bgColor: "bg-violet-50", filterKey: "printed" },
       {
         label: "Attending",
-        value:
-          metrics?.attending_count ??
-          metrics?.checked_in_count ??
-          (eventUsers.length > 0 ? attendingCountFromUsers : 0),
-        icon: Assets.icons.todayRegistration,
-        bgColor: "bg-cyan-50",
+        value: attendingCountFromApi ?? metrics?.attending_count ?? metrics?.checked_in_count ?? attendingCountFromUsers,
+        icon: UserCog, iconColor: "text-cyan-600", bgColor: "bg-cyan-50", filterKey: "attending",
       },
       {
         label: "Attended",
-        value:
-          metrics?.attended_count ??
-          metrics?.checked_out_count ??
-          (eventUsers.length > 0 ? attendedCountFromUsers : 0),
-        icon: Assets.icons.approvedRegistration,
-        bgColor: "bg-green-50",
+        value: metrics?.attended_count ?? metrics?.checked_out_count ?? attendedCountFromUsers,
+        icon: CheckCircle, iconColor: "text-green-600", bgColor: "bg-green-50", filterKey: "attended",
       },
+      { label: "Attendee Count", value: userTypeCounts["attendee"] ?? 0, icon: Users, iconColor: "text-indigo-600", bgColor: "bg-indigo-50", filterKey: "user_type", userTypeKey: "attendee" },
+      { label: "VIP Count", value: userTypeCounts["vip"] ?? 0, icon: Crown, iconColor: "text-amber-600", bgColor: "bg-amber-50", filterKey: "user_type", userTypeKey: "vip" },
+    ] as any[];
+
+    const extraColors = [
+      { ic: "text-rose-600", bg: "bg-rose-50" },
+      { ic: "text-purple-600", bg: "bg-purple-50" },
+      { ic: "text-sky-600", bg: "bg-sky-50" },
     ];
-    const userTypeCards = uniqueUserTypes.map((typeKey, index) => ({
-      label: `${formatUserTypeLabel(typeKey)} Count`,
-      value: userTypeCounts[typeKey] ?? 0,
-      icon: guestTypeIcons[index % guestTypeIcons.length],
-      bgColor: guestTypeColors[index % guestTypeColors.length],
-      filterKey: "user_type",
-      userTypeKey: typeKey,
-    }));
-    return [...base, ...userTypeCards];
-  }, [derivedCounts, uniqueUserTypes, userTypeCounts]);
+    uniqueUserTypes
+      .filter((t) => t !== "attendee" && t !== "vip")
+      .forEach((typeKey, i) => {
+        const c = extraColors[i % extraColors.length];
+        base.push({
+          label: `${formatLabel(typeKey)} Count`,
+          value: userTypeCounts[typeKey] ?? 0,
+          icon: Users,
+          iconColor: c.ic,
+          bgColor: c.bg,
+          filterKey: "user_type",
+          userTypeKey: typeKey,
+        });
+      });
 
-  if (!eventData) {
-    return <SkeletonLoader />;
-  }
+    return base;
+  }, [derivedCounts, uniqueUserTypes, userTypeCounts, metrics, attendingCountFromApi, attendingCountFromUsers, attendedCountFromUsers, printedCountFromUsers]);
 
-  const {
-    name,
-    event_type,
-    event_date_from,
-    event_date_to,
-    event_time_from,
-    event_time_to,
-    about,
-    location: eventLocation,
-    logo_url,
-    primary_color,
-    secondary_color,
-    registration_page_banner,
-    require_approval,
-  } = eventData.attributes;
+  // ── image crop state ────────────────────────────────────────────────────
 
-  const handleTimeRangeChange = (newRange: string) => {
-    // Call parent callback if provided
-    if (onTimeRangeChange) {
-      onTimeRangeChange(newRange);
-    }
-  };
+  const [isCropping, setIsCropping] = useState(false);
+  const [originalImageSrc, setOriginalImageSrc] = useState("");
+  const [cropArea, setCropArea] = useState({ x: 0, y: 0, width: 100, height: 100 });
+  const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
+  const [resizeCorner, setResizeCorner] = useState<string | null>(null);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
 
-  // Format time nicely
-  const formatTime = (timeStr: string) => {
-    const date = new Date(timeStr);
-    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
-
-  // Handle file selection - show cropping modal
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    const file = files && files[0];
+    const file = e.target.files?.[0];
     if (!file || !eventId) return;
-
-    // File type validation
-    const allowedTypes = [
-      "image/svg+xml",
-      "image/png",
-      "image/jpeg",
-      "image/jpg",
-    ];
-    if (!allowedTypes.includes(file.type)) {
-      showNotification(
-        "Invalid file type. Please upload SVG, PNG, or JPG.",
-        "error",
-      );
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+    const allowed = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
+    if (!allowed.includes(file.type)) {
+      showNotification("Invalid file type. Please upload SVG, PNG, or JPG.", "error");
+      if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
-
-    // For SVG files, skip cropping and compress directly
-    if (file.type === "image/svg+xml") {
-      handleSvgUpload(file);
-      return;
-    }
-
-    // For other image types, open crop interface
-    const objectUrl = URL.createObjectURL(file);
-    setOriginalImageSrc(objectUrl);
+    if (file.type === "image/svg+xml") { handleSvgUpload(file); return; }
+    setOriginalImageSrc(URL.createObjectURL(file));
     setIsCropping(true);
   };
 
-  // Handle SVG upload (no cropping needed)
   const handleSvgUpload = async (file: File) => {
     if (!eventId) return;
     setIsUploading(true);
     try {
-      // Compress SVG if needed (though SVG compression is limited)
-      let fileToUpload = file;
-
       if (file.size > 2 * 1024 * 1024) {
-        showNotification(
-          "SVG file is too large. Maximum allowed size is 2MB.",
-          "error",
-        );
-        setIsUploading(false);
+        showNotification("SVG too large. Max 2MB.", "error");
         return;
       }
-
       const fd = new FormData();
-      fd.append("event[logo]", fileToUpload);
-
-      const response = await updateEventById(eventId, fd);
-
+      fd.append("event[logo]", file);
+      const res = await updateEventById(eventId, fd);
       setEventData((prev: any) => ({
         ...prev,
-        attributes: {
-          ...prev.attributes,
-          logo_url: response?.data?.data?.attributes?.logo_url,
-        },
+        attributes: { ...prev.attributes, logo_url: res?.data?.data?.attributes?.logo_url },
       }));
-
       showNotification("Logo updated successfully", "success");
-    } catch (error: any) {
-      showNotification(
-        error?.response?.data?.message || "Error updating logo",
-        "error",
-      );
+    } catch (e: any) {
+      showNotification(e?.response?.data?.message || "Error updating logo", "error");
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
-  // Handle image load for cropping
   const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const img = e.currentTarget;
-    setImageDimensions({
-      width: img.width,
-      height: img.height,
-    });
-
-    // Initialize crop area to center square (80% of smaller dimension) for logo
+    setImageDimensions({ width: img.width, height: img.height });
     const size = Math.min(img.width, img.height) * 0.8;
-    setCropArea({
-      x: (img.width - size) / 2,
-      y: (img.height - size) / 2,
-      width: size,
-      height: size,
-    });
+    setCropArea({ x: (img.width - size) / 2, y: (img.height - size) / 2, width: size, height: size });
   };
 
-  // Handle mouse/touch events for cropping
   const handleCropStart = (e: React.MouseEvent | React.TouchEvent) => {
     if (isResizing) return;
-
     e.preventDefault();
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-
-    // Check if click is on a resize handle
     const clickX = clientX - rect.left;
     const clickY = clientY - rect.top;
-
-    // Define resize handle areas (20px hit area)
-    const handles = {
-      topLeft: {
-        x: cropArea.x - 10,
-        y: cropArea.y - 10,
-        width: 20,
-        height: 20,
-      },
-      topRight: {
-        x: cropArea.x + cropArea.width - 10,
-        y: cropArea.y - 10,
-        width: 20,
-        height: 20,
-      },
-      bottomLeft: {
-        x: cropArea.x - 10,
-        y: cropArea.y + cropArea.height - 10,
-        width: 20,
-        height: 20,
-      },
-      bottomRight: {
-        x: cropArea.x + cropArea.width - 10,
-        y: cropArea.y + cropArea.height - 10,
-        width: 20,
-        height: 20,
-      },
+    const handles: Record<string, { x: number; y: number; width: number; height: number }> = {
+      topLeft: { x: cropArea.x - 10, y: cropArea.y - 10, width: 20, height: 20 },
+      topRight: { x: cropArea.x + cropArea.width - 10, y: cropArea.y - 10, width: 20, height: 20 },
+      bottomLeft: { x: cropArea.x - 10, y: cropArea.y + cropArea.height - 10, width: 20, height: 20 },
+      bottomRight: { x: cropArea.x + cropArea.width - 10, y: cropArea.y + cropArea.height - 10, width: 20, height: 20 },
     };
-
-    // Check which handle was clicked
     for (const [corner, area] of Object.entries(handles)) {
-      if (
-        clickX >= area.x &&
-        clickX <= area.x + area.width &&
-        clickY >= area.y &&
-        clickY <= area.y + area.height
-      ) {
-        setIsResizing(true);
-        setResizeCorner(corner);
-        setDragStart({ x: clickX, y: clickY });
-        return;
+      if (clickX >= area.x && clickX <= area.x + area.width && clickY >= area.y && clickY <= area.y + area.height) {
+        setIsResizing(true); setResizeCorner(corner); setDragStart({ x: clickX, y: clickY }); return;
       }
     }
-
-    // If not on a resize handle, start dragging
     setIsDragging(true);
-    setDragStart({
-      x: clientX - rect.left - cropArea.x,
-      y: clientY - rect.top - cropArea.y,
-    });
+    setDragStart({ x: clientX - rect.left - cropArea.x, y: clientY - rect.top - cropArea.y });
   };
 
   const handleCropMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (
-      (!isDragging && !isResizing) ||
-      !imageDimensions.width ||
-      !imageDimensions.height
-    )
-      return;
+    if ((!isDragging && !isResizing) || !imageDimensions.width) return;
     e.preventDefault();
-
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
-
-    const currentX = clientX - rect.left;
-    const currentY = clientY - rect.top;
-
+    const curX = clientX - rect.left;
+    const curY = clientY - rect.top;
     if (isDragging && !isResizing) {
-      // Move the entire crop area
-      const newX = currentX - dragStart.x;
-      const newY = currentY - dragStart.y;
-
-      // Constrain crop area within image bounds
-      setCropArea((prev) => ({
-        ...prev,
-        x: Math.max(0, Math.min(newX, imageDimensions.width - prev.width)),
-        y: Math.max(0, Math.min(newY, imageDimensions.height - prev.height)),
+      setCropArea((p) => ({
+        ...p,
+        x: Math.max(0, Math.min(curX - dragStart.x, imageDimensions.width - p.width)),
+        y: Math.max(0, Math.min(curY - dragStart.y, imageDimensions.height - p.height)),
       }));
     } else if (isResizing && resizeCorner) {
-      // Resize from a corner while maintaining square aspect ratio
-      const deltaX = currentX - dragStart.x;
-      const deltaY = currentY - dragStart.y;
-
+      const dX = curX - dragStart.x;
+      const dY = curY - dragStart.y;
       setCropArea((prev) => {
-        let newCrop = { ...prev };
-        const minSize = 50; // Minimum crop size
-
-        // Calculate the change in size (use the larger delta to maintain square)
-        const delta = Math.abs(deltaX) > Math.abs(deltaY) ? deltaX : deltaY;
-
+        let n = { ...prev };
+        const min = 50;
+        const delta = Math.abs(dX) > Math.abs(dY) ? dX : dY;
         switch (resizeCorner) {
-          case "topLeft":
-            const newSizeTL = Math.max(minSize, prev.width - delta);
-            newCrop.x = prev.x + prev.width - newSizeTL;
-            newCrop.y = prev.y + prev.height - newSizeTL;
-            newCrop.width = newSizeTL;
-            newCrop.height = newSizeTL;
-            break;
-          case "topRight":
-            const newSizeTR = Math.max(minSize, prev.width + delta);
-            newCrop.y = prev.y + prev.height - newSizeTR;
-            newCrop.width = newSizeTR;
-            newCrop.height = newSizeTR;
-            break;
-          case "bottomLeft":
-            const newSizeBL = Math.max(minSize, prev.width - delta);
-            newCrop.x = prev.x + prev.width - newSizeBL;
-            newCrop.width = newSizeBL;
-            newCrop.height = newSizeBL;
-            break;
-          case "bottomRight":
-            const newSizeBR = Math.max(minSize, prev.width + delta);
-            newCrop.width = newSizeBR;
-            newCrop.height = newSizeBR;
-            break;
+          case "topLeft": { const s = Math.max(min, prev.width - delta); n.x = prev.x + prev.width - s; n.y = prev.y + prev.height - s; n.width = s; n.height = s; break; }
+          case "topRight": { const s = Math.max(min, prev.width + delta); n.y = prev.y + prev.height - s; n.width = s; n.height = s; break; }
+          case "bottomLeft": { const s = Math.max(min, prev.width - delta); n.x = prev.x + prev.width - s; n.width = s; n.height = s; break; }
+          case "bottomRight": { const s = Math.max(min, prev.width + delta); n.width = s; n.height = s; break; }
         }
-
-        // Ensure crop area stays within image bounds
-        if (newCrop.x < 0) {
-          newCrop.width += newCrop.x;
-          newCrop.x = 0;
-          newCrop.height = newCrop.width; // Maintain square
-        }
-        if (newCrop.y < 0) {
-          newCrop.height += newCrop.y;
-          newCrop.y = 0;
-          newCrop.width = newCrop.height; // Maintain square
-        }
-        if (newCrop.x + newCrop.width > imageDimensions.width) {
-          newCrop.width = imageDimensions.width - newCrop.x;
-          newCrop.height = newCrop.width; // Maintain square
-        }
-        if (newCrop.y + newCrop.height > imageDimensions.height) {
-          newCrop.height = imageDimensions.height - newCrop.y;
-          newCrop.width = newCrop.height; // Maintain square
-        }
-
-        return newCrop;
+        if (n.x < 0) { n.width += n.x; n.x = 0; n.height = n.width; }
+        if (n.y < 0) { n.height += n.y; n.y = 0; n.width = n.height; }
+        if (n.x + n.width > imageDimensions.width) { n.width = imageDimensions.width - n.x; n.height = n.width; }
+        if (n.y + n.height > imageDimensions.height) { n.height = imageDimensions.height - n.y; n.width = n.height; }
+        return n;
       });
-
-      setDragStart({ x: currentX, y: currentY });
+      setDragStart({ x: curX, y: curY });
     }
   };
 
-  const handleCropEnd = () => {
-    setIsDragging(false);
-    setIsResizing(false);
-    setResizeCorner(null);
-  };
+  const handleCropEnd = () => { setIsDragging(false); setIsResizing(false); setResizeCorner(null); };
 
-  // Cancel cropping
   const cancelCrop = () => {
     setIsCropping(false);
-    if (originalImageSrc) {
-      URL.revokeObjectURL(originalImageSrc);
-    }
+    if (originalImageSrc) URL.revokeObjectURL(originalImageSrc);
     setOriginalImageSrc("");
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  // Handle crop complete - crop, compress, and upload
   const handleCropComplete = async () => {
     if (!imgRef.current || !canvasRef.current || !eventId) return;
-
     setIsUploading(true);
     try {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       const img = imgRef.current;
-
-      if (!ctx || !img) {
-        throw new Error("Failed to get canvas context or image");
-      }
-
-      // Calculate scale between displayed image and original
+      if (!ctx || !img) throw new Error("No context");
       const scaleX = img.naturalWidth / img.width;
       const scaleY = img.naturalHeight / img.height;
-
-      // Set canvas size to 400x400 (target size)
-      canvas.width = 400;
-      canvas.height = 400;
-
-      // Draw cropped image
-      ctx.drawImage(
-        img,
-        cropArea.x * scaleX,
-        cropArea.y * scaleY,
-        cropArea.width * scaleX,
-        cropArea.height * scaleY,
-        0,
-        0,
-        400,
-        400,
-      );
-
-      // Convert canvas to blob
-      canvas.toBlob(
-        async (blob) => {
-          if (!blob) {
-            showNotification(
-              "Failed to crop image. Please try again.",
-              "error",
-            );
-            setIsUploading(false);
-            return;
+      canvas.width = 400; canvas.height = 400;
+      ctx.drawImage(img, cropArea.x * scaleX, cropArea.y * scaleY, cropArea.width * scaleX, cropArea.height * scaleY, 0, 0, 400, 400);
+      canvas.toBlob(async (blob) => {
+        if (!blob) { showNotification("Failed to crop image.", "error"); setIsUploading(false); return; }
+        try {
+          let final: File = new File([blob], "cropped-logo.jpg", { type: "image/jpeg", lastModified: Date.now() });
+          if (final.size > 500 * 1024) {
+            final = await imageCompression(final, { maxSizeMB: 0.5, maxWidthOrHeight: 400, useWebWorker: true, fileType: "image/jpeg" });
           }
-
-          try {
-            // Convert blob to File
-            const croppedFile = new File([blob], "cropped-logo.jpg", {
-              type: "image/jpeg",
-              lastModified: Date.now(),
-            });
-
-            // Compress the cropped image
-            let finalFile = croppedFile;
-            if (croppedFile.size > 500 * 1024) {
-              // Compress if larger than 500KB
-              const compressionOptions = {
-                maxSizeMB: 0.5, // Target size: 500KB
-                maxWidthOrHeight: 400, // Already 400x400, but keep for safety
-                useWebWorker: true,
-                fileType: "image/jpeg",
-              };
-
-              finalFile = await imageCompression(
-                croppedFile,
-                compressionOptions,
-              );
-            }
-
-            // Upload the compressed file
-            const fd = new FormData();
-            fd.append("event[logo]", finalFile);
-
-            const response = await updateEventById(eventId, fd);
-
-            // Update the event data with new logo URL
-            setEventData((prev: any) => ({
-              ...prev,
-              attributes: {
-                ...prev.attributes,
-                logo_url: response?.data?.data?.attributes?.logo_url,
-              },
-            }));
-
-            showNotification("Logo updated successfully", "success");
-
-            // Close cropping mode
-            setIsCropping(false);
-            if (originalImageSrc) {
-              URL.revokeObjectURL(originalImageSrc);
-            }
-            setOriginalImageSrc("");
-          } catch (error: any) {
-            console.error("Error processing image:", error);
-            showNotification(
-              error?.response?.data?.message || "Error updating logo",
-              "error",
-            );
-          } finally {
-            setIsUploading(false);
-            if (fileInputRef.current) {
-              fileInputRef.current.value = "";
-            }
-          }
-        },
-        "image/jpeg",
-        0.9, // Quality
-      );
-    } catch (error: any) {
-      console.error("Error cropping image:", error);
-      showNotification("Failed to crop image. Please try again.", "error");
+          const fd = new FormData();
+          fd.append("event[logo]", final);
+          const res = await updateEventById(eventId, fd);
+          setEventData((prev: any) => ({
+            ...prev,
+            attributes: { ...prev.attributes, logo_url: res?.data?.data?.attributes?.logo_url },
+          }));
+          showNotification("Logo updated successfully", "success");
+          setIsCropping(false);
+          if (originalImageSrc) URL.revokeObjectURL(originalImageSrc);
+          setOriginalImageSrc("");
+        } catch (e: any) {
+          showNotification(e?.response?.data?.message || "Error updating logo", "error");
+        } finally {
+          setIsUploading(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      }, "image/jpeg", 0.9);
+    } catch {
+      showNotification("Failed to crop image.", "error");
       setIsUploading(false);
     }
   };
 
+  // ── render guard ────────────────────────────────────────────────────────
+
+  if (!eventData) return <SkeletonLoader />;
+
+  const {
+    name, event_type, event_date_from, event_date_to,
+    event_time_from, event_time_to, about,
+    location: eventLocation, logo_url, primary_color, secondary_color,
+    registration_page_banner, require_approval,
+  } = eventData.attributes;
+
+  const formatTime = (s: string) =>
+    new Date(s).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+  const totalRegistrations = metrics?.registration_count ?? derivedCounts.total;
+
+  // ── JSX ─────────────────────────────────────────────────────────────────
+
   return (
     <>
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        {/* edit event details */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 pb-10 space-y-6">
 
+        {/* Page title */}
+
+        {/* ── Event header card ── */}
         <div className="p-4 sm:p-6 lg:p-6 bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
@@ -1168,14 +1040,25 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
           {/* edit button and share button */}
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <div
+            <button
+              type="button"
               onClick={() => {
-                // Same format as invitation registration link: /register/{event_uuid}?tenant_uuid=...&event_id=...
-                const eventUuid = eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
-                const tenantUuid = typeof window !== "undefined" ? localStorage.getItem("tenant_uuid") : null;
-                const registrationUrl = getRegistrationUrl(eventUuid, tenantUuid, eventId ?? undefined);
+                const eventUuid =
+                  eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
+                const tenantUuid =
+                  typeof window !== "undefined"
+                    ? localStorage.getItem("tenant_uuid")
+                    : null;
+                const registrationUrl = getRegistrationUrl(
+                  eventUuid,
+                  tenantUuid,
+                  eventId ?? undefined
+                );
                 if (!registrationUrl) {
-                  showNotification("Registration link not available (event UUID or tenant required)", "warning");
+                  showNotification(
+                    "Registration link not available (event UUID or tenant required)",
+                    "warning"
+                  );
                   return;
                 }
                 navigator.clipboard
@@ -1183,30 +1066,39 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   .then(() => {
                     showNotification(
                       "Registration link copied to clipboard!",
-                      "success",
+                      "success"
                     );
                   })
                   .catch(() => {
                     showNotification("Failed to copy link", "error");
                   });
               }}
-              className="rounded-2xl bg-green-50 py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center shrink-0"
+              className="rounded-2xl bg-green-50 py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center shrink-0 border-0 text-left"
             >
-              <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600" />
-              <p className="text-green-700 text-xs sm:text-sm font-normal">
+              <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600 shrink-0" />
+              <span className="text-green-700 text-xs sm:text-sm font-normal">
                 Copy Registration Link
-              </p>
-            </div>
-            <div
-              onClick={() =>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const idToUse = eventId ?? paramId;
+                if (!idToUse) {
+                  showNotification("Event ID is missing. Cannot open editor.", "warning");
+                  return;
+                }
+                // Only pass serializable state (no functions, no React components) — History API cannot clone them
+                const statsSerializable = statItems.map(({ icon: _icon, ...rest }) => rest);
+                // Navigate without id in path so layout keeps sidebar collapsed (icon-only), like previous behavior
                 navigate("/express-event", {
                   state: {
-                    // Event type and basic info
                     plan: event_type,
                     eventData: eventData,
                     isEditing: true,
-
-                    // All event attributes
                     eventAttributes: {
                       name,
                       event_type,
@@ -1222,278 +1114,268 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                       registration_page_banner,
                       require_approval,
                     },
-
-                    // Component props
                     chartData,
-                    onTimeRangeChange,
-
-                    // Event ID for reference
-                    eventId,
-
-                    // Stats data
-                    stats,
-
-                    // Additional metadata
+                    eventId: idToUse,
+                    stats: statsSerializable,
                     lastEdit: "Before 3hr",
-                    currentStep: 0, // Start from first step when editing
+                    currentStep: 0,
                   },
-                })
-              }
-              className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors justify-center shrink-0"
+                });
+              }}
+              className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors justify-center shrink-0 border-0 text-left"
             >
-              <Edit size={16} className="lg:w-5 lg:h-5" />
-              <p className="text-[#202242] text-xs sm:text-sm font-normal">
+              <Edit size={16} className="lg:w-5 lg:h-5 shrink-0 pointer-events-none" aria-hidden />
+              <span className="text-[#202242] text-xs sm:text-sm font-normal">
                 Edit Event
-              </p>
-            </div>
+              </span>
+            </button>
           </div>
         </div>
 
-        {/* registration and user counters - Responsive Grid (clickable cards) */}
-        <div className="mt-6 lg:mt-6 gap-3 sm:gap-4 lg:gap-3 grid grid-cols-1 xs:grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6">
-          {stats.map((item, index) => (
-            <div
-              key={`${item.label}-${index}`}
-              role="button"
-              tabIndex={0}
-              onClick={() =>
-                navigate(`/home/${eventId}/summary-card`, {
-                  state: {
-                    cardLabel: item.label,
-                    filterKey: item.filterKey ?? "all",
-                    userTypeKey: item.userTypeKey,
-                  },
-                })
-              }
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
+        {/* ── Stats section: Capacity card left + stats grid right ── */}
+        <div className="flex flex-col lg:flex-row gap-3 items-stretch">
+          {/* Capacity card — fixed width on large screens */}
+          <div className="w-full lg:w-[210px] xl:w-[220px] shrink-0">
+            <CapacityCard
+              percent={capacity.percent}
+              used={capacity.used}
+              total={capacity.total}
+              remaining={capacity.remaining}
+              onUpgrade={() => showNotification("Upgrade plan coming soon", "info")}
+            />
+          </div>
+
+          {/* Stat cards grid */}
+          <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+            {statItems.map((item, i) => (
+              <StatCard
+                key={`${item.label}-${i}`}
+                label={item.label}
+                value={item.value}
+                icon={item.icon}
+                iconColor={item.iconColor}
+                bgColor={item.bgColor}
+                onClick={() =>
                   navigate(`/home/${eventId}/summary-card`, {
-                    state: {
-                      cardLabel: item.label,
-                      filterKey: item.filterKey ?? "all",
-                      userTypeKey: item.userTypeKey,
-                    },
-                  });
+                    state: { cardLabel: item.label, filterKey: item.filterKey ?? "all", userTypeKey: item.userTypeKey },
+                  })
                 }
-              }}
-              className="bg-white flex items-center gap-3 p-4 lg:p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <div
-                className={`p-3 lg:p-4 ${item.bgColor} rounded-xl shrink-0 flex items-center justify-center`}
-              >
-                {item.filterKey === "rejected" ? (
-                  <UserX
-                    className="h-5 w-5 sm:h-6 sm:w-6 text-red-600"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                ) : (
-                  <img
-                    src={item.icon}
-                    alt={item.label}
-                    className="h-5 w-5 sm:h-6 sm:w-6"
-                  />
-                )}
-              </div>
-              <div className="justify-between flex flex-col min-w-0 flex-1">
-                <p className="text-xs font-normal sm:text-sm text-[#656C95] line-clamp-2">
-                  {item.label}
-                </p>
-                <p className="mt-1 text-sm sm:text-base lg:text-lg font-medium text-[#202242]">
-                  {item.value.toLocaleString()}
-                </p>
-              </div>
-            </div>
-          ))}
+              />
+            ))}
+          </div>
         </div>
 
-        {/* Registrations Activity Chart */}
-        <div className="mt-6 lg:mt-6">
-          <RegistrationChart
-            data={derivedChartData}
-            title="Registrations Activity"
-            legend="Registered"
-            useDefaultFallback={useDefaultFallback}
-            onTimeRangeChange={handleTimeRangeChange}
-            height="320px"
-            xAxisKey="label"
-            yAxisKey="registered"
-            className="shadow-sm hover:shadow-md transition-shadow"
-          />
+        {/* ── Activity chart + Registration Sources ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="lg:col-span-2">
+            <RegistrationsActivityChart data={derivedChartData} onRangeChange={onTimeRangeChange} />
+          </div>
+
+          {/* Registration Sources donut */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-[#202242]">Registration Sources</h3>
+              <select className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none">
+                <option>2 Month</option>
+                <option>6 Month</option>
+              </select>
+            </div>
+            <DonutChart
+              data={[
+                { name: "Website", value: 45, color: "#1e293b" },
+                { name: "Invitation Link", value: 30, color: "#22c55e" },
+                { name: "QR Code", value: 15, color: "#a855f7" },
+                { name: "Manual", value: 10, color: "#f97316" },
+              ]}
+              totalLabel="Total Registrations"
+              totalValue={totalRegistrations}
+              legendItems={[
+                { label: "Website", percent: "45%", color: "#1e293b" },
+                { label: "Invitation Link", percent: "30%", color: "#22c55e" },
+                { label: "QR Code", percent: "15%", color: "#a855f7" },
+                { label: "Manual", percent: "10%", color: "#f97316" },
+              ]}
+            />
+          </div>
+        </div>
+
+        {/* ── Registration Status + Recent Activity ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Registration Status */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50 relative">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-[#202242]">Registration Status</h3>
+              <select className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none">
+                <option>2 Month</option>
+                <option>6 Month</option>
+              </select>
+            </div>
+
+            {/* FAB + Quick Actions Menu dropdown - fixed in main content area (right of sidebar), aligned with content */}
+            <div ref={quickActionsRef} className="fixed bottom-6 z-50 left-[calc(280px+3rem)]">
+              {quickActionsOpen && (
+                <div className="absolute bottom-full left-0 mb-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[200px]">
+                  <p className="px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-100">
+                    Quick Actions Menu
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setQuickActionsOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="p-1.5 rounded-lg bg-blue-50">
+                      <UserPlus className="h-4 w-4 text-blue-600" />
+                    </div>
+                    Add User
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickActionsOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="p-1.5 rounded-lg bg-emerald-50">
+                      <Send className="h-4 w-4 text-emerald-600" />
+                    </div>
+                    Send Invitation
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickActionsOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="p-1.5 rounded-lg bg-violet-50">
+                      <Printer className="h-4 w-4 text-violet-600" />
+                    </div>
+                    Print Badge
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setQuickActionsOpen(false)}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="p-1.5 rounded-lg bg-red-50">
+                      <FileText className="h-4 w-4 text-red-600" />
+                    </div>
+                    View Report
+                  </button>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setQuickActionsOpen((prev) => !prev)}
+                className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg"
+                aria-expanded={quickActionsOpen}
+                aria-haspopup="true"
+                aria-label="Quick actions"
+              >
+                <Plus size={20} strokeWidth={2.5} />
+              </button>
+            </div>
+
+            <DonutChart
+              data={[
+                { name: "Approved", value: derivedCounts.approved, color: "#202242" },
+                { name: "Pending", value: derivedCounts.pending, color: "#f97316" },
+                { name: "Rejected", value: derivedCounts.rejected, color: "#a855f7" },
+              ]}
+              totalLabel="Total"
+              totalValue={derivedCounts.approved + derivedCounts.pending + derivedCounts.rejected}
+              legendItems={[
+                { label: "Approved", value: derivedCounts.approved, color: "#202242" },
+                { label: "Pending", value: derivedCounts.pending, color: "#f97316" },
+                { label: "Rejected", value: derivedCounts.rejected, color: "#a855f7" },
+              ]}
+            />
+          </div>
+
+          {/* Recent Activity */}
+          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-[#202242]">Recent Activity</h3>
+              <button type="button" className="text-sm font-medium text-blue-500 hover:text-blue-600">View All</button>
+            </div>
+            <ul className="space-y-4">
+              {[
+                { Icon: UserCheck, text: "Ahmed Hassan registered", time: "2 min ago", iconBg: "bg-blue-50", iconColor: "text-blue-600" },
+                { Icon: MailCheck, text: "Fatima Ali accepted invitation", time: "10 min ago", iconBg: "bg-emerald-50", iconColor: "text-emerald-600" },
+                { Icon: Star, text: "VIP user added", time: "1 hour ago", iconBg: "bg-amber-50", iconColor: "text-amber-500" },
+                { Icon: FileText, text: "Event details updated", time: "3 hours ago", iconBg: "bg-slate-50", iconColor: "text-slate-500" },
+                { Icon: QrCode, text: "Ahmed Hassan checked in using QR code", time: "3 hours ago", iconBg: "bg-red-50", iconColor: "text-red-500" },
+                { Icon: UserCheck, text: "Sara Mohamed was approved for registration", time: "4 hours ago", iconBg: "bg-teal-50", iconColor: "text-teal-600" },
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <div className={`p-1.5 rounded-lg ${item.iconBg} shrink-0`}>
+                    <item.Icon className={`h-4 w-4 ${item.iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
+                    <p className="text-sm text-[#202242] leading-snug">{item.text}</p>
+                    <p className="text-xs text-[#9CA3AF] shrink-0 whitespace-nowrap">{item.time}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
 
-      {/* Cropping Modal */}
+      {/* ── Crop Modal ── */}
       {isCropping && originalImageSrc && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-medium text-gray-900">
-                Crop Image (Drag to adjust)
-              </h3>
-              <button
-                onClick={cancelCrop}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-                disabled={isUploading}
-              >
+              <h3 className="text-lg font-semibold text-gray-900">Crop Image</h3>
+              <button onClick={cancelCrop} disabled={isUploading} className="text-gray-400 hover:text-gray-600">
                 <XCircle size={24} />
               </button>
             </div>
-
-            <div className="mb-6">
-              <div
-                className="relative mx-auto border border-gray-300 rounded-lg overflow-hidden bg-transparent"
-                style={{
-                  maxWidth: "600px",
-                  maxHeight: "400px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onMouseDown={handleCropStart}
-                onMouseMove={handleCropMove}
-                onMouseUp={handleCropEnd}
-                onMouseLeave={handleCropEnd}
-                onTouchStart={handleCropStart}
-                onTouchMove={handleCropMove}
-                onTouchEnd={handleCropEnd}
-              >
-                <img
-                  ref={imgRef}
-                  src={originalImageSrc}
-                  alt="Crop preview"
-                  className="max-w-full max-h-full"
-                  onLoad={handleImageLoad}
-                  draggable={false}
-                  style={{
-                    objectFit: "contain",
-                  }}
-                />
-                {imageDimensions.width > 0 && (
-                  <>
-                    {/* Crop overlay - darken outside area */}
-                    <div
-                      className="absolute inset-0 bg-black bg-opacity-40"
-                      style={{
-                        clipPath: `polygon(
-                          0% 0%, 
-                          0% 100%, 
-                          ${cropArea.x}px 100%, 
-                          ${cropArea.x}px ${cropArea.y}px, 
-                          ${cropArea.x + cropArea.width}px ${cropArea.y}px, 
-                          ${cropArea.x + cropArea.width}px ${
-                            cropArea.y + cropArea.height
-                          }px, 
-                          ${cropArea.x}px ${cropArea.y + cropArea.height}px, 
-                          ${cropArea.x}px 100%, 
-                          100% 100%, 
-                          100% 0%
-                        )`,
-                      }}
-                    />
-
-                    {/* Crop area border */}
-                    <div
-                      className="absolute border-2 border-white border-dashed"
-                      style={{
-                        left: `${cropArea.x}px`,
-                        top: `${cropArea.y}px`,
-                        width: `${cropArea.width}px`,
-                        height: `${cropArea.height}px`,
-                        cursor: isDragging ? "grabbing" : "grab",
-                      }}
-                    >
-                      {/* Resize handles */}
-                      <div
-                        className="absolute -top-2 -left-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nwse-resize"
-                        title="Drag to resize from top-left"
-                      />
-                      <div
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nesw-resize"
-                        title="Drag to resize from top-right"
-                      />
-                      <div
-                        className="absolute -bottom-2 -left-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nesw-resize"
-                        title="Drag to resize from bottom-left"
-                      />
-                      <div
-                        className="absolute -bottom-2 -right-2 w-6 h-6 bg-white rounded-full border-2 border-blue-500 cursor-nwse-resize"
-                        title="Drag to resize from bottom-right"
-                      />
-
-                      {/* Center drag area */}
-                      <div
-                        className="absolute inset-0 cursor-move"
-                        title="Drag to move crop area"
-                      />
-                    </div>
-                  </>
-                )}
-              </div>
+            <div
+              className="relative mx-auto border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+              style={{ maxWidth: 600, maxHeight: 400 }}
+              onMouseDown={handleCropStart} onMouseMove={handleCropMove} onMouseUp={handleCropEnd} onMouseLeave={handleCropEnd}
+              onTouchStart={handleCropStart} onTouchMove={handleCropMove} onTouchEnd={handleCropEnd}
+            >
+              <img ref={imgRef} src={originalImageSrc} alt="Crop" className="max-w-full max-h-full object-contain" onLoad={handleImageLoad} draggable={false} />
+              {imageDimensions.width > 0 && (
+                <>
+                  <div className="absolute inset-0 bg-black/40" style={{ clipPath: `polygon(0% 0%,0% 100%,${cropArea.x}px 100%,${cropArea.x}px ${cropArea.y}px,${cropArea.x + cropArea.width}px ${cropArea.y}px,${cropArea.x + cropArea.width}px ${cropArea.y + cropArea.height}px,${cropArea.x}px ${cropArea.y + cropArea.height}px,${cropArea.x}px 100%,100% 100%,100% 0%)` }} />
+                  <div className="absolute border-2 border-white border-dashed" style={{ left: cropArea.x, top: cropArea.y, width: cropArea.width, height: cropArea.height, cursor: isDragging ? "grabbing" : "grab" }}>
+                    {["top-left", "top-right", "bottom-left", "bottom-right"].map((pos) => (
+                      <div key={pos} className={`absolute w-5 h-5 bg-white border-2 border-blue-500 rounded-full ${pos.includes("top") ? "-top-2.5" : "-bottom-2.5"} ${pos.includes("left") ? "-left-2.5" : "-right-2.5"} cursor-${pos.includes("top") ? (pos.includes("left") ? "nwse" : "nesw") : pos.includes("left") ? "nesw" : "nwse"}-resize`} />
+                    ))}
+                    <div className="absolute inset-0 cursor-move" />
+                  </div>
+                </>
+              )}
             </div>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={cancelCrop}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                disabled={isUploading}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCropComplete}
-                className="px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  "Crop & Upload"
-                )}
+            <div className="flex justify-end gap-3 mt-5">
+              <button onClick={cancelCrop} disabled={isUploading} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+              <button onClick={handleCropComplete} disabled={isUploading} className="px-4 py-2 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors text-sm flex items-center gap-2">
+                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</> : "Crop & Upload"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Hidden canvas for cropping */}
+      {/* Hidden canvas for crop */}
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Toast notification */}
       {notification && (
         <div className="fixed top-4 right-4 z-[100] animate-slide-in">
-          <div
-            className={`px-6 py-3 rounded-lg shadow-lg ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : notification.type === "error"
-                  ? "bg-red-500 text-white"
-                  : notification.type === "warning"
-                    ? "bg-yellow-500 text-white"
-                    : "bg-blue-500 text-white"
-            }`}
-          >
+          <div className={`px-5 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${
+            notification.type === "success" ? "bg-green-500" :
+            notification.type === "error" ? "bg-red-500" :
+            notification.type === "warning" ? "bg-amber-500" : "bg-blue-500"
+          }`}>
             {notification.message}
           </div>
         </div>
       )}
+
       <style>{`
-        @keyframes slide-in {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
+        @keyframes slide-in { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .animate-slide-in { animation: slide-in 0.3s ease-out; }
       `}</style>
     </>
   );

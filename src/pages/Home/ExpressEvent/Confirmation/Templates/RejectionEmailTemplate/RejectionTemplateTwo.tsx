@@ -1,11 +1,3 @@
-import Assets from "@/utils/Assets";
-import React from "react";
-import {
-  Facebook,
-  Instagram,
-  Twitter,
-} from "lucide-react";
-
 interface EventDataProps {
   eventName?: string;
   dateFrom?: string | Date;
@@ -22,94 +14,156 @@ const formatDate = (date: string | Date | undefined): string => {
   return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 };
 
+const formatTime = (time: string | undefined): string => {
+  if (!time) return "";
+  return time;
+};
+
 function RejectionTemplateTwo({
   eventName = "event name",
   dateFrom,
   dateTo,
-  logoUrl,
+  timeFrom,
+  timeTo,
+  location,
 }: EventDataProps) {
-  const [logoError, setLogoError] = React.useState(false);
   const formattedDateFrom = formatDate(dateFrom);
   const formattedDateTo = formatDate(dateTo);
-  const dateRangeText =
-    formattedDateFrom && formattedDateTo
-      ? `from ${formattedDateFrom} to ${formattedDateTo}`
-      : formattedDateFrom
-        ? `on ${formattedDateFrom}`
-        : "";
-
-  // Check if logoUrl is valid
-  const isValidLogoUrl = logoUrl && 
-    typeof logoUrl === 'string' && 
-    logoUrl.trim() !== '' && 
-    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:') || logoUrl.startsWith('/'));
+  const formattedTimeFrom = formatTime(timeFrom);
+  const formattedTimeTo = formatTime(timeTo);
 
   return (
-    <>
-      <div className="w-full bg-gray-50 p-10">
-        {isValidLogoUrl && !logoError ? (
-          <div className="flex items-center">
-            <img 
-              src={logoUrl} 
-              alt="Event Logo" 
-              style={{ maxHeight: 60, maxWidth: 200 }} 
-              onError={() => setLogoError(true)}
-              onLoad={() => setLogoError(false)}
-            />
-          </div>
-        ) : (
-          <p>Our Logo</p>
-        )}
-        <div style={{ marginTop: 40 }} />
-
-        <div className="p-[40px] bg-white">
-          <div className="flex items-center justify-center">
-            <img
-              src={Assets.icons.rejectionEmailTwo}
-              style={{
-                height: 190,
-                width: 168,
-              }}
-            />
-          </div>
-          <div />
-          <div className="flex justify-center items-center  font-bold text-[20px]">
-            <p>Thanks for registering to &quot;{eventName}&quot;</p>
-          </div>
-          <div className="mt-[24px]">
-            <p className="font-medium text-[16px] text-[#121A26]">
-              Dear [Guest&apos;s Name],
-            </p>
-            <p className="mt-[8px] font-normal text-[16px] text-[#384860]">
-              Thanks so much for registering for {eventName}
-              {dateRangeText ? ` ${dateRangeText}` : ""} – we&apos;re honored by
-              your interest! <br /> <br />
-              Due to overwhelming response and limited space, we&apos;re sorry to let
-              you know that we&apos;re unable to accommodate your registration for
-              this particular event. <br /> <br /> However, we&apos;d love to stay in
-              touch and notify you about future events that may interest you.{" "}
-              <br /> <br /> We truly appreciate your interest and hope to
-              connect again soon!
-            </p>
-          </div>
-
-          <p className="mt-[24px] font-normal text-[16px] text-[#384860]">
-            Warm Regards <br />
-            [Your Name or Organization]
-          </p>
-        </div>
-        <div className="mt-[40px] flex items-center justify-between">
-          <p>
-            This email was sent by scc@mail.com <br />© 2025 scc
-          </p>
-          <div className="flex items-center gap-3">
-            <Twitter />
-            <Facebook />
-            <Instagram />
-          </div>
-        </div>
-      </div>
-    </>
+    <div
+      style={{
+        margin: 0,
+        padding: 0,
+        background: "#f5f7fb",
+        fontFamily: "Arial, Helvetica, sans-serif",
+        color: "#1f2937",
+      }}
+    >
+      <table width="100%" cellPadding={0} cellSpacing={0} style={{ padding: "40px 16px" }}>
+        <tbody>
+          <tr>
+            <td align="center">
+              <table
+                width={620}
+                cellPadding={0}
+                cellSpacing={0}
+                style={{
+                  background: "#ffffff",
+                  borderRadius: 10,
+                  overflow: "hidden",
+                  border: "1px solid #e5e7eb",
+                }}
+              >
+                <tbody>
+                  {/* Header */}
+                  <tr>
+                    <td
+                      style={{
+                        padding: "24px 28px",
+                        background: "#fef2f2",
+                        borderBottom: "1px solid #fee2e2",
+                      }}
+                    >
+                      <h1
+                        style={{
+                          margin: 0,
+                          fontSize: 22,
+                          fontWeight: 700,
+                          color: "#b91c1c",
+                        }}
+                      >
+                        Registration Update
+                      </h1>
+                    </td>
+                  </tr>
+                  {/* Message */}
+                  <tr>
+                    <td style={{ padding: 28 }}>
+                      <p style={{ margin: "0 0 16px", fontSize: 15, lineHeight: 1.8 }}>
+                        Dear <strong>[Guest&apos;s Name]</strong>,
+                      </p>
+                      <p style={{ margin: "0 0 16px", fontSize: 15, lineHeight: 1.8 }}>
+                        Thank you for your interest in attending <strong>{eventName}</strong>. We truly appreciate the
+                        time you took to register.
+                      </p>
+                      <p style={{ margin: "0 0 16px", fontSize: 15, lineHeight: 1.8 }}>
+                        After careful review, we regret to inform you that your registration could not be approved for
+                        this event.
+                      </p>
+                      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7, color: "#4b5563" }}>
+                        Please note that due to capacity limitations or specific selection criteria, we were unable to
+                        accommodate all requests.
+                      </p>
+                    </td>
+                  </tr>
+                  {/* Event Info */}
+                  <tr>
+                    <td style={{ padding: "0 28px 20px 28px" }}>
+                      <table
+                        width="100%"
+                        cellPadding={0}
+                        cellSpacing={0}
+                        style={{
+                          background: "#f9fafb",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: 8,
+                        }}
+                      >
+                        <tbody>
+                          <tr>
+                            <td style={{ padding: 14, fontSize: 13, lineHeight: 1.7 }}>
+                              <strong>Event:</strong> {eventName}
+                              <br />
+                              <strong>Date:</strong> {formattedDateFrom || "[Start Date]"} –{" "}
+                              {formattedDateTo || "[End Date]"}
+                              <br />
+                              <strong>Time:</strong> {formattedTimeFrom || "[Start Time]"} –{" "}
+                              {formattedTimeTo || "[End Time]"}
+                              <br />
+                              <strong>Location:</strong> {location || "[City / Venue]"}
+                              <br />
+                              <strong>Status:</strong>{" "}
+                              <span style={{ color: "#b91c1c", fontWeight: 700 }}>Rejected</span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                  {/* Footer */}
+                  <tr>
+                    <td
+                      style={{
+                        padding: "20px 28px",
+                        fontSize: 12,
+                        lineHeight: 1.6,
+                        color: "#6b7280",
+                        background: "#fafafa",
+                        borderTop: "1px solid #e5e7eb",
+                      }}
+                    >
+                      If you have any questions, please contact us at{" "}
+                      <a
+                        href="mailto:[support@email.com]"
+                        style={{ color: "#2563eb", textDecoration: "none" }}
+                      >
+                        [support@email.com]
+                      </a>
+                      <br />
+                      <br />
+                      © 2026 [Your Organization]. All rights reserved.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }
 

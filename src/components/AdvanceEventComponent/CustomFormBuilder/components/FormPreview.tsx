@@ -216,15 +216,19 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const renderField = (
     field: CustomFormField,
     overrideInputStyle?: React.CSSProperties,
-    theme?: FormTheme
+    theme?: FormTheme,
+    hasFormBackground?: boolean
   ) => {
-    // Merge field-specific styles with theme styles
+    const defaultInputBg =
+      hasFormBackground === true
+        ? (theme?.inputBackgroundColor ?? "transparent")
+        : (theme?.inputBackgroundColor || "#ffffff");
     const fieldInputStyle: React.CSSProperties = {
       ...overrideInputStyle,
       backgroundColor:
         field.fieldStyle?.backgroundColor ||
         theme?.inputBackgroundColor ||
-        "#ffffff",
+        defaultInputBg,
       borderColor:
         field.fieldStyle?.borderColor || theme?.inputBorderColor || "#d1d5db",
       borderWidth:
@@ -305,7 +309,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                     theme?.inputFocusBackgroundColor ||
                     field.fieldStyle?.backgroundColor ||
                     theme?.inputBackgroundColor ||
-                    "#ffffff";
+                    defaultInputBg;
                 }}
                 onBlur={(e) => {
                   e.currentTarget.style.borderColor =
@@ -315,9 +319,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   e.currentTarget.style.backgroundColor =
                     field.fieldStyle?.backgroundColor ||
                     theme?.inputBackgroundColor ||
-                    "#ffffff";
+                    defaultInputBg;
                 }}
-                className="transition-all bg-white"
+                className="transition-all"
               >
                 <option value="">Code</option>
                 {COUNTRY_DIAL_CODES.map((c) => (
@@ -344,7 +348,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                     theme?.inputFocusBackgroundColor ||
                     field.fieldStyle?.backgroundColor ||
                     theme?.inputBackgroundColor ||
-                    "#ffffff";
+                    defaultInputBg;
                   executeEventHandler(field.events?.onFocus, field.name);
                 }}
                 onBlur={(e) => {
@@ -355,7 +359,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                   e.currentTarget.style.backgroundColor =
                     field.fieldStyle?.backgroundColor ||
                     theme?.inputBackgroundColor ||
-                    "#ffffff";
+                    defaultInputBg;
                   executeEventHandler(field.events?.onBlur, field.name);
                 }}
                 onClick={() =>
@@ -384,7 +388,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 theme?.inputFocusBackgroundColor ||
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
@@ -395,7 +399,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               e.currentTarget.style.backgroundColor =
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onBlur, field.name);
             }}
             onClick={() =>
@@ -426,7 +430,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 theme?.inputFocusBackgroundColor ||
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
@@ -437,7 +441,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               e.currentTarget.style.backgroundColor =
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onBlur, field.name);
             }}
             onClick={() =>
@@ -465,7 +469,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 theme?.inputFocusBackgroundColor ||
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
@@ -476,7 +480,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               e.currentTarget.style.backgroundColor =
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onBlur, field.name);
             }}
             className="w-full transition-all resize-y"
@@ -501,7 +505,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 theme?.inputFocusBackgroundColor ||
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onFocus, field.name);
             }}
             onBlur={(e) => {
@@ -512,13 +516,13 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               e.currentTarget.style.backgroundColor =
                 field.fieldStyle?.backgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
               executeEventHandler(field.events?.onBlur, field.name);
             }}
             onClick={() =>
               executeEventHandler(field.events?.onClick, field.name)
             }
-            className="w-full transition-all bg-white"
+            className="w-full transition-all"
           >
             <option value="">
               {displayPlaceholder || "Select an option..."}
@@ -802,7 +806,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             style={{
               color: theme?.textColor || "#111827",
               fontSize: theme?.textFontSize || "16px",
-              backgroundColor: theme?.inputBackgroundColor || "#ffffff",
+              backgroundColor: theme?.inputBackgroundColor || defaultInputBg,
               borderColor: theme?.inputBorderColor || "#d1d5db",
               borderWidth: theme?.inputBorderWidth || "1px",
               borderRadius: theme?.inputBorderRadius || "6px",
@@ -816,13 +820,13 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               e.currentTarget.style.backgroundColor =
                 theme?.inputFocusBackgroundColor ||
                 theme?.inputBackgroundColor ||
-                "#ffffff";
+                defaultInputBg;
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor =
                 theme?.inputBorderColor || "#d1d5db";
               e.currentTarget.style.backgroundColor =
-                theme?.inputBackgroundColor || "#ffffff";
+                theme?.inputBackgroundColor || defaultInputBg;
             }}
             rows={4}
             placeholder="Enter your paragraph"
@@ -897,18 +901,25 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     }
   };
 
+  const formBgImageUrl = backgroundImagePreview
+    ? backgroundImagePreview
+    : theme?.formBackgroundImage &&
+        typeof theme.formBackgroundImage === "string" &&
+        theme.formBackgroundImage.trim() !== ""
+      ? theme.formBackgroundImage
+      : null;
+  const hasFormBackground =
+    !!formBgImageUrl ||
+    (theme?.formBackgroundColor != null && theme?.formBackgroundColor !== "");
+
   const formStyle: React.CSSProperties = {
-    backgroundColor: theme?.formBackgroundColor || "#ffffff",
-    backgroundImage: theme?.formBackgroundImage
-      ? typeof theme.formBackgroundImage === "string"
-        ? `url(${theme.formBackgroundImage})`
-        : backgroundImagePreview
-          ? `url(${backgroundImagePreview})`
-          : undefined
-      : undefined,
-    backgroundSize: theme?.formBackgroundImage ? "cover" : undefined,
-    backgroundPosition: theme?.formBackgroundImage ? "center" : undefined,
-    backgroundRepeat: theme?.formBackgroundImage ? "no-repeat" : undefined,
+    backgroundColor: hasFormBackground
+      ? (theme?.formBackgroundColor ?? "transparent")
+      : "transparent",
+    backgroundImage: formBgImageUrl ? `url(${formBgImageUrl})` : undefined,
+    backgroundSize: formBgImageUrl ? "cover" : undefined,
+    backgroundPosition: formBgImageUrl ? "center" : undefined,
+    backgroundRepeat: formBgImageUrl ? "no-repeat" : undefined,
     paddingTop: theme?.formPadding || "24px",
     paddingLeft: theme?.formPadding || "24px",
     paddingRight: theme?.formPadding || "24px",
@@ -920,7 +931,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   };
 
   const baseInputStyle: React.CSSProperties = {
-    backgroundColor: theme?.inputBackgroundColor || "#ffffff",
+    backgroundColor: hasFormBackground
+      ? (theme?.inputBackgroundColor ?? "transparent")
+      : theme?.inputBackgroundColor || "#ffffff",
     borderColor: theme?.inputBorderColor || "#d1d5db",
     borderWidth: theme?.inputBorderWidth || "1px",
     borderRadius: theme?.inputBorderRadius || "6px",
@@ -995,7 +1008,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
         <div
           style={{
-            backgroundColor: theme?.formBackgroundColor || "#ffffff",
+            backgroundColor: hasFormBackground
+              ? formBgImageUrl
+                ? "transparent"
+                : (theme?.formBackgroundColor ?? "transparent")
+              : "transparent",
           }}
         >
           <form
@@ -1174,7 +1191,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                                       ...baseInputStyle,
                                       width: "100%",
                                     },
-                                    theme
+                                    theme,
+                                    hasFormBackground
                                   )}
                                 </div>
                               </div>
@@ -1219,7 +1237,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                                     ...baseInputStyle,
                                     width: "100%",
                                   },
-                                  theme
+                                  theme,
+                                  hasFormBackground
                                 )}
                               </div>
                             </div>
@@ -1258,7 +1277,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                         : {}),
                     }}
                   >
-                    {renderField(field, baseInputStyle, theme)}
+                    {renderField(field, baseInputStyle, theme, hasFormBackground)}
                   </div>
                 );
               }
@@ -1286,7 +1305,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                         : {}),
                     }}
                   >
-                    {renderField(field, baseInputStyle, theme)}
+                    {renderField(field, baseInputStyle, theme, hasFormBackground)}
                   </div>
                 );
               }
@@ -1314,7 +1333,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                         : {}),
                     }}
                   >
-                    {renderField(field, baseInputStyle, theme)}
+                    {renderField(field, baseInputStyle, theme, hasFormBackground)}
                   </div>
                 );
               }
@@ -1382,7 +1401,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                       {replaceInlineParams(getTranslatedDescription(field, i18n.language || "en") || "")}
                     </p>
                   )}
-                  {renderField(field, baseInputStyle, theme)}
+                  {renderField(field, baseInputStyle, theme, hasFormBackground)}
                   {errors[field.name] && (
                     <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
                       <AlertCircle size={12} />

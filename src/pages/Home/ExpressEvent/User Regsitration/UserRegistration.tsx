@@ -274,10 +274,14 @@ function UserRegistration() {
           const finalBannerImage =
             bannerFromTemplateData || bannerFromAttributes || null;
 
-          // Use logo from attributes (API response) if available, otherwise use theme logo
+          // Merge API attributes into theme so background image shows (API stores form_background_image on template)
+          const formBgFromAttrs = defaultTemplate.attributes?.form_background_image ?? null;
+          const footerBannerFromAttrs = defaultTemplate.attributes?.footer_banner_image ?? null;
           const finalTheme = {
             ...themeData,
             logo: logoFromAttributes || logoFromTheme || null,
+            formBackgroundImage: formBgFromAttrs ?? themeData.formBackgroundImage ?? null,
+            footerBannerImage: footerBannerFromAttrs ?? themeData.footerBannerImage ?? null,
           };
 
           console.log("🎨 Logo setup for custom template:", {
@@ -846,7 +850,7 @@ function UserRegistration() {
 
     return (
       <div
-        className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6"
+        className="min-h-screen p-6"
         style={registrationFontStyle}
       >
         {/* Notification Toast - Only shows on submit */}
@@ -871,7 +875,7 @@ function UserRegistration() {
 
         {/* Language Switcher – only when form is dual language */}
         {isDualLanguage && (
-          <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end">
+          <div className="w-full max-w-4xl mx-auto mb-4 flex justify-end relative z-10">
             <div className="relative" ref={langDropdownRef}>
               <button
                 onClick={() => setIsLangDropdownOpen(!isLangDropdownOpen)}
@@ -915,7 +919,8 @@ function UserRegistration() {
           </div>
         )}
 
-        <div className="w-full max-w-4xl mx-auto">
+        {/* Full-width wrapper so template background (color + image) can show correctly */}
+        <div className="w-full">
           <FormBuilderTemplateForm
             isUserRegistration={true}
             formBuilderData={customFormBuilderTemplate.formBuilderData}

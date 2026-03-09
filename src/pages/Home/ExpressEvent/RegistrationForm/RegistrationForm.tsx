@@ -182,15 +182,16 @@ const Modal = ({
         )}
 
         <div className="mt-6 flex justify-center">
-          {/* <button
+          <button
+            type="button"
             onClick={() => selectedTemplate && onUseTemplate(selectedTemplate)}
             disabled={isLoading}
-            className={`px-4 py-2 rounded-lg text-white ${
-              isLoading ? "bg-gray-400" : "bg-slate-800 hover:bg-slate-900"
+            className={`px-4 py-2 rounded-lg text-white text-sm font-medium ${
+              isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-slate-800 hover:bg-slate-900"
             }`}
           >
             {isLoading ? "Applying..." : "Use this template"}
-          </button> */}
+          </button>
         </div>
       </div>
     </div>
@@ -1245,12 +1246,9 @@ const RegistrationForm = ({
                     </p>
                   </div>
 
-                  {/* Custom form builder templates */}
+                  {/* Custom form builder templates (preview aligned with AdvanceRegistration) */}
                   {formBuilderTemplates.map((template) => {
-                    const hasPreviewData =
-                      Array.isArray(template.formBuilderData?.formData) &&
-                      template.formBuilderData.formData.length > 0;
-                    const FormBuilderPreview = () => (
+                    const FormBuilderComponent = () => (
                       <FormBuilderTemplateForm
                         data={template.data}
                         eventId={effectiveEventId}
@@ -1264,7 +1262,7 @@ const RegistrationForm = ({
                     return (
                       <div
                         key={template.id}
-                        className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors flex flex-col relative overflow-hidden ${
+                        className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${
                           isSelected ? "border-pink-500 bg-pink-50" : "border-gray-200 hover:border-pink-500"
                         }`}
                       >
@@ -1276,7 +1274,7 @@ const RegistrationForm = ({
                               handleEditFormBuilderTemplate(template);
                             }}
                             className="p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50"
-                            title="Edit"
+                            title="Edit Template"
                           >
                             <Edit size={14} />
                           </button>
@@ -1287,36 +1285,38 @@ const RegistrationForm = ({
                               handleDeleteFormBuilderTemplate(template.id);
                             }}
                             className="p-1.5 bg-white rounded-lg shadow-sm text-red-500 hover:bg-red-50"
-                            title="Delete"
+                            title="Delete Template"
                           >
                             <Trash2 size={14} />
                           </button>
                         </div>
                         <div
-                          onClick={() => !isLoadingFormData && handleSelectFormBuilderTemplate(template.id)}
-                          className="w-full h-40 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative shrink-0"
+                          onClick={() => !isLoadingFormData && handleUseFormBuilderTemplate(template.id)}
+                          className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative cursor-pointer"
                         >
-                          {hasPreviewData ? (
-                            <div style={{ scale: 0.22 }} className="transform pointer-events-none origin-top-left absolute top-0 left-0">
-                              <div className="w-[1200px]">
-                                <FormBuilderPreview />
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center gap-1 p-3 text-center">
-                              <p className="text-sm font-medium text-gray-700 truncate w-full">{template.title}</p>
-                              <p className="text-xs text-gray-500">Click to use or edit to add fields</p>
+                          {isLoadingFormData && (
+                            <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-20">
+                              <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
                             </div>
                           )}
+                          {/* Always show the full form preview (banner + fields) - same as AdvanceRegistration */}
+                          <div
+                            style={{ scale: 0.25 }}
+                            className="transform pointer-events-none"
+                          >
+                            <div className="w-[1200px]">
+                              <FormBuilderComponent />
+                            </div>
+                          </div>
                         </div>
-                        <div className="mt-2 shrink-0">
+                        <div className="mt-2 text-center shrink-0">
                           <h4 className="text-sm font-medium text-gray-900 truncate">{template.title}</h4>
                           <span className="text-xs text-gray-500">{template.data?.length ?? template.formBuilderData?.formData?.length ?? 0} fields</span>
                         </div>
                         {isSelected && (
-                          <div className="mt-1 flex items-center justify-center shrink-0">
-                            <Check size={14} className="text-pink-500 mr-1" />
-                            <span className="text-xs text-pink-500 font-medium">Selected</span>
+                          <div className="mt-2 flex items-center justify-center shrink-0">
+                            <Check size={16} className="text-pink-500 mr-1" />
+                            <span className="text-sm text-pink-500 font-medium">Selected</span>
                           </div>
                         )}
                       </div>
@@ -1328,9 +1328,9 @@ const RegistrationForm = ({
                     <div
                       key={tpl.id}
                       onClick={() =>
-                        !isLoadingFormData && handleOpenModal(tpl.id)
+                        !isLoadingFormData && handleUseTemplate(tpl.id)
                       }
-                      className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors ${
+                      className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors relative overflow-hidden ${
                         confirmedTemplate === tpl.id
                           ? "border-pink-500 bg-pink-50"
                           : "border-gray-200 hover:border-pink-500"
@@ -1338,6 +1338,18 @@ const RegistrationForm = ({
                         isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
                       }`}
                     >
+                      {/* Edit: open modal to view template and use if required */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenModal(tpl.id);
+                        }}
+                        className="absolute top-2 right-2 z-10 p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
+                        title="View / Edit Template"
+                      >
+                        <Edit size={14} />
+                      </button>
                       <div className="w-full h-40 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
                         <div className="transform scale-[0.15] pointer-events-none">
                           <div className="w-[1200px]">{tpl.component}</div>

@@ -88,17 +88,21 @@ const Payment: React.FC<PaymentProps> = ({
     }
   }
 
+  const addressValid =
+    country.trim() !== "" &&
+    city.trim() !== "" &&
+    district.trim() !== "" &&
+    buildingNo.trim() !== "" &&
+    postalCode.trim() !== "";
+
   const isCompanyValid =
-    billingType !== "company" ||
-    (companyName.trim() !== "" &&
-      vatNumber.trim() !== "" &&
-      !vatError &&
-      validateSaudiVat(vatNumber) &&
-      country.trim() !== "" &&
-      city.trim() !== "" &&
-      district.trim() !== "" &&
-      buildingNo.trim() !== "" &&
-      postalCode.trim() !== "");
+    billingType === "company"
+      ? companyName.trim() !== "" &&
+        vatNumber.trim() !== "" &&
+        !vatError &&
+        validateSaudiVat(vatNumber) &&
+        addressValid
+      : companyName.trim() !== "" && addressValid;
 
   const canPay = isCompanyValid && termsAccepted;
 
@@ -106,7 +110,10 @@ const Payment: React.FC<PaymentProps> = ({
     if (!canPay) return;
     console.log("Billing payload (API not connected yet):", {
       billing_type: billingType,
-      company_details: billingType === "company" ? { companyName, vatNumber, country, city, district, buildingNo, postalCode, additionalInfo } : undefined,
+      billing_details:
+        billingType === "company"
+          ? { companyName, vatNumber, country, city, district, buildingNo, postalCode, additionalInfo }
+          : { personName: companyName, country, city, district, buildingNo, postalCode, additionalInfo },
       support_level: supportLevel,
       subtotal,
       vat: vatAmount,
@@ -213,11 +220,6 @@ const Payment: React.FC<PaymentProps> = ({
                 <span className="text-gray-800">Company</span>
               </label>
             </div>
-            {billingType === "individual" && (
-              <p className="text-gray-500 text-sm mt-2">
-                No billing details required.
-              </p>
-            )}
 
             <div className="mt-6 pt-5 border-t border-gray-100">
               <h3 className="text-base font-semibold text-gray-800 mb-3">
@@ -275,49 +277,51 @@ const Payment: React.FC<PaymentProps> = ({
               </button>
             </div>
 
-            {billingType === "company" && (
+            {(billingType === "individual" || billingType === "company") && (
               <div className="space-y-4 pt-2">
                 <div>
-                  <Label htmlFor="companyName" className="text-gray-700 text-sm">
-                    Company Name *
+                  <Label htmlFor="billingName" className="text-gray-700 text-sm">
+                    {billingType === "individual" ? "Person Name *" : "Company Name *"}
                   </Label>
                   <Input
-                    id="companyName"
+                    id="billingName"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="-"
                     className="mt-1.5 h-10 rounded-lg border-gray-300"
                   />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="vatNumber" className="text-gray-700 text-sm">
-                      VAT Number *
-                    </Label>
-                    <span
-                      className="text-gray-400 cursor-help"
-                      title="15 digits, numeric, must start and end with 3"
-                    >
-                      <Info className="w-4 h-4" />
-                    </span>
+                {billingType === "company" && (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="vatNumber" className="text-gray-700 text-sm">
+                        VAT Number *
+                      </Label>
+                      <span
+                        className="text-gray-400 cursor-help"
+                        title="15 digits, numeric, must start and end with 3"
+                      >
+                        <Info className="w-4 h-4" />
+                      </span>
+                    </div>
+                    <Input
+                      id="vatNumber"
+                      value={vatNumber}
+                      onChange={handleVatChange}
+                      placeholder="-"
+                      className={`mt-1.5 h-10 rounded-lg max-w-xs ${
+                        vatError ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300"
+                      }`}
+                      maxLength={15}
+                      aria-invalid={!!vatError}
+                    />
+                    {vatError && (
+                      <p className="text-red-600 text-xs mt-1 flex items-center gap-1" role="alert">
+                        {vatError}
+                      </p>
+                    )}
                   </div>
-                  <Input
-                    id="vatNumber"
-                    value={vatNumber}
-                    onChange={handleVatChange}
-                    placeholder="-"
-                    className={`mt-1.5 h-10 rounded-lg max-w-xs ${
-                      vatError ? "border-red-500 focus-visible:ring-red-500" : "border-gray-300"
-                    }`}
-                    maxLength={15}
-                    aria-invalid={!!vatError}
-                  />
-                  {vatError && (
-                    <p className="text-red-600 text-xs mt-1 flex items-center gap-1" role="alert">
-                      {vatError}
-                    </p>
-                  )}
-                </div>
+                )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-gray-700 text-sm">Country *</Label>

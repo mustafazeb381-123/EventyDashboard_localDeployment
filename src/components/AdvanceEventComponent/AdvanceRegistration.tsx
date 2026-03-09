@@ -1528,8 +1528,13 @@ export const FormBuilderTemplateForm: React.FC<
       setBannerLoadError(false);
     }, [bannerUrl]);
 
+    // Form container: only show background when one is set (no default white)
+    const hasFormBackground =
+      backgroundImageUrl || (theme?.formBackgroundColor != null && theme?.formBackgroundColor !== "");
     const formContainerStyle: React.CSSProperties = {
-      backgroundColor: theme?.formBackgroundColor || "#ffffff",
+      backgroundColor: hasFormBackground
+        ? (theme?.formBackgroundColor ?? "transparent")
+        : "transparent",
       backgroundImage: backgroundImageUrl
         ? `url(${backgroundImageUrl})`
         : undefined,
@@ -1547,7 +1552,9 @@ export const FormBuilderTemplateForm: React.FC<
     };
 
     const baseInputStyle: React.CSSProperties = {
-      backgroundColor: theme?.inputBackgroundColor || "#ffffff",
+      backgroundColor: hasFormBackground
+        ? (theme?.inputBackgroundColor ?? "transparent")
+        : theme?.inputBackgroundColor || "#ffffff",
       borderColor: theme?.inputBorderColor || "#d1d5db",
       borderWidth: theme?.inputBorderWidth || "1px",
       borderRadius: theme?.inputBorderRadius || "6px",
@@ -1557,26 +1564,26 @@ export const FormBuilderTemplateForm: React.FC<
 
     return (
       <div className="w-full p-4">
-        <div
-          className="w-full rounded-xl shadow-lg overflow-hidden"
-          style={{
-            ...formContainerStyle,
-            maxWidth: theme?.formMaxWidth || "768px",
-            marginLeft:
-              theme?.formAlignment === "left"
-                ? "0"
-                : theme?.formAlignment === "right"
-                  ? "auto"
-                  : "auto",
-            marginRight:
-              theme?.formAlignment === "left"
-                ? "auto"
-                : theme?.formAlignment === "right"
+          <div
+            className="w-full rounded-xl shadow-lg overflow-hidden"
+            style={{
+              ...formContainerStyle,
+              maxWidth: theme?.formMaxWidth || "768px",
+              marginLeft:
+                theme?.formAlignment === "left"
                   ? "0"
-                  : "auto",
-          }}
-        >
-          {bannerUrl && !bannerLoadError && (
+                  : theme?.formAlignment === "right"
+                    ? "auto"
+                    : "auto",
+              marginRight:
+                theme?.formAlignment === "left"
+                  ? "auto"
+                  : theme?.formAlignment === "right"
+                    ? "0"
+                    : "auto",
+            }}
+          >
+            {bannerUrl && !bannerLoadError && (
             <div
               className="w-full bg-gray-100 overflow-hidden"
               style={{
@@ -1631,7 +1638,13 @@ export const FormBuilderTemplateForm: React.FC<
           <FormHeader theme={theme} />
 
           <div
-            style={{ backgroundColor: theme?.formBackgroundColor || "#ffffff" }}
+            style={{
+              backgroundColor: hasFormBackground
+                ? backgroundImageUrl
+                  ? "transparent"
+                  : (theme?.formBackgroundColor ?? "transparent")
+                : "transparent",
+            }}
             dir={currentLanguage === "ar" ? "rtl" : "ltr"}
           >
             <form
@@ -4178,9 +4191,9 @@ const AdvanceRegistration = ({
                   <div
                     onClick={() =>
                       !isLoadingFormData &&
-                      handleSelectFormBuilderTemplate(template.id)
+                      handleUseFormBuilderTemplate(template.id)
                     }
-                    className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative"
+                    className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative cursor-pointer"
                   >
                     {isLoadingFormData && (
                       <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-20">
@@ -4229,13 +4242,25 @@ const AdvanceRegistration = ({
               return (
                 <div
                   key={tpl.id}
-                  onClick={() => !isLoadingFormData && handleOpenModal(tpl.id)}
-                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col ${
+                  onClick={() => !isLoadingFormData && handleUseTemplate(tpl.id)}
+                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${
                     confirmedTemplate === tpl.id
                       ? "border-pink-500 bg-pink-50"
                       : "border-gray-200 hover:border-pink-500"
                   }`}
                 >
+                  {/* Edit: open modal to view template and use if required */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenModal(tpl.id);
+                    }}
+                    className="absolute top-2 right-2 z-10 p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
+                    title="View / Edit Template"
+                  >
+                    <Edit size={14} />
+                  </button>
                   <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
                     {isLoadingFormData && (
                       <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">

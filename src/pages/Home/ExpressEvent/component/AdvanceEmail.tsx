@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Check, ChevronLeft, X, Pencil, Trash2, Eye, Mail } from "lucide-react";
+import { EmailSenderStep } from "../Confirmation/EmailSenderStep";
 import { createRoot } from "react-dom/client";
 import {
   EmailTemplateBuilderModal,
@@ -7,9 +8,11 @@ import {
 } from "@/components/EmailTemplateBuilder/EmailTemplateBuilderModal";
 import RejectionTemplateOne from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateOne";
 import RejectionTemplateTwo from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
+import RejectionTemplateThree from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateThree";
 import ConfirmationTemplateOne from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
 import ThanksTemplateOne from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateTwo";
+import ThanksTemplateThree from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateThree";
 import {
   getEmailTemplatesApi,
   createEmailTemplateApi,
@@ -38,19 +41,23 @@ const rewriteHtmlUrlsToAbsolute = (html: string, baseUrl: string): string => {
     .replace(/href="\/(?!\/)/g, `href="${base}/`);
 };
 
-/** Flow steps config: when approval is required show Welcome, Thanks, Rejection; otherwise only Welcome (Confirmation). */
-const getFlowsConfig = (requireApproval: boolean) => {
+/** Flow steps config: when showEmailSenderStep true prepend Email Sender; then Welcome and optionally Thanks, Rejection. */
+const getFlowsConfig = (requireApproval: boolean, showEmailSenderStep = true) => {
+  const emailSender = {
+    id: "email_sender",
+    label: "Email Sender",
+    templates: [] as any[],
+  };
   const welcome = {
     id: "welcome",
     label: "Welcome Email (Confirmation)",
     templates: [] as any[],
   };
-  if (!requireApproval) return [welcome];
-  return [
-    welcome,
-    { id: "thank_you", label: "Thanks Email", templates: [] as any[] },
-    { id: "rejection", label: "Rejection Email", templates: [] as any[] },
-  ];
+  const thankYou = { id: "thank_you", label: "Thanks Email", templates: [] as any[] };
+  const rejection = { id: "rejection", label: "Rejection Email", templates: [] as any[] };
+  const templateSteps = !requireApproval ? [welcome] : [welcome, thankYou, rejection];
+  if (!showEmailSenderStep) return templateSteps;
+  return [emailSender, ...templateSteps];
 };
 
 // Helper function to create static templates with event data
@@ -116,6 +123,16 @@ const createStaticTemplates = (eventData: any) => {
         type: "thank_you",
         readyMadeId: "thank-you-template-2",
       },
+      {
+        id: "thank-you-template-3",
+        title: "Thank You Template 3",
+        component: <ThanksTemplateThree {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "thank_you",
+        readyMadeId: "thank-you-template-3",
+      },
     ],
     rejection: [
       {
@@ -137,6 +154,16 @@ const createStaticTemplates = (eventData: any) => {
         isStatic: true,
         type: "rejection",
         readyMadeId: "rejection-template-2",
+      },
+      {
+        id: "rejection-template-3",
+        title: "Rejection Template 3",
+        component: <RejectionTemplateThree {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "rejection",
+        readyMadeId: "rejection-template-3",
       },
     ],
   };
@@ -568,15 +595,18 @@ interface EmailConfirmationProps {
   onNext: (eventId?: string | number) => void;
   onPrevious?: () => void;
   eventId?: string | number;
+  /** When true (default), show Email Sender as first step */
+  showEmailSenderStep?: boolean;
 }
 const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   onNext,
   onPrevious,
   eventId,
+  showEmailSenderStep = true,
 }) => {
   const effectiveEventId = eventId;
 
-  const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false));
+  const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false, showEmailSenderStep));
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
   const [modalTemplate, setModalTemplate] = useState<any | null>(null);
@@ -587,6 +617,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   const [eventData, setEventData] = useState<any>(null);
   const [showNameDialog, setShowNameDialog] = useState(false);
   const [customTemplateName, setCustomTemplateName] = useState("");
+  const [useExistingSender, setUseExistingSender] = useState(false);
+  const [senderFromName, setSenderFromName] = useState("");
+  const [senderFromEmail, setSenderFromEmail] = useState("");
+  const [showVerifySenderModal, setShowVerifySenderModal] = useState(false);
+  const [verificationCode, setVerificationCode] = useState<string[]>(["", "", "", "", "", ""]);
+  const [resendCountdown, setResendCountdown] = useState(0);
+  const verifyCodeInputsRef = useRef<HTMLDivElement>(null);
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "warning";
@@ -612,6 +649,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
 
   const currentFlow = flows[currentFlowIndex];
 
+  // Resend verification code countdown
+  useEffect(() => {
+    if (!showVerifySenderModal || resendCountdown <= 0) return;
+    const t = setInterval(() => setResendCountdown((c) => (c <= 0 ? 0 : c - 1)), 1000);
+    return () => clearInterval(t);
+  }, [showVerifySenderModal, resendCountdown]);
+
   // Event-level email enabled from getShowEventData (set in MainData as "Enable email")
   const emailEnabledFromEvent =
     (eventData?.attributes?.email_enabled ?? (eventData?.attributes as any)?.enable_email) !== false;
@@ -622,7 +666,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
       const currentEventId = eventId;
       if (!currentEventId) {
         setEventData(null);
-        setFlows(getFlowsConfig(false));
+        setFlows(getFlowsConfig(false, showEmailSenderStep));
         setCurrentFlowIndex(0);
         return;
       }
@@ -634,7 +678,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           const requireApproval =
             newEventData?.attributes?.require_approval === true;
           setEventData(newEventData);
-          setFlows(getFlowsConfig(requireApproval));
+          setFlows(getFlowsConfig(requireApproval, showEmailSenderStep));
           setCurrentFlowIndex(0);
           console.log(
             "Event data updated:",
@@ -644,18 +688,18 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           );
         } else {
           setEventData(null);
-          setFlows(getFlowsConfig(false));
+          setFlows(getFlowsConfig(false, showEmailSenderStep));
           setCurrentFlowIndex(0);
         }
       } catch (error) {
         console.error("Failed to fetch event data:", error);
         setEventData(null);
-        setFlows(getFlowsConfig(false));
+        setFlows(getFlowsConfig(false, showEmailSenderStep));
         setCurrentFlowIndex(0);
       }
     };
     fetchEventData();
-  }, [eventId, effectiveEventId]); // respond to eventId changes
+  }, [eventId, effectiveEventId, showEmailSenderStep]); // respond to eventId changes
 
   // Update modal template when eventData or flows change to ensure it shows latest data
   useEffect(() => {
@@ -672,12 +716,13 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   }, [eventData, flows, currentFlowIndex, modalTemplate?.id]);
 
   useEffect(() => {
-    // Only load templates when email is enabled and we have eventId and eventData
+    // Only load templates when email is enabled, we have eventId/eventData, and we're not on the Email Sender step
     const emailOn = (eventData?.attributes?.email_enabled ?? (eventData?.attributes as any)?.enable_email) !== false;
-    if (effectiveEventId && eventData && emailOn) {
+    const isEmailSenderStep = showEmailSenderStep && currentFlowIndex === 0;
+    if (effectiveEventId && eventData && emailOn && !isEmailSenderStep) {
       loadTemplatesFromAPI();
     }
-  }, [effectiveEventId, currentFlowIndex, eventData]);
+  }, [effectiveEventId, currentFlowIndex, eventData, showEmailSenderStep]);
 
   const loadTemplatesFromAPI = async () => {
     if (!effectiveEventId || !eventData) {
@@ -1137,21 +1182,56 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
   };
 
   const handleBack = () => {
-    if (currentFlowIndex > 0) setCurrentFlowIndex(currentFlowIndex - 1);
-    else onPrevious?.();
+    setCurrentFlowIndex((prev) => {
+      if (prev > 0) return prev - 1;
+      onPrevious?.();
+      return prev;
+    });
   };
+
+  /** Advance from Email Sender step (after modal "Do this later" or "Verify sender"). */
+  const advanceFromEmailSenderStep = () => {
+    setShowVerifySenderModal(false);
+    setVerificationCode(["", "", "", "", "", ""]);
+    setCurrentFlowIndex((prev) => {
+      if (prev < flows.length - 1) return prev + 1;
+      onNext?.(effectiveEventId || undefined);
+      return prev;
+    });
+  };
+
   const handleNext = () => {
+    if (currentFlow.id === "email_sender") {
+      if (useExistingSender) {
+        setCurrentFlowIndex((prev) => {
+          if (prev < flows.length - 1) return prev + 1;
+          onNext?.(effectiveEventId || undefined);
+          return prev;
+        });
+        return;
+      }
+      if (!senderFromName.trim()) {
+        showNotification("Please enter From Name", "warning");
+        return;
+      }
+      if (!senderFromEmail.trim()) {
+        showNotification("Please enter From Email", "warning");
+        return;
+      }
+      setShowVerifySenderModal(true);
+      setResendCountdown(43);
+      setVerificationCode(["", "", "", "", "", ""]);
+      return;
+    }
     if (emailEnabledFromEvent && !selectedTemplates[currentFlow.id]) {
       showNotification("Please select template", "warning");
       return;
     }
-    // If there are more email flow steps (e.g. Thanks, Rejection), go to next flow first
-    if (currentFlowIndex < flows.length - 1) {
-      setCurrentFlowIndex(currentFlowIndex + 1);
-      return;
-    }
-    // On last email step: navigate to next page (e.g. mobile app visualization)
-    onNext?.(effectiveEventId || undefined);
+    setCurrentFlowIndex((prev) => {
+      if (prev < flows.length - 1) return prev + 1;
+      onNext?.(effectiveEventId || undefined);
+      return prev;
+    });
   };
 
   const handleSkip = () => {
@@ -1396,20 +1476,31 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
           <ChevronLeft
             size={20}
             className="cursor-pointer text-gray-500 hover:text-gray-700"
-            onClick={onPrevious}
+            onClick={handleBack}
+            aria-label={currentFlowIndex > 0 ? "Previous step" : "Previous page"}
           />
           <h2 className="text-xl font-semibold">{currentFlow.label}</h2>
         </div>
         <div className="flex items-center gap-1">
           {flows.map((f, idx) => {
             const active = idx === currentFlowIndex;
-            const done = Boolean(selectedTemplates[f.id]);
+            const done =
+              f.id === "email_sender"
+                ? currentFlowIndex > 0 ||
+                  useExistingSender ||
+                  (Boolean(senderFromName.trim()) && Boolean(senderFromEmail.trim()))
+                : Boolean(selectedTemplates[f.id]);
             return (
               <React.Fragment key={f.id}>
                 <div className="flex flex-col items-center flex-shrink-0">
                   <button
                     type="button"
-                    onClick={() => setCurrentFlowIndex(idx)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCurrentFlowIndex(idx);
+                    }}
+                    aria-current={active ? "step" : undefined}
+                    aria-label={`Go to step ${idx + 1}: ${f.label}`}
                     className={`w-8 h-8 rounded-full flex items-center justify-center border-2 shrink-0 cursor-pointer transition-colors ${
                       done
                         ? "bg-pink-500 border-pink-500 hover:bg-pink-600 text-white"
@@ -1441,7 +1532,7 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
                 {idx !== flows.length - 1 && (
                   <div
                     className={`w-12 h-0.5 self-start mt-4 flex-shrink-0 ${
-                      selectedTemplates[f.id] ? "bg-pink-500" : "bg-gray-300"
+                      done ? "bg-pink-500" : "bg-gray-300"
                     }`}
                     aria-hidden
                   />
@@ -1452,13 +1543,150 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         </div>
       </div>
 
-      {emailEnabledFromEvent && isLoading && (
+      {currentFlow.id === "email_sender" && (
+        <EmailSenderStep
+          useExistingSender={useExistingSender}
+          onUseExistingSenderChange={setUseExistingSender}
+          senderFromName={senderFromName}
+          onSenderFromNameChange={setSenderFromName}
+          senderFromEmail={senderFromEmail}
+          onSenderFromEmailChange={setSenderFromEmail}
+          onCancel={handleBack}
+          onAddSender={handleNext}
+        />
+      )}
+
+      {/* Verify new sender modal (static flow – APIs to be wired later) */}
+      {showVerifySenderModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+          onClick={() => setShowVerifySenderModal(false)}
+          role="presentation"
+        >
+          <div
+            className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 sm:p-8"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="verify-sender-title"
+          >
+            <div className="flex justify-between items-start mb-6">
+              <h3
+                id="verify-sender-title"
+                className="text-lg font-semibold text-gray-900 pr-8"
+              >
+                Verify the new sender {senderFromName.trim() || "Sender"}{" "}
+                <span className="text-blue-600 underline font-normal">
+                  {senderFromEmail.trim() || "email@example.com"}
+                </span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowVerifySenderModal(false)}
+                className="p-1.5 -m-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                aria-label="Close"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center">
+                <Mail size={24} className="text-gray-600" />
+              </div>
+            </div>
+            <p className="text-center text-gray-600 text-sm mb-6">
+              Before you can use {senderFromName.trim() || "this sender"} as a sender, we must verify its email address. We have sent you a verification code by email at{" "}
+              <span className="text-blue-600 underline font-medium">
+                {senderFromEmail.trim() || "email@example.com"}
+              </span>
+            </p>
+            <p className="text-sm font-medium text-gray-700 mb-2">
+              Enter the verification code you received:
+            </p>
+            <div ref={verifyCodeInputsRef} className="flex gap-2 justify-center mb-6">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <input
+                  key={i}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={verificationCode[i] || ""}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/\D/g, "").slice(0, 1);
+                    setVerificationCode((prev) => {
+                      const next = [...prev];
+                      next[i] = v;
+                      return next;
+                    });
+                    if (v && i < 5) {
+                      (verifyCodeInputsRef.current?.children[i + 1] as HTMLInputElement)?.focus();
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Backspace" && !verificationCode[i] && i > 0) {
+                      (verifyCodeInputsRef.current?.children[i - 1] as HTMLInputElement)?.focus();
+                    }
+                  }}
+                  className="w-10 h-12 text-center text-lg font-semibold border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              ))}
+            </div>
+            <p className="text-center text-sm text-gray-500 mb-1">
+              Did not receive the code? Need a new one?
+            </p>
+            <div className="text-center mb-6">
+              {resendCountdown > 0 ? (
+                <span className="text-sm text-blue-600 underline">
+                  Resend verification code ({resendCountdown}s)
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResendCountdown(43);
+                    showNotification("Verification code sent", "success");
+                  }}
+                  className="text-sm text-blue-600 underline hover:no-underline font-medium"
+                >
+                  Resend verification code
+                </button>
+              )}
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={advanceFromEmailSenderStep}
+                className="flex-1 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium"
+              >
+                Do this later
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const code = verificationCode.join("");
+                  if (code.length === 6) {
+                    showNotification("Sender verified (static)", "success");
+                    advanceFromEmailSenderStep();
+                  } else {
+                    showNotification("Please enter the 6-digit code", "warning");
+                  }
+                }}
+                className="flex-1 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium"
+              >
+                Verify sender
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {emailEnabledFromEvent && isLoading && currentFlow.id !== "email_sender" && (
         <div className="flex justify-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500" />
         </div>
       )}
 
-      {emailEnabledFromEvent && !isLoading && (
+      {emailEnabledFromEvent && !isLoading && currentFlow.id !== "email_sender" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div
             onClick={handleCreateNewTemplate}
@@ -1522,28 +1750,30 @@ const AdvanceEmail: React.FC<EmailConfirmationProps> = ({
         </div>
       )}
 
-      <div className="flex justify-between gap-4">
-        <button
-          onClick={handleBack}
-          className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100"
-        >
-          Back
-        </button>
-        <div className="flex items-center gap-3">
+      {currentFlow.id !== "email_sender" && (
+        <div className="flex justify-between gap-4">
           <button
-            onClick={handleSkip}
-            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700"
+            onClick={handleBack}
+            className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
           >
-            Skip
+            Back
           </button>
-          <button
-            onClick={handleNext}
-            className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white"
-          >
-            Next
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSkip}
+              className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
+            >
+              Skip
+            </button>
+            <button
+              onClick={handleNext}
+              className="px-6 py-3 rounded-lg bg-pink-500 hover:bg-pink-600 text-white font-medium transition-colors"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       <TemplateModal
         template={modalTemplate}

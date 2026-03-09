@@ -1,17 +1,4 @@
-import Assets from "@/utils/Assets";
 import React from "react";
-import {
-  Calendar,
-  CalendarDays,
-  Clock,
-  Facebook,
-  Instagram,
-  Locate,
-  LocateIcon,
-  MapPin,
-  MoveRight,
-  Twitter,
-} from "lucide-react";
 
 interface EventDataProps {
   eventName?: string;
@@ -23,31 +10,25 @@ interface EventDataProps {
   logoUrl?: string | null;
 }
 
-// Helper function to format date
 const formatDate = (date: string | Date | undefined): string => {
   if (!date) return "";
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 };
 
-// Helper function to format time
 const formatTime = (time: string | undefined): string => {
   if (!time) return "";
-  // If time is in HH:MM format, return it as is
-  if (time.includes(":")) {
-    return time;
-  }
   return time;
 };
 
-function ConfirmationTemplateOne({ 
+function ConfirmationTemplateOne({
   eventName = "event name",
   dateFrom,
   dateTo,
   timeFrom,
   timeTo,
-  location = "awd",
-  logoUrl
+  location = "",
+  logoUrl,
 }: EventDataProps) {
   const [logoError, setLogoError] = React.useState(false);
   const formattedDateFrom = formatDate(dateFrom);
@@ -55,145 +36,438 @@ function ConfirmationTemplateOne({
   const formattedTimeFrom = formatTime(timeFrom);
   const formattedTimeTo = formatTime(timeTo);
 
-  // Check if logoUrl is valid
-  const isValidLogoUrl = logoUrl && 
-    typeof logoUrl === 'string' && 
-    logoUrl.trim() !== '' && 
-    (logoUrl.startsWith('http://') || logoUrl.startsWith('https://') || logoUrl.startsWith('data:') || logoUrl.startsWith('/'));
+  const isValidLogoUrl =
+    logoUrl &&
+    typeof logoUrl === "string" &&
+    logoUrl.trim() !== "" &&
+    (logoUrl.startsWith("http://") ||
+      logoUrl.startsWith("https://") ||
+      logoUrl.startsWith("data:") ||
+      logoUrl.startsWith("/"));
 
   return (
-    <>
-      <div className="w-full bg-gray-50 p-10">
-        {isValidLogoUrl && !logoError ? (
-          <div className="flex items-center">
-            <img 
-              src={logoUrl} 
-              alt="Event Logo" 
-              style={{ maxHeight: 60, maxWidth: 200 }} 
-              onError={() => setLogoError(true)}
-              onLoad={() => setLogoError(false)}
-            />
-          </div>
-        ) : (
-          <p>Our Logo</p>
-        )}
-        <div style={{ marginTop: 40 }} />
-
-        <div className="p-[40px] bg-white">
-          <div className="flex items-center justify-center">
-            <img
-              src={Assets.icons.confirmationEmailOne}
-              style={{ height: 80, width: 80 }}
-            />
-          </div>
-          <div style={{ marginTop: 64 }} />
-          <div className="flex justify-center items-center  font-bold text-[20px]">
-            <p>Thanks for registering to "{eventName}"</p>
-          </div>
-          <div className="mt-[24px]">
-            <p className="font-medium text-[16px] text-[#121A26]">
-              Dear [Guest's Name],{" "}
-            </p>
-            <p className="mt-[8px] font-normal text-[16px] text-[#384860]">
-              We hope you're doing well! 😊
-            </p>
-            <p className="mt-[24px] font-normal text-[16px] text-[#384860]">
-              Thank you for registering for our upcoming event. We are excited
-              to have you join us on {formattedDateFrom || "2025-05-10"}{" "}
-              {formattedDateTo && (
-                <>
-                  <MoveRight className="inline-block mx-1" />
-                  {formattedDateTo}
-                </>
-              )}{" "}
-              {formattedTimeFrom && formattedTimeTo && (
-                <>at {formattedTimeFrom} - {formattedTimeTo}</>
-              )} at {location}.
-            </p>
-          </div>
-          <p className="mt-[24px] text-[16px] text-[#121A26] font-medium">
-            {" "}
-            Event Details:
-          </p>
-          <div className="mt-[8px] bg-[#F1F5F9] p-[17px] rounded-2xl items-center flex justify-between ">
-            <div className=" items-center flex gap-2">
-              <img src={Assets.icons.label} style={{ height: 22, width: 22 }} />
-              <p className="font-normal text-[16px] ">Event Name :</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <p className="font-semibold text-[16px] text-black">{eventName}</p>
-            </div>
-          </div>
-
-          <div className="mt-[8px] bg-[#F1F5F9] p-[17px] rounded-2xl items-center flex justify-between ">
-            <div className=" items-center flex gap-2">
-              <CalendarDays color="#2B7FFF" />
-              <p className="font-normal text-[16px] ">Event time :</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <p className="font-semibold text-[16px] text-black">
-                {formattedDateFrom || "24,Mar 2025"}
-              </p>
-              {formattedDateTo && (
-                <>
-                  <p className="font-semibold text-[16px] text-black">:</p>
-                  <p className="font-semibold text-[16px] text-black">
-                    {formattedDateTo}
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="mt-[8px] bg-[#F1F5F9] p-[17px] rounded-2xl items-center flex justify-between ">
-            <div className=" items-center flex gap-2">
-              <Clock color="#2B7FFF" />
-              <p className="font-normal text-[16px] ">Due Date :</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <p className="font-semibold text-[16px] text-black">{formattedTimeFrom || "14:13:00"}</p>
-              {formattedTimeTo && (
-                <>
-                  <p className="font-semibold text-[16px] text-black">:</p>
-                  <p className="font-semibold text-[16px] text-black">{formattedTimeTo}</p>
-                </>
-              )}
-            </div>
-          </div>
-          <div className="mt-[8px] bg-[#F1F5F9] p-[17px] rounded-2xl items-center flex justify-between ">
-            <div className=" items-center flex gap-2">
-              <MapPin color="#2B7FFF" />
-
-              <p className="font-normal text-[16px] ">Event Location :</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <p className="font-semibold text-[16px] text-black">
-                {location}
-              </p>
-            </div>
-          </div>
-          <p className="mt-[24px] font-normal text-[16px] text-[#384860]">
-            If you have any questions or concerns, please don't hesitate to
-            reach out to us. We're happy to help. <br /> <br />
-            Best regards, <br />
-            [Please add Your Name or Organization]
-          </p>
-        </div>
-        <div className="mt-[40px] flex items-center justify-between">
-          <p>
-            This email was sent by scc@mail.com <br />© 2025 scc
-          </p>
-          <div className="flex items-center gap-3">
-            <Twitter />
-            <Facebook />
-            <Instagram />
-          </div>
-        </div>
-      </div>
-    </>
+    <div style={{ boxSizing: "border-box", margin: 0 }}>
+      <table width="100%" cellPadding={0} cellSpacing={0} style={{ boxSizing: "border-box", padding: "30px 16px" }}>
+        <tbody style={{ boxSizing: "border-box" }}>
+          <tr style={{ boxSizing: "border-box" }}>
+            <td align="center" style={{ boxSizing: "border-box" }}>
+              <table
+                width={640}
+                cellPadding={0}
+                cellSpacing={0}
+                style={{
+                  boxSizing: "border-box",
+                  background: "#ffffff",
+                  borderRadius: 16,
+                  overflow: "hidden",
+                  boxShadow: "0 18px 40px rgba(15,23,42,0.10)",
+                }}
+              >
+                {/* HEADER */}
+                <tbody style={{ boxSizing: "border-box" }}>
+                  <tr style={{ boxSizing: "border-box" }}>
+                    <td
+                      style={{
+                        boxSizing: "border-box",
+                        background: "#0b1220",
+                        padding: "18px 24px",
+                      }}
+                    >
+                      <table width="100%" cellPadding={0} cellSpacing={0} style={{ boxSizing: "border-box" }}>
+                        <tbody style={{ boxSizing: "border-box" }}>
+                          <tr style={{ boxSizing: "border-box" }}>
+                            <td align="left" valign="middle" style={{ boxSizing: "border-box" }}>
+                              {isValidLogoUrl && !logoError ? (
+                                <img
+                                  src={logoUrl!}
+                                  alt="Logo"
+                                  style={{ maxHeight: 60, maxWidth: 200 }}
+                                  onError={() => setLogoError(true)}
+                                  onLoad={() => setLogoError(false)}
+                                />
+                              ) : (
+                                <>
+                                  <div style={{ color: "#ffffff", fontWeight: 700, fontSize: 16, letterSpacing: 0.3 }}>
+                                    [Your Brand / Logo]
+                                  </div>
+                                  <div style={{ color: "#cbd5e1", fontSize: 12, marginTop: 3 }}>
+                                    Official Confirmation Email
+                                  </div>
+                                </>
+                              )}
+                            </td>
+                            <td align="right" valign="middle" style={{ boxSizing: "border-box" }}>
+                              <span
+                                style={{
+                                  display: "inline-block",
+                                  background: "#0f766e",
+                                  color: "#ffffff",
+                                  fontSize: 12,
+                                  fontWeight: 700,
+                                  padding: "8px 12px",
+                                  borderRadius: 9999,
+                                }}
+                              >
+                                ✅ Confirmed
+                              </span>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                  {/* HERO */}
+                  <tr style={{ boxSizing: "border-box" }}>
+                    <td
+                      style={{
+                        boxSizing: "border-box",
+                        padding: "26px 24px 16px 24px",
+                        background: "linear-gradient(135deg,#eff6ff,#ffffff)",
+                      }}
+                    >
+                      <h1
+                        style={{
+                          boxSizing: "border-box",
+                          margin: 0,
+                          fontSize: 28,
+                          color: "#0b1220",
+                          fontWeight: 800,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Thank You — Your Registration is Confirmed
+                      </h1>
+                      <p
+                        style={{
+                          boxSizing: "border-box",
+                          margin: "10px 0 0",
+                          fontSize: 14,
+                          color: "#334155",
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        Hi <strong style={{ boxSizing: "border-box" }}>[Guest&apos;s Name]</strong>, thanks for your
+                        interest. Your registration request has been reviewed, approved, and confirmed. We look forward
+                        to seeing you!
+                      </p>
+                    </td>
+                  </tr>
+                  {/* CONTENT */}
+                  <tr style={{ boxSizing: "border-box" }}>
+                    <td style={{ boxSizing: "border-box", padding: "18px 24px 0 24px" }}>
+                      {/* Key Info Strip */}
+                      <table
+                        width="100%"
+                        cellPadding={0}
+                        cellSpacing={0}
+                        style={{
+                          boxSizing: "border-box",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 14,
+                          overflow: "hidden",
+                        }}
+                      >
+                        <tbody style={{ boxSizing: "border-box" }}>
+                          <tr style={{ boxSizing: "border-box" }}>
+                            <td
+                              style={{
+                                boxSizing: "border-box",
+                                padding: 14,
+                                background: "#ffffff",
+                              }}
+                            >
+                              <table width="100%" cellPadding={0} cellSpacing={0} style={{ boxSizing: "border-box" }}>
+                                <tbody style={{ boxSizing: "border-box" }}>
+                                  <tr style={{ boxSizing: "border-box" }}>
+                                    <td
+                                      style={{
+                                        boxSizing: "border-box",
+                                        fontSize: 13,
+                                        color: "#334155",
+                                        lineHeight: 1.7,
+                                      }}
+                                    >
+                                      <strong>Registration ID:</strong> [REG-000123] • <strong>Ticket:</strong> [General
+                                      / VIP] • <strong>Status:</strong> Approved ✅
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      {/* Event Details Title */}
+                      <h3
+                        style={{
+                          boxSizing: "border-box",
+                          margin: "18px 0 10px 0",
+                          fontSize: 15,
+                          color: "#0b1220",
+                          fontWeight: 800,
+                        }}
+                      >
+                        Event Details
+                      </h3>
+                      {/* Event Details Card */}
+                      <table
+                        width="100%"
+                        cellPadding={0}
+                        cellSpacing={0}
+                        style={{
+                          boxSizing: "border-box",
+                          background: "#f8fafc",
+                          border: "1px solid #e2e8f0",
+                          borderRadius: 14,
+                        }}
+                      >
+                        <tbody style={{ boxSizing: "border-box" }}>
+                          <tr style={{ boxSizing: "border-box" }}>
+                            <td style={{ boxSizing: "border-box", padding: 16 }}>
+                              <table width="100%" cellPadding={0} cellSpacing={0} style={{ boxSizing: "border-box" }}>
+                                <tbody style={{ boxSizing: "border-box" }}>
+                                  <tr style={{ boxSizing: "border-box" }}>
+                                    <td
+                                      style={{
+                                        boxSizing: "border-box",
+                                        padding: "6px 0",
+                                        fontSize: 13,
+                                        color: "#475569",
+                                      }}
+                                    >
+                                      <strong style={{ color: "#0b1220" }}>Event Name:</strong> {eventName}
+                                    </td>
+                                  </tr>
+                                  <tr style={{ boxSizing: "border-box" }}>
+                                    <td
+                                      style={{
+                                        boxSizing: "border-box",
+                                        padding: "6px 0",
+                                        fontSize: 13,
+                                        color: "#475569",
+                                      }}
+                                    >
+                                      <strong style={{ color: "#0b1220" }}>Date:</strong> {formattedDateFrom || "[Start Date]"} →{" "}
+                                      {formattedDateTo || "[End Date]"}
+                                    </td>
+                                  </tr>
+                                  <tr style={{ boxSizing: "border-box" }}>
+                                    <td
+                                      style={{
+                                        boxSizing: "border-box",
+                                        padding: "6px 0",
+                                        fontSize: 13,
+                                        color: "#475569",
+                                      }}
+                                    >
+                                      <strong style={{ color: "#0b1220" }}>Time:</strong> {formattedTimeFrom || "[Start Time]"} –{" "}
+                                      {formattedTimeTo || "[End Time]"}
+                                    </td>
+                                  </tr>
+                                  <tr style={{ boxSizing: "border-box" }}>
+                                    <td
+                                      style={{
+                                        boxSizing: "border-box",
+                                        padding: "6px 0",
+                                        fontSize: 13,
+                                        color: "#475569",
+                                      }}
+                                    >
+                                      <strong style={{ color: "#0b1220" }}>Location:</strong> {location || "[Venue / City]"}
+                                    </td>
+                                  </tr>
+                                  <tr style={{ boxSizing: "border-box" }}>
+                                    <td
+                                      style={{
+                                        boxSizing: "border-box",
+                                        padding: "10px 0 0",
+                                        fontSize: 13,
+                                      }}
+                                    >
+                                      <a
+                                        href="[MAP_LINK]"
+                                        style={{
+                                          boxSizing: "border-box",
+                                          color: "#2563eb",
+                                          textDecoration: "none",
+                                          fontWeight: 700,
+                                        }}
+                                      >
+                                        View Location on Map →
+                                      </a>
+                                    </td>
+                                  </tr>
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      {/* Notes */}
+                      <table
+                        width="100%"
+                        cellPadding={0}
+                        cellSpacing={0}
+                        style={{
+                          boxSizing: "border-box",
+                          marginTop: 14,
+                          background: "#ecfeff",
+                          border: "1px solid #a5f3fc",
+                          borderRadius: 14,
+                        }}
+                      >
+                        <tbody style={{ boxSizing: "border-box" }}>
+                          <tr style={{ boxSizing: "border-box" }}>
+                            <td
+                              style={{
+                                boxSizing: "border-box",
+                                padding: 14,
+                                fontSize: 13,
+                                color: "#0f172a",
+                                lineHeight: 1.7,
+                              }}
+                            >
+                              <strong>What to do next:</strong>
+                              <br />
+                              • Please arrive 15–30 minutes early.
+                              <br />
+                              • Keep this email for quick access to your ticket.
+                              <br />
+                              • Badge pickup will be available at the registration desk.
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      {/* Buttons */}
+                      <table width="100%" cellPadding={0} cellSpacing={0} style={{ boxSizing: "border-box", marginTop: 18 }}>
+                        <tbody style={{ boxSizing: "border-box" }}>
+                          <tr style={{ boxSizing: "border-box" }}>
+                            <td align="center" style={{ boxSizing: "border-box", padding: "6px 0 0 0" }}>
+                              <a
+                                href="[VIEW_TICKET_LINK]"
+                                style={{
+                                  boxSizing: "border-box",
+                                  background: "#2563eb",
+                                  color: "#ffffff",
+                                  textDecoration: "none",
+                                  padding: "12px 22px",
+                                  borderRadius: 12,
+                                  fontSize: 14,
+                                  fontWeight: 800,
+                                  display: "inline-block",
+                                  marginRight: 10,
+                                }}
+                              >
+                                View Badge
+                              </a>
+                              <a
+                                href="[ADD_TO_CALENDAR_LINK]"
+                                style={{
+                                  boxSizing: "border-box",
+                                  background: "#ffffff",
+                                  color: "#2563eb",
+                                  textDecoration: "none",
+                                  padding: "12px 18px",
+                                  borderRadius: 12,
+                                  fontSize: 14,
+                                  fontWeight: 800,
+                                  display: "inline-block",
+                                  border: "1px solid #bfdbfe",
+                                }}
+                              >
+                                Add to Calendar
+                              </a>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                      <div style={{ boxSizing: "border-box", height: 22 }} />
+                    </td>
+                  </tr>
+                  {/* FOOTER */}
+                  <tr style={{ boxSizing: "border-box" }}>
+                    <td
+                      style={{
+                        boxSizing: "border-box",
+                        background: "#0b1220",
+                        padding: "18px 24px",
+                        color: "#cbd5e1",
+                      }}
+                    >
+                      <table width="100%" cellPadding={0} cellSpacing={0} style={{ boxSizing: "border-box" }}>
+                        <tbody style={{ boxSizing: "border-box" }}>
+                          <tr style={{ boxSizing: "border-box" }}>
+                            <td
+                              align="left"
+                              style={{ boxSizing: "border-box", fontSize: 12, lineHeight: 1.7 }}
+                            >
+                              Need help? Contact us at{" "}
+                              <a
+                                href="mailto:[support@email.com]"
+                                style={{
+                                  boxSizing: "border-box",
+                                  color: "#93c5fd",
+                                  textDecoration: "none",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                [support@email.com]
+                              </a>
+                              <br />
+                              © 2026 [Your Organization]. All rights reserved.
+                            </td>
+                            <td
+                              align="right"
+                              style={{ boxSizing: "border-box", fontSize: 12, lineHeight: 1.7 }}
+                            >
+                              <a
+                                href="[WEBSITE_LINK]"
+                                style={{
+                                  boxSizing: "border-box",
+                                  color: "#93c5fd",
+                                  textDecoration: "none",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Website
+                              </a>{" "}
+                              •{" "}
+                              <a
+                                href="[PRIVACY_LINK]"
+                                style={{
+                                  boxSizing: "border-box",
+                                  color: "#93c5fd",
+                                  textDecoration: "none",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Privacy
+                              </a>{" "}
+                              •{" "}
+                              <a
+                                href="[TERMS_LINK]"
+                                style={{
+                                  boxSizing: "border-box",
+                                  color: "#93c5fd",
+                                  textDecoration: "none",
+                                  fontWeight: 700,
+                                }}
+                              >
+                                Terms
+                              </a>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   );
 }
 

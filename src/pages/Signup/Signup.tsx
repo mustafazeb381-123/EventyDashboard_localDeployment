@@ -14,10 +14,35 @@ import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 
+/** Sub-domain: max 6 chars, a-z, 0-9, dash only. Sent as `company` to API. */
+const SUBDOMAIN_REGEX = /^[a-z0-9-]{1,6}$/;
+const SUBDOMAIN_MAX_LENGTH = 6;
+
+/** Workspace URL for preview: on localhost shows subdomain.localhost:port; otherwise uses VITE_APP_ROOT_DOMAIN or eventy.com. */
+function getWorkspaceUrlConfig() {
+  if (typeof window === "undefined")
+    return { rootDomain: "eventy.com", port: "", isLocalhost: false };
+  const hostname = window.location.hostname;
+  const port = window.location.port || "";
+  const isLocalhost =
+    hostname === "localhost" || hostname === "127.0.0.1";
+  const rootDomain =
+    (import.meta as any).env?.VITE_APP_ROOT_DOMAIN ||
+    (isLocalhost ? "localhost" : "eventy.com");
+  return { rootDomain, port, isLocalhost };
+}
+
+function buildWorkspacePreviewUrl(subdomain: string, rootDomain: string, port: string) {
+  if (!subdomain) return "";
+  const protocol = typeof window !== "undefined" ? window.location.protocol : "https:";
+  const withPort = port ? `:${port}` : "";
+  return `${protocol}//${subdomain}.${rootDomain}${withPort}`;
+}
+
 interface SignupFormData {
   name: string;
   email: string;
-  company: string;
+  subdomain: string;
   password: string;
   passwordConfirmation: string;
 }
@@ -43,7 +68,12 @@ function Signup() {
 
   const validationSchema = yup.object({
     name: yup.string().trim().required(t("errorMessages.nameRequired")),
-    company: yup.string().trim().required(t("errorMessages.companyRequired")),
+    subdomain: yup
+      .string()
+      .trim()
+      .required(t("errorMessages.subdomainRequired"))
+      .max(SUBDOMAIN_MAX_LENGTH, t("errorMessages.subdomainMaxLength"))
+      .matches(SUBDOMAIN_REGEX, t("errorMessages.subdomainInvalid")),
     email: yup
       .string()
       .trim()
@@ -63,6 +93,7 @@ function Signup() {
     register,
     handleSubmit,
     setError,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<SignupFormData>({
     resolver: yupResolver(validationSchema),
@@ -83,10 +114,11 @@ function Signup() {
 
   const onSubmit = async (data: SignupFormData) => {
     try {
+      const subdomain = data.subdomain.trim().toLowerCase();
       const payload = {
         name: data.name.trim(),
         email: data.email.trim(),
-        company: data.company.trim(),
+        company: subdomain,
         password: data.password,
         password_confirmation: data.passwordConfirmation,
       };
@@ -117,7 +149,9 @@ function Signup() {
             const key =
               field === "password_confirmation"
                 ? "passwordConfirmation"
-                : (field as keyof SignupFormData);
+                : field === "company"
+                  ? "subdomain"
+                  : (field as keyof SignupFormData);
             setError(key, { message: (messages as string[]).join(", ") });
           },
         );
@@ -157,6 +191,54 @@ function Signup() {
       )}
     </div>
   );
+
+  const renderSubdomainInput = () => {
+    const subdomain = watch("subdomain")?.trim().toLowerCase() || "";
+    const { rootDomain, port, isLocalhost } = getWorkspaceUrlConfig();
+    const suffix = rootDomain;
+    const preview =
+      subdomain.length > 0
+        ? buildWorkspacePreviewUrl(subdomain, rootDomain, port)
+        : t("subdomainWorkspacePreviewEmpty");
+    return (
+      <div className="space-y-1">
+        <div className="relative">
+          <RHFInput
+            id="subdomain"
+            type="text"
+            placeholder={t("subdomainPlaceholder")}
+            {...register("subdomain", {
+              onChange: (e) => {
+                const v = e.target.value.replace(/\s/g, "").toLowerCase();
+                e.target.value = v.slice(0, SUBDOMAIN_MAX_LENGTH);
+              },
+            })}
+            className={`w-full h-10 sm:h-11 text-sm border-[#A3ADBC] rounded-2xl lowercase ${isRTL ? "pl-24" : "pr-24"}`}
+            maxLength={SUBDOMAIN_MAX_LENGTH}
+            autoComplete="off"
+          />
+          <span
+            className={`absolute top-1/2 -translate-y-1/2 text-xs text-gray-400 ${isRTL ? "left-3" : "right-3"}`}
+          >
+            .{suffix}
+          </span>
+        </div>
+        <Text size="xs" color="text-gray-500">
+          {t("subdomainHint")} {preview}
+        </Text>
+        {isLocalhost && (
+          <Text size="xs" color="text-gray-500" className="italic">
+            {t("subdomainLocalhostNote")}
+          </Text>
+        )}
+        {errors.subdomain && (
+          <Text size="xs" color="text-red-500" className="animate-slide-down">
+            {errors.subdomain?.message}
+          </Text>
+        )}
+      </div>
+    );
+  };
 
   const renderInput = (
     id: keyof SignupFormData,
@@ -222,7 +304,7 @@ function Signup() {
           <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-2">
               {renderInput("name", t("namePlaceholder"))}
-              {renderInput("company", t("companyPlaceholder"))}
+              {renderSubdomainInput()}
               {renderInput("email", t("emailPlaceholder"), "email")}
               {renderPasswordInput(
                 "password",

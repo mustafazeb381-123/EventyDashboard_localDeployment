@@ -103,6 +103,24 @@ export const getEventbyId = (id: string | number) => {
 };
 
 /**
+ * Get event metrics (capacity, registration count, invitation quota, etc.).
+ * GET /events/:id/metrics
+ * Response: { metrics: { total_user_capacity, registration_count, total_event_invitation_quota, sent_invitation_count, total_event_invitees_count, remaining_invitation_quota } }
+ */
+export interface EventMetricsResponse {
+  total_user_capacity: number;
+  registration_count: number;
+  total_event_invitation_quota: number;
+  sent_invitation_count: number;
+  total_event_invitees_count: number;
+  remaining_invitation_quota: number;
+}
+
+export const getEventMetrics = (id: string | number) => {
+  return axiosInstance.get<{ metrics: EventMetricsResponse }>(`/events/${id}/metrics`);
+};
+
+/**
  * Get minimal event info by event UUID (public, no auth required).
  * GET /events/public/{event_uuid}?tenant_uuid={tenant_uuid}
  * Both event_uuid and tenant_uuid are required for multi-tenancy.
