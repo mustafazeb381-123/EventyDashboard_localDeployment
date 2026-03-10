@@ -9,7 +9,7 @@ import {
   ChevronDown,
   Plus
 } from "lucide-react";
-import { getEventbyId } from "@/apis/apiHelpers";
+import { getEventbyId, createDashboardUser } from "@/apis/apiHelpers";
 
 interface TeamMember {
   id: string;
@@ -22,29 +22,7 @@ interface TeamMember {
 export default function Management() {
   const [searchParams] = useSearchParams();
   const eventIdFromUrl = searchParams.get("eventId") ?? "";
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    {
-      id: "#182",
-      name: "Mohammed",
-      email: "merom8703@gmail.com",
-      role: "Author",
-      event: "scc",
-    },
-    {
-      id: "#182",
-      name: "Mohammed",
-      email: "merom8703@gmail.com",
-      role: "Author",
-      event: "scc",
-    },
-    {
-      id: "#182",
-      name: "Mohammed",
-      email: "merom8703@gmail.com",
-      role: "Author",
-      event: "scc",
-    },
-  ]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -55,6 +33,11 @@ export default function Management() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedMembers, setSelectedMembers] = useState<Set<number>>(new Set());
   const itemsPerPage = 10;
+
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
 
   // Current event from URL (eventId query param)
   const [currentEventName, setCurrentEventName] = useState("");
@@ -89,7 +72,7 @@ export default function Management() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddMember = (e: React.FormEvent) => {
+  const handleAddMember = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.name && formData.email && formData.role) {
       const newMember: TeamMember = {
@@ -98,6 +81,32 @@ export default function Management() {
         event: eventIdFromUrl ? currentEventName : formData.event,
       };
       setTeamMembers((prev) => [...prev, newMember]);
+
+      // Call backend API to create dashboard user when eventId is present
+      if (eventIdFromUrl) {
+        const normalizedRole = formData.role.toLowerCase();
+        if (normalizedRole === "author" || normalizedRole === "usher") {
+          try {
+            await createDashboardUser({
+              email: formData.email,
+              name: formData.name,
+              role: normalizedRole,
+              event_id: Number(eventIdFromUrl),
+            });
+            setToast({
+              message: "Dashboard user created and credentials emailed.",
+              type: "success",
+            });
+          } catch (error) {
+            console.error("Management - Error creating dashboard user:", error);
+            setToast({
+              message: "Failed to create dashboard user.",
+              type: "error",
+            });
+          }
+        }
+      }
+
       setFormData({ name: "", email: "", role: "", event: eventIdFromUrl ? currentEventName : "" });
     }
   };
@@ -130,7 +139,21 @@ export default function Management() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] p-6">
+    <div className="min-h-screen bg-[#F8F9FA] p-6 relative">
+      {toast && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium ${
+            toast.type === "success"
+              ? "bg-green-600 text-white"
+              : "bg-red-600 text-white"
+          }`}
+          onAnimationEnd={() => {
+            // auto hide after CSS animation if you later add it
+          }}
+        >
+          {toast.message}
+        </div>
+      )}
       <div className="mx-auto space-y-6">
         {/* Add Management Form */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">

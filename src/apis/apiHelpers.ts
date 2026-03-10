@@ -450,6 +450,18 @@ export const rejectEventUsers = (
   );
 };
 
+// Create a new dashboard user (author or usher), linked to an event; credentials are emailed
+export const createDashboardUser = (data: {
+  email: string;
+  name: string;
+  role: "author" | "usher";
+  event_id: number;
+}) => {
+  return axiosInstance.post("/api_dashboard/v1/users", data, {
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
 export const createSessionAreaApi = (data: any, id: string) => {
   return axiosInstance.post(`events/${id}/session_areas`, data);
 };
