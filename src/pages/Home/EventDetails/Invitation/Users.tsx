@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   Plus,
   ChevronDown,
@@ -158,6 +159,7 @@ const _unused = [
 function Invitations() {
   const location = useLocation();
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
@@ -462,8 +464,8 @@ function Invitations() {
               </button>
               <button
                 onClick={() =>
-                  navigate(
-                    `/invitation/new${eventId ? `?eventId=${eventId}` : ""}`,
+                  navigateTo(
+                    `invitation/new${eventId ? `?eventId=${eventId}` : ""}`,
                   )
                 }
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors"
@@ -739,8 +741,8 @@ function Invitations() {
                                   e.preventDefault();
                                   e.stopPropagation();
                                   const eventIdToPass = actualEventId || eventId;
-                                  const previewPath = `/invitation/preview-page/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`;
-                                  navigate(previewPath);
+                                  const previewPath = `invitation/preview-page/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`;
+                                  navigateTo(previewPath);
                                 }}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
                                 title="View"
@@ -812,8 +814,8 @@ function Invitations() {
                                           onClick={() => {
                                             const eventIdToPass =
                                               actualEventId || eventId;
-                                            navigate(
-                                              `/invitation/report/${invitation.id}`,
+                                            navigateTo(
+                                              `invitation/report/${invitation.id}`,
                                               {
                                                 state: {
                                                   invitationName:
@@ -842,8 +844,8 @@ function Invitations() {
                                           onClick={() => {
                                             const eventIdToPass =
                                               actualEventId || eventId;
-                                            navigate(
-                                              `/invitation/edit/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`,
+                                            navigateTo(
+                                              `invitation/edit/${invitation.id}${eventIdToPass ? `?eventId=${eventIdToPass}` : ""}`,
                                             );
                                             closeActionsMenu();
                                           }}

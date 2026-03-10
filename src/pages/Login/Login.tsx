@@ -28,7 +28,8 @@ function Login() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      navigate("/home");
+      const companySubdomain = localStorage.getItem("company_subdomain");
+      navigate(companySubdomain ? `/${companySubdomain}` : "/");
       return;
     }
 
@@ -100,13 +101,21 @@ function Login() {
       const currentUserAttrs =
         response?.data?.data?.current_user?.data?.attributes;
       const tenantUuid = currentUserAttrs?.tenant_uuid;
+      const subdomain =
+        currentUserAttrs?.account?.subdomain_name ??
+        response?.data?.data?.current_user?.data?.attributes?.account?.subdomain_name;
       console.log("tenanUuiidddddddddddd", tenantUuid);
+      console.log("company subdomain:", subdomain);
 
       if (tenantUuid) {
         localStorage.setItem("tenant_uuid", tenantUuid);
         console.log("✅ TENANT LOGIN:", tenantUuid);
       } else {
         console.warn("⚠️ No tenant UUID found in response");
+      }
+
+      if (subdomain) {
+        localStorage.setItem("company_subdomain", subdomain);
       }
 
       // Store current user for "Printed By" and other features
@@ -129,8 +138,9 @@ function Login() {
       }
 
       showNotification("Logged in successfully!", "success");
+      const workspaceSubdomain = subdomain || localStorage.getItem("company_subdomain") || "app";
       setTimeout(() => {
-        navigate("/");
+        navigate(`/${workspaceSubdomain}`);
       }, 1000);
     } catch (error: any) {
       console.error("Login error", error);

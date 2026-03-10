@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,7 @@ const Payment: React.FC<PaymentProps> = ({
   currentStep,
   totalSteps = 0,
 }) => {
+  const { company: companySlug } = useParams<{ company?: string }>();
   const [contact] = useState(DEFAULT_CONTACT);
   const [billingType, setBillingType] = useState<BillingType>("individual");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -186,7 +187,7 @@ const Payment: React.FC<PaymentProps> = ({
               </div>
             </div>
             <Link
-              to="/"
+              to={companySlug ? `/${companySlug}` : "/"}
               className="inline-block mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
               Edit Profile

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { Check, ChevronLeft, X, Pencil, Trash2, Eye, CheckCircle, Mail } from "lucide-react";
 import { EmailSenderStep } from "./EmailSenderStep";
 import { createRoot } from "react-dom/client";
@@ -576,6 +577,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   showEmailSenderStep = true,
 }, ref) => {
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const effectiveEventId = eventId;
 
   const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false, showEmailSenderStep));
@@ -1168,7 +1170,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
     setCurrentFlowIndex((prev) => {
       if (prev < flows.length - 1) return prev + 1;
       onNext?.(effectiveEventId || undefined);
-      if (isLastStep) navigate("/", { replace: true });
+      if (isLastStep) navigateTo("", { replace: true });
       return prev;
     });
   };
@@ -1180,7 +1182,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
         setCurrentFlowIndex((prev) => {
           if (prev < flows.length - 1) return prev + 1;
           onNext?.(effectiveEventId || undefined);
-          if (isLastStep) navigate("/", { replace: true });
+          if (isLastStep) navigateTo("", { replace: true });
           return prev;
         });
         return;
@@ -1206,7 +1208,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
     setCurrentFlowIndex((prev) => {
       if (prev < flows.length - 1) return prev + 1;
       onNext?.(effectiveEventId || undefined);
-      if (isLastStep) navigate("/", { replace: true });
+      if (isLastStep) navigateTo("", { replace: true });
       return prev;
     });
   };
@@ -1222,13 +1224,13 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       return;
     }
     onNext?.(effectiveEventId || undefined);
-    navigate("/", { replace: true });
+    navigateTo("", { replace: true });
   };
 
   const handleSkip = () => {
     onNext?.(effectiveEventId || undefined);
     if (isLastStep) {
-      navigate("/", { replace: true });
+      navigateTo("", { replace: true });
     }
   };
 

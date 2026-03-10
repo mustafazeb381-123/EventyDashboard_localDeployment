@@ -37,6 +37,7 @@ import {
   CartesianGrid,
 } from "recharts";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   getEventbyId,
   updateEventById,
@@ -542,6 +543,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   // ── routing ─────────────────────────────────────────────────────────────
 
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const location = useLocation();
   const { id: paramId } = useParams();
   const [eventId, setEventId] = useState<string | undefined>(
@@ -1094,7 +1096,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 // Only pass serializable state (no functions, no React components) — History API cannot clone them
                 const statsSerializable = statItems.map(({ icon: _icon, ...rest }) => rest);
                 // Navigate without id in path so layout keeps sidebar collapsed (icon-only), like previous behavior
-                navigate("/express-event", {
+                navigateTo("express-event", {
                   state: {
                     plan: event_type,
                     eventData: eventData,
@@ -1156,7 +1158,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 iconColor={item.iconColor}
                 bgColor={item.bgColor}
                 onClick={() =>
-                  navigate(`/home/${eventId}/summary-card`, {
+                  navigateTo(`home/${eventId}/summary-card`, {
                     state: { cardLabel: item.label, filterKey: item.filterKey ?? "all", userTypeKey: item.userTypeKey },
                   })
                 }

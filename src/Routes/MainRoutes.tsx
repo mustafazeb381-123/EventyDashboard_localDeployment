@@ -7,19 +7,25 @@ import Header from "@/components/Header/Header";
 function MainRoutes() {
   const location = useLocation();
   const params = useParams();
+  const company = params.company;
+
+  // Path after /:company (e.g. "" or "/home/123") for route context checks
+  const pathAfterCompany = company
+    ? location.pathname.replace(new RegExp(`^/${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "") || "/"
+    : location.pathname;
 
   // --- Identify route contexts ---
-  const isHomePage = location.pathname === "/";
+  const isHomePage = pathAfterCompany === "/" || pathAfterCompany === "";
   const isEventDetailsPage =
-    location.pathname.startsWith("/home/") && Boolean(params.id);
+    pathAfterCompany.startsWith("/home/") && Boolean(params.id);
   const isExpressEventEditPage =
-    location.pathname.startsWith("/express-event/") && Boolean(params.id);
+    pathAfterCompany.startsWith("/express-event/") && Boolean(params.id);
 
   // --- Check if we have eventId (param or query) ---
   const urlParams = new URLSearchParams(location.search);
   const eventIdFromQuery = urlParams.get("eventId");
   // On /communication/poll and /communication/poll/:id, params.id is the poll id, not event id — use query only
-  const isPollRoute = location.pathname.startsWith("/communication/poll");
+  const isPollRoute = pathAfterCompany.startsWith("/communication/poll");
   const isEventRelatedPage = Boolean(eventIdFromQuery) || Boolean(params.id);
 
   // --- Event-related paths that should expand sidebar ---
@@ -45,12 +51,12 @@ function MainRoutes() {
 
   // --- FIXED: use startsWith() instead of includes() ---
   // Invitation pages (list + new) always show sidebar/top bar like Figma
-  const isInvitationPage = location.pathname.startsWith("/invitation");
-  const isSettingsPage = location.pathname.startsWith("/settings");
+  const isInvitationPage = pathAfterCompany.startsWith("/invitation");
+  const isSettingsPage = pathAfterCompany.startsWith("/settings");
   const isEventContextPage =
     isInvitationPage ||
     isSettingsPage ||
-    (eventRelatedPaths.some((path) => location.pathname.startsWith(path)) &&
+    (eventRelatedPaths.some((path) => pathAfterCompany.startsWith(path)) &&
       isEventRelatedPage);
 
   // --- Determine sidebar default state ---
@@ -85,7 +91,7 @@ function MainRoutes() {
       newSidebarState: newState,
     });
     setIsExpanded(newState);
-  }, [location.pathname, params.id]);
+  }, [location.pathname, params.id, params.company]);
 
   // --- Handle RTL (right-to-left) direction dynamically ---
   useEffect(() => {

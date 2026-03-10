@@ -23,7 +23,7 @@ import {
   Handshake,
   MapPin,
 } from "lucide-react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 import Assets from "@/utils/Assets";
 import { getEventbyId } from "@/apis/apiHelpers";
 
@@ -61,6 +61,10 @@ const SideBar = ({
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { company } = useParams<{ company?: string }>();
+  const pathAfterCompany = company
+    ? location.pathname.replace(new RegExp(`^/${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "") || "/"
+    : location.pathname;
 
   // Helper function to update activeItem and persist it
   const updateActiveItem = (item: string) => {
@@ -115,10 +119,12 @@ const SideBar = ({
     }
   };
 
-  // Function to determine active item from current path
+  // Function to determine active item from current path (path is after /:company)
   const getActiveItemFromPath = (pathname: string) => {
-    // Remove query parameters for matching
-    const path = pathname.split("?")[0];
+    let path = (pathname.split("?")[0] || "") || "/";
+    if (company) {
+      path = path.replace(new RegExp(`^/${company.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`), "") || "/";
+    }
 
     // Check invitation route
     if (path.includes("/invitation")) {
@@ -196,24 +202,23 @@ const SideBar = ({
 
   // Set active item based on current route
   useEffect(() => {
-    const currentPath = location.pathname;
-    const activeItemFromPath = getActiveItemFromPath(currentPath);
+    const activeItemFromPath = getActiveItemFromPath(location.pathname);
 
     if (activeItemFromPath) {
       updateActiveItem(activeItemFromPath);
     }
 
     // Expand submenus based on current path
-    if (currentPath.includes("/invitation")) {
+    if (pathAfterCompany.includes("/invitation")) {
       setExpandedMenus((prev) => ({ ...prev, Inviation: true }));
     }
     if (
-      currentPath.includes("/communication/poll") ||
-      currentPath.includes("/communication/QA")
+      pathAfterCompany.includes("/communication/poll") ||
+      pathAfterCompany.includes("/communication/QA")
     ) {
       setExpandedMenus((prev) => ({ ...prev, Communications: true }));
     }
-    if (currentPath.includes("/event-content") || currentPath.includes("/galleries")) {
+    if (pathAfterCompany.includes("/event-content") || pathAfterCompany.includes("/galleries")) {
       setExpandedMenus((prev) => ({ ...prev, "Event Content": true }));
     }
 
@@ -259,7 +264,7 @@ const SideBar = ({
     {
       icon: HomeIcon,
       label: "Home summary",
-      path: currentEventId ? `/home/${currentEventId}` : "/",
+      path: currentEventId ? `home/${currentEventId}` : "",
       availableForExpress: true,
     },
     {
@@ -267,8 +272,8 @@ const SideBar = ({
       label: "Registered Users",
       badge: registeredUsersCount, // Use the dynamic count from localStorage
       path: currentEventId
-        ? `/regesterd_user?eventId=${currentEventId}`
-        : "/regesterd_user",
+        ? `regesterd_user?eventId=${currentEventId}`
+        : "regesterd_user",
       availableForExpress: true,
     },
     // Agenda hidden for now (outside Event Content)
@@ -282,7 +287,7 @@ const SideBar = ({
       icon: LayoutTemplate,
       label: "Event Content",
       path: currentEventId
-        ? `/home/${currentEventId}/event-content`
+        ? `home/${currentEventId}/event-content`
         : "#",
       availableForExpress: false,
       submenu: [
@@ -290,8 +295,8 @@ const SideBar = ({
           label: "Galleries",
           icon: Image,
           path: currentEventId
-            ? `/home/${currentEventId}/galleries`
-            : "/galleries",
+            ? `home/${currentEventId}/galleries`
+            : "galleries",
           availableForExpress: false,
           sidebarActiveKey: "Galleries",
         },
@@ -299,7 +304,7 @@ const SideBar = ({
           label: "Speakers",
           icon: Mic,
           path: currentEventId
-            ? `/home/${currentEventId}/event-content/speakers`
+            ? `home/${currentEventId}/event-content/speakers`
             : "#",
           availableForExpress: false,
           sidebarActiveKey: "Speakers",
@@ -308,7 +313,7 @@ const SideBar = ({
           label: "Exhibitors",
           icon: Building2,
           path: currentEventId
-            ? `/home/${currentEventId}/event-content/exhibitors`
+            ? `home/${currentEventId}/event-content/exhibitors`
             : "#",
           availableForExpress: false,
           sidebarActiveKey: "Exhibitors",
@@ -317,7 +322,7 @@ const SideBar = ({
           label: "Partners",
           icon: Handshake,
           path: currentEventId
-            ? `/home/${currentEventId}/event-content/partners`
+            ? `home/${currentEventId}/event-content/partners`
             : "#",
           availableForExpress: false,
           sidebarActiveKey: "Partners",
@@ -326,7 +331,7 @@ const SideBar = ({
           label: "Agenda",
           icon: NotepadText,
           path: currentEventId
-            ? `/home/${currentEventId}/event-content/agenda`
+            ? `home/${currentEventId}/event-content/agenda`
             : "#",
           availableForExpress: false,
           sidebarActiveKey: "Event Content Agenda",
@@ -335,7 +340,7 @@ const SideBar = ({
           label: "Area",
           icon: MapPin,
           path: currentEventId
-            ? `/home/${currentEventId}/event-content/area`
+            ? `home/${currentEventId}/event-content/area`
             : "#",
           availableForExpress: false,
           sidebarActiveKey: "Area",
@@ -354,40 +359,40 @@ const SideBar = ({
       icon: Printer,
       label: "Print Badges",
       path: currentEventId
-        ? `/print_badges?eventId=${currentEventId}`
-        : "/print_badges",
+        ? `print_badges?eventId=${currentEventId}`
+        : "print_badges",
       availableForExpress: true,
     },
     {
       icon: UserCheck,
       label: "Invitation",
       path: currentEventId
-        ? `/invitation?eventId=${currentEventId}`
-        : "/invitation",
+        ? `invitation?eventId=${currentEventId}`
+        : "invitation",
       availableForExpress: false,
     },
     {
       icon: MessagesSquare,
       label: "Communications",
       path: currentEventId
-        ? `/communication?eventId=${currentEventId}`
-        : "/communication",
+        ? `communication?eventId=${currentEventId}`
+        : "communication",
       availableForExpress: false,
       submenu: [
         {
           label: "Poll",
           icon: Vote,
           path: currentEventId
-            ? `/communication/poll?eventId=${currentEventId}`
-            : "/communication/poll",
+            ? `communication/poll?eventId=${currentEventId}`
+            : "communication/poll",
           availableForExpress: false,
         },
         {
           label: "Q & A",
           icon: BarChart3,
           path: currentEventId
-            ? `/communication/QA?eventId=${currentEventId}`
-            : "/communication/QA",
+            ? `communication/QA?eventId=${currentEventId}`
+            : "communication/QA",
           availableForExpress: false,
         },
       ],
@@ -396,24 +401,24 @@ const SideBar = ({
       icon: IdCard,
       label: "Check-In/out",
       path: currentEventId
-        ? `/Onboarding?eventId=${currentEventId}`
-        : "/Onboarding",
+        ? `Onboarding?eventId=${currentEventId}`
+        : "Onboarding",
       availableForExpress: true,
     },
     {
       icon: Mail,
       label: "Email Management",
       path: currentEventId
-        ? `/email-templates?eventId=${currentEventId}`
-        : "/email-templates",
+        ? `email-templates?eventId=${currentEventId}`
+        : "email-templates",
       availableForExpress: false,
     },
     {
       icon: UserCog,
       label: "Event Admin",
       path: currentEventId
-        ? `/management?eventId=${currentEventId}`
-        : "/management",
+        ? `management?eventId=${currentEventId}`
+        : "management",
       availableForExpress: true,
     },
     // {
@@ -485,7 +490,7 @@ const SideBar = ({
               )}
               <div
                 onClick={() => {
-                  navigate("/");
+                  navigate(company ? `/${company}` : "");
                   if (canToggle) {
                     setIsExpanded(!isExpanded);
                   }
@@ -557,8 +562,9 @@ const SideBar = ({
                           toggleSubmenu(item.label);
                         } else {
                           updateActiveItem(item.label);
-                          if (item.path) {
-                            navigate(item.path);
+                          if (item.path && item.path !== "#") {
+                            const target = company ? `/${company}${item.path ? `/${item.path}` : ""}` : item.path;
+                            navigate(target);
                           }
                         }
                       }}
@@ -615,8 +621,9 @@ const SideBar = ({
                                   return; // Prevent click for disabled sub-items
                                 }
                                 updateActiveItem(subItem.label);
-                                if (subItem.path) {
-                                  navigate(subItem.path);
+                                if (subItem.path && subItem.path !== "#") {
+                                  const target = company ? `/${company}/${subItem.path}` : subItem.path;
+                                  navigate(target);
                                 }
                               }}
                               title={
@@ -654,9 +661,11 @@ const SideBar = ({
             variant="ghost"
             onClick={() =>
               navigate(
-                currentEventId
-                  ? `/home/${currentEventId}/settings`
-                  : "/settings"
+                company
+                  ? `/${company}/${currentEventId ? `home/${currentEventId}/settings` : "settings"}`
+                  : currentEventId
+                    ? `home/${currentEventId}/settings`
+                    : "settings"
               )
             }
             className={`w-full ${

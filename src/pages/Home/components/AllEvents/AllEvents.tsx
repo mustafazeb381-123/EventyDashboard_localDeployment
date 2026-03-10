@@ -4,8 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { Trash2, Search, Grid3X3, List, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// import { useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 
 interface Event {
   id: string;
@@ -121,6 +120,7 @@ function AllEvents() {
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -187,7 +187,7 @@ function AllEvents() {
   // Handle event click
   const handleEventClick = (eventId: string) => {
     setTimeout(() => {
-      navigate(`/home/${eventId}`, {
+      navigateTo(`home/${eventId}`, {
         state: { eventId: eventId },
       });
       localStorage.setItem("edit_eventId", eventId);

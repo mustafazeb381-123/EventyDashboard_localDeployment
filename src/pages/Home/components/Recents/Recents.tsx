@@ -2,6 +2,7 @@ import Assets from "@/utils/Assets";
 import React, { useEffect, useState } from "react";
 import { getAllEvents } from "@/apis/apiHelpers";
 import { useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface Event {
@@ -27,6 +28,7 @@ interface ApiEventItem {
 }
 
 function Recents() {
+  const navigateTo = useWorkspaceNavigate();
   const [recentEvents, setRecentEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -225,7 +227,7 @@ function Recents() {
 
   const handleEventClick = (eventId: string) => {
     setTimeout(() => {
-      navigate(`/home/${eventId}`, {
+      navigateTo(`home/${eventId}`, {
         state: { eventId: eventId },
       });
       localStorage.setItem("edit_eventId", eventId);

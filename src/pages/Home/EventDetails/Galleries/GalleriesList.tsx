@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   Plus,
   Search,
@@ -54,6 +55,7 @@ interface Pagination {
 export default function GalleriesList() {
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
 
   const [galleries, setGalleries] = useState<Gallery[]>([]);
   const [loading, setLoading] = useState(true);
@@ -321,7 +323,7 @@ export default function GalleriesList() {
               <div
                 key={gallery.id}
                 onClick={() =>
-                  navigate(`/home/${eventId}/galleries/${gallery.id}`)
+                  navigateTo(`home/${eventId}/galleries/${gallery.id}`)
                 }
                 className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 cursor-pointer overflow-hidden transform hover:-translate-y-1"
               >

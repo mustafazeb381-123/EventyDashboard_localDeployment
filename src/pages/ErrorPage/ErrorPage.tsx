@@ -49,7 +49,10 @@ export default function ErrorPage() {
           </button>
 
           <button
-            onClick={() => navigate("/")}
+            onClick={() => {
+              const company = localStorage.getItem("company_subdomain") || "app";
+              navigate(`/${company}`);
+            }}
             className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Home className="w-4 h-4" />

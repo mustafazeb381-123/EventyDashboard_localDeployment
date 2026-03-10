@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   ArrowLeft,
   Printer,
@@ -108,6 +109,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function InvitationReport() {
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const { invitationId } = useParams<{ invitationId: string }>();
   const location = useLocation();
   const state = location.state as {
@@ -328,8 +330,8 @@ function InvitationReport() {
 
   const handleBackToList = () => {
     const eventId = state?.eventId;
-    const path = eventId ? `/invitation?eventId=${eventId}` : "/invitation";
-    navigate(path, { state: location.state });
+    const path = eventId ? `invitation?eventId=${eventId}` : "invitation";
+    navigateTo(path, { state: location.state });
   };
 
   const handlePrintReport = () => {
@@ -492,7 +494,7 @@ function InvitationReport() {
           <p className="text-red-600 mb-4">{loadError}</p>
           <button
             type="button"
-            onClick={() => navigate(state?.eventId ? `/invitation?eventId=${state.eventId}` : "/invitation")}
+            onClick={() => navigateTo(state?.eventId ? `invitation?eventId=${state.eventId}` : "invitation")}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200"
           >
             <ArrowLeft size={18} />

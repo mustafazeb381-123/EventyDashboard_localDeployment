@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, Search, ChevronDown } from "lucide-react";
 import { getEventInvitations, getEventInvitation } from "@/apis/invitationService";
 import { parseInvitationResponse } from "./NewInvitation";
@@ -25,6 +26,7 @@ function formatScheduled(value: string | undefined): string {
 
 function InvitationPreviewPage() {
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ invitationId: string }>();
   const [searchParams] = useSearchParams();
   const invitationId = params.invitationId ?? null;
@@ -155,7 +157,7 @@ function InvitationPreviewPage() {
   }, [filteredUsers, currentPage, itemsPerPage]);
 
   const handleBack = () => {
-    navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
+    navigateTo(`invitation${eventId ? `?eventId=${eventId}` : ""}`);
   };
 
   if (loading) {

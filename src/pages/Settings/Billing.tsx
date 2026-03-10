@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -45,7 +46,8 @@ const STATIC_INVOICES = [
 export default function SettingsBilling() {
   const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
-  const settingsPath = params.id ? `/home/${params.id}/settings` : "/settings";
+  const navigateTo = useWorkspaceNavigate();
+  const settingsPath = params.id ? `home/${params.id}/settings` : "settings";
   const [invoices] = useState(STATIC_INVOICES);
 
   return (
@@ -54,7 +56,7 @@ export default function SettingsBilling() {
         <Button
           variant="ghost"
           className="-ml-2 mb-4 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-          onClick={() => navigate(settingsPath)}
+          onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Settings

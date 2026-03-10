@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   ChevronDown,
   ChevronLeft,
@@ -21,6 +22,7 @@ const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
 function SummaryCardData() {
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const location = useLocation();
   const state =
     (location.state as {
@@ -307,7 +309,7 @@ function SummaryCardData() {
   };
 
   const goBack = () => {
-    if (eventId) navigate(`/home/${eventId}`);
+    if (eventId) navigateTo(`home/${eventId}`);
     else navigate(-1);
   };
 

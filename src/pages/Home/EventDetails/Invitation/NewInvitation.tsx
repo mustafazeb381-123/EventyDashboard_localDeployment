@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ChevronLeft } from "lucide-react";
 import { getEventbyId } from "@/apis/apiHelpers";
 import {
@@ -90,7 +91,8 @@ function findInvitationFromListResponse(
 function NewInvitation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const params = useParams<{ invitationId?: string }>();
+  const navigateTo = useWorkspaceNavigate();
+  const params = useParams<{ invitationId?: string; company?: string }>();
   const searchParams = new URLSearchParams(location.search);
   const eventIdFromUrl = searchParams.get("eventId");
   const invitationIdFromRoute = params.invitationId ?? null;
@@ -447,7 +449,7 @@ function NewInvitation() {
         await new Promise((r) => setTimeout(r, 1500));
         // Redirect to preview page so user sees the data from GET API
         const eventUuidForPreview = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
-        navigate(`/invitation/preview-page/${invitationIdFromRoute}${eventId ? `?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}` : ""}`);
+        navigateTo(`invitation/preview-page/${invitationIdFromRoute}${eventId ? `?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}` : ""}`);
       } else {
         const createRes = await createEventInvitation(eventId, { event_invitation });
         showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
@@ -477,9 +479,9 @@ function NewInvitation() {
         if (createdId && eventId) {
           await new Promise((r) => setTimeout(r, 500));
           const eventUuidForPreview = eventData?.data?.attributes?.uuid ?? eventData?.data?.uuid ?? eventData?.attributes?.uuid ?? eventData?.uuid ?? null;
-          navigate(`/invitation/preview-page/${createdId}?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}`);
+          navigateTo(`invitation/preview-page/${createdId}?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}`);
         } else {
-          navigate(`/invitation${eventId ? `?eventId=${eventId}` : ""}`);
+          navigateTo(`invitation${eventId ? `?eventId=${eventId}` : ""}`);
         }
       }
     } catch (error: any) {
@@ -537,7 +539,8 @@ function NewInvitation() {
     }, interval);
   };
 
-  const backUrl = `/invitation${eventId ? `?eventId=${eventId}` : ""}`;
+  const backPath = `invitation${eventId ? `?eventId=${eventId}` : ""}`;
+  const backUrl = params.company ? `/${params.company}/${backPath}` : `/${backPath}`;
   const pageTitle = isEditMode ? "Edit Invitation" : "New Invitation";
 
   const selectedTemplate = invitationEmailTemplates.find(
@@ -586,7 +589,7 @@ function NewInvitation() {
             href={backUrl}
             onClick={(e) => {
               e.preventDefault();
-              navigate(backUrl);
+              navigateTo(backPath);
             }}
             className="p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
             aria-label="Back to invitations"
@@ -809,7 +812,7 @@ function NewInvitation() {
                   href={backUrl}
                   onClick={(e) => {
                     e.preventDefault();
-                    navigate(backUrl);
+                    navigateTo(backPath);
                   }}
                   className="px-5 py-2.5 border border-slate-300 bg-white text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >

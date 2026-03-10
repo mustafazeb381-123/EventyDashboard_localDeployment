@@ -1,4 +1,5 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { User, CreditCard, Shield, Send } from "lucide-react";
 
 const sectionKeys = [
@@ -9,10 +10,10 @@ const sectionKeys = [
 ] as const;
 
 export default function Settings() {
-  const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ id?: string }>();
   const eventId = params.id;
-  const settingsBase = eventId ? `/home/${eventId}/settings` : "/settings";
+  const settingsBase = eventId ? `home/${eventId}/settings` : "settings";
 
   return (
     <div className="min-h-screen bg-[#F7FAFF] p-6">
@@ -34,7 +35,7 @@ export default function Settings() {
               <button
                 key={section.id}
                 type="button"
-                onClick={() => navigate(sectionPath)}
+                onClick={() => navigateTo(sectionPath)}
                 className="group relative flex items-start gap-5 rounded-2xl border border-gray-200/80 bg-white p-6 text-left shadow-sm transition-all duration-200 hover:border-blue-300/60 hover:shadow-lg hover:shadow-blue-500/5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-600 shadow-inner transition-all group-hover:from-blue-100 group-hover:to-indigo-100 group-hover:scale-105">

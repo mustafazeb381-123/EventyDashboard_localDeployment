@@ -1,4 +1,4 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import MainRoutes from "./MainRoutes";
 import ProtectedRoute from "./ProtectedRoutes";
 
@@ -41,15 +41,28 @@ import SettingsSenderManagement from "@/pages/Settings/SenderManagement";
 
 const router = createBrowserRouter([
   {
-    path: "/", // The main path for all protected routes
+    path: "/",
+    element: (
+      <Navigate
+        to={
+          localStorage.getItem("token")
+            ? `/${localStorage.getItem("company_subdomain") || "app"}`
+            : "/login"
+        }
+        replace
+      />
+    ),
+  },
+  {
+    path: "/:company", // Company workspace: /enso, /enso/home, etc.
     element: <ProtectedRoute />,
     errorElement: <ErrorPage />,
     children: [
       {
-        element: <MainRoutes />, // MainRoutes now acts as a layout for children
+        element: <MainRoutes />,
         children: [
           {
-            index: true, // This will render at the root path ("/")
+            index: true, // Renders at /:company (e.g. /enso)
             element: <Home />,
           },
           {

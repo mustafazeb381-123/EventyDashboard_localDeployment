@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { Loader2, Plus, Trash2, Pencil, BarChart3, Power } from "lucide-react";
 
 import Pagination from "@/components/Pagination";
@@ -68,6 +69,7 @@ const normalizePoll = (poll: any): Poll => {
 
 const PollPage = () => {
   const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get("eventId");
 
@@ -374,8 +376,8 @@ const PollPage = () => {
     if (!eventId) return;
     // Use selectedAgendaId if available, otherwise use the poll's agenda_id
     const agendaId = selectedAgendaId || poll.agenda_id;
-    navigate(
-      `/communication/poll/${poll.id}?eventId=${eventId}&agendaId=${agendaId}`
+    navigateTo(
+      `communication/poll/${poll.id}?eventId=${eventId}&agendaId=${agendaId}`
     );
   };
 

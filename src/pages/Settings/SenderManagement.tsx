@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, Plus, Mail, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,10 +25,10 @@ const mockSenders: Sender[] = [
 const RESEND_COOLDOWN_SEC = 60;
 
 export default function SettingsSenderManagement() {
-  const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ id?: string }>();
   const eventId = params.id;
-  const settingsPath = eventId ? `/home/${eventId}/settings` : "/settings";
+  const settingsPath = eventId ? `home/${eventId}/settings` : "settings";
   const [senders, setSenders] = useState<Sender[]>(mockSenders);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ name: "", email: "" });
@@ -189,7 +190,7 @@ export default function SettingsSenderManagement() {
         <Button
           variant="ghost"
           className="-ml-2 mb-4 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-          onClick={() => navigate(settingsPath)}
+          onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Settings

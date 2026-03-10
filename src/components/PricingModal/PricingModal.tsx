@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -13,7 +14,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
   onClose,
   selectedPlan,
 }) => {
-  const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const [activePlan, setActivePlan] = useState<string>(selectedPlan || "");
 
   // Sync active plan when modal opens or selectedPlan changes (e.g. Express vs Advanced from Home)
@@ -76,10 +77,10 @@ const PricingModal: React.FC<PricingModalProps> = ({
 
   const handleGetStarted = (plan: any) => {
     if (plan.id === "express") {
-      navigate("/express-event", { state: { plan: "express" } });
+      navigateTo("express-event", { state: { plan: "express" } });
     } else if (plan.id === "advanced") {
       // ExpressEvent page expects "advance" (no 'd'), not "advanced"
-      navigate("/express-event", { state: { plan: "advance" } });
+      navigateTo("express-event", { state: { plan: "advance" } });
     }
     onClose();
   };

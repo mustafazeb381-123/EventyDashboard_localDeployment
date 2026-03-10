@@ -1,14 +1,15 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SettingsSecurity() {
-  const navigate = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ id?: string }>();
-  const settingsPath = params.id ? `/home/${params.id}/settings` : "/settings";
+  const settingsPath = params.id ? `home/${params.id}/settings` : "settings";
   const [formData, setFormData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -33,7 +34,7 @@ export default function SettingsSecurity() {
         <Button
           variant="ghost"
           className="-ml-2 mb-4 text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-          onClick={() => navigate(settingsPath)}
+          onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Settings
