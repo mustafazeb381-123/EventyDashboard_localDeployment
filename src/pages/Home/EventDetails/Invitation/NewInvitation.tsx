@@ -438,7 +438,7 @@ function NewInvitation() {
       if (!isEditMode) {
         try {
           await navigator.clipboard.writeText(payloadJson);
-          showNotification("Payload copied to clipboard. Sending invitation…", "info");
+          // showNotification("Payload copied to clipboard. Sending invitation…", "info");
         } catch {
           // ignore clipboard errors
         }
@@ -452,7 +452,7 @@ function NewInvitation() {
         navigateTo(`invitation/preview-page/${invitationIdFromRoute}${eventId ? `?eventId=${eventId}${eventUuidForPreview ? `&eventUuid=${encodeURIComponent(eventUuidForPreview)}` : ""}` : ""}`);
       } else {
         const createRes = await createEventInvitation(eventId, { event_invitation });
-        showNotification("Invitation created successfully. Full payload was logged to console and copied to clipboard.", "success");
+        showNotification("Invitation created successfully.", "success");
         // Get created invitation id from response and redirect to preview (GET will load the saved data)
         const createdBody = createRes.data as unknown;
         const createdAttrs = parseInvitationResponse(createdBody);

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
+import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import RegistrationForm from "./RegistrationForm/RegistrationForm";
 import Badges from "./Badges/Badges";
 import EmailConfirmation, {
@@ -48,7 +49,7 @@ const ExpressEvent = () => {
     Number(initialStep) || 0,
   );
 
-  const navigation = useNavigate();
+  const navigateTo = useWorkspaceNavigate();
 
   const steps = [
     {
@@ -170,9 +171,9 @@ const ExpressEvent = () => {
 
   const handleBackNavigation = () => {
     if (isEditing && finalEventId) {
-      navigation(`/home/${finalEventId}`, { state: { eventId: finalEventId } });
+      navigateTo(`home/${finalEventId}`, { state: { eventId: finalEventId } });
     } else {
-      navigation("/");
+      navigateTo("");
     }
   };
 
@@ -199,7 +200,7 @@ const ExpressEvent = () => {
               onClick={() => {
                 const step = steps[currentStep];
                 if (step?.id === "payment" && finalEventId) {
-                  navigation(`/home/${finalEventId}`, { state: { eventId: finalEventId } });
+                  navigateTo(`home/${finalEventId}`, { state: { eventId: finalEventId } });
                 } else {
                   emailConfirmationRef.current?.finish();
                 }
@@ -211,7 +212,7 @@ const ExpressEvent = () => {
             </Button>
           )}
           <Button
-            onClick={() => navigation("/")}
+            onClick={() => navigateTo("")}
             className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
           >
             <span>Cancel Creation</span>
