@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   UserPlus,
@@ -8,7 +9,7 @@ import {
   ChevronDown,
   Plus
 } from "lucide-react";
-import { getAllEvents } from "@/apis/apiHelpers";
+import { getEventbyId } from "@/apis/apiHelpers";
 
 interface TeamMember {
   id: string;
@@ -18,12 +19,9 @@ interface TeamMember {
   event: string;
 }
 
-interface EventOption {
-  id: string;
-  name: string;
-}
-
 export default function Management() {
+  const [searchParams] = useSearchParams();
+  const eventIdFromUrl = searchParams.get("eventId") ?? "";
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
     {
       id: "#182",
@@ -58,60 +56,31 @@ export default function Management() {
   const [selectedMembers, setSelectedMembers] = useState<Set<number>>(new Set());
   const itemsPerPage = 10;
 
-  // Events for dropdown (from API)
-  const [eventsList, setEventsList] = useState<EventOption[]>([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
+  // Current event from URL (eventId query param)
+  const [currentEventName, setCurrentEventName] = useState("");
+  const [currentEventLoading, setCurrentEventLoading] = useState(false);
 
-  // Fetch all events for the Event dropdown
   useEffect(() => {
-    const fetchEvents = async () => {
-      setEventsLoading(true);
+    if (!eventIdFromUrl) {
+      setCurrentEventName("");
+      return;
+    }
+    const fetchCurrentEvent = async () => {
+      setCurrentEventLoading(true);
       try {
-        let allEvents: EventOption[] = [];
-        let page = 1;
-        let hasMore = true;
-
-        while (hasMore) {
-          const response = await getAllEvents({
-            page,
-            per_page: 100,
-          });
-
-          if (response.data?.data && Array.isArray(response.data.data)) {
-            const items = response.data.data.map((item: { id: string | number; name?: string; attributes?: { name?: string } }) => ({
-              id: String(item.id),
-              name: item.name ?? item.attributes?.name ?? "",
-            }));
-            allEvents = [...allEvents, ...items];
-
-            const pagination = response.data?.meta?.pagination;
-            if (items.length === 0) {
-              hasMore = false;
-            } else if (pagination?.next_page != null) {
-              page = pagination.next_page;
-            } else if (pagination?.current_page != null && pagination?.total_pages != null && pagination.current_page < pagination.total_pages) {
-              page = pagination.current_page + 1;
-            } else if (pagination?.total_pages != null && page < pagination.total_pages) {
-              page += 1;
-            } else {
-              hasMore = false;
-            }
-          } else {
-            hasMore = false;
-          }
-        }
-
-        setEventsList(allEvents);
+        const response = await getEventbyId(eventIdFromUrl);
+        const data = response.data?.data ?? response.data;
+        const name = data?.name ?? data?.attributes?.name ?? "";
+        setCurrentEventName(name || `Event #${eventIdFromUrl}`);
       } catch (error) {
-        console.error("Management - Error fetching events:", error);
-        setEventsList([]);
+        console.error("Management - Error fetching current event:", error);
+        setCurrentEventName(`Event #${eventIdFromUrl}`);
       } finally {
-        setEventsLoading(false);
+        setCurrentEventLoading(false);
       }
     };
-
-    fetchEvents();
-  }, []);
+    fetchCurrentEvent();
+  }, [eventIdFromUrl]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -126,9 +95,10 @@ export default function Management() {
       const newMember: TeamMember = {
         id: `#${Math.floor(Math.random() * 1000)}`,
         ...formData,
+        event: eventIdFromUrl ? currentEventName : formData.event,
       };
       setTeamMembers((prev) => [...prev, newMember]);
-      setFormData({ name: "", email: "", role: "", event: "" });
+      setFormData({ name: "", email: "", role: "", event: eventIdFromUrl ? currentEventName : "" });
     }
   };
 
@@ -224,31 +194,18 @@ export default function Management() {
                 </div>
               </div>
 
-              {/* Event */}
+              {/* Event (read-only: current event from URL) */}
               <div>
                 <label className="block text-sm font-medium text-gray-900 mb-2">
                   Event
                 </label>
-                <div className="relative">
-                  <select
-                    name="event"
-                    value={formData.event}
-                    onChange={handleInputChange}
-                    disabled={eventsLoading}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none text-gray-600 bg-white disabled:opacity-70 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {eventsLoading ? "Loading events..." : "Select Event"}
-                    </option>
-                    {!eventsLoading &&
-                      eventsList.map((ev) => (
-                        <option key={ev.id} value={ev.id}>
-                          {ev.name || `Event #${ev.id}`}
-                        </option>
-                      ))}
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-                </div>
+                <input
+                  type="text"
+                  readOnly
+                  value={eventIdFromUrl ? (currentEventLoading ? "Loading..." : currentEventName) : "No event in URL"}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
+                  placeholder="Open page with ?eventId=189"
+                />
               </div>
             </div>
 

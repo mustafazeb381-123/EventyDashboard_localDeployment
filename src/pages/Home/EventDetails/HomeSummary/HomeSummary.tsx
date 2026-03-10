@@ -305,8 +305,6 @@ const _ActivityChart = ({
     );
   };
 
-  const yTicks = [0, 20, 50, 100, 300, 500, 800];
-
   return (
     <ResponsiveContainer width="100%" height={290}>
       <ComposedChart
@@ -323,11 +321,11 @@ const _ActivityChart = ({
           tickLine={false}
         />
         <YAxis
-          ticks={yTicks}
           tick={{ fontSize: 11, fill: "#9CA3AF" }}
           axisLine={false}
           tickLine={false}
           width={36}
+          allowDecimals={false}
         />
         <Tooltip
           cursor={{ stroke: "#C4C9E8", strokeWidth: 1, fill: "transparent" }}
@@ -500,45 +498,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     type: "success" | "error" | "warning" | "info",
   ) => setNotification({ message, type });
 
-  // ── chart data ──────────────────────────────────────────────────────────
-
-  const defaultChartData = useMemo(
-    () => [
-      { label: "JAN", registered: 300 },
-      { label: "FEB", registered: 200 },
-      { label: "MAR", registered: 350 },
-      { label: "APR", registered: 750 },
-      { label: "MAY", registered: 420 },
-      { label: "JUN", registered: 480 },
-    ],
-    [],
-  );
-
-  const derivedChartData = useMemo(() => {
-    const normalize = (item: any, idx: number) => {
-      const rawLabel =
-        item?.label ?? item?.date ?? item?.day ?? item?.month ?? item?.period ?? item?.name ?? `Day ${idx + 1}`;
-      let label = rawLabel;
-      if (typeof rawLabel === "string" && /\d{4}-\d{2}-\d{2}/.test(rawLabel)) {
-        label = new Date(rawLabel).toLocaleDateString("en-US", { month: "short" }).toUpperCase();
-      }
-      const value = item?.registered ?? item?.count ?? item?.total ?? item?.value ?? item?.registrations ?? 0;
-      return { label: String(label), registered: Number(value) || 0 };
-    };
-
-    const series =
-      metrics?.registrations_by_day ??
-      metrics?.registration_chart ??
-      metrics?.registration_trend ??
-      metrics?.daily_registration ??
-      metrics?.chart ??
-      metrics?.data ??
-      (Array.isArray(metrics) ? metrics : null);
-
-    if (Array.isArray(series) && series.length) return series.map(normalize);
-    if (chartData?.length) return chartData.map(normalize);
-    return defaultChartData;
-  }, [metrics, chartData, defaultChartData]);
+  // ── chart data (moved below derivedCounts so we can use counts for default chart)
 
   // ── routing ─────────────────────────────────────────────────────────────
 
@@ -630,6 +590,37 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     });
     return { total, today, pending, approved, rejected, printed };
   }, [eventUsers]);
+
+  const derivedChartData = useMemo(() => {
+    const normalize = (item: any, idx: number) => {
+      const rawLabel =
+        item?.label ?? item?.date ?? item?.day ?? item?.month ?? item?.period ?? item?.name ?? `Day ${idx + 1}`;
+      let label = rawLabel;
+      if (typeof rawLabel === "string" && /\d{4}-\d{2}-\d{2}/.test(rawLabel)) {
+        label = new Date(rawLabel).toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+      }
+      const value = item?.registered ?? item?.count ?? item?.total ?? item?.value ?? item?.registrations ?? 0;
+      return { label: String(label), registered: Number(value) || 0 };
+    };
+
+    const series =
+      metrics?.registrations_by_day ??
+      metrics?.registration_chart ??
+      metrics?.registration_trend ??
+      metrics?.daily_registration ??
+      metrics?.chart ??
+      metrics?.data ??
+      (Array.isArray(metrics) ? metrics : null);
+
+    if (Array.isArray(series) && series.length) return series.map(normalize);
+    if (chartData?.length) return chartData.map(normalize);
+    return [
+      { label: "Today registration", registered: derivedCounts.today },
+      { label: "Total registration", registered: derivedCounts.total },
+      { label: "Pending", registered: derivedCounts.pending },
+      { label: "Approved user", registered: derivedCounts.approved },
+    ];
+  }, [metrics, chartData, derivedCounts]);
 
   const userTypeCounts = useMemo(() => {
     const counts: Record<string, number> = {};

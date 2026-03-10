@@ -1,7 +1,6 @@
 import Assets from "@/utils/Assets";
 import React, { useState } from "react";
 import Recents from "./components/Recents/Recents";
-import Draft from "./components/Drafts/Draft";
 import AllEvents from "./components/AllEvents/AllEvents";
 import PricingModal from "@/components/PricingModal/PricingModal";
 
@@ -74,20 +73,9 @@ const Home = () => {
         </div>
       </div>
 
-      {/* Recents and Drafts and all events */}
-      <div
-        style={{ marginTop: 24 }}
-        className="flex flex-col md:flex-row justify-between w-full items-center gap-4"
-      >
-        {/* Recents */}
-        <div className="w-full md:w-[49%]">
-          <Recents />
-        </div>
-
-        {/* Drafts */}
-        <div className="w-full md:w-[49%]">
-          <Draft />
-        </div>
+      {/* Recents and all events */}
+      <div style={{ marginTop: 24 }} className="w-full">
+        <Recents />
       </div>
 
       {/* all events */}
