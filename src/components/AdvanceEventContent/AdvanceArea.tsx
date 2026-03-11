@@ -64,7 +64,6 @@ function AdvanceArea({
     type: "",
   });
   const [areas, setAreas] = useState<Area[]>([]);
-  const [editingRow, setEditingRow] = useState<string | null>(null);
   const [editData, setEditData] = useState<Area | null>(null);
   const [loading, setLoading] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null);
@@ -79,38 +78,37 @@ function AdvanceArea({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
 
+  // Edit area modal state (opens modal instead of inline edit)
+  const [editModalOpen, setEditModalOpen] = useState(false);
+
   const { t } = useTranslation("dashboard");
   const STEP_NAMES = [t("advance.area.speakers"), t("advance.area.exhibitors"), t("advance.area.partners"), t("advance.area.agenda"), t("advance.area.area")];
   const currentEventId = eventId || localStorage.getItem("create_eventId");
 
-  // Fetch badges for user type dropdown
+  // Fetch badges for user type dropdown (same as MainData – pass tenant_uuid for multi-tenancy)
   const fetchBadgeApi = async () => {
     if (!currentEventId) return;
 
     setBadgeLoading(true);
     try {
-      console.log("Fetching badges for event ID:", currentEventId);
+      const tenantUuid =
+        typeof window !== "undefined"
+          ? localStorage.getItem("tenant_uuid")
+          : null;
 
-      const response = await getBadgeType(currentEventId);
+      const response = await getBadgeType(currentEventId, {
+        tenant_uuid: tenantUuid ?? undefined,
+      });
 
       console.log("Badges API Response in AdvanceArea", response);
 
       const result = response.data;
       console.log("✅ Raw badges fetched:", result?.data);
 
-      // Store ALL badges (both default and non-default)
+      // Store ALL badges (both default and non-default), including duplicates
       if (result?.data && Array.isArray(result.data)) {
-        // Deduplicate badges by name to avoid showing duplicates
-        const uniqueBadges = result.data.filter(
-          (badge: Badge, index: number, self: Badge[]) =>
-            index ===
-            self.findIndex(
-              (b: Badge) =>
-                b.attributes.name === badge.attributes.name
-            )
-        );
-        setBadges(uniqueBadges);
-        console.log("✅ Unique badges stored:", uniqueBadges);
+        setBadges(result.data);
+        console.log("✅ Badges stored in AdvanceArea:", result.data);
       } else {
         setBadges([]);
       }
@@ -267,15 +265,6 @@ function AdvanceArea({
       );
 
       if (response?.data?.data) {
-        // Transform the new area data to match our Area type
-        const newAreaData: Area = {
-          id: response.data.data.id,
-          title: response.data.data.attributes.name,
-          location: response.data.data.attributes.location,
-          type: response.data.data.attributes.user_type,
-          travelNumber: response.data.data.attributes.guest_number,
-        };
-
         setNewArea({
           title: "",
           location: "",
@@ -300,8 +289,8 @@ function AdvanceArea({
   };
 
   const handleEdit = (area: Area) => {
-    setEditingRow(area.id);
     setEditData({ ...area });
+    setEditModalOpen(true);
   };
 
   const handleSaveEdit = async () => {
@@ -331,16 +320,7 @@ function AdvanceArea({
       );
 
       if (response?.data?.data) {
-        // Use the response data to ensure consistency
-        const updatedArea: Area = {
-          id: response.data.data.id,
-          title: response.data.data.attributes.name,
-          location: response.data.data.attributes.location,
-          type: response.data.data.attributes.user_type,
-          travelNumber: response.data.data.attributes.guest_number,
-        };
-
-        setEditingRow(null);
+        setEditModalOpen(false);
         setEditData(null);
         showNotification(t("advance.area.updatedSuccess"), "success");
         // Refresh current page to show updated data
@@ -358,7 +338,7 @@ function AdvanceArea({
   };
 
   const handleCancelEdit = () => {
-    setEditingRow(null);
+    setEditModalOpen(false);
     setEditData(null);
   };
 
@@ -395,7 +375,9 @@ function AdvanceArea({
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-2">
           <ChevronLeft className="text-gray-500" size={20} />
-          <h2 className="text-xl font-semibold text-gray-900">Area</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {t("advance.area.area")}
+          </h2>
         </div>
 
         {/* Progress Steps */}
@@ -475,19 +457,19 @@ function AdvanceArea({
                   />
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
+                  {t("advance.area.tableNameHeader")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Location
+                  {t("advance.area.tableLocationHeader")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                  {t("advance.area.tableTypeHeader")}
                 </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Guest number
+                  {t("advance.area.tableGuestNumberHeader")}
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
+                  {t("advance.area.tableActionsHeader")}
                 </th>
               </tr>
             </thead>
@@ -548,134 +530,42 @@ function AdvanceArea({
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-900">
-                      {editingRow === area.id ? (
-                        <input
-                          type="text"
-                          value={editData?.title || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev ? { ...prev, title: e.target.value } : null
-                            )
-                          }
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        />
-                      ) : (
-                        area.title
-                      )}
+                      {area.title}
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {editingRow === area.id ? (
-                        <input
-                          type="text"
-                          value={editData?.location || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev
-                                ? { ...prev, location: e.target.value }
-                                : null
-                            )
-                          }
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        />
-                      ) : (
-                        area.location
-                      )}
+                      {area.location}
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {editingRow === area.id ? (
-                        <select
-                          value={editData?.type || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev ? { ...prev, type: e.target.value } : null
-                            )
-                          }
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        >
-                          {badges.map((badge) => (
-                            <option
-                              key={badge.id}
-                              value={badge.attributes.name}
-                            >
-                              {badge.attributes.name}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        badges.find(
-                          (b) => b.attributes.name === area.type
-                        )?.attributes.name || area.type
-                      )}
+                      {badges.find(
+                        (b) => b.attributes.name === area.type
+                      )?.attributes.name || area.type}
                     </td>
 
                     <td className="px-4 py-3 text-sm text-gray-600">
-                      {editingRow === area.id ? (
-                        <input
-                          type="number"
-                          value={editData?.travelNumber || ""}
-                          onChange={(e) =>
-                            setEditData((prev) =>
-                              prev
-                                ? {
-                                    ...prev,
-                                    travelNumber: parseInt(e.target.value) || 0,
-                                  }
-                                : null
-                            )
-                          }
-                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                        />
-                      ) : (
-                        area.travelNumber
-                      )}
+                      {area.travelNumber}
                     </td>
 
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-center gap-2">
-                        {editingRow === area.id ? (
-                          <>
-                            <button
-                              onClick={handleSaveEdit}
-                              disabled={saveLoading === area.id}
-                              className="p-1.5 text-green-500 hover:bg-green-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {saveLoading === area.id ? (
-                                <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Check className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={handleCancelEdit}
-                              disabled={saveLoading === area.id}
-                              className="p-1.5 text-gray-500 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {t("advance.area.cancel")}
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => handleDeleteArea(area)}
-                              disabled={deleteLoading === area.id}
-                              className="p-1.5 text-pink-500 hover:bg-pink-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                              {deleteLoading === area.id ? (
-                                <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Trash2 className="w-4 h-4" />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => handleEdit(area)}
-                              className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-md transition-colors"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
+                        <button
+                          onClick={() => handleDeleteArea(area)}
+                          disabled={deleteLoading === area.id}
+                          className="p-1.5 text-pink-500 hover:bg-pink-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {deleteLoading === area.id ? (
+                            <div className="w-4 h-4 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleEdit(area)}
+                          className="p-1.5 text-yellow-500 hover:bg-yellow-50 rounded-md transition-colors"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -733,7 +623,7 @@ function AdvanceArea({
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Area Name
+                    {t("advance.area.areaNameLabel")}
                   </label>
                   <input
                     type="text"
@@ -748,7 +638,7 @@ function AdvanceArea({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Area Location
+                    {t("advance.area.areaLocationLabel")}
                   </label>
                   <input
                     type="text"
@@ -766,7 +656,7 @@ function AdvanceArea({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    Guest number
+                    {t("advance.area.guestNumberLabel")}
                   </label>
                   <input
                     type="number"
@@ -784,7 +674,7 @@ function AdvanceArea({
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                    User Type
+                    {t("advance.area.userTypeLabel")}
                   </label>
                   <select
                     value={newArea.type}
@@ -828,6 +718,152 @@ function AdvanceArea({
             </div>
           </div>
         )}
+
+        {/* Edit Area Modal */}
+        {editModalOpen && editData && (
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            onClick={() => !saveLoading && handleCancelEdit()}
+          >
+            <div
+              className="bg-white p-8 rounded-2xl w-3/4 shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {t("advance.area.editArea") || "Edit Area"}
+                </h2>
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={!!saveLoading}
+                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t("advance.area.areaNameLabel")}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t("advance.area.clickHere")}
+                    value={editData.title}
+                    onChange={(e) =>
+                      setEditData((prev) =>
+                        prev ? { ...prev, title: e.target.value } : null
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t("advance.area.areaLocationLabel")}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t("advance.area.locationHere")}
+                    value={editData.location}
+                    onChange={(e) =>
+                      setEditData((prev) =>
+                        prev ? { ...prev, location: e.target.value } : null
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t("advance.area.guestNumberLabel")}
+                  </label>
+                  <input
+                    type="number"
+                    placeholder={t("advance.area.number")}
+                    value={editData.travelNumber ?? ""}
+                    onChange={(e) =>
+                      setEditData((prev) =>
+                        prev
+                          ? {
+                              ...prev,
+                              travelNumber: parseInt(e.target.value, 10) || 0,
+                            }
+                          : null
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    {t("advance.area.userTypeLabel")}
+                  </label>
+                  <select
+                    value={editData.type}
+                    onChange={(e) =>
+                      setEditData((prev) =>
+                        prev ? { ...prev, type: e.target.value } : null
+                      )
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+                  >
+                    <option value="" disabled>
+                      {t("advance.area.selectUserType")}
+                    </option>
+                    {badgeLoading ? (
+                      <option value="" disabled>
+                        {t("advance.area.loadingBadges")}
+                      </option>
+                    ) : (
+                      badges.map((badge) => (
+                        <option
+                          key={badge.id}
+                          value={badge.attributes.name}
+                        >
+                          {badge.attributes.name}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  disabled={!!saveLoading}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t("advance.area.cancel")}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={saveLoading === editData.id}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saveLoading === editData.id ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      {t("advance.area.saving") || "Saving..."}
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      {t("advance.area.save") || "Save"}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation Footer */}
@@ -836,14 +872,14 @@ function AdvanceArea({
           onClick={handleBack}
           className="cursor-pointer px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm"
         >
-          ← Previous
+          ← {t("expressEvent.previous")}
         </button>
 
         <button
           onClick={handleNext}
           className="cursor-pointer px-6 py-2 rounded-lg text-white transition-colors font-medium bg-gray-900 hover:bg-gray-800 text-sm"
         >
-          Next →
+          {t("expressEvent.next")} →
         </button>
       </div>
 
