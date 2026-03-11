@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff } from "lucide-react";
 import { loginApi } from "@/apis/apiHelpers";
+import { getWorkspaceRedirectUrl, useSubdomainRedirect } from "@/utils/workspaceUrl";
 
 function Login() {
   const navigate = useNavigate();
@@ -140,7 +141,11 @@ function Login() {
       showNotification(t("loggedInSuccess"), "success");
       const workspaceSubdomain = subdomain || localStorage.getItem("company_subdomain") || "app";
       setTimeout(() => {
-        navigate(`/${workspaceSubdomain}`);
+        if (useSubdomainRedirect()) {
+          window.location.href = getWorkspaceRedirectUrl(workspaceSubdomain);
+        } else {
+          navigate(`/${workspaceSubdomain}`);
+        }
       }, 1000);
     } catch (error: any) {
       console.error("Login error", error);
