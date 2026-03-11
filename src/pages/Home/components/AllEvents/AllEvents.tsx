@@ -840,6 +840,7 @@ function AllEvents() {
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
                 className="mt-6"
+                t={t}
               />
             )}
           </>
