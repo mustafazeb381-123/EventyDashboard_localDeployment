@@ -304,19 +304,40 @@ export const setRegistrationFormTemplateAsDefault = (
   );
 };
 
-// Update an image attachment for a registration form template
+/** Image name for registration form template attachments (no logo; footer uses footer_image). */
+export type RegistrationFormTemplateImageName =
+  | "banner_image"
+  | "form_background_image"
+  | "footer_image";
+
+// Update a single image attachment (legacy; prefer updateRegistrationFormTemplateImages for multiple)
 export const updateRegistrationFormTemplateImage = (
   eventId: string | number,
   templateId: string | number,
-  imageName: "banner_image" | "logo" | "form_background_image" | "footer_banner_image",
+  imageName: RegistrationFormTemplateImageName,
   base64Data: string
 ) => {
   return axiosInstance.patch(
     `/events/${eventId}/registration_form_templates/${templateId}/update_image`,
     {
-      image_name: imageName,
-      base64_data: base64Data,
+      images: [{ image_name: imageName, base64_data: base64Data }],
     }
+  );
+};
+
+// Update one or more image attachments in a single request (banner_image, form_background_image, footer_image)
+export const updateRegistrationFormTemplateImages = (
+  eventId: string | number,
+  templateId: string | number,
+  images: Array<{
+    image_name: RegistrationFormTemplateImageName;
+    base64_data: string;
+  }>
+) => {
+  if (images.length === 0) return Promise.resolve({ data: { status: "success", updated: [], errors: [] } });
+  return axiosInstance.patch(
+    `/events/${eventId}/registration_form_templates/${templateId}/update_image`,
+    { images }
   );
 };
 

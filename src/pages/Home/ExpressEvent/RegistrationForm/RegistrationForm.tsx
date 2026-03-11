@@ -37,7 +37,7 @@ import {
   getRegistrationFormTemplates,
   createRegistrationFormTemplate,
   updateRegistrationFormTemplate,
-  updateRegistrationFormTemplateImage,
+  updateRegistrationFormTemplateImages,
   deleteRegistrationFormTemplate,
   setRegistrationFormTemplateAsDefault,
 } from "@/apis/apiHelpers";
@@ -396,7 +396,7 @@ const RegistrationForm = ({
     const theme: FormTheme = {
       ...themeFromFormData,
       formBackgroundImage: attrs.form_background_image ?? themeFromFormData.formBackgroundImage ?? null,
-      footerBannerImage: attrs.footer_banner_image ?? themeFromFormData.footerBannerImage ?? null,
+      footerBannerImage: attrs.footer_image ?? attrs.footer_banner_image ?? themeFromFormData.footerBannerImage ?? null,
     };
     const formBuilderData = {
       formData: fields,
@@ -497,39 +497,89 @@ const RegistrationForm = ({
 
   const handleSaveFormBuilderTemplate = useCallback(async (template: CustomFormTemplate) => {
     if (!effectiveEventId) return;
+
+    const blobToDataUrl = (blob: Blob) =>
+      new Promise<string>((resolve, reject) => {
+        const r = new FileReader();
+        r.onloadend = () => resolve(r.result as string);
+        r.onerror = () => reject(new Error("Failed to read image"));
+        r.readAsDataURL(blob);
+      });
+
+    const normalizeImageValue = async (value: unknown): Promise<string | null | undefined> => {
+      if (typeof value === "string") return value;
+      if (value instanceof File || value instanceof Blob) return await blobToDataUrl(value);
+      if (value == null) return null;
+      return null;
+    };
+
     const fields = Array.isArray(template.formBuilderData?.formData)
       ? template.formBuilderData.formData
       : [];
+
     const normalizedBannerImage =
       typeof template.bannerImage === "string"
         ? template.bannerImage
         : template.bannerImage instanceof File
-          ? await new Promise<string>((res, rej) => {
-              const r = new FileReader();
-              r.onloadend = () => res(r.result as string);
-              r.onerror = () => rej(new Error("Failed to read image"));
-              r.readAsDataURL(template.bannerImage as File);
-            })
+          ? await blobToDataUrl(template.bannerImage as File)
           : null;
+
+    const normalizedTheme: FormTheme | undefined = template.theme
+      ? {
+          ...template.theme,
+          formBackgroundImage: await normalizeImageValue(template.theme.formBackgroundImage),
+          footerBannerImage: await normalizeImageValue(template.theme.footerBannerImage),
+        }
+      : undefined;
+
+    // On update: do not send image URLs in theme (backend would overwrite stored attachments). Only send base64 data URLs.
+    const isBase64DataUrl = (s: string | undefined) =>
+      typeof s === "string" && s.trim() !== "" && s.startsWith("data:");
+
     const cleanTheme: any = {
       formBackgroundColor: "#ffffff",
       formPadding: "24px",
       primaryColor: "#3B82F6",
       secondaryColor: "#10B981",
-      ...(template.theme && typeof template.theme === "object"
-        ? Object.fromEntries(
-            Object.entries(template.theme).filter(
-              ([_, v]) => v != null && typeof v !== "object" && !(v instanceof File)
-            )
-          )
-        : {}),
     };
-    if (template.theme?.formBackgroundImage && typeof template.theme.formBackgroundImage === "string") {
-      cleanTheme.formBackgroundImage = template.theme.formBackgroundImage;
+    if (normalizedTheme) {
+      if (
+        normalizedTheme.formBackgroundImage &&
+        typeof normalizedTheme.formBackgroundImage === "string" &&
+        isBase64DataUrl(normalizedTheme.formBackgroundImage)
+      ) {
+        cleanTheme.formBackgroundImage = normalizedTheme.formBackgroundImage;
+      }
+      if (
+        normalizedTheme.footerBannerImage &&
+        typeof normalizedTheme.footerBannerImage === "string" &&
+        isBase64DataUrl(normalizedTheme.footerBannerImage)
+      ) {
+        cleanTheme.footerBannerImage = normalizedTheme.footerBannerImage;
+        cleanTheme.footerImage = normalizedTheme.footerBannerImage;
+      }
+      cleanTheme.primaryColor = normalizedTheme.buttonBackgroundColor || "#3B82F6";
+      cleanTheme.secondaryColor = normalizedTheme.buttonHoverBackgroundColor || "#10B981";
+      const imageThemeKeys = ["formBackgroundImage", "footerBannerImage", "footerImage"];
+      Object.keys(normalizedTheme).forEach((key) => {
+        if (imageThemeKeys.includes(key)) return;
+        const value = (normalizedTheme as any)[key];
+        if (value != null && !(value instanceof File) && !(value instanceof Blob)) {
+          if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            if (typeof value === "string" && (value.startsWith("http://") || value.startsWith("https://"))) return;
+            cleanTheme[key] = value;
+          }
+        }
+      });
     }
-    if (template.theme?.footerBannerImage && typeof template.theme.footerBannerImage === "string") {
-      cleanTheme.footerBannerImage = template.theme.footerBannerImage;
-    }
+
+    // When editing: only include bannerImage in payload if we're updating it; omit when unchanged so backend keeps existing
+    const shouldUpdateBanner = (template as any)._shouldUpdateBannerImage !== false;
+    const bannerForPayload =
+      isEditFormBuilderMode && !shouldUpdateBanner
+        ? undefined
+        : (normalizedBannerImage ?? null);
+
     const payload = {
       registration_form_template: {
         name: template.title.trim() || "Custom Form",
@@ -538,27 +588,40 @@ const RegistrationForm = ({
           fields,
           formBuilderData: {
             formData: fields,
-            ...(normalizedBannerImage ? { bannerImage: normalizedBannerImage } : {}),
+            ...(bannerForPayload !== undefined ? { bannerImage: bannerForPayload } : {}),
             theme: cleanTheme,
             languageMode: template.formBuilderData?.languageMode ?? "single",
             primaryLanguage: template.formBuilderData?.primaryLanguage,
           },
-          ...(normalizedBannerImage ? { bannerImage: normalizedBannerImage } : {}),
+          ...(bannerForPayload !== undefined ? { bannerImage: bannerForPayload } : {}),
           theme: cleanTheme,
         },
       },
     };
+
     if (isEditFormBuilderMode && editingFormBuilderTemplate?.id) {
       await updateRegistrationFormTemplate(effectiveEventId, editingFormBuilderTemplate.id, payload);
-      if (normalizedBannerImage && (template as any)._shouldUpdateBannerImage !== false) {
+
+      const imagesToUpdate: Array<{ image_name: "banner_image" | "form_background_image" | "footer_image"; base64_data: string }> = [];
+      if (shouldUpdateBanner && normalizedBannerImage && typeof normalizedBannerImage === "string" && isBase64DataUrl(normalizedBannerImage)) {
+        imagesToUpdate.push({ image_name: "banner_image", base64_data: normalizedBannerImage });
+      }
+      if (cleanTheme.formBackgroundImage && typeof cleanTheme.formBackgroundImage === "string" && cleanTheme.formBackgroundImage.trim() !== "") {
+        imagesToUpdate.push({ image_name: "form_background_image", base64_data: cleanTheme.formBackgroundImage });
+      }
+      if ((cleanTheme.footerImage || cleanTheme.footerBannerImage) && typeof (cleanTheme.footerImage || cleanTheme.footerBannerImage) === "string" && (cleanTheme.footerImage || cleanTheme.footerBannerImage).trim() !== "") {
+        imagesToUpdate.push({
+          image_name: "footer_image",
+          base64_data: (cleanTheme.footerImage || cleanTheme.footerBannerImage) as string,
+        });
+      }
+      if (imagesToUpdate.length > 0) {
         try {
-          await updateRegistrationFormTemplateImage(
-            effectiveEventId,
-            editingFormBuilderTemplate.id,
-            "banner_image",
-            normalizedBannerImage
-          );
-        } catch (_) {}
+          await updateRegistrationFormTemplateImages(effectiveEventId, editingFormBuilderTemplate.id, imagesToUpdate);
+        } catch (imageError: any) {
+          console.error("Error updating template images:", imageError);
+          showNotification("Template saved, but one or more image updates failed. You can try updating images again.", "warning");
+        }
       }
     } else {
       const createRes = await createRegistrationFormTemplate(effectiveEventId, payload);
@@ -581,17 +644,35 @@ const RegistrationForm = ({
       languageConfig?: FormLanguageConfig,
     ) => {
       if (!effectiveEventId) return;
+
+      // When editing: if banner is unchanged (still the original URL), don't send to API so backend keeps existing image
+      const originalBannerImage =
+        isEditFormBuilderMode && editingFormBuilderTemplate
+          ? editingFormBuilderTemplate.bannerImage ?? editingFormBuilderTemplate.formBuilderData?.bannerImage
+          : null;
+      const isBannerUnchanged =
+        isEditFormBuilderMode &&
+        !!originalBannerImage &&
+        bannerImage === originalBannerImage;
+
       let normalizedBanner: string | null = null;
-      if (bannerImage instanceof File) {
+      let shouldUpdateBannerImage = true;
+
+      if (isBannerUnchanged) {
+        // Preserve existing banner – don't convert or send; backend keeps stored image
+        normalizedBanner = typeof originalBannerImage === "string" ? originalBannerImage : null;
+        shouldUpdateBannerImage = false;
+      } else if (bannerImage instanceof File) {
         normalizedBanner = await new Promise<string>((res, rej) => {
           const r = new FileReader();
           r.onloadend = () => res(r.result as string);
           r.onerror = () => rej(new Error("Failed to read image"));
           r.readAsDataURL(bannerImage);
         });
-      } else if (typeof bannerImage === "string") {
+      } else if (typeof bannerImage === "string" && bannerImage.trim() !== "") {
         normalizedBanner = bannerImage;
       }
+
       const formBuilderData = {
         formData: customFields,
         bannerImage: normalizedBanner,
@@ -610,13 +691,13 @@ const RegistrationForm = ({
         updatedAt: new Date().toISOString(),
         isCustom: true,
       };
-      (templateData as any)._shouldUpdateBannerImage = true;
+      (templateData as any)._shouldUpdateBannerImage = shouldUpdateBannerImage;
       await handleSaveFormBuilderTemplate(templateData);
       setIsCustomFormBuilderOpen(false);
       setEditingFormBuilderTemplate(null);
       setIsEditFormBuilderMode(false);
     },
-    [effectiveEventId, editingFormBuilderTemplate, handleSaveFormBuilderTemplate, convertFormBuilderToFieldsForValidation]
+    [effectiveEventId, editingFormBuilderTemplate, isEditFormBuilderMode, handleSaveFormBuilderTemplate, convertFormBuilderToFieldsForValidation]
   );
 
   const handleEditFormBuilderTemplate = useCallback((template: CustomFormTemplate) => {

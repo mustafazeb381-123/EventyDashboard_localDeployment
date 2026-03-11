@@ -259,10 +259,7 @@ function UserRegistration() {
           // It's a custom form builder template
           console.log("✅ Custom form builder template detected");
 
-          // Merge logo into theme - logo can be in theme or in attributes
           const themeData = formTemplateData.theme || {};
-          const logoFromAttributes = defaultTemplate.attributes?.logo || null;
-          const logoFromTheme = themeData.logo || null;
 
           // Banner can be stored either on attributes (older) or inside form_template_data (newer/custom builder)
           const bannerFromTemplateData =
@@ -274,23 +271,17 @@ function UserRegistration() {
           const finalBannerImage =
             bannerFromTemplateData || bannerFromAttributes || null;
 
-          // Merge API attributes into theme so background image shows (API stores form_background_image on template)
+          // Merge API attributes into theme (API returns form_background_image, footer_image on template)
           const formBgFromAttrs = defaultTemplate.attributes?.form_background_image ?? null;
-          const footerBannerFromAttrs = defaultTemplate.attributes?.footer_banner_image ?? null;
+          const footerFromAttrs =
+            defaultTemplate.attributes?.footer_image ??
+            defaultTemplate.attributes?.footer_banner_image ??
+            null;
           const finalTheme = {
             ...themeData,
-            logo: logoFromAttributes || logoFromTheme || null,
             formBackgroundImage: formBgFromAttrs ?? themeData.formBackgroundImage ?? null,
-            footerBannerImage: footerBannerFromAttrs ?? themeData.footerBannerImage ?? null,
+            footerBannerImage: footerFromAttrs ?? themeData.footerBannerImage ?? null,
           };
-
-          console.log("🎨 Logo setup for custom template:", {
-            logoFromAttributes,
-            logoFromTheme,
-            finalLogo: finalTheme.logo,
-            hasBannerImage: !!defaultTemplate.attributes?.banner_image,
-            themeKeys: Object.keys(finalTheme),
-          });
 
           // Transform form data to update "about" field placeholder
           const formDataArray =
@@ -340,8 +331,7 @@ function UserRegistration() {
               formData: transformedFormData,
             },
             bannerImage: finalBannerImage,
-            logo: logoFromAttributes || logoFromTheme || null,
-            theme: finalTheme, // Theme now includes logo
+            theme: finalTheme,
           });
           setTemplateData(null); // Clear old template data
         } else {
@@ -820,8 +810,6 @@ function UserRegistration() {
 
     console.log("🎨 Passing theme to FormBuilderTemplateForm:", {
       hasTheme: !!customFormBuilderTemplate.theme,
-      hasLogo: !!customFormBuilderTemplate.theme?.logo,
-      logo: customFormBuilderTemplate.theme?.logo,
       hasBannerImage: !!customFormBuilderTemplate.bannerImage,
       themeKeys: customFormBuilderTemplate.theme
         ? Object.keys(customFormBuilderTemplate.theme)

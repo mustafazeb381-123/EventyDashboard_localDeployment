@@ -16,7 +16,7 @@ import {
   getRegistrationFormTemplates,
   createRegistrationFormTemplate,
   updateRegistrationFormTemplate,
-  updateRegistrationFormTemplateImage,
+  updateRegistrationFormTemplateImages,
   deleteRegistrationFormTemplate,
   setRegistrationFormTemplateAsDefault,
   createEventUser,
@@ -2545,6 +2545,7 @@ const AdvanceRegistration = ({
         themeFromFormData.formBackgroundImage ??
         null,
       footerBannerImage:
+        attrs.footer_image ??
         attrs.footer_banner_image ??
         themeFromFormData.footerBannerImage ??
         null,
@@ -3227,8 +3228,12 @@ const AdvanceRegistration = ({
         })),
       });
 
+      // On update, do not send image URLs in theme (backend would overwrite stored attachments). Only send base64 data URLs.
+      const isBase64DataUrl = (s: string | undefined) =>
+        typeof s === "string" && s.trim() !== "" && s.startsWith("data:");
+
       // Clean theme object - only include string values, exclude File objects and null
-      // For new templates, normalizedTheme can be undefined; ensure we always send a valid theme object
+      // On UPDATE: do not send image URLs in theme (backend would overwrite stored attachments and clear them)
       const cleanTheme: any = {
         formBackgroundColor: "#ffffff",
         formPadding: "24px",
@@ -3236,19 +3241,22 @@ const AdvanceRegistration = ({
         secondaryColor: "#10B981",
       };
       if (normalizedTheme) {
-        // Only include formBackgroundImage if it's a base64 string (not File or null)
+        // Only include formBackgroundImage if it's base64 (not a stored URL); on update, omit URLs so backend keeps existing image
         if (
           normalizedTheme.formBackgroundImage &&
-          typeof normalizedTheme.formBackgroundImage === "string"
+          typeof normalizedTheme.formBackgroundImage === "string" &&
+          isBase64DataUrl(normalizedTheme.formBackgroundImage)
         ) {
           cleanTheme.formBackgroundImage = normalizedTheme.formBackgroundImage;
         }
-        // Only include footerBannerImage if it's a base64 string (not File or null)
+        // Only include footer image if it's base64; API expects footerImage in theme body
         if (
           normalizedTheme.footerBannerImage &&
-          typeof normalizedTheme.footerBannerImage === "string"
+          typeof normalizedTheme.footerBannerImage === "string" &&
+          isBase64DataUrl(normalizedTheme.footerBannerImage)
         ) {
           cleanTheme.footerBannerImage = normalizedTheme.footerBannerImage;
+          cleanTheme.footerImage = normalizedTheme.footerBannerImage;
         }
         // Include color properties
         cleanTheme.primaryColor =
@@ -3256,21 +3264,32 @@ const AdvanceRegistration = ({
         cleanTheme.secondaryColor =
           normalizedTheme.buttonHoverBackgroundColor || "#10B981";
 
-        // Include other string-based theme properties (exclude File objects)
+        // Include other string-based theme properties (exclude File objects and image URLs)
+        const imageThemeKeys = [
+          "formBackgroundImage",
+          "footerBannerImage",
+          "footerImage",
+        ];
         Object.keys(normalizedTheme).forEach((key) => {
+          if (imageThemeKeys.includes(key)) return; // Only set above when base64; never copy URL
           const value = normalizedTheme[key as keyof FormTheme];
-          // Skip if it's a File, Blob, or null
           if (
             value != null &&
             !(value instanceof File) &&
             !(value instanceof Blob)
           ) {
-            // Only include string, number, boolean values
             if (
               typeof value === "string" ||
               typeof value === "number" ||
               typeof value === "boolean"
             ) {
+              // Never send image URLs in theme (backend overwrites stored attachments)
+              if (
+                typeof value === "string" &&
+                (value.startsWith("http://") || value.startsWith("https://"))
+              ) {
+                return;
+              }
               cleanTheme[key] = value;
             }
           }
@@ -3392,108 +3411,67 @@ const AdvanceRegistration = ({
         );
         console.log("Template updated successfully:", response);
 
-        // Check if banner image should be updated
-        // If _shouldUpdateBannerImage is false, banner is unchanged - skip update and preserve existing
+        // Batch update images via PATCH (banner_image, form_background_image, footer_image). Only send base64 entries so existing images are preserved when unchanged.
         const shouldUpdateBanner =
           (template as any)._shouldUpdateBannerImage !== false;
 
-        console.log("Banner update check:", {
-          shouldUpdateBanner,
-          flagValue: (template as any)._shouldUpdateBannerImage,
-          hasNormalizedBanner: !!normalizedBannerImage,
-        });
+        const imagesToUpdate: Array<{
+          image_name: "banner_image" | "form_background_image" | "footer_image";
+          base64_data: string;
+        }> = [];
 
         if (shouldUpdateBanner) {
-          if (
-            normalizedBannerImage &&
-            typeof normalizedBannerImage === "string" &&
-            normalizedBannerImage.trim() !== ""
-          ) {
-            try {
-              console.log("Updating banner image using update_image endpoint");
-              await updateRegistrationFormTemplateImage(
-                effectiveEventId,
-                editingFormBuilderTemplate.id,
-                "banner_image",
-                normalizedBannerImage,
-              );
-              console.log("✅ Banner image updated successfully");
-            } catch (imageError: any) {
-              console.error("❌ Error updating banner image:", imageError);
-              // Don't fail the entire save if image update fails
-              showNotification(
-                "Template updated, but banner image update failed. Please try updating the image separately.",
-                "warning",
-              );
-            }
-          } else if (normalizedBannerImage === null) {
-            // User explicitly removed the banner - clear it on the server
-            try {
-              console.log("Clearing banner image (user removed)");
-              await updateRegistrationFormTemplateImage(
-                effectiveEventId,
-                editingFormBuilderTemplate.id,
-                "banner_image",
-                "",
-              );
-              console.log("✅ Banner image cleared successfully");
-            } catch (clearError: any) {
-              console.error("❌ Error clearing banner image:", clearError);
-              showNotification(
-                "Banner was removed from this template, but clearing it on the server failed. You may still see the old image until the backend supports clearing.",
-                "warning",
-              );
-            }
-          }
-        } else {
-          console.log(
-            "✅ Banner image unchanged - preserving existing banner (no API call needed)",
-          );
+          imagesToUpdate.push({
+            image_name: "banner_image",
+            base64_data:
+              typeof normalizedBannerImage === "string" &&
+              normalizedBannerImage.trim() !== ""
+                ? normalizedBannerImage
+                : "",
+          });
         }
-
-        // Update form background image if it exists in theme
         if (
           cleanTheme.formBackgroundImage &&
           typeof cleanTheme.formBackgroundImage === "string" &&
           cleanTheme.formBackgroundImage.trim() !== ""
         ) {
-          try {
-            console.log(
-              "Updating form background image using update_image endpoint",
-            );
-            await updateRegistrationFormTemplateImage(
-              effectiveEventId,
-              editingFormBuilderTemplate.id,
-              "form_background_image",
-              cleanTheme.formBackgroundImage,
-            );
-            console.log("✅ Form background image updated successfully");
-          } catch (imageError: any) {
-            console.error(
-              "❌ Error updating form background image:",
-              imageError,
-            );
-            // Don't fail the entire save if image update fails
-          }
+          imagesToUpdate.push({
+            image_name: "form_background_image",
+            base64_data: cleanTheme.formBackgroundImage,
+          });
+        }
+        if (
+          (cleanTheme.footerImage || cleanTheme.footerBannerImage) &&
+          typeof (cleanTheme.footerImage || cleanTheme.footerBannerImage) ===
+            "string" &&
+          (cleanTheme.footerImage || cleanTheme.footerBannerImage).trim() !== ""
+        ) {
+          imagesToUpdate.push({
+            image_name: "footer_image",
+            base64_data:
+              (cleanTheme.footerImage || cleanTheme.footerBannerImage) as string,
+          });
         }
 
-        // Update footer banner image if it exists in theme
-        if (
-          cleanTheme.footerBannerImage &&
-          typeof cleanTheme.footerBannerImage === "string" &&
-          cleanTheme.footerBannerImage.trim() !== ""
-        ) {
+        if (imagesToUpdate.length > 0) {
           try {
-            await updateRegistrationFormTemplateImage(
+            await updateRegistrationFormTemplateImages(
               effectiveEventId,
               editingFormBuilderTemplate.id,
-              "footer_banner_image",
-              cleanTheme.footerBannerImage,
+              imagesToUpdate,
             );
-            console.log("✅ Footer banner image updated successfully");
+            console.log("✅ Template images updated:", imagesToUpdate.map((i) => i.image_name));
           } catch (imageError: any) {
-            console.error("❌ Error updating footer banner image:", imageError);
+            console.error("❌ Error updating template images:", imageError);
+            showNotification(
+              "Template saved, but one or more image updates failed. You can try updating images again.",
+              "warning",
+            );
           }
+        } else if (shouldUpdateBanner && normalizedBannerImage === null) {
+          console.log(
+            "✅ Banner image unchanged - preserving existing (no base64 to send)",
+          );
         }
       } else {
         // Create new template
