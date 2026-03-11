@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,8 +8,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const VAT_RATE = 0.15;
-const VAT_ERROR_MSG =
-  "Saudi VAT number must start and end with 3.";
 
 type BillingType = "individual" | "company";
 type SupportLevel = "none" | "basic" | "standard" | "premium";
@@ -36,6 +35,7 @@ const Payment: React.FC<PaymentProps> = ({
   totalSteps = 0,
 }) => {
   const { company: companySlug } = useParams<{ company?: string }>();
+  const { t } = useTranslation("dashboard");
   const [contact] = useState(DEFAULT_CONTACT);
   const [billingType, setBillingType] = useState<BillingType>("individual");
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -54,7 +54,7 @@ const Payment: React.FC<PaymentProps> = ({
   const [needSupportContact, setNeedSupportContact] = useState(false);
   const [supportLevel, setSupportLevel] = useState<SupportLevel>("none");
 
-  const planName = "Standard Plan";
+  const planName = t("expressEvent.standardPlan");
   const planPrice = 99;
   const supportLevelPrice: Record<SupportLevel, number> = {
     none: 0,
@@ -83,7 +83,7 @@ const Payment: React.FC<PaymentProps> = ({
       return;
     }
     if (!validateSaudiVat(value)) {
-      setVatError(VAT_ERROR_MSG);
+      setVatError(t("expressEvent.vatError"));
     } else {
       setVatError("");
     }
@@ -132,7 +132,7 @@ const Payment: React.FC<PaymentProps> = ({
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-semibold tabular-nums">
             01
           </div>
-          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Plan</span>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">{t("expressEvent.plan")}</span>
         </div>
         <div className="flex-1 h-0.5 mt-5 mx-1 bg-gray-300 rounded" aria-hidden />
         {/* 02 Billing */}
@@ -140,7 +140,7 @@ const Payment: React.FC<PaymentProps> = ({
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-pink-500 text-white flex items-center justify-center text-sm font-semibold tabular-nums shadow-md">
             02
           </div>
-          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Billing</span>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">{t("expressEvent.billing")}</span>
         </div>
         <div className="flex-1 h-0.5 mt-5 mx-1 bg-gray-300 rounded" aria-hidden />
         {/* 03 Payment */}
@@ -148,7 +148,7 @@ const Payment: React.FC<PaymentProps> = ({
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-amber-200 text-amber-900 flex items-center justify-center text-sm font-semibold tabular-nums">
             03
           </div>
-          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Payment</span>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">{t("expressEvent.paymentStep")}</span>
         </div>
         <div className="flex-1 h-0.5 mt-5 mx-1 bg-gray-300 rounded" aria-hidden />
         {/* 04 Confirmation */}
@@ -156,12 +156,12 @@ const Payment: React.FC<PaymentProps> = ({
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-sky-200 text-sky-900 flex items-center justify-center text-sm font-semibold tabular-nums">
             04
           </div>
-          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">Confirmation</span>
+          <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">{t("expressEvent.confirmation")}</span>
         </div>
       </div>
 
       <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-        Billing & Checkout
+        {t("expressEvent.billingAndCheckout")}
       </h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
@@ -170,19 +170,19 @@ const Payment: React.FC<PaymentProps> = ({
           {/* Contact Summary */}
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-4">
-              Contact Summary
+              {t("expressEvent.contactSummary")}
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
               <div>
-                <span className="text-gray-500 block mb-0.5">Name</span>
+                <span className="text-gray-500 block mb-0.5">{t("expressEvent.nameLabel")}</span>
                 <span className="text-gray-900 font-medium">{contact.name}</span>
               </div>
               <div>
-                <span className="text-gray-500 block mb-0.5">Email</span>
+                <span className="text-gray-500 block mb-0.5">{t("expressEvent.emailLabel")}</span>
                 <span className="text-gray-900 font-medium">{contact.email}</span>
               </div>
               <div>
-                <span className="text-gray-500 block mb-0.5">Phone</span>
+                <span className="text-gray-500 block mb-0.5">{t("expressEvent.phoneLabel")}</span>
                 <span className="text-gray-900 font-medium">{contact.phone}</span>
               </div>
             </div>
@@ -190,14 +190,14 @@ const Payment: React.FC<PaymentProps> = ({
               to={companySlug ? `/${companySlug}` : "/"}
               className="inline-block mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
             >
-              Edit Profile
+              {t("expressEvent.editProfile")}
             </Link>
           </div>
 
           {/* Billing Type + Selected Add-ons */}
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-3">
-              Billing Type
+              {t("expressEvent.billingType")}
             </h2>
             <div className="flex gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -208,7 +208,7 @@ const Payment: React.FC<PaymentProps> = ({
                   onChange={() => setBillingType("individual")}
                   className="w-4 h-4 text-blue-600"
                 />
-                <span className="text-gray-800">Individual</span>
+                <span className="text-gray-800">{t("expressEvent.individual")}</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -218,13 +218,13 @@ const Payment: React.FC<PaymentProps> = ({
                   onChange={() => setBillingType("company")}
                   className="w-4 h-4 text-blue-600"
                 />
-                <span className="text-gray-800">Company</span>
+                <span className="text-gray-800">{t("expressEvent.company")}</span>
               </label>
             </div>
 
             <div className="mt-6 pt-5 border-t border-gray-100">
               <h3 className="text-base font-semibold text-gray-800 mb-3">
-                Selected Add-ons
+                {t("expressEvent.selectedAddons")}
               </h3>
               {/* <div className="flex flex-wrap items-center gap-3">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -251,7 +251,7 @@ const Payment: React.FC<PaymentProps> = ({
           {/* Billing Information (Company) */}
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-4">
-              Billing Information
+              {t("expressEvent.billingInformation")}
             </h2>
             <div className="flex gap-4 mb-4">
               <button
@@ -263,7 +263,7 @@ const Payment: React.FC<PaymentProps> = ({
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                Individual
+                {t("expressEvent.individual")}
               </button>
               <button
                 type="button"
@@ -274,7 +274,7 @@ const Payment: React.FC<PaymentProps> = ({
                     : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                 }`}
               >
-                Company
+                {t("expressEvent.company")}
               </button>
             </div>
 
@@ -282,7 +282,7 @@ const Payment: React.FC<PaymentProps> = ({
               <div className="space-y-4 pt-2">
                 <div>
                   <Label htmlFor="billingName" className="text-gray-700 text-sm">
-                    {billingType === "individual" ? "Person Name *" : "Company Name *"}
+                    {billingType === "individual" ? t("expressEvent.personName") : t("expressEvent.companyName")}
                   </Label>
                   <Input
                     id="billingName"
@@ -296,7 +296,7 @@ const Payment: React.FC<PaymentProps> = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <Label htmlFor="vatNumber" className="text-gray-700 text-sm">
-                        VAT Number *
+                        {t("expressEvent.vatNumber")}
                       </Label>
                       <span
                         className="text-gray-400 cursor-help"
@@ -325,38 +325,38 @@ const Payment: React.FC<PaymentProps> = ({
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-700 text-sm">Country *</Label>
+                    <Label className="text-gray-700 text-sm">{t("expressEvent.country")}</Label>
                     <select
                       value={country}
                       onChange={(e) => setCountry(e.target.value)}
                       className="mt-1.5 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm"
                     >
                       <option value="">-</option>
-                      <option value="SA">Saudi Arabia</option>
-                      <option value="AE">UAE</option>
-                      <option value="KW">Kuwait</option>
-                      <option value="BH">Bahrain</option>
-                      <option value="OM">Oman</option>
+                      <option value="SA">{t("expressEvent.saudiArabia")}</option>
+                      <option value="AE">{t("expressEvent.uae")}</option>
+                      <option value="KW">{t("expressEvent.kuwait")}</option>
+                      <option value="BH">{t("expressEvent.bahrain")}</option>
+                      <option value="OM">{t("expressEvent.oman")}</option>
                     </select>
                   </div>
                   <div>
-                    <Label className="text-gray-700 text-sm">City *</Label>
+                    <Label className="text-gray-700 text-sm">{t("expressEvent.city")}</Label>
                     <select
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
                       className="mt-1.5 h-10 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm"
                     >
                       <option value="">-</option>
-                      <option value="RUH">Riyadh</option>
-                      <option value="JED">Jeddah</option>
-                      <option value="DMM">Dammam</option>
-                      <option value="MEC">Mecca</option>
+                      <option value="RUH">{t("expressEvent.riyadh")}</option>
+                      <option value="JED">{t("expressEvent.jeddah")}</option>
+                      <option value="DMM">{t("expressEvent.dammam")}</option>
+                      <option value="MEC">{t("expressEvent.mecca")}</option>
                     </select>
                   </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-700 text-sm">District *</Label>
+                    <Label className="text-gray-700 text-sm">{t("expressEvent.district")}</Label>
                     <Input
                       value={district}
                       onChange={(e) => setDistrict(e.target.value)}
@@ -365,7 +365,7 @@ const Payment: React.FC<PaymentProps> = ({
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700 text-sm">Building No *</Label>
+                    <Label className="text-gray-700 text-sm">{t("expressEvent.buildingNo")}</Label>
                     <Input
                       value={buildingNo}
                       onChange={(e) => setBuildingNo(e.target.value)}
@@ -376,7 +376,7 @@ const Payment: React.FC<PaymentProps> = ({
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-700 text-sm">Postal Code *</Label>
+                    <Label className="text-gray-700 text-sm">{t("expressEvent.postalCode")}</Label>
                     <Input
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
@@ -386,7 +386,7 @@ const Payment: React.FC<PaymentProps> = ({
                   </div>
                   <div className="sm:col-span-2">
                     <Label className="text-gray-700 text-sm">
-                      Additional Info (Optional)
+                      {t("expressEvent.additionalInfo")}
                     </Label>
                     <Input
                       value={additionalInfo}
@@ -403,7 +403,7 @@ const Payment: React.FC<PaymentProps> = ({
           {/* Additional Services */}
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6">
             <h2 className="text-base font-semibold text-gray-800 mb-4">
-              Additional Services
+              {t("expressEvent.additionalServices")}
             </h2>
             <div className="space-y-4">
               <label className="flex items-start gap-3 cursor-pointer">
@@ -412,12 +412,12 @@ const Payment: React.FC<PaymentProps> = ({
                   onCheckedChange={(c) => setNeedSupportContact(c === true)}
                 />
                 <span className="text-gray-800 text-sm pt-0.5">
-                  Need our team to manage the event setup?
+                  {t("expressEvent.needTeamManage")}
                 </span>
               </label>
               <div>
                 <Label className="text-gray-700 text-sm block mb-2">
-                  Support Level
+                  {t("expressEvent.supportLevel")}
                 </Label>
                 <select
                   value={supportLevel}
@@ -426,10 +426,10 @@ const Payment: React.FC<PaymentProps> = ({
                   }
                   className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm w-full max-w-xs"
                 >
-                  <option value="none">None</option>
-                  <option value="basic">Basic Support</option>
-                  <option value="standard">Standard Support</option>
-                  <option value="premium">Premium Support</option>
+                  <option value="none">{t("expressEvent.none")}</option>
+                  <option value="basic">{t("expressEvent.basicSupport")}</option>
+                  <option value="standard">{t("expressEvent.standardSupport")}</option>
+                  <option value="premium">{t("expressEvent.premiumSupport")}</option>
                 </select>
               </div>
             </div>
@@ -440,16 +440,16 @@ const Payment: React.FC<PaymentProps> = ({
         <div className="lg:col-span-1">
           <div className="bg-white rounded-2xl border border-gray-200/80 shadow-sm p-5 md:p-6 sticky top-24">
             <h2 className="text-lg font-semibold text-gray-900 mb-5">
-              Order Summary
+              {t("expressEvent.orderSummary")}
             </h2>
             <ul className="space-y-2 text-sm text-gray-700">
               <li>
-                <span className="font-medium text-gray-800">Plan:</span>{" "}
+                <span className="font-medium text-gray-800">{t("expressEvent.plan")}:</span>{" "}
                 {planName} – ${planPrice}/mo
               </li>
               <li>
-                <span className="font-medium text-gray-800">Billing Type:</span>{" "}
-                {billingType === "individual" ? "Individual" : "Company"}
+                <span className="font-medium text-gray-800">{t("expressEvent.billingType")}:</span>{" "}
+                {billingType === "individual" ? t("expressEvent.individual") : t("expressEvent.company")}
               </li>
               {/* {badgePrinting && (
                 <li>
@@ -458,21 +458,21 @@ const Payment: React.FC<PaymentProps> = ({
                 </li>
               )} */}
               <li>
-                <span className="font-medium text-gray-800">Venue & Timing:</span>{" "}
+                <span className="font-medium text-gray-800">{t("expressEvent.venueTiming")}:</span>{" "}
                 1 Day
               </li>
             </ul>
             <div className="mt-5 pt-4 border-t border-gray-200 space-y-2">
               <div className="flex justify-between text-sm text-gray-700">
-                <span>Subtotal</span>
+                <span>{t("expressEvent.subtotal")}</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-700">
-                <span>VAT (15%)</span>
+                <span>{t("expressEvent.vatPercent")}</span>
                 <span>${vatAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold text-gray-900 pt-2">
-                <span>Total</span>
+                <span>{t("expressEvent.total")}</span>
                 <span>${totalAmount.toFixed(2)}</span>
               </div>
             </div>
@@ -487,7 +487,7 @@ const Payment: React.FC<PaymentProps> = ({
                 htmlFor="terms"
                 className="text-sm text-gray-600 cursor-pointer leading-tight"
               >
-                I agree to the Terms of Service and Privacy Policy
+                {t("expressEvent.agreeTerms")}
               </Label>
             </div>
 
@@ -496,11 +496,11 @@ const Payment: React.FC<PaymentProps> = ({
               disabled={!canPay}
               className="w-full mt-4 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none rounded-xl"
             >
-              Pay Now
+              {t("expressEvent.payNow")}
             </Button>
 
             <div className="mt-5 pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-500 mb-2">Payment methods</p>
+              <p className="text-xs text-gray-500 mb-2">{t("expressEvent.paymentMethods")}</p>
               <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-[10px] font-semibold px-2 py-1 rounded bg-gray-100 text-gray-600">
                   VISA
@@ -528,16 +528,16 @@ const Payment: React.FC<PaymentProps> = ({
           className="flex items-center gap-2 rounded-lg"
         >
           <ChevronLeft size={20} />
-          Previous
+          {t("expressEvent.previous")}
         </Button>
         <span className="text-sm text-gray-500">
-          Step {currentStep + 1} of {totalSteps}
+          {t("expressEvent.stepOf", { current: currentStep + 1, total: totalSteps })}
         </span>
         <Button
           onClick={() => onNext()}
           className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 rounded-lg"
         >
-          Next
+          {t("expressEvent.next")}
           <ChevronRight size={20} />
         </Button>
       </div>

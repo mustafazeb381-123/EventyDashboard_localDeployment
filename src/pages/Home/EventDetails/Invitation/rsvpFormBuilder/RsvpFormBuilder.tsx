@@ -24,25 +24,13 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField, RsvpTheme, RsvpLanguageConfig } from "./types";
 import { getDefaultRsvpFormFields, createRsvpFormField } from "./types";
 import { RsvpTextStylingPanel } from "./RsvpTextStylingPanel";
 import { RsvpThemeConfigPanel } from "./RsvpThemeConfigPanel";
 import { RsvpFormPreview } from "./RsvpFormPreview";
 import { RsvpFieldPalette } from "./RsvpFieldPalette";
-
-const AVAILABLE_VARIABLES = [
-  { label: "First Name", value: "((firstname))" },
-  { label: "Last Name", value: "{{lastname}}" },
-  { label: "Full Name", value: "{{fullname}}" },
-  { label: "Email", value: "{{email}}" },
-  { label: "Company", value: "{{comapny}}" },
-  { label: "Organization", value: "{{organization}}" },
-  { label: "Event Name", value: "{{eventname}}" },
-  { label: "Event Location", value: "{{eventlocation}}" },
-  { label: "Event Start", value: "{{eventstart}}" },
-  { label: "Event End", value: "{{eventend}}" },
-];
 
 /** Draggable variable button: click adds to form, drag-and-drop onto page or into containers */
 function DraggableVariableButton({
@@ -214,6 +202,19 @@ export const RsvpFormBuilder: React.FC<RsvpFormBuilderProps> = ({
   onSave,
   onClose,
 }) => {
+  const { t } = useTranslation("dashboard");
+  const AVAILABLE_VARIABLES = [
+    { label: t("invitation.firstName"), value: "((firstname))" },
+    { label: t("invitation.lastName"), value: "{{lastname}}" },
+    { label: t("invitation.fullName"), value: "{{fullname}}" },
+    { label: t("invitation.email"), value: "{{email}}" },
+    { label: t("invitation.company"), value: "{{comapny}}" },
+    { label: t("invitation.organization"), value: "{{organization}}" },
+    { label: t("invitation.eventName"), value: "{{eventname}}" },
+    { label: t("invitation.eventLocation"), value: "{{eventlocation}}" },
+    { label: t("invitation.eventStart"), value: "{{eventstart}}" },
+    { label: t("invitation.eventEnd"), value: "{{eventend}}" },
+  ];
   const [formFields, setFormFields] = useState<RsvpFormField[]>(() =>
     initialFormFields?.length ? initialFormFields : getDefaultRsvpFormFields()
   );

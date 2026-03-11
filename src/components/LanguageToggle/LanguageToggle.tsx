@@ -1,6 +1,7 @@
-// src/components/LanguageToggle.jsx
+// src/components/LanguageToggle.tsx
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { updateDirection } from "../../utils/i18n";
 
 const LanguageToggle = () => {
   const { i18n } = useTranslation();
@@ -8,15 +9,16 @@ const LanguageToggle = () => {
   const toggleLanguage = () => {
     const newLang = i18n.language === "en" ? "ar" : "en";
     i18n.changeLanguage(newLang);
-
-    // Optional: Set direction for Arabic
-    document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
+    // updateDirection is also called by the i18n languageChanged listener,
+    // but we call it here to ensure immediate visual update
+    updateDirection(newLang);
   };
 
   return (
     <button
       onClick={toggleLanguage}
-      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition cursor-pointer"
+      className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer text-sm font-medium"
+      title={i18n.language === "en" ? "Switch to Arabic" : "التبديل إلى الإنجليزية"}
     >
       {i18n.language === "en" ? "العربية" : "English"}
     </button>

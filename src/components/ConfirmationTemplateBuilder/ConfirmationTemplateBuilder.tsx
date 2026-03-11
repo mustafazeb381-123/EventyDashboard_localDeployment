@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { DndContext, PointerSensor, useSensor, useSensors, useDraggable } from "@dnd-kit/core";
 import type { DragEndEvent } from "@dnd-kit/core";
 import {
@@ -102,6 +103,7 @@ function ColorPickerField({
   onChange: (hex: string | undefined) => void;
   placeholder?: string;
 }) {
+  const { t } = useTranslation("dashboard");
   const hex = value?.trim() || "";
   const normalized = toHexColor(hex) || (hex.startsWith("#") ? hex : undefined);
   const pickerValue = normalized || "#808080";
@@ -112,7 +114,7 @@ function ColorPickerField({
         value={pickerValue}
         onChange={(e) => onChange(e.target.value || undefined)}
         className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer bg-white p-0.5 shrink-0"
-        title="Pick color"
+        title={t("expressEvent.confirmationBuilder.pickColor")}
       />
       <input
         type="text"
@@ -198,6 +200,7 @@ function OrderListItem({
   onMoveDown,
   onRemove,
 }: OrderListItemProps) {
+  const { t } = useTranslation("dashboard");
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({
     id: block.id,
     data: { kind: "block", index },
@@ -218,7 +221,7 @@ function OrderListItem({
       <GripVertical size={14} className="text-gray-400 shrink-0" />
       <span className="text-sm text-gray-700 truncate flex-1 min-w-0">
         {block.type === "custom_text"
-          ? (block.text || "Custom text").slice(0, 20) +
+          ? (block.text || t("expressEvent.confirmationBuilder.customText")).slice(0, 20) +
             (block.text && block.text.length > 20 ? "…" : "")
           : BLOCK_LABELS[block.type]}
       </span>
@@ -231,7 +234,7 @@ function OrderListItem({
           onClick={onMoveUp}
           disabled={!canMoveUp}
           className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Move up"
+          aria-label={t("expressEvent.confirmationBuilder.moveUp")}
         >
           <ChevronUp size={14} />
         </button>
@@ -240,7 +243,7 @@ function OrderListItem({
           onClick={onMoveDown}
           disabled={!canMoveDown}
           className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
-          aria-label="Move down"
+          aria-label={t("expressEvent.confirmationBuilder.moveDown")}
         >
           <ChevronDown size={14} />
         </button>
@@ -248,7 +251,7 @@ function OrderListItem({
           type="button"
           onClick={onRemove}
           className="p-1 rounded hover:bg-red-50 text-red-600"
-          aria-label="Remove"
+          aria-label={t("expressEvent.confirmationBuilder.remove")}
         >
           <Trash2 size={14} />
         </button>

@@ -1,4 +1,5 @@
 import { Info } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { InvitationForm, InvitationType } from "./newInvitationTypes";
 
 type InvitationDetailsTabProps = {
@@ -18,20 +19,21 @@ export function InvitationDetailsTab({
   eventData,
   eventId,
 }: InvitationDetailsTabProps) {
+  const { t } = useTranslation("dashboard");
   return (
     <>
       <h3 className="text-base font-semibold text-slate-800 mb-6">
-        Basic information
+        {t("invitation.details.basicInformation")}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Invitation Name
+              {t("invitation.details.invitationName")}
             </label>
             <input
               type="text"
-              placeholder="e.g., Annual Conference 2025"
+              placeholder={t("invitation.details.invitationNamePlaceholder")}
               value={invitationForm.invitationName}
               onChange={(e) =>
                 setInvitationForm({
@@ -44,7 +46,7 @@ export function InvitationDetailsTab({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Communication Type
+              {t("invitation.details.communicationType")}
             </label>
             <select
               value={invitationForm.communicationType}
@@ -56,15 +58,15 @@ export function InvitationDetailsTab({
               }
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-slate-900"
             >
-              <option value="email">Email</option>
-              <option value="sms">SMS</option>
-              <option value="whatsapp">WhatsApp</option>
+              <option value="email">{t("invitation.details.emailOption")}</option>
+              <option value="sms">{t("invitation.details.smsOption")}</option>
+              <option value="whatsapp">{t("invitation.details.whatsappOption")}</option>
             </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Schedule Send At{" "}
-              <span className="text-slate-400 font-normal">(optional)</span>
+              {t("invitation.details.scheduleSendAt")}{" "}
+              <span className="text-slate-400 font-normal">({t("invitation.details.optional")})</span>
             </label>
             <input
               type="datetime-local"
@@ -78,14 +80,14 @@ export function InvitationDetailsTab({
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-slate-900"
             />
             <p className="text-xs text-slate-500 mt-1.5">
-              Leave empty to send immediately
+              {t("invitation.details.leaveEmptyToSendImmediately")}
             </p>
           </div>
         </div>
         <div className="space-y-5">
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Event
+              {t("invitation.details.event")}
             </label>
             <input
               type="text"
@@ -101,7 +103,7 @@ export function InvitationDetailsTab({
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Invitation Language
+              {t("invitation.details.invitationLanguage")}
             </label>
             <select
               value={invitationForm.language}
@@ -113,20 +115,20 @@ export function InvitationDetailsTab({
               }
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white text-slate-900"
             >
-              <option value="en">English</option>
+              <option value="en">{t("invitation.details.english")}</option>
               <option value="ar">Arabic (العربية)</option>
             </select>
             <p className="text-xs text-slate-500 mt-1.5">
-              Language for invitation links and email content (API receives: en / ar)
+              {t("invitation.details.languageDescription")}
             </p>
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1.5">
-              Email Sender
+              {t("invitation.details.emailSender")}
             </label>
             <input
               type="email"
-              placeholder="e.g. noreply@yourdomain.com"
+              placeholder={t("invitation.details.emailSenderPlaceholder")}
               value={invitationForm.emailSender}
               onChange={(e) =>
                 setInvitationForm({
@@ -137,17 +139,17 @@ export function InvitationDetailsTab({
               className="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
             />
             <p className="text-xs text-slate-500 mt-1.5">
-              Email address that will appear as the sender of invitation emails
+              {t("invitation.details.emailSenderDescription")}
             </p>
           </div>
         </div>
       </div>
       <div className="mt-8 pt-6 border-t border-slate-200 flex items-center gap-3">
-        <span className="text-sm font-medium text-slate-700">Enable RSVP?</span>
+        <span className="text-sm font-medium text-slate-700">{t("invitation.details.enableRsvp")}</span>
         <button
           type="button"
           className="p-0.5 rounded-full text-slate-400 hover:text-slate-600"
-          title="RSVP allows invitees to respond yes/no"
+          title={t("invitation.details.rsvpTooltip")}
           aria-label="Info about RSVP"
         >
           <Info className="w-4 h-4" />
@@ -168,7 +170,7 @@ export function InvitationDetailsTab({
           />
         </button>
         <span className="text-xs text-slate-500">
-          Let invitees respond yes or no
+          {t("invitation.details.letInviteesRespond")}
         </span>
       </div>
     </>

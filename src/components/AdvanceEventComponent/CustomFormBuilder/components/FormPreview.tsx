@@ -792,45 +792,19 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         );
       case "paragraph":
         const paragraphContent =
-          formData[field.name] || field.content || getTranslatedLabel(field, i18n.language || "en") || "";
+          field.content || getTranslatedLabel(field, i18n.language || "en") || "";
         return (
-          <textarea
-            value={paragraphContent}
-            onChange={(e) => {
-              setFormData((prev) => ({
-                ...prev,
-                [field.name]: e.target.value,
-              }));
-            }}
-            className="w-full text-sm resize-y"
+          <p
+            className="w-full text-sm whitespace-pre-wrap"
             style={{
-              color: theme?.textColor || "#111827",
+              color: theme?.textColor || "#6b7280",
               fontSize: theme?.textFontSize || "16px",
-              backgroundColor: theme?.inputBackgroundColor || defaultInputBg,
-              borderColor: theme?.inputBorderColor || "#d1d5db",
-              borderWidth: theme?.inputBorderWidth || "1px",
-              borderRadius: theme?.inputBorderRadius || "6px",
-              padding: theme?.inputPadding || "10px 16px",
-              outline: "none",
-              minHeight: "80px",
+              lineHeight: "1.6",
+              margin: 0,
             }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor =
-                theme?.inputFocusBorderColor || "#3b82f6";
-              e.currentTarget.style.backgroundColor =
-                theme?.inputFocusBackgroundColor ||
-                theme?.inputBackgroundColor ||
-                defaultInputBg;
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor =
-                theme?.inputBorderColor || "#d1d5db";
-              e.currentTarget.style.backgroundColor =
-                theme?.inputBackgroundColor || defaultInputBg;
-            }}
-            rows={4}
-            placeholder="Enter your paragraph"
-          />
+          >
+            {paragraphContent}
+          </p>
         );
       case "helperText":
         return (
@@ -1034,10 +1008,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                 return null;
               }
 
-              // Skip heading fields from preview
-              if (field.type === "heading") {
-                return null;
-              }
+              // Note: heading fields are NOT skipped here — they are rendered
+              // below using a dedicated wrapper that calls renderField().
 
               // Check visibility
               if (!isFieldVisible(field, formData)) {

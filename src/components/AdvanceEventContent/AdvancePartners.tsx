@@ -15,6 +15,7 @@ import {
   updatePartnerApi,
 } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
+import { useTranslation } from "react-i18next";
 
 interface AdvancePartnersProps {
   onNext?: (eventId?: string | number) => void;
@@ -48,7 +49,8 @@ function AdvancePartners({
   totalSteps = 5,
   eventId,
 }: AdvancePartnersProps) {
-  const STEP_NAMES = ["Speakers", "Exhibitors", "Partners", "Agenda", "Area"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.partners.speakers"), t("advance.partners.exhibitors"), t("advance.partners.partners"), t("advance.partners.agenda"), t("advance.partners.area")];
   // currentStep is passed from parent (0-3 for 4 steps)
   const [eventUsers, setEventUsers] = useState<Partner[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -134,11 +136,11 @@ function AdvancePartners({
           setPagination(paginationMeta);
         }
       } else {
-        showNotification("Failed to fetch partners", "error");
+        showNotification(t("advance.partners.failedToFetch"), "error");
       }
     } catch (error: any) {
       console.log("💥 GET partners error:", error);
-      showNotification("Network error: Cannot fetch partners", "error");
+      showNotification(t("advance.partners.networkErrorFetch"), "error");
     } finally {
       setIsFetchingPartners(false);
     }
@@ -184,18 +186,18 @@ function AdvancePartners({
       const response = await deletePartnerApi(eventId!, partnerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        showNotification("Partner deleted successfully!", "success");
+        showNotification(t("advance.partners.deletedSuccess"), "success");
         setIsDeleteModalOpen(false);
         setPartnerToDelete(null);
         // Refresh current page to show updated data
         fetchPartners(eventId!, currentPage);
       } else {
-        showNotification("Failed to delete partner", "error");
+        showNotification(t("advance.partners.failedToDelete"), "error");
       }
     } catch (error: any) {
       console.error("Delete partner error:", error);
       showNotification(
-        error.response?.data?.message || "Network error: Cannot delete partner",
+        error.response?.data?.message || t("advance.partners.networkErrorDelete"),
         "error"
       );
     } finally {
@@ -216,7 +218,7 @@ function AdvancePartners({
 
   const handleAddPartner = async () => {
     if (!newPartner.name) {
-      showNotification("Please fill the partner name!", "error");
+      showNotification(t("advance.partners.fillPartnerName"), "error");
       return;
     }
 
@@ -230,7 +232,7 @@ function AdvancePartners({
       }
 
       if (!eventId) {
-        showNotification("Event ID is required!", "error");
+        showNotification(t("advance.partners.eventIdRequired"), "error");
         setIsAddingPartner(false);
         return;
       }
@@ -255,7 +257,7 @@ function AdvancePartners({
           },
         };
 
-        showNotification("Partner added successfully!", "success");
+        showNotification(t("advance.partners.addedSuccess"), "success");
         // Refresh current page to show updated data
         fetchPartners(eventId, currentPage);
 
@@ -272,11 +274,11 @@ function AdvancePartners({
 
       if (error.response) {
         showNotification(
-          error.response.data?.message || "Failed to add partner",
+          error.response.data?.message || t("advance.partners.failedToAdd"),
           "error"
         );
       } else {
-        showNotification("Network error: Cannot connect to server.", "error");
+        showNotification(t("advance.partners.networkErrorConnect"), "error");
       }
     } finally {
       setIsAddingPartner(false);
@@ -287,7 +289,7 @@ function AdvancePartners({
     if (!editingPartner) return;
 
     if (!editPartnerData.name) {
-      showNotification("Please fill the partner name!", "error");
+      showNotification(t("advance.partners.fillPartnerName"), "error");
       return;
     }
 
@@ -311,7 +313,7 @@ function AdvancePartners({
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
 
-        showNotification("Partner updated successfully!", "success");
+        showNotification(t("advance.partners.updatedSuccess"), "success");
         setEditModalOpen(false);
         setEditingPartner(null);
         setEditSelectedImageFile(null);
@@ -323,7 +325,7 @@ function AdvancePartners({
     } catch (error: any) {
       console.error("Update partner error:", error);
       showNotification(
-        error.response?.data?.message || "Network error: Cannot update partner",
+        error.response?.data?.message || t("advance.partners.networkErrorUpdate"),
         "error"
       );
     } finally {
@@ -431,12 +433,12 @@ function AdvancePartners({
       <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Partners</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t("advance.partners.partners")}</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
               {isFetchingPartners ? (
                 <span className="flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading...
+                  {t("advance.partners.loading")}
                 </span>
               ) : (
                 `${eventUsers.length} Partners`
@@ -450,7 +452,7 @@ function AdvancePartners({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isFetchingPartners ? "Loading..." : "Add Partner"}
+            {isFetchingPartners ? t("advance.partners.loading") : t("advance.partners.addPartner")}
           </button>
         </div>
 
@@ -499,13 +501,13 @@ function AdvancePartners({
           </div>
         ) : eventUsers.length === 0 ? (
           <div className="text-center py-12 border border-gray-200 rounded-lg">
-            <p className="text-gray-500 mb-4">No partners found</p>
+            <p className="text-gray-500 mb-4">{t("advance.partners.noPartnersFound")}</p>
             <button
               onClick={() => setAddModalOpen(true)}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add Your First Partner
+              {t("advance.partners.addYourFirstPartner")}
             </button>
           </div>
         ) : (
@@ -618,7 +620,7 @@ function AdvancePartners({
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">
-                Add Partner
+                {t("advance.partners.addPartner")}
               </h2>
 
               <div className="space-y-4">
@@ -628,7 +630,7 @@ function AdvancePartners({
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter partner name"
+                    placeholder={t("advance.partners.enterPartnerName")}
                     value={newPartner.name}
                     onChange={(e) =>
                       setNewPartner({ ...newPartner, name: e.target.value })
@@ -688,7 +690,7 @@ function AdvancePartners({
                   disabled={isAddingPartner}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.partners.cancel")}
                 </button>
                 <button
                   onClick={handleAddPartner}
@@ -698,12 +700,12 @@ function AdvancePartners({
                   {isAddingPartner ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Adding Partner...
+                      {t("advance.partners.addingPartner")}
                     </>
                   ) : (
                     <>
                       <Plus className="w-4 h-4" />
-                      Add Partner
+                      {t("advance.partners.addPartner")}
                     </>
                   )}
                 </button>
@@ -723,7 +725,7 @@ function AdvancePartners({
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">
-                Edit Partner
+                {t("advance.partners.editPartner")}
               </h2>
 
               <div className="space-y-4">
@@ -733,7 +735,7 @@ function AdvancePartners({
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter partner name"
+                    placeholder={t("advance.partners.enterPartnerName")}
                     value={editPartnerData.name}
                     onChange={(e) =>
                       setEditPartnerData({
@@ -807,7 +809,7 @@ function AdvancePartners({
                   disabled={isUpdatingPartner}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.partners.cancel")}
                 </button>
                 <button
                   onClick={handleUpdatePartner}
@@ -817,10 +819,10 @@ function AdvancePartners({
                   {isUpdatingPartner ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Updating...
+                      {t("advance.partners.updating")}
                     </>
                   ) : (
-                    "Update Partner"
+                    t("advance.partners.updatePartner")
                   )}
                 </button>
               </div>
@@ -867,7 +869,7 @@ function AdvancePartners({
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Delete Partner
+                  {t("advance.partners.deletePartner")}
                 </h3>
                 <button
                   onClick={() => {
@@ -885,7 +887,7 @@ function AdvancePartners({
 
               <div className="mb-6">
                 <p className="text-gray-600 mb-2">
-                  Are you sure you want to delete this partner?
+                  {t("advance.partners.confirmDeletePartner")}
                 </p>
                 {partnerToDelete && (
                   <div className="bg-gray-50 p-3 rounded-lg mt-3">
@@ -895,7 +897,7 @@ function AdvancePartners({
                   </div>
                 )}
                 <p className="text-sm text-red-600 mt-3">
-                  This action cannot be undone.
+                  {t("advance.partners.cannotBeUndone")}
                 </p>
               </div>
 
@@ -908,7 +910,7 @@ function AdvancePartners({
                   disabled={isDeletingPartner !== null}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.partners.cancel")}
                 </button>
                 <button
                   onClick={confirmDelete}
@@ -918,12 +920,12 @@ function AdvancePartners({
                   {isDeletingPartner !== null ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Deleting...
+                      {t("advance.partners.deleting")}
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t("advance.partners.delete")}
                     </>
                   )}
                 </button>

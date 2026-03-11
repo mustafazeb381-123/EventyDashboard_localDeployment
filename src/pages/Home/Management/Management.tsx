@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   UserPlus,
@@ -20,6 +21,7 @@ interface TeamMember {
 }
 
 export default function Management() {
+  const { t } = useTranslation("dashboard");
   const [searchParams] = useSearchParams();
   const eventIdFromUrl = searchParams.get("eventId") ?? "";
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -94,13 +96,13 @@ export default function Management() {
               event_id: Number(eventIdFromUrl),
             });
             setToast({
-              message: "Dashboard user created and credentials emailed.",
+              message: t("management.dashboardUserCreated"),
               type: "success",
             });
           } catch (error) {
             console.error("Management - Error creating dashboard user:", error);
             setToast({
-              message: "Failed to create dashboard user.",
+              message: t("management.failedToCreateUser"),
               type: "error",
             });
           }
@@ -161,7 +163,7 @@ export default function Management() {
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <UserPlus className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Add Event Admin</h2>
+            <h2 className="text-2xl font-bold text-gray-900">{t("management.addEventAdmin")}</h2>
           </div>
 
           <form onSubmit={handleAddMember}>
@@ -176,7 +178,7 @@ export default function Management() {
                   name="name"
                   value={formData.name}
                   onChange={handleInputChange}
-                  placeholder="Type Member Name"
+                  placeholder={t("management.typeMemberName")}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-600"
                 />
               </div>
@@ -191,7 +193,7 @@ export default function Management() {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  placeholder="example@email.com"
+                  placeholder={t("management.emailPlaceholder")}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-600"
                 />
               </div>
@@ -208,10 +210,10 @@ export default function Management() {
                     onChange={handleInputChange}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent appearance-none text-gray-600 bg-white"
                   >
-                    <option value="">Select Role</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Author">Author</option>
-                    <option value="Usher">Usher</option>
+                    <option value="">{t("management.selectRole")}</option>
+                    <option value="Admin">{t("management.admin")}</option>
+                    <option value="Author">{t("management.author")}</option>
+                    <option value="Usher">{t("management.usher")}</option>
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                 </div>
@@ -225,9 +227,9 @@ export default function Management() {
                 <input
                   type="text"
                   readOnly
-                  value={eventIdFromUrl ? (currentEventLoading ? "Loading..." : currentEventName) : "No event in URL"}
+                  value={eventIdFromUrl ? (currentEventLoading ? "Loading..." : currentEventName) : t("management.noEventInUrl")}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
-                  placeholder="Open page with ?eventId=189"
+                  placeholder={t("management.openPageWithEventId")}
                 />
               </div>
             </div>
@@ -238,7 +240,7 @@ export default function Management() {
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
-                Add Member
+                {t("management.addMember")}
               </Button>
             </div>
           </form>
@@ -248,11 +250,11 @@ export default function Management() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="p-6 border-b border-gray-200">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Members List</h2>
+              <h2 className="text-xl font-bold text-gray-900">{t("management.membersList")}</h2>
               <div className="flex items-center gap-4">
                 {/* Show in page */}
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Show in page</span>
+                  <span className="text-sm text-gray-600">{t("management.showInPage")}</span>
                   <div className="relative">
                     <select className="pl-3 pr-8 py-1.5 border border-gray-300 rounded-lg text-sm appearance-none bg-white">
                       <option>10</option>
@@ -268,7 +270,7 @@ export default function Management() {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search Members..."
+                    placeholder={t("management.searchMembers")}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-4 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
@@ -292,11 +294,11 @@ export default function Management() {
                     />
                   </th>
                   <th className="px-6 py-3.5 text-left text-sm font-semibold">ID</th>
-                  <th className="px-6 py-3.5 text-left text-sm font-semibold">Name</th>
-                  <th className="px-6 py-3.5 text-left text-sm font-semibold">Email</th>
-                  <th className="px-6 py-3.5 text-left text-sm font-semibold">Role</th>
-                  <th className="px-6 py-3.5 text-left text-sm font-semibold">Event</th>
-                  <th className="px-6 py-3.5 text-left text-sm font-semibold">ACTIONS</th>
+                  <th className="px-6 py-3.5 text-left text-sm font-semibold">{t("management.name")}</th>
+                  <th className="px-6 py-3.5 text-left text-sm font-semibold">{t("management.email")}</th>
+                  <th className="px-6 py-3.5 text-left text-sm font-semibold">{t("management.role")}</th>
+                  <th className="px-6 py-3.5 text-left text-sm font-semibold">{t("management.event")}</th>
+                  <th className="px-6 py-3.5 text-left text-sm font-semibold">{t("management.actions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">

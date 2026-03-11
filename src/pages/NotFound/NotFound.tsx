@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 function NotFound() {
+  const { t } = useTranslation("dashboard");
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [stars, setStars] = useState([]);
 
@@ -102,10 +104,10 @@ function NotFound() {
         {/* 404 with glowing effect */}
         <div className="relative mb-6">
           <h1 className="text-8xl md:text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 animate-pulse">
-            404
+            {t("errors.notFound")}
           </h1>
           <div className="absolute inset-0 text-8xl md:text-9xl font-extrabold text-white opacity-10 blur-xl">
-            404
+            {t("errors.notFound")}
           </div>
         </div>
 
@@ -115,8 +117,7 @@ function NotFound() {
         </h2>
         
         <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl leading-relaxed animate-fade-in-delay">
-          The page you're looking for has drifted into deep space. 
-          Don't worry, our rescue mission is ready to take you back home!
+          {t("errors.pageNotFound")}
         </p>
 
         {/* Action buttons */}
@@ -126,7 +127,7 @@ function NotFound() {
             className="group relative px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-full transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-cyan-500/25 focus:outline-none focus:ring-4 focus:ring-cyan-300"
           >
             <span className="relative z-10 flex items-center gap-2">
-              🏠 Return to Earth
+              🏠 {t("errors.returnHome")}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </button>
@@ -136,7 +137,7 @@ function NotFound() {
             className="group relative px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-full transform transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-purple-500/25 focus:outline-none focus:ring-4 focus:ring-purple-300"
           >
             <span className="relative z-10 flex items-center gap-2">
-              🔄 Try Again
+              🔄 {t("errors.tryAgain")}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           </button>

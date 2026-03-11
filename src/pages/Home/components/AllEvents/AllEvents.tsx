@@ -1,6 +1,7 @@
 import { deleteEvent, getAllEvents } from "@/apis/apiHelpers";
 import Assets from "@/utils/Assets";
 import { useEffect, useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Trash2, Search, Grid3X3, List, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -60,7 +61,8 @@ function Pagination({
   totalPages,
   onPageChange,
   className = "",
-}: PaginationProps) {
+  t,
+}: PaginationProps & { t: (key: string) => string }) {
   if (totalPages <= 1) return null;
 
   const goToPage = (page: number) => {
@@ -76,7 +78,7 @@ function Pagination({
         disabled={currentPage === 1}
         className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
       >
-        Prev
+        {t("home.prev")}
       </button>
 
       {[...Array(totalPages)].map((_, i) => (
@@ -98,13 +100,14 @@ function Pagination({
         disabled={currentPage === totalPages}
         className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
       >
-        Next
+        {t("home.next")}
       </button>
     </div>
   );
 }
 
 function AllEvents() {
+  const { t } = useTranslation("dashboard");
   const [allEvents, setAllEvents] = useState<Event[]>([]); // all events fetched when searching
   const [filteredEvents, setFilteredEvents] = useState<Event[]>([]); // events after search filter
   const [events, setEvents] = useState<Event[]>([]); // events to display (paginated)
@@ -431,7 +434,7 @@ function AllEvents() {
     setEventToDelete(null); // Close modal
     try {
       await deleteEvent(eventId);
-      showNotification("Event deleted successfully!", "success");
+      showNotification(t("home.eventDeletedSuccess"), "success");
 
       // Refresh the events list
       if (debouncedSearch.trim()) {
@@ -570,7 +573,7 @@ function AllEvents() {
       }
     } catch (error) {
       console.error("AllEvents - Error deleting event:", error);
-      showNotification("Failed to delete event. Please try again.", "error");
+      showNotification(t("home.eventDeleteFailed"), "error");
     } finally {
       setDeletingEventId(null);
     }
@@ -598,23 +601,19 @@ function AllEvents() {
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <p className="font-poppins text-md font-medium text-neutral-900">
-                All Events
+                {t("home.allEvents")}
               </p>
               {!isLoading && (
                 <p className="text-sm text-gray-500 mt-1">
                   {searchQuery ? (
                     <>
-                      Showing {paginatedEvents.length} of{" "}
-                      {filteredEvents.length} event
-                      {filteredEvents.length !== 1 ? "s" : ""} found
+                      {t("home.showingEvents", { count: paginatedEvents.length, total: filteredEvents.length })}
                       {filteredEvents.length !== allEvents.length &&
-                        ` (${allEvents.length} total searched)`}
+                        ` (${allEvents.length})`}
                     </>
                   ) : (
                     <>
-                      Showing {paginatedEvents.length} event
-                      {paginatedEvents.length !== 1 ? "s" : ""} on page{" "}
-                      {currentPage} of {totalPages}
+                      {t("home.showingEventsPage", { count: paginatedEvents.length, page: currentPage, pages: totalPages })}
                     </>
                   )}
                 </p>
@@ -622,7 +621,7 @@ function AllEvents() {
               {isLoading && <Skeleton className="h-4 w-32 mt-1" />}
               {searching && (
                 <p className="text-sm text-blue-500 mt-1">
-                  Searching through all pages...
+                  {t("home.searchingAllPages")}
                 </p>
               )}
             </div>
@@ -634,7 +633,7 @@ function AllEvents() {
               </div>
               <input
                 type="text"
-                placeholder="Search events by name..."
+                placeholder={t("home.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
@@ -668,7 +667,7 @@ function AllEvents() {
           {!isLoading || events.length > 0 ? (
             <div className="flex justify-between items-center">
               <div className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
+                {t("home.pageOfPages", { page: currentPage, pages: totalPages })}
               </div>
               <div className="flex items-center bg-gray-100 rounded-lg p-1">
                 <button
@@ -678,7 +677,7 @@ function AllEvents() {
                       ? "bg-white shadow-sm text-blue-600"
                       : "text-gray-500 hover:text-gray-700"
                   }`}
-                  title="Grid view"
+                  title={t("home.gridView")}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </button>
@@ -689,7 +688,7 @@ function AllEvents() {
                       ? "bg-white shadow-sm text-blue-600"
                       : "text-gray-500 hover:text-gray-700"
                   }`}
-                  title="List view"
+                  title={t("home.listView")}
                 >
                   <List className="h-4 w-4" />
                 </button>
@@ -774,7 +773,7 @@ function AllEvents() {
                       >
                         <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
                         <div className="text-center px-2">
-                          <p className="text-slate-700 font-medium text-sm">Deleting...</p>
+                          <p className="text-slate-700 font-medium text-sm">{t("home.deleting")}</p>
                           <p className="text-slate-500 text-xs mt-0.5 truncate max-w-[180px]" title={event.name}>
                             {event.name}
                           </p>
@@ -869,7 +868,7 @@ function AllEvents() {
                       >
                         <Loader2 className="w-6 h-6 text-rose-500 animate-spin shrink-0" />
                         <div className="text-center min-w-0">
-                          <p className="text-slate-700 font-medium text-sm">Deleting...</p>
+                          <p className="text-slate-700 font-medium text-sm">{t("home.deleting")}</p>
                           <p className="text-slate-500 text-xs truncate" title={event.name}>
                             {event.name}
                           </p>
@@ -926,7 +925,7 @@ function AllEvents() {
                       ) : (
                         <>
                           <Trash2 className="w-4 h-4" strokeWidth={2} />
-                          <span className="text-xs font-medium hidden sm:inline">Delete</span>
+                          <span className="text-xs font-medium hidden sm:inline">{t("home.delete")}</span>
                         </>
                       )}
                     </button>
@@ -942,6 +941,7 @@ function AllEvents() {
                 totalPages={totalPages}
                 onPageChange={setCurrentPage}
                 className="mt-6"
+                t={t}
               />
             )}
           </>
@@ -955,16 +955,16 @@ function AllEvents() {
               src={Assets.images.eventEmptyCard}
               alt="No Events"
             />
-            <p className="text-gray-500 mt-4 text-sm">No events found</p>
+            <p className="text-gray-500 mt-4 text-sm">{t("home.noEventsFound")}</p>
           </div>
         )}
 
         {!isLoading && !searching && events.length === 0 && searchQuery && (
           <div className="w-full flex flex-col justify-center items-center py-10">
             <Search className="h-16 w-16 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg font-medium">No events found</p>
+            <p className="text-gray-500 text-lg font-medium">{t("home.noEventsFound")}</p>
             <p className="text-gray-400 text-sm mt-2">
-              No events match "{searchQuery}". Try a different search term.
+              {t("home.noEventsMatch", { search: searchQuery })}
             </p>
           </div>
         )}
@@ -984,12 +984,10 @@ function AllEvents() {
               </div>
 
               <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
-                Delete Event?
+                {t("home.deleteEvent")}
               </h3>
               <p className="text-sm text-gray-600 text-center mb-6">
-                Are you sure you want to delete{" "}
-                <strong>{eventToDelete.name || "this event"}</strong>? This
-                action cannot be undone.
+                {t("home.deleteEventConfirm", { name: eventToDelete.name || t("home.thisEvent") })}
               </p>
 
               <div className="flex space-x-3">
@@ -997,7 +995,7 @@ function AllEvents() {
                   onClick={handleCloseDeleteModal}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
                 >
-                  Cancel
+                  {t("home.cancel")}
                 </button>
                 <button
                   onClick={handleDelete}
@@ -1005,8 +1003,8 @@ function AllEvents() {
                   className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {deletingEventId === eventToDelete.id
-                    ? "Deleting..."
-                    : "Delete"}
+                    ? t("home.deleting")
+                    : t("home.delete")}
                 </button>
               </div>
             </div>

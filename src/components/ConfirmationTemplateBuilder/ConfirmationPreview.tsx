@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { useDroppable } from "@dnd-kit/core";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, MapPin, QrCode, Calendar, Clock, Image } from "lucide-react";
@@ -137,8 +138,9 @@ export function ConfirmationPreview({
   data,
   className = "",
 }: ConfirmationPreviewProps) {
-  const eventName = data.eventName || "Event Name";
-  const attendeeName = data.attendeeName || "John Doe";
+  const { t } = useTranslation("dashboard");
+  const eventName = data.eventName || t("expressEvent.confirmation.eventName");
+  const attendeeName = data.attendeeName || t("expressEvent.confirmation.johnDoe");
   const location = data.location ?? "—";
   const about = data.about ?? "";
   const logoUrl = data.logoUrl;
@@ -353,7 +355,7 @@ export function ConfirmationPreview({
                 className={`${getFontWeightClass(opts)} ${getTextColorClass(opts) || styles.text}`}
                 style={opts.textColor?.startsWith("#") ? { color: opts.textColor } : undefined}
               >
-                {opts.label || "Event Location"}
+                {opts.label || t("expressEvent.confirmation.eventLocation")}
               </p>
               <p
                 className={`${styles.textMuted} text-xs mt-0.5`}
@@ -377,7 +379,7 @@ export function ConfirmationPreview({
               className={`${getFontWeightClass(opts)} mb-2 ${getTextColorClass(opts) || "text-gray-900"}`}
               style={opts.textColor?.startsWith("#") ? { color: opts.textColor } : undefined}
             >
-              {opts.label || "About Event"}
+              {opts.label || t("expressEvent.confirmation.aboutEvent")}
             </h3>
             <p
               className="text-sm text-gray-600 leading-relaxed"
@@ -422,7 +424,7 @@ export function ConfirmationPreview({
             {logoUrl ? (
               <img
                 src={logoUrl}
-                alt="Event logo"
+                alt={t("expressEvent.confirmation.eventLogo")}
                 className="max-h-24 w-auto object-contain rounded-lg"
               />
             ) : (

@@ -49,6 +49,7 @@ import {
 import { getRegistrationUrl } from "@/pages/Home/EventDetails/Invitation/resolveInvitationEmailLinks";
 import imageCompression from "browser-image-compression";
 import Assets from "@/utils/Assets";
+import { useTranslation } from "react-i18next";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,7 @@ const CapacityCard = ({
   remaining: number;
   onUpgrade: () => void;
 }) => {
+  const { t } = useTranslation("dashboard");
   // SVG half-circle gauge
   // viewBox 160×100: cx=80, cy=90, r=70
   // The arc goes from left (10,90) to right (150,90)
@@ -140,7 +142,7 @@ const CapacityCard = ({
   return (
     <div className="bg-white rounded-2xl p-5 flex flex-col shadow-sm border border-gray-50">
       {/* Title */}
-      <p className="text-sm font-medium text-[#656C95] mb-3">Registration Capacity</p>
+      <p className="text-sm font-medium text-[#656C95] mb-3">{t("homeSummary.registrationCapacity")}</p>
 
       {/* Gauge — centered */}
       <div className="relative mx-auto" style={{ width: 160, height: 92 }}>
@@ -181,11 +183,11 @@ const CapacityCard = ({
         <p className="text-center text-xs text-[#656C95] mt-1.5 flex items-center justify-center gap-3">
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#202242] inline-block" />
-            {remaining.toLocaleString()} spots remaining
+            {remaining.toLocaleString()} {t("homeSummary.spotsRemaining")}
           </span>
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
-            {used.toLocaleString()} spots used
+            {used.toLocaleString()} {t("homeSummary.spotsUsed")}
           </span>
         </p>
       )}
@@ -197,7 +199,7 @@ const CapacityCard = ({
         className="mt-3 flex items-center justify-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
       >
         <ArrowUp size={12} />
-        Upgrade Plan
+        {t("homeSummary.upgradePlan")}
       </button>
     </div>
   );
@@ -212,6 +214,7 @@ const RegistrationsActivityChart = ({
   onRangeChange?: (r: string) => void;
 }) => {
   const [range, setRange] = useState("6 Month");
+  const { t } = useTranslation("dashboard");
 
   const peak = useMemo(
     () =>
@@ -231,10 +234,10 @@ const RegistrationsActivityChart = ({
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-semibold text-[#202242]">Registrations Activity</h3>
+          <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.registrationsActivity")}</h3>
           <span className="flex items-center gap-1.5 text-xs text-[#656C95]">
             <span className="w-2 h-2 rounded-full bg-[#202242] inline-block" />
-            Registered
+            {t("homeSummary.registered")}
           </span>
         </div>
         <select
@@ -245,9 +248,9 @@ const RegistrationsActivityChart = ({
           }}
           className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none"
         >
-          <option>6 Month</option>
-          <option>3 Month</option>
-          <option>1 Year</option>
+          <option value="6 Month">{t("homeSummary.sixMonth")}</option>
+          <option value="3 Month">{t("homeSummary.threeMonth")}</option>
+          <option value="1 Year">{t("homeSummary.oneYear")}</option>
         </select>
       </div>
 
@@ -266,6 +269,7 @@ const _ActivityChart = ({
   peak: { label: string; registered: number };
 }) => {
   const [activeBar, setActiveBar] = useState<string | null>(null);
+  const { t } = useTranslation("dashboard");
 
   const CustomDot = (props: any) => {
     const { cx, cy, payload } = props;
@@ -340,7 +344,7 @@ const _ActivityChart = ({
           labelStyle={{ fontWeight: 600, color: "#202242", marginBottom: 4 }}
           formatter={(v: unknown) => [
             `${typeof v === "number" ? v.toLocaleString() : v}`,
-            "Registered",
+            t("homeSummary.registered"),
           ]}
           separator=" : "
         />
@@ -378,8 +382,10 @@ const DonutChart = ({
   totalValue: number | string;
   legendItems: Array<{ label: string; value?: number | string; percent?: string; color: string }>;
 }) => {
+  const { t } = useTranslation("dashboard");
   const hasData = data.some((d) => d.value > 0);
-  const displayData = hasData ? data : [{ name: "No data", value: 1, color: "#E5E7EB" }];
+  const noDataLabel = t("homeSummary.noData");
+  const displayData = hasData ? data : [{ name: noDataLabel, value: 1, color: "#E5E7EB" }];
 
   return (
     <div className="flex flex-col items-center">
@@ -410,7 +416,7 @@ const DonutChart = ({
                 fontSize: 12,
               }}
               formatter={(v: unknown, name: unknown) =>
-                name === "No data" ? [] : [typeof v === "number" ? v.toLocaleString() : v, String(name ?? "")]
+                name === noDataLabel ? [] : [typeof v === "number" ? v.toLocaleString() : v, String(name ?? "")]
               }
             />
           </PieChart>
@@ -469,6 +475,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [quickActionsOpen, setQuickActionsOpen] = useState(false);
   const quickActionsRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("dashboard");
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -677,24 +684,24 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
   const statItems = useMemo(() => {
     const totalRegistrations = metrics?.registration_count ?? derivedCounts.total;
     const base = [
-      { label: "Total Registrations", value: totalRegistrations, icon: Users, iconColor: "text-blue-600", bgColor: "bg-blue-50", filterKey: "all" },
-      { label: "Today's Registration", value: derivedCounts.today, icon: UserCheck, iconColor: "text-emerald-600", bgColor: "bg-emerald-50", filterKey: "today" },
-      { label: "Pending Users", value: derivedCounts.pending, icon: AlertCircle, iconColor: "text-amber-500", bgColor: "bg-amber-50", filterKey: "pending" },
-      { label: "Approved Users", value: derivedCounts.approved, icon: CheckCircle, iconColor: "text-teal-600", bgColor: "bg-teal-50", filterKey: "approved" },
-      { label: "Registered Users", value: derivedCounts.total, icon: Users, iconColor: "text-slate-600", bgColor: "bg-slate-50", filterKey: "all" },
-      { label: "Printed Users", value: printedCountFromUsers || derivedCounts.printed, icon: Printer, iconColor: "text-violet-600", bgColor: "bg-violet-50", filterKey: "printed" },
+      { label: t("homeSummary.totalRegistrations"), value: totalRegistrations, icon: Users, iconColor: "text-blue-600", bgColor: "bg-blue-50", filterKey: "all" },
+      { label: t("homeSummary.todayRegistration"), value: derivedCounts.today, icon: UserCheck, iconColor: "text-emerald-600", bgColor: "bg-emerald-50", filterKey: "today" },
+      { label: t("homeSummary.pendingUsers"), value: derivedCounts.pending, icon: AlertCircle, iconColor: "text-amber-500", bgColor: "bg-amber-50", filterKey: "pending" },
+      { label: t("homeSummary.approvedUsers"), value: derivedCounts.approved, icon: CheckCircle, iconColor: "text-teal-600", bgColor: "bg-teal-50", filterKey: "approved" },
+      { label: t("homeSummary.registeredUsers"), value: derivedCounts.total, icon: Users, iconColor: "text-slate-600", bgColor: "bg-slate-50", filterKey: "all" },
+      { label: t("homeSummary.printedUsers"), value: printedCountFromUsers || derivedCounts.printed, icon: Printer, iconColor: "text-violet-600", bgColor: "bg-violet-50", filterKey: "printed" },
       {
-        label: "Attending",
+        label: t("homeSummary.attending"),
         value: attendingCountFromApi ?? metrics?.attending_count ?? metrics?.checked_in_count ?? attendingCountFromUsers,
         icon: UserCog, iconColor: "text-cyan-600", bgColor: "bg-cyan-50", filterKey: "attending",
       },
       {
-        label: "Attended",
+        label: t("homeSummary.attended"),
         value: metrics?.attended_count ?? metrics?.checked_out_count ?? attendedCountFromUsers,
         icon: CheckCircle, iconColor: "text-green-600", bgColor: "bg-green-50", filterKey: "attended",
       },
-      { label: "Attendee Count", value: userTypeCounts["attendee"] ?? 0, icon: Users, iconColor: "text-indigo-600", bgColor: "bg-indigo-50", filterKey: "user_type", userTypeKey: "attendee" },
-      { label: "VIP Count", value: userTypeCounts["vip"] ?? 0, icon: Crown, iconColor: "text-amber-600", bgColor: "bg-amber-50", filterKey: "user_type", userTypeKey: "vip" },
+      { label: t("homeSummary.attendeeCount"), value: userTypeCounts["attendee"] ?? 0, icon: Users, iconColor: "text-indigo-600", bgColor: "bg-indigo-50", filterKey: "user_type", userTypeKey: "attendee" },
+      { label: t("homeSummary.vipCount"), value: userTypeCounts["vip"] ?? 0, icon: Crown, iconColor: "text-amber-600", bgColor: "bg-amber-50", filterKey: "user_type", userTypeKey: "vip" },
     ] as any[];
 
     const extraColors = [
@@ -718,7 +725,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       });
 
     return base;
-  }, [derivedCounts, uniqueUserTypes, userTypeCounts, metrics, attendingCountFromApi, attendingCountFromUsers, attendedCountFromUsers, printedCountFromUsers]);
+  }, [derivedCounts, uniqueUserTypes, userTypeCounts, metrics, attendingCountFromApi, attendingCountFromUsers, attendedCountFromUsers, printedCountFromUsers, t]);
 
   // ── image crop state ────────────────────────────────────────────────────
 
@@ -738,7 +745,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     if (!file || !eventId) return;
     const allowed = ["image/svg+xml", "image/png", "image/jpeg", "image/jpg"];
     if (!allowed.includes(file.type)) {
-      showNotification("Invalid file type. Please upload SVG, PNG, or JPG.", "error");
+      showNotification(t("homeSummary.invalidFileType"), "error");
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
     }
@@ -752,7 +759,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
     setIsUploading(true);
     try {
       if (file.size > 2 * 1024 * 1024) {
-        showNotification("SVG too large. Max 2MB.", "error");
+        showNotification(t("homeSummary.svgTooLarge"), "error");
         return;
       }
       const fd = new FormData();
@@ -762,9 +769,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         ...prev,
         attributes: { ...prev.attributes, logo_url: res?.data?.data?.attributes?.logo_url },
       }));
-      showNotification("Logo updated successfully", "success");
+      showNotification(t("homeSummary.logoUpdatedSuccess"), "success");
     } catch (e: any) {
-      showNotification(e?.response?.data?.message || "Error updating logo", "error");
+      showNotification(e?.response?.data?.message || t("homeSummary.errorUpdatingLogo"), "error");
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -860,7 +867,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
       canvas.width = 400; canvas.height = 400;
       ctx.drawImage(img, cropArea.x * scaleX, cropArea.y * scaleY, cropArea.width * scaleX, cropArea.height * scaleY, 0, 0, 400, 400);
       canvas.toBlob(async (blob) => {
-        if (!blob) { showNotification("Failed to crop image.", "error"); setIsUploading(false); return; }
+        if (!blob) { showNotification(t("homeSummary.failedToCrop"), "error"); setIsUploading(false); return; }
         try {
           let final: File = new File([blob], "cropped-logo.jpg", { type: "image/jpeg", lastModified: Date.now() });
           if (final.size > 500 * 1024) {
@@ -873,19 +880,19 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             ...prev,
             attributes: { ...prev.attributes, logo_url: res?.data?.data?.attributes?.logo_url },
           }));
-          showNotification("Logo updated successfully", "success");
+          showNotification(t("homeSummary.logoUpdatedSuccess"), "success");
           setIsCropping(false);
           if (originalImageSrc) URL.revokeObjectURL(originalImageSrc);
           setOriginalImageSrc("");
         } catch (e: any) {
-          showNotification(e?.response?.data?.message || "Error updating logo", "error");
+          showNotification(e?.response?.data?.message || t("homeSummary.errorUpdatingLogo"), "error");
         } finally {
           setIsUploading(false);
           if (fileInputRef.current) fileInputRef.current.value = "";
         }
       }, "image/jpeg", 0.9);
     } catch {
-      showNotification("Failed to crop image.", "error");
+      showNotification(t("homeSummary.failedToCrop"), "error");
       setIsUploading(false);
     }
   };
@@ -927,7 +934,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <div className="absolute inset-0 h-8 w-8 border-2 border-blue-100 rounded-full"></div>
                   </div>
                   <p className="text-blue-600 text-xs font-medium mt-3">
-                    Uploading...
+                    {t("homeSummary.uploading")}
                   </p>
                 </div>
               )}
@@ -982,7 +989,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     isUploading ? "opacity-50" : "opacity-100"
                   }`}
                 >
-                  No Logo
+                  {t("homeSummary.noLogo")}
                 </div>
               )}
             </div>
@@ -1026,7 +1033,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               </div>
 
               <p className="mt-4 lg:mt-6 text-neutral-500 text-xs sm:text-sm font-normal">
-                Last edit: Before 3hr
+                {t("homeSummary.lastEdit", { time: "3hr" })}
               </p>
             </div>
           </div>
@@ -1049,7 +1056,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 );
                 if (!registrationUrl) {
                   showNotification(
-                    "Registration link not available (event UUID or tenant required)",
+                    t("homeSummary.registrationLinkNotAvailable"),
                     "warning"
                   );
                   return;
@@ -1058,19 +1065,19 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   .writeText(registrationUrl)
                   .then(() => {
                     showNotification(
-                      "Registration link copied to clipboard!",
+                      t("homeSummary.registrationLinkCopied"),
                       "success"
                     );
                   })
                   .catch(() => {
-                    showNotification("Failed to copy link", "error");
+                    showNotification(t("homeSummary.failedToCopyLink"), "error");
                   });
               }}
               className="rounded-2xl bg-green-50 py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center shrink-0 border-0 text-left"
             >
               <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600 shrink-0" />
               <span className="text-green-700 text-xs sm:text-sm font-normal">
-                Copy Registration Link
+                {t("homeSummary.copyRegistrationLink")}
               </span>
             </button>
 
@@ -1081,7 +1088,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 e.stopPropagation();
                 const idToUse = eventId ?? paramId;
                 if (!idToUse) {
-                  showNotification("Event ID is missing. Cannot open editor.", "warning");
+                  showNotification(t("homeSummary.eventIdMissing"), "warning");
                   return;
                 }
                 // Only pass serializable state (no functions, no React components) — History API cannot clone them
@@ -1119,7 +1126,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             >
               <Edit size={16} className="lg:w-5 lg:h-5 shrink-0 pointer-events-none" aria-hidden />
               <span className="text-[#202242] text-xs sm:text-sm font-normal">
-                Edit Event
+                {t("homeSummary.editEvent")}
               </span>
             </button>
           </div>
@@ -1134,7 +1141,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               used={capacity.used}
               total={capacity.total}
               remaining={capacity.remaining}
-              onUpgrade={() => showNotification("Upgrade plan coming soon", "info")}
+              onUpgrade={() => showNotification(t("homeSummary.upgradePlanComingSoon"), "info")}
             />
           </div>
 
@@ -1167,7 +1174,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           {/* Registration Sources donut */}
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#202242]">Registration Sources</h3>
+              <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.registrationSources")}</h3>
               <select className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none">
                 <option>2 Month</option>
                 <option>6 Month</option>
@@ -1175,18 +1182,18 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             </div>
             <DonutChart
               data={[
-                { name: "Website", value: 45, color: "#1e293b" },
-                { name: "Invitation Link", value: 30, color: "#22c55e" },
-                { name: "QR Code", value: 15, color: "#a855f7" },
-                { name: "Manual", value: 10, color: "#f97316" },
+                { name: t("homeSummary.website"), value: 45, color: "#1e293b" },
+                { name: t("homeSummary.invitationLink"), value: 30, color: "#22c55e" },
+                { name: t("homeSummary.qrCode"), value: 15, color: "#a855f7" },
+                { name: t("homeSummary.manual"), value: 10, color: "#f97316" },
               ]}
-              totalLabel="Total Registrations"
+              totalLabel={t("homeSummary.totalRegistrations")}
               totalValue={totalRegistrations}
               legendItems={[
-                { label: "Website", percent: "45%", color: "#1e293b" },
-                { label: "Invitation Link", percent: "30%", color: "#22c55e" },
-                { label: "QR Code", percent: "15%", color: "#a855f7" },
-                { label: "Manual", percent: "10%", color: "#f97316" },
+                { label: t("homeSummary.website"), percent: "45%", color: "#1e293b" },
+                { label: t("homeSummary.invitationLink"), percent: "30%", color: "#22c55e" },
+                { label: t("homeSummary.qrCode"), percent: "15%", color: "#a855f7" },
+                { label: t("homeSummary.manual"), percent: "10%", color: "#f97316" },
               ]}
             />
           </div>
@@ -1197,7 +1204,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           {/* Registration Status */}
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50 relative">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#202242]">Registration Status</h3>
+              <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.registrationStatus")}</h3>
               <select className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none">
                 <option>2 Month</option>
                 <option>6 Month</option>
@@ -1209,7 +1216,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               {quickActionsOpen && (
                 <div className="absolute bottom-full left-0 mb-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[200px]">
                   <p className="px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-100">
-                    Quick Actions Menu
+                    {t("homeSummary.quickActionsMenu")}
                   </p>
                   <button
                     type="button"
@@ -1219,7 +1226,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <div className="p-1.5 rounded-lg bg-blue-50">
                       <UserPlus className="h-4 w-4 text-blue-600" />
                     </div>
-                    Add User
+                    {t("homeSummary.addUser")}
                   </button>
                   <button
                     type="button"
@@ -1229,7 +1236,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <div className="p-1.5 rounded-lg bg-emerald-50">
                       <Send className="h-4 w-4 text-emerald-600" />
                     </div>
-                    Send Invitation
+                    {t("homeSummary.sendInvitation")}
                   </button>
                   <button
                     type="button"
@@ -1239,7 +1246,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <div className="p-1.5 rounded-lg bg-violet-50">
                       <Printer className="h-4 w-4 text-violet-600" />
                     </div>
-                    Print Badge
+                    {t("homeSummary.printBadge")}
                   </button>
                   <button
                     type="button"
@@ -1249,7 +1256,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <div className="p-1.5 rounded-lg bg-red-50">
                       <FileText className="h-4 w-4 text-red-600" />
                     </div>
-                    View Report
+                    {t("homeSummary.viewReport")}
                   </button>
                 </div>
               )}
@@ -1267,16 +1274,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
             <DonutChart
               data={[
-                { name: "Approved", value: derivedCounts.approved, color: "#202242" },
-                { name: "Pending", value: derivedCounts.pending, color: "#f97316" },
-                { name: "Rejected", value: derivedCounts.rejected, color: "#a855f7" },
+                { name: t("homeSummary.approved"), value: derivedCounts.approved, color: "#202242" },
+                { name: t("homeSummary.pending"), value: derivedCounts.pending, color: "#f97316" },
+                { name: t("homeSummary.rejected"), value: derivedCounts.rejected, color: "#a855f7" },
               ]}
-              totalLabel="Total"
+              totalLabel={t("homeSummary.total")}
               totalValue={derivedCounts.approved + derivedCounts.pending + derivedCounts.rejected}
               legendItems={[
-                { label: "Approved", value: derivedCounts.approved, color: "#202242" },
-                { label: "Pending", value: derivedCounts.pending, color: "#f97316" },
-                { label: "Rejected", value: derivedCounts.rejected, color: "#a855f7" },
+                { label: t("homeSummary.approved"), value: derivedCounts.approved, color: "#202242" },
+                { label: t("homeSummary.pending"), value: derivedCounts.pending, color: "#f97316" },
+                { label: t("homeSummary.rejected"), value: derivedCounts.rejected, color: "#a855f7" },
               ]}
             />
           </div>
@@ -1284,8 +1291,8 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           {/* Recent Activity */}
           <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[#202242]">Recent Activity</h3>
-              <button type="button" className="text-sm font-medium text-blue-500 hover:text-blue-600">View All</button>
+              <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.recentActivity")}</h3>
+              <button type="button" className="text-sm font-medium text-blue-500 hover:text-blue-600">{t("homeSummary.viewAll")}</button>
             </div>
             <ul className="space-y-4">
               {[
@@ -1316,7 +1323,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Crop Image</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("homeSummary.cropImage")}</h3>
               <button onClick={cancelCrop} disabled={isUploading} className="text-gray-400 hover:text-gray-600">
                 <XCircle size={24} />
               </button>
@@ -1341,9 +1348,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               )}
             </div>
             <div className="flex justify-end gap-3 mt-5">
-              <button onClick={cancelCrop} disabled={isUploading} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-sm">Cancel</button>
+              <button onClick={cancelCrop} disabled={isUploading} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-sm">{t("homeSummary.cancel")}</button>
               <button onClick={handleCropComplete} disabled={isUploading} className="px-4 py-2 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors text-sm flex items-center gap-2">
-                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" />Processing...</> : "Crop & Upload"}
+                {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" />{t("homeSummary.processing")}</> : t("homeSummary.cropAndUpload")}
               </button>
             </div>
           </div>

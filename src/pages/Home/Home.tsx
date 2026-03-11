@@ -1,10 +1,12 @@
 import Assets from "@/utils/Assets";
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import Recents from "./components/Recents/Recents";
 import AllEvents from "./components/AllEvents/AllEvents";
 import PricingModal from "@/components/PricingModal/PricingModal";
 
 const Home = () => {
+  const { t } = useTranslation("dashboard");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState("");
   console.log("selected plan", selectedPlan);
@@ -60,10 +62,10 @@ const Home = () => {
             </div>
             <div>
               <p className="text-lg font-semibold text-sky-800 group-hover:text-sky-900 transition-colors duration-300">
-                Create Event
+                {t("home.createEvent")}
               </p>
               <p className="font-poppins font-normal text-xs text-sky-950/90">
-                Start setting up your event now.
+                {t("home.startSettingUp")}
               </p>
             </div>
           </div>

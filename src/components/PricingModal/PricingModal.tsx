@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { X, Check } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
+import { useTranslation } from "react-i18next";
 
 interface PricingModalProps {
   isOpen: boolean;
@@ -15,6 +16,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
   selectedPlan,
 }) => {
   const navigateTo = useWorkspaceNavigate();
+  const { t } = useTranslation("dashboard");
   const [activePlan, setActivePlan] = useState<string>(selectedPlan || "");
 
   // Sync active plan when modal opens or selectedPlan changes (e.g. Express vs Advanced from Home)
@@ -29,47 +31,47 @@ const PricingModal: React.FC<PricingModalProps> = ({
   const plans = [
     {
       id: "express",
-      name: "Express",
+      name: t("pricing.express"),
       price: "$1000",
       features: [
-        "Up to 400 Registrations",
-        "Invitations & Email Confirmations",
-        "Basic Attendance Reports",
-        "Event Registration Form",
+        t("pricing.upTo400Registrations"),
+        t("pricing.invitationsAndConfirmations"),
+        t("pricing.basicAttendanceReports"),
+        t("pricing.eventRegistrationForm"),
       ],
-      buttonText: "Get started",
+      buttonText: t("pricing.getStarted"),
       buttonClass: "bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white",
       cardClass: "border-pink-200 bg-white",
     },
     {
       id: "advanced",
-      name: "Advanced",
-      subtitle: "/ with the app",
+      name: t("pricing.advanced"),
+      subtitle: t("pricing.withTheApp"),
       price: "$2000",
       isPopular: true,
       features: [
-        "Up to 400 Registrations",
-        "Fully Customized Landing Page",
-        "Badge Generation & Printing",
-        "Custom Mobile App (iOS & Android)",
-        "Advanced Reports & Full Branding",
-        "Dedicated Support",
+        t("pricing.upTo400Registrations"),
+        t("pricing.fullyCustomizedLandingPage"),
+        t("pricing.badgeGenerationPrinting"),
+        t("pricing.customMobileApp"),
+        t("pricing.advancedReports"),
+        t("pricing.dedicatedSupport"),
       ],
-      buttonText: "Get started",
+      buttonText: t("pricing.getStarted"),
       buttonClass: "bg-white hover:bg-gray-50 text-[#1e3a5f]",
       cardClass: "bg-gradient-to-b from-[#1e3a5f] to-[#2d4f7f] text-white",
     },
     {
       id: "unlimited",
-      name: "Unlimited",
+      name: t("pricing.unlimited"),
       price: "$Custom",
       features: [
-        "Enterprise / Custom Plan",
-        "Advanced integrations (CRM, payment, APIs)",
-        "On-site & remote technical support",
-        "Custom reports & dashboards",
+        t("pricing.enterpriseCustomPlan"),
+        t("pricing.advancedIntegrations"),
+        t("pricing.onSiteSupport"),
+        t("pricing.customReports"),
       ],
-      buttonText: "Contact Us",
+      buttonText: t("pricing.contactUs"),
       buttonClass: "bg-[#1e3a5f] hover:bg-[#2d4a6f] text-white",
       cardClass: "border-pink-200 bg-white",
     },
@@ -101,11 +103,11 @@ const PricingModal: React.FC<PricingModalProps> = ({
         <div className="relative p-8 border-b">
           <div className="text-center">
             <h2 className="text-3xl font-semibold text-slate-800 mb-2">
-              Choose Your Plan
+              {t("pricing.chooseYourPlan")}
             </h2>
             <div className="flex items-center justify-center gap-2 text-base">
-              <span className="text-gray-600">Choose Now,</span>
-              <span className="text-blue-500 font-medium">Pay Later</span>
+              <span className="text-gray-600">{t("pricing.chooseNow")}</span>
+              <span className="text-blue-500 font-medium">{t("pricing.payLater")}</span>
             </div>
           </div>
           <button
@@ -143,7 +145,7 @@ const PricingModal: React.FC<PricingModalProps> = ({
                 {plan.isPopular && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <span className="bg-white text-[#1e3a5f] px-6 py-1.5 rounded-full text-sm font-medium border-2 border-[#1e3a5f]">
-                      Most Popular
+                      {t("pricing.mostPopular")}
                     </span>
                   </div>
                 )}

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SettingsProfile() {
+  const { t } = useTranslation("settings");
   const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ id?: string }>();
   const settingsPath = params.id ? `home/${params.id}/settings` : "settings";
@@ -35,34 +37,34 @@ export default function SettingsProfile() {
           onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Settings
+          {t("profile.backToSettings")}
         </Button>
 
         <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-            Profile Information
+            {t("profile.title")}
           </h1>
           <p className="mt-1.5 text-sm text-gray-500">
-            View and edit your user profile details.
+            {t("profile.description")}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <Label htmlFor="fullName" className="text-gray-700">
-                Full Name
+                {t("profile.fullName")}
               </Label>
               <Input
                 id="fullName"
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                placeholder="Your full name"
+                placeholder={t("profile.fullNamePlaceholder")}
                 className="mt-1.5 border-gray-200 bg-gray-100 focus:bg-gray-100 focus:ring-blue-500"
               />
             </div>
             <div>
               <Label htmlFor="email" className="text-gray-700">
-                Email
+                {t("profile.email")}
               </Label>
               <Input
                 id="email"
@@ -70,33 +72,33 @@ export default function SettingsProfile() {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                placeholder="your@email.com"
+                placeholder={t("profile.emailPlaceholder")}
                 className="mt-1.5 border-gray-200 bg-gray-100 focus:bg-gray-100 focus:ring-blue-500"
               />
             </div>
             <div>
               <Label htmlFor="phone" className="text-gray-700">
-                Phone
+                {t("profile.phone")}
               </Label>
               <Input
                 id="phone"
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+1 (555) 000-0000"
+                placeholder={t("profile.phonePlaceholder")}
                 className="mt-1.5 border-gray-200 bg-gray-100 focus:bg-gray-100 focus:ring-blue-500"
               />
             </div>
             <div>
               <Label htmlFor="company" className="text-gray-700">
-                Company
+                {t("profile.company")}
               </Label>
               <Input
                 id="company"
                 name="company"
                 value={formData.company}
                 onChange={handleChange}
-                placeholder="Company name"
+                placeholder={t("profile.companyPlaceholder")}
                 className="mt-1.5 border-gray-200 bg-gray-100 focus:bg-gray-100 focus:ring-blue-500"
               />
             </div>
@@ -105,7 +107,7 @@ export default function SettingsProfile() {
                 type="submit"
                 className="bg-blue-600 text-white hover:bg-blue-700"
               >
-                Save changes
+                {t("profile.saveChanges")}
               </Button>
             </div>
           </form>

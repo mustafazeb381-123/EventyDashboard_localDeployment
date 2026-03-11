@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { type Poll } from "@/apis/pollsService";
 
 interface AnswersTabProps {
@@ -7,6 +8,7 @@ interface AnswersTabProps {
 }
 
 const AnswersTab: React.FC<AnswersTabProps> = ({ poll, totalVotes }) => {
+  const { t } = useTranslation("dashboard");
   return (
     <div className="space-y-4">
       {/* Question Card with Results */}
@@ -18,7 +20,7 @@ const AnswersTab: React.FC<AnswersTabProps> = ({ poll, totalVotes }) => {
             {poll.question}
           </p>
           <span className="text-sm text-gray-500 shrink-0 ml-4">
-            {totalVotes} {totalVotes === 1 ? "Participant" : "Participants"}
+            {totalVotes} {totalVotes === 1 ? t("poll.participant") : t("poll.participants")}
           </span>
         </div>
 
@@ -29,7 +31,7 @@ const AnswersTab: React.FC<AnswersTabProps> = ({ poll, totalVotes }) => {
             return (
               <div key={option.id} className="flex items-center gap-4">
                 <span className="text-sm text-gray-600 min-w-[80px]">
-                  Answer {index + 1} :
+                  {t("poll.answer")} {index + 1} :
                 </span>
                 <div className="flex-1 bg-gray-100 rounded-full h-2 max-w-lg">
                   <div

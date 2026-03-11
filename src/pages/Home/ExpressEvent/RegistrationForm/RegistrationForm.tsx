@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useParams } from "react-router-dom";
 import { ChevronLeft, Check, Plus, Edit, Trash2, Loader2, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +28,8 @@ import TemplateFormFour from "./RegistrationTemplates/TemplateFour/TemplateForm"
 import TemplateFormFive from "./RegistrationTemplates/TemplateFive/TemplateForm";
 import TemplateFormSix from "./RegistrationTemplates/TemplateSix/TemplateForm";
 import TemplateFormSeven from "./RegistrationTemplates/TemplateSeven/TemplateForm";
+import { PREBUILT_TEMPLATES, type PrebuiltTemplate } from "./prebuiltTemplates";
+import PrebuiltTemplateCard from "./PrebuiltTemplateCard";
 import {
   createTemplatePostApi,
   getRegistrationFieldApi,
@@ -190,7 +193,7 @@ const Modal = ({
               isLoading ? "bg-gray-400 cursor-not-allowed" : "bg-slate-800 hover:bg-slate-900"
             }`}
           >
-            {isLoading ? "Applying..." : "Use this template"}
+            {isLoading ? t("expressEvent.applying") : t("expressEvent.useThisTemplate")}
           </button>
         </div>
       </div>
@@ -217,6 +220,7 @@ const RegistrationForm = ({
   eventId,
   plan,
 }: RegistrationFormProps) => {
+  const { t } = useTranslation("dashboard");
   const { id: routeId } = useParams();
   const effectiveEventId =
     (routeId as string | undefined) || (eventId as string | undefined);
@@ -259,6 +263,11 @@ const RegistrationForm = ({
   const [isFormBuilderPreviewModalOpen, setIsFormBuilderPreviewModalOpen] = useState(false);
   const [previewFormBuilderTemplate, setPreviewFormBuilderTemplate] = useState<CustomFormTemplate | null>(null);
   const [lastSelectedSystem, setLastSelectedSystem] = useState<"default" | "custom" | null>(null);
+
+  // Prebuilt template state
+  const [prebuiltPreviewTemplate, setPrebuiltPreviewTemplate] = useState<PrebuiltTemplate | null>(null);
+  const [isPrebuiltPreviewOpen, setIsPrebuiltPreviewOpen] = useState(false);
+  const [isSavingPrebuilt, setIsSavingPrebuilt] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -353,7 +362,7 @@ const RegistrationForm = ({
       // decide based on the API's `default` flags across both systems.
       setGetTemplatesData(templateData);
     } catch (error) {
-      showNotification("Failed to fetch template data", "error");
+      showNotification(t("expressEvent.failedFetchTemplateData"), "error");
       setGetTemplatesData([]);
     }
   }, [effectiveEventId]);
@@ -407,7 +416,7 @@ const RegistrationForm = ({
     };
     return {
       id: String(apiTemplate.id),
-      title: attrs.name || "Untitled Template",
+      title: attrs.name || t("expressEvent.untitledTemplate"),
       data: fields.length > 0 ? convertFormBuilderToFieldsForValidation({ formData: fields }) : [],
       formBuilderData,
       bannerImage,
@@ -464,7 +473,7 @@ const RegistrationForm = ({
       setFormBuilderTemplates(transformed);
       await checkAndSetDefaultTemplate();
     } catch (err) {
-      showNotification("Failed to load custom form templates", "error");
+      showNotification(t("expressEvent.failedLoadCustomFormTemplates"), "error");
       setFormBuilderTemplates([]);
     } finally {
       setIsLoadingFormData(false);
@@ -482,7 +491,7 @@ const RegistrationForm = ({
   // -------------------- Custom form builder handlers (express) --------------------
   const handleOpenCustomFormBuilder = useCallback((template?: CustomFormTemplate) => {
     if (!effectiveEventId) {
-      showNotification("Event ID not found. Cannot open form builder.", "error");
+      showNotification(t("expressEvent.eventIdNotFoundFormBuilder"), "error");
       return;
     }
     if (template) {
@@ -632,7 +641,7 @@ const RegistrationForm = ({
       }
     }
     await loadFormBuilderTemplates();
-    showNotification("Template saved successfully", "success");
+    showNotification(t("expressEvent.templateSavedSuccess"), "success");
   }, [effectiveEventId, isEditFormBuilderMode, editingFormBuilderTemplate, confirmedTemplate, loadFormBuilderTemplates]);
 
   const handleSaveCustomForm = useCallback(
@@ -704,7 +713,7 @@ const RegistrationForm = ({
     if (template.formBuilderData?.formData && Array.isArray(template.formBuilderData.formData)) {
       handleOpenCustomFormBuilder(template);
     } else {
-      showNotification("This template cannot be edited in the form builder.", "info");
+      showNotification(t("expressEvent.templateCannotEditFormBuilder"), "info");
     }
   }, [handleOpenCustomFormBuilder]);
 
@@ -726,12 +735,12 @@ const RegistrationForm = ({
       await setRegistrationFormTemplateAsDefault(effectiveEventId, templateId);
       setConfirmedTemplate(templateId);
       setSelectedTemplateData(template.formBuilderData || { name: template.title });
-      showNotification("Template applied successfully", "success");
+      showNotification(t("expressEvent.templateAppliedSuccess"), "success");
       setIsFormBuilderPreviewModalOpen(false);
       setPreviewFormBuilderTemplate(null);
       await loadFormBuilderTemplates();
     } catch (err: any) {
-      showNotification(err?.message || "Failed to apply template", "error");
+      showNotification(err?.message || t("expressEvent.failedApplyTemplate"), "error");
     } finally {
       setIsLoading(false);
     }
@@ -760,14 +769,84 @@ const RegistrationForm = ({
       setFormBuilderTemplates((prev) => prev.filter((t) => t.id !== id));
       if (confirmedTemplate === id) setConfirmedTemplate(null);
       await loadFormBuilderTemplates();
-      showNotification("Template deleted successfully", "success");
+      showNotification(t("expressEvent.templateDeletedSuccess"), "success");
     } catch (err: any) {
-      showNotification(err?.message || "Failed to delete template", "error");
+      showNotification(err?.message || t("expressEvent.failedDeleteTemplate"), "error");
     } finally {
       setIsDeletingFormBuilder(false);
       cancelDeleteFormBuilderTemplate();
     }
   }, [deleteFormBuilderCandidate, effectiveEventId, confirmedTemplate, loadFormBuilderTemplates, cancelDeleteFormBuilderTemplate]);
+
+  // -------------------- Prebuilt template handlers --------------------
+  const handlePrebuiltPreview = useCallback((key: string) => {
+    const tpl = PREBUILT_TEMPLATES.find((t) => t.key === key);
+    if (tpl) {
+      setPrebuiltPreviewTemplate(tpl);
+      setIsPrebuiltPreviewOpen(true);
+    }
+  }, []);
+
+  const handleUsePrebuiltTemplate = useCallback(async (key: string) => {
+    if (!effectiveEventId) return;
+    const tpl = PREBUILT_TEMPLATES.find((t) => t.key === key);
+    if (!tpl) return;
+
+    setIsSavingPrebuilt(true);
+    try {
+      // Build the payload in the same shape as handleSaveFormBuilderTemplate
+      const cleanTheme: any = {
+        formBackgroundColor: "#ffffff",
+        formPadding: "24px",
+        ...Object.fromEntries(
+          Object.entries(tpl.theme).filter(
+            ([_, v]) => v != null && typeof v !== "object" && !(v instanceof File)
+          )
+        ),
+      };
+
+      const payload = {
+        registration_form_template: {
+          name: t(tpl.nameKey),
+          default: true,
+          form_template_data: {
+            fields: tpl.fields,
+            formBuilderData: {
+              formData: tpl.fields,
+              theme: cleanTheme,
+              languageMode: "single" as const,
+            },
+            theme: cleanTheme,
+          },
+        },
+      };
+
+      const createRes = await createRegistrationFormTemplate(effectiveEventId, payload);
+      const newId = createRes?.data?.data?.id ?? createRes?.data?.id;
+
+      if (newId != null) {
+        // Set as default
+        await setRegistrationFormTemplateAsDefault(effectiveEventId, String(newId));
+        setLastSelectedSystem("custom");
+        setConfirmedTemplate(String(newId));
+        showNotification(t("prebuiltTemplates.templateApplied"), "success");
+      }
+
+      // Reload templates
+      await loadFormBuilderTemplates();
+
+      // Close preview if open
+      setIsPrebuiltPreviewOpen(false);
+      setPrebuiltPreviewTemplate(null);
+
+      // Advance to confirmation step
+      setTimeout(() => setInternalStep(1), 600);
+    } catch (err: any) {
+      showNotification(err?.message || t("expressEvent.failedApplyTemplate"), "error");
+    } finally {
+      setIsSavingPrebuilt(false);
+    }
+  }, [effectiveEventId, loadFormBuilderTemplates, t]);
 
   // Memoize getFieldAPi function
   const getFieldAPi = useCallback(async (id: string) => {
@@ -777,7 +856,7 @@ const RegistrationForm = ({
       const response = await getRegistrationFieldApi(id, tenantUuid);
       setFormData(response.data.data);
     } catch (error) {
-      showNotification("Failed to load form data", "error");
+      showNotification(t("expressEvent.failedLoadFormData"), "error");
     } finally {
       setIsLoadingFormData(false);
     }
@@ -1045,7 +1124,7 @@ const RegistrationForm = ({
         // Optimistically mark this template as selected in the UI
         setSelectedTemplateData(templateData);
         setConfirmedTemplate(templateId);
-        showNotification("Event template added successfully!", "success");
+        showNotification(t("expressEvent.eventTemplateAddedSuccess"), "success");
 
         // Close modal and advance internal step after a short delay
         setTimeout(() => {
@@ -1064,14 +1143,14 @@ const RegistrationForm = ({
       } catch (error: any) {
         console.error("Error creating template:", error);
         if (error.response?.status === 400) {
-          showNotification("Invalid template data. Please try again.", "error");
+          showNotification(t("expressEvent.invalidTemplateData"), "error");
         } else if (error.response?.status === 401) {
           showNotification(
             "Authentication failed. Please login again.",
             "error",
           );
         } else if (error.response?.status === 500) {
-          showNotification("Server error. Please try again later.", "error");
+          showNotification(t("expressEvent.serverError"), "error");
         } else {
           showNotification(
             error.message || "Error adding template. Please try again.",
@@ -1103,7 +1182,7 @@ const RegistrationForm = ({
     const id = effectiveEventId;
 
     if (!id) {
-      showNotification("Event ID not found", "error");
+      showNotification(t("expressEvent.eventIdNotFound"), "error");
       throw new Error("Event ID not found");
     }
 
@@ -1126,10 +1205,10 @@ const RegistrationForm = ({
 
     try {
       const response = await updateEventById(id, formData);
-      showNotification("Confirmation Details Updated Successfully", "success");
+      showNotification(t("expressEvent.confirmationDetailsUpdatedSuccess"), "success");
     } catch (error) {
       console.log("Error in confirmation details:", error);
-      showNotification("Error in Confirmation data", "error");
+      showNotification(t("expressEvent.errorInConfirmationData"), "error");
       throw error;
     }
   }, [effectiveEventId, confirmationToggleStates]);
@@ -1144,7 +1223,7 @@ const RegistrationForm = ({
       if (effectiveEventId && onNext) {
         onNext(effectiveEventId, plan);
       } else {
-        showNotification("Cannot proceed without event ID", "error");
+        showNotification(t("expressEvent.cannotProceedWithoutEventId"), "error");
       }
     } catch (error) {
       console.error("Failed to update confirmation details:", error);
@@ -1174,7 +1253,7 @@ const RegistrationForm = ({
     if (internalStep === 0) {
       if (!confirmedTemplate) {
         showNotification(
-          "Please select a template before proceeding",
+          t("expressEvent.pleaseSelectTemplate"),
           "warning",
         );
         return;
@@ -1217,16 +1296,16 @@ const RegistrationForm = ({
               />
               <p className="text-neutral-900 text-md font-poppins font-normal">
                 {internalStep === 0
-                  ? "Choose a registration form template"
-                  : "Confirmation details"}
+                  ? t("expressEvent.chooseRegistrationFormTemplate")
+                  : t("expressEvent.confirmationDetails")}
               </p>
             </div>
 
             {/* Steps */}
             <div className="flex items-center gap-1">
               {[
-                { step: 0, label: "Registration Template" },
-                { step: 1, label: "Confirmation Details" },
+                { step: 0, label: t("expressEvent.registrationTemplate") },
+                { step: 1, label: t("expressEvent.confirmationDetails") },
               ].map(({ step, label }, idx) => {
                 const isActive = (step === 0 && isStep1Active) || (step === 1 && isStep2Active);
                 const done = step === 0 ? isStep1Completed : internalStep > 1;
@@ -1314,16 +1393,16 @@ const RegistrationForm = ({
                     className="relative border-2 border-dashed border-pink-300 rounded-3xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center h-[240px]"
                   >
                     <div className="absolute top-2 right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full hidden sm:block">
-                      New
+                      {t("expressEvent.new")}
                     </div>
                     <div className="w-12 h-12 bg-pink-100 rounded-full flex items-center justify-center mb-2">
                       <Plus className="text-pink-600" size={28} />
                     </div>
                     <h3 className="text-base font-medium mb-1 text-center text-pink-600">
-                      Custom Form Builder
+                      {t("expressEvent.customFormBuilder")}
                     </h3>
                     <p className="text-xs text-gray-500 text-center line-clamp-2">
-                      Fully customizable with drag and drop, conditions, validation and more
+                      {t("expressEvent.customFormBuilderDescription")}
                     </p>
                   </div>
 
@@ -1397,55 +1476,35 @@ const RegistrationForm = ({
                         {isSelected && (
                           <div className="mt-2 flex items-center justify-center shrink-0">
                             <Check size={16} className="text-pink-500 mr-1" />
-                            <span className="text-sm text-pink-500 font-medium">Selected</span>
+                            <span className="text-sm text-pink-500 font-medium">{t("expressEvent.selected")}</span>
                           </div>
                         )}
                       </div>
                     );
                   })}
 
-                  {/* Default templates (template-one ... template-seven) */}
-                  {templates.map((tpl) => (
-                    <div
-                      key={tpl.id}
-                      onClick={() =>
-                        !isLoadingFormData && handleUseTemplate(tpl.id)
-                      }
-                      className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors relative overflow-hidden ${
-                        confirmedTemplate === tpl.id
-                          ? "border-pink-500 bg-pink-50"
-                          : "border-gray-200 hover:border-pink-500"
-                      } ${
-                        isLoadingFormData ? "cursor-not-allowed opacity-75" : ""
-                      }`}
-                    >
-                      {/* Edit: open modal to view template and use if required */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenModal(tpl.id);
-                        }}
-                        className="absolute top-2 right-2 z-10 p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
-                        title="View / Edit Template"
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <div className="w-full h-40 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
-                        <div className="transform scale-[0.15] pointer-events-none">
-                          <div className="w-[1200px]">{tpl.component}</div>
-                        </div>
-                      </div>
-
-                      {confirmedTemplate === tpl.id && (
-                        <div className="mt-2 flex items-center justify-center">
-                          <Check size={16} className="text-pink-500 mr-1" />
-                          <span className="text-sm text-pink-500 font-medium">
-                            Selected
-                          </span>
-                        </div>
-                      )}
+                  {/* ── Pre-built Templates Section ─────────────────── */}
+                  <div className="col-span-full mt-4 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1 bg-gray-200" />
+                      <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                        {t("prebuiltTemplates.sectionTitle")}
+                      </span>
+                      <div className="h-px flex-1 bg-gray-200" />
                     </div>
+                    <p className="text-center text-xs text-gray-400 mt-1">
+                      {t("prebuiltTemplates.sectionSubtitle")}
+                    </p>
+                  </div>
+                  {PREBUILT_TEMPLATES.map((tpl) => (
+                    <PrebuiltTemplateCard
+                      key={tpl.key}
+                      template={tpl}
+                      isSelected={false}
+                      isLoading={isSavingPrebuilt}
+                      onUse={handleUsePrebuiltTemplate}
+                      onPreview={handlePrebuiltPreview}
+                    />
                   ))}
                 </div>
               )}
@@ -1530,7 +1589,7 @@ const RegistrationForm = ({
                           : "bg-pink-500 hover:bg-pink-600 text-white"
                       }`}
                     >
-                      {isLoading ? "Applying..." : "Use This Template"}
+                      {isLoading ? t("expressEvent.applying") : t("expressEvent.useThisTemplate")}
                     </button>
                     <button
                       onClick={() => {
@@ -1555,6 +1614,74 @@ const RegistrationForm = ({
             </div>
           )}
 
+          {/* Prebuilt template full-preview modal */}
+          {isPrebuiltPreviewOpen && prebuiltPreviewTemplate && (
+            <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">
+                      {t(prebuiltPreviewTemplate.nameKey)}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {t(prebuiltPreviewTemplate.descriptionKey)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleUsePrebuiltTemplate(prebuiltPreviewTemplate.key)}
+                      disabled={isSavingPrebuilt}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        isSavingPrebuilt
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          : "bg-pink-500 hover:bg-pink-600 text-white"
+                      }`}
+                    >
+                      {isSavingPrebuilt ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <Check size={14} />
+                      )}
+                      {isSavingPrebuilt ? t("expressEvent.applying") : t("prebuiltTemplates.useTemplate")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsPrebuiltPreviewOpen(false);
+                        setPrebuiltPreviewTemplate(null);
+                      }}
+                      className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preview body */}
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                  <div className="mx-auto" style={{ maxWidth: prebuiltPreviewTemplate.theme.formMaxWidth || "600px" }}>
+                    <FormBuilderTemplateForm
+                      data={prebuiltPreviewTemplate.fields.map((f, i) => ({
+                        id: f.id,
+                        type: f.type,
+                        label: f.label,
+                        required: f.required,
+                        ...f,
+                      }))}
+                      eventId={effectiveEventId}
+                      formBuilderData={{
+                        formData: prebuiltPreviewTemplate.fields,
+                        theme: prebuiltPreviewTemplate.theme,
+                        languageMode: "single",
+                      }}
+                      theme={prebuiltPreviewTemplate.theme}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Delete custom form template confirmation (express) */}
           {isDeleteFormBuilderModalOpen && (
             <div
@@ -1568,7 +1695,7 @@ const RegistrationForm = ({
                 onMouseDown={(e) => e.stopPropagation()}
               >
                 <div className="p-4 border-b flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Delete Template</h3>
+                  <h3 className="text-lg font-semibold text-gray-900">{t("expressEvent.deleteTemplate")}</h3>
                   <button
                     onClick={cancelDeleteFormBuilderTemplate}
                     className="p-2 hover:bg-gray-100 rounded-lg"
@@ -1579,10 +1706,10 @@ const RegistrationForm = ({
                 </div>
                 <div className="p-4">
                   <p className="text-sm text-gray-700">
-                    Are you sure you want to delete{" "}
-                    <span className="font-semibold">{deleteFormBuilderCandidate?.title ?? "this template"}</span>?
+                    {t("expressEvent.areYouSureDelete")}{" "}
+                    <span className="font-semibold">{deleteFormBuilderCandidate?.title ?? t("expressEvent.thisTemplate")}</span>?
                   </p>
-                  <p className="text-xs text-gray-500 mt-2">This action cannot be undone.</p>
+                  <p className="text-xs text-gray-500 mt-2">{t("expressEvent.actionCannotBeUndone")}</p>
                 </div>
                 <div className="p-4 border-t flex items-center justify-end gap-3">
                   <button
@@ -1590,14 +1717,14 @@ const RegistrationForm = ({
                     disabled={isDeletingFormBuilder}
                     className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                   >
-                    Cancel
+                    {t("expressEvent.cancel")}
                   </button>
                   <button
                     onClick={confirmDeleteFormBuilderTemplate}
                     disabled={isDeletingFormBuilder}
                     className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50"
                   >
-                    {isDeletingFormBuilder ? "Deleting..." : "Delete"}
+                    {isDeletingFormBuilder ? t("expressEvent.deleting") : t("expressEvent.delete")}
                   </button>
                 </div>
               </div>
@@ -1615,7 +1742,7 @@ const RegistrationForm = ({
                   : ""
               }`}
             >
-              ← Previous
+              {t("expressEvent.previous")}
             </button>
 
             <button
@@ -1636,9 +1763,9 @@ const RegistrationForm = ({
                   <Skeleton className="h-4 w-16" />
                 </div>
               ) : confirmedTemplate ? (
-                "Next →"
+                t("expressEvent.next")
               ) : (
-                "Configure Template"
+                t("expressEvent.configureTemplate")
               )}
             </button>
           </div>

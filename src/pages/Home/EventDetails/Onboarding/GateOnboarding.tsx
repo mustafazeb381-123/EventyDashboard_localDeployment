@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, FileDown, FileSpreadsheet } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
 import * as XLSX from "xlsx";
@@ -44,6 +45,7 @@ interface EnrolledUser {
 }
 
 export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
+    const { t } = useTranslation("dashboard");
 
     const [enrolledUsers, setEnrolledUsers] = useState<EnrolledUser[]>([]);
     const [loading, setLoading] = useState(true);
@@ -505,21 +507,21 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     ? "need_check_out"
                     : "checked_out";
             const baseHeaders = [
-                "ID",
-                "Name",
-                "Email",
-                "User Type",
-                "Status",
-                "Check-In Time",
-                "Check-Out Time",
+                t("gateOnboarding.id"),
+                t("gateOnboarding.name"),
+                t("gateOnboarding.email"),
+                t("gateOnboarding.userType"),
+                t("gateOnboarding.status"),
+                t("gateOnboarding.checkInTime"),
+                t("gateOnboarding.checkOutTime"),
             ];
             const rows = users.map((user: EnrolledUser) => {
                 const status =
                     view === "registered_users"
-                        ? "Not Checked In"
+                        ? t("gateOnboarding.notCheckedIn")
                         : view === "checked_in"
-                        ? "Checked In"
-                        : "Checked Out";
+                        ? t("gateOnboarding.checkedIn")
+                        : t("gateOnboarding.checkedOut");
                 const checkIn = getCheckInTime(user);
                 const checkOut = getCheckOutTime(user);
                 return [
@@ -564,21 +566,21 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     ? "need_check_out"
                     : "checked_out";
             const baseHeaders = [
-                "ID",
-                "Name",
-                "Email",
-                "User Type",
-                "Status",
-                "Check-In Time",
-                "Check-Out Time",
+                t("gateOnboarding.id"),
+                t("gateOnboarding.name"),
+                t("gateOnboarding.email"),
+                t("gateOnboarding.userType"),
+                t("gateOnboarding.status"),
+                t("gateOnboarding.checkInTime"),
+                t("gateOnboarding.checkOutTime"),
             ];
             const rowArrays = users.map((user: EnrolledUser) => {
                 const status =
                     view === "registered_users"
-                        ? "Not Checked In"
+                        ? t("gateOnboarding.notCheckedIn")
                         : view === "checked_in"
-                        ? "Checked In"
-                        : "Checked Out";
+                        ? t("gateOnboarding.checkedIn")
+                        : t("gateOnboarding.checkedOut");
                 const checkIn = getCheckInTime(user);
                 const checkOut = getCheckOutTime(user);
                 return [
@@ -681,7 +683,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     {/* Export CSV / Excel - on top */}
                     <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
                         <p className="text-sm text-gray-600 mb-3">
-                            Export respects current tab and search filter.
+                            {t("gateOnboarding.exportRespectsFilter")}
                         </p>
                         <div className="flex flex-wrap items-center gap-2">
                             <button
@@ -690,7 +692,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
                             >
                                 <FileDown className="w-4 h-4" />
-                                {exportingCsv ? "Exporting…" : "Export CSV"}
+                                {exportingCsv ? t("gateOnboarding.exporting") : t("gateOnboarding.exportCsv")}
                             </button>
                             <button
                                 onClick={handleExportExcel}
@@ -698,7 +700,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
                             >
                                 <FileSpreadsheet className="w-4 h-4" />
-                                {exportingExcel ? "Exporting…" : "Export Excel"}
+                                {exportingExcel ? t("gateOnboarding.exporting") : t("gateOnboarding.exportExcel")}
                             </button>
                         </div>
                     </div>
@@ -709,19 +711,19 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                             className={`px-4 py-2 rounded-lg ${view === "registered_users" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
                             onClick={() => setView("registered_users")}
                         >
-                            Registered Users
+                            {t("gateOnboarding.registeredUsers")}
                         </button>
                         <button
                             className={`px-4 py-2 rounded-lg ${view === "checked_in" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
                             onClick={() => setView("checked_in")}
                         >
-                            Checked-In
+                            {t("gateOnboarding.checkedIn")}
                         </button>
                         <button
                             className={`px-4 py-2 rounded-lg ${view === "checked_out" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-700"}`}
                             onClick={() => setView("checked_out")}
                         >
-                            Checked Out
+                            {t("gateOnboarding.checkedOut")}
                         </button>
                     </div>
 
@@ -732,14 +734,14 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 className="px-4 py-2 bg-[#EAF1FF]  text-[#202242] rounded-lg flex items-center gap-2"
                                 onClick={() => setIsCameraActive(true)}
                             >
-                                Camera
+                                {t("gateOnboarding.camera")}
                             </button>
                         ) : (
                             <button
                                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center gap-2"
                                 onClick={stopCamera}
                             >
-                                Close Camera
+                                {t("gateOnboarding.closeCamera")}
                             </button>
                         )}
                     </div>
@@ -752,7 +754,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 className="w-full max-w-md mx-auto rounded-lg overflow-hidden shadow-lg"
                             ></div>
                             <p className="text-center mt-2 text-sm text-gray-600">
-                                📷 Point camera at QR code to scan
+                                {t("gateOnboarding.pointCameraToScan")}
                             </p>
                         </div>
                     )}
@@ -761,7 +763,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                     {scannedData && (
                         <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg">
                             <p className="text-sm text-green-800">
-                                <strong>Last Scanned:</strong> {scannedData}
+                                <strong>{t("gateOnboarding.lastScanned")}</strong> {scannedData}
                             </p>
                         </div>
                     )}
@@ -774,7 +776,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 onClick={() => setShowInput((prev) => !prev)}
                                 className="px-4 py-2 bg-[#EAF1FF] text-[#202242] rounded-lg transition"
                             >
-                                {showInput ? "Close Scanner" : "Open Scanner Input"}
+                                {showInput ? t("gateOnboarding.closeScanner") : t("gateOnboarding.openScannerInput")}
                             </button>
                         </div>
 
@@ -783,7 +785,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                 <input
                                     ref={inputRef}
                                     type="text"
-                                    placeholder="Scanner Token"
+                                    placeholder={t("gateOnboarding.scannerToken")}
                                     className="flex p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#EAF1FF] outline-none"
                                     onKeyDown={(e) => {
                                         if (e.key === "Enter") {
@@ -807,7 +809,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                         }
                                     }}
                                 >
-                                    Submit
+                                    {t("gateOnboarding.submit")}
                                 </button>
                             </div>
                         )}
@@ -819,10 +821,10 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                         <div className="flex items-center justify-between mb-4">
                             <h3 className="text-base font-semibold text-gray-800">
                                 {view === "registered_users"
-                                    ? `Registered Users ${enrolledUsers.length}`
+                                    ? `${t("gateOnboarding.registeredUsers")} ${enrolledUsers.length}`
                                     : view === "checked_in"
-                                    ? `Checked-In Users ${enrolledUsers.length}`
-                                    : `Checked Out Users ${enrolledUsers.length}`}
+                                    ? `${t("gateOnboarding.checkedInUsers")} ${enrolledUsers.length}`
+                                    : `${t("gateOnboarding.checkedOutUsers")} ${enrolledUsers.length}`}
                             </h3>
                             <Search
                                 value={searchTerm}
@@ -830,7 +832,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                     setSearchTerm(val);
                                     setCurrentPage(1); // reset to first page when searching
                                 }}
-                                placeholder="Search users..."
+                                placeholder={t("gateOnboarding.searchPlaceholder")}
                             />
                         </div>
 
@@ -841,14 +843,14 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                         onClick={() => handleAreaCheckIn(selectedUsers)}
                                         className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
                                     >
-                                        {selectedUsers.length} Bulk Check-In
+                                        {selectedUsers.length} {t("gateOnboarding.bulkCheckIn")}
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => handleAreaCheckOut(selectedUsers)}
                                         className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                                     >
-                                        {selectedUsers.length} Bulk Check-Out
+                                        {selectedUsers.length} {t("gateOnboarding.bulkCheckOut")}
                                     </button>
                                 )}
                             </div>
@@ -937,18 +939,18 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                     />
                                                 </th>
                                             )}
-                                            <th className="px-4 py-3 text-left">ID</th>
-                                            <th className="px-4 py-3 text-left">Name</th>
-                                            <th className="px-4 py-3 text-left">Email</th>
-                                            <th className="px-4 py-3 text-left">User type</th>
+                                            <th className="px-4 py-3 text-left">{t("gateOnboarding.id")}</th>
+                                            <th className="px-4 py-3 text-left">{t("gateOnboarding.name")}</th>
+                                            <th className="px-4 py-3 text-left">{t("gateOnboarding.email")}</th>
+                                            <th className="px-4 py-3 text-left">{t("gateOnboarding.userType")}</th>
                                             {view === "registered_users" && (
-                                                <th className="px-4 py-3 text-left">Status</th>
+                                                <th className="px-4 py-3 text-left">{t("gateOnboarding.status")}</th>
                                             )}
                                             {view === "checked_out" && (
-                                                <th className="px-4 py-3 text-left">Check-Out Time</th>
+                                                <th className="px-4 py-3 text-left">{t("gateOnboarding.checkOutTime")}</th>
                                             )}
                                             {view !== "checked_out" && (
-                                                <th className="px-4 py-3 text-left">Action</th>
+                                                <th className="px-4 py-3 text-left">{t("gateOnboarding.action")}</th>
                                             )}
                                         </tr>
                                     </thead>
@@ -963,7 +965,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                     }
                                                     className="px-4 py-8 text-center text-gray-500"
                                                 >
-                                                    No users found
+                                                    {t("gateOnboarding.noUsersFound")}
                                                 </td>
                                             </tr>
                                         ) : (
@@ -1002,17 +1004,17 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                                 <td className="px-4 py-3 text-sm">
                                                                     {status === "Not Checked-In" && (
                                                                         <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">
-                                                                            Not Checked-In
+                                                                            {t("gateOnboarding.notCheckedIn")}
                                                                         </span>
                                                                     )}
                                                                     {status === "Checked-In" && (
                                                                         <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                                                                            Checked-In
+                                                                            {t("gateOnboarding.checkedIn")}
                                                                         </span>
                                                                     )}
                                                                     {status === "Checked Out" && (
                                                                         <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                                                                            Checked Out
+                                                                            {t("gateOnboarding.checkedOut")}
                                                                         </span>
                                                                     )}
                                                                 </td>
@@ -1030,7 +1032,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                                         className="px-2 py-1 bg-green-500 hover:bg-green-600 text-white rounded-lg transition"
                                                                         onClick={() => handleAreaCheckIn([user.id], user.attributes.name)}
                                                                     >
-                                                                        Check-In
+                                                                        {t("gateOnboarding.checkIn")}
                                                                     </button>
                                                                 ) : (
                                                                     <button
@@ -1042,7 +1044,7 @@ export default function GateOnboarding({ gate, onBack }: GateOnboardingProps) {
                                                                             )
                                                                         }
                                                                     >
-                                                                        Check-Out
+                                                                        {t("gateOnboarding.checkOut")}
                                                                     </button>
                                                                 )}
                                                             </td>

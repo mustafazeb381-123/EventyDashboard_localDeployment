@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Eye,
@@ -20,6 +21,7 @@ import {
 import Assets from "@/utils/Assets";
 
 function TicketManagement() {
+  const { t } = useTranslation("dashboard");
   const [activeTab, setActiveTab] = useState("types");
   const [showModal, setShowModal] = useState(false);
   const [selectedType, setSelectedType] = useState("email");
@@ -369,7 +371,7 @@ function TicketManagement() {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-500">
-                  Total Tickets
+                  {t("ticketManagement.totalTickets")}
                 </p>
                 <p className="text-lg font-semibold text-gray-900">300</p>
               </div>
@@ -387,7 +389,7 @@ function TicketManagement() {
 
               <div>
                 <p className="text-sm font-medium text-gray-500">
-                  Total Sold Tickets
+                  {t("ticketManagement.totalSoldTickets")}
                 </p>
                 <p className="text-lg font-semibold text-gray-900">300</p>
               </div>
@@ -400,7 +402,7 @@ function TicketManagement() {
               <div className="flex items-center">
                 <h1 className="text-3xl font-regular text-gray-900 tracking-tight">
                   
-                  {activeTab === "types" ? "Ticket Types" : "All Tickets"}
+                  {activeTab === "types" ? t("ticketManagement.ticketTypes") : t("ticketManagement.allTickets")}
                 </h1>
                 <p className="text-sm font-medium text-gray-500 px-3">{activeTab === "types" ? "6 Types" : "6 Tickets"}</p>
               </div>
@@ -417,7 +419,7 @@ function TicketManagement() {
              transition-all duration-200 transform hover:-translate-y-0.5 cursor-pointer"
             >
               <Plus size={18} />
-              New Tickets
+              {t("ticketManagement.newTickets")}
             </button>
           </div>
 
@@ -431,7 +433,7 @@ function TicketManagement() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              Types
+              {t("ticketManagement.types")}
             </button>
             <button
               onClick={() => setActiveTab("users")}
@@ -441,7 +443,7 @@ function TicketManagement() {
                   : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
               }`}
             >
-              Users
+              {t("ticketManagement.users")}
             </button>
           </div>
 
@@ -522,7 +524,7 @@ function TicketManagement() {
             <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  New Ticket
+                  {t("ticketManagement.newTicket")}
                 </h2>
               </div>
               <button
@@ -544,7 +546,7 @@ function TicketManagement() {
                     onChange={(e) => setSendTo(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white"
                   >
-                    <option>All users Types</option>
+                    <option>{t("ticketManagement.allUsersTypes")}</option>
                     <option>Type 1</option>
                     <option>Type 2</option>
                     <option>Type 3</option>
@@ -560,7 +562,7 @@ function TicketManagement() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter Your Description..."
+                    placeholder={t("ticketManagement.descriptionPlaceholder")}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
@@ -616,7 +618,7 @@ function TicketManagement() {
                     />
                     <div className="flex items-center gap-3">
                       <div>
-                        <div className="font-medium text-gray-900">Email</div>
+                        <div className="font-medium text-gray-900">{t("ticketManagement.email")}</div>
                       </div>
                     </div>
                   </label>
@@ -638,7 +640,7 @@ function TicketManagement() {
                     />
                     <div className="flex items-center gap-3">
                       <div>
-                        <div className="font-medium text-gray-900">SMS</div>
+                        <div className="font-medium text-gray-900">{t("ticketManagement.sms")}</div>
                       </div>
                     </div>
                   </label>
@@ -662,7 +664,7 @@ function TicketManagement() {
     ) : (
       <>
         <Plus size={18} />
-        Add Ticket
+        {t("ticketManagement.addTicket")}
       </>
     )}
   </button>

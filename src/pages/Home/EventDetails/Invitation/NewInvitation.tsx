@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ChevronLeft } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getEventbyId } from "@/apis/apiHelpers";
 import {
   createEventInvitation,
@@ -89,6 +90,7 @@ function findInvitationFromListResponse(
 }
 
 function NewInvitation() {
+  const { t } = useTranslation("dashboard");
   const location = useLocation();
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
@@ -286,17 +288,17 @@ function NewInvitation() {
   };
 
   const invitationEmailMergeTags: MergeTag[] = [
-    { name: "First Name", value: "{{user.firstname}}" },
-    { name: "Last Name", value: "{{user.lastname}}" },
-    { name: "Full Name", value: "{{user.fullname}}" },
-    { name: "Email", value: "{{user.email}}" },
-    { name: "Company", value: "{{user.company}}" },
-    { name: "Organization", value: "{{user.organization}}" },
-    { name: "Event Name", value: "{{event.name}}" },
-    { name: "Event Location", value: "{{event.location}}" },
-    { name: "Event Start", value: "{{event.startdate}}" },
-    { name: "Event End", value: "{{event.enddate}}" },
-    { name: "User QR Code", value: "{{user.qrcode}}" },
+    { name: t("invitation.firstName"), value: "{{user.firstname}}" },
+    { name: t("invitation.lastName"), value: "{{user.lastname}}" },
+    { name: t("invitation.fullName"), value: "{{user.fullname}}" },
+    { name: t("invitation.email"), value: "{{user.email}}" },
+    { name: t("invitation.company"), value: "{{user.company}}" },
+    { name: t("invitation.organization"), value: "{{user.organization}}" },
+    { name: t("invitation.eventName"), value: "{{event.name}}" },
+    { name: t("invitation.eventLocation"), value: "{{event.location}}" },
+    { name: t("invitation.eventStart"), value: "{{event.startdate}}" },
+    { name: t("invitation.eventEnd"), value: "{{event.enddate}}" },
+    { name: t("invitation.userQrCode"), value: "{{user.qrcode}}" },
   ];
 
   const handleInvitationCreateNewTemplate = () => {
@@ -339,7 +341,7 @@ function NewInvitation() {
     setInvitationEmailBuilderOpen(false);
     setInvitationEmailEditingTemplate(null);
     setInvitationCustomTemplateName("");
-    showNotification("Template saved", "success");
+    showNotification(t("invitation.templateSaved"), "success");
   };
 
   const handleInvitationEditTemplate = (template: InvitationEmailTemplate) => {
@@ -511,7 +513,7 @@ function NewInvitation() {
     }
   };
 
-  const submitButtonLabel = isEditMode ? "Update Invitation" : "Send Invitation";
+  const submitButtonLabel = isEditMode ? t("invitation.updateInvitation") : t("invitation.sendInvitation");
 
   const handleSendTestEmail = () => {
     showNotification("Test email sent to your address.", "success");
@@ -541,7 +543,7 @@ function NewInvitation() {
 
   const backPath = `invitation${eventId ? `?eventId=${eventId}` : ""}`;
   const backUrl = params.company ? `/${params.company}/${backPath}` : `/${backPath}`;
-  const pageTitle = isEditMode ? "Edit Invitation" : "New Invitation";
+  const pageTitle = isEditMode ? t("invitation.editInvitation") : t("invitation.newInvitation");
 
   const selectedTemplate = invitationEmailTemplates.find(
     (t) => t.id === selectedInvitationEmailTemplateId,
@@ -559,7 +561,7 @@ function NewInvitation() {
     return (
       <div className="min-h-full flex flex-col items-center justify-center gap-4 p-8">
         <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-slate-600 font-medium">Loading invitation…</p>
+        <p className="text-slate-600 font-medium">{t("invitation.loading")}</p>
       </div>
     );
   }
@@ -610,22 +612,22 @@ function NewInvitation() {
           const allTabs = [
             {
               id: "invitation-details" as TabId,
-              label: "Invitation Details",
+              label: t("invitation.steps.invitationDetails"),
               colorClass: "text-violet-600 border-b-2 border-violet-600",
             },
             {
               id: "rsvp-template" as TabId,
-              label: "RSVP Template",
+              label: t("invitation.steps.rsvpTemplate"),
               colorClass: "text-blue-600 border-b-2 border-blue-600",
             },
             {
               id: "email-template" as TabId,
-              label: "Email Template",
+              label: t("invitation.steps.emailTemplate"),
               colorClass: "text-red-600 border-b-2 border-red-600",
             },
             {
               id: "invitees" as TabId,
-              label: "Invitees",
+              label: t("invitation.steps.invitees"),
               colorClass: "text-green-600 border-b-2 border-green-600",
             },
           ];
@@ -769,7 +771,7 @@ function NewInvitation() {
                       }}
                       className="px-4 py-2.5 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-xl text-sm font-medium transition-colors"
                     >
-                      Back
+                      {t("invitation.back")}
                     </button>
                   )
                 )}
@@ -785,7 +787,7 @@ function NewInvitation() {
                         }
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
                       >
-                        Next
+                        {t("invitation.next")}
                       </button>
                     )}
                     {newInvitationActiveTab === "rsvp-template" && (
@@ -794,7 +796,7 @@ function NewInvitation() {
                         onClick={() => setNewInvitationActiveTab("email-template")}
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
                       >
-                        Next
+                        {t("invitation.next")}
                       </button>
                     )}
                     {newInvitationActiveTab === "email-template" && (
@@ -803,7 +805,7 @@ function NewInvitation() {
                         onClick={() => setNewInvitationActiveTab("invitees")}
                         className="px-5 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shadow-sm"
                       >
-                        Next
+                        {t("invitation.next")}
                       </button>
                     )}
                   </>
@@ -816,7 +818,7 @@ function NewInvitation() {
                   }}
                   className="px-5 py-2.5 border border-slate-300 bg-white text-slate-600 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
                 >
-                  Close
+                  {t("invitation.close")}
                 </a>
               </div>
             </div>
@@ -828,8 +830,8 @@ function NewInvitation() {
         open={invitationEmailBuilderOpen}
         title={
           invitationEmailEditingTemplate
-            ? "Edit Email Template"
-            : "Create Email Template"
+            ? t("invitation.editEmailTemplate")
+            : t("invitation.createEmailTemplate")
         }
         initialDesign={invitationEmailEditingTemplate?.design}
         initialHtml={invitationEmailEditingTemplate?.html}
@@ -847,14 +849,14 @@ function NewInvitation() {
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
             <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              Create Custom Template
+              {t("invitation.createCustomTemplate")}
             </h3>
             <p className="text-gray-600 mb-6 text-sm">
-              Enter a name for your new email template
+              {t("invitation.enterTemplateName")}
             </p>
             <input
               type="text"
-              placeholder="e.g., Welcome Email with QR Code"
+              placeholder={t("invitation.templateNamePlaceholder")}
               value={invitationCustomTemplateName}
               onChange={(e) => setInvitationCustomTemplateName(e.target.value)}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg mb-6 focus:outline-none focus:ring-2 focus:ring-indigo-500"
@@ -872,14 +874,14 @@ function NewInvitation() {
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700"
               >
-                Cancel
+                {t("invitation.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleInvitationStartCreatingTemplate}
                 className="flex-1 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium"
               >
-                Create
+                {t("invitation.create")}
               </button>
             </div>
           </div>

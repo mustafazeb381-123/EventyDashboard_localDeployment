@@ -4,8 +4,10 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { AlertTriangle, RefreshCcw, Home } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function ErrorPage() {
+  const { t } = useTranslation("dashboard");
   const error = useRouteError();
   const navigate = useNavigate();
 
@@ -13,14 +15,14 @@ export default function ErrorPage() {
 
   if (isRouteErrorResponse(error)) {
     // error is type `ErrorResponse`
-    errorMessage = error.statusText || error.data?.message || "Unknown error";
+    errorMessage = error.statusText || error.data?.message || t("errors.unknownError");
   } else if (error instanceof Error) {
     errorMessage = error.message;
   } else if (typeof error === "string") {
     errorMessage = error;
   } else {
     console.error(error);
-    errorMessage = "Unknown error";
+    errorMessage = t("errors.unknownError");
   }
   // we did the error handling above to narrow down the type of `error` for TypeScript
 
@@ -32,11 +34,11 @@ export default function ErrorPage() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-900 mb-2">
-          Oops! Something went wrong
+          {t("errors.somethingWentWrong")}
         </h1>
 
         <p className="text-gray-500 mb-6 break-words">
-          {errorMessage || "An unexpected error occurred."}
+          {errorMessage || t("errors.unexpectedError")}
         </p>
 
         <div className="flex gap-3 justify-center">
@@ -45,7 +47,7 @@ export default function ErrorPage() {
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <RefreshCcw className="w-4 h-4" />
-            Reload Page
+            {t("errors.reloadPage")}
           </button>
 
           <button
@@ -56,7 +58,7 @@ export default function ErrorPage() {
             className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Home className="w-4 h-4" />
-            Go Home
+            {t("errors.goHome")}
           </button>
         </div>
       </div>

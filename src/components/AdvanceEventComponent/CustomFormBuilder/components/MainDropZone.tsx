@@ -1,6 +1,7 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { Plus, GripVertical, Edit } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface MainDropZoneProps {
   children?: React.ReactNode;
@@ -11,6 +12,7 @@ export const MainDropZone: React.FC<MainDropZoneProps> = ({
   children,
   isEmpty = false,
 }) => {
+  const { t } = useTranslation("dashboard");
   const { setNodeRef, isOver } = useDroppable({
     id: "main-drop-zone",
   });
@@ -40,10 +42,10 @@ export const MainDropZone: React.FC<MainDropZoneProps> = ({
             </p>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <GripVertical size={16} />
-              <span>Drag to reorder</span>
+              <span>{t("advance.formBuilder.dragToReorder")}</span>
               <span>•</span>
               <Edit size={16} />
-              <span>Click to edit</span>
+              <span>{t("advance.formBuilder.clickToEdit")}</span>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { deleteEventUser, getBadgesApi, getEventUsers, getEventUser, markEventUserPrinted, getEventbyId, getBadgeApi, getBadgeType, updateEventUser } from "@/apis/apiHelpers";
 
 // Import refactored components and hooks using relative paths as per your structure
@@ -12,6 +13,7 @@ import { usePrintStyles } from "./hook/usePrintStyle";
 import { X, Edit } from "lucide-react";
 
 function PrintBadges() {
+  const { t } = useTranslation("dashboard");
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
@@ -770,7 +772,7 @@ function PrintBadges() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Edit User</h2>
+                <h2 className="text-2xl font-bold text-gray-900">{t("printBadges.editUser")}</h2>
                 <button
                   onClick={() => setEditingUser(null)}
                   className="p-1 hover:bg-gray-100 rounded-lg transition"
@@ -821,17 +823,17 @@ function PrintBadges() {
 
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("printBadges.name")}</label>
                   <input
                     type="text"
-                    placeholder="Full Name"
+                    placeholder={t("printBadges.fullNamePlaceholder")}
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("printBadges.email")}</label>
                   <input
                     type="email"
                     placeholder="user@example.com"
@@ -841,10 +843,10 @@ function PrintBadges() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("printBadges.organization")}</label>
                   <input
                     type="text"
-                    placeholder="Organization"
+                    placeholder={t("printBadges.organization")}
                     value={editForm.organization}
                     onChange={(e) =>
                       setEditForm({ ...editForm, organization: e.target.value })
@@ -853,7 +855,7 @@ function PrintBadges() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">User Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t("printBadges.userType")}</label>
                   {badgeTypesLoading ? (
                     <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm">
                       Loading user types...
@@ -871,7 +873,7 @@ function PrintBadges() {
                       }}
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                     >
-                      <option value="">Select user type</option>
+                      <option value="">{t("printBadges.selectUserType")}</option>
                       {badgeTypes.map((badge) => (
                         <option
                           key={badge.id}
@@ -890,7 +892,7 @@ function PrintBadges() {
                   onClick={() => setEditingUser(null)}
                   className="flex-1 px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium transition"
                 >
-                  Cancel
+                  {t("printBadges.cancel")}
                 </button>
                 <button
                   onClick={handleUpdateUser}
@@ -899,7 +901,7 @@ function PrintBadges() {
                     isUpdating ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
                   }`}
                 >
-                  {isUpdating ? "Updating..." : "Update"}
+                  {isUpdating ? t("printBadges.updating") : t("printBadges.update")}
                 </button>
               </div>
             </div>

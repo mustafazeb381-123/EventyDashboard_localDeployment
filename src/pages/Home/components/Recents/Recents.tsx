@@ -1,5 +1,6 @@
 import Assets from "@/utils/Assets";
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { getAllEvents } from "@/apis/apiHelpers";
 import { useNavigate } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
@@ -28,6 +29,7 @@ interface ApiEventItem {
 }
 
 function Recents() {
+  const { t } = useTranslation("dashboard");
   const navigateTo = useWorkspaceNavigate();
   const [recentEvents, setRecentEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
@@ -237,7 +239,7 @@ function Recents() {
   return (
     <div className="bg-white w-full rounded-2xl p-6 shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md">
       <p className="font-poppins text-md font-medium text-neutral-900 mb-4">
-        Recents
+        {t("home.recents")}
       </p>
 
       {loading ? (
@@ -291,20 +293,20 @@ function Recents() {
                         }}
                       >
                         {event.type === "advance"
-                          ? "Advance Event"
+                          ? t("home.advanceEvent")
                           : event.type === "express"
-                          ? "Express Event"
-                          : event.type || "Event"}
+                          ? t("home.expressEvent")
+                          : event.type || t("home.event")}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2 mt-10">
                     <p className="text-neutral-100 font-poppins font-medium text-md group-hover:text-white transition-colors duration-300">
-                      {event.name || "Unnamed Event"}
+                      {event.name || t("home.unnamedEvent")}
                     </p>
                     <p className="text-neutral-300 font-poppins font-normal text-xs">
-                      {event.date || "No date"}
+                      {event.date || t("home.noDate")}
                     </p>
                   </div>
                 </div>

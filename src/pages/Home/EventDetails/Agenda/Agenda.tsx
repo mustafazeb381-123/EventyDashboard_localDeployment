@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Trash2,
@@ -56,6 +57,7 @@ type FormState = {
 function Agenda() {
   const location = useLocation();
   const params = useParams();
+  const { t } = useTranslation("dashboard");
 
   // Get eventId from URL params or query string
   const urlParams = new URLSearchParams(location.search);
@@ -179,7 +181,7 @@ function Agenda() {
         }
       } catch (error) {
         console.error("Error fetching agendas:", error);
-        showNotification("Failed to fetch agendas", "error");
+        showNotification(t("agenda.failedToFetchAgendas"), "error");
       } finally {
         setIsFetchingAgendas(false);
       }
@@ -283,7 +285,7 @@ function Agenda() {
 
   const handleDeleteAgenda = async (agenda: AgendaItem) => {
     if (!eventId) {
-      showNotification("Event ID is missing", "error");
+      showNotification(t("agenda.eventIdMissing"), "error");
       return;
     }
 
@@ -302,15 +304,15 @@ function Agenda() {
         setSelectedAgendas((prev) =>
           prev.filter((id) => id !== agendaToDelete.id)
         );
-        showNotification("Agenda deleted successfully!", "success");
+        showNotification(t("agenda.deletedSuccess"), "success");
         setIsDeleteModalOpen(false);
         setAgendaToDelete(null);
       } else {
-        showNotification("Failed to delete agenda", "error");
+        showNotification(t("agenda.failedToDelete"), "error");
       }
     } catch (error) {
       console.error("Error deleting agenda:", error);
-      showNotification("Error deleting agenda", "error");
+      showNotification(t("agenda.errorDeleting"), "error");
     } finally {
       setIsDeletingAgenda(null);
     }
@@ -318,7 +320,7 @@ function Agenda() {
 
   const handleSubmit = async () => {
     if (!eventId) {
-      showNotification("Event ID is missing", "error");
+      showNotification(t("agenda.eventIdMissing"), "error");
       return;
     }
 
@@ -329,7 +331,7 @@ function Agenda() {
       !formData.timeFrom ||
       !formData.timeTo
     ) {
-      showNotification("Please fill all required fields!", "error");
+      showNotification(t("agenda.fillRequiredFields"), "error");
       return;
     }
 
@@ -399,15 +401,15 @@ function Agenda() {
             });
             setAgendas(agendas);
           }
-          showNotification("Agenda updated successfully!", "success");
+          showNotification(t("agenda.updatedSuccess"), "success");
           setIsModalOpen(false);
           resetForm();
         } else {
-          showNotification("Failed to update agenda", "error");
+          showNotification(t("agenda.failedToUpdate"), "error");
         }
       } catch (error) {
         console.error("Error updating agenda:", error);
-        showNotification("Error updating agenda", "error");
+        showNotification(t("agenda.errorUpdating"), "error");
       } finally {
         setIsUpdatingAgenda(false);
       }
@@ -458,15 +460,15 @@ function Agenda() {
             });
             setAgendas(agendas);
           }
-          showNotification("Agenda added successfully!", "success");
+          showNotification(t("agenda.addedSuccess"), "success");
           setIsModalOpen(false);
           resetForm();
         } else {
-          showNotification("Failed to add agenda", "error");
+          showNotification(t("agenda.failedToAdd"), "error");
         }
       } catch (error) {
         console.error("Error creating agenda:", error);
-        showNotification("Error creating agenda", "error");
+        showNotification(t("agenda.errorCreating"), "error");
       } finally {
         setIsAddingAgenda(false);
       }
@@ -588,15 +590,15 @@ function Agenda() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-gray-900">Agenda</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">{t("agenda.title")}</h1>
               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
                 {isFetchingAgendas ? (
                   <span className="flex items-center gap-1">
                     <Loader2 className="w-3 h-3 animate-spin" />
-                    Loading...
+                    {t("agenda.loading")}
                   </span>
                 ) : (
-                  `${agendas.length} Agendas`
+                  `${agendas.length} ${t("agenda.agendas")}`
                 )}
               </span>
             </div>
@@ -609,7 +611,7 @@ function Agenda() {
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="w-4 h-4" />
-              Add Agenda
+              {t("agenda.addAgenda")}
             </button>
           </div>
 
@@ -623,25 +625,25 @@ function Agenda() {
                       <div className="w-4 h-4 bg-gray-300 rounded"></div>
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Title
+                      {t("agenda.tableTitle")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Start time
+                      {t("agenda.startTime")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      End time
+                      {t("agenda.endTime")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
+                      {t("agenda.location")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      {t("agenda.type")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Speakers
+                      {t("agenda.speakers")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t("agenda.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -700,7 +702,7 @@ function Agenda() {
             </div>
           ) : agendas.length === 0 ? (
             <div className="text-center py-12 border border-gray-200 rounded-lg">
-              <p className="text-gray-500 mb-4">No agendas found</p>
+              <p className="text-gray-500 mb-4">{t("agenda.noAgendasFound")}</p>
               <button
                 onClick={() => {
                   resetForm();
@@ -710,7 +712,7 @@ function Agenda() {
                 className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus className="w-4 h-4" />
-                Add Your First Agenda
+                {t("agenda.addFirstAgenda")}
               </button>
             </div>
           ) : (
@@ -732,25 +734,25 @@ function Agenda() {
                       />
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Title
+                      {t("agenda.tableTitle")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Start time
+                      {t("agenda.startTime")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      End time
+                      {t("agenda.endTime")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Location
+                      {t("agenda.location")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Type
+                      {t("agenda.type")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Speakers
+                      {t("agenda.speakers")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
+                      {t("agenda.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -845,7 +847,7 @@ function Agenda() {
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Delete Agenda
+                  {t("agenda.deleteAgenda")}
                 </h3>
                 <button
                   onClick={() => {
@@ -864,7 +866,7 @@ function Agenda() {
               {/* Content */}
               <div className="mb-6">
                 <p className="text-gray-600 mb-2">
-                  Are you sure you want to delete this agenda?
+                  {t("agenda.confirmDelete")}
                 </p>
                 {agendaToDelete && (
                   <div className="bg-gray-50 p-3 rounded-lg mt-3">
@@ -877,7 +879,7 @@ function Agenda() {
                   </div>
                 )}
                 <p className="text-sm text-red-600 mt-3">
-                  This action cannot be undone.
+                  {t("agenda.cannotBeUndone")}
                 </p>
               </div>
 
@@ -891,7 +893,7 @@ function Agenda() {
                   disabled={isDeletingAgenda !== null}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("agenda.cancel")}
                 </button>
                 <button
                   onClick={confirmDelete}
@@ -901,12 +903,12 @@ function Agenda() {
                   {isDeletingAgenda !== null ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Deleting...
+                      {t("agenda.deleting")}
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t("agenda.delete")}
                     </>
                   )}
                 </button>
@@ -935,7 +937,7 @@ function Agenda() {
               {/* Modal Header */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-semibold text-gray-900">
-                  {isEditMode ? "Edit Agenda" : "Add Agenda"}
+                  {isEditMode ? t("agenda.editAgenda") : t("agenda.addAgenda")}
                 </h2>
                 <button
                   onClick={() => {
@@ -957,11 +959,11 @@ function Agenda() {
                   {/* Title */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Title
+                      {t("agenda.tableTitle")}
                     </label>
                     <input
                       type="text"
-                      placeholder="text here"
+                      placeholder={t("agenda.textPlaceholder")}
                       value={formData.title}
                       onChange={(e) =>
                         handleInputChange("title", e.target.value)
@@ -974,7 +976,7 @@ function Agenda() {
                   {/* Date */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Date
+                      {t("agenda.date")}
                     </label>
                     <input
                       type="date"
@@ -998,7 +1000,7 @@ function Agenda() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Time From
+                        {t("agenda.timeFrom")}
                       </label>
                       <input
                         type="time"
@@ -1012,7 +1014,7 @@ function Agenda() {
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        To
+                        {t("agenda.timeTo")}
                       </label>
                       <input
                         type="time"
@@ -1029,12 +1031,12 @@ function Agenda() {
                   {/* Location */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
+                      {t("agenda.location")}
                     </label>
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="location here"
+                        placeholder={t("agenda.locationPlaceholder")}
                         value={formData.location}
                         onChange={(e) =>
                           handleInputChange("location", e.target.value)
@@ -1050,17 +1052,17 @@ function Agenda() {
                   <div>
                     <div className="flex items-center gap-2 mb-3">
                       <label className="text-sm font-medium text-gray-700">
-                        Speakers
+                        {t("agenda.speakers")}
                       </label>
                       <span className="text-sm text-gray-500">
-                        {selectedSpeakers.length} Added
+                        {selectedSpeakers.length} {t("agenda.added")}
                       </span>
                     </div>
                     <div className="space-y-3">
                       {isFetchingSpeakers ? (
                         <div className="flex items-center gap-2 text-gray-500 text-sm">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading speakers...
+                          {t("agenda.loadingSpeakers")}
                         </div>
                       ) : availableSpeakers.length > 0 ? (
                         availableSpeakers.map((speaker) => (
@@ -1083,7 +1085,7 @@ function Agenda() {
                         ))
                       ) : (
                         <div className="text-gray-500 text-sm">
-                          No speakers available. Add speakers first.
+                          {t("agenda.noSpeakersAvailable")}
                         </div>
                       )}
                     </div>
@@ -1097,7 +1099,7 @@ function Agenda() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-700">
-                          Display
+                          {t("agenda.display")}
                         </span>
                         <svg
                           className="w-4 h-4 text-gray-400"
@@ -1136,7 +1138,7 @@ function Agenda() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-gray-700">
-                          Required Enrollment
+                          {t("agenda.requiredEnrollment")}
                         </span>
                         <svg
                           className="w-4 h-4 text-gray-400"
@@ -1188,12 +1190,12 @@ function Agenda() {
                   {isAddingAgenda || isUpdatingAgenda ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      {isEditMode ? "Updating Agenda..." : "Adding Agenda..."}
+                      {isEditMode ? t("agenda.updatingAgenda") : t("agenda.addingAgenda")}
                     </>
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      {isEditMode ? "Update Agenda" : "Add Agenda"}
+                      {isEditMode ? t("agenda.updateAgenda") : t("agenda.addAgenda")}
                     </>
                   )}
                 </button>

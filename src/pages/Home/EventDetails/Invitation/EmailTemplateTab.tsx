@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, Check, Pencil, Trash2, Eye, Code, X, Copy } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getEventInvitations } from "@/apis/invitationService";
 import type { InvitationEmailTemplate, InvitationForm } from "./newInvitationTypes";
 
@@ -35,6 +36,7 @@ export function EmailTemplateTab({
   onDeleteTemplate,
   eventId,
 }: EmailTemplateTabProps) {
+  const { t } = useTranslation("dashboard");
   const [previewTemplate, setPreviewTemplate] = useState<InvitationEmailTemplate | MadeInvitationTemplate | null>(null);
   const [codeTemplate, setCodeTemplate] = useState<InvitationEmailTemplate | MadeInvitationTemplate | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
@@ -89,14 +91,14 @@ export function EmailTemplateTab({
     <div className="space-y-8">
       <div>
         <h3 className="text-base font-semibold text-slate-800 mb-6">
-          Email content
+          {t("invitation.emailTemplateTab.emailContent")}
         </h3>
         <label className="block text-sm font-medium text-slate-700 mb-1.5">
-          Email Subject
+          {t("invitation.emailTemplateTab.emailSubject")}
         </label>
         <input
           type="text"
-          placeholder="e.g., You're invited to our event"
+          placeholder={t("invitation.emailTemplateTab.emailSubjectPlaceholder")}
           value={invitationForm.emailSubject}
           onChange={(e) =>
             setInvitationForm({
@@ -110,11 +112,10 @@ export function EmailTemplateTab({
 
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1.5">
-          Email Template
+          {t("invitation.emailTemplateTab.emailTemplateLabel")}
         </label>
         <p className="text-xs text-slate-500 mb-4">
-          Create a custom template with the builder or select one below. The
-          selected template is used as the invitation email body.
+          {t("invitation.emailTemplateTab.emailTemplateDescription")}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <div
@@ -124,7 +125,7 @@ export function EmailTemplateTab({
             <div className="text-center">
               <Plus className="w-10 h-10 mx-auto mb-2 text-slate-400" />
               <span className="text-sm font-medium text-slate-600">
-                Create new
+                {t("invitation.emailTemplateTab.createNew")}
               </span>
             </div>
           </div>
@@ -157,7 +158,7 @@ export function EmailTemplateTab({
                     />
                   ) : (
                     <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
-                      No preview
+                      {t("invitation.emailTemplateTab.noPreview")}
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
@@ -169,8 +170,8 @@ export function EmailTemplateTab({
                           setPreviewTemplate(template);
                         }}
                         className="w-10 h-10 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-indigo-400 transition-colors cursor-pointer"
-                        aria-label="Preview"
-                        title="Preview"
+                        aria-label={t("invitation.emailTemplateTab.preview")}
+                        title={t("invitation.emailTemplateTab.preview")}
                       >
                         <Eye size={18} className="text-gray-700" />
                       </button>
@@ -181,8 +182,8 @@ export function EmailTemplateTab({
                           setCodeTemplate(template);
                         }}
                         className="w-10 h-10 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-indigo-400 transition-colors cursor-pointer"
-                        aria-label="See code"
-                        title="See code"
+                        aria-label={t("invitation.emailTemplateTab.seeCode")}
+                        title={t("invitation.emailTemplateTab.seeCode")}
                       >
                         <Code size={18} className="text-gray-700" />
                       </button>
@@ -193,8 +194,8 @@ export function EmailTemplateTab({
                           onEditTemplate(template);
                         }}
                         className="w-10 h-10 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-indigo-400 transition-colors cursor-pointer"
-                        aria-label="Edit template"
-                        title="Edit"
+                        aria-label={t("invitation.emailTemplateTab.editTemplate")}
+                        title={t("invitation.emailTemplateTab.edit")}
                       >
                         <Pencil size={18} className="text-gray-700" />
                       </button>
@@ -205,8 +206,8 @@ export function EmailTemplateTab({
                           onDeleteTemplate(template);
                         }}
                         className="w-10 h-10 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-red-400 transition-colors cursor-pointer"
-                        aria-label="Delete template"
-                        title="Delete"
+                        aria-label={t("invitation.emailTemplateTab.deleteTemplate")}
+                        title={t("invitation.emailTemplateTab.delete")}
                       >
                         <Trash2 size={18} className="text-red-600" />
                       </button>
@@ -225,7 +226,7 @@ export function EmailTemplateTab({
                           className="text-indigo-500 mr-1"
                         />
                         <span className="text-sm text-indigo-500 font-medium">
-                          Selected
+                          {t("invitation.emailTemplateTab.selected")}
                         </span>
                       </div>
                     )}
@@ -241,10 +242,10 @@ export function EmailTemplateTab({
       {eventId && (
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-1.5">
-            Made templates
+            {t("invitation.emailTemplateTab.madeTemplates")}
           </label>
           <p className="text-xs text-slate-500 mb-4">
-            Invitation email templates already created for this event. Preview only.
+            {t("invitation.emailTemplateTab.madeTemplatesDescription")}
           </p>
           {loadingMadeTemplates ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -256,7 +257,7 @@ export function EmailTemplateTab({
               ))}
             </div>
           ) : madeTemplates.length === 0 ? (
-            <p className="text-sm text-slate-500 py-4">No invitation templates for this event yet.</p>
+            <p className="text-sm text-slate-500 py-4">{t("invitation.emailTemplateTab.noMadeTemplates")}</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {madeTemplates.map((template) => {
@@ -276,7 +277,7 @@ export function EmailTemplateTab({
                         />
                       ) : (
                         <div className="absolute inset-0 flex items-center justify-center text-slate-400 text-sm">
-                          No preview
+                          {t("invitation.emailTemplateTab.noPreview")}
                         </div>
                       )}
                       <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto">
@@ -288,8 +289,8 @@ export function EmailTemplateTab({
                               setPreviewTemplate(template);
                             }}
                             className="w-10 h-10 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-indigo-400 transition-colors cursor-pointer"
-                            aria-label="Preview"
-                            title="Preview"
+                            aria-label={t("invitation.emailTemplateTab.preview")}
+                            title={t("invitation.emailTemplateTab.preview")}
                           >
                             <Eye size={18} className="text-gray-700" />
                           </button>
@@ -300,8 +301,8 @@ export function EmailTemplateTab({
                               setCodeTemplate(template);
                             }}
                             className="w-10 h-10 rounded-full bg-white/95 hover:bg-white shadow-md flex items-center justify-center border border-gray-200 hover:border-indigo-400 transition-colors cursor-pointer"
-                            aria-label="See code"
-                            title="See code"
+                            aria-label={t("invitation.emailTemplateTab.seeCode")}
+                            title={t("invitation.emailTemplateTab.seeCode")}
                           >
                             <Code size={18} className="text-gray-700" />
                           </button>
@@ -341,7 +342,7 @@ export function EmailTemplateTab({
                 type="button"
                 onClick={() => setPreviewTemplate(null)}
                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
-                aria-label="Close"
+                aria-label={t("invitation.emailTemplateTab.close")}
               >
                 <X size={20} />
               </button>
@@ -356,7 +357,7 @@ export function EmailTemplateTab({
                 />
               ) : (
                 <div className="flex items-center justify-center h-64 text-slate-500">
-                  No content to preview
+                  {t("invitation.emailTemplateTab.noContentToPreview")}
                 </div>
               )}
             </div>
@@ -387,13 +388,13 @@ export function EmailTemplateTab({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
                 >
                   <Copy size={16} />
-                  {codeCopied ? "Copied!" : "Copy"}
+                  {codeCopied ? t("invitation.emailTemplateTab.copiedBang") : t("invitation.emailTemplateTab.copy")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCodeTemplate(null)}
                   className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
-                  aria-label="Close"
+                  aria-label={t("invitation.emailTemplateTab.close")}
                 >
                   <X size={20} />
                 </button>
@@ -401,7 +402,7 @@ export function EmailTemplateTab({
             </div>
             <div className="flex-1 min-h-0 overflow-auto p-4">
               <pre className="text-xs font-mono text-slate-800 bg-slate-50 p-4 rounded-xl overflow-x-auto whitespace-pre-wrap break-words max-h-[70vh]">
-                {getTemplateHtml(codeTemplate) || "No HTML content"}
+                {getTemplateHtml(codeTemplate) || t("invitation.emailTemplateTab.noHtmlContent")}
               </pre>
             </div>
           </div>

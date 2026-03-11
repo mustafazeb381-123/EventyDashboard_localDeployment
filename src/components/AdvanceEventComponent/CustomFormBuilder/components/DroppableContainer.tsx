@@ -9,6 +9,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { Edit, Trash2, LayoutGrid, Columns2, Square } from "lucide-react";
 import type { CustomFormField } from "../types";
 import { SortableFieldItem } from "./SortableFieldItem";
+import { useTranslation } from "react-i18next";
 
 interface DroppableContainerProps {
   field: CustomFormField;
@@ -33,6 +34,7 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
   onUpdate,
   onUpdateChild,
 }) => {
+  const { t } = useTranslation("dashboard");
   const droppableId = `container:${field.id}`;
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: droppableId,
@@ -120,7 +122,7 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
               e.stopPropagation();
               setIsEditingLabel(true);
             }}
-            title="Click or double-click to edit label"
+            title={t("advance.formBuilder.clickToEditLabel")}
           >
             {field.label || field.name || "Container"}
           </span>
@@ -154,7 +156,7 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
             onEdit(field);
           }}
           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Edit container"
+          title={t("advance.formBuilder.editContainer")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Edit size={18} />
@@ -165,7 +167,7 @@ export const DroppableContainer: React.FC<DroppableContainerProps> = ({
             onDelete(field.id);
           }}
           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete container"
+          title={t("advance.formBuilder.deleteContainer")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Trash2 size={18} />

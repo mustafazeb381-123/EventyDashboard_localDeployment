@@ -42,7 +42,7 @@ const ReusableRegistrationForm = ({
   onDeleteField,
   deleteLoading = {},
 }) => {
-  const { t } = useTranslation("registration");
+  const { t } = useTranslation(["registration", "dashboard"]);
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
@@ -372,7 +372,7 @@ const ReusableRegistrationForm = ({
                         className="w-16 h-16 object-cover rounded-lg border border-gray-200"
                       />
                       <div className="text-xs text-gray-500">
-                        <p>Preview</p>
+                        <p>{t("dashboard:expressEvent.preview")}</p>
                         <button
                           type="button"
                           onClick={() =>
@@ -380,7 +380,7 @@ const ReusableRegistrationForm = ({
                           }
                           className="text-blue-500 hover:text-blue-700 underline"
                         >
-                          View full size
+                          {t("dashboard:expressEvent.viewFullSize")}
                         </button>
                       </div>
                     </div>
@@ -875,7 +875,7 @@ const ReusableRegistrationForm = ({
               </div>
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-gray-900">
-                  Delete Field
+                  {t("registrationForm.deleteField")}
                 </h3>
               </div>
               <button
@@ -895,11 +895,11 @@ const ReusableRegistrationForm = ({
 
             <div className="mb-6">
               <p className="text-gray-700">
-                Are you sure you want to delete{" "}
+                {t("registrationForm.deleteConfirm")}{" "}
                 <span className="font-semibold text-gray-900">
                   "{deleteConfirmModal.fieldLabel}"
                 </span>
-                ? This action cannot be undone.
+                {t("registrationForm.deleteConfirmDesc")}
               </p>
             </div>
 
@@ -915,7 +915,7 @@ const ReusableRegistrationForm = ({
                 }
                 className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors font-medium"
               >
-                Cancel
+                {t("registrationForm.cancel")}
               </button>
               <button
                 type="button"
@@ -930,12 +930,12 @@ const ReusableRegistrationForm = ({
                 deleteLoading[deleteConfirmModal.fieldId] ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Deleting...</span>
+                    <span>{t("registrationForm.deleting")}</span>
                   </>
                 ) : (
                   <>
                     <Trash2 size={16} />
-                    <span>Delete</span>
+                    <span>{t("registrationForm.delete")}</span>
                   </>
                 )}
               </button>

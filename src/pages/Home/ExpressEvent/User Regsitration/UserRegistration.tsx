@@ -68,7 +68,7 @@ function getEventFontFamily(attributes: { font_name?: string } | null | undefine
 function UserRegistration() {
   const { id: routeId } = useParams();
   const [searchParams] = useSearchParams();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation("dashboard");
 
   // When user opens link from email with ?user_type=vip, register them as VIP; otherwise use default (guest)
   const userTypeFromUrl = searchParams.get("user_type")?.trim().toLowerCase() || null;
@@ -345,11 +345,11 @@ function UserRegistration() {
               setTemplateData(templateInfo);
               setCustomFormBuilderTemplate(null);
             } else {
-              setError("No template data found");
+              setError(t("expressEvent.noTemplateDataFound"));
             }
           } catch (oldError) {
             console.log("error getting old template api", oldError);
-            setError("Failed to fetch template data");
+            setError(t("expressEvent.failedFetchTemplateData"));
           }
         }
       } else {
@@ -363,7 +363,7 @@ function UserRegistration() {
           setTemplateData(templateInfo);
           setCustomFormBuilderTemplate(null);
         } else {
-          setError("No template data found");
+          setError(t("expressEvent.noTemplateDataFound"));
         }
       }
     } catch (error: any) {
@@ -371,7 +371,7 @@ function UserRegistration() {
       const errorMsg =
         error?.response?.data?.message ||
         error?.message ||
-        "Failed to fetch template data";
+        t("expressEvent.failedFetchTemplateData");
       setError(errorMsg);
     }
   };
@@ -380,7 +380,7 @@ function UserRegistration() {
   const getEventDataByUuid = async () => {
     if (!effectiveEventId) return;
     if (!tenantUuid) {
-      setError("This link is missing tenant_uuid. Please use the full registration link from your invitation or copy link.");
+      setError(t("expressEvent.missingTenantUuid"));
       return;
     }
 
@@ -627,10 +627,9 @@ function UserRegistration() {
       return (
         <div className="text-center py-12">
           <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg">
-            <p className="font-medium">No active form fields</p>
+            <p className="font-medium">{t("expressEvent.noActiveFormFields")}</p>
             <p className="text-sm mt-1">
-              All form fields are currently disabled. Please contact the event
-              organizer.
+              {t("expressEvent.allFieldsDisabled")}
             </p>
           </div>
         </div>
@@ -655,7 +654,7 @@ function UserRegistration() {
       default:
         return (
           <div className="text-center py-8">
-            <p className="text-red-500">Unknown template: {templateName}</p>
+            <p className="text-red-500">{t("expressEvent.unknownTemplate")}: {templateName}</p>
           </div>
         );
     }
@@ -667,10 +666,10 @@ function UserRegistration() {
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mx-auto mb-4" />
           <p className="text-gray-600 text-lg font-medium">
-            Loading registration form...
+            {t("expressEvent.loadingRegistrationForm")}
           </p>
           <p className="text-gray-500 text-sm mt-2">
-            Please wait while we prepare your form
+            {t("expressEvent.pleaseWaitPreparingForm")}
           </p>
         </div>
       </div>
@@ -682,7 +681,7 @@ function UserRegistration() {
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
-            <p className="font-medium">Error loading registration form</p>
+            <p className="font-medium">{t("expressEvent.errorLoadingRegistrationForm")}</p>
             <p className="text-sm mt-1">{error}</p>
           </div>
         </div>
@@ -704,10 +703,10 @@ function UserRegistration() {
               </svg>
             </div>
             <h1 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-2">
-              Registration is closed
+              {t("expressEvent.registrationIsClosed")}
             </h1>
             <p className="text-gray-600 text-sm sm:text-base">
-              Registration for this event is not currently accepting new submissions. Please contact the event organizer if you have questions.
+              {t("expressEvent.registrationClosedDescription")}
             </p>
           </div>
         </div>
@@ -739,12 +738,12 @@ function UserRegistration() {
         <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
-              <p className="font-medium">Error: Event ID not found</p>
+              <p className="font-medium">{t("expressEvent.errorEventIdNotFound")}</p>
               <p className="text-sm mt-1">
-                Please check the URL and try again.
+                {t("expressEvent.pleaseCheckUrlAndTryAgain")}
               </p>
               <p className="text-xs mt-2 text-gray-600">
-                Expected URL format: /register/[event_uuid]
+                {t("expressEvent.expectedUrlFormat")}
               </p>
             </div>
           </div>
@@ -773,13 +772,12 @@ function UserRegistration() {
         <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
           <div className="text-center">
             <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg">
-              <p className="font-medium">Error: Event ID not found</p>
+              <p className="font-medium">{t("expressEvent.errorEventIdNotFound")}</p>
               <p className="text-sm mt-1">
-                The event data could not be loaded. Please check the URL and try
-                again.
+                {t("expressEvent.eventDataCouldNotBeLoaded")}
               </p>
               <p className="text-xs mt-2 text-gray-600">
-                Expected URL format: /register/[event_uuid]
+                {t("expressEvent.expectedUrlFormat")}
               </p>
             </div>
           </div>
@@ -935,7 +933,7 @@ function UserRegistration() {
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 p-6">
         <div className="w-full max-w-4xl mx-auto flex flex-col items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-indigo-600 mb-4" />
-          <p className="text-gray-600 text-sm">Loading form...</p>
+          <p className="text-gray-600 text-sm">{t("expressEvent.loadingForm")}</p>
         </div>
       </div>
     );
@@ -946,7 +944,7 @@ function UserRegistration() {
       <div className="min-h-screen bg-linear-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-6">
         <div className="text-center">
           <p className="text-gray-600">
-            No registration template found for this event.
+            {t("expressEvent.noRegistrationTemplateFound")}
           </p>
         </div>
       </div>

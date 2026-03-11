@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Search, ChevronDown, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import toast, { Toaster } from "react-hot-toast";
 import type { ParsedInvitee } from "./InviteesTab";
 import type { InvitationForm } from "./newInvitationTypes";
@@ -47,6 +48,7 @@ export function PreviewInvitationScreen({
   submitButtonLabel = "Send Invitation",
   allowSendWithoutInvitees = false,
 }: PreviewInvitationScreenProps) {
+  const { t } = useTranslation("dashboard");
   const busy = isSending || isCreatingInvitation;
   const sendInvitationDisabled =
     busy || (!allowSendWithoutInvitees && parsedInvitees.length === 0);
@@ -61,17 +63,17 @@ export function PreviewInvitationScreen({
   const handleSendTestEmailSubmit = () => {
     const trimmed = testEmail.trim();
     if (!trimmed) {
-      toast.error("Please enter an email address.");
+      toast.error(t("invitation.previewScreen.enterEmail"));
       return;
     }
     // Simple email format check
     const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRe.test(trimmed)) {
-      toast.error("Please enter a valid email address.");
+      toast.error(t("invitation.previewScreen.invalidEmail"));
       return;
     }
     // Static UI: show success toast only (API will be implemented later)
-    toast.success(`Test email sent to ${trimmed}`);
+    toast.success(t("invitation.previewScreen.testEmailSent", { email: trimmed }));
     setTestEmail("");
     setShowTestEmailModal(false);
   };
@@ -140,7 +142,7 @@ export function PreviewInvitationScreen({
       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       {/* ── Title bar ── */}
       <div className="shrink-0 text-center py-6 border-b border-gray-100">
-        <h1 className="text-2xl font-bold text-gray-900">Preview Invitation</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("invitation.previewScreen.previewInvitation")}</h1>
       </div>
 
       {/* ── Full-screen centered content ── */}
@@ -156,7 +158,7 @@ export function PreviewInvitationScreen({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600 font-medium">
-                    Email Subject:
+                    {t("invitation.previewScreen.emailSubject")}
                   </span>
                   <span className="text-blue-500 font-medium dir-rtl">
                     {invitationForm.emailSubject || "ملتقى ميزانية 2026"}
@@ -164,7 +166,7 @@ export function PreviewInvitationScreen({
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600 font-medium">
-                    Scheduled For:
+                    {t("invitation.previewScreen.scheduledFor")}
                   </span>
                   <span className="text-blue-500 font-medium">
                     {formatDateTime(invitationForm.scheduleSendAt) ||
@@ -176,18 +178,18 @@ export function PreviewInvitationScreen({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600 font-medium">
-                    Communication Type:
+                    {t("invitation.previewScreen.communicationType")}
                   </span>
                   <span className="text-blue-500 font-medium">
                     {invitationForm.communicationType === "whatsapp"
-                      ? "WhatsApp"
+                      ? t("invitation.previewScreen.whatsapp")
                       : invitationForm.communicationType === "sms"
-                        ? "SMS"
-                        : "Email"}
+                        ? t("invitation.previewScreen.sms")
+                        : t("invitation.previewScreen.emailType")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-600 font-medium">Event:</span>
+                  <span className="text-gray-600 font-medium">{t("invitation.previewScreen.eventLabel")}</span>
                   <a
                     href={eventLink}
                     target="_blank"
@@ -209,7 +211,7 @@ export function PreviewInvitationScreen({
               disabled={busy}
               className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Send Test Email
+              {t("invitation.previewScreen.sendTestEmail")}
             </button>
             <button
               type="button"
@@ -221,8 +223,8 @@ export function PreviewInvitationScreen({
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                   {submitButtonLabel.includes("Update")
-                    ? "Updating…"
-                    : "Sending…"}
+                    ? t("invitation.previewScreen.updating")
+                    : t("invitation.previewScreen.sending")}
                 </span>
               ) : (
                 submitButtonLabel
@@ -235,7 +237,7 @@ export function PreviewInvitationScreen({
             {/* ── Left: Email Preview ── */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Email Preview
+                {t("invitation.previewScreen.emailPreview")}
               </h3>
               <div className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm">
                 <div
@@ -243,7 +245,7 @@ export function PreviewInvitationScreen({
                   dangerouslySetInnerHTML={{
                     __html:
                       emailHtml ||
-                      "<p class='text-gray-400'>No email content available.</p>",
+                      `<p class='text-gray-400'>${t("invitation.previewScreen.noEmailContent")}</p>`,
                   }}
                 />
               </div>
@@ -254,12 +256,12 @@ export function PreviewInvitationScreen({
               {/* Header row: "Imported Users" + Show in page + Search */}
               <div className="flex items-center gap-3 mb-3">
                 <h3 className="text-sm font-semibold text-gray-700 flex-shrink-0">
-                  Imported Users
+                  {t("invitation.previewScreen.importedUsers")}
                 </h3>
                 {/* Show in page dropdown */}
                 <div className="flex items-center gap-1.5 ml-auto">
                   <span className="text-xs text-gray-500 flex-shrink-0">
-                    Show in page
+                    {t("invitation.previewScreen.showInPage")}
                   </span>
                   <div className="relative">
                     <select
@@ -283,7 +285,7 @@ export function PreviewInvitationScreen({
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search users..."
+                    placeholder={t("invitation.previewScreen.searchUsersPlaceholder")}
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
@@ -314,27 +316,27 @@ export function PreviewInvitationScreen({
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            ID
+                            {t("invitation.previewScreen.idCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            First Name
+                            {t("invitation.previewScreen.firstNameCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            Last Name
+                            {t("invitation.previewScreen.lastNameCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            Email
+                            {t("invitation.previewScreen.emailCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            Phone Number
+                            {t("invitation.previewScreen.phoneNumberCol")}
                           </span>
                         </th>
                       </tr>
@@ -346,7 +348,7 @@ export function PreviewInvitationScreen({
                             colSpan={6}
                             className="px-4 py-10 text-center text-gray-400 text-sm"
                           >
-                            No users to display
+                            {t("invitation.previewScreen.noUsersToDisplay")}
                           </td>
                         </tr>
                       ) : (
@@ -395,8 +397,8 @@ export function PreviewInvitationScreen({
                   <div className="flex items-center justify-between">
                     {/* Count */}
                     <p className="text-xs text-gray-500">
-                      Showing {showingFrom} to {showingTo} of{" "}
-                      {filteredUsers.length} users
+                      {t("invitation.previewScreen.showing")} {showingFrom} {t("invitation.previewScreen.to")} {showingTo} {t("invitation.previewScreen.of")}{" "}
+                      {filteredUsers.length} {t("invitation.previewScreen.usersLabel")}
                     </p>
 
                     {/* Page buttons */}
@@ -409,7 +411,7 @@ export function PreviewInvitationScreen({
                         disabled={currentPage === 1}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
-                        ← Previous
+                        {t("invitation.previewScreen.previous")}
                       </button>
 
                       {/* Page numbers */}
@@ -442,7 +444,7 @@ export function PreviewInvitationScreen({
                         disabled={currentPage === totalPages}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
-                        Next →
+                        {t("invitation.previewScreen.next")}
                       </button>
                     </div>
                   </div>
@@ -467,34 +469,34 @@ export function PreviewInvitationScreen({
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
               <h3 className="text-lg font-semibold text-slate-800">
-                Send Test Email
+                {t("invitation.previewScreen.sendTestEmail")}
               </h3>
               <button
                 type="button"
                 onClick={closeTestEmailModal}
                 className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
-                aria-label="Close"
+                aria-label={t("invitation.previewScreen.close")}
               >
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-4">
               <p className="text-sm text-slate-600">
-              Send a test invitation to this address.
+              {t("invitation.previewScreen.sendTestEmailDescription")}
               </p>
               <div>
                 <label
                   htmlFor="test-email-input"
                   className="block text-sm font-medium text-slate-700 mb-1.5"
                 >
-                  Email address
+                  {t("invitation.previewScreen.emailAddress")}
                 </label>
                 <input
                   id="test-email-input"
                   type="email"
                   value={testEmail}
                   onChange={(e) => setTestEmail(e.target.value)}
-                  placeholder="e.g. you@example.com"
+                  placeholder={t("invitation.previewScreen.emailPlaceholder")}
                   className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   autoFocus
                 />
@@ -506,14 +508,14 @@ export function PreviewInvitationScreen({
                 onClick={closeTestEmailModal}
                 className="px-4 py-2 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition-colors"
               >
-                Cancel
+                {t("invitation.previewScreen.cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleSendTestEmailSubmit}
                 className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
               >
-                Send Test Email
+                {t("invitation.previewScreen.sendTestEmail")}
               </button>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Upload,
   X,
@@ -33,7 +34,8 @@ export default function AdvanceAppVisulization({
   currentStep, 
   totalSteps 
 }: AdvanceAppVisulizationProps) {
-  const STEP_NAMES = ["App Visualization", "App Sections", "Admin Management"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.appVisualization.appVisualization"), t("advance.appVisualization.appSections"), t("advance.appVisualization.adminManagement")];
 
   const [activeTab, setActiveTab] = useState("general");
   const [toggles, setToggles] = useState({
@@ -47,16 +49,16 @@ export default function AdvanceAppVisulization({
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const tabs = [
-    { id: "general", label: "General Caption", removable: true },
+    { id: "general", label: t("advance.appVisualization.generalCaption"), removable: true },
     { id: "snow", label: "Snow v2 API" },
   ];
 
   const imageTypes = [
-    { key: "exhibitors", label: "Exhibitors Image", icon: Users },
-    { key: "exhibitors2", label: "Exhibitors Image", icon: Users },
-    { key: "speakers", label: "Speakers Image", icon: Users },
-    { key: "agenda", label: "Agenda Image", icon: Calendar },
-    { key: "floorplan", label: "Floorplan Image", icon: Map },
+    { key: "exhibitors", label: t("advance.appVisualization.exhibitorsImage"), icon: Users },
+    { key: "exhibitors2", label: t("advance.appVisualization.exhibitorsImage"), icon: Users },
+    { key: "speakers", label: t("advance.appVisualization.speakersImage"), icon: Users },
+    { key: "agenda", label: t("advance.appVisualization.agendaImage"), icon: Calendar },
+    { key: "floorplan", label: t("advance.appVisualization.floorplanImage"), icon: Map },
   ];
 
   const handleToggle = (key) => {
@@ -85,7 +87,7 @@ export default function AdvanceAppVisulization({
               size={20} 
               onClick={onPrevious} // ADD: Make chevron clickable to go back
             />
-            <h1 className="text-2xl font-semibold text-gray-800">Advanced Event</h1>
+            <h1 className="text-2xl font-semibold text-gray-800">{t("advance.appVisualization.advancedEvent")}</h1>
           </div>
 
           {/* Step Indicator - USE DYNAMIC STEPS */}
@@ -138,9 +140,9 @@ export default function AdvanceAppVisulization({
         </div>
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>Home</span>
+          <span>{t("advance.appVisualization.home")}</span>
           <span>›</span>
-          <span className="text-gray-700">Advanced Event</span>
+          <span className="text-gray-700">{t("advance.appVisualization.advancedEvent")}</span>
         </div>
       </div>
   {/* Main Content */}

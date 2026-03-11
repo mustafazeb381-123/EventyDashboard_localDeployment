@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { X, ImageIcon } from "lucide-react";
 import type { FormTheme } from "../types";
 
@@ -13,6 +14,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
   onUpdate,
   onClose,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [localTheme, setLocalTheme] = useState<FormTheme>(theme);
   const backgroundImageInputRef = useRef<HTMLInputElement>(null);
   const [backgroundImagePreview, setBackgroundImagePreview] = useState<
@@ -79,16 +81,16 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
       <div className="sticky top-0 bg-linear-to-r from-purple-50 to-pink-50 p-4 border-b border-gray-200 flex justify-between items-center">
         <div>
           <h3 className="text-lg font-semibold text-gray-800">
-            Theme & Styling
+            {t("advance.formBuilder.theme.themeStyling")}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">
-            Customize form appearance
+            {t("advance.formBuilder.theme.customizeAppearance")}
           </p>
         </div>
         <button
           onClick={onClose}
           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          title="Close theme panel"
+          title={t("advance.formBuilder.theme.closePanel")}
         >
           <X size={18} />
         </button>
@@ -98,13 +100,13 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         {/* Form Container */}
         <div className="space-y-4">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Form Container
+            {t("advance.formBuilder.theme.formContainer")}
           </h4>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Max Width
+                {t("advance.formBuilder.theme.maxWidth")}
               </label>
               <input
                 type="text"
@@ -116,7 +118,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Alignment
+                {t("advance.formBuilder.theme.alignment")}
               </label>
               <select
                 value={localTheme.formAlignment || "center"}
@@ -130,16 +132,16 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
               >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
+                <option value="left">{t("advance.formBuilder.theme.left")}</option>
+                <option value="center">{t("advance.formBuilder.theme.center")}</option>
+                <option value="right">{t("advance.formBuilder.theme.right")}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Background Color
+              {t("advance.formBuilder.theme.backgroundColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -164,21 +166,21 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Background Image
+              {t("advance.formBuilder.theme.backgroundImage")}
             </label>
             {backgroundImagePreview ? (
               <div className="relative">
                 <div className="w-full h-32 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-100">
                   <img
                     src={backgroundImagePreview}
-                    alt="Background preview"
+                    alt={t("advance.formBuilder.theme.backgroundPreview")}
                     className="w-full h-full object-cover"
                   />
                 </div>
                 <button
                   onClick={handleRemoveBackgroundImage}
                   className="absolute top-2 right-2 p-2 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors"
-                  title="Remove background image"
+                  title={t("advance.formBuilder.theme.removeBackgroundImage")}
                 >
                   <X size={14} />
                 </button>
@@ -187,7 +189,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               <label className="flex flex-col items-center justify-center w-full h-24 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
                 <div className="flex flex-col items-center justify-center pt-3 pb-2">
                   <ImageIcon className="w-8 h-8 mb-1 text-gray-400" />
-                  <p className="text-xs text-gray-500">Click to upload</p>
+                  <p className="text-xs text-gray-500">{t("advance.formBuilder.theme.clickToUpload")}</p>
                 </div>
                 <input
                   ref={backgroundImageInputRef}
@@ -203,7 +205,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Padding
+                {t("advance.formBuilder.theme.padding")}
               </label>
               <input
                 type="text"
@@ -215,7 +217,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Border Radius
+                {t("advance.formBuilder.theme.borderRadius")}
               </label>
               <input
                 type="text"
@@ -231,7 +233,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Border Color
+              {t("advance.formBuilder.theme.borderColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -257,14 +259,14 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         {/* Banner & Footer Margins – touch edges by default, optional inset */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Banner &amp; Footer Margins
+            {t("advance.formBuilder.theme.bannerFooterMargins")}
           </h4>
           <p className="text-xs text-gray-500">
-            Banner and footer touch top, bottom, and sides by default. Add margins (e.g. 8px, 16px) to inset from edges.
+            {t("advance.formBuilder.theme.bannerFooterDesc")}
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Top</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.bannerTop")}</label>
               <input
                 type="text"
                 value={localTheme.bannerMarginTop || "0"}
@@ -274,7 +276,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Right</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.bannerRight")}</label>
               <input
                 type="text"
                 value={localTheme.bannerMarginRight || "0"}
@@ -284,7 +286,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Bottom</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.bannerBottom")}</label>
               <input
                 type="text"
                 value={localTheme.bannerMarginBottom || "0"}
@@ -294,7 +296,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Banner Left</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.bannerLeft")}</label>
               <input
                 type="text"
                 value={localTheme.bannerMarginLeft || "0"}
@@ -306,7 +308,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Top (gap from form)</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.footerTopGap")}</label>
               <input
                 type="text"
                 value={localTheme.footerMarginTop ?? "24px"}
@@ -316,7 +318,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Right</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.footerRight")}</label>
               <input
                 type="text"
                 value={localTheme.footerMarginRight || "0"}
@@ -326,7 +328,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Bottom</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.footerBottom")}</label>
               <input
                 type="text"
                 value={localTheme.footerMarginBottom || "0"}
@@ -336,7 +338,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1 text-gray-700">Footer Left</label>
+              <label className="block text-sm font-medium mb-1 text-gray-700">{t("advance.formBuilder.theme.footerLeft")}</label>
               <input
                 type="text"
                 value={localTheme.footerMarginLeft || "0"}
@@ -351,25 +353,25 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         {/* Event Details */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Event Details (Header)
+            {t("advance.formBuilder.theme.eventDetailsHeader")}
           </h4>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Event Name
+              {t("advance.formBuilder.theme.eventName")}
             </label>
             <input
               type="text"
               value={localTheme.eventName || ""}
               onChange={(e) => handleUpdate({ eventName: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-              placeholder="e.g. Annual Tech Conference"
+              placeholder={t("advance.formBuilder.theme.eventNamePlaceholder")}
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Description
+              {t("advance.formBuilder.theme.description")}
             </label>
             <textarea
               value={localTheme.eventDescription || ""}
@@ -378,14 +380,14 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
               }
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 resize-none"
               rows={3}
-              placeholder="Event description..."
+              placeholder={t("advance.formBuilder.theme.eventDescPlaceholder")}
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Location
+                {t("advance.formBuilder.theme.location")}
               </label>
               <input
                 type="text"
@@ -399,7 +401,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Date
+                {t("advance.formBuilder.theme.date")}
               </label>
               <input
                 type="text"
@@ -413,7 +415,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Text Color
+              {t("advance.formBuilder.theme.textColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -439,12 +441,12 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         {/* Typography */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Typography
+            {t("advance.formBuilder.theme.typography")}
           </h4>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Heading Color
+              {t("advance.formBuilder.theme.headingColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -464,7 +466,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Label Color
+              {t("advance.formBuilder.theme.labelColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -484,7 +486,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Text Color
+              {t("advance.formBuilder.theme.textColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -506,12 +508,12 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         {/* Input Fields */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Input Fields
+            {t("advance.formBuilder.theme.inputFields")}
           </h4>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Border Color
+              {t("advance.formBuilder.theme.borderColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -535,7 +537,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Focus Border Color
+              {t("advance.formBuilder.theme.focusBorderColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -559,7 +561,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Background Color
+              {t("advance.formBuilder.theme.backgroundColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -584,7 +586,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Border Radius
+                {t("advance.formBuilder.theme.borderRadius")}
               </label>
               <input
                 type="text"
@@ -598,7 +600,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 text-gray-700">
-                Padding
+                {t("advance.formBuilder.theme.padding")}
               </label>
               <input
                 type="text"
@@ -614,12 +616,12 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         {/* Buttons */}
         <div className="space-y-4 pt-4 border-t">
           <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-            Buttons
+            {t("advance.formBuilder.theme.buttons")}
           </h4>
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Background Color
+              {t("advance.formBuilder.theme.backgroundColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -643,7 +645,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Text Color
+              {t("advance.formBuilder.theme.textColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -667,7 +669,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-700">
-              Hover Background Color
+              {t("advance.formBuilder.theme.hoverBackgroundColor")}
             </label>
             <div className="flex gap-2">
               <input
@@ -694,7 +696,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
         <div className="space-y-4 pt-4 border-t">
           <div className="flex items-center justify-between">
             <h4 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">
-              Footer
+              {t("advance.formBuilder.theme.footer")}
             </h4>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -705,7 +707,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
                 }
                 className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
               />
-              <span className="text-sm text-gray-700">Enable Footer</span>
+              <span className="text-sm text-gray-700">{t("advance.formBuilder.theme.enableFooter")}</span>
             </label>
           </div>
 
@@ -713,20 +715,20 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
             <>
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Footer Text
+                  {t("advance.formBuilder.theme.footerText")}
                 </label>
                 <textarea
                   value={localTheme.footerText || ""}
                   onChange={(e) => handleUpdate({ footerText: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                   rows={3}
-                  placeholder="Enter footer text..."
+                  placeholder={t("advance.formBuilder.theme.footerTextPlaceholder")}
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Text Color
+                  {t("advance.formBuilder.theme.textColor")}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -750,7 +752,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Background Color
+                  {t("advance.formBuilder.theme.backgroundColor")}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -774,7 +776,7 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
 
               <div>
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Alignment
+                  {t("advance.formBuilder.theme.alignment")}
                 </label>
                 <select
                   value={localTheme.footerAlignment || "center"}
@@ -788,9 +790,9 @@ export const ThemeConfigPanel: React.FC<ThemeConfigPanelProps> = ({
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="left">Left</option>
-                  <option value="center">Center</option>
-                  <option value="right">Right</option>
+                  <option value="left">{t("advance.formBuilder.theme.left")}</option>
+                  <option value="center">{t("advance.formBuilder.theme.center")}</option>
+                  <option value="right">{t("advance.formBuilder.theme.right")}</option>
                 </select>
               </div>
             </>

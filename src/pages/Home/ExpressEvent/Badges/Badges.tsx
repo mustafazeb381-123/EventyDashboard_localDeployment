@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   Check,
@@ -24,6 +25,9 @@ import {
 } from "@/apis/apiHelpers";
 import type { ToggleStates } from "../ExpressEvent";
 import CustomBadgeModal from "./components/CustomBadgeModal";
+import { prebuiltBadgeTemplates } from "./prebuiltBadgeTemplates";
+import type { PrebuiltBadgeTemplate } from "./prebuiltBadgeTemplates";
+import PrebuiltBadgeCard from "./components/PrebuiltBadgeCard";
 
 // -------------------- TYPES --------------------
 interface BadgeTemplate {
@@ -195,6 +199,7 @@ const Template1Preview: React.FC<BadgePreviewProps> = ({
   CardHeader,
   CardFooter,
 }) => {
+  const { t } = useTranslation("dashboard");
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
   const logoUrl = event?.attributes?.logo_url;
@@ -240,9 +245,9 @@ const Template1Preview: React.FC<BadgePreviewProps> = ({
                 alt="User"
               />
               <h2 className="text-2xl font-bold text-gray-900 mt-4">
-                John Doe
+                {t("expressEvent.sampleName")}
               </h2>
-              <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+              <p className="text-gray-600 text-lg mt-1">{t("expressEvent.sampleTitle")}</p>
 
               {/* QR Code on front side */}
               <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
@@ -275,6 +280,7 @@ const Template2Preview: React.FC<BadgePreviewProps> = ({
   CardHeader,
   CardFooter,
 }) => {
+  const { t } = useTranslation("dashboard");
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
 
@@ -311,9 +317,9 @@ const Template2Preview: React.FC<BadgePreviewProps> = ({
                 alt="User"
               />
               <h2 className="text-2xl font-bold text-gray-900 mt-4">
-                John Doe
+                {t("expressEvent.sampleName")}
               </h2>
-              <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+              <p className="text-gray-600 text-lg mt-1">{t("expressEvent.sampleTitle")}</p>
 
               {/* QR Code on front side */}
               <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
@@ -348,6 +354,7 @@ interface CustomBadgePreviewProps {
 const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
   template,
 }) => {
+  const { t } = useTranslation("dashboard");
   // Use 96 DPI for consistency with print (standard web DPI)
   const DPI = 96;
   const widthInInches =
@@ -421,7 +428,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   }}
                 >
                   <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
-                    <span className="text-gray-500">Photo</span>
+                    <span className="text-gray-500">{t("expressEvent.photo")}</span>
                   </div>
                 </div>
               )}
@@ -444,7 +451,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                       color: template.nameText.color || "#ffffff",
                     }}
                   >
-                    John Doe
+                    {t("expressEvent.sampleName")}
                   </div>
                 </div>
               )}
@@ -467,7 +474,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                       color: template.companyText.color || "#cccccc",
                     }}
                   >
-                    Tech Company
+                    {t("expressEvent.sampleCompany")}
                   </div>
                 </div>
               )}
@@ -490,7 +497,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                       color: template.titleText.color || "#999999",
                     }}
                   >
-                    Software Engineer
+                    {t("expressEvent.sampleTitle")}
                   </div>
                 </div>
               )}
@@ -531,6 +538,7 @@ const Badges: React.FC<BadgesProps> = ({
   eventId,
   plan,
 }) => {
+  const { t } = useTranslation("dashboard");
   console.log(plan, currentStep, eventId);
 
   // State for custom templates
@@ -1154,7 +1162,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   const handleSaveCustomTemplate = async (template: BadgeTemplate) => {
     if (!effectiveEventId) {
-      showNotification("Event ID not found. Cannot save template.", "error");
+      showNotification(t("expressEvent.eventIdNotFoundCannotSave"), "error");
       return;
     }
 
@@ -1194,7 +1202,7 @@ const Badges: React.FC<BadgesProps> = ({
 
         if (!numericId || numericId === 0) {
           showNotification(
-            "Invalid template ID. Cannot update template.",
+            t("expressEvent.invalidTemplateIdCannotUpdate"),
             "error",
           );
           setLoading(false);
@@ -1245,7 +1253,7 @@ const Badges: React.FC<BadgesProps> = ({
       console.log("Badge template saved successfully:", response.data);
 
       showNotification(
-        `Template ${isEditCustomMode ? "updated" : "created"} successfully!`,
+        isEditCustomMode ? t("expressEvent.templateUpdatedSuccess") : t("expressEvent.templateCreatedSuccess"),
         "success",
       );
 
@@ -1328,7 +1336,7 @@ const Badges: React.FC<BadgesProps> = ({
       console.error("Error status:", error?.response?.status);
 
       // Show detailed validation errors if available
-      let errorMessage = `Failed to ${isEditCustomMode ? "update" : "create"} template.`;
+      let errorMessage = isEditCustomMode ? t("expressEvent.failedUpdateTemplate") : t("expressEvent.failedCreateTemplate");
 
       if (error?.response?.data?.errors) {
         // Handle validation errors object
@@ -1385,7 +1393,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   const performDeleteCustomTemplate = async (templateId: string) => {
     if (!effectiveEventId) {
-      showNotification("Event ID not found. Cannot delete template.", "error");
+      showNotification(t("expressEvent.eventIdNotFoundCannotDelete"), "error");
       return;
     }
 
@@ -1413,7 +1421,7 @@ const Badges: React.FC<BadgesProps> = ({
     // If we still don't have a valid numeric ID, we can't delete from API
     if (!numericId || numericId === 0) {
       showNotification(
-        "Invalid template ID. Cannot delete from server.",
+        t("expressEvent.invalidTemplateIdCannotDelete"),
         "error",
       );
       return;
@@ -1433,14 +1441,14 @@ const Badges: React.FC<BadgesProps> = ({
         setSelectedTemplate(null);
       }
 
-      showNotification("Template deleted successfully!", "success");
+      showNotification(t("expressEvent.templateDeletedSuccess"), "success");
 
       // Reload templates from API to get the latest data
       await reloadCustomTemplates();
     } catch (error: any) {
       console.error("Failed to delete badge template:", error);
       showNotification(
-        error?.response?.data?.error || "Failed to delete template.",
+        error?.response?.data?.error || t("expressEvent.failedDeleteTemplate"),
         "error",
       );
     } finally {
@@ -1453,13 +1461,31 @@ const Badges: React.FC<BadgesProps> = ({
     if (selectedTemplate?.id === template.id) {
       setSelectedTemplate(null);
       setSelectedBadge(null); // Also clear badge selection
-      showNotification("Template deselected!", "success");
+      showNotification(t("expressEvent.templateDeselected"), "success");
     } else {
       // Select new template and deselect any existing badge
       setSelectedTemplate(template);
       setSelectedBadge(null); // Ensure existing badge is cleared
-      showNotification("Template selected!", "success");
+      showNotification(t("expressEvent.badgeTemplateSelected"), "success");
     }
+  };
+
+  const handleSelectPrebuiltTemplate = (prebuilt: PrebuiltBadgeTemplate) => {
+    const tpl = prebuilt.template;
+    if (selectedTemplate?.id === tpl.id) {
+      setSelectedTemplate(null);
+      setSelectedBadge(null);
+      showNotification(t("expressEvent.templateDeselected"), "success");
+    } else {
+      setSelectedTemplate(tpl);
+      setSelectedBadge(null);
+      showNotification(t("expressEvent.badgeTemplateSelected"), "success");
+    }
+  };
+
+  const handlePreviewPrebuiltTemplate = (prebuilt: PrebuiltBadgeTemplate) => {
+    setPreviewTemplate(prebuilt.template);
+    setPreviewBadge(null);
   };
 
   const handlePreviewBadge = (badge: Badge) => {
@@ -1553,11 +1579,11 @@ const Badges: React.FC<BadgesProps> = ({
               badge.id === 3 ? "text-gray-900" : "text-gray-900"
             } mb-1`}
           >
-            John Doe
+            {t("expressEvent.sampleName")}
           </h2>
 
           {/* Title */}
-          <p className="text-xs text-gray-600 mb-2">Software Engineer</p>
+          <p className="text-xs text-gray-600 mb-2">{t("expressEvent.sampleTitle")}</p>
 
           {/* QR Code on front side */}
           <div className="w-10 h-10 bg-white rounded border border-gray-300 flex items-center justify-center">
@@ -1673,7 +1699,7 @@ const Badges: React.FC<BadgesProps> = ({
                   color: template.nameText.color || "#ffffff",
                 }}
               >
-                John Doe
+                {t("expressEvent.sampleName")}
               </div>
             </div>
           )}
@@ -1696,7 +1722,7 @@ const Badges: React.FC<BadgesProps> = ({
                   color: template.companyText.color || "#cccccc",
                 }}
               >
-                Tech Company
+                {t("expressEvent.sampleCompany")}
               </div>
             </div>
           )}
@@ -1719,7 +1745,7 @@ const Badges: React.FC<BadgesProps> = ({
                   color: template.titleText.color || "#999999",
                 }}
               >
-                Software Engineer
+                {t("expressEvent.sampleTitle")}
               </div>
             </div>
           )}
@@ -1885,7 +1911,7 @@ const Badges: React.FC<BadgesProps> = ({
 
   const selectBadgeAndContinue = async () => {
     if (!selectedBadge && !selectedTemplate) {
-      showNotification("Please select a badge template first!", "error");
+      showNotification(t("expressEvent.pleaseSelectBadgeFirst"), "error");
       return;
     }
 
@@ -2025,7 +2051,7 @@ const Badges: React.FC<BadgesProps> = ({
             );
             console.log("Template bgColor:", fullTemplateData.bgColor);
           }
-          showNotification("Template selected!", "success");
+          showNotification(t("expressEvent.badgeTemplateSelected"), "success");
           setActiveBadgeId(selectedBadge.id);
 
           // Update event's active_badge_id in API for cross-device visibility
@@ -2047,7 +2073,7 @@ const Badges: React.FC<BadgesProps> = ({
             selectedBadge.id,
             selectedBadge.name,
           );
-          showNotification("Template selected!", "success");
+          showNotification(t("expressEvent.badgeTemplateSelected"), "success");
           setActiveBadgeId(selectedBadge.id);
 
           // Update event's active_badge_id in API for cross-device visibility
@@ -2198,9 +2224,27 @@ const Badges: React.FC<BadgesProps> = ({
               console.error("Failed to update event active_badge_id:", error);
             }
           }
+        } else if (effectiveEventId) {
+          // Prebuilt or new template not yet in API — create via POST
+          const response = await handleCustomBadgeApiSelection(selectedTemplate);
+          console.log("Created prebuilt badge template via POST:", response?.data);
+
+          if (response?.data?.data?.id) {
+            const createdId = response.data.data.id;
+            const fd = new FormData();
+            fd.append("event[active_badge_id]", createdId.toString());
+            try {
+              await updateEventById(effectiveEventId, fd);
+              console.log(
+                `Updated event active_badge_id to ${createdId} for cross-device visibility`,
+              );
+            } catch (error) {
+              console.error("Failed to update event active_badge_id:", error);
+            }
+          }
         }
 
-        showNotification("Custom template selected!", "success");
+        showNotification(t("expressEvent.customTemplateSelected"), "success");
       }
 
       setTimeout(() => {
@@ -2211,7 +2255,7 @@ const Badges: React.FC<BadgesProps> = ({
         }
       }, 1000);
     } catch (error) {
-      showNotification("Failed to select template.", "error");
+      showNotification(t("expressEvent.failedSelectTemplate"), "error");
       console.error("Template selection error:", error);
     } finally {
       setLoading(false);
@@ -2244,7 +2288,7 @@ const Badges: React.FC<BadgesProps> = ({
         <div className="flex flex-row gap-2 items-center">
           <ChevronLeft />
           <p className="text-neutral-900 text-md font-poppins font-normal">
-            Choose a Badge Template
+            {t("expressEvent.chooseBadgeTemplate")}
           </p>
         </div>
       </div>
@@ -2260,12 +2304,23 @@ const Badges: React.FC<BadgesProps> = ({
             <Plus className="text-pink-500" size={32} />
           </div>
           <h3 className="text-lg font-medium mb-2 text-center text-pink-500">
-            Create Custom Badge
+            {t("expressEvent.createCustomBadge")}
           </h3>
           <p className="text-sm text-gray-500 text-center">
-            Design a custom badge template from scratch
+            {t("expressEvent.designCustomBadgeDescription")}
           </p>
         </div>
+
+        {/* Pre-built Badge Templates */}
+        {prebuiltBadgeTemplates.map((prebuilt) => (
+          <PrebuiltBadgeCard
+            key={prebuilt.key}
+            template={prebuilt}
+            isSelected={selectedTemplate?.id === prebuilt.template.id}
+            onSelect={handleSelectPrebuiltTemplate}
+            onPreview={handlePreviewPrebuiltTemplate}
+          />
+        ))}
 
         {/* Custom Templates */}
         {customTemplates.map((template) => {
@@ -2298,7 +2353,7 @@ const Badges: React.FC<BadgesProps> = ({
                       <div className="flex items-center">
                         <Check size={16} className="text-pink-500 mr-1" />
                         <span className="text-sm text-pink-500 font-medium">
-                          Selected
+                          {t("expressEvent.selected")}
                         </span>
                       </div>
                     )}
@@ -2337,7 +2392,7 @@ const Badges: React.FC<BadgesProps> = ({
                       <div className="flex items-center">
                         <Check size={16} className="text-pink-500 mr-1" />
                         <span className="text-sm text-pink-500 font-medium">
-                          Selected
+                          {t("expressEvent.selected")}
                         </span>
                       </div>
                     )}
@@ -2369,18 +2424,17 @@ const Badges: React.FC<BadgesProps> = ({
               <Trash2 className="w-6 h-6 text-red-500" />
             </div>
             <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
-              Delete template?
+              {t("expressEvent.deleteTemplate")}
             </h3>
             <p className="text-sm text-gray-600 text-center mb-6">
-              Are you sure you want to delete this template? This action cannot
-              be undone.
+              {t("expressEvent.deleteTemplateConfirmation")}
             </p>
             <div className="flex space-x-3">
               <button
                 onClick={() => setTemplateToDelete(null)}
                 className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
               >
-                Cancel
+                {t("expressEvent.cancel")}
               </button>
               <button
                 onClick={() => {
@@ -2390,7 +2444,7 @@ const Badges: React.FC<BadgesProps> = ({
                 }}
                 className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
               >
-                Delete
+                {t("expressEvent.delete")}
               </button>
             </div>
           </div>
@@ -2404,7 +2458,7 @@ const Badges: React.FC<BadgesProps> = ({
             {/* Modal Header with close button */}
             <div className="p-6 border-b flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">
-                {previewBadge.name} Preview
+                {previewBadge.name} {t("expressEvent.preview")}
               </h2>
               <button
                 onClick={closePreview}
@@ -2441,13 +2495,13 @@ const Badges: React.FC<BadgesProps> = ({
                 className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white hover:bg-pink-600 rounded-lg transition-colors"
               >
                 <Check size={16} />
-                Select
+                {t("expressEvent.select")}
               </button>
               <button
                 onClick={closePreview}
                 className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
               >
-                Close
+                {t("expressEvent.close")}
               </button>
             </div>
           </div>
@@ -2460,7 +2514,7 @@ const Badges: React.FC<BadgesProps> = ({
             {/* Modal Header with close button */}
             <div className="p-6 border-b flex justify-between items-center">
               <h2 className="text-xl font-bold text-gray-900">
-                {previewTemplate.name} Preview
+                {previewTemplate.name} {t("expressEvent.preview")}
               </h2>
               <button
                 onClick={closePreview}
@@ -2484,34 +2538,39 @@ const Badges: React.FC<BadgesProps> = ({
                   className="flex items-center gap-2 px-4 py-2 bg-pink-500 text-white hover:bg-pink-600 rounded-lg transition-colors"
                 >
                   <Check size={16} />
-                  Select
+                  {t("expressEvent.select")}
                 </button>
-                <button
-                  onClick={() => {
-                    closePreview();
-                    handleEditCustomTemplate(previewTemplate);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Edit2 size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    closePreview();
-                    handleDeleteCustomTemplate(previewTemplate.id);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+                {/* Hide Edit/Delete for prebuilt templates */}
+                {!previewTemplate.id.startsWith("prebuilt-") && (
+                  <>
+                    <button
+                      onClick={() => {
+                        closePreview();
+                        handleEditCustomTemplate(previewTemplate);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                      {t("expressEvent.edit")}
+                    </button>
+                    <button
+                      onClick={() => {
+                        closePreview();
+                        handleDeleteCustomTemplate(previewTemplate.id);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                      {t("expressEvent.delete")}
+                    </button>
+                  </>
+                )}
               </div>
               <button
                 onClick={closePreview}
                 className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 font-medium"
               >
-                Close
+                {t("expressEvent.close")}
               </button>
             </div>
           </div>
@@ -2525,7 +2584,7 @@ const Badges: React.FC<BadgesProps> = ({
           disabled={currentStep === 0}
           className="cursor-pointer w-full sm:w-auto px-6 py-2.5 rounded-lg border text-slate-800 hover:bg-gray-50"
         >
-          ← Previous
+          ← {t("expressEvent.previous")}
         </button>
 
         <button
@@ -2540,10 +2599,10 @@ const Badges: React.FC<BadgesProps> = ({
           {loading ? (
             <span className="flex items-center gap-2">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Loading...
+              {t("expressEvent.loading")}
             </span>
           ) : (
-            "Use Template →"
+            t("expressEvent.useTemplate")
           )}
         </button>
       </div>

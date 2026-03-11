@@ -4,6 +4,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Check, X, Image as ImageIcon, Square, LayoutGrid, Columns2, Sparkles, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField, RsvpTheme } from "./types";
 
 interface RsvpFormPreviewProps {
@@ -158,7 +159,7 @@ function DroppableContainerNode({
           className={isOver ? "ring-2 ring-indigo-400" : ""}
         >
           {childFields.length === 0 ? (
-            <span className="text-sm italic text-slate-400 w-full text-center block">Drop fields here</span>
+            <span className="text-sm italic text-slate-400 w-full text-center block">{t("invitation.rsvpBuilder.dropFieldsHere")}</span>
           ) : (
             <SortableContext
               items={childFields.map((f) => f.id)}
@@ -259,6 +260,7 @@ export const RsvpFormPreview: React.FC<RsvpFormPreviewProps> = ({
   onFieldContentChange,
   onImageUploadRequest,
 }) => {
+  const { t } = useTranslation("dashboard");
   const lang = currentLanguage;
   const [bannerUrl, setBannerUrl] = useState<string | null>(null);
   const [footerBannerUrl, setFooterBannerUrl] = useState<string | null>(null);

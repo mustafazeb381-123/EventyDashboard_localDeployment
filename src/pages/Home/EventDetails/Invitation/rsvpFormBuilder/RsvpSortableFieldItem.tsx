@@ -23,6 +23,7 @@ import {
   Image,
   Sparkles,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField, RsvpFieldType } from "./types";
 
 interface RsvpSortableFieldItemProps {
@@ -69,6 +70,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const { t } = useTranslation("dashboard");
   const {
     attributes,
     listeners,
@@ -125,7 +127,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
           {typeLabel}
         </span>
         {!isVisible && (
-          <span className="text-xs text-slate-500 flex items-center gap-0.5" title="Hidden">
+          <span className="text-xs text-slate-500 flex items-center gap-0.5" title={t("invitation.rsvpBuilder.hidden")}>
             <EyeOff size={12} />
           </span>
         )}
@@ -137,7 +139,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
           className="p-1.5 rounded hover:bg-slate-100 text-slate-400 cursor-grab active:cursor-grabbing"
           {...attributes}
           {...listeners}
-          aria-label="Drag to reorder"
+          aria-label={t("invitation.rsvpBuilder.dragToReorder")}
         >
           <GripVertical size={16} />
         </button>
@@ -147,7 +149,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
             {displayLabel}
           </span>
           {field.required && field.type !== "divider" && field.type !== "paragraph" && field.type !== "heading" && (
-            <span className="text-xs text-red-500 font-medium">Required</span>
+            <span className="text-xs text-red-500 font-medium">{t("invitation.rsvpBuilder.required")}</span>
           )}
         </div>
       </div>
@@ -163,7 +165,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
             onEdit(field);
           }}
           className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-          title="Edit field"
+          title={t("invitation.rsvpBuilder.editField")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Edit size={18} />
@@ -176,7 +178,7 @@ export const RsvpSortableFieldItem: React.FC<RsvpSortableFieldItemProps> = ({
               onDelete(field.id);
             }}
             className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            title="Remove field"
+            title={t("invitation.rsvpBuilder.removeField")}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <Trash2 size={18} />

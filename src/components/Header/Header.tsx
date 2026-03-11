@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Home,
   Users,
@@ -21,6 +22,7 @@ function Header({ isExpanded }) {
   const [activeItem, setActiveItem] = useState("Registered Users");
   const [expandedMenus, setExpandedMenus] = useState({});
   const [isRTL, setIsRTL] = useState(false);
+  const { t } = useTranslation("dashboard");
 
   const naviagte = useNavigate();
 
@@ -79,7 +81,7 @@ function Header({ isExpanded }) {
           </Button>
            */}
 
-        <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
+        <h1 className="text-xl font-semibold text-gray-800">{t("header.dashboard")}</h1>
       </div>
 
       <div className="flex items-center space-x-3">
@@ -96,7 +98,7 @@ function Header({ isExpanded }) {
           <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
             <User className="h-4 w-4" />
           </div>
-          <span>My Account</span>
+          <span>{t("header.myAccount")}</span>
         </div>
       </div>
     </header>

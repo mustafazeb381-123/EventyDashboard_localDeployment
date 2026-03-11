@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Users,
@@ -42,6 +43,32 @@ const SideBar = ({
   canToggle = true,
   currentEventId,
 }: SideBarProps) => {
+  const { t } = useTranslation("dashboard");
+
+  // Translation map: internal label key -> translation key in dashboard.sidebar
+  const labelTranslations: Record<string, string> = {
+    "Home summary": t("sidebar.homeSummary"),
+    "Registered Users": t("sidebar.registeredUsers"),
+    "Event Content": t("sidebar.eventContent"),
+    "Galleries": t("sidebar.galleries"),
+    "Speakers": t("sidebar.speakers"),
+    "Exhibitors": t("sidebar.exhibitors"),
+    "Partners": t("sidebar.partners"),
+    "Agenda": t("sidebar.agenda"),
+    "Area": t("sidebar.area"),
+    "Print Badges": t("sidebar.printBadges"),
+    "Invitation": t("sidebar.invitation"),
+    "Communications": t("sidebar.communications"),
+    "Poll": t("sidebar.poll"),
+    "Q & A": t("sidebar.qAndA"),
+    "Check-In/out": t("sidebar.checkInOut"),
+    "Email Management": t("sidebar.emailManagement"),
+    "Event Admin": t("sidebar.eventAdmin"),
+    "Ticket Management": t("sidebar.ticketManagement"),
+  };
+
+  const getTranslatedLabel = (label: string) => labelTranslations[label] || label;
+
   // Initialize activeItem from localStorage or default
   const getInitialActiveItem = () => {
     const stored = localStorage.getItem("sidebar_active_item");
@@ -455,7 +482,7 @@ const SideBar = ({
     try {
       await localStorage.removeItem("token");
       setShowLogoutModal(false);
-      showNotification("Logout Successful", "success");
+      showNotification(t("sidebar.logoutSuccessful"), "success");
       setTimeout(() => {
         navigate("/login");
       }, 1500);
@@ -526,7 +553,7 @@ const SideBar = ({
         {isExpanded && (
           <div className="px-4 py-3 border-b border-slate-700/30">
             <span className="text-slate-400 text-sm font-medium">
-              Event Details
+              {t("sidebar.eventDetails")}
             </span>
           </div>
         )}
@@ -569,7 +596,7 @@ const SideBar = ({
                         }
                       }}
                       title={
-                        isDisabled ? "Only available in advance events" : ""
+                        isDisabled ? t("sidebar.onlyAdvanceEvents") : ""
                       }
                     >
                       <div className="flex items-center space-x-3">
@@ -579,7 +606,7 @@ const SideBar = ({
                             isDisabled ? "line-through" : ""
                           }`}
                         >
-                          {item.label}
+                          {getTranslatedLabel(item.label)}
                         </span>
                         {isDisabled && (
                           <Lock className="h-3 w-3 text-slate-500 shrink-0" />
@@ -628,7 +655,7 @@ const SideBar = ({
                               }}
                               title={
                                 isSubDisabled
-                                  ? "Only available in advance events"
+                                  ? t("sidebar.onlyAdvanceEvents")
                                   : ""
                               }
                             >
@@ -638,7 +665,7 @@ const SideBar = ({
                                   isSubDisabled ? "line-through" : ""
                                 }`}
                               >
-                                {subItem.label}
+                                {getTranslatedLabel(subItem.label)}
                               </span>
                               {isSubDisabled && (
                                 <Lock className="h-3 w-3 text-slate-500 shrink-0" />
@@ -678,7 +705,7 @@ const SideBar = ({
           >
             <Settings className="h-4 w-4" />
             {isExpanded && (
-              <span className="ml-3 text-sm font-medium">Settings</span>
+              <span className="ml-3 text-sm font-medium">{t("sidebar.settings")}</span>
             )}
           </Button>
           {/* <ToastContainer /> */}
@@ -692,7 +719,7 @@ const SideBar = ({
           >
             <LogOut className="h-4 w-4" />
             {isExpanded && (
-              <span className="ml-3 text-sm font-medium">Log Out</span>
+              <span className="ml-3 text-sm font-medium">{t("sidebar.logOut")}</span>
             )}
           </Button>
         </div>
@@ -711,10 +738,10 @@ const SideBar = ({
                 <LogOut className="h-8 w-8 text-red-500" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Confirm Logout
+                {t("sidebar.confirmLogout")}
               </h3>
               <p className="text-gray-500 mb-6">
-                Are you sure you want to log out of your account?
+                {t("sidebar.confirmLogoutMessage")}
               </p>
               <div className="flex gap-3 w-full">
                 <Button
@@ -722,13 +749,13 @@ const SideBar = ({
                   variant="outline"
                   className="flex-1 py-2.5 rounded-xl border-gray-300 text-gray-700 hover:bg-gray-100"
                 >
-                  Cancel
+                  {t("common:cancel")}
                 </Button>
                 <Button
                   onClick={handleLogoutConfirm}
                   className="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white"
                 >
-                  Log Out
+                  {t("sidebar.logOut")}
                 </Button>
               </div>
             </div>

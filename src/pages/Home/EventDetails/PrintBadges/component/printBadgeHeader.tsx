@@ -1,5 +1,6 @@
 import React from "react";
 import { Eye, Printer, Clock, Users as UsersIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PrintBadgesHeaderProps {
   filteredUsersCount: number;
@@ -31,6 +32,7 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
   onPreviewSelected,
   disablePreview,
 }) => {
+  const { t } = useTranslation("dashboard");
   return (
     <div className="mb-8">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -40,19 +42,19 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
         </div>
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Manage Badges
+            {t("printBadges.manageBadges")}
           </h1>
           <p className="text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
               {filteredUsersCount}
             </span>
-            users •{" "}
+            {t("printBadges.users")} •{" "}
             <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
               {selectedUsersCount}
             </span>
-            selected
+            {t("printBadges.selected")}
             {searchTerm && (
-              <span className="text-indigo-600"> • Filtered results</span>
+              <span className="text-indigo-600"> • {t("printBadges.filteredResults")}</span>
             )}
           </p>
           {/* Print count & last printed below the subtitle - full-rounded badge like Printed/Pending */}
@@ -63,15 +65,15 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
                   {printCount}
                 </span>
-                {" "}badges printed
+                {" "}{t("printBadges.badgesPrinted")}
               </span>
             </span>
             <span className="flex items-center gap-1.5">
               <Clock className="w-4 h-4 text-indigo-600" />
               <span>
-                Last printed:{" "}
+                {t("printBadges.lastPrinted")}{" "}
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
-                  {lastPrintedAt ? formatLastPrinted(lastPrintedAt) : "Never"}
+                  {lastPrintedAt ? formatLastPrinted(lastPrintedAt) : t("printBadges.never")}
                 </span>
               </span>
             </span>
@@ -85,7 +87,7 @@ const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
           className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium shadow-lg shadow-indigo-600/25 hover:shadow-xl hover:shadow-indigo-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
         >
           <Eye size={18} />
-          Preview Selected (
+          {t("printBadges.previewSelected")} (
           <span className="inline-flex items-center min-w-[1.5rem] justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 border border-white/30">
             {selectedUsersCount}
           </span>

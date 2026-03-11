@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, CheckCircle, X } from "lucide-react";
 import MainData from "./MainData/MianData";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ export interface ToggleStates {
 }
 
 const ExpressEvent = () => {
+  const { t } = useTranslation("dashboard");
   const location = useLocation();
   const planType = location?.state?.plan;
   const { id: routeEventId } = useParams();
@@ -54,51 +56,51 @@ const ExpressEvent = () => {
   const steps = [
     {
       id: "main-data",
-      label: "Main Data",
-      description: "Please provide your event info",
+      label: t("expressEvent.mainData"),
+      description: t("expressEvent.mainDataDescription"),
     },
     {
       id: "registration-form",
-      label: "Registration Form",
-      description: "Please provide your event Registration details",
+      label: t("expressEvent.registrationForm"),
+      description: t("expressEvent.registrationFormDescription"),
     },
     plan === "advance"
       ? {
           id: "event-content",
-          label: "Event Content",
-          description: "Please provide event content details",
+          label: t("expressEvent.eventContent"),
+          description: t("expressEvent.eventContentDescription"),
         }
       : {
           id: "badge",
-          label: "Badge",
-          description: "Please provide your name and email",
+          label: t("expressEvent.badge"),
+          description: t("expressEvent.badgeDescription"),
         },
     plan === "advance"
       ? {
           id: "Invitation-Management",
-          label: "Email Management",
-          description: "Manage invitations for the event",
+          label: t("expressEvent.emailManagement"),
+          description: t("expressEvent.emailManagementDescriptionInvite"),
         }
       : {
           id: "confirmation",
-          label: "Email Management",
-          description: "Confirm event details",
+          label: t("expressEvent.emailManagement"),
+          description: t("expressEvent.emailManagementDescriptionConfirm"),
         },
     // Advance only: Mobile App Management
     ...(plan === "advance"
       ? [
           {
             id: "Mobile-App-Management",
-            label: "Mobile App Management",
-            description: "Manage mobile app settings for event",
+            label: t("expressEvent.mobileAppManagement"),
+            description: t("expressEvent.mobileAppManagementDescription"),
           },
         ]
       : []),
     // Payment: last step for both Express and Advance
     {
       id: "payment",
-      label: "Payment",
-      description: "Configure payment options for your event",
+      label: t("expressEvent.payment"),
+      description: t("expressEvent.paymentDescription"),
     },
   ];
 
@@ -190,7 +192,7 @@ const ExpressEvent = () => {
               <ChevronLeft size={20} />
             </div>
             <span className="text-sm font-poppins font-medium">
-              {plan === "express" ? "Express" : "Advance"} Event
+              {plan === "express" ? t("expressEvent.expressEvent") : t("expressEvent.advanceEvent")}
             </span>
           </Button>
         </div>
@@ -208,14 +210,14 @@ const ExpressEvent = () => {
               className="flex items-center gap-2 text-sm font-poppins font-medium px-4 py-2 rounded-md cursor-pointer bg-teal-600 hover:bg-teal-700 text-white"
             >
               <CheckCircle size={18} />
-              <span>Finish event</span>
+              <span>{t("expressEvent.finishEvent")}</span>
             </Button>
           )}
           <Button
             onClick={() => navigateTo("")}
             className="text-red-600 hover:text-red-900 flex items-center gap-2 text-sm font-poppins font-normal p-2 bg-red-50 rounded-md cursor-pointer"
           >
-            <span>Cancel Creation</span>
+            <span>{t("expressEvent.cancelCreation")}</span>
             <X size={18} />
           </Button>
         </div>
@@ -223,14 +225,14 @@ const ExpressEvent = () => {
       <div className="px-6 py-3">
         <div className="flex items-center gap-2 text-sm">
           <span className="text-neutral-500 font-poppins text-xs font-normal">
-            Home
+            {t("expressEvent.home")}
           </span>
           <ChevronLeft
             className="rotate-180 text-gray-400 cursor-pointer"
             size={14}
           />
           <span className="text-gray-800 text-xs font-normal font-poppins">
-            Express Event
+            {t("expressEvent.expressEvent")}
           </span>
         </div>
       </div>

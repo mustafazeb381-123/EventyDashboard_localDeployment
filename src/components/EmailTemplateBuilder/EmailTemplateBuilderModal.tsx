@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { CSSProperties } from "react";
 import {
   X,
@@ -283,6 +284,7 @@ function ImageBlockSettings({
   block: ImageBlock;
   onUpdate: (updates: Partial<ImageBlock>) => void;
 }) {
+  const { t } = useTranslation("common");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -327,13 +329,13 @@ function ImageBlockSettings({
               />
               <div className="hidden h-24 flex-col items-center justify-center text-gray-400 text-sm gap-2">
                 <ImageIcon size={24} className="text-gray-300" />
-                <span>Image failed to load</span>
+                <span>{t("imageFailedToLoad")}</span>
               </div>
             </div>
           ) : (
             <div className="h-24 flex flex-col items-center justify-center text-gray-400 text-sm gap-2">
               <ImageIcon size={32} className="text-gray-300" />
-              <span>No image selected</span>
+              <span>{t("noImageSelected")}</span>
             </div>
           )}
         </div>
@@ -354,7 +356,7 @@ function ImageBlockSettings({
           className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-pink-400 hover:text-pink-600 hover:bg-pink-50 transition-colors"
         >
           <Upload size={18} />
-          <span className="font-medium">Upload from Computer</span>
+          <span className="font-medium">{t("uploadFromComputer")}</span>
         </button>
       </div>
 
@@ -373,7 +375,7 @@ function ImageBlockSettings({
       <div>
         <input
           className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-pink-400 outline-none"
-          placeholder="https://example.com/image.jpg"
+          placeholder={t("imageUrlPlaceholder")}
           value={block.src}
           onChange={(e) => onUpdate({ src: e.target.value } as any)}
         />
@@ -386,7 +388,7 @@ function ImageBlockSettings({
         </label>
         <input
           className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:border-pink-400 outline-none"
-          placeholder="Image description"
+          placeholder={t("imageDescriptionPlaceholder")}
           value={block.alt}
           onChange={(e) => onUpdate({ alt: e.target.value } as any)}
         />

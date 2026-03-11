@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function SettingsSecurity() {
+  const { t } = useTranslation("settings");
   const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ id?: string }>();
   const settingsPath = params.id ? `home/${params.id}/settings` : "settings";
@@ -37,21 +39,21 @@ export default function SettingsSecurity() {
           onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Settings
+          {t("security.backToSettings")}
         </Button>
 
         <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm">
           <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-            Security
+            {t("security.title")}
           </h1>
           <p className="mt-1.5 text-sm text-gray-500">
-            Change your account password.
+            {t("security.description")}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <Label htmlFor="currentPassword" className="text-gray-700">
-                Current password
+                {t("security.currentPassword")}
               </Label>
               <Input
                 id="currentPassword"
@@ -66,7 +68,7 @@ export default function SettingsSecurity() {
             </div>
             <div>
               <Label htmlFor="newPassword" className="text-gray-700">
-                New password
+                {t("security.newPassword")}
               </Label>
               <Input
                 id="newPassword"
@@ -81,7 +83,7 @@ export default function SettingsSecurity() {
             </div>
             <div>
               <Label htmlFor="confirmPassword" className="text-gray-700">
-                Confirm new password
+                {t("security.confirmNewPassword")}
               </Label>
               <Input
                 id="confirmPassword"
@@ -99,7 +101,7 @@ export default function SettingsSecurity() {
                 type="submit"
                 className="bg-blue-600 text-white hover:bg-blue-700"
               >
-                Update password
+                {t("security.updatePassword")}
               </Button>
             </div>
           </form>

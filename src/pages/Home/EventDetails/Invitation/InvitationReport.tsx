@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Printer,
@@ -108,6 +109,7 @@ function formatDate(iso: string): string {
 const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function InvitationReport() {
+  const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
   const { invitationId } = useParams<{ invitationId: string }>();
@@ -129,7 +131,7 @@ function InvitationReport() {
   useEffect(() => {
     if (!invitationId || !eventId) {
       setLoadingInvitation(false);
-      if (!eventId && invitationId) setLoadError("Event ID is missing. Open this report from the invitation list.");
+      if (!eventId && invitationId) setLoadError(t("invitation.report.eventIdMissing"));
       return;
     }
     setLoadingInvitation(true);
@@ -147,14 +149,14 @@ function InvitationReport() {
           setLoadError(null);
         } else {
           setInvitation(null);
-          setLoadError("Invitation not found in list.");
+          setLoadError(t("invitation.report.invitationNotFound"));
         }
         setMetrics(metricsRes.data.metrics);
       })
       .catch(() => {
         setInvitation(null);
         setMetrics(null);
-        setLoadError("Failed to load invitation.");
+        setLoadError(t("invitation.report.failedToLoad"));
       })
       .finally(() => setLoadingInvitation(false));
   }, [invitationId, eventId]);
@@ -410,7 +412,7 @@ function InvitationReport() {
       return (
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800">
           <Check size={14} className="text-green-600 shrink-0" strokeWidth={2.5} />
-          Approved
+          {t("invitation.report.approved")}
         </span>
       );
     }
@@ -418,14 +420,14 @@ function InvitationReport() {
       return (
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-50 text-amber-800 border border-amber-200">
           <Clock size={14} className="text-amber-600 shrink-0" strokeWidth={2} />
-          Pending
+          {t("invitation.report.pending")}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-red-700">
         <XCircle size={14} className="text-red-600 shrink-0" strokeWidth={2} />
-        Rejected
+        {t("invitation.report.rejected")}
       </span>
     );
   }
@@ -436,7 +438,7 @@ function InvitationReport() {
       return (
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-green-100 text-green-800">
           <Check size={14} className="text-green-600 shrink-0" strokeWidth={2.5} />
-          Sent
+          {t("invitation.report.sent")}
         </span>
       );
     }
@@ -444,14 +446,14 @@ function InvitationReport() {
       return (
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-red-50 text-red-700">
           <XCircle size={14} className="text-red-600 shrink-0" strokeWidth={2} />
-          Rejected
+          {t("invitation.report.rejected")}
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium bg-amber-50 text-amber-800 border border-amber-200">
         <Clock size={14} className="text-amber-600 shrink-0" strokeWidth={2} />
-        Pending
+        {t("invitation.report.pending")}
       </span>
     );
   }
@@ -498,7 +500,7 @@ function InvitationReport() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200"
           >
             <ArrowLeft size={18} />
-            Back to List
+            {t("invitation.report.backToList")}
           </button>
         </div>
       </div>
@@ -518,7 +520,7 @@ function InvitationReport() {
                 <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden">
                   <img src={icons.reports} alt="" className="w-6 h-6 object-contain brightness-0 invert" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">Invitation Report</h1>
+                <h1 className="text-xl font-bold text-gray-900">{t("invitation.report.invitationReport")}</h1>
               </div>
               <p className="text-gray-900 text-base font-medium mb-2">{invitationName}</p>
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
@@ -528,7 +530,7 @@ function InvitationReport() {
                 </span>
                 <span className="inline-flex items-center gap-1.5">
                   <Calendar size={14} />
-                  Created: {createdAt}
+                  {t("invitation.report.created")} {createdAt}
                 </span>
               </div>
             </div>
@@ -538,7 +540,7 @@ function InvitationReport() {
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
               >
                 <ArrowLeft size={18} />
-                Back to List
+                {t("invitation.report.backToList")}
               </button>
               {/* <button
                 onClick={handlePrintReport}
@@ -553,7 +555,7 @@ function InvitationReport() {
 
         <div className="flex items-center gap-2 px-6 pt-6 pb-2">
               <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">Registration Status</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.registrationStatus")}</h2>
             </div>
 
         {/* Statistics Cards - Inside white container */}
@@ -566,7 +568,7 @@ function InvitationReport() {
                   <Users size={20} className="text-purple-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Total Invitations</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.totalInvitations")}</p>
                   <p className="text-2lg font-bold text-gray-700">{stats.totalInvitations}</p>
                 </div>
               </div>
@@ -579,7 +581,7 @@ function InvitationReport() {
                   <Send size={20} className="text-cyan-500" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Not Registered</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.notRegistered")}</p>
                   <p className="text-2lg font-bold text-gray-700">{stats.sent}</p>
                 </div>
               </div>
@@ -592,7 +594,7 @@ function InvitationReport() {
                   <UserCheck size={20} className="text-green-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Registered</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.registered")}</p>
                   <p className="text-2lg font-bold text-gray-700">{stats.registered}</p>
                 </div>
               </div>
@@ -620,7 +622,7 @@ function InvitationReport() {
                   <Copy size={20} className="text-red-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Duplicate Emails</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.duplicateEmails")}</p>
                   <p className="text-2lg font-bold text-gray-700">{stats.duplicateEmails}</p>
                 </div>
               </div>
@@ -630,7 +632,7 @@ function InvitationReport() {
           {/* RSVP Cards */}
           <div className="flex items-center gap-2 mb-4">
               <Calendar size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">RSVP Status</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.rsvpStatus")}</h2>
             </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
@@ -639,7 +641,7 @@ function InvitationReport() {
                 <Users size={20} className="text-purple-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Total Invitations</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.totalInvitations")}</p>
                   <p className="text-2lg font-bold text-gray-700">{rsvpStatus.total}</p>
                 </div>
               </div>
@@ -650,7 +652,7 @@ function InvitationReport() {
                   <CalendarCheck size={20} className="text-green-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Approved</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.approved")}</p>
                   <p className="text-2lg font-bold text-gray-700">{rsvpStatus.attended}</p>
                 </div>
               </div>
@@ -661,7 +663,7 @@ function InvitationReport() {
                   <XCircle size={20} className="text-red-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Rejected</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.rejected")}</p>
                   <p className="text-2lg font-bold text-gray-700">{rsvpStatus.decline}</p>
                 </div>
               </div>
@@ -672,7 +674,7 @@ function InvitationReport() {
                   <Clock size={20} className="text-amber-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">Pending</p>
+                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.pending")}</p>
                   <p className="text-2lg font-bold text-gray-700">{rsvpStatus.pending}</p>
                 </div>
               </div>
@@ -683,7 +685,7 @@ function InvitationReport() {
           <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
             <div className="flex items-center gap-2 mb-6 ">
               <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">Registration Status</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.registrationStatus")}</h2>
             </div>
 
             <div className="space-y-4">
@@ -694,7 +696,7 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                       <UserCheck size={18} className="text-green-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Registered</span>
+                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.registered")}</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.approved}</span>
                 </div>
@@ -713,7 +715,7 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center shrink-0">
                       <Send size={18} className="text-red-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Not Registered</span>
+                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.notRegistered")}</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{registrationStatus.rejected}</span>
                 </div>
@@ -750,7 +752,7 @@ function InvitationReport() {
                 style={{ backgroundColor: "#EAF1FF" }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-regular text-gray-700">Conversion Rate:</span>
+                  <span className="text-sm font-regular text-gray-700">{t("invitation.report.conversionRateLabel")}</span>
                   <span className="text-sm font-medium text-gray-700">{stats.conversionRate}</span>
                 </div>
               </div>
@@ -761,7 +763,7 @@ function InvitationReport() {
           <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
             <div className="flex items-center gap-2 mb-6">
               <Calendar size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">RSVP Status</h2>
+              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.rsvpStatus")}</h2>
             </div>
 
             <div className="space-y-4">
@@ -772,7 +774,7 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                       <CalendarCheck size={18} className="text-green-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Approved</span>
+                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.approved")}</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{rsvpStatus.attended}</span>
                 </div>
@@ -791,7 +793,7 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
                       <XCircle size={18} className="text-red-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Rejected</span>
+                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.rejected")}</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{rsvpStatus.decline}</span>
                 </div>
@@ -810,7 +812,7 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
                       <Clock size={18} className="text-amber-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">Pending</span>
+                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.pending")}</span>
                   </div>
                   <span className="text-sm font-semibold text-gray-900">{rsvpStatus.pending}</span>
                 </div>
@@ -829,15 +831,15 @@ function InvitationReport() {
             <div className="p-4 border-b border-gray-200 no-print">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <h3 className="text-base font-semibold text-gray-900">
-                  Invitation Users ({filteredUsers.length})
+                  {t("invitation.report.invitationUsers")} ({filteredUsers.length})
                 </h3>
                 <div className="flex items-center gap-3">
                   <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
                     <Download size={16} />
-                    Export CSV
+                    {t("invitation.report.exportCsv")}
                   </button>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Show in page</span>
+                    <span className="text-sm text-gray-600">{t("invitation.report.showInPage")}</span>
                     <select
                       value={pageSize}
                       onChange={(e) => handlePageSizeChange(Number(e.target.value))}
@@ -854,7 +856,7 @@ function InvitationReport() {
                     <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Search users..."
+                      placeholder={t("invitation.report.searchUsersPlaceholder")}
                       value={searchQuery}
                       onChange={(e) => {
                         setSearchQuery(e.target.value);
@@ -877,20 +879,20 @@ function InvitationReport() {
                         className="rounded"
                         checked={allOnPageSelected}
                         onChange={handleSelectAll}
-                        aria-label="Select all on page"
+                        aria-label={t("invitation.report.selectAllOnPage")}
                       />
                     </th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Organization</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Position</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
-                    <th className="px-4 py-3 text-left text-sm font-semibold">STATUS</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.name")}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.organization")}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.position")}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.email")}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.phone")}</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.status")}</th>
                     {showRegisteredColumn && (
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Registered</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.registered")}</th>
                     )}
                     {showConfirmedColumn && (
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Confirmed</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">{t("invitation.report.confirmed")}</th>
                     )}
                   </tr>
                 </thead>
@@ -898,7 +900,7 @@ function InvitationReport() {
                   {paginatedUsers.length === 0 ? (
                     <tr>
                       <td colSpan={tableColumnCount} className="px-4 py-12 text-center text-gray-500 text-sm">
-                        {allUsers.length === 0 ? "No invitation users for this invitation." : "No users match your search."}
+                        {allUsers.length === 0 ? t("invitation.report.noInvitationUsers") : t("invitation.report.noUsersMatchSearch")}
                       </td>
                     </tr>
                   ) : (
@@ -935,7 +937,7 @@ function InvitationReport() {
                           {duplicateEmailsSet.has((user.email ?? "").toLowerCase()) && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
                               <Copy size={12} />
-                              Duplicate email
+                              {t("invitation.report.duplicateEmail")}
                             </span>
                           )}
                          
@@ -952,7 +954,7 @@ function InvitationReport() {
             <div className="p-4 border-t border-gray-200 no-print">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <p className="text-sm text-gray-600">
-                  Showing {startItem}–{endItem} of {filteredUsers.length}
+                  {t("invitation.report.showing")} {startItem}–{endItem} {t("invitation.report.of")} {filteredUsers.length}
                 </p>
                 {filteredUsers.length > 10 && (
                   <div className="flex items-center gap-2">
@@ -962,7 +964,7 @@ function InvitationReport() {
                       disabled={safePage <= 1}
                       className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      Previous
+                      {t("invitation.report.previous")}
                     </button>
                     <div className="flex items-center gap-1">
                       {Array.from({ length: totalPages }, (_, i) => i + 1)
@@ -997,7 +999,7 @@ function InvitationReport() {
                       disabled={safePage >= totalPages}
                       className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
                     >
-                      Next
+                      {t("invitation.report.next")}
                     </button>
                   </div>
                 )}
@@ -1011,15 +1013,15 @@ function InvitationReport() {
       {/* Print-only: full report with all data */}
       <div id="invitation-report-print" className="hidden print:block p-6 bg-white">
         <div className="mb-6">
-          <h1 className="text-xl font-bold text-gray-900 mb-2">Invitation Report</h1>
+          <h1 className="text-xl font-bold text-gray-900 mb-2">{t("invitation.report.invitationReport")}</h1>
           <p className="text-gray-900 font-medium">{invitationName}</p>
           <p className="text-sm text-gray-600">
-            {type} · Created: {createdAt}
+            {type} · {t("invitation.report.created")} {createdAt}
           </p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6 text-sm">
           <div>
-            <p className="text-gray-600">Total Invitations</p>
+            <p className="text-gray-600">{t("invitation.report.totalInvitations")}</p>
             <p className="text-lg font-bold text-gray-900">{stats.totalInvitations}</p>
           </div>
           {/* <div>
@@ -1027,52 +1029,52 @@ function InvitationReport() {
             <p className="text-lg font-bold text-gray-900">{stats.sent}</p>
           </div> */}
           <div>
-            <p className="text-gray-600">Registered</p>
+            <p className="text-gray-600">{t("invitation.report.registered")}</p>
             <p className="text-lg font-bold text-gray-900">{stats.registered}</p>
           </div>
           <div>
-            <p className="text-gray-600">Conversion Rate</p>
+            <p className="text-gray-600">{t("invitation.report.conversionRate")}</p>
             <p className="text-lg font-bold text-gray-900">{stats.conversionRate}</p>
           </div>
           <div>
-            <p className="text-gray-600">Duplicate Emails</p>
+            <p className="text-gray-600">{t("invitation.report.duplicateEmails")}</p>
             <p className="text-lg font-bold text-gray-900">{stats.duplicateEmails}</p>
           </div>
         </div>
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Registration Status</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.registrationStatus")}</h2>
           <p className="text-sm text-gray-600">
-            Approved: {registrationStatus.approved} · Rejected: {registrationStatus.rejected} ·
-            Pending: {registrationStatus.pending}
+            {t("invitation.report.approved")}: {registrationStatus.approved} · {t("invitation.report.rejected")}: {registrationStatus.rejected} ·
+            {t("invitation.report.pending")}: {registrationStatus.pending}
           </p>
         </div>
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">RSVP Status</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.rsvpStatus")}</h2>
           <p className="text-sm text-gray-600">
             Attended: {rsvpStatus.attended} · Decline: {rsvpStatus.decline} ·
             Pending: {rsvpStatus.pending}
           </p>
         </div>
         <h3 className="text-base font-semibold text-gray-900 mb-2">
-          Invitation Users ({allUsers.length})
+          {t("invitation.report.invitationUsers")} ({allUsers.length})
         </h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm border border-gray-200">
             <thead className="bg-gray-800 text-white">
               <tr>
-                <th className="px-3 py-2 text-left font-semibold">Name</th>
-                <th className="px-3 py-2 text-left font-semibold">Organization</th>
-                <th className="px-3 py-2 text-left font-semibold">Position</th>
-                <th className="px-3 py-2 text-left font-semibold">Email</th>
-                <th className="px-3 py-2 text-left font-semibold">Phone</th>
-                <th className="px-3 py-2 text-left font-semibold">Status</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.name")}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.organization")}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.position")}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.email")}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.phone")}</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.status")}</th>
                 {showRegisteredColumn && (
-                  <th className="px-3 py-2 text-left font-semibold">Registered</th>
+                  <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.registered")}</th>
                 )}
                 {showConfirmedColumn && (
-                  <th className="px-3 py-2 text-left font-semibold">Confirmed</th>
+                  <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.confirmed")}</th>
                 )}
-                <th className="px-3 py-2 text-left font-semibold">Duplicate email</th>
+                <th className="px-3 py-2 text-left font-semibold">{t("invitation.report.duplicateEmail")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -1083,14 +1085,14 @@ function InvitationReport() {
                   <td className="px-3 py-2 text-gray-900">{user.position}</td>
                   <td className="px-3 py-2 text-gray-600">{user.email}</td>
                   <td className="px-3 py-2 text-gray-600">{user.phone}</td>
-                  <td className="px-3 py-2">{user.delivery === "delivered" ? "Sent" : user.delivery === "failed" ? "Rejected" : "Pending"}</td>
+                  <td className="px-3 py-2">{user.delivery === "delivered" ? t("invitation.report.sent") : user.delivery === "failed" ? t("invitation.report.rejected") : t("invitation.report.pending")}</td>
                   {showRegisteredColumn && (
-                    <td className="px-3 py-2">{user.registered ? "Yes" : "No"}</td>
+                    <td className="px-3 py-2">{user.registered ? t("invitation.report.yes") : t("invitation.report.no")}</td>
                   )}
                   {showConfirmedColumn && (
-                    <td className="px-3 py-2">{user.rsvpStatus === "approved" ? "Approved" : user.rsvpStatus === "pending" ? "Pending" : "Rejected"}</td>
+                    <td className="px-3 py-2">{user.rsvpStatus === "approved" ? t("invitation.report.approved") : user.rsvpStatus === "pending" ? t("invitation.report.pending") : t("invitation.report.rejected")}</td>
                   )}
-                  <td className="px-3 py-2">{duplicateEmailsSet.has((user.email ?? "").toLowerCase()) ? "Yes" : "No"}</td>
+                  <td className="px-3 py-2">{duplicateEmailsSet.has((user.email ?? "").toLowerCase()) ? t("invitation.report.yes") : t("invitation.report.no")}</td>
                 </tr>
               ))}
             </tbody>
