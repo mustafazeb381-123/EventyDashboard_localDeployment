@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, Loader2, ArrowRight } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ const PollDetails = () => {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { t } = useTranslation("dashboard");
 
   const eventId = searchParams.get("eventId");
   const agendaId = searchParams.get("agendaId");
@@ -214,15 +216,15 @@ const PollDetails = () => {
         );
       } else {
         console.error("Invalid poll response structure:", responseData);
-        showNotification("Invalid poll data received", "error");
+        showNotification(t("poll.invalidPollData"), "error");
       }
     } catch (error: any) {
       console.error("Error fetching poll details:", error);
       if (error?.response?.status === 404) {
-        showNotification("Poll not found", "error");
+        showNotification(t("poll.pollNotFound"), "error");
         handleBack();
       } else {
-        showNotification("Failed to load poll", "error");
+        showNotification(t("poll.failedToLoadPoll"), "error");
       }
     } finally {
       setIsLoading(false);
@@ -267,13 +269,13 @@ const PollDetails = () => {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <h1 className="text-xl font-semibold text-gray-900">
-            {poll?.question || "Poll Name"}
+            {poll?.question || t("poll.pollName")}
           </h1>
         </div>
         <div className="flex items-center gap-2 text-sm text-gray-500 ml-8">
-          <span>Polls</span>
+          <span>{t("poll.title")}</span>
           <span className="text-gray-400">&gt;</span>
-          <span className="text-gray-700">{poll?.question || "Poll Name"}</span>
+          <span className="text-gray-700">{poll?.question || t("poll.pollName")}</span>
         </div>
       </div>
 
@@ -286,7 +288,7 @@ const PollDetails = () => {
 
       {isLoading && (
         <div className="flex items-center gap-2 text-gray-600">
-          <Loader2 className="w-4 h-4 animate-spin" /> Loading…
+          <Loader2 className="w-4 h-4 animate-spin" /> {t("poll.loading")}
         </div>
       )}
 
@@ -303,7 +305,7 @@ const PollDetails = () => {
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                Poll Questions
+                {t("poll.pollQuestions")}
               </button>
               <button
                 onClick={() => setActiveTab("answers")}
@@ -313,7 +315,7 @@ const PollDetails = () => {
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                Answers
+                {t("poll.answers")}
               </button>
             </div>
             {activeTab === "questions" && (
@@ -322,7 +324,7 @@ const PollDetails = () => {
                 className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 px-4 py-2 font-medium"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Add New Question
+                {t("poll.addNewQuestion")}
               </Button>
             )}
           </div>
@@ -350,7 +352,7 @@ const PollDetails = () => {
             onClick={handleBack}
             className="bg-[#1E2A4A] hover:bg-[#2a3a5a] text-white px-6 py-2.5 font-medium"
           >
-            Done
+            {t("poll.done")}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

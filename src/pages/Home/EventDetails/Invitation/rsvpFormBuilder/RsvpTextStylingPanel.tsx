@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, Code, ChevronDown, ChevronUp, Upload } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField } from "./types";
 
 interface RsvpTextStylingPanelProps {
@@ -10,25 +11,25 @@ interface RsvpTextStylingPanelProps {
   onImageUploadRequest?: (fieldId: string) => void;
 }
 
-const AVAILABLE_VARIABLES = [
-  { label: "First Name", value: "((firstname))", syntax: "double-paren" },
-  { label: "Last Name", value: "{{lastname}}", syntax: "double-brace" },
-  { label: "Full Name", value: "{{fullname}}", syntax: "double-brace" },
-  { label: "Email", value: "{{email}}", syntax: "double-brace" },
-  { label: "Company", value: "{{comapny}}", syntax: "double-brace" },
-  { label: "Organization", value: "{{organization}}", syntax: "double-brace" },
-  { label: "Event Name", value: "{{eventname}}", syntax: "double-brace" },
-  { label: "Event Location", value: "{{eventlocation}}", syntax: "double-brace" },
-  { label: "Event Start", value: "{{eventstart}}", syntax: "double-brace" },
-  { label: "Event End", value: "{{eventend}}", syntax: "double-brace" },
-];
-
 export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
   field,
   onUpdate,
   onClose,
   onImageUploadRequest,
 }) => {
+  const { t } = useTranslation("dashboard");
+  const AVAILABLE_VARIABLES = [
+    { label: t("invitation.firstName"), value: "((firstname))", syntax: "double-paren" },
+    { label: t("invitation.lastName"), value: "{{lastname}}", syntax: "double-brace" },
+    { label: t("invitation.fullName"), value: "{{fullname}}", syntax: "double-brace" },
+    { label: t("invitation.email"), value: "{{email}}", syntax: "double-brace" },
+    { label: t("invitation.company"), value: "{{comapny}}", syntax: "double-brace" },
+    { label: t("invitation.organization"), value: "{{organization}}", syntax: "double-brace" },
+    { label: t("invitation.eventName"), value: "{{eventname}}", syntax: "double-brace" },
+    { label: t("invitation.eventLocation"), value: "{{eventlocation}}", syntax: "double-brace" },
+    { label: t("invitation.eventStart"), value: "{{eventstart}}", syntax: "double-brace" },
+    { label: t("invitation.eventEnd"), value: "{{eventend}}", syntax: "double-brace" },
+  ];
   const style = field.fieldStyle ?? {};
   const [showVariables, setShowVariables] = useState(false);
   const [textareaRef, setTextareaRef] = useState<HTMLTextAreaElement | null>(null);
@@ -66,13 +67,13 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
       <div className="p-5 border-b sticky top-0 bg-gray-50 z-10 shadow-sm">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-semibold text-gray-800">
-            Text Styling
+            {t("invitation.rsvpBuilder.textStyling")}
           </h3>
           <button
             type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg"
-            title="Close"
+            title={t("invitation.close")}
           >
             <X size={20} className="text-gray-500" />
           </button>
@@ -92,7 +93,7 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
                 className="flex items-center gap-2 w-full justify-center px-3 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-medium transition-colors"
               >
                 <Upload size={18} />
-                {field.content?.trim() ? "Change image" : "Upload image"}
+                {field.content?.trim() ? t("invitation.rsvpBuilder.changeImage") : t("invitation.rsvpBuilder.uploadImage")}
               </button>
             )}
           </div>
@@ -112,7 +113,7 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
                 className="flex items-center gap-1 px-2 py-1 text-xs text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
               >
                 <Code size={14} />
-                Variables
+                {t("invitation.rsvpBuilder.variables")}
                 {showVariables ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
               </button>
             )}
@@ -121,7 +122,7 @@ export const RsvpTextStylingPanel: React.FC<RsvpTextStylingPanelProps> = ({
           {/* Variables picker */}
           {showVariables && field.type !== "divider" && (
             <div className="mb-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-              <p className="text-xs font-medium text-indigo-900 mb-2">Available Variables:</p>
+              <p className="text-xs font-medium text-indigo-900 mb-2">{t("invitation.rsvpBuilder.availableVariables")}</p>
               <div className="flex flex-wrap gap-2">
                 {AVAILABLE_VARIABLES.map((variable) => (
                   <button

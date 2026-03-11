@@ -7,6 +7,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Edit, Trash2, LayoutGrid, Columns2, Square } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField } from "./types";
 import { RsvpSortableFieldItem } from "./RsvpSortableFieldItem";
 
@@ -33,6 +34,7 @@ export const RsvpDroppableContainer: React.FC<RsvpDroppableContainerProps> = ({
   onUpdate,
   onUpdateChild,
 }) => {
+  const { t } = useTranslation("dashboard");
   const droppableId = `container:${field.id}`;
   const { setNodeRef: setDroppableRef, isOver } = useDroppable({
     id: droppableId,
@@ -119,7 +121,7 @@ export const RsvpDroppableContainer: React.FC<RsvpDroppableContainerProps> = ({
               e.stopPropagation();
               setIsEditingLabel(true);
             }}
-            title="Click or double-click to edit label"
+            title={t("invitation.rsvpBuilder.clickOrDoubleClickToEditLabel")}
           >
             {field.label || field.name || "Container"}
           </span>
@@ -154,7 +156,7 @@ export const RsvpDroppableContainer: React.FC<RsvpDroppableContainerProps> = ({
             onEdit(field);
           }}
           className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-          title="Edit container"
+          title={t("invitation.rsvpBuilder.editContainer")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Edit size={18} />
@@ -166,7 +168,7 @@ export const RsvpDroppableContainer: React.FC<RsvpDroppableContainerProps> = ({
             onDelete(field.id);
           }}
           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete container"
+          title={t("invitation.rsvpBuilder.deleteContainer")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Trash2 size={18} />
@@ -185,7 +187,7 @@ export const RsvpDroppableContainer: React.FC<RsvpDroppableContainerProps> = ({
         >
           {isEmpty ? (
             <div className="text-center py-8 text-slate-400 text-sm italic">
-              Drop fields here
+              {t("invitation.rsvpBuilder.dropFieldsHere")}
             </div>
           ) : (
             childFields.map((childField) => {

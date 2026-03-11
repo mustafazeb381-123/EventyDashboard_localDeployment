@@ -11,7 +11,7 @@ import { loginApi } from "@/apis/apiHelpers";
 
 function Login() {
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useTranslation("loginPage");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -48,7 +48,7 @@ function Login() {
 
     if (wasLoggedOut) {
       setNotification({
-        message: "You have been logged out.",
+        message: t("loggedOut"),
         type: "info",
       });
       localStorage.removeItem("loggedOut");
@@ -73,13 +73,13 @@ function Login() {
 
   const validate = () => {
     const newErrors: typeof errors = {};
-    if (!email) newErrors.email = "Email is required.";
+    if (!email) newErrors.email = t("errors.emailRequired");
     else if (!/\S+@\S+\.\S+/.test(email))
-      newErrors.email = "Invalid email address.";
+      newErrors.email = t("errors.invalidEmail");
 
-    if (!password) newErrors.password = "Password is required.";
+    if (!password) newErrors.password = t("errors.passwordRequired");
     else if (password.length < 6)
-      newErrors.password = "Password should be at least 6 characters long.";
+      newErrors.password = t("errors.passwordMinLength");
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -137,7 +137,7 @@ function Login() {
         localStorage.removeItem("rememberedPassword");
       }
 
-      showNotification("Logged in successfully!", "success");
+      showNotification(t("loggedInSuccess"), "success");
       const workspaceSubdomain = subdomain || localStorage.getItem("company_subdomain") || "app";
       setTimeout(() => {
         navigate(`/${workspaceSubdomain}`);
@@ -145,7 +145,7 @@ function Login() {
     } catch (error: any) {
       console.error("Login error", error);
       showNotification(
-        error?.response?.data?.error || "Login failed",
+        error?.response?.data?.error || t("loginFailed"),
         "error"
       );
     } finally {
@@ -183,13 +183,13 @@ function Login() {
             </div>
 
         {/* Welcome Text */}
-        <h1 className="login-title">Welcome!</h1>
+        <h1 className="login-title">{t("welcome")}</h1>
 
         {/* Email Field */}
         <div className="input-group">
           <Input
             type="email"
-            placeholder="Enter your email"
+            placeholder={t("emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="login-input"
@@ -202,7 +202,7 @@ function Login() {
           <div className="password-wrapper">
             <Input
               type={showPassword ? "text" : "password"}
-              placeholder="Password"
+              placeholder={t("passwordPlaceholder")}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="login-input"
@@ -220,9 +220,9 @@ function Login() {
 
         {/* Forgot Password & Remember Me */}
         <div className="login-options">
-          <span className="forgot-text">Forget Password?</span>
+          <span className="forgot-text">{t("forgotPassword")}</span>
           <a href="/reset-password" className="reset-link">
-            Reset Password
+            {t("resetPassword")}
           </a>
         </div>
 
@@ -233,7 +233,7 @@ function Login() {
             onCheckedChange={(checked) => setRememberMe(checked === true)}
           />
           <Label htmlFor="remember" className="remember-label">
-            Remember me
+            {t("rememberMe")}
           </Label>
         </div>
 
@@ -243,12 +243,12 @@ function Login() {
           disabled={loading}
           className="signin-button"
         >
-          {loading ? "Loading..." : t("signin")}
+          {loading ? t("loading") : t("signin")}
         </Button>
 
         {/* Sign Up Link */}
         <div className="signup-link">
-          <span>{t("Don't have an account?")}</span>
+          <span>{t("dontHaveAccount")}</span>
           <a onClick={() => navigate("/signup")} className="signup-text">
             {t("signup")}
           </a>

@@ -15,6 +15,7 @@ import {
   deleteAgendaApi,
   getSpeakersApi,
 } from "@/apis/apiHelpers";
+import { useTranslation } from "react-i18next";
 
 interface AdvanceAgendaProps {
   onNext?: (eventId?: string | number) => void;
@@ -40,6 +41,8 @@ function AdvanceAgenda({
   };
 
   const STEP_NAMES = ["Speakers", "Exhibitors", "Partners", "Agenda", "Area"];
+
+  const { t } = useTranslation("dashboard");
 
   const SpeakerAvatar = ({
     name,
@@ -810,12 +813,12 @@ function AdvanceAgenda({
       <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Sessions</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t("advance.agenda.sessions")}</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
               {isFetchingAgendas ? (
                 <span className="flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading...
+                  {t("advance.agenda.loading")}
                 </span>
               ) : (
                 `${displayedSessions.length} of ${sessions.length} sessions visible`
@@ -829,7 +832,7 @@ function AdvanceAgenda({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isFetchingAgendas ? "Loading..." : "Add Sessions"}
+            {isFetchingAgendas ? t("advance.agenda.loading") : t("advance.agenda.addSessions")}
           </button>
         </div>
 
@@ -926,7 +929,7 @@ function AdvanceAgenda({
           </div>
         ) : sessions.length === 0 ? (
           <div className="text-center py-12 border border-gray-200 rounded-lg">
-            <p className="text-gray-500 mb-4">No sessions found</p>
+            <p className="text-gray-500 mb-4">{t("advance.agenda.noSessionsFound")}</p>
             <button
               onClick={() => setAddModalOpen(true)}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
@@ -1104,7 +1107,7 @@ function AdvanceAgenda({
             >
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold text-gray-800">
-                  {editModalOpen ? "Edit Session" : "Add Sessions"}
+                  {editModalOpen ? t("advance.agenda.editSession") : t("advance.agenda.addSessions")}
                 </h2>
                 <X
                   onClick={() =>
@@ -1363,7 +1366,7 @@ function AdvanceAgenda({
                 ) : (
                   <>
                     <Plus className="w-4 h-4" />
-                    {editModalOpen ? "Update Session" : "Add Sessions"}
+                    {editModalOpen ? t("advance.agenda.updateSession") : t("advance.agenda.addSessions")}
                   </>
                 )}
               </button>

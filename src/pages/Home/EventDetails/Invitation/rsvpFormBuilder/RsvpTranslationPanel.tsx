@@ -1,5 +1,6 @@
 import React from "react";
 import { X, Languages } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField, RsvpLanguageConfig } from "./types";
 
 interface RsvpTranslationPanelProps {
@@ -24,6 +25,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
   onFormFieldsChange,
   onClose,
 }) => {
+  const { t } = useTranslation("dashboard");
   const { languageMode, primaryLanguage = "en" } = languageConfig;
   const secondaryLanguage = primaryLanguage === "en" ? "ar" : "en";
 
@@ -94,14 +96,14 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
         <div className="flex items-center gap-2">
           <Languages size={22} className="text-indigo-600" />
           <h2 className="text-lg font-semibold text-gray-900">
-            Language &amp; Translation
+            {t("invitation.rsvpBuilder.languageAndTranslation")}
           </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="p-2 hover:bg-white/80 rounded-lg"
-          aria-label="Close"
+          aria-label={t("invitation.close")}
         >
           <X size={20} />
         </button>
@@ -110,7 +112,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         <section>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            Form language
+            {t("invitation.rsvpBuilder.formLanguage")}
           </h3>
           <div className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -127,7 +129,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
                 }
                 className="w-4 h-4 text-indigo-600"
               />
-              <span className="text-sm text-gray-800">Single language</span>
+              <span className="text-sm text-gray-800">{t("invitation.rsvpBuilder.singleLanguage")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -143,7 +145,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
                 }
                 className="w-4 h-4 text-indigo-600"
               />
-              <span className="text-sm text-gray-800">Dual language</span>
+              <span className="text-sm text-gray-800">{t("invitation.rsvpBuilder.dualLanguage")}</span>
             </label>
           </div>
         </section>
@@ -151,7 +153,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
         {languageMode === "single" && (
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Language
+              {t("invitation.rsvpBuilder.language")}
             </h3>
             <select
               value={primaryLanguage || "en"}
@@ -163,7 +165,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
               }
               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
-              <option value="en">English</option>
+              <option value="en">{t("invitation.rsvpBuilder.english")}</option>
               <option value="ar">العربية (Arabic)</option>
             </select>
           </section>
@@ -172,7 +174,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
         {languageMode === "dual" && (
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Primary language
+              {t("invitation.rsvpBuilder.primaryLanguage")}
             </h3>
             <select
               value={primaryLanguage || "en"}
@@ -184,7 +186,7 @@ export const RsvpTranslationPanel: React.FC<RsvpTranslationPanelProps> = ({
               }
               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm"
             >
-              <option value="en">English</option>
+              <option value="en">{t("invitation.rsvpBuilder.english")}</option>
               <option value="ar">العربية (Arabic)</option>
             </select>
           </section>

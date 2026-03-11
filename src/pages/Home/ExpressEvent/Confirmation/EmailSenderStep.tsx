@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, User, Folder, Trash2, MoreVertical, Signal, Wifi, Battery } from "lucide-react";
 
 export interface EmailSenderStepProps {
@@ -26,6 +27,7 @@ export function EmailSenderStep({
   onCancel,
   onAddSender,
 }: EmailSenderStepProps) {
+  const { t } = useTranslation("dashboard");
   const displayName = senderFromName.trim() || "John Doe";
   const displayEmail = senderFromEmail.trim() || "john.doe@email.com";
 
@@ -43,7 +45,7 @@ export function EmailSenderStep({
                 onChange={() => onUseExistingSenderChange(true)}
                 className="w-4 h-4 text-pink-500 border-gray-300 focus:ring-pink-500"
               />
-              <span className="text-gray-700 font-medium">Use Existing Sender</span>
+              <span className="text-gray-700 font-medium">{t("expressEvent.useExistingSender")}</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer">
               <input
@@ -53,14 +55,14 @@ export function EmailSenderStep({
                 onChange={() => onUseExistingSenderChange(false)}
                 className="w-4 h-4 text-pink-500 border-gray-300 focus:ring-pink-500"
               />
-              <span className="text-gray-700 font-medium">Create New Sender</span>
+              <span className="text-gray-700 font-medium">{t("expressEvent.createNewSender")}</span>
             </label>
           </div>
           {!useExistingSender && (
             <>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  From Name <span className="text-red-500">*</span>
+                  {t("expressEvent.fromName")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -70,12 +72,12 @@ export function EmailSenderStep({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-colors"
                 />
                 <p className="mt-1.5 text-sm text-gray-500">
-                  Specify what your recipients will see when they receive emails from this sender.
+                  {t("expressEvent.fromNameHelp")}
                 </p>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  From Email <span className="text-red-500">*</span>
+                  {t("expressEvent.fromEmail")} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -85,7 +87,7 @@ export function EmailSenderStep({
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-colors"
                 />
                 <p className="mt-1.5 text-sm text-gray-500">
-                  From email is the sender&apos;s email address from which your recipients will receive your emails.
+                  {t("expressEvent.fromEmailHelp")}
                 </p>
               </div>
             </>
@@ -127,7 +129,7 @@ export function EmailSenderStep({
               </div>
               {/* Inbox content */}
               <div className="px-4 py-4">
-                <p className="text-base font-semibold text-gray-900 mb-0.5">O Inbox</p>
+                <p className="text-base font-semibold text-gray-900 mb-0.5">{t("expressEvent.oInbox")}</p>
                 <p className="text-xs text-gray-500 mb-4">10 June 2021, 19:45</p>
                 <p className="text-xs text-gray-600 mb-2">From:</p>
                 <div className="inline-flex items-center gap-2.5 px-3 py-2.5 rounded-2xl bg-gray-100 border border-gray-200 shadow-sm min-w-0 max-w-full">
@@ -155,14 +157,14 @@ export function EmailSenderStep({
           onClick={onCancel}
           className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
         >
-          Cancel
+          {t("expressEvent.cancel")}
         </button>
         <button
           type="button"
           onClick={onAddSender}
           className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-all duration-200 hover:shadow-md active:scale-[0.98]"
         >
-          Add sender
+          {t("expressEvent.addSender")}
         </button>
       </div>
     </>

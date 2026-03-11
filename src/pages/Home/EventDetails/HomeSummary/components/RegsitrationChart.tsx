@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import {
   LineChart,
   Line,
@@ -78,8 +79,8 @@ const RegistrationChart = ({
   data = [],
 
   // Display props
-  title = "Registrations Activity",
-  legend = "Registered",
+  title: titleProp,
+  legend: legendProp,
   height = "320px",
 
   // Dropdown props
@@ -112,23 +113,27 @@ const RegistrationChart = ({
   yAxisKey = "registered",
   useDefaultFallback = true,
 }: RegistrationChartProps) => {
+  const { t } = useTranslation("dashboard");
+  const title = titleProp ?? t("homeSummary.chart.registrationsActivity");
+  const legend = legendProp ?? t("homeSummary.chart.registered");
+
   const [selectedTimeRange, setSelectedTimeRange] = useState(defaultTimeRange);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
   const defaultData = useMemo(
     () => [
-      { month: "Jan", registered: 45 },
-      { month: "Feb", registered: 120 },
-      { month: "Mar", registered: 155 },
-      { month: "Apr", registered: 60 },
-      { month: "May", registered: 85 },
-      { month: "Jun", registered: 200 },
-      { month: "Jul", registered: 200 },
-      { month: "Aug", registered: 200 },
-      { month: "Sep", registered: 200 },
+      { month: t("months.jan"), registered: 45 },
+      { month: t("months.feb"), registered: 120 },
+      { month: t("months.mar"), registered: 155 },
+      { month: t("months.apr"), registered: 60 },
+      { month: t("months.may"), registered: 85 },
+      { month: t("months.jun"), registered: 200 },
+      { month: t("months.jul"), registered: 200 },
+      { month: t("months.aug"), registered: 200 },
+      { month: t("months.sep"), registered: 200 },
     ],
-    [],
+    [t],
   );
 
   const chartData = useMemo(
@@ -217,7 +222,7 @@ const RegistrationChart = ({
           className="flex h-full items-center justify-center text-center text-gray-500 text-base"
           style={{ height }}
         >
-          No data available for this period.
+          {t("homeSummary.chart.noDataAvailable")}
         </div>
       );
     }
@@ -383,37 +388,38 @@ export default RegistrationChart;
 // import RegistrationChart from "./RegistrationChart"; // Assuming it's in the same directory
 
 export const ChartExamples = () => {
+  const { t } = useTranslation("dashboard");
   // Full 12-month dataset
   const registrationDataFull = useMemo(
     () => [
-      { month: "Jan", registered: 45 },
-      { month: "Feb", registered: 120 },
-      { month: "Mar", registered: 155 },
-      { month: "Apr", registered: 60 },
-      { month: "May", registered: 85 },
-      { month: "Jun", registered: 200 },
-      { month: "Jul", registered: 200 },
-      { month: "Aug", registered: 200 },
-      { month: "Sep", registered: 200 },
-      { month: "Oct", registered: 300 },
-      { month: "Nov", registered: 700 },
-      { month: "Dec", registered: 10 },
+      { month: t("months.jan"), registered: 45 },
+      { month: t("months.feb"), registered: 120 },
+      { month: t("months.mar"), registered: 155 },
+      { month: t("months.apr"), registered: 60 },
+      { month: t("months.may"), registered: 85 },
+      { month: t("months.jun"), registered: 200 },
+      { month: t("months.jul"), registered: 200 },
+      { month: t("months.aug"), registered: 200 },
+      { month: t("months.sep"), registered: 200 },
+      { month: t("months.oct"), registered: 300 },
+      { month: t("months.nov"), registered: 700 },
+      { month: t("months.dec"), registered: 10 },
     ],
-    [],
+    [t],
   );
 
   // New data sets
   const websiteTrafficData = useMemo(
     () => [
-      { day: "Mon", visitors: 520 },
-      { day: "Tue", visitors: 650 },
-      { day: "Wed", visitors: 810 },
-      { day: "Thu", visitors: 730 },
-      { day: "Fri", visitors: 950 },
-      { day: "Sat", visitors: 1100 },
-      { day: "Sun", visitors: 880 },
+      { day: t("days.mon"), visitors: 520 },
+      { day: t("days.tue"), visitors: 650 },
+      { day: t("days.wed"), visitors: 810 },
+      { day: t("days.thu"), visitors: 730 },
+      { day: t("days.fri"), visitors: 950 },
+      { day: t("days.sat"), visitors: 1100 },
+      { day: t("days.sun"), visitors: 880 },
     ],
-    [],
+    [t],
   );
 
   const revenueData = useMemo(
@@ -467,17 +473,17 @@ export const ChartExamples = () => {
   return (
     <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
       <h2 className="text-3xl font-extrabold text-gray-900 mb-6">
-        Chart Showcase
+        {t("homeSummary.chart.chartShowcase")}
       </h2>
 
       {/* Existing Registrations Chart */}
       <div>
         <h3 className="text-xl font-semibold mb-4 text-gray-800">
-          Registrations Over Time
+          {t("homeSummary.chart.registrationsOverTime")}
         </h3>
         <RegistrationChart
           data={currentRegistrationData}
-          highlightDataKey="Nov"
+          highlightDataKey={t("months.nov")}
           highlightValue={700}
           onTimeRangeChange={handleRegistrationTimeRangeChange}
         />
@@ -486,12 +492,12 @@ export const ChartExamples = () => {
       {/* New: Website Traffic Chart */}
       <div>
         <h3 className="text-xl font-semibold mb-4 text-gray-800">
-          Website Traffic
+          {t("homeSummary.chart.websiteTraffic")}
         </h3>
         <RegistrationChart
           data={websiteTrafficData}
-          title="Website Traffic"
-          legend="Visitors"
+          title={t("homeSummary.chart.websiteTraffic")}
+          legend={t("homeSummary.chart.visitors")}
           xAxisKey="day"
           yAxisKey="visitors"
           lineColor="#EF4444" // Red line
@@ -504,20 +510,20 @@ export const ChartExamples = () => {
       {/* New: Quarterly Revenue Chart */}
       <div>
         <h3 className="text-xl font-semibold mb-4 text-gray-800">
-          Quarterly Revenue
+          {t("homeSummary.chart.quarterlyRevenue")}
         </h3>
         <RegistrationChart
           data={revenueData}
-          title="Quarterly Revenue"
-          legend="Revenue"
+          title={t("homeSummary.chart.quarterlyRevenue")}
+          legend={t("homeSummary.chart.revenue")}
           xAxisKey="quarter"
           yAxisKey="revenue"
           lineColor="#22C55E" // Green line
           highlightColor="#16A34A"
           highlightDataKey="Q3"
           highlightValue="41K"
-          timeRangeOptions={["This Year", "Last Year"]}
-          defaultTimeRange="This Year"
+          timeRangeOptions={[t("homeSummary.chart.thisYear"), t("homeSummary.chart.lastYear")]}
+          defaultTimeRange={t("homeSummary.chart.thisYear")}
           yAxisTicks={[0, 10000, 20000, 30000, 40000]}
           height="300px"
         />
@@ -526,18 +532,18 @@ export const ChartExamples = () => {
       {/* New: App Downloads Chart */}
       <div>
         <h3 className="text-xl font-semibold mb-4 text-gray-800">
-          App Downloads
+          {t("homeSummary.chart.appDownloads")}
         </h3>
         <RegistrationChart
           data={appDownloadsData}
-          title="App Downloads"
-          legend="Downloads"
+          title={t("homeSummary.chart.appDownloads")}
+          legend={t("homeSummary.chart.downloads")}
           selectedTimeRange={timeRange} // ✅ parent controls this
           xAxisKey="month"
           yAxisKey="downloads"
           lineColor="#F97316" // Orange line
           highlightColor="#EA580C"
-          highlightDataKey="Jun"
+          highlightDataKey={t("months.jun")}
           highlightValue="6.8K"
           showTimeRangeSelector={false}
           yAxisDomain={[0, "dataMax + 1000"]}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   X,
   Upload,
@@ -290,9 +291,11 @@ const AlignmentButtons = ({
 }: {
   value: "left" | "center" | "right";
   onChange: (value: "left" | "center" | "right") => void;
-}) => (
+}) => {
+  const { t } = useTranslation("dashboard");
+  return (
   <div>
-    <label className="block text-sm text-gray-600 mb-2">Alignment</label>
+    <label className="block text-sm text-gray-600 mb-2">{t("expressEvent.alignment")}</label>
     <div className="flex gap-2">
       {["left", "center", "right"].map((align) => (
         <button
@@ -314,6 +317,7 @@ const AlignmentButtons = ({
     </div>
   </div>
 );
+};
 
 // -------------------- CUSTOM BADGE BUILDER MODAL --------------------
 interface CustomBadgeModalProps {
@@ -331,6 +335,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
   template,
   isEditMode = false,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [editingTemplate, setEditingTemplate] = useState<BadgeTemplate | null>(
     null
   );
@@ -410,7 +415,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
     if (!editingTemplate) return;
 
     if (editingTemplate.name.trim() === "") {
-      showNotification("Please enter a template name", "warning");
+      showNotification(t("expressEvent.pleaseEnterTemplateName"), "warning");
       return;
     }
     console.log("Saved Badge Template JSON:");
@@ -501,7 +506,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   color: template.nameText.color || "#ffffff",
                 }}
               >
-                Name
+                {t("expressEvent.nameLabel")}
               </div>
             </div>
           )}
@@ -524,7 +529,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   color: template.companyText.color || "#cccccc",
                 }}
               >
-                Company
+                {t("expressEvent.companyLabel")}
               </div>
             </div>
           )}
@@ -547,7 +552,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   color: template.titleText.color || "#999999",
                 }}
               >
-                Title
+                {t("expressEvent.titleLabel")}
               </div>
             </div>
           )}
@@ -589,8 +594,8 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
           <div className="flex items-center gap-4">
             <h3 className="text-lg font-semibold text-white">
               {isEditMode
-                ? "Edit Custom Badge"
-                : "Create Custom Badge Template"}
+                ? t("expressEvent.editCustomBadge")
+                : t("expressEvent.createCustomBadgeTemplate")}
             </h3>
             <input
               type="text"
@@ -602,7 +607,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 })
               }
               className="px-3 py-2 border border-white/30 rounded-md bg-white/20 text-white placeholder:text-white/70 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-white/50"
-              placeholder="Template name"
+              placeholder={t("expressEvent.templateNamePlaceholder")}
             />
           </div>
           <button
@@ -616,14 +621,14 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
         <div className="flex flex-1 overflow-hidden">
           <div className="flex-1 overflow-auto p-6">
             <h4 className="font-semibold text-gray-800 mb-4">
-              Badge Configuration
+              {t("expressEvent.badgeConfiguration")}
             </h4>
 
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <BadgeNumberInput
-                    label="Width (inches)"
+                    label={t("expressEvent.widthInches")}
                     value={editingTemplate.width}
                     step={0.1}
                     onChange={(val) =>
@@ -636,7 +641,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                 </div>
                 <div>
                   <BadgeNumberInput
-                    label="Height (inches)"
+                    label={t("expressEvent.heightInches")}
                     value={editingTemplate.height}
                     step={0.1}
                     onChange={(val) =>
@@ -657,14 +662,14 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     hasBackground: checked,
                   })
                 }
-                label="Badge Background"
+                label={t("expressEvent.badgeBackground")}
               />
 
               {editingTemplate.hasBackground && (
                 <>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Background Color
+                      {t("expressEvent.backgroundColor")}
                     </label>
                     <div className="flex gap-3">
                       <input
@@ -694,12 +699,12 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Background Image
+                      {t("expressEvent.backgroundImage")}
                     </label>
                     <div className="flex items-center gap-3">
                       <label className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer inline-flex items-center gap-2">
                         <Upload size={16} />
-                        Upload Image
+                        {t("expressEvent.uploadImage")}
                         <input
                           type="file"
                           accept="image/*"
@@ -717,7 +722,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                           }
                           className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                         >
-                          Remove
+                          {t("expressEvent.remove")}
                         </button>
                       )}
                     </div>
@@ -733,16 +738,16 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     hasPersonalPhoto: checked,
                   })
                 }
-                label="Personal Photo"
+                label={t("expressEvent.personalPhoto")}
               />
 
               {editingTemplate.hasPersonalPhoto && (
                 <div className="space-y-6 ml-4">
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Size</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.photoSize")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="Width"
+                        label={t("expressEvent.width")}
                         value={editingTemplate.photoSize?.width || 200}
                         min={50}
                         max={600}
@@ -758,7 +763,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Height"
+                        label={t("expressEvent.height")}
                         value={editingTemplate.photoSize?.height || 200}
                         min={50}
                         max={800}
@@ -790,10 +795,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div> */}
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Photo Position</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.photoPosition")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="X Position (Horizontal)"
+                        label={t("expressEvent.xPosition")}
                         value={editingTemplate.photoPosition?.x || 200}
                         min={0}
                         max={400}
@@ -809,7 +814,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Y Position (Vertical)"
+                        label={t("expressEvent.yPosition")}
                         value={editingTemplate.photoPosition?.y || 60}
                         min={0}
                         max={800}
@@ -837,16 +842,16 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     hasName: checked,
                   })
                 }
-                label="Name Text"
+                label={t("expressEvent.nameText")}
               />
 
               {editingTemplate.hasName && (
                 <div className="space-y-6 ml-4">
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Name Text Size & Color</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.nameTextSizeColor")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="Size"
+                        label={t("expressEvent.size")}
                         value={editingTemplate.nameText?.size || 24}
                         min={8}
                         max={72}
@@ -863,7 +868,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">
-                          Color
+                          {t("expressEvent.color")}
                         </label>
                         <input
                           type="color"
@@ -884,7 +889,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Name Text Alignment</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.nameTextAlignment")}</h5>
                     <AlignmentButtons
                       value={editingTemplate.nameText?.alignment || "center"}
                       onChange={(alignment) =>
@@ -900,10 +905,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Name Text Position</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.nameTextPosition")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="X Position (Horizontal)"
+                        label={t("expressEvent.xPosition")}
                         value={editingTemplate.nameText?.position?.x || 200}
                         min={0}
                         max={400}
@@ -922,7 +927,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Y Position (Vertical)"
+                        label={t("expressEvent.yPosition")}
                         value={editingTemplate.nameText?.position?.y || 280}
                         min={0}
                         max={800}
@@ -953,16 +958,16 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     hasCompany: checked,
                   })
                 }
-                label="Company Text"
+                label={t("expressEvent.companyText")}
               />
 
               {editingTemplate.hasCompany && (
                 <div className="space-y-6 ml-4">
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Company Text Size & Color</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.companyTextSizeColor")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="Size"
+                        label={t("expressEvent.size")}
                         value={editingTemplate.companyText?.size || 18}
                         min={8}
                         max={72}
@@ -979,7 +984,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">
-                          Color
+                          {t("expressEvent.color")}
                         </label>
                         <input
                           type="color"
@@ -1000,7 +1005,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Company Text Alignment</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.companyTextAlignment")}</h5>
                     <AlignmentButtons
                       value={editingTemplate.companyText?.alignment || "center"}
                       onChange={(alignment) =>
@@ -1016,10 +1021,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Company Text Position</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.companyTextPosition")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="X Position (Horizontal)"
+                        label={t("expressEvent.xPosition")}
                         value={editingTemplate.companyText?.position?.x || 200}
                         min={0}
                         max={400}
@@ -1038,7 +1043,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Y Position (Vertical)"
+                        label={t("expressEvent.yPosition")}
                         value={editingTemplate.companyText?.position?.y || 315}
                         min={0}
                         max={800}
@@ -1069,16 +1074,16 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     hasTitle: checked,
                   })
                 }
-                label="Title Text"
+                label={t("expressEvent.titleText")}
               />
 
               {editingTemplate.hasTitle && (
                 <div className="space-y-6 ml-4">
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Title Text Size & Color</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.titleTextSizeColor")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="Size"
+                        label={t("expressEvent.size")}
                         value={editingTemplate.titleText?.size || 16}
                         min={8}
                         max={72}
@@ -1095,7 +1100,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                       />
                       <div>
                         <label className="block text-sm text-gray-600 mb-1">
-                          Color
+                          {t("expressEvent.color")}
                         </label>
                         <input
                           type="color"
@@ -1116,7 +1121,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Title Text Alignment</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.titleTextAlignment")}</h5>
                     <AlignmentButtons
                       value={editingTemplate.titleText?.alignment || "center"}
                       onChange={(alignment) =>
@@ -1132,10 +1137,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div>
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">Title Text Position</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.titleTextPosition")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="X Position (Horizontal)"
+                        label={t("expressEvent.xPosition")}
                         value={editingTemplate.titleText?.position?.x || 200}
                         min={0}
                         max={400}
@@ -1154,7 +1159,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Y Position (Vertical)"
+                        label={t("expressEvent.yPosition")}
                         value={editingTemplate.titleText?.position?.y || 350}
                         min={0}
                         max={800}
@@ -1185,16 +1190,16 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                     hasQrCode: checked,
                   })
                 }
-                label="QR Code"
+                label={t("expressEvent.qrCode")}
               />
 
               {editingTemplate.hasQrCode && (
                 <div className="space-y-6 ml-4">
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Size</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.qrCodeSize")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="Width"
+                        label={t("expressEvent.width")}
                         value={editingTemplate.qrCodeSize?.width || 120}
                         min={50}
                         max={300}
@@ -1210,7 +1215,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Height"
+                        label={t("expressEvent.height")}
                         value={editingTemplate.qrCodeSize?.height || 120}
                         min={50}
                         max={300}
@@ -1242,10 +1247,10 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                   </div> */}
 
                   <div>
-                    <h5 className="text-sm font-semibold text-gray-700 mb-4">QR Code Position</h5>
+                    <h5 className="text-sm font-semibold text-gray-700 mb-4">{t("expressEvent.qrCodePosition")}</h5>
                     <div className="grid grid-cols-2 gap-4">
                       <SliderWithInput
-                        label="X Position (Horizontal)"
+                        label={t("expressEvent.xPosition")}
                         value={editingTemplate.qrCodePosition?.x || 200}
                         min={0}
                         max={400}
@@ -1261,7 +1266,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
                         }
                       />
                       <SliderWithInput
-                        label="Y Position (Vertical)"
+                        label={t("expressEvent.yPosition")}
                         value={editingTemplate.qrCodePosition?.y || 400}
                         min={0}
                         max={800}
@@ -1285,7 +1290,7 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
 
           <div className="w-[500px] border-l border-gray-200 p-6 overflow-auto bg-gray-50">
             <h4 className="font-semibold text-gray-800 mb-4 text-center">
-              Badge Preview
+              {t("expressEvent.badgePreview")}
             </h4>
             {renderCustomBadgePreview(editingTemplate)}
           </div>
@@ -1296,13 +1301,13 @@ const CustomBadgeModal: React.FC<CustomBadgeModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
           >
-            Cancel
+            {t("expressEvent.cancel")}
           </button>
           <button
             onClick={handleSaveTemplate}
             className="px-6 py-2 bg-pink-500 text-white rounded-lg hover:bg-pink-600 transition-colors font-medium"
           >
-            Save Template
+            {t("expressEvent.saveTemplate")}
           </button>
         </div>
       </div>

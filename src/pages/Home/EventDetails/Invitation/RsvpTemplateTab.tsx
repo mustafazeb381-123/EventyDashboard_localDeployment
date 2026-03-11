@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Check, X, Plus, Edit, Trash2, Eye, Code, Copy, Share2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { RsvpFormBuilder } from "./rsvpFormBuilder/RsvpFormBuilder";
 import { RsvpFormPreview } from "./rsvpFormBuilder/RsvpFormPreview";
 import type {
@@ -68,6 +69,7 @@ export function RsvpTemplateTab({
   eventId = null,
   invitationId = null,
 }: RsvpTemplateTabProps) {
+  const { t } = useTranslation("dashboard");
   // Saved RSVP Form Builder templates (local state only; replace with API when ready)
   const [rsvpFormBuilderTemplates, setRsvpFormBuilderTemplates] = useState<
     RsvpFormBuilderTemplate[]
@@ -254,7 +256,7 @@ export function RsvpTemplateTab({
       setRsvpFormBuilderTemplates((prev) =>
         prev.map((t) => (t.id === updated.id ? updated : t))
       );
-      showNotification("Template updated successfully", "success");
+      showNotification(t("invitation.rsvpTemplateTab.templateUpdatedSuccess"), "success");
     } else {
       const id = `rsvp-template-${Date.now()}`;
       const title =
@@ -271,7 +273,7 @@ export function RsvpTemplateTab({
       };
       setRsvpFormBuilderTemplates((prev) => [...prev, newTemplate]);
       setConfirmedTemplate(id);
-      showNotification("Template saved successfully", "success");
+      showNotification(t("invitation.rsvpTemplateTab.templateSavedSuccess"), "success");
     }
     setIsCustomFormBuilderOpen(false);
     setEditingFormBuilderTemplate(null);
@@ -323,7 +325,7 @@ export function RsvpTemplateTab({
     if (confirmedTemplate === deleteCandidate.id) {
       setConfirmedTemplate(null);
     }
-    showNotification("Template deleted successfully", "success");
+    showNotification(t("invitation.rsvpTemplateTab.templateDeletedSuccess"), "success");
     setIsDeleting(false);
     cancelDelete();
   };
@@ -338,7 +340,7 @@ export function RsvpTemplateTab({
 
   const handleUseFormBuilderTemplate = (templateId: string) => {
     setConfirmedTemplate(templateId);
-    showNotification("Template applied successfully", "success");
+    showNotification(t("invitation.rsvpTemplateTab.templateAppliedSuccess"), "success");
     setIsPreviewModalOpen(false);
     setPreviewTemplate(null);
   };
@@ -380,19 +382,19 @@ export function RsvpTemplateTab({
   const handleShareRsvpLink = () => {
     if (!rsvpLinkHasInvitationId) {
       showNotification(
-        "Save the invitation first so the RSVP link includes your invitation. Links without it won’t work for recipients.",
+        t("invitation.rsvpTemplateTab.saveInvitationFirstLink"),
         "warning"
       );
       return;
     }
     if (!rsvpLinkUrl) {
-      showNotification("Event ID or tenant is missing. Use the full link from your invitation.", "warning");
+      showNotification(t("invitation.rsvpTemplateTab.eventIdMissing"), "warning");
       return;
     }
     navigator.clipboard
       .writeText(rsvpLinkUrlWithToken)
-      .then(() => showNotification("RSVP link (with {{tenant_uuid}} & {{rsvp_token}} placeholders) copied!", "success"))
-      .catch(() => showNotification("Failed to copy link", "error"));
+      .then(() => showNotification(t("invitation.rsvpTemplateTab.rsvpLinkCopied"), "success"))
+      .catch(() => showNotification(t("invitation.rsvpTemplateTab.failedToCopyLink"), "error"));
   };
 
   return (
@@ -401,12 +403,12 @@ export function RsvpTemplateTab({
       {eventId && (
         <div className="flex flex-wrap items-center justify-between gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm font-semibold text-slate-800">RSVP link</h3>
+            <h3 className="text-sm font-semibold text-slate-800">{t("invitation.rsvpTemplateTab.rsvpLink")}</h3>
             <p className="text-xs text-slate-600 mt-0.5">
-              Share this link so invitees can respond (RSVP) to your invitation.
+              {t("invitation.rsvpTemplateTab.shareRsvpDescription")}
               {!rsvpLinkHasInvitationId && (
                 <span className="mt-1 block font-medium text-amber-700">
-                  Save the invitation first — the link will then include your invitation and work in emails.
+                  {t("invitation.rsvpTemplateTab.saveInvitationFirstWarning")}
                 </span>
               )}
             </p>
@@ -425,7 +427,7 @@ export function RsvpTemplateTab({
                 </p>
               </>
             ) : rsvpLinkHasInvitationId ? null : (
-              <p className="mt-2 text-xs text-amber-700">Link will appear here after you save the invitation.</p>
+              <p className="mt-2 text-xs text-amber-700">{t("invitation.rsvpTemplateTab.linkWillAppear")}</p>
             )}
           </div>
           <button
@@ -435,7 +437,7 @@ export function RsvpTemplateTab({
             disabled={!rsvpLinkHasInvitationId}
           >
             <Share2 size={18} />
-            Copy link
+            {t("invitation.rsvpTemplateTab.copyLink")}
           </button>
         </div>
       )}
@@ -454,16 +456,16 @@ export function RsvpTemplateTab({
             className="border-2 border-dashed border-indigo-300 rounded-3xl p-6 cursor-pointer transition-all duration-200 hover:border-indigo-500 hover:bg-indigo-50 flex flex-col items-center justify-center aspect-square relative"
           >
             <div className="absolute top-2 right-2 bg-indigo-500 text-white text-xs px-2 py-1 rounded-full">
-              New
+              {t("invitation.rsvpTemplateTab.new")}
             </div>
             <div className="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mb-4">
               <Plus className="text-indigo-600" size={32} />
             </div>
             <h3 className="text-lg font-medium mb-2 text-center text-indigo-600">
-              Custom RSVP Builder
+              {t("invitation.rsvpTemplateTab.customRsvpBuilder")}
             </h3>
             <p className="text-sm text-gray-500 text-center">
-              Fully customizable with drag and drop, theme and translations
+              {t("invitation.rsvpTemplateTab.customRsvpDescription")}
             </p>
           </div>
 
@@ -487,7 +489,7 @@ export function RsvpTemplateTab({
                       handleOpenPreview(template);
                     }}
                     className="p-1.5 bg-white rounded-lg shadow-sm text-slate-600 hover:bg-slate-50 transition-colors"
-                    title="Preview"
+                    title={t("invitation.rsvpTemplateTab.preview")}
                   >
                     <Eye size={14} />
                   </button>
@@ -498,7 +500,7 @@ export function RsvpTemplateTab({
                       handleOpenCode(template);
                     }}
                     className="p-1.5 bg-white rounded-lg shadow-sm text-slate-600 hover:bg-slate-50 transition-colors"
-                    title="See code"
+                    title={t("invitation.rsvpTemplateTab.seeCode")}
                   >
                     <Code size={14} />
                   </button>
@@ -509,7 +511,7 @@ export function RsvpTemplateTab({
                       handleEditFormBuilderTemplate(template);
                     }}
                     className="p-1.5 bg-white rounded-lg shadow-sm text-indigo-500 hover:bg-indigo-50 transition-colors"
-                    title="Edit Template"
+                    title={t("invitation.rsvpTemplateTab.editTemplate")}
                   >
                     <Edit size={14} />
                   </button>
@@ -520,7 +522,7 @@ export function RsvpTemplateTab({
                       handleDeleteFormBuilderTemplate(template.id);
                     }}
                     className="p-1.5 bg-white rounded-lg shadow-sm text-red-500 hover:bg-red-50 transition-colors"
-                    title="Delete Template"
+                    title={t("invitation.rsvpTemplateTab.deleteTemplate")}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -566,27 +568,26 @@ export function RsvpTemplateTab({
                       onClick={(e) => e.stopPropagation()}
                       className="w-full text-sm font-medium text-slate-900 border border-indigo-300 rounded px-2 py-1 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       autoFocus
-                      aria-label="Template name"
+                      aria-label={t("invitation.rsvpTemplateTab.templateName")}
                     />
                   ) : (
                     <h4
                       className="text-sm font-medium text-slate-900 truncate cursor-pointer hover:text-indigo-600 hover:underline"
                       onClick={(e) => handleStartEditTitle(e, template)}
-                      title="Click to edit name"
+                      title={t("invitation.rsvpTemplateTab.clickToEditName")}
                     >
                       {template.title}
                     </h4>
                   )}
                   <span className="text-xs text-slate-500 block mt-0.5">
-                    {template.formFields.length} element
-                    {template.formFields.length !== 1 ? "s" : ""}
+                    {template.formFields.length} {template.formFields.length !== 1 ? t("invitation.rsvpTemplateTab.elements") : t("invitation.rsvpTemplateTab.element")}
                   </span>
                 </div>
                 {isSelected && (
                   <div className="mt-2 flex items-center justify-center">
                     <Check size={16} className="text-indigo-500 mr-1" />
                     <span className="text-sm text-indigo-600 font-medium">
-                      Selected
+                      {t("invitation.rsvpTemplateTab.selected")}
                     </span>
                   </div>
                 )}
@@ -630,27 +631,27 @@ export function RsvpTemplateTab({
           >
             <div className="p-4 border-b flex items-center justify-between">
               <h3 className="text-lg font-semibold text-slate-900">
-                Delete Template
+                {t("invitation.rsvpTemplateTab.deleteTemplateTitle")}
               </h3>
               <button
                 type="button"
                 onClick={cancelDelete}
                 className="p-2 hover:bg-slate-100 rounded-lg"
-                aria-label="Close"
+                aria-label={t("invitation.rsvpTemplateTab.close")}
               >
                 <X size={18} />
               </button>
             </div>
             <div className="p-4">
               <p className="text-sm text-slate-700">
-                Are you sure you want to delete{" "}
+                {t("invitation.rsvpTemplateTab.deleteTemplateConfirm")}{" "}
                 <span className="font-semibold">
-                  {deleteCandidate?.title ?? "this template"}
+                  {deleteCandidate?.title ?? t("invitation.rsvpTemplateTab.thisTemplate")}
                 </span>
                 ?
               </p>
               <p className="text-xs text-slate-500 mt-2">
-                This action can’t be undone.
+                {t("invitation.rsvpTemplateTab.cannotBeUndone")}
               </p>
             </div>
             <div className="p-4 border-t flex items-center justify-end gap-3">
@@ -660,7 +661,7 @@ export function RsvpTemplateTab({
                 disabled={isDeleting}
                 className="px-4 py-2 border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 disabled:opacity-50"
               >
-                Cancel
+                {t("invitation.rsvpTemplateTab.cancel")}
               </button>
               <button
                 type="button"
@@ -668,7 +669,7 @@ export function RsvpTemplateTab({
                 disabled={isDeleting}
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium disabled:opacity-50"
               >
-                {isDeleting ? "Deleting…" : "Delete"}
+                {isDeleting ? t("invitation.rsvpTemplateTab.deletingEllipsis") : t("invitation.rsvpTemplateTab.deleteVerb")}
               </button>
             </div>
           </div>
@@ -691,7 +692,7 @@ export function RsvpTemplateTab({
                   }
                   className="px-4 py-2 rounded-lg text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white"
                 >
-                  Use This Template
+                  {t("invitation.rsvpTemplateTab.useThisTemplate")}
                 </button>
                 <button
                   type="button"
@@ -743,7 +744,7 @@ export function RsvpTemplateTab({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700"
                 >
                   <Copy size={16} />
-                  {codeCopied ? "Copied!" : "Copy"}
+                  {codeCopied ? t("invitation.rsvpTemplateTab.copiedBang") : t("invitation.rsvpTemplateTab.copy")}
                 </button>
                 <button
                   type="button"
@@ -752,7 +753,7 @@ export function RsvpTemplateTab({
                     setCodeTemplate(null);
                   }}
                   className="p-2 rounded-lg hover:bg-slate-100 text-slate-600"
-                  aria-label="Close"
+                  aria-label={t("invitation.rsvpTemplateTab.close")}
                 >
                   <X size={20} />
                 </button>

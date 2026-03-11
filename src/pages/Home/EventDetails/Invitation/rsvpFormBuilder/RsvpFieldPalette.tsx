@@ -24,6 +24,7 @@ import {
   Image as ImageIcon,
   Sparkles,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField, RsvpFieldType } from "./types";
 import { createRsvpFormField, createRsvpLayoutField } from "./types";
 
@@ -160,6 +161,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
   onToggleVisible,
   onDeleteField,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [activeTab, setActiveTab] = useState<PaletteTab>("layout");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -196,11 +198,11 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <Palette size={18} className="text-slate-600 shrink-0" />
-          <h3 className="text-sm font-semibold text-slate-800">Layout & Content</h3>
+          <h3 className="text-sm font-semibold text-slate-800">{t("invitation.rsvpBuilder.layoutAndContent")}</h3>
         </div>
         <p className="text-[11px] text-slate-500">Drag into the form or click to add.</p>
         <div>
-          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Layout</p>
+          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t("invitation.rsvpBuilder.layout")}</p>
           <div className="space-y-2">
             {STRUCTURE_ITEMS.map((item) => (
               <DraggablePaletteButton
@@ -224,7 +226,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
           </div>
         </div>
         <div>
-          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">Content</p>
+          <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">{t("invitation.rsvpBuilder.content")}</p>
           <div className="space-y-2">
             {CONTENT_OPTIONS.map(({ type, label }) => (
               <DraggablePaletteButton
@@ -253,7 +255,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
       {/* Title: Form Elements with palette icon (like screenshot) */}
       <div className="flex items-center gap-2">
         <Palette size={18} className="text-slate-600 shrink-0" />
-        <h3 className="text-sm font-semibold text-slate-800">Form Elements</h3>
+        <h3 className="text-sm font-semibold text-slate-800">{t("invitation.rsvpBuilder.formElements")}</h3>
       </div>
 
       {/* Search bar */}
@@ -264,7 +266,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
         />
         <input
           type="text"
-          placeholder="Search..."
+          placeholder={t("invitation.rsvpBuilder.searchPlaceholder")}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"
@@ -282,7 +284,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
-          Layout
+          {t("invitation.rsvpBuilder.layout")}
         </button>
         <button
           type="button"
@@ -293,7 +295,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
               : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
-          Fields
+          {t("invitation.rsvpBuilder.fields")}
         </button>
       </div>
 
@@ -301,10 +303,10 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
       {activeTab === "layout" && (
         <div>
           <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1">
-            Structure
+            {t("invitation.rsvpBuilder.structure")}
           </p>
           <p className="text-[11px] text-slate-500 mb-3">
-            Add containers to group and arrange fields in rows or columns.
+            {t("invitation.rsvpBuilder.structureDescription")}
           </p>
           <div className="space-y-2">
             {filteredStructureItems.map((item) => (
@@ -339,7 +341,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
           {/* Current fields – click to edit; show/hide + delete */}
           <div className="space-y-2">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-              Current fields
+              {t("invitation.rsvpBuilder.currentFields")}
             </p>
             {filteredFormFields.map((field) => {
               const isVisible = field.visible !== false;
@@ -417,7 +419,7 @@ export const RsvpFieldPalette: React.FC<RsvpFieldPaletteProps> = ({
           <div className="pt-4 border-t border-slate-200">
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
               <Plus size={14} />
-              Add field
+              {t("invitation.rsvpBuilder.addField")}
             </p>
             <div className="flex flex-wrap gap-2">
               {filteredFieldOptions.map(({ type, label }) => (

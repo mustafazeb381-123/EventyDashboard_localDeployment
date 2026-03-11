@@ -1,5 +1,6 @@
 import React from "react";
 import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import PrintBadgesTableRow from "./printBadgeTableRow";
 
 interface PrintBadgesTableProps {
@@ -35,6 +36,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
   rowsPerPage,
   startIndex,
 }) => {
+  const { t } = useTranslation("dashboard");
   // Logic to generate pagination numbers (kept here as it's tightly coupled with pagination UI)
   const getPaginationNumbers = () => {
     const pages = [];
@@ -84,34 +86,34 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                 />
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                ID
+                {t("printBadges.id")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Participant
+                {t("printBadges.participant")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Email
+                {t("printBadges.email")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray:600 uppercase tracking-wider">
-                Type
+                {t("printBadges.type")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Organization
+                {t("printBadges.organization")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Created
+                {t("printBadges.created")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Print Count
+                {t("printBadges.printCount")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Status
+                {t("printBadges.status")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Actions
+                {t("printBadges.actions")}
               </th>
               <th className="text-left p-4 text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                Edit
+                {t("printBadges.edit")}
               </th>
             </tr>
           </thead>
@@ -164,7 +166,7 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
                 <td colSpan={11} className="p-8 text-center">
                   <div className="flex flex-col items-center justify-center py-8 text-gray-500">
                     <Users className="w-12 h-12 text-gray-300 mb-3" />
-                    <p className="text-sm">No users found</p>
+                    <p className="text-sm">{t("printBadges.noUsersFound")}</p>
                   </div>
                 </td>
               </tr>
@@ -188,11 +190,11 @@ const PrintBadgesTable: React.FC<PrintBadgesTableProps> = ({
       {filteredUsersCount > 0 && (
         <div className="flex items-center justify-between px-6 py-4 bg-gray-50/50 border-t border-gray-200/60">
           <div className="text-sm text-gray-600">
-            Showing <span className="font-medium">{startIndex + 1}</span> to{" "}
+            Showing <span className="font-medium">{startIndex + 1}</span> {t("printBadges.to")}{" "}
             <span className="font-medium">
               {startIndex + paginatedUsers.length}
             </span>{" "}
-            of <span className="font-medium">{filteredUsersCount}</span> users
+            {t("printBadges.of")} <span className="font-medium">{filteredUsersCount}</span> {t("printBadges.users")}
           </div>
           {filteredUsersCount >= rowsPerPage && (
             <div className="flex items-center gap-2">

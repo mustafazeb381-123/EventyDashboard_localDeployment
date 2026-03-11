@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { X, Languages } from "lucide-react";
 import type { CustomFormField } from "../types";
 import type { FormLanguageConfig, PrimaryLanguage } from "../types";
@@ -28,6 +29,7 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
   onFieldsChange,
   onClose,
 }) => {
+  const { t } = useTranslation("dashboard");
   const { languageMode, primaryLanguage = "en" } = languageConfig;
   const secondaryLanguage: LangCode = primaryLanguage === "en" ? "ar" : "en";
 
@@ -165,14 +167,14 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
         <div className="flex items-center gap-2">
           <Languages size={22} className="text-indigo-600" />
           <h2 className="text-lg font-semibold text-gray-900">
-            Language &amp; Translation
+            {t("advance.formBuilder.translation.languageTranslation")}
           </h2>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="p-2 hover:bg-white/80 rounded-lg transition-colors"
-          aria-label="Close"
+          aria-label={t("advance.formBuilder.translation.close")}
         >
           <X size={20} />
         </button>
@@ -182,7 +184,7 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
         {/* Language mode */}
         <section>
           <h3 className="text-sm font-semibold text-gray-700 mb-2">
-            Form language
+            {t("advance.formBuilder.translation.formLanguage")}
           </h3>
           <div className="flex gap-4">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -199,7 +201,7 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
                 }
                 className="w-4 h-4 text-indigo-600"
               />
-              <span className="text-sm text-gray-800">Single language</span>
+              <span className="text-sm text-gray-800">{t("advance.formBuilder.translation.singleLanguage")}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -215,7 +217,7 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
                 }
                 className="w-4 h-4 text-indigo-600"
               />
-              <span className="text-sm text-gray-800">Dual language</span>
+              <span className="text-sm text-gray-800">{t("advance.formBuilder.translation.dualLanguage")}</span>
             </label>
           </div>
         </section>
@@ -224,10 +226,10 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
         {languageMode === "single" && (
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Language
+              {t("advance.formBuilder.translation.language")}
             </h3>
             <p className="text-xs text-gray-500 mb-2">
-              Choose the language for your form (English or Arabic).
+              {t("advance.formBuilder.translation.chooseLanguageDesc")}
             </p>
             <select
               value={primaryLanguage || "en"}
@@ -252,11 +254,10 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
         {languageMode === "dual" && (
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Primary language
+              {t("advance.formBuilder.translation.primaryLanguage")}
             </h3>
             <p className="text-xs text-gray-500 mb-2">
-              If primary is English, translation is Arabic. If primary is Arabic,
-              translation is English.
+              {t("advance.formBuilder.translation.primaryLanguageDesc")}
             </p>
             <select
               value={primaryLanguage || "en"}
@@ -281,11 +282,10 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
         {languageMode === "dual" && (
           <section>
             <h3 className="text-sm font-semibold text-gray-700 mb-2">
-              Translate form (Primary → Secondary)
+              {t("advance.formBuilder.translation.translateForm")}
             </h3>
             <p className="text-xs text-gray-500 mb-3">
-              Default fields (e.g. first name, last name, email) are
-              pre-translated. You can edit any row.
+              {t("advance.formBuilder.translation.defaultFieldsDesc")}
             </p>
             <div className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="overflow-x-auto max-h-[50vh] overflow-y-auto">
@@ -293,19 +293,19 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
                   <thead className="bg-gray-50 sticky top-0">
                     <tr>
                       <th className="text-left p-2 font-medium text-gray-700 border-b">
-                        Field
+                        {t("advance.formBuilder.translation.field")}
                       </th>
                       <th className="text-left p-2 font-medium text-gray-700 border-b whitespace-nowrap">
-                        Label ({primaryLabel})
+                        {t("advance.formBuilder.translation.labelColumn", { lang: primaryLabel })}
                       </th>
                       <th className="text-left p-2 font-medium text-gray-700 border-b whitespace-nowrap">
-                        Label ({secondaryLabel})
+                        {t("advance.formBuilder.translation.labelColumn", { lang: secondaryLabel })}
                       </th>
                       <th className="text-left p-2 font-medium text-gray-700 border-b whitespace-nowrap">
-                        Placeholder ({primaryLabel})
+                        {t("advance.formBuilder.translation.placeholderColumn", { lang: primaryLabel })}
                       </th>
                       <th className="text-left p-2 font-medium text-gray-700 border-b whitespace-nowrap">
-                        Placeholder ({secondaryLabel})
+                        {t("advance.formBuilder.translation.placeholderColumn", { lang: secondaryLabel })}
                       </th>
                     </tr>
                   </thead>
@@ -345,8 +345,8 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
                               }
                               placeholder={
                                 isButton
-                                  ? `Translate button text to ${secondaryLabel}`
-                                  : `Translate label to ${secondaryLabel}`
+                                  ? t("advance.formBuilder.translation.translateButtonTextTo", { lang: secondaryLabel })
+                                  : t("advance.formBuilder.translation.translateLabelTo", { lang: secondaryLabel })
                               }
                               className="w-full px-2 py-1 border border-gray-200 rounded text-gray-800 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                             />
@@ -369,7 +369,7 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
                                     secondaryLanguage
                                   )
                                 }
-                                placeholder={`Translate placeholder to ${secondaryLabel}`}
+                                placeholder={t("advance.formBuilder.translation.translatePlaceholderTo", { lang: secondaryLabel })}
                                 className="w-full px-2 py-1 border border-gray-200 rounded text-gray-800 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
                               />
                             )}
@@ -382,8 +382,7 @@ export const TranslationPanel: React.FC<TranslationPanelProps> = ({
               </div>
               {translatableFields.length === 0 && (
                 <div className="p-6 text-center text-gray-500 text-sm">
-                  No translatable fields yet. Add fields in the form design
-                  first.
+                  {t("advance.formBuilder.translation.noTranslatableFields")}
                 </div>
               )}
             </div>

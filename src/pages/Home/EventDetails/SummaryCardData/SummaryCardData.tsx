@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   ChevronDown,
@@ -20,6 +21,7 @@ const getApprovalStatus = (user: any): "approved" | "rejected" | "pending" => {
 };
 
 function SummaryCardData() {
+  const { t } = useTranslation("dashboard");
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
@@ -409,7 +411,7 @@ function SummaryCardData() {
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               <FileDown size={18} />
-              {exportingCsv ? "Exporting…" : "Export CSV"}
+              {exportingCsv ? t("summaryCard.exporting") : t("summaryCard.exportCsv")}
             </button>
             <button
               type="button"
@@ -418,7 +420,7 @@ function SummaryCardData() {
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               <FileSpreadsheet size={18} />
-              {exportingExcel ? "Exporting…" : "Export Excel"}
+              {exportingExcel ? t("summaryCard.exporting") : t("summaryCard.exportExcel")}
             </button>
           </div>
         </div>
@@ -435,10 +437,10 @@ function SummaryCardData() {
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none bg-white pr-10 text-sm"
               >
-                <option value="all">All Status</option>
-                <option value="pending">Pending</option>
-                <option value="approved">Approved</option>
-                <option value="rejected">Rejected</option>
+                <option value="all">{t("summaryCard.allStatus")}</option>
+                <option value="pending">{t("summaryCard.pending")}</option>
+                <option value="approved">{t("summaryCard.approved")}</option>
+                <option value="rejected">{t("summaryCard.rejected")}</option>
               </select>
               <ChevronDown
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
@@ -454,7 +456,7 @@ function SummaryCardData() {
                 }}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none bg-white pr-10 text-sm"
               >
-                <option value="all">All Types</option>
+                <option value="all">{t("summaryCard.allTypes")}</option>
                 {uniqueUserTypesFromFiltered.map((typeKey) => (
                   <option key={typeKey} value={typeKey}>
                     {typeKey.charAt(0).toUpperCase() + typeKey.slice(1)}
@@ -470,7 +472,7 @@ function SummaryCardData() {
               <Search
                 value={searchTerm}
                 onChange={setSearchTerm}
-                placeholder="Search by name, email, phone, organization, type..."
+                placeholder={t("summaryCard.searchPlaceholder")}
               />
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React from "react";
 import { Search, Download } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface PrintBadgesFilterAndSearchProps {
   searchTerm: string;
@@ -16,6 +17,7 @@ const PrintBadgesFilterAndSearch: React.FC<PrintBadgesFilterAndSearchProps> = ({
   onStatusFilterChange,
   onExport,
 }) => {
+  const { t } = useTranslation("dashboard");
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200/60 mb-6 p-6">
       <div className="flex flex-col lg:flex-row gap-4">
@@ -26,7 +28,7 @@ const PrintBadgesFilterAndSearch: React.FC<PrintBadgesFilterAndSearchProps> = ({
           />
           <input
             type="text"
-            placeholder="Search by name, email, or organization..."
+            placeholder={t("printBadges.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
@@ -38,10 +40,10 @@ const PrintBadgesFilterAndSearch: React.FC<PrintBadgesFilterAndSearchProps> = ({
             onChange={(e) => onStatusFilterChange(e.target.value)}
             className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors bg-white"
           >
-            <option value="all">All Status</option>
-            <option value="printed">Printed</option>
-            <option value="pending">Pending</option>
-            <option value="error">Error</option>
+            <option value="all">{t("printBadges.allStatus")}</option>
+            <option value="printed">{t("printBadges.printed")}</option>
+            <option value="pending">{t("printBadges.pending")}</option>
+            <option value="error">{t("printBadges.error")}</option>
           </select>
           {/* <button
             onClick={onExport}

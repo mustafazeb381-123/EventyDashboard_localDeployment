@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ const STATIC_INVOICES = [
 ];
 
 export default function SettingsBilling() {
+  const { t } = useTranslation("settings");
   const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
   const navigateTo = useWorkspaceNavigate();
@@ -59,16 +61,16 @@ export default function SettingsBilling() {
           onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Settings
+          {t("billing.backToSettings")}
         </Button>
 
         <div className="rounded-2xl border border-gray-200/80 bg-white shadow-sm overflow-hidden">
           <div className="p-6 pb-4">
             <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-              Billing
+              {t("billing.title")}
             </h1>
             <p className="mt-1.5 text-sm text-gray-500">
-              View invoices and payment history.
+              {t("billing.description")}
             </p>
           </div>
 
@@ -76,26 +78,26 @@ export default function SettingsBilling() {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-100/80 border-y border-gray-200">
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-900">
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-gray-900">
                     <span className="inline-flex items-center gap-0.5">
-                      Invoice #
+                      {t("billing.invoiceNumber")}
                       <ChevronDown className="h-3.5 w-3.5 text-gray-500" />
                     </span>
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-900">
-                    Total
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-gray-900">
+                    {t("billing.total")}
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-900">
-                    Status
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-gray-900">
+                    {t("billing.status")}
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-900">
-                    Invoice Date
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-gray-900">
+                    {t("billing.invoiceDate")}
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-900">
-                    Due Date
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-gray-900">
+                    {t("billing.dueDate")}
                   </th>
-                  <th className="text-left py-3 px-4 text-xs font-semibold text-gray-900">
-                    Details
+                  <th className="text-start py-3 px-4 text-xs font-semibold text-gray-900">
+                    {t("billing.details")}
                   </th>
                 </tr>
               </thead>
@@ -133,7 +135,7 @@ export default function SettingsBilling() {
                           // TODO: open invoice details
                         }}
                       >
-                        View Invoice
+                        {t("billing.viewInvoice")}
                       </Button>
                     </td>
                   </tr>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import * as XLSX from "xlsx";
 import { getCheckIns, getSessionAreaApi } from "@/apis/apiHelpers";
@@ -44,6 +45,7 @@ const UserAvatar = ({ user }: { user: any }) => {
 };
 
 function CheckIn() {
+  const { t } = useTranslation("dashboard");
   const location = useLocation();
   const [eventId, setEventId] = useState<string | null>(null);
   const [sessionAreaId, setSessionAreaId] = useState<string | number | null>(null);
@@ -304,20 +306,20 @@ function CheckIn() {
   return (
     <div className="bg-white min-h-screen p-6">
       <div className="max-w-8xl mx-auto">
-        <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
+        <h1 className="text-2xl font-bold mb-4">{t("checkIn.registeredUsers")}</h1>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
+              <h1 className="text-2xl font-semibold text-gray-900">{t("checkIn.total")}</h1>
               <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
-                {pagination?.total_count || allUsers.length} Users
+                {pagination?.total_count || allUsers.length} {t("checkIn.users")}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <label className="text-sm font-medium text-gray-700">Session Area:</label>
+            <label className="text-sm font-medium text-gray-700">{t("checkIn.sessionArea")}:</label>
             <select
               value={sessionAreaId ?? ""}
               onChange={(e) => {
@@ -329,9 +331,9 @@ function CheckIn() {
               className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loadingAreas ? (
-                <option value="">Loading session areas...</option>
+                <option value="">{t("checkIn.loadingSessionAreas")}</option>
               ) : sessionAreas.length === 0 ? (
-                <option value="">No session areas available</option>
+                <option value="">{t("checkIn.noSessionAreasAvailable")}</option>
               ) : (
                 <>
                   {sessionAreas.map((area) => (
@@ -357,7 +359,7 @@ function CheckIn() {
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               <FileDown className="w-4 h-4" />
-              {exportingCsv ? "Exporting…" : "Export CSV"}
+              {exportingCsv ? t("checkIn.exporting") : t("checkIn.exportCsv")}
             </button>
             <button
               onClick={handleExportExcel}
@@ -365,7 +367,7 @@ function CheckIn() {
               className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
             >
               <FileSpreadsheet className="w-4 h-4" />
-              {exportingExcel ? "Exporting…" : "Export Excel"}
+              {exportingExcel ? t("checkIn.exporting") : t("checkIn.exportExcel")}
             </button>
           </div>
         </div>
@@ -377,7 +379,7 @@ function CheckIn() {
               onChange={(val) => {
                 setSearchTerm(val);
               }}
-              placeholder="Search users..."
+              placeholder={t("checkIn.searchPlaceholder")}
             />
           </div>
           <div>
@@ -404,11 +406,11 @@ function CheckIn() {
         {/* Table */}
         {loadingAreas ? (
           <div className="border border-gray-200 rounded-lg p-12 text-center">
-            <div className="text-gray-500 text-lg">Loading session areas...</div>
+            <div className="text-gray-500 text-lg">{t("checkIn.loadingSessionAreas")}</div>
           </div>
         ) : !sessionAreaId ? (
           <div className="border border-gray-200 rounded-lg p-12 text-center">
-            <div className="text-gray-500 text-lg">No session areas available</div>
+            <div className="text-gray-500 text-lg">{t("checkIn.noSessionAreasAvailable")}</div>
           </div>
         ) : (
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
@@ -475,16 +477,16 @@ function CheckIn() {
                 <thead className="bg-gray-50 border-b border-gray-200">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
+                      {t("checkIn.id")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Name
+                      {t("checkIn.name")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Email
+                      {t("checkIn.email")}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User type
+                      {t("checkIn.userType")}
                     </th>
                   </tr>
                 </thead>
@@ -513,13 +515,13 @@ function CheckIn() {
                           </svg>
                           <p className="text-lg font-medium text-gray-900 mb-1">
                             {debouncedSearchTerm
-                              ? `No users found matching "${debouncedSearchTerm}"`
-                              : "No users found"}
+                              ? `${t("checkIn.noUsersFoundMatching")} "${debouncedSearchTerm}"`
+                              : t("checkIn.noUsersFound")}
                           </p>
                           <p className="text-sm text-gray-500">
                             {debouncedSearchTerm
-                              ? "Try adjusting your search criteria"
-                              : "There are no users to display at this time"}
+                              ? t("checkIn.tryAdjustingSearch")
+                              : t("checkIn.noUsersToDisplay")}
                           </p>
                         </div>
                       </td>
@@ -546,7 +548,7 @@ function CheckIn() {
                         </td>
                         <td className="px-6 py-4">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {user?.attributes?.user_type || "Guest"}
+                            {user?.attributes?.user_type || t("checkIn.guest")}
                           </span>
                         </td>
                       </tr>

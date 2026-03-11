@@ -499,7 +499,7 @@ const renderCustomField = (
             fontWeight: theme?.headingFontWeight || "bold",
           }}
         >
-          {field.content || fieldLabel || "Heading"}
+          {field.content || fieldLabel || tFormPreview?.("advance.registration.heading") || "Heading"}
         </h3>
       );
     case "helperText":
@@ -527,23 +527,19 @@ const renderCustomField = (
       );
     case "paragraph":
       const paragraphContent =
-        formData[field.name] || field.content || fieldLabel || "";
+        field.content || fieldLabel || "";
       return (
-        <textarea
-          value={paragraphContent}
-          onChange={(e) =>
-            setFormData({ ...formData, [field.name]: e.target.value })
-          }
-          className="w-full text-sm resize-y transition-all outline-none focus:ring-2 focus:ring-pink-500"
+        <p
+          className="w-full text-sm whitespace-pre-wrap"
           style={{
-            ...fieldInputStyle,
-            color: theme?.textColor || "#111827",
+            color: theme?.textColor || "#6b7280",
             fontSize: theme?.textFontSize || "16px",
-            minHeight: "80px",
+            lineHeight: "1.6",
+            margin: 0,
           }}
-          rows={4}
-          placeholder="Enter your paragraph"
-        />
+        >
+          {paragraphContent}
+        </p>
       );
     case "spacer":
       return (
@@ -592,6 +588,7 @@ export const FormBuilderTemplateForm: React.FC<
 }: FormBuilderTemplateFormProps) => {
   const { i18n } = useTranslation();
   const { t: tFormBuilder } = useTranslation("formBuilder");
+  const { t } = useTranslation("dashboard");
   const [currentLanguage, setCurrentLanguage] = useState(i18n.language || "en");
 
   // Listen to language changes to force re-render
@@ -903,7 +900,7 @@ export const FormBuilderTemplateForm: React.FC<
             ? localStorage.getItem("edit_eventId")
             : null,
       });
-      showNotification("No event ID found", "error");
+      showNotification(t("advance.registration.noEventIdFound"), "error");
       return;
     }
 
@@ -921,7 +918,7 @@ export const FormBuilderTemplateForm: React.FC<
         console.error(
           "❌ CRITICAL: actualEventId is missing at submission time!",
         );
-        showNotification("No event ID found", "error");
+        showNotification(t("advance.registration.noEventIdFound"), "error");
         setIsSubmitting(false);
         return;
       }
@@ -966,7 +963,7 @@ export const FormBuilderTemplateForm: React.FC<
             effectiveEventId,
           },
         );
-        showNotification("No event ID found", "error");
+        showNotification(t("advance.registration.noEventIdFound"), "error");
         setIsSubmitting(false);
         return;
       }
@@ -1340,7 +1337,7 @@ export const FormBuilderTemplateForm: React.FC<
         code: error?.code,
       });
 
-      let errorMessage = "Registration failed";
+      let errorMessage = t("advance.registration.registrationFailed");
 
       // Handle network errors (no response received)
       if (error?.request && !error?.response) {
@@ -1683,10 +1680,8 @@ export const FormBuilderTemplateForm: React.FC<
                     return null;
                   }
 
-                  // Skip heading fields from rendering (but allow other text fields like "title")
-                  if (field.type === "heading") {
-                    return null;
-                  }
+                  // Note: heading fields are NOT skipped — they are rendered below
+                  // using a dedicated wrapper that calls renderCustomField().
 
                   // Skip if this field has already been rendered (prevent duplicates)
                   if (renderedFieldIds.has(field.id)) {
@@ -1919,6 +1914,54 @@ export const FormBuilderTemplateForm: React.FC<
                     );
                   }
 
+                  // Render heading fields without label/description wrapper
+                  if (field.type === "heading") {
+                    return (
+                      <div
+                        key={`${field.id}-${currentLanguage}`}
+                        style={{
+                          padding: field.fieldStyle?.padding || undefined,
+                          width: field.fieldStyle?.width || "100%",
+                        }}
+                      >
+                        {renderCustomField(
+                          field,
+                          baseInputStyle,
+                          theme,
+                          formData,
+                          setFormData,
+                          imagePreviewUrls,
+                          currentLanguage,
+                          (key) => tFormBuilder("formPreview." + key),
+                        )}
+                      </div>
+                    );
+                  }
+
+                  // Render paragraph fields without label/description wrapper
+                  if (field.type === "paragraph") {
+                    return (
+                      <div
+                        key={`${field.id}-${currentLanguage}`}
+                        style={{
+                          padding: field.fieldStyle?.padding || undefined,
+                          width: field.fieldStyle?.width || "100%",
+                        }}
+                      >
+                        {renderCustomField(
+                          field,
+                          baseInputStyle,
+                          theme,
+                          formData,
+                          setFormData,
+                          imagePreviewUrls,
+                          currentLanguage,
+                          (key) => tFormBuilder("formPreview." + key),
+                        )}
+                      </div>
+                    );
+                  }
+
                   // Render regular fields
                   return (
                     <div
@@ -2027,7 +2070,7 @@ export const FormBuilderTemplateForm: React.FC<
                       padding: theme?.buttonPadding || "12px 24px",
                     }}
                   >
-                    {isSubmitting ? "Submitting..." : "Register"}
+                    {isSubmitting ? t("advance.registration.submitting") : t("advance.registration.register")}
                   </button>
                 </div>
               )}
@@ -2357,6 +2400,7 @@ const AdvanceRegistration = ({
   onStepClick,
 }: RegistrationFormProps) => {
   const { id: routeId } = useParams();
+  const { t } = useTranslation("dashboard");
 
   const effectiveEventId =
     (routeId as string | undefined) ||
@@ -2366,9 +2410,9 @@ const AdvanceRegistration = ({
       : undefined);
 
   const STEP_NAMES = [
-    "Registration Template",
-    "Confirmation Template",
-    "Badge Template",
+    t("advance.registration.registrationTemplate"),
+    t("advance.registration.confirmationTemplate"),
+    t("advance.registration.badgeTemplate"),
   ];
 
   // State for default templates

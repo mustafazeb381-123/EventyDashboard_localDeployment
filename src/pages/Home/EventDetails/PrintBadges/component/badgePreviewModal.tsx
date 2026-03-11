@@ -52,6 +52,7 @@
 
 import React, { useRef, useState, useEffect, forwardRef } from "react";
 import { X, Download, Printer } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useReactToPrint } from "react-to-print";
 import jsPDF from "jspdf";
 import domtoimage from "dom-to-image-more";
@@ -148,6 +149,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
 }) => {
   const badgeRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const printComponentRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation("dashboard");
   const [notification, setNotification] = useState<{
     message: string;
     type: "success" | "error" | "info";
@@ -343,14 +345,14 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
         <div className="p-4 border-b flex justify-between items-center bg-white z-10">
           <div className="flex items-center gap-2">
             <button onClick={downloadPdf} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-              <Download size={16} /> Download PDF
+              <Download size={16} /> {t("printBadges.downloadPdf")}
             </button>
             <button 
               onClick={() => handlePrint()} 
               disabled={updatingPrintStatus}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              <Printer size={16} /> {updatingPrintStatus ? "Updating..." : "Print Badges"}
+              <Printer size={16} /> {updatingPrintStatus ? t("printBadges.updating") : t("printBadges.printBadges")}
             </button>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
@@ -366,7 +368,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
             {allBadgeTemplates.length > 0 && (
               <div className="flex-shrink-0">
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                  Choose template for this print
+                  {t("printBadges.chooseTemplate")}
                 </h3>
                 <div className="flex flex-wrap gap-2">
                   {allBadgeTemplates.map((template: any) => {
@@ -434,7 +436,7 @@ const BadgePreviewModal: React.FC<BadgePreviewModalProps> = ({
           {templateToUse && usersForPdfOrPrint.length > 0 && (
             <div className="w-full">
               <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Badge preview
+                {t("printBadges.badgePreview")}
               </h3>
               <div className="flex flex-col gap-6">
                 {usersForPdfOrPrint.map((user) => (

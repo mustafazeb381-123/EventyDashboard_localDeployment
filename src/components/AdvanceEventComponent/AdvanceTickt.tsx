@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Check, ChevronLeft, Plus, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 // Ticket interface
 interface Ticket {
@@ -27,6 +28,8 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
 }) => {
   const effectiveEventId = eventId || 100;
 
+  const { t } = useTranslation("dashboard");
+
   // Flow tickets
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(
@@ -39,7 +42,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   // Form fields
-  const [type, setType] = useState("All users Types");
+  const [type, setType] = useState(t("advance.ticket.allUserTypes"));
   const [description, setDescription] = useState("");
   const [limit, setLimit] = useState("");
   const [currency, setCurrency] = useState("email");
@@ -47,7 +50,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
   // Open modal for new ticket
   const handleOpenModal = () => {
     setEditingTicket(null);
-    setType("All users Types");
+    setType(t("advance.ticket.allUserTypes"));
     setDescription("");
     setLimit("");
     setCurrency("email");
@@ -56,7 +59,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
 
   // Save ticket (new or edit)
   const handleSaveTicket = () => {
-    if (!description || !limit) return alert("Please fill required fields.");
+    if (!description || !limit) return alert(t("advance.ticket.fillRequired"));
     setIsLoading(true);
     setTimeout(() => {
       if (editingTicket) {
@@ -107,7 +110,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
 
   const resetModal = () => {
     setEditingTicket(null);
-    setType("All users Types");
+    setType(t("advance.ticket.allUserTypes"));
     setDescription("");
     setLimit("");
     setCurrency("email");
@@ -115,7 +118,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
   };
 
   const handleNext = () => {
-    if (!selectedTicketId) return alert("Please select a ticket first.");
+    if (!selectedTicketId) return alert(t("advance.ticket.selectFirst"));
     localStorage.setItem(
       `selectedTicket_${effectiveEventId}`,
       JSON.stringify(selectedTicketId)
@@ -234,7 +237,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl transform flex flex-col">
             <div className="flex items-center justify-between p-6 border-b border-gray-200/60">
               <h2 className="text-2xl font-bold text-gray-900">
-                {editingTicket ? "Edit Ticket" : "New Ticket"}
+                {editingTicket ? t("advance.ticket.editTicket") : t("advance.ticket.newTicket")}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
@@ -265,7 +268,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
                 </label>
                 <textarea
                   rows={6}
-                  placeholder="Enter Your Description..."
+                  placeholder={t("advance.ticket.enterDescription")}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none mb-3"
@@ -276,7 +279,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter limit"
+                  placeholder={t("advance.ticket.enterLimit")}
                   value={limit}
                   onChange={(e) => setLimit(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors mb-3"
@@ -321,7 +324,7 @@ const AdvanceTicket: React.FC<AdvanceTicketProps> = ({
                 }`}
               >
                 <Plus size={18} />
-                {editingTicket ? "Update Ticket" : "Add Ticket"}
+                {editingTicket ? t("advance.ticket.updateTicket") : t("advance.ticket.addTicket")}
               </button>
               {editingTicket && (
                 <button

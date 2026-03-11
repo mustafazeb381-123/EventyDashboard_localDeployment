@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Edit,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import UserAvatar from "./useAvatar";
 import {
   Tooltip,
@@ -61,6 +62,7 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
   rowIndex = 0,
 }) => {
   const isGrayRow = rowIndex % 2 === 1;
+  const { t } = useTranslation("dashboard");
   return (
     <tr
       key={user.id}
@@ -94,7 +96,7 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
           {/* Use flexible UserAvatar */}
           <div>
             <div className="text-sm font-medium text-gray-900">
-              {user.attributes?.name || "Unknown"}
+              {user.attributes?.name || t("printBadges.unknown")}
             </div>
             <div className="text-sm text-gray-500">{user.department}</div>
           </div>
@@ -102,12 +104,12 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
       </td>
       <td className="p-4">
         <div className="text-sm text-gray-900">
-          {user.attributes?.email || "No email"}
+          {user.attributes?.email || t("printBadges.noEmail")}
         </div>
       </td>
       <td className="p-4">
         <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-blue-100 text-blue-800 border-blue-200">
-          {user.attributes?.user_type || "Attendee"}
+          {user.attributes?.user_type || t("printBadges.attendee")}
         </span>
       </td>
       <td className="p-4">
@@ -144,9 +146,9 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
             side="top"
             className="max-w-xs rounded-lg p-4 shadow-lg border bg-gray-900 text-white text-left"
           >
-            <div className="font-semibold text-white mb-2">Print History</div>
+            <div className="font-semibold text-white mb-2">{t("printBadges.printHistory")}</div>
             {(user.printCount ?? 0) === 0 ? (
-              <p className="text-gray-300 text-xs">No prints yet</p>
+              <p className="text-gray-300 text-xs">{t("printBadges.noPrintsYet")}</p>
             ) : (
               <div className="space-y-1.5 text-xs text-gray-300">
                 <div>
@@ -196,7 +198,7 @@ const PrintBadgesTableRow: React.FC<PrintBadgesTableRowProps> = ({
   disabled={loadingUserId === user.id}
 >
   {loadingUserId === user.id ? (
-    "Loading..."
+    t("printBadges.loading")
   ) : (
     <>
       <Printer size={16} />

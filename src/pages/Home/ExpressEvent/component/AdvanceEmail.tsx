@@ -10,6 +10,8 @@ import RejectionTemplateOne from "../Confirmation/Templates/RejectionEmailTempla
 import RejectionTemplateTwo from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import RejectionTemplateThree from "../Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateThree";
 import ConfirmationTemplateOne from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
+import ConfirmationTemplateTwo from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateTwo";
+import ConfirmationTemplateThree from "../Confirmation/Templates/ConfirmationEmailTemplates/ConfirmationTemplateThree";
 import ThanksTemplateOne from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import ThanksTemplateThree from "../Confirmation/Templates/ThanksEmailTemplates/ThanksTemplateThree";
@@ -100,6 +102,26 @@ const createStaticTemplates = (eventData: any) => {
         isStatic: true,
         type: "welcome",
         readyMadeId: "welcome-template-1",
+      },
+      {
+        id: "welcome-template-2",
+        title: "Welcome Template 2",
+        component: <ConfirmationTemplateTwo {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "welcome",
+        readyMadeId: "welcome-template-2",
+      },
+      {
+        id: "welcome-template-3",
+        title: "Welcome Template 3",
+        component: <ConfirmationTemplateThree {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "welcome",
+        readyMadeId: "welcome-template-3",
       },
     ],
     thank_you: [

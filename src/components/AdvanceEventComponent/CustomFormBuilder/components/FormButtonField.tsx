@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 
 import type { CustomFormField, FormTheme } from "../types";
 import { getTranslatedButtonText } from "../utils/fieldTranslations";
@@ -14,10 +15,11 @@ export function FormButtonField({
   theme,
   currentLanguage = "en",
 }: FormButtonFieldProps) {
+  const { t } = useTranslation("dashboard");
   const displayText =
     currentLanguage
       ? getTranslatedButtonText(field, currentLanguage)
-      : field.buttonText ?? "Button";
+      : field.buttonText ?? t("advance.formBuilder.buttonDefault");
   const justifyContent: CSSProperties["justifyContent"] =
     field.buttonAlignment === "center"
       ? "center"

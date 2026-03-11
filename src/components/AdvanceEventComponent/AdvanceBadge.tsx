@@ -24,6 +24,10 @@ import {
 } from "@/apis/apiHelpers";
 import type { ToggleStates } from "@/pages/Home/ExpressEvent/ExpressEvent";
 import AdvanceCustomBadgeModal from "@/pages/Home/ExpressEvent/component/AdvanceCustomBadgeModal";
+import { useTranslation } from "react-i18next";
+import { prebuiltBadgeTemplates } from "@/pages/Home/ExpressEvent/Badges/prebuiltBadgeTemplates";
+import type { PrebuiltBadgeTemplate } from "@/pages/Home/ExpressEvent/Badges/prebuiltBadgeTemplates";
+import PrebuiltBadgeCard from "@/pages/Home/ExpressEvent/Badges/components/PrebuiltBadgeCard";
 
 // -------------------- TYPES --------------------
 interface BadgeTemplate {
@@ -276,6 +280,7 @@ const Template2Preview: React.FC<BadgePreviewProps> = ({
   CardHeader,
   CardFooter,
 }) => {
+  const { t } = useTranslation("dashboard");
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = event?.attributes?.secondary_color || "white";
 
@@ -312,9 +317,9 @@ const Template2Preview: React.FC<BadgePreviewProps> = ({
                 alt="User"
               />
               <h2 className="text-2xl font-bold text-gray-900 mt-4">
-                John Doe
+                {t("advance.badge.johnDoe")}
               </h2>
-              <p className="text-gray-600 text-lg mt-1">Software Engineer</p>
+              <p className="text-gray-600 text-lg mt-1">{t("advance.badge.softwareEngineer")}</p>
 
               {/* QR Code on front side */}
               <div className="mt-6 bg-white p-3 rounded-lg shadow-md">
@@ -349,6 +354,7 @@ interface CustomBadgePreviewProps {
 const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
   template,
 }) => {
+  const { t } = useTranslation("dashboard");
   // Use 96 DPI for consistency with print (standard web DPI)
   const DPI = 96;
   const widthInInches =
@@ -422,7 +428,7 @@ const CustomBadgePreview: React.FC<CustomBadgePreviewProps> = ({
                   }}
                 >
                   <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-400 flex items-center justify-center">
-                    <span className="text-gray-500">Photo</span>
+                    <span className="text-gray-500">{t("advance.badge.photo")}</span>
                   </div>
                 </div>
               )}
@@ -535,6 +541,8 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
   onStepClick,
 }) => {
   console.log(plan, currentStep, eventId);
+
+  const { t } = useTranslation("dashboard");
 
   // State for custom templates
   const [customTemplates, setCustomTemplates] = useState<BadgeTemplate[]>([]);
@@ -1358,7 +1366,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
             return JSON.stringify(err);
           });
           errorMessage =
-            messages.length > 0 ? messages.join(", ") : "Validation failed";
+            messages.length > 0 ? messages.join(", ") : t("advance.badge.validationFailed");
         } else if (errors.errors && typeof errors.errors === "object") {
           // Handle errors.errors as an object
           const errorMessages = Object.entries(errors.errors)
@@ -1367,10 +1375,10 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
               return `${field}: ${msgArray.join(", ")}`;
             })
             .join(", ");
-          errorMessage = errorMessages || "Validation failed";
+          errorMessage = errorMessages || t("advance.badge.validationFailed");
         } else {
           // Fallback: try to stringify the errors
-          errorMessage = errors.message || "Validation failed";
+          errorMessage = errors.message || t("advance.badge.validationFailed");
         }
         console.error("Validation errors:", errors);
       } else if (error?.response?.data?.error) {
@@ -1465,6 +1473,24 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
       setSelectedBadge(null);
       showNotification("Template selected!", "success");
     }
+  };
+
+  const handleSelectPrebuiltTemplate = (prebuilt: PrebuiltBadgeTemplate) => {
+    const tpl = prebuilt.template;
+    if (selectedTemplate?.id === tpl.id) {
+      setSelectedTemplate(null);
+      setSelectedBadge(null);
+      showNotification("Template deselected!", "success");
+    } else {
+      setSelectedTemplate(tpl);
+      setSelectedBadge(null);
+      showNotification("Template selected!", "success");
+    }
+  };
+
+  const handlePreviewPrebuiltTemplate = (prebuilt: PrebuiltBadgeTemplate) => {
+    setPreviewTemplate(prebuilt.template);
+    setPreviewBadge(null);
   };
 
   const handlePreviewBadge = (badge: Badge) => {
@@ -1770,7 +1796,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
     badgeName: string,
   ) => {
     if (!effectiveEventId) {
-      throw new Error("Event ID not found");
+      throw new Error(t("advance.badge.eventIdNotFound"));
     }
 
     // Find the template data from existingBadges array
@@ -1879,7 +1905,7 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
 
   const handleCustomBadgeApiSelection = async (template: BadgeTemplate) => {
     if (!effectiveEventId) {
-      throw new Error("Event ID not found");
+      throw new Error(t("advance.badge.eventIdNotFound"));
     }
 
     // Transform template to API format
@@ -2210,6 +2236,24 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
               console.error("Failed to update event active_badge_id:", error);
             }
           }
+        } else if (effectiveEventId) {
+          // Prebuilt or new template not yet in API — create via POST
+          const response = await handleCustomBadgeApiSelection(selectedTemplate);
+          console.log("Created prebuilt badge template via POST:", response?.data);
+
+          if (response?.data?.data?.id) {
+            const createdId = response.data.data.id;
+            const fd = new FormData();
+            fd.append("event[active_badge_id]", createdId.toString());
+            try {
+              await updateEventById(effectiveEventId, fd);
+              console.log(
+                `Updated event active_badge_id to ${createdId} for cross-device visibility`,
+              );
+            } catch (error) {
+              console.error("Failed to update event active_badge_id:", error);
+            }
+          }
         }
 
         showNotification("Custom template selected!", "success");
@@ -2330,6 +2374,17 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
             Design a custom badge template from scratch
           </p>
         </div>
+
+        {/* Pre-built Badge Templates */}
+        {prebuiltBadgeTemplates.map((prebuilt) => (
+          <PrebuiltBadgeCard
+            key={prebuilt.key}
+            template={prebuilt}
+            isSelected={selectedTemplate?.id === prebuilt.template.id}
+            onSelect={handleSelectPrebuiltTemplate}
+            onPreview={handlePreviewPrebuiltTemplate}
+          />
+        ))}
 
         {/* Custom Templates */}
         {customTemplates.map((template) => {
@@ -2550,26 +2605,31 @@ const AdvanceBadge: React.FC<BadgesProps> = ({
                   <Check size={16} />
                   Select
                 </button>
-                <button
-                  onClick={() => {
-                    closePreview();
-                    handleEditCustomTemplate(previewTemplate);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Edit2 size={16} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    closePreview();
-                    handleDeleteCustomTemplate(previewTemplate.id);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 size={16} />
-                  Delete
-                </button>
+                {/* Hide Edit/Delete for prebuilt templates */}
+                {!previewTemplate.id.startsWith("prebuilt-") && (
+                  <>
+                    <button
+                      onClick={() => {
+                        closePreview();
+                        handleEditCustomTemplate(previewTemplate);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        closePreview();
+                        handleDeleteCustomTemplate(previewTemplate.id);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </>
+                )}
               </div>
               <button
                 onClick={closePreview}

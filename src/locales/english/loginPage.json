@@ -1,8 +1,22 @@
 {
   "title": "Login",
-  "emailPlaceholder": "Email",
+  "welcome": "Welcome!",
+  "emailPlaceholder": "Enter your email",
   "passwordPlaceholder": "Password",
   "signin": "Sign In",
-  "forgotPassword": "Forgot Password?",
-  "signup": "Sign up"
+  "forgotPassword": "Forget Password?",
+  "resetPassword": "Reset Password",
+  "rememberMe": "Remember me",
+  "signup": "Sign up",
+  "dontHaveAccount": "Don't have an account?",
+  "loading": "Loading...",
+  "loggedInSuccess": "Logged in successfully!",
+  "loginFailed": "Login failed",
+  "loggedOut": "You have been logged out.",
+  "errors": {
+    "emailRequired": "Email is required.",
+    "invalidEmail": "Invalid email address.",
+    "passwordRequired": "Password is required.",
+    "passwordMinLength": "Password should be at least 6 characters long."
+  }
 }

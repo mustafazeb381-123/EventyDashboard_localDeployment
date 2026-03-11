@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ChevronLeft, ChevronRight, Send, ArrowRightLeft, Loader2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 interface AdvancePaymentProps {
   onNext: (eventId?: string | number, plan?: string) => void;
@@ -23,6 +24,7 @@ const AdvancePayment: React.FC<AdvancePaymentProps> = ({
   plan = "advance",
   onConvertToExpress,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [publishing, setPublishing] = useState(false);
   const [showExpressModal, setShowExpressModal] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
@@ -50,7 +52,7 @@ const AdvancePayment: React.FC<AdvancePaymentProps> = ({
       {/* Main content */}
       <div className="flex-1 min-w-0 bg-white rounded-xl shadow-lg p-6 md:p-8">
         <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Payment Settings</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t("advance.payment.title")}</h2>
           <p className="text-gray-600">
             Configure payment options for your advance event. This section will be updated with payment integration details.
           </p>
@@ -75,8 +77,8 @@ const AdvancePayment: React.FC<AdvancePaymentProps> = ({
                 </svg>
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-800">Payment Integration</h3>
-                <p className="text-sm text-gray-500">Payment gateway configuration coming soon</p>
+                <h3 className="text-lg font-semibold text-gray-800">{t("advance.payment.integrationTitle")}</h3>
+                <p className="text-sm text-gray-500">{t("advance.payment.integrationSubtitle")}</p>
               </div>
             </div>
             <div className="mt-4 p-4 bg-white rounded-md border border-gray-200">
@@ -88,12 +90,12 @@ const AdvancePayment: React.FC<AdvancePaymentProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-700 mb-2">Payment Methods</h4>
-              <p className="text-sm text-gray-500">Configure accepted payment methods</p>
+              <h4 className="font-medium text-gray-700 mb-2">{t("advance.payment.paymentMethods")}</h4>
+              <p className="text-sm text-gray-500">{t("advance.payment.paymentMethodsDesc")}</p>
             </div>
             <div className="border border-gray-200 rounded-lg p-4">
-              <h4 className="font-medium text-gray-700 mb-2">Pricing</h4>
-              <p className="text-sm text-gray-500">Set event pricing and ticket costs</p>
+              <h4 className="font-medium text-gray-700 mb-2">{t("advance.payment.pricing")}</h4>
+              <p className="text-sm text-gray-500">{t("advance.payment.pricingDesc")}</p>
             </div>
           </div>
         </div>
@@ -136,7 +138,7 @@ const AdvancePayment: React.FC<AdvancePaymentProps> = ({
             Event type
           </h3>
           <p className="text-xs text-gray-500 mb-3">
-            Currently: <span className="font-medium text-gray-700">Advance</span>
+            {t("advance.payment.currently")} <span className="font-medium text-gray-700">{t("advance.payment.advance")}</span>
           </p>
           <Button
             variant="outline"
@@ -159,7 +161,7 @@ const AdvancePayment: React.FC<AdvancePaymentProps> = ({
             <div className="flex justify-center w-12 h-12 bg-amber-100 rounded-full mx-auto mb-4">
               <AlertTriangle className="w-6 h-6 text-amber-600" />
             </div>
-            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">Switch to Express?</h3>
+            <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">{t("advance.payment.switchToExpressTitle")}</h3>
             <p className="text-sm text-gray-600 text-center mb-4">
               Switching to Express may not be supported yet. Contact support if you need this.
             </p>

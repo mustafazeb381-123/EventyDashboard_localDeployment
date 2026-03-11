@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   Plus,
@@ -53,6 +54,7 @@ interface Pagination {
 }
 
 export default function GalleriesList() {
+  const { t } = useTranslation("dashboard");
   const { id: eventId } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
@@ -232,7 +234,7 @@ export default function GalleriesList() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Galleries</h1>
+          <h1 className="text-3xl font-bold text-gray-900">{t("galleries.title")}</h1>
           <p className="text-gray-500 mt-1">
             Manage your event photo galleries
           </p>
@@ -252,7 +254,7 @@ export default function GalleriesList() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
           <input
             type="text"
-            placeholder="Search galleries..."
+            placeholder={t("galleries.searchPlaceholder")}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 focus:bg-white transition-all text-gray-700"
@@ -262,7 +264,7 @@ export default function GalleriesList() {
           <span className="hidden sm:inline-flex items-center gap-1.5 text-sm text-gray-500 bg-gray-50 px-4 py-2 rounded-lg">
             <ImageIcon className="w-4 h-4" />
             {galleries.length}{" "}
-            {galleries.length === 1 ? "Gallery" : "Galleries"}
+            {galleries.length === 1 ? t("galleries.gallery") : t("galleries.galleries")}
           </span>
         )}
       </div>
@@ -299,17 +301,17 @@ export default function GalleriesList() {
             <ImageIcon className="w-8 h-8 text-gray-400" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-1">
-            No galleries found
+            {t("galleries.noGalleriesFound")}
           </h3>
           <p className="text-gray-500 mb-6">
-            Create your first gallery to start adding photos
+            {t("galleries.createFirstGallery")}
           </p>
           <button
             onClick={() => setIsCreateModalOpen(true)}
             className="inline-flex items-center gap-2 text-blue-600 font-medium hover:text-blue-700"
           >
             <Plus className="w-4 h-4" />
-            Create Gallery
+            {t("galleries.createGallery")}
           </button>
         </div>
       ) : (
@@ -333,7 +335,7 @@ export default function GalleriesList() {
                     brokenCoverImageIds.has(coverImage.id) ? (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-500">
                         <ImageOff className="w-12 h-12 mb-1" />
-                        <span className="text-xs mb-1">Image unavailable</span>
+                        <span className="text-xs mb-1">{t("galleries.imageUnavailable")}</span>
                         <a
                           href={coverImage.url}
                           target="_blank"
@@ -358,7 +360,7 @@ export default function GalleriesList() {
                       <div className="text-center">
                         <ImageIcon className="w-16 h-16 text-gray-200 mx-auto mb-2" />
                         <span className="text-xs text-gray-300">
-                          No images yet
+                          {t("galleries.noImagesYet")}
                         </span>
                       </div>
                     </div>
@@ -399,7 +401,7 @@ export default function GalleriesList() {
                           : "bg-gray-800/70 text-white"
                       }`}
                     >
-                      {gallery.public ? "Public" : "Private"}
+                      {gallery.public ? t("galleries.public") : t("galleries.private")}
                     </span>
                   </div>
 
@@ -417,10 +419,10 @@ export default function GalleriesList() {
                 {/* Content */}
                 <div className="p-5">
                   <h3 className="font-bold text-gray-900 mb-1.5 truncate text-lg group-hover:text-blue-600 transition-colors">
-                    {gallery.title || "Untitled Gallery"}
+                    {gallery.title || t("galleries.untitledGallery")}
                   </h3>
                   <p className="text-sm text-gray-500 line-clamp-2 min-h-[2.5rem] leading-relaxed">
-                    {gallery.description || "No description provided"}
+                    {gallery.description || t("galleries.noDescriptionProvided")}
                   </p>
 
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between text-sm">
@@ -434,7 +436,7 @@ export default function GalleriesList() {
                       </span>
                     </div>
                     <span className="text-blue-500 font-medium text-xs group-hover:text-blue-600">
-                      View Gallery →
+                      {t("galleries.viewGallery")}
                     </span>
                   </div>
                 </div>
@@ -473,7 +475,7 @@ export default function GalleriesList() {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">
-                Create Gallery
+                {t("galleries.createGallery")}
               </h2>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
@@ -496,7 +498,7 @@ export default function GalleriesList() {
                     setFormData({ ...formData, title: e.target.value })
                   }
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  placeholder="e.g. Conference Highlights"
+                  placeholder={t("galleries.titlePlaceholder")}
                 />
               </div>
 
@@ -511,7 +513,7 @@ export default function GalleriesList() {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
-                  placeholder="Optional description..."
+                  placeholder={t("galleries.descriptionPlaceholder")}
                 />
               </div>
 
@@ -532,7 +534,7 @@ export default function GalleriesList() {
                   />
                 </button>
                 <span className="text-sm font-medium text-gray-700">
-                  Public Gallery
+                  {t("galleries.publicGallery")}
                 </span>
               </div>
 
@@ -542,7 +544,7 @@ export default function GalleriesList() {
                   onClick={() => setIsCreateModalOpen(false)}
                   className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  {t("galleries.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -550,7 +552,7 @@ export default function GalleriesList() {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex justify-center items-center gap-2"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Create
+                  {t("galleries.create")}
                 </button>
               </div>
             </form>
@@ -564,7 +566,7 @@ export default function GalleriesList() {
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl animate-in fade-in zoom-in duration-200">
             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
               <h2 className="text-xl font-semibold text-gray-900">
-                Edit Gallery
+                {t("galleries.editGallery")}
               </h2>
               <button
                 onClick={() => {
@@ -591,7 +593,7 @@ export default function GalleriesList() {
                     setFormData({ ...formData, title: e.target.value })
                   }
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  placeholder="e.g. Conference Highlights"
+                  placeholder={t("galleries.titlePlaceholder")}
                 />
               </div>
 
@@ -606,7 +608,7 @@ export default function GalleriesList() {
                     setFormData({ ...formData, description: e.target.value })
                   }
                   className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 resize-none"
-                  placeholder="Optional description..."
+                  placeholder={t("galleries.descriptionPlaceholder")}
                 />
               </div>
 
@@ -627,7 +629,7 @@ export default function GalleriesList() {
                   />
                 </button>
                 <span className="text-sm font-medium text-gray-700">
-                  Public Gallery
+                  {t("galleries.publicGallery")}
                 </span>
               </div>
 
@@ -641,7 +643,7 @@ export default function GalleriesList() {
                   }}
                   className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  {t("galleries.cancel")}
                 </button>
                 <button
                   type="submit"
@@ -649,7 +651,7 @@ export default function GalleriesList() {
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex justify-center items-center gap-2"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Save Changes
+                  {t("galleries.saveChanges")}
                 </button>
               </div>
             </form>
@@ -666,11 +668,10 @@ export default function GalleriesList() {
                 <Trash2 className="w-6 h-6 text-red-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Delete Gallery?
+                {t("galleries.deleteGallery")}
               </h3>
               <p className="text-gray-500 mb-6">
-                Are you sure you want to delete "{selectedGallery.title}"? This
-                action cannot be undone and all images will be lost.
+                {t("galleries.deleteGalleryConfirm", { title: selectedGallery.title })}
               </p>
 
               <div className="flex gap-3">
@@ -678,7 +679,7 @@ export default function GalleriesList() {
                   onClick={() => setIsDeleteModalOpen(false)}
                   className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  {t("galleries.cancel")}
                 </button>
                 <button
                   onClick={handleDelete}
@@ -686,7 +687,7 @@ export default function GalleriesList() {
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex justify-center items-center gap-2"
                 >
                   {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-                  Delete
+                  {t("galleries.delete")}
                 </button>
               </div>
             </div>

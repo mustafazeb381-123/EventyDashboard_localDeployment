@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Edit, Trash2, Plus } from "lucide-react";
 import {
   createSessionAreaApi,
@@ -35,6 +36,7 @@ type AreasProps = {
 };
 
 export default function Areas({ eventId: propEventId }: AreasProps) {
+  const { t } = useTranslation("dashboard");
   const [data, setData] = useState<Area[]>([]);
   const [editData, setEditData] = useState<Area | null>(null);
   const [newArea, setNewArea] = useState({
@@ -211,7 +213,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
       }
     } catch (error) {
       console.error("Error fetching session areas:", error);
-      setError("Failed to fetch session areas");
+      setError(t("expressEvent.failedFetchSessionAreas"));
       setData([]);
       setPagination(null);
     } finally {
@@ -231,17 +233,17 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
 
   const handleAdd = async () => {
     const errors = {
-      name: newArea?.name ? "" : "Name is required",
-      location: newArea?.location ? "" : "Location is required",
-      type: newArea?.type ? "" : "Type is required",
-      guestNumbers: newArea?.guestNumbers ? "" : "Guest numbers are required",
+      name: newArea?.name ? "" : t("expressEvent.nameRequired"),
+      location: newArea?.location ? "" : t("expressEvent.locationRequired"),
+      type: newArea?.type ? "" : t("expressEvent.typeRequired"),
+      guestNumbers: newArea?.guestNumbers ? "" : t("expressEvent.guestNumbersRequired"),
     };
 
     setValidationErrors(errors);
     const hasError = Object.values(errors).some((err) => err !== "");
     if (hasError) {
       console.log("Validation failed");
-      showNotification("Please fill all required fields", "error");
+      showNotification(t("expressEvent.fillAllRequiredFields"), "error");
       return;
     }
 
@@ -280,16 +282,16 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
             guestNumbers: "",
           });
 
-          showNotification("Area added successfully!", "success");
+          showNotification(t("expressEvent.areaAddedSuccess"), "success");
         }
       } else {
         console.log("Please fill all fields before adding area");
-        showNotification("Please fill all fields before adding area", "error");
+        showNotification(t("expressEvent.fillAllFieldsBeforeAdding"), "error");
       }
     } catch (error) {
       console.log("Error in adding area:", error);
-      setError("Failed to add session area");
-      showNotification("Failed to add session area", "error");
+      setError(t("expressEvent.failedAddSessionArea"));
+      showNotification(t("expressEvent.failedAddSessionArea"), "error");
       // If add fails, refresh to get actual state from server
       if (eventId) {
         await fetchSessionAreas(eventId, currentPage);
@@ -301,8 +303,8 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
 
   const handleDelete = async () => {
     if (!eventId || !areaToDelete) {
-      setError("Event ID or Area not found");
-      showNotification("Event ID or Area not found", "error");
+      setError(t("expressEvent.eventIdOrAreaNotFound"));
+      showNotification(t("expressEvent.eventIdOrAreaNotFound"), "error");
       return;
     }
 
@@ -325,15 +327,15 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
         if (eventId) {
           await fetchSessionAreas(eventId, currentPage);
         }
-        showNotification("Area deleted successfully!", "success");
+        showNotification(t("expressEvent.areaDeletedSuccess"), "success");
         closeDeleteModal();
       } else {
         throw new Error(`Delete failed with status: ${response.status}`);
       }
     } catch (error) {
       console.error("Error deleting area:", error);
-      setError("Failed to delete session area");
-      showNotification("Failed to delete session area", "error");
+      setError(t("expressEvent.failedDeleteSessionArea"));
+      showNotification(t("expressEvent.failedDeleteSessionArea"), "error");
 
       // Refresh to get current state
       if (eventId) {
@@ -384,24 +386,24 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
 
   const handleSaveEdit = async () => {
     if (!editData || !eventId) {
-      setError("Edit data or Event ID not found");
-      showNotification("Edit data or Event ID not found", "error");
+      setError(t("expressEvent.editDataOrEventIdNotFound"));
+      showNotification(t("expressEvent.editDataOrEventIdNotFound"), "error");
       return;
     }
 
     // Validate form fields
     const errors = {
-      name: editData.name ? "" : "Name is required",
-      location: editData.location ? "" : "Location is required",
-      type: editData.type ? "" : "Type is required",
-      guestNumbers: editData.guestNumbers ? "" : "Guest numbers are required",
+      name: editData.name ? "" : t("expressEvent.nameRequired"),
+      location: editData.location ? "" : t("expressEvent.locationRequired"),
+      type: editData.type ? "" : t("expressEvent.typeRequired"),
+      guestNumbers: editData.guestNumbers ? "" : t("expressEvent.guestNumbersRequired"),
     };
 
     setEditValidationErrors(errors);
     const hasError = Object.values(errors).some((err) => err !== "");
     if (hasError) {
       console.log("Validation failed");
-      showNotification("Please fill all required fields", "error");
+      showNotification(t("expressEvent.fillAllRequiredFields"), "error");
       return;
     }
 
@@ -453,15 +455,15 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
 
         setEditData(null);
         console.log(`Successfully updated area with id: ${editData.id}`);
-        showNotification("Area updated successfully!", "success");
+        showNotification(t("expressEvent.areaUpdatedSuccess"), "success");
         closeEditModal();
       } else {
         throw new Error("Update response format is invalid");
       }
     } catch (error) {
       console.error("Error updating area:", error);
-      setError("Failed to update session area");
-      showNotification("Failed to update session area", "error");
+      setError(t("expressEvent.failedUpdateSessionArea"));
+      showNotification(t("expressEvent.failedUpdateSessionArea"), "error");
 
       // Rollback on error
       if (eventId) {
@@ -541,7 +543,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
             marginBottom: "16px",
           }}
         >
-          Session Areas
+          {t("expressEvent.sessionAreas")}
         </h1>
 
         {/* Error Message */}
@@ -600,11 +602,11 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 marginBottom: "4px",
               }}
             >
-              Area Name
+              {t("expressEvent.areaName")}
             </label>
             <input
               type="text"
-              placeholder="text here"
+              placeholder={t("expressEvent.textHere")}
               value={newArea.name}
               onChange={(e) => setNewArea({ ...newArea, name: e.target.value })}
               style={{
@@ -634,11 +636,11 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 marginBottom: "4px",
               }}
             >
-              Area Location
+              {t("expressEvent.areaLocation")}
             </label>
             <input
               type="text"
-              placeholder="text here"
+              placeholder={t("expressEvent.textHere")}
               value={newArea.location}
               onChange={(e) =>
                 setNewArea({ ...newArea, location: e.target.value })
@@ -670,7 +672,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 marginBottom: "4px",
               }}
             >
-              User Type
+              {t("expressEvent.userType")}
             </label>
             <select
               value={newArea.type}
@@ -687,12 +689,12 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
               }}
             >
               <option value="" disabled>
-                Select User Type
+                {t("expressEvent.selectUserType")}
               </option>
-              <option value="any">Any</option>
+              <option value="any">{t("expressEvent.any")}</option>
               {badgeLoading ? (
                 <option value="" disabled>
-                  Loading badges...
+                  {t("expressEvent.loadingBadges")}
                 </option>
               ) : (
                 badges.map((badge) => (
@@ -719,11 +721,11 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 marginBottom: "4px",
               }}
             >
-              Guest numbers
+              {t("expressEvent.guestNumbers")}
             </label>
             <input
               type="number"
-              placeholder="Type number"
+              placeholder={t("expressEvent.typeNumber")}
               value={newArea.guestNumbers}
               onChange={(e) =>
                 setNewArea({ ...newArea, guestNumbers: e.target.value })
@@ -785,12 +787,12 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                     animation: "spin 1s linear infinite",
                   }}
                 />
-                Adding...
+                {t("expressEvent.adding")}
               </>
             ) : (
               <>
                 <Plus size={16} />
-                Add
+                {t("expressEvent.add")}
               </>
             )}
           </button>
@@ -829,7 +831,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 margin: 0,
               }}
             >
-              Areas
+              {t("expressEvent.areas")}
             </h2>
             {loading ? (
               <Skeleton style={{ height: "20px", width: "80px" }} />
@@ -840,7 +842,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   color: "#6b7280",
                 }}
               >
-                {pagination?.total_count || data.length} areas
+                {pagination?.total_count || data.length} {t("expressEvent.areasCount")}
               </span>
             )}
           </div>
@@ -894,7 +896,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   verticalAlign: "middle",
                 }}
               >
-                Name
+                {t("expressEvent.nameHeader")}
               </th>
               <th
                 style={{
@@ -906,7 +908,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   verticalAlign: "middle",
                 }}
               >
-                Location
+                {t("expressEvent.locationHeader")}
               </th>
               <th
                 style={{
@@ -918,7 +920,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   verticalAlign: "middle",
                 }}
               >
-                Type
+                {t("expressEvent.typeHeader")}
               </th>
               <th
                 style={{
@@ -930,7 +932,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   verticalAlign: "middle",
                 }}
               >
-                Guest Numbers
+                {t("expressEvent.guestNumbersHeader")}
               </th>
               <th
                 style={{
@@ -942,7 +944,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   verticalAlign: "middle",
                 }}
               >
-                Actions
+                {t("expressEvent.actionsHeader")}
               </th>
             </tr>
           </thead>
@@ -1155,7 +1157,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
               fontSize: "14px",
             }}
           >
-            No areas found. Add your first area above.
+            {t("expressEvent.noAreasFound")}
           </div>
         )}
 
@@ -1218,7 +1220,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 margin: 0,
               }}
             >
-              Delete Area
+              {t("expressEvent.deleteArea")}
             </h3>
             <p
               style={{
@@ -1228,9 +1230,8 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 margin: "8px 0 24px 0",
               }}
             >
-              Are you sure you want to delete{" "}
-              <strong>{areaToDelete?.name}</strong>? This action cannot be
-              undone.
+              {t("expressEvent.areYouSureDeleteArea")}{" "}
+              <strong>{areaToDelete?.name}</strong>{t("expressEvent.actionCannotBeUndone")}
             </p>
             <div
               style={{
@@ -1257,7 +1258,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   opacity: deleteLoading === areaToDelete?.id ? 0.6 : 1,
                 }}
               >
-                Cancel
+                {t("expressEvent.cancel")}
               </button>
               <button
                 onClick={handleDelete}
@@ -1292,10 +1293,10 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                         animation: "spin 1s linear infinite",
                       }}
                     />
-                    Deleting...
+                    {t("expressEvent.deleting")}
                   </>
                 ) : (
-                  "Delete"
+                  t("expressEvent.delete")
                 )}
               </button>
             </div>
@@ -1342,7 +1343,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                 margin: 0,
               }}
             >
-              Edit Area
+              {t("expressEvent.editArea")}
             </h3>
 
             <div
@@ -1359,11 +1360,11 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                     marginBottom: "6px",
                   }}
                 >
-                  Area Name <span style={{ color: "red" }}>*</span>
+                  {t("expressEvent.areaName")} <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter area name"
+                  placeholder={t("expressEvent.enterAreaName")}
                   value={editData.name}
                   onChange={(e) =>
                     setEditData((prev) =>
@@ -1406,11 +1407,11 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                     marginBottom: "6px",
                   }}
                 >
-                  Area Location <span style={{ color: "red" }}>*</span>
+                  {t("expressEvent.areaLocation")} <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter area location"
+                  placeholder={t("expressEvent.enterAreaLocation")}
                   value={editData.location}
                   onChange={(e) =>
                     setEditData((prev) =>
@@ -1453,7 +1454,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                     marginBottom: "6px",
                   }}
                 >
-                  User Type <span style={{ color: "red" }}>*</span>
+                  {t("expressEvent.userType")} <span style={{ color: "red" }}>*</span>
                 </label>
                 <select
                   value={editData.type}
@@ -1476,12 +1477,12 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   }}
                 >
                   <option value="" disabled>
-                    Select User Type
+                    {t("expressEvent.selectUserType")}
                   </option>
-                  <option value="any">Any</option>
+                  <option value="any">{t("expressEvent.any")}</option>
                   {badgeLoading ? (
                     <option value="" disabled>
-                      Loading badges...
+                      {t("expressEvent.loadingBadges")}
                     </option>
                   ) : (
                     badges.map((badge) => (
@@ -1515,11 +1516,11 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                     marginBottom: "6px",
                   }}
                 >
-                  Guest Numbers <span style={{ color: "red" }}>*</span>
+                  {t("expressEvent.guestNumbers")} <span style={{ color: "red" }}>*</span>
                 </label>
                 <input
                   type="number"
-                  placeholder="Enter guest numbers"
+                  placeholder={t("expressEvent.enterGuestNumbers")}
                   value={editData.guestNumbers}
                   onChange={(e) =>
                     setEditData((prev) =>
@@ -1582,7 +1583,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                   opacity: saveLoading === editData.id ? 0.6 : 1,
                 }}
               >
-                Cancel
+                {t("expressEvent.cancel")}
               </button>
               <button
                 onClick={handleSaveEdit}
@@ -1615,10 +1616,10 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
                         animation: "spin 1s linear infinite",
                       }}
                     />
-                    Saving...
+                    {t("expressEvent.saving")}
                   </>
                 ) : (
-                  "Save Changes"
+                  t("expressEvent.saveChanges")
                 )}
               </button>
             </div>
@@ -1648,7 +1649,7 @@ export default function Areas({ eventId: propEventId }: AreasProps) {
         onMouseOver={(e) => (e.currentTarget.style.backgroundColor = "#111827")}
         onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "#1f2937")}
       >
-        Create event
+        {t("expressEvent.createEvent")}
         <span style={{ fontSize: "16px" }}>→</span>
       </button>
 

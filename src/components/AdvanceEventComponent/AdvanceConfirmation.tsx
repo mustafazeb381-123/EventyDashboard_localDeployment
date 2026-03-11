@@ -19,6 +19,7 @@ import { getEventbyId, updateEventById } from "@/apis/apiHelpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ConfirmationTemplateBuilder } from "@/components/ConfirmationTemplateBuilder";
 import type { ConfirmationBlock } from "@/components/ConfirmationTemplateBuilder";
+import { useTranslation } from "react-i18next";
 
 interface ToggleStates {
   confirmationMsg: boolean;
@@ -58,10 +59,12 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
     localStorage.getItem("create_eventId") ||
     undefined;
 
+  const { t } = useTranslation("dashboard");
+
   const STEP_NAMES = [
-    "Registration Template",
-    "Confirmation Template",
-    "Badge Template",
+    t("advance.confirmation.registrationTemplate"),
+    t("advance.confirmation.confirmationTemplate"),
+    t("advance.confirmation.badgeTemplate"),
   ];
 
   console.log("AdvanceConfirmation - event id:", effectiveEventId);
@@ -207,7 +210,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
       } catch (err) {
         console.error("Failed to persist toggle:", err);
         setToggleStates((prev) => ({ ...prev, [key]: !value }));
-        showNotification("Failed to save setting", "error");
+        showNotification(t("advance.confirmation.failedToSaveSetting"), "error");
       }
     }
   };
@@ -254,8 +257,8 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
     if (!effectiveEventId) return;
     const trimmed = modalLocation.trim();
     if (!trimmed) {
-      setModalErrors({ location: "Event location is required" });
-      showNotification("Event location is required", "error");
+      setModalErrors({ location: t("advance.confirmation.eventLocationRequired") });
+      showNotification(t("advance.confirmation.eventLocationRequired"), "error");
       return;
     }
     setModalErrors({});
@@ -270,7 +273,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
           : prev,
       );
       closeEditModal();
-      showNotification("Event location updated", "success");
+      showNotification(t("advance.confirmation.eventLocationUpdated"), "success");
     } catch (err: any) {
       console.error("Failed to save location:", err);
       const msg =
@@ -290,9 +293,9 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
     const to = modalDateTo.trim();
     const errors: { location?: string; dateFrom?: string; dateTo?: string } =
       {};
-    if (!loc) errors.location = "Location is required";
-    if (!from) errors.dateFrom = "Start date is required";
-    if (!to) errors.dateTo = "End date is required";
+    if (!loc) errors.location = t("advance.confirmation.locationRequired");
+    if (!from) errors.dateFrom = t("advance.confirmation.startDateRequired");
+    if (!to) errors.dateTo = t("advance.confirmation.endDateRequired");
     if (Object.keys(errors).length > 0) {
       setModalErrors(errors);
       showNotification(
@@ -337,7 +340,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
           : prev,
       );
       closeEditModal();
-      showNotification("Event details updated", "success");
+      showNotification(t("advance.confirmation.eventDetailsUpdated"), "success");
     } catch (err: any) {
       console.error("Failed to save event details:", err);
       const msg =
@@ -555,7 +558,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                     location: eventData.attributes?.location,
                     about: eventData.attributes?.about,
                     logoUrl: eventData.attributes?.logo_url,
-                    attendeeName: "John Doe",
+                    attendeeName: t("advance.confirmation.johnDoe"),
                   }
                 : undefined
             }
@@ -672,7 +675,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                     )}
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800">
-                        {eventName || "Event Name"}
+                        {eventName || t("advance.confirmation.eventName")}
                       </h3>
                       {eventData?.attributes?.event_date_from && (
                         <div className="flex items-center gap-1 text-sm text-gray-500">
@@ -938,7 +941,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                     if (modalErrors.location)
                       setModalErrors((p) => ({ ...p, location: undefined }));
                   }}
-                  placeholder="Event location"
+                  placeholder={t("advance.confirmation.eventLocationPlaceholder")}
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                     modalErrors.location ? "border-red-500" : "border-gray-300"
                   }`}
@@ -1077,7 +1080,7 @@ const AdvanceConfirmation: React.FC<AdvanceConfirmationProps> = ({
                     if (modalErrors.location)
                       setModalErrors((p) => ({ ...p, location: undefined }));
                   }}
-                  placeholder="Event location"
+                  placeholder={t("advance.confirmation.eventLocationPlaceholder")}
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     modalErrors.location ? "border-red-500" : "border-gray-300"
                   }`}

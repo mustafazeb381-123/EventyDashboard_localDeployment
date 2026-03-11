@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, ImageIcon } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpTheme } from "./types";
 
 interface RsvpThemeConfigPanelProps {
@@ -13,6 +14,7 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
   onUpdate,
   onClose,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [localTheme, setLocalTheme] = useState<RsvpTheme>(() => ({
     headerBackgroundColor: "#1e293b",
     headerTextColor: "#ffffff",
@@ -105,7 +107,7 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
           type="button"
           onClick={onClose}
           className="p-2 hover:bg-gray-100 rounded-lg"
-          title="Close"
+          title={t("invitation.close")}
         >
           <X size={18} />
         </button>
@@ -146,9 +148,9 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
                 }
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
+                <option value="left">{t("invitation.rsvpBuilder.leftAlign")}</option>
+                <option value="center">{t("invitation.rsvpBuilder.centerAlign")}</option>
+                <option value="right">{t("invitation.rsvpBuilder.rightAlign")}</option>
               </select>
             </div>
             <div>
@@ -169,9 +171,9 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">Default (full width)</option>
-                <option value="left">Left</option>
-                <option value="center">Center</option>
-                <option value="right">Right</option>
+                <option value="left">{t("invitation.rsvpBuilder.leftAlign")}</option>
+                <option value="center">{t("invitation.rsvpBuilder.centerAlign")}</option>
+                <option value="right">{t("invitation.rsvpBuilder.rightAlign")}</option>
               </select>
             </div>
           </div>
@@ -1177,9 +1179,9 @@ export const RsvpThemeConfigPanel: React.FC<RsvpThemeConfigPanelProps> = ({
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="left">Left</option>
-                  <option value="center">Center</option>
-                  <option value="right">Right</option>
+                  <option value="left">{t("invitation.rsvpBuilder.leftAlign")}</option>
+                  <option value="center">{t("invitation.rsvpBuilder.centerAlign")}</option>
+                  <option value="right">{t("invitation.rsvpBuilder.rightAlign")}</option>
                 </select>
               </div>
             </>

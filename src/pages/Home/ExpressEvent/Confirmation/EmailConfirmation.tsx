@@ -1,4 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { Check, ChevronLeft, X, Pencil, Trash2, Eye, CheckCircle, Mail } from "lucide-react";
@@ -11,6 +12,8 @@ import {
 
 // ---------- Static Templates ----------
 import ConfirmationTemplateOne from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateOne";
+import ConfirmationTemplateTwo from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateTwo";
+import ConfirmationTemplateThree from "./Templates/ConfirmationEmailTemplates/ConfirmationTemplateThree";
 import ThanksTemplateOne from "./Templates/ThanksEmailTemplates/ThanksTemplateOne";
 import ThanksTemplateTwo from "./Templates/ThanksEmailTemplates/ThanksTemplateTwo";
 import ThanksTemplateThree from "./Templates/ThanksEmailTemplates/ThanksTemplateThree";
@@ -48,19 +51,19 @@ const rewriteHtmlUrlsToAbsolute = (html: string, baseUrl: string): string => {
 };
 
 /** Flow steps config. When showEmailSenderStep is true, prepend Email Sender step; otherwise use original flow (Welcome only or Welcome + Thanks + Rejection). */
-const getFlowsConfig = (requireApproval: boolean, showEmailSenderStep: boolean) => {
+const getFlowsConfig = (requireApproval: boolean, showEmailSenderStep: boolean, t: (key: string) => string) => {
   const emailSender = {
     id: "email_sender",
-    label: "Email Sender",
+    label: t("expressEvent.emailSender"),
     templates: [] as any[],
   };
   const welcome = {
     id: "welcome",
-    label: "Welcome Email (Confirmation)",
+    label: t("expressEvent.welcomeEmailConfirmation"),
     templates: [] as any[],
   };
-  const thankYou = { id: "thank_you", label: "Thanks Email", templates: [] as any[] };
-  const rejection = { id: "rejection", label: "Rejection Email", templates: [] as any[] };
+  const thankYou = { id: "thank_you", label: t("expressEvent.thanksEmail"), templates: [] as any[] };
+  const rejection = { id: "rejection", label: t("expressEvent.rejectionEmail"), templates: [] as any[] };
   // Original flow (unchanged): only Welcome, or Welcome + Thanks + Rejection
   const templateSteps = !requireApproval ? [welcome] : [welcome, thankYou, rejection];
   if (!showEmailSenderStep) return templateSteps;
@@ -107,6 +110,26 @@ const createStaticTemplates = (eventData: any) => {
         isStatic: true,
         type: "welcome",
         readyMadeId: "welcome-template-1",
+      },
+      {
+        id: "welcome-template-2",
+        title: "Welcome Template 2",
+        component: <ConfirmationTemplateTwo {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "welcome",
+        readyMadeId: "welcome-template-2",
+      },
+      {
+        id: "welcome-template-3",
+        title: "Welcome Template 3",
+        component: <ConfirmationTemplateThree {...eventProps} />,
+        html: null,
+        design: null,
+        isStatic: true,
+        type: "welcome",
+        readyMadeId: "welcome-template-3",
       },
     ],
     thank_you: [
@@ -350,6 +373,7 @@ const EmailEditorModal = ({
   onClose,
   onSave,
 }: any) => {
+  const { t } = useTranslation("dashboard");
   const mergeTags: MergeTag[] = [
     { name: "First Name", value: "{{user.firstname}}" },
     { name: "Last Name", value: "{{user.lastname}}" },
@@ -367,7 +391,7 @@ const EmailEditorModal = ({
   return (
     <EmailTemplateBuilderModal
       open={open}
-      title="Edit Email Template"
+      title={t("expressEvent.editEmailTemplate")}
       initialDesign={initialDesign}
       initialHtml={initialHtml}
       mergeTags={mergeTags}
@@ -546,7 +570,7 @@ const TemplateThumbnail = ({ template, eventDataKey }: any) => {
         </div>
       ) : (
         <div className="flex items-center justify-center w-full h-full text-gray-400">
-          No preview available
+          {t("expressEvent.noPreviewAvailable")}
         </div>
       )}
       {/* {template.isStatic && <div className="absolute top-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded">Static</div>} */}
@@ -576,11 +600,12 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   isLastStep = false,
   showEmailSenderStep = true,
 }, ref) => {
+  const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
   const effectiveEventId = eventId;
 
-  const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false, showEmailSenderStep));
+  const [flows, setFlows] = useState<any[]>(() => getFlowsConfig(false, showEmailSenderStep, t));
   const [currentFlowIndex, setCurrentFlowIndex] = useState(0);
   const [selectedTemplates, setSelectedTemplates] = useState<any>({});
   const [modalTemplate, setModalTemplate] = useState<any | null>(null);
@@ -635,7 +660,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       const currentEventId = eventId;
       if (!currentEventId) {
         setEventData(null);
-        setFlows(getFlowsConfig(false, showEmailSenderStep));
+        setFlows(getFlowsConfig(false, showEmailSenderStep, t));
         setCurrentFlowIndex(0);
         return;
       }
@@ -647,7 +672,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
           const requireApproval =
             newEventData?.attributes?.require_approval === true;
           setEventData(newEventData);
-          setFlows(getFlowsConfig(requireApproval, showEmailSenderStep));
+          setFlows(getFlowsConfig(requireApproval, showEmailSenderStep, t));
           setCurrentFlowIndex(0);
           console.log(
             "Event data updated:",
@@ -657,13 +682,13 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
           );
         } else {
           setEventData(null);
-          setFlows(getFlowsConfig(false, showEmailSenderStep));
+          setFlows(getFlowsConfig(false, showEmailSenderStep, t));
           setCurrentFlowIndex(0);
         }
       } catch (error) {
         console.error("Failed to fetch event data:", error);
         setEventData(null);
-        setFlows(getFlowsConfig(false, showEmailSenderStep));
+        setFlows(getFlowsConfig(false, showEmailSenderStep, t));
         setCurrentFlowIndex(0);
       }
     };
@@ -850,7 +875,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       const errorMessage =
         e?.response?.data?.message ||
         e?.message ||
-        "Failed to load templates. Please try again.";
+        t("expressEvent.failedLoadTemplates");
       showNotification(errorMessage, "error");
     } finally {
       setIsLoading(false);
@@ -912,7 +937,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       (t: any) => t.id === templateId,
     );
     if (!selectedTemplate) {
-      showNotification("Template not found", "error");
+      showNotification(t("expressEvent.templateNotFound"), "error");
       return;
     }
 
@@ -956,9 +981,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
             [currentFlow.id]: templateId,
           });
           setModalTemplate(null);
-          showNotification("Template selected!", "success");
-        } else {
-          // Template doesn't exist - create it via POST API
+          showNotification(t("expressEvent.templateSelected"), "success");
           // Convert React component to HTML string
           let htmlString = "";
           if (selectedTemplate.component) {
@@ -977,7 +1000,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
           } else if (selectedTemplate.html) {
             htmlString = selectedTemplate.html;
           } else {
-            showNotification("Template content not available", "error");
+            showNotification(t("expressEvent.templateContentNotAvailable"), "error");
             setIsLoading(false);
             return;
           }
@@ -1027,11 +1050,11 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
             [currentFlow.id]: templateId, // Use static template ID
           });
           setModalTemplate(null);
-          showNotification("Template saved and selected!", "success");
+          showNotification(t("expressEvent.templateSavedSelected"), "success");
         }
       } catch (e) {
         console.error("Failed to save/select ready-made template:", e);
-        showNotification("Failed to save template", "error");
+        showNotification(t("expressEvent.failedSaveTemplate"), "error");
       } finally {
         setIsLoading(false);
       }
@@ -1039,7 +1062,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       // Custom template: mark as default via API so selection persists
       const apiId = selectedTemplate.apiId;
       if (!apiId) {
-        showNotification("Template cannot be selected", "error");
+        showNotification(t("expressEvent.templateCannotBeSelected"), "error");
         return;
       }
       setIsLoading(true);
@@ -1064,10 +1087,10 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
           [currentFlow.id]: templateId,
         });
         setModalTemplate(null);
-        showNotification("Template selected!", "success");
+        showNotification(t("expressEvent.templateSelected"), "success");
       } catch (e) {
         console.error("Failed to mark template as default:", e);
-        showNotification("Failed to select template", "error");
+        showNotification(t("expressEvent.failedSelectTemplate"), "error");
       } finally {
         setIsLoading(false);
       }
@@ -1080,7 +1103,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
 
   const handleStartCreatingTemplate = () => {
     if (!customTemplateName.trim()) {
-      showNotification("Please enter a template name", "warning");
+      showNotification(t("expressEvent.pleaseEnterTemplateName"), "warning");
       return;
     }
     setShowNameDialog(false);
@@ -1112,7 +1135,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       } catch (e) {
         console.warn("Could not derive html/design from default template:", e);
         showNotification(
-          "Could not load template for editing. Please try again.",
+          t("expressEvent.couldNotLoadTemplate"),
           "warning",
         );
         return;
@@ -1135,7 +1158,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
         );
         if (!templateWithDesign.isStatic && !templateWithDesign.readyMadeId) {
           showNotification(
-            "Template design not found. Editor will open empty. Please recreate the template.",
+            t("expressEvent.templateDesignNotFound"),
             "warning",
           );
         }
@@ -1188,11 +1211,11 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
         return;
       }
       if (!senderFromName.trim()) {
-        showNotification("Please enter From Name", "warning");
+        showNotification(t("expressEvent.pleaseEnterFromName"), "warning");
         return;
       }
       if (!senderFromEmail.trim()) {
-        showNotification("Please enter From Email", "warning");
+        showNotification(t("expressEvent.pleaseEnterFromEmail"), "warning");
         return;
       }
       setShowVerifySenderModal(true);
@@ -1201,7 +1224,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
       return;
     }
     if (emailEnabledFromEvent && !selectedTemplates[currentFlow.id]) {
-      showNotification("Please select template", "warning");
+      showNotification(t("expressEvent.pleaseSelectTemplate"), "warning");
       return;
     }
     // If there are more email flow steps (e.g. Thanks, Rejection), go to next flow first
@@ -1216,11 +1239,11 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
   const handleFinish = () => {
     if (currentFlow.id === "email_sender") {
       if (!useExistingSender && (!senderFromName.trim() || !senderFromEmail.trim())) {
-        showNotification("Please enter From Name and From Email", "warning");
+        showNotification(t("expressEvent.pleaseEnterFromNameAndEmail"), "warning");
         return;
       }
     } else if (emailEnabledFromEvent && !selectedTemplates[currentFlow.id]) {
-      showNotification("Please select a template to finish", "warning");
+      showNotification(t("expressEvent.pleaseSelectTemplateToFinish"), "warning");
       return;
     }
     onNext?.(effectiveEventId || undefined);
@@ -1585,7 +1608,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                 id="verify-sender-title"
                 className="text-lg font-semibold text-gray-900 pr-8"
               >
-                Verify the new sender {senderFromName.trim() || "Sender"}{" "}
+                {t("expressEvent.verifyNewSender")} {senderFromName.trim() || t("expressEvent.senderFallback")}{" "}
                 <span className="text-blue-600 underline font-normal">
                   {senderFromEmail.trim() || "email@example.com"}
                 </span>
@@ -1605,13 +1628,13 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
               </div>
             </div>
             <p className="text-center text-gray-600 text-sm mb-6">
-              Before you can use {senderFromName.trim() || "this sender"} as a sender, we must verify its email address. We have sent you a verification code by email at{" "}
+              {t("expressEvent.verifyEmailDescription", { name: senderFromName.trim() || t("expressEvent.thisSender"), email: senderFromEmail.trim() || "email@example.com" })}{" "}
               <span className="text-blue-600 underline font-medium">
                 {senderFromEmail.trim() || "email@example.com"}
               </span>
             </p>
             <p className="text-sm font-medium text-gray-700 mb-2">
-              Enter the verification code you received:
+              {t("expressEvent.enterVerificationCode")}
             </p>
             <div ref={verifyCodeInputsRef} className="flex gap-2 justify-center mb-6">
               {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -1642,23 +1665,23 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
               ))}
             </div>
             <p className="text-center text-sm text-gray-500 mb-1">
-              Did not receive the code? Need a new one?
+              {t("expressEvent.didNotReceiveCode")}
             </p>
             <div className="text-center mb-6">
               {resendCountdown > 0 ? (
                 <span className="text-sm text-blue-600 underline">
-                  Resend verification code ({resendCountdown}s)
+                  {t("expressEvent.resendVerificationCode")} ({resendCountdown}s)
                 </span>
               ) : (
                 <button
                   type="button"
                   onClick={() => {
                     setResendCountdown(43);
-                    showNotification("Verification code sent", "success");
+                    showNotification(t("expressEvent.verificationCodeSent"), "success");
                   }}
                   className="text-sm text-blue-600 underline hover:no-underline font-medium"
                 >
-                  Resend verification code
+                  {t("expressEvent.resendVerificationCode")}
                 </button>
               )}
             </div>
@@ -1668,22 +1691,22 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                 onClick={advanceFromEmailSenderStep}
                 className="flex-1 px-4 py-3 rounded-lg border border-gray-300 hover:bg-gray-50 text-gray-700 font-medium"
               >
-                Do this later
+                {t("expressEvent.doThisLater")}
               </button>
               <button
                 type="button"
                 onClick={() => {
                   const code = verificationCode.join("");
                   if (code.length === 6) {
-                    showNotification("Sender verified (static)", "success");
+                    showNotification(t("expressEvent.senderVerified"), "success");
                     advanceFromEmailSenderStep();
                   } else {
-                    showNotification("Please enter the 6-digit code", "warning");
+                    showNotification(t("expressEvent.pleaseEnter6DigitCode"), "warning");
                   }
                 }}
                 className="flex-1 px-4 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium"
               >
-                Verify sender
+                {t("expressEvent.verifySender")}
               </button>
             </div>
           </div>
@@ -1702,7 +1725,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
             onClick={handleCreateNewTemplate}
             className="border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center text-gray-400 cursor-pointer hover:border-pink-400 hover:bg-pink-50 transition-all duration-200 min-h-[280px]"
           >
-            + New Template
+            + {t("expressEvent.newTemplate")}
           </div>
           {currentFlow.templates.map((template: any) => {
             const eventDataKey = `${effectiveEventId}-${eventData?.id || ""}-${
@@ -1747,7 +1770,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                       <div className="flex items-center shrink-0">
                         <Check size={16} className="text-pink-500 mr-1" />
                         <span className="text-sm text-pink-500 font-medium">
-                          Selected
+                          {t("expressEvent.selected")}
                         </span>
                       </div>
                     )}
@@ -1765,7 +1788,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
             onClick={handleBack}
             className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
           >
-            Back
+            {t("expressEvent.back")}
           </button>
           <div className="flex items-center gap-3">
             {!isLastStep && (
@@ -1773,7 +1796,7 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                 onClick={handleSkip}
                 className="px-6 py-3 rounded-lg border border-gray-300 hover:bg-gray-100 text-gray-700 font-medium transition-colors"
               >
-                Skip
+                {t("expressEvent.skip")}
               </button>
             )}
             <button
@@ -1783,10 +1806,10 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
               {isLastStep ? (
                 <>
                   <CheckCircle className="w-5 h-5" />
-                  Finish event
+                  {t("expressEvent.finishEvent")}
                 </>
               ) : (
-                "Next"
+                t("expressEvent.next")
               )}
             </button>
           </div>
@@ -1816,14 +1839,14 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                 return updated;
               });
             }
-            showNotification("Template deselected", "success");
+            showNotification(t("expressEvent.templateDeselected"), "success");
             handleCloseModal();
             return;
           }
 
           // Delete from API when template has apiId (custom or saved default)
           if (!tpl.apiId) {
-            showNotification("This template cannot be deleted.", "warning");
+            showNotification(t("expressEvent.templateCannotBeDeleted"), "warning");
             handleCloseModal();
             return;
           }
@@ -1868,11 +1891,11 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                 return updated;
               });
             }
-            showNotification("Template deleted", "success");
+            showNotification(t("expressEvent.templateDeleted"), "success");
             handleCloseModal();
           } catch (e) {
             console.error("Failed to delete template:", e);
-            showNotification("Failed to delete template", "error");
+            showNotification(t("expressEvent.failedDeleteTemplate"), "error");
           } finally {
             setIsLoading(false);
           }
@@ -1898,10 +1921,10 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
         <div className="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-lg p-8 max-w-sm w-full">
             <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              Create Custom Template
+              {t("expressEvent.createCustomTemplate")}
             </h3>
             <p className="text-gray-600 mb-6 text-sm">
-              Enter a name for your new email template
+              {t("expressEvent.enterTemplateName")}
             </p>
 
             <input
@@ -1926,13 +1949,13 @@ const EmailConfirmation = forwardRef<EmailConfirmationHandle, EmailConfirmationP
                 }}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium text-gray-700"
               >
-                Cancel
+                {t("expressEvent.cancel")}
               </button>
               <button
                 onClick={handleStartCreatingTemplate}
                 className="flex-1 px-4 py-2 bg-pink-500 hover:bg-pink-600 text-white rounded-lg font-medium"
               >
-                Create
+                {t("expressEvent.create")}
               </button>
             </div>
           </div>

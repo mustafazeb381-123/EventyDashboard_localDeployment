@@ -1,8 +1,22 @@
 {
   "title": "تسجيل الدخول",
-  "emailPlaceholder": "البريد الإلكتروني",
+  "welcome": "مرحباً!",
+  "emailPlaceholder": "أدخل بريدك الإلكتروني",
   "passwordPlaceholder": "كلمة المرور",
   "signin": "تسجيل الدخول",
   "forgotPassword": "هل نسيت كلمة المرور؟",
-  "signup": "إنشاء حساب جديد"
+  "resetPassword": "إعادة تعيين كلمة المرور",
+  "rememberMe": "تذكرني",
+  "signup": "إنشاء حساب جديد",
+  "dontHaveAccount": "ليس لديك حساب؟",
+  "loading": "جاري التحميل...",
+  "loggedInSuccess": "تم تسجيل الدخول بنجاح!",
+  "loginFailed": "فشل تسجيل الدخول",
+  "loggedOut": "تم تسجيل خروجك.",
+  "errors": {
+    "emailRequired": "البريد الإلكتروني مطلوب.",
+    "invalidEmail": "عنوان بريد إلكتروني غير صالح.",
+    "passwordRequired": "كلمة المرور مطلوبة.",
+    "passwordMinLength": "كلمة المرور يجب أن تكون 6 أحرف على الأقل."
+  }
 }

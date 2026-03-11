@@ -1,0 +1,61 @@
+{
+  "title": "Settings",
+  "subtitle": "Manage your account and preferences.",
+  "profile": {
+    "title": "Profile Information",
+    "description": "View and edit your user profile details.",
+    "backToSettings": "Back to Settings",
+    "fullName": "Full Name",
+    "email": "Email",
+    "phone": "Phone",
+    "company": "Company",
+    "fullNamePlaceholder": "Your full name",
+    "emailPlaceholder": "your@email.com",
+    "phonePlaceholder": "+1 (555) 000-0000",
+    "companyPlaceholder": "Company name",
+    "saveChanges": "Save changes"
+  },
+  "billing": {
+    "title": "Billing",
+    "description": "View invoices and payment history.",
+    "backToSettings": "Back to Settings",
+    "invoiceNumber": "Invoice #",
+    "total": "Total",
+    "status": "Status",
+    "invoiceDate": "Invoice Date",
+    "dueDate": "Due Date",
+    "details": "Details",
+    "viewInvoice": "View Invoice",
+    "paid": "Paid"
+  },
+  "security": {
+    "title": "Security",
+    "description": "Change your account password.",
+    "backToSettings": "Back to Settings",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "updatePassword": "Update password"
+  },
+  "senderManagement": {
+    "title": "Sender Management",
+    "description": "Add and manage senders for your emails.",
+    "backToSettings": "Back to Settings",
+    "addSender": "Add sender",
+    "name": "Name",
+    "email": "Email",
+    "senderName": "Sender name",
+    "senderEmailPlaceholder": "sender@example.com",
+    "saveSender": "Save sender",
+    "cancel": "Cancel",
+    "yourSenders": "Your senders",
+    "default": "Default",
+    "verifySender": "Verify sender",
+    "verificationCodeSent": "We sent a 6-digit code to {{email}}",
+    "resendVerificationCode": "Resend verification code",
+    "resendVerificationCodeTimer": "Resend verification code ({{seconds}}s)",
+    "doThisLater": "Do this later",
+    "failedToSendCode": "Failed to send verification code",
+    "invalidCode": "Invalid verification code"
+  }
+}

@@ -1,7 +1,9 @@
 import Assets from '@/utils/Assets'
 import React from 'react'
+import { useTranslation } from "react-i18next";
 
 function Draft() {
+  const { t } = useTranslation("dashboard");
   const recentEvents = [
     {
       id: 1,
@@ -45,7 +47,7 @@ function Draft() {
 
   return (
     <div className='bg-white w-full rounded-2xl p-6 shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md'>
-      <p className='font-poppins text-md font-medium text-neutral-900 mb-4'>Draft</p>
+      <p className='font-poppins text-md font-medium text-neutral-900 mb-4'>{t("home.draft")}</p>
 
       <div className='flex flex-col md:flex-row md:flex-wrap md:justify-between gap-4'>
         {recentEvents.map((event) => {

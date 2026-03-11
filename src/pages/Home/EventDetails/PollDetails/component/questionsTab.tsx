@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import {
   updateAgendaPoll,
@@ -22,6 +23,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
   onRefresh,
   triggerAddQuestion,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [question, setQuestion] = useState("");
@@ -110,7 +112,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
 
   const handleSave = async () => {
     if (!question.trim()) {
-      showNotification("Question is required", "error");
+      showNotification(t("poll.questionRequired"), "error");
       return;
     }
 
@@ -119,7 +121,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
       .filter((a) => a.text.length > 0);
 
     if (trimmedAnswers.length < 2) {
-      showNotification("Please add at least 2 answers", "error");
+      showNotification(t("poll.atLeastTwoAnswers"), "error");
       return;
     }
 
@@ -140,7 +142,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
 
         console.log("Create poll response:", response.data);
 
-        showNotification("Poll created successfully", "success");
+        showNotification(t("poll.pollCreatedSuccess"), "success");
         setIsAddingNew(false);
         setIsEditing(false);
 
@@ -161,7 +163,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             })),
           },
         });
-        showNotification("Poll updated successfully", "success");
+        showNotification(t("poll.pollUpdatedSuccess"), "success");
         setIsAddingNew(false);
         setIsEditing(false);
         onRefresh();
@@ -190,7 +192,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
               type="text"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Type question here"
+              placeholder={t("poll.typeQuestionPlaceholder")}
               className="flex-1 bg-transparent border-none outline-none text-gray-800 placeholder-gray-400"
             />
             {isAddingNew && (
@@ -199,8 +201,8 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                 onChange={(e) => setPollType(e.target.value as PollType)}
                 className="px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 text-sm"
               >
-                <option value="single_answer">Single Answer</option>
-                <option value="multiple_answer">Multiple Answer</option>
+                <option value="single_answer">{t("poll.singleAnswer")}</option>
+                <option value="multiple_answer">{t("poll.multipleAnswer")}</option>
               </select>
             )}
             <button
@@ -208,13 +210,13 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
               disabled={isSaving || !question.trim()}
               className="px-6 py-2 bg-[#1E2A4A] text-white rounded-lg hover:bg-[#2a3a5a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
             >
-              {isSaving ? "Saving..." : isEditing ? "Save" : "Add Question"}
+              {isSaving ? t("poll.saving") : isEditing ? t("poll.save") : t("poll.addQuestion")}
             </button>
             <button
               onClick={cancelEdit}
               className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium text-sm"
             >
-              Cancel
+              {t("poll.cancel")}
             </button>
           </div>
 
@@ -234,7 +236,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                   type="text"
                   value={answer.text}
                   onChange={(e) => updateAnswer(index, e.target.value)}
-                  placeholder="Type answer here"
+                  placeholder={t("poll.typeAnswerPlaceholder")}
                   className="flex-1 bg-transparent border-none outline-none text-gray-700 placeholder-gray-400"
                 />
                 {answers.length > 2 && (
@@ -255,7 +257,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             className="flex items-center gap-2 mt-4 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm font-medium"
           >
             <Plus className="w-4 h-4" />
-            Add answer
+            {t("poll.addAnswer")}
           </button>
         </div>
       )}
@@ -275,15 +277,15 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
               <div className="mb-4">
                 <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                   {poll.poll_type === "single_answer"
-                    ? "Single Answer"
-                    : "Multiple Answer"}
+                    ? t("poll.singleAnswer")
+                    : t("poll.multipleAnswer")}
                 </span>
               </div>
 
               {/* Answer Options */}
               <div className="space-y-3">
                 <p className="text-sm text-gray-500 mb-2 font-medium">
-                  Options:
+                  {t("poll.optionsLabel")}:
                 </p>
                 {(poll.poll_options || []).map((option, index) => (
                   <div key={option.id} className="flex items-center gap-3">
@@ -297,7 +299,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                       className="w-5 h-5 rounded border-gray-300"
                     />
                     <span className="text-gray-700">
-                      {option.option_text || `Answer ${index + 1}`}
+                      {option.option_text || `${t("poll.answer")} ${index + 1}`}
                     </span>
                     {option.votes_count !== undefined && (
                       <span className="text-xs text-gray-500 ml-auto">
@@ -308,7 +310,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                 ))}
                 {(!poll.poll_options || poll.poll_options.length === 0) && (
                   <p className="text-sm text-gray-400 italic">
-                    No options available
+                    {t("poll.noOptionsAvailable")}
                   </p>
                 )}
               </div>
@@ -364,18 +366,17 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold mb-2 text-gray-900">
-              Delete poll?
+              {t("poll.deletePollQuestion")}
             </h2>
             <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to delete this poll? This action cannot be
-              undone.
+              {t("poll.deletePollConfirmation")}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setIsDeletePollModalOpen(false)}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("poll.cancel")}
               </button>
               <button
                 onClick={() => {
@@ -384,7 +385,7 @@ const QuestionsTab: React.FC<QuestionsTabProps> = ({
                 }}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors"
               >
-                Delete
+                {t("poll.delete")}
               </button>
             </div>
           </div>

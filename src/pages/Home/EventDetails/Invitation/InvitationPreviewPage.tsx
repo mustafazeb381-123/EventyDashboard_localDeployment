@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, Search, ChevronDown } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getEventInvitations, getEventInvitation } from "@/apis/invitationService";
 import { parseInvitationResponse } from "./NewInvitation";
 import { resolveInvitationEmailLinks } from "./resolveInvitationEmailLinks";
@@ -25,6 +26,7 @@ function formatScheduled(value: string | undefined): string {
 }
 
 function InvitationPreviewPage() {
+  const { t } = useTranslation("dashboard");
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ invitationId: string }>();
@@ -52,7 +54,7 @@ function InvitationPreviewPage() {
   useEffect(() => {
     if (!eventId || !invitationId) {
       setLoading(false);
-      setError("Missing event or invitation. Open preview from the invitation list with an event selected.");
+      setError(t("invitation.previewPage.missingEventOrInvitation"));
       return;
     }
     setError(null);
@@ -86,12 +88,12 @@ function InvitationPreviewPage() {
             const singleRes = await getEventInvitation(eventId, invitationId);
             attrs = parseInvitationResponse(singleRes.data as unknown);
           } catch {
-            setError("Invitation not found. It may be on another page.");
+            setError(t("invitation.previewPage.invitationNotFound"));
             return;
           }
         }
         if (!attrs) {
-          setError("Could not read invitation data.");
+          setError(t("invitation.previewPage.couldNotReadData"));
           return;
         }
         setInvitationTitle(String(attrs.title ?? ""));
@@ -124,7 +126,7 @@ function InvitationPreviewPage() {
         const msg =
           (err as { response?: { data?: { message?: string }; status?: number } })?.response?.data?.message ??
           (err as Error)?.message ??
-          "Failed to load invitation.";
+          t("invitation.previewPage.failedToLoad");
         setError(String(msg));
       })
       .finally(() => {
@@ -168,10 +170,10 @@ function InvitationPreviewPage() {
           className="absolute left-6 top-6 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors z-10 bg-white border border-gray-200 shadow-sm"
         >
           <ArrowLeft size={20} />
-          Back
+          {t("invitation.previewPage.back")}
         </button>
         <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-        <p className="text-gray-600 font-medium">Loading invitation…</p>
+        <p className="text-gray-600 font-medium">{t("invitation.previewPage.loadingInvitation")}</p>
       </div>
     );
   }
@@ -185,7 +187,7 @@ function InvitationPreviewPage() {
           className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
         >
           <ArrowLeft size={20} />
-          Back to invitations
+          {t("invitation.previewPage.backToInvitations")}
         </button>
       </div>
     );
@@ -200,9 +202,9 @@ function InvitationPreviewPage() {
           className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors z-10 bg-white border border-gray-200 shadow-sm"
         >
           <ArrowLeft size={20} />
-          Back
+          {t("invitation.previewPage.back")}
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">Preview Invitation</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t("invitation.previewPage.previewInvitation")}</h1>
       </div>
 
       {/* ── Full-screen centered content ── */}
@@ -218,7 +220,7 @@ function InvitationPreviewPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600 font-medium">
-                    Email Subject:
+                    {t("invitation.previewPage.emailSubject")}
                   </span>
                   <span className="text-blue-500 font-medium dir-rtl">
                     {emailSubject}
@@ -226,7 +228,7 @@ function InvitationPreviewPage() {
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600 font-medium">
-                    Scheduled For:
+                    {t("invitation.previewPage.scheduledFor")}
                   </span>
                   <span className="text-blue-500 font-medium">
                     {scheduledFor}
@@ -237,18 +239,18 @@ function InvitationPreviewPage() {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600 font-medium">
-                    Communication Type:
+                    {t("invitation.previewPage.communicationType")}
                   </span>
                   <span className="text-blue-500 font-medium">
                     {communicationType === "whatsapp"
-                      ? "WhatsApp"
+                      ? t("invitation.previewPage.whatsapp")
                       : communicationType === "sms"
-                        ? "SMS"
-                        : "Email"}
+                        ? t("invitation.previewPage.sms")
+                        : t("invitation.previewPage.emailType")}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-600 font-medium">Event:</span>
+                  <span className="text-gray-600 font-medium">{t("invitation.previewPage.eventLabel")}</span>
                   <span className="text-blue-500 font-medium">
                     {eventName}
                   </span>
@@ -262,7 +264,7 @@ function InvitationPreviewPage() {
             {/* ── Left: Email Preview ── */}
             <div>
               <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Email Preview
+                {t("invitation.previewPage.emailPreview")}
               </h3>
               <div className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm">
                 <div
@@ -270,7 +272,7 @@ function InvitationPreviewPage() {
                   dangerouslySetInnerHTML={{
                     __html:
                       emailBody ||
-                      "<p class='text-gray-400'>No email content available.</p>",
+                      `<p class='text-gray-400'>${t("invitation.previewPage.noEmailContent")}</p>`,
                   }}
                 />
               </div>
@@ -281,12 +283,12 @@ function InvitationPreviewPage() {
               {/* Header row: "Imported Users" + Show in page + Search */}
               <div className="flex items-center gap-3 mb-3">
                 <h3 className="text-sm font-semibold text-gray-700 flex-shrink-0">
-                  Imported Users
+                  {t("invitation.previewPage.importedUsers")}
                 </h3>
                 {/* Show in page dropdown */}
                 <div className="flex items-center gap-1.5 ml-auto">
                   <span className="text-xs text-gray-500 flex-shrink-0">
-                    Show in page
+                    {t("invitation.previewPage.showInPage")}
                   </span>
                   <div className="relative">
                     <select
@@ -310,7 +312,7 @@ function InvitationPreviewPage() {
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                   <input
                     type="text"
-                    placeholder="Search users..."
+                    placeholder={t("invitation.previewPage.searchUsersPlaceholder")}
                     value={searchTerm}
                     onChange={(e) => {
                       setSearchTerm(e.target.value);
@@ -329,27 +331,27 @@ function InvitationPreviewPage() {
                       <tr className="bg-[#1b3a5c]">
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            ID
+                            {t("invitation.previewPage.idCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            First Name
+                            {t("invitation.previewPage.firstNameCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            Last Name
+                            {t("invitation.previewPage.lastNameCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            Email
+                            {t("invitation.previewPage.emailCol")}
                           </span>
                         </th>
                         <th className="px-4 py-3 text-left">
                           <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                            Phone Number
+                            {t("invitation.previewPage.phoneNumberCol")}
                           </span>
                         </th>
                       </tr>
@@ -361,7 +363,7 @@ function InvitationPreviewPage() {
                             colSpan={5}
                             className="px-4 py-10 text-center text-gray-400 text-sm"
                           >
-                            No users to display
+                            {t("invitation.previewPage.noUsersToDisplay")}
                           </td>
                         </tr>
                       ) : (
@@ -397,8 +399,8 @@ function InvitationPreviewPage() {
                   <div className="flex items-center justify-between">
                     {/* Count */}
                     <p className="text-xs text-gray-500">
-                      Showing {showingFrom} to {showingTo} of{" "}
-                      {totalUsersCount} users
+                      {t("invitation.previewPage.showing")} {showingFrom} {t("invitation.previewPage.to")} {showingTo} {t("invitation.previewPage.of")}{" "}
+                      {totalUsersCount} {t("invitation.previewPage.usersLabel")}
                     </p>
 
                     {/* Page buttons */}
@@ -412,7 +414,7 @@ function InvitationPreviewPage() {
                           disabled={currentPage === 1}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
-                          ← Previous
+                          {t("invitation.previewPage.previous")}
                         </button>
 
                         {/* Page numbers - show up to 5 pages */}
@@ -441,7 +443,7 @@ function InvitationPreviewPage() {
                           disabled={currentPage === totalPagesForPagination}
                           className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                         >
-                          Next →
+                          {t("invitation.previewPage.next")}
                         </button>
                       </div>
                     )}

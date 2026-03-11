@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { ChevronDown, Upload, Trash2, Search, Download, X, UserPlus, Users, FileSpreadsheet, Edit3 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import type { SendTo } from "@/apis/invitationService";
 
@@ -91,6 +92,7 @@ function ManualInviteesSection({
   onParsedUsersChange?: (users: ParsedInvitee[]) => void;
   onPreviewClick?: () => void;
 }) {
+  const { t } = useTranslation("dashboard");
   const [first_name, setFirst_name] = useState("");
   const [last_name, setLast_name] = useState("");
   const [email, setEmail] = useState("");
@@ -101,7 +103,7 @@ function ManualInviteesSection({
     setAddError(null);
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
-      setAddError("Email is required.");
+      setAddError(t("invitation.inviteesTab.emailRequired"));
       return;
     }
     const newUser: ParsedInvitee = {
@@ -127,32 +129,32 @@ function ManualInviteesSection({
 
   return (
     <div className="space-y-5">
-      <p className="text-sm text-slate-500">Add invitees one by one. At least email is required.</p>
+      <p className="text-sm text-slate-500">{t("invitation.inviteesTab.addInviteeHint")}</p>
 
       {/* Add user form */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h4 className="text-sm font-medium text-slate-700 mb-3 flex items-center gap-2">
           <UserPlus className="w-4 h-4" />
-          Add user
+          {t("invitation.inviteesTab.addUser")}
         </h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <input
             type="text"
-            placeholder="First name"
+            placeholder={t("invitation.inviteesTab.firstNamePlaceholder")}
             value={first_name}
             onChange={(e) => setFirst_name(e.target.value)}
             className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
           <input
             type="text"
-            placeholder="Last name"
+            placeholder={t("invitation.inviteesTab.lastNamePlaceholder")}
             value={last_name}
             onChange={(e) => setLast_name(e.target.value)}
             className="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
           />
           <input
             type="email"
-            placeholder="Email *"
+            placeholder={t("invitation.inviteesTab.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
@@ -160,7 +162,7 @@ function ManualInviteesSection({
           />
           <input
             type="text"
-            placeholder="Phone number"
+            placeholder={t("invitation.inviteesTab.phonePlaceholder")}
             value={phone_number}
             onChange={(e) => setPhone_number(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
@@ -174,7 +176,7 @@ function ManualInviteesSection({
           className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
         >
           <UserPlus className="w-4 h-4" />
-          Add user
+          {t("invitation.inviteesTab.addUser")}
         </button>
       </div>
 
@@ -183,7 +185,7 @@ function ManualInviteesSection({
         <div className="rounded-xl border border-slate-200 overflow-hidden bg-white shadow-sm">
           <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
             <p className="text-sm font-medium text-slate-700">
-              {parsedInvitees.length} user{parsedInvitees.length !== 1 ? "s" : ""} added
+              {parsedInvitees.length} {parsedInvitees.length !== 1 ? t("invitation.inviteesTab.usersAdded") : t("invitation.inviteesTab.userAdded")}
             </p>
             {onPreviewClick && (
               <button
@@ -191,7 +193,7 @@ function ManualInviteesSection({
                 onClick={onPreviewClick}
                 className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200"
               >
-                Preview
+                {t("invitation.inviteesTab.preview")}
               </button>
             )}
           </div>
@@ -200,11 +202,11 @@ function ManualInviteesSection({
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">#</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">First name</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">Last name</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">Email</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">Phone</th>
-                  <th className="px-4 py-2.5 w-20 text-right text-xs font-semibold text-slate-600 uppercase">Action</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">{t("invitation.inviteesTab.firstNameHeader")}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">{t("invitation.inviteesTab.lastNameHeader")}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">{t("invitation.inviteesTab.emailHeader")}</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase">{t("invitation.inviteesTab.phoneHeader")}</th>
+                  <th className="px-4 py-2.5 w-20 text-right text-xs font-semibold text-slate-600 uppercase">{t("invitation.inviteesTab.actionHeader")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -220,8 +222,8 @@ function ManualInviteesSection({
                         type="button"
                         onClick={() => handleRemove(u.id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Remove"
-                        aria-label="Remove"
+                        title={t("invitation.inviteesTab.remove")}
+                        aria-label={t("invitation.inviteesTab.remove")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -244,9 +246,10 @@ function VipInvitationToggle({
   isVipInvitation: boolean;
   setIsVipInvitation: (value: boolean) => void;
 }) {
+  const { t } = useTranslation("dashboard");
   return (
     <div className="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-      <span className="text-sm font-medium text-slate-700">VIP invitation</span>
+      <span className="text-sm font-medium text-slate-700">{t("invitation.inviteesTab.vipInvitation")}</span>
       <button
         type="button"
         role="switch"
@@ -262,8 +265,8 @@ function VipInvitationToggle({
           }`}
         />
       </button>
-      <span className="text-sm text-slate-600">{isVipInvitation ? "Yes" : "No"}</span>
-      <p className="text-xs text-slate-500 w-full mt-0.5">Mark this invitation as VIP (API: is_vip_invitation true/false)</p>
+      <span className="text-sm text-slate-600">{isVipInvitation ? t("invitation.inviteesTab.yes") : t("invitation.inviteesTab.no")}</span>
+      <p className="text-xs text-slate-500 w-full mt-0.5">{t("invitation.inviteesTab.vipDescription")}</p>
     </div>
   );
 }
@@ -288,11 +291,12 @@ function SendToSelector({
   sendTo: SendTo;
   setSendTo: (value: SendTo) => void;
 }) {
+  const { t } = useTranslation("dashboard");
   return (
     <div className="mb-6">
-      <h3 className="text-base font-semibold text-gray-800 mb-2">Send to</h3>
+      <h3 className="text-base font-semibold text-gray-800 mb-2">{t("invitation.inviteesTab.sendTo")}</h3>
       <p className="text-sm text-slate-500 mb-3">
-        Choose who receives this invitation: all recipients, import from file (Excel/CSV), or add users manually.
+        {t("invitation.inviteesTab.sendToDescription")}
       </p>
       <div className="flex flex-wrap gap-3">
       
@@ -306,7 +310,7 @@ function SendToSelector({
           }`}
         >
           <FileSpreadsheet className="w-4 h-4" />
-          Import from file (Excel/CSV)
+          {t("invitation.inviteesTab.importFromExcelCsv")}
         </button>
         <button
           type="button"
@@ -318,7 +322,7 @@ function SendToSelector({
           }`}
         >
           <Edit3 className="w-4 h-4" />
-          Manually entered
+          {t("invitation.inviteesTab.manuallyEntered")}
         </button>
       </div>
     </div>
@@ -337,6 +341,7 @@ export function InviteesTab({
   onParsedUsersChange,
   onPreviewClick,
 }: InviteesTabProps) {
+  const { t } = useTranslation("dashboard");
   const [parsedUsers, setParsedUsers] = useState<ParsedInvitee[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -532,7 +537,7 @@ export function InviteesTab({
     <div className="space-y-5">
       <SendToSelector sendTo={sendTo} setSendTo={setSendTo} />
       <VipInvitationToggle isVipInvitation={isVipInvitation} setIsVipInvitation={setIsVipInvitation} />
-      <h3 className="text-base font-semibold text-gray-800">Import from file</h3>
+      <h3 className="text-base font-semibold text-gray-800">{t("invitation.inviteesTab.importFromFile")}</h3>
 
       {/* ── Upload Controls ── */}
       <div className="flex flex-wrap items-center gap-3">
@@ -540,7 +545,7 @@ export function InviteesTab({
         <div className="relative flex-1 min-w-[200px]">
           <input
             type="text"
-            placeholder="Import From Excel"
+            placeholder={t("invitation.inviteesTab.importFromExcelPlaceholder")}
             readOnly
             className="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-xl text-sm bg-white text-gray-900 placeholder:text-gray-400 cursor-default"
           />
@@ -569,7 +574,7 @@ export function InviteesTab({
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-100 text-blue-700 rounded-xl text-sm font-medium hover:bg-blue-200 transition-colors"
         >
           <Upload className="w-4 h-4" />
-          Choose file
+          {t("invitation.inviteesTab.chooseFile")}
         </button>
 
         <button
@@ -578,7 +583,7 @@ export function InviteesTab({
           className="inline-flex items-center gap-2 px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
         >
           <Download className="w-4 h-4" />
-          Download template
+          {t("invitation.inviteesTab.downloadTemplate")}
         </button>
       </div>
 
@@ -604,7 +609,7 @@ export function InviteesTab({
               setUploadError(null);
             }}
             className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            aria-label="Remove file"
+            aria-label={t("invitation.inviteesTab.removeFile")}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -628,10 +633,10 @@ export function InviteesTab({
         {isUploading ? (
           <span className="flex items-center gap-2">
             <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            Uploading…
+            {t("invitation.inviteesTab.uploading")}
           </span>
         ) : (
-          "Upload Users and Preview"
+          t("invitation.inviteesTab.uploadUsersAndPreview")
         )}
       </button>
 
@@ -643,7 +648,7 @@ export function InviteesTab({
           {selectedIds.size > 0 && (
             <div className="px-4 py-3 bg-blue-50 border-b border-blue-200 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm font-medium text-blue-800">
-                {selectedIds.size} user{selectedIds.size !== 1 ? "s" : ""} selected
+                {selectedIds.size} {t("invitation.inviteesTab.selected")}
               </p>
               <div className="flex flex-wrap items-center gap-2">
                 <button
@@ -652,7 +657,7 @@ export function InviteesTab({
                   className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Remove selected
+                  {t("invitation.inviteesTab.removeSelected")}
                 </button>
                 <button
                   type="button"
@@ -660,7 +665,7 @@ export function InviteesTab({
                   className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors"
                 >
                   <X className="w-4 h-4" />
-                  Clear selection
+                  {t("invitation.inviteesTab.clearSelection")}
                 </button>
               </div>
             </div>
@@ -669,14 +674,14 @@ export function InviteesTab({
           {/* Toolbar: Users label + Remove all | Show X + Search */}
           <div className="px-4 py-3 border-b border-gray-200 bg-white flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <h4 className="text-sm font-semibold text-gray-800">Users</h4>
+              <h4 className="text-sm font-semibold text-gray-800">{t("invitation.inviteesTab.users")}</h4>
               <button
                 type="button"
                 onClick={removeAllUsers}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Remove all
+                {t("invitation.inviteesTab.removeAll")}
               </button>
             </div>
             <div className="flex items-center gap-3">
@@ -690,10 +695,10 @@ export function InviteesTab({
                   }}
                   className="appearance-none pl-3 pr-8 py-2 border border-gray-300 rounded-lg text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
                 >
-                  <option value={5}>Show 5</option>
-                  <option value={10}>Show 10</option>
-                  <option value={25}>Show 25</option>
-                  <option value={50}>Show 50</option>
+                  <option value={5}>{t("invitation.inviteesTab.show")} 5</option>
+                  <option value={10}>{t("invitation.inviteesTab.show")} 10</option>
+                  <option value={25}>{t("invitation.inviteesTab.show")} 25</option>
+                  <option value={50}>{t("invitation.inviteesTab.show")} 50</option>
                 </select>
                 <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
               </div>
@@ -702,7 +707,7 @@ export function InviteesTab({
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search users..."
+                  placeholder={t("invitation.inviteesTab.searchUsersPlaceholder")}
                   value={searchTerm}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                     setSearchTerm(e.target.value);
@@ -729,32 +734,32 @@ export function InviteesTab({
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                      ID
+                      {t("invitation.inviteesTab.id")}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                      First Name
+                      {t("invitation.inviteesTab.firstNameCol")}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                      Last Name
+                      {t("invitation.inviteesTab.lastNameCol")}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                      Email
+                      {t("invitation.inviteesTab.emailCol")}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                      Phone Number
+                      {t("invitation.inviteesTab.phoneNumberCol")}
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
                     <span className="text-xs font-semibold text-white uppercase tracking-wider">
-                      Actions
+                      {t("invitation.inviteesTab.actionsCol")}
                     </span>
                   </th>
                 </tr>
@@ -797,7 +802,7 @@ export function InviteesTab({
                           type="button"
                           onClick={() => removeUser(user.id)}
                           className="p-1.5 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          aria-label="Remove user"
+                          aria-label={t("invitation.inviteesTab.removeUser")}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -813,7 +818,7 @@ export function InviteesTab({
           <div className="border-t border-gray-200 px-4 py-3 bg-white">
             <div className="flex items-center justify-between">
               <p className="text-sm text-gray-500">
-                Showing {showingFrom} to {showingTo} of {filteredUsers.length} users
+                {t("invitation.inviteesTab.showing")} {showingFrom} {t("invitation.inviteesTab.to")} {showingTo} {t("invitation.inviteesTab.of")} {filteredUsers.length} {t("invitation.inviteesTab.usersLabel")}
               </p>
               <div className="flex items-center gap-1.5">
                 <button
@@ -823,7 +828,7 @@ export function InviteesTab({
                   disabled={currentPage === 1}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  ← Previous
+                  {t("invitation.inviteesTab.previous")}
                 </button>
                 {Array.from(
                   { length: Math.min(totalPages, 5) },
@@ -849,7 +854,7 @@ export function InviteesTab({
                   disabled={currentPage === totalPages}
                   className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
-                  Next →
+                  {t("invitation.inviteesTab.next")}
                 </button>
               </div>
             </div>
@@ -865,7 +870,7 @@ export function InviteesTab({
             onClick={onPreviewClick}
             className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors shadow-sm"
           >
-            Preview
+            {t("invitation.inviteesTab.preview")}
           </button>
         </div>
       )}

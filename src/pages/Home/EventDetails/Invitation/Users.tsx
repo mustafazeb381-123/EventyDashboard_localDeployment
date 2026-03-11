@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   ChevronDown,
@@ -157,6 +158,7 @@ const _unused = [
 ];
 
 function Invitations() {
+  const { t } = useTranslation("dashboard");
   const location = useLocation();
   const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
@@ -357,14 +359,14 @@ function Invitations() {
   const handleSendInvitation = async (userIds?: string[]) => {
     const idToUse = actualEventId || eventId;
     if (!idToUse) {
-      showNotification("Event ID is missing. Cannot send invitation.", "error");
+      showNotification(t("invitation.usersList.eventIdMissingCannotSend"), "error");
       return;
     }
     const idsToSend: string[] =
       userIds || Array.from(selectedUsers).map((id) => String(id));
     if (idsToSend.length === 0) {
       showNotification(
-        "Please select at least one user to send invitation.",
+        t("invitation.usersList.selectAtLeastOneUser"),
         "error",
       );
       return;
@@ -374,10 +376,10 @@ function Invitations() {
     try {
       await sendCredentials(String(idToUse), idsToSend);
       if (isSingleUser) {
-        showNotification("Invitation sent to user successfully!", "success");
+        showNotification(t("invitation.usersList.invitationSentToUser"), "success");
       } else {
         showNotification(
-          `Invitation sent to ${idsToSend.length} users successfully!`,
+          t("invitation.usersList.invitationSentToUsers", { count: idsToSend.length }),
           "success",
         );
       }
@@ -387,10 +389,10 @@ function Invitations() {
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        "Failed to send invitation. Please try again.";
+        t("invitation.usersList.failedToSendDefault");
       showNotification(
         isSingleUser
-          ? "Failed to send invitation to user. Please try again."
+          ? t("invitation.usersList.failedToSendToUser")
           : errorMessage,
         "error",
       );
@@ -450,7 +452,7 @@ function Invitations() {
                 <UsersIcon className="w-5 h-5 text-white" />
               </div>
               <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-                Invitation Users
+                {t("invitation.usersList.invitationUsersTitle")}
               </h1>
             </div>
             <div className="flex items-center gap-2">
@@ -471,7 +473,7 @@ function Invitations() {
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors"
               >
                 <Plus size={15} />
-                Creat New Invitations
+                {t("invitation.usersList.creatNewInvitations")}
               </button>
             </div>
           </div>
@@ -488,7 +490,7 @@ function Invitations() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">
-                  Total Invitations
+                  {t("invitation.usersList.totalInvitations")}
                 </p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
                   {stats.total}
@@ -505,7 +507,7 @@ function Invitations() {
                 <CheckCircle className="w-5 h-5 text-green-500" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Completed</p>
+                <p className="text-xs text-gray-500 mb-0.5">{t("invitation.usersList.completed")}</p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
                   {stats.completed}
                 </p>
@@ -521,7 +523,7 @@ function Invitations() {
                 <Mail className="w-5 h-5 text-red-400" />
               </div>
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Pending</p>
+                <p className="text-xs text-gray-500 mb-0.5">{t("invitation.usersList.pending")}</p>
                 <p className="text-2lg font-bold text-gray-700 leading-none mt-2">
                   {stats.pending}
                 </p>
@@ -538,7 +540,7 @@ function Invitations() {
               />
               <input
                 type="text"
-                placeholder="Search users..."
+                placeholder={t("invitation.usersList.searchUsersPlaceholder")}
                 value={searchTerm}
                 onChange={(e) => {
                   setSearchTerm(e.target.value);
@@ -557,10 +559,10 @@ function Invitations() {
                 disabled={loadingInvitations}
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm disabled:opacity-50 cursor-pointer"
               >
-                <option value="all">All Types</option>
-                <option value="email">Email</option>
-                <option value="sms">SMS</option>
-                <option value="whatsapp">WhatsApp</option>
+                <option value="all">{t("invitation.usersList.allTypes")}</option>
+                <option value="email">{t("invitation.usersList.emailType")}</option>
+                <option value="sms">{t("invitation.usersList.smsType")}</option>
+                <option value="whatsapp">{t("invitation.usersList.whatsappType")}</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
             </div>
@@ -661,7 +663,7 @@ function Invitations() {
                         className="px-6 py-12 text-center text-gray-500 text-sm"
                       >
                         {actualEventId || eventId
-                          ? "No invitations found"
+                          ? t("invitation.usersList.noInvitationsFound")
                           : "Select an event (add ?eventId= to URL or use event from storage)"}
                       </td>
                     </tr>
@@ -719,12 +721,12 @@ function Invitations() {
                             {isDone ? (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 border border-green-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                                Done
+                                {t("invitation.usersList.done")}
                               </span>
                             ) : (
                               <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-orange-100 text-orange-600 border border-orange-200">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
-                                Pending
+                                {t("invitation.usersList.pending")}
                               </span>
                             )}
                           </td>
@@ -745,7 +747,7 @@ function Invitations() {
                                   navigateTo(previewPath);
                                 }}
                                 className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-                                title="View"
+                                title={t("invitation.usersList.view")}
                               >
                                 <Eye size={16} />
                               </button>
@@ -766,7 +768,7 @@ function Invitations() {
                                     }
                                   }}
                                   className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-                                  title="More actions"
+                                  title={t("invitation.usersList.moreActions")}
                                 >
                                   <MoreVertical size={16} />
                                 </button>
@@ -837,7 +839,7 @@ function Invitations() {
                                             size={15}
                                             className="text-orange-500 flex-shrink-0"
                                           />
-                                          Invitation Report
+                                          {t("invitation.usersList.invitationReport")}
                                         </button>
                                         <button
                                           type="button"
@@ -855,7 +857,7 @@ function Invitations() {
                                             size={15}
                                             className="text-green-600 flex-shrink-0"
                                           />
-                                          Edit
+                                          {t("invitation.usersList.edit")}
                                         </button>
                                         <button
                                           type="button"
@@ -864,7 +866,7 @@ function Invitations() {
                                               actualEventId || eventId;
                                             if (!idToUse) {
                                               showNotification(
-                                                "Event ID is missing.",
+                                                t("invitation.usersList.eventIdMissing"),
                                                 "error",
                                               );
                                               return;
@@ -876,7 +878,7 @@ function Invitations() {
                                                 invitation.id,
                                               );
                                               showNotification(
-                                                "Event invitation duplicated successfully",
+                                                t("invitation.usersList.duplicatedSuccess"),
                                                 "success",
                                               );
                                               closeActionsMenu();
@@ -890,7 +892,7 @@ function Invitations() {
                                                   ?.response?.data?.message ||
                                                 (err as { response?: { data?: { error?: string } } })?.response?.data
                                                   ?.error ||
-                                                "Failed to duplicate invitation.";
+                                                t("invitation.usersList.failedToDuplicate");
                                               showNotification(msg, "error");
                                             } finally {
                                               setCloningInvitationId(null);
@@ -909,7 +911,7 @@ function Invitations() {
                                               className="text-pink-500 flex-shrink-0"
                                             />
                                           )}
-                                          Clone
+                                          {t("invitation.usersList.clone")}
                                         </button>
                                         <button
                                           type="button"
@@ -918,7 +920,7 @@ function Invitations() {
                                               actualEventId || eventId;
                                             if (!idToUse) {
                                               showNotification(
-                                                "Event ID is missing.",
+                                                t("invitation.usersList.eventIdMissing"),
                                                 "error",
                                               );
                                               return;
@@ -944,7 +946,7 @@ function Invitations() {
                                               className="text-red-500 flex-shrink-0"
                                             />
                                           )}
-                                          Delete
+                                          {t("invitation.usersList.delete")}
                                         </button>
                                       </div>
                                     </>
@@ -966,38 +968,38 @@ function Invitations() {
                 <div className="text-sm text-gray-600">
                   {invitationPagination ? (
                     <>
-                      Showing{" "}
+                      {t("invitation.usersList.showing")}{" "}
                       <span className="font-medium">
                         {(currentPage - 1) * itemsPerPage + 1}
                       </span>{" "}
-                      to{" "}
+                      {t("invitation.usersList.to")}{" "}
                       <span className="font-medium">
                         {Math.min(
                           currentPage * itemsPerPage,
                           totalCount || listToShow.length,
                         )}
                       </span>{" "}
-                      of{" "}
+                      {t("invitation.usersList.of")}{" "}
                       <span className="font-medium">
                         {totalCount || listToShow.length}
                       </span>{" "}
-                      invitations
+                      {t("invitation.usersList.invitationsLabel")}
                     </>
                   ) : (
                     <>
-                      Showing{" "}
+                      {t("invitation.usersList.showing")}{" "}
                       <span className="font-medium">
                         {listToShow.length === 0 ? 0 : 1}
                       </span>{" "}
-                      to{" "}
+                      {t("invitation.usersList.to")}{" "}
                       <span className="font-medium">
                         {listToShow.length}
                       </span>{" "}
-                      of{" "}
+                      {t("invitation.usersList.of")}{" "}
                       <span className="font-medium">
                         {listToShow.length}
                       </span>{" "}
-                      invitations
+                      {t("invitation.usersList.invitationsLabel")}
                     </>
                   )}
                 </div>
@@ -1011,7 +1013,7 @@ function Invitations() {
                       disabled={currentPage === 1}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      ← Previous
+                      {t("invitation.usersList.previous")}
                     </button>
 
                     <div className="flex items-center gap-1">
@@ -1041,7 +1043,7 @@ function Invitations() {
                       disabled={currentPage === totalPages}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      Next →
+                      {t("invitation.usersList.next")}
                     </button>
                   </div>
                 )}
@@ -1075,7 +1077,7 @@ function Invitations() {
                 }
                 disabled={!!deletingInvitationId}
                 className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors"
-                aria-label="Close"
+                aria-label={t("invitation.usersList.close")}
               >
                 <X size={20} />
               </button>
@@ -1084,10 +1086,10 @@ function Invitations() {
               id="delete-invitation-modal-title"
               className="text-lg font-semibold text-gray-900 mb-1"
             >
-              Delete invitation
+              {t("invitation.usersList.deleteInvitation")}
             </h2>
             <p className="text-gray-600 text-sm mb-6">
-              Are you sure you want to delete &quot;{deleteModalInvitation.title}&quot;? This action cannot be undone.
+              {t("invitation.usersList.deleteConfirmation")} &quot;{deleteModalInvitation.title}&quot;? {t("invitation.usersList.cannotBeUndone")}
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -1098,7 +1100,7 @@ function Invitations() {
                 disabled={!!deletingInvitationId}
                 className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
               >
-                Cancel
+                {t("invitation.usersList.cancel")}
               </button>
               <button
                 type="button"
@@ -1109,7 +1111,7 @@ function Invitations() {
                   try {
                     await deleteEventInvitation(idToUse, invitationId);
                     showNotification(
-                      "Invitation deleted successfully",
+                      t("invitation.usersList.deletedSuccess"),
                       "success",
                     );
                     setDeleteModalInvitation(null);
@@ -1120,7 +1122,7 @@ function Invitations() {
                         ?.response?.data?.message ||
                       (err as { response?: { data?: { error?: string } } })?.response?.data
                         ?.error ||
-                      "Failed to delete invitation.";
+                      t("invitation.usersList.failedToDelete");
                     showNotification(msg, "error");
                   } finally {
                     setDeletingInvitationId(null);
@@ -1132,10 +1134,10 @@ function Invitations() {
                 {deletingInvitationId === deleteModalInvitation.rowKey ? (
                   <>
                     <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Deleting...
+                    {t("invitation.usersList.deleting")}
                   </>
                 ) : (
-                  "Delete"
+                  t("invitation.usersList.delete")
                 )}
               </button>
             </div>

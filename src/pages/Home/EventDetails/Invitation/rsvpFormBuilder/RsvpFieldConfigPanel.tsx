@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { X, Plus, Trash2, Palette, ChevronDown, Eye, EyeOff, LayoutGrid } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { RsvpFormField, RsvpFormFieldOption, RsvpFieldType } from "./types";
 
 interface RsvpFieldConfigPanelProps {
@@ -29,6 +30,7 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
   onUpdate,
   onClose,
 }) => {
+  const { t } = useTranslation("dashboard");
   const [config, setConfig] = useState<RsvpFormField>(field);
   const [isStylingOpen, setIsStylingOpen] = useState(false);
 
@@ -61,7 +63,7 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
   };
 
   const addOption = () => {
-    const opts = [...(config.options ?? []), { label: "New option", value: `opt_${Date.now()}` }];
+    const opts = [...(config.options ?? []), { label: t("invitation.rsvpBuilder.newOption"), value: `opt_${Date.now()}` }];
     setConfig({ ...config, options: opts });
   };
 
@@ -87,7 +89,7 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
             type="button"
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-lg"
-            title="Close"
+            title={t("invitation.close")}
           >
             <X size={20} className="text-gray-500" />
           </button>
@@ -97,7 +99,7 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
       <div className="p-5 space-y-5">
         {/* Step 1: Show / Hide field */}
         <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200">
-          <span className="text-sm font-medium text-gray-700">Show in preview</span>
+          <span className="text-sm font-medium text-gray-700">{t("invitation.rsvpBuilder.showInPreview")}</span>
           <button
             type="button"
             onClick={() => setConfig({ ...config, visible: !isVisible })}
@@ -115,17 +117,17 @@ export const RsvpFieldConfigPanel: React.FC<RsvpFieldConfigPanelProps> = ({
           <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-indigo-50/30 border border-slate-200">
             <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide flex items-center gap-2">
               <LayoutGrid className="w-4 h-4 text-indigo-600" />
-              Layout
+              {t("invitation.rsvpBuilder.layout")}
             </h4>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium mb-1 text-gray-600">Gap</label>
+                <label className="block text-xs font-medium mb-1 text-gray-600">{t("invitation.rsvpBuilder.gap")}</label>
                 <input
                   type="text"
                   value={layoutProps.gap ?? ""}
                   onChange={(e) => updateLayoutProps({ gap: e.target.value || undefined })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g. 20px"
+                  placeholder={t("invitation.rsvpBuilder.gapPlaceholder")}
                 />
               </div>
               <div>

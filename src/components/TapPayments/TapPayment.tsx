@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const CARD_SDK_SCRIPT_URL = "https://tap-sdks.b-cdn.net/card/1.0.2/index.js";
 
@@ -118,6 +119,7 @@ const TapPayment: React.FC<TapPaymentProps> = ({
   onError,
   onSuccess,
 }) => {
+  const { t } = useTranslation("common");
   const [isLoading, setIsLoading] = useState(true);
   const [sdkReady, setSdkReady] = useState(false);
   const [paymentConfig, setPaymentConfig] = useState<{
@@ -246,7 +248,7 @@ const TapPayment: React.FC<TapPaymentProps> = ({
     script.onload = () => {
       initCard();
     };
-    script.onerror = () => onError?.(new Error("Failed to load Tap Card SDK"));
+    script.onerror = () => onError?.(new Error(t("tapFailedToLoad")));
     document.head.appendChild(script);
 
     return () => {
@@ -269,7 +271,7 @@ const TapPayment: React.FC<TapPaymentProps> = ({
 
   const handleTokenize = useCallback(() => {
     if (!window.CardSDK?.tokenize) {
-      onError?.(new Error("Card SDK not ready"));
+      onError?.(new Error(t("tapCardNotReady")));
       return;
     }
     setIsLoading(true);
@@ -293,7 +295,7 @@ const TapPayment: React.FC<TapPaymentProps> = ({
         onClick={handleTokenize}
         className="w-full rounded-lg bg-indigo-600 px-4 py-3 font-medium text-white shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:pointer-events-none"
       >
-        {isLoading ? "Processing…" : "Pay"}
+        {isLoading ? t("tapProcessing") : t("tapPay")}
       </button>
     </div>
   );

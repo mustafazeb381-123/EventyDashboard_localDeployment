@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Upload,
   MapPin,
@@ -52,8 +53,8 @@ type MainDataProps = {
 };
 
 /** Font options for event (registration page & badge). font_name is sent to API and used as font-family in user registration and print badges. Empty string = app default. */
-export const EVENT_FONT_OPTIONS: { value: string; label: string }[] = [
-  { value: "", label: "Default (app font)" },
+export const EVENT_FONT_OPTIONS: { value: string; label?: string; labelKey?: string }[] = [
+  { value: "", labelKey: "defaultAppFont" },
   { value: "Inter", label: "Inter" },
   { value: "Roboto", label: "Roboto" },
   { value: "Open Sans", label: "Open Sans" },
@@ -170,6 +171,7 @@ const MainData = ({
   lastEdit,
   onEventCreated,
 }: MainDataProps) => {
+  const { t } = useTranslation("dashboard");
   const [newGuestType, setNewGuestType] = useState<string>("");
   console.log("new guest type----", newGuestType);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -295,19 +297,19 @@ const MainData = ({
     const errors: Record<string, string> = {};
 
     if (!formData.eventName.trim()) {
-      errors.eventName = "Event name is required";
+      errors.eventName = t("expressEvent.eventNameRequired");
     }
 
     if (!formData.description.trim()) {
-      errors.description = "Description is required";
+      errors.description = t("expressEvent.descriptionRequired");
     }
 
     if (!formData.dateFrom) {
-      errors.dateFrom = "Start date is required";
+      errors.dateFrom = t("expressEvent.startDateRequired");
     }
 
     if (!formData.dateTo) {
-      errors.dateTo = "End date is required";
+      errors.dateTo = t("expressEvent.endDateRequired");
     }
 
     if (
@@ -315,18 +317,18 @@ const MainData = ({
       formData.dateTo &&
       formData.dateFrom > formData.dateTo
     ) {
-      errors.dateTo = "End date must be after start date";
+      errors.dateTo = t("expressEvent.endDateAfterStart");
     }
 
     if (!formData.location.trim()) {
-      errors.location = "Location is required";
+      errors.location = t("expressEvent.locationRequired");
     }
 
     // Registration limit (optional): if provided, must be a positive integer (both express & advance)
     if (formData.registrationLimit?.trim()) {
       const num = parseInt(formData.registrationLimit, 10);
       if (Number.isNaN(num) || num < 1 || !Number.isInteger(num)) {
-        errors.registrationLimit = "Must be a positive integer";
+        errors.registrationLimit = t("expressEvent.mustBePositiveInteger");
       }
     }
 
@@ -388,7 +390,7 @@ const MainData = ({
           (blob) => {
             if (!blob) {
               showNotification(
-                "Failed to crop image. Please try again.",
+                t("expressEvent.failedCropImage"),
                 "error",
               );
               return;
@@ -412,7 +414,7 @@ const MainData = ({
             setOriginalImageSrc("");
 
             showNotification(
-              "Image cropped and uploaded successfully!",
+              t("expressEvent.imageCroppedSuccess"),
               "success",
             );
           },
@@ -421,7 +423,7 @@ const MainData = ({
         );
       } catch (error) {
         console.error("Error cropping image:", error);
-        showNotification("Failed to crop image. Please try again.", "error");
+        showNotification(t("expressEvent.failedCropImage"), "error");
       }
     }
   };
@@ -803,7 +805,7 @@ const MainData = ({
         if (attrsPatch != null) {
           console.log("[Main Data] PATCH API returned event attributes (check font_name):", { font_name: attrsPatch?.font_name, ...attrsPatch });
         }
-        showNotification("Event updated successfully", "success");
+        showNotification(t("expressEvent.eventUpdatedSuccess"), "success");
       } else {
         console.log("Creating new event – POST payload includes event[font_name]:", fontNameValue || "(empty)");
         response = await eventPostAPi(fd);
@@ -819,7 +821,7 @@ const MainData = ({
         if (newEventId != null && onEventCreated) {
           onEventCreated(String(newEventId));
         }
-        showNotification("Event created successfully", "success");
+        showNotification(t("expressEvent.eventCreatedSuccess"), "success");
       }
 
       return response;
@@ -904,7 +906,7 @@ const MainData = ({
 
       // Use the new badge service to delete badge
       await deleteBadge(eventId, badgeId);
-      showNotification("Badge type deleted successfully!", "success");
+      showNotification(t("expressEvent.badgeTypeDeletedSuccess"), "success");
 
       // Remove from local state
       setBadges((prev) => prev.filter((_, i) => i !== index));
@@ -923,7 +925,7 @@ const MainData = ({
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
-        "Failed to delete badge";
+        t("expressEvent.failedDeleteBadge");
       showNotification(errorMessage, "error");
     } finally {
       // Clear loading state
@@ -1080,7 +1082,7 @@ const MainData = ({
             eventId,
             error,
           );
-          showNotification("Failed to load event data", "error");
+          showNotification(t("expressEvent.failedLoadEventData"), "error");
         } finally {
           setIsLoading(false);
         }
@@ -1104,7 +1106,7 @@ const MainData = ({
 
   const handleEventType = () => {
     if (!eventguesttype.trim()) {
-      showNotification("Guest type name required", "error");
+      showNotification(t("expressEvent.guestTypeNameRequired"), "error");
       return;
     }
 
@@ -1130,7 +1132,7 @@ const MainData = ({
       }));
     }
 
-    showNotification("Guest type added!", "success");
+    showNotification(t("expressEvent.guestTypeAdded"), "success");
   };
 
   const handleAddUserType = async () => {
@@ -1139,7 +1141,7 @@ const MainData = ({
       return;
     }
     if (!newGuestType?.trim()) {
-      showNotification("Guest type name required", "error");
+      showNotification(t("expressEvent.guestTypeNameRequired"), "error");
       return;
     }
 
@@ -1154,14 +1156,14 @@ const MainData = ({
         }
         return { ...prev, guestTypes: [...current, trimmed] };
       });
-      showNotification("Guest type added. Click Next to save.", "success");
+      showNotification(t("expressEvent.guestTypeAddedClickNext"), "success");
       setNewGuestType("");
       return;
     }
 
     try {
       await createBadgeSimple(eventId, newGuestType.trim(), false);
-      showNotification("Guest type added successfully!", "success");
+      showNotification(t("expressEvent.guestTypeAddedSuccess"), "success");
       setNewGuestType("");
       await fetchBadgeApi();
     } catch (error: any) {
@@ -1170,7 +1172,7 @@ const MainData = ({
         error?.response?.data?.message ||
         error?.response?.data?.error ||
         error?.message ||
-        "Failed to add guest type.";
+        t("expressEvent.failedAddGuestType");
       showNotification(errorMessage, "error");
     }
   };
@@ -1234,7 +1236,7 @@ const MainData = ({
 
         // Then set this badge as default
         await setDefaultBadge(eventId, badgeId);
-        showNotification("Default badge updated successfully!", "success");
+        showNotification(t("expressEvent.defaultBadgeUpdatedSuccess"), "success");
       }
 
       // Refresh badges to get updated default status
@@ -1244,7 +1246,7 @@ const MainData = ({
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
-        "Failed to set default badge";
+        t("expressEvent.failedSetDefaultBadge");
       showNotification(errorMessage, "error");
     } finally {
       setTogglingDefaultBadgeId(null);
@@ -1266,7 +1268,7 @@ const MainData = ({
       const response = await updateEventById(eventId, fd);
       console.log("Event converted to Advanced:", response.data);
 
-      showNotification("Event successfully converted to Advanced", "success");
+      showNotification(t("expressEvent.eventConvertedAdvanced"), "success");
 
       // Close modal
       setShowConvertToAdvancedModal(false);
@@ -1280,7 +1282,7 @@ const MainData = ({
       const errorMessage =
         error?.response?.data?.message ||
         error?.response?.data?.error ||
-        "Failed to convert event to Advanced";
+        t("expressEvent.failedConvertAdvanced");
       showNotification(errorMessage, "error");
     } finally {
       setIsConverting(false);
@@ -1295,7 +1297,7 @@ const MainData = ({
       {isLoading && (
         <div className="flex items-center justify-center py-8">
           <Loader2 size={24} className="animate-spin text-teal-500" />
-          <span className="ml-2 text-gray-600">Loading event data...</span>
+          <span className="ml-2 text-gray-600">{t("expressEvent.loadingEventData")}</span>
         </div>
       )}
 
@@ -1305,7 +1307,7 @@ const MainData = ({
           <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium text-gray-900">
-                Crop Image (Drag to adjust)
+                {t("expressEvent.cropImageDrag")}
               </h3>
               <button
                 onClick={cancelCrop}
@@ -1379,8 +1381,7 @@ const MainData = ({
                 )}
               </div>
               <p className="text-sm text-gray-500 mt-2 text-center">
-                Drag the square to adjust cropping. The image will be cropped to
-                a square.
+                {t("expressEvent.dragSquareToCrop")}
               </p>
             </div>
 
@@ -1389,13 +1390,13 @@ const MainData = ({
                 onClick={cancelCrop}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("expressEvent.cancel")}
               </button>
               <button
                 onClick={handleCropComplete}
                 className="px-4 py-2 bg-teal-500 hover:bg-teal-600 rounded-lg text-white transition-colors"
               >
-                Apply Crop
+                {t("expressEvent.applyCrop")}
               </button>
             </div>
           </div>
@@ -1457,7 +1458,7 @@ const MainData = ({
         {/* Event Logo Section */}
         <div className="w-full border rounded-2xl border-gray-200 p-4 sm:p-5">
           <label className="block text-xs font-normal text-neutral-700 mb-2">
-            Event Logo
+            {t("expressEvent.eventLogo")}
           </label>
           <div
             className={`
@@ -1514,12 +1515,12 @@ const MainData = ({
                 </div>
                 <p className="text-xs sm:text-sm text-neutral-500 mb-1">
                   <span className="font-medium text-[#202242]">
-                    Click to upload
+                    {t("expressEvent.clickToUpload")}
                   </span>{" "}
-                  or drag and drop
+                  {t("expressEvent.orDragAndDrop")}
                 </p>
                 <p className="text-xs text-neutral-500">
-                  Any image format (will be cropped to square)
+                  {t("expressEvent.anyImageFormat")}
                 </p>
               </>
             )}
@@ -1545,7 +1546,7 @@ const MainData = ({
                 title="Registration waits for admin approval or rejection."
               >
                 <span className="text-sm font-medium text-gray-700">
-                  Require approval
+                  {t("expressEvent.requireApproval")}
                 </span>
                 <Info size={17} className="text-gray-400 flex-shrink-0" />
               </button>
@@ -1602,7 +1603,7 @@ const MainData = ({
                 title="Blocks duplicate entries automatically."
               >
                 <span className="text-sm font-medium text-gray-700">
-                  Duplicate registration
+                  {t("expressEvent.duplicateRegistration")}
                 </span>
                 <Info size={17} className="text-gray-400 flex-shrink-0" />
               </button>
@@ -1657,7 +1658,7 @@ const MainData = ({
                 title="Allow attendees to register via a public link."
               >
                 <span className="text-sm font-medium text-gray-700">
-                  Enable Registration Link
+                  {t("expressEvent.enableRegistrationLink")}
                 </span>
                 <Info size={17} className="text-gray-400 flex-shrink-0" />
               </button>
@@ -1706,7 +1707,7 @@ const MainData = ({
                 title="Send email notifications for registrations and updates."
               >
                 <span className="text-sm font-medium text-gray-700">
-                  Enable email
+                  {t("expressEvent.enableEmail")}
                 </span>
                 <Info size={17} className="text-gray-400 flex-shrink-0" />
               </button>
@@ -1746,11 +1747,11 @@ const MainData = ({
         <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Event Name <span className="text-red-500">*</span>
+              {t("expressEvent.eventName")} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              placeholder="Event name"
+              placeholder={t("expressEvent.eventNamePlaceholder")}
               value={formData.eventName}
               onChange={(e) => handleInputChange("eventName", e.target.value)}
               className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 text-sm transition-colors ${
@@ -1768,10 +1769,10 @@ const MainData = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Description <span className="text-red-500">*</span>
+              {t("expressEvent.description")} <span className="text-red-500">*</span>
             </label>
             <textarea
-              placeholder="Enter a description..."
+              placeholder={t("expressEvent.descriptionPlaceholder")}
               value={formData.description}
               onChange={(e) => handleInputChange("description", e.target.value)}
               rows={3}
@@ -1791,7 +1792,7 @@ const MainData = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date From <span className="text-red-500">*</span>
+                {t("expressEvent.dateFrom")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -1820,7 +1821,7 @@ const MainData = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                To <span className="text-red-500">*</span>
+                {t("expressEvent.to")} <span className="text-red-500">*</span>
               </label>
               <input
                 type="date"
@@ -1850,7 +1851,7 @@ const MainData = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Time From
+                {t("expressEvent.timeFrom")}
               </label>
               <input
                 type="time"
@@ -1861,7 +1862,7 @@ const MainData = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                To
+                {t("expressEvent.to")}
               </label>
               <input
                 type="time"
@@ -1874,12 +1875,12 @@ const MainData = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Location <span className="text-red-500">*</span>
+              {t("expressEvent.location")} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
                 type="text"
-                placeholder="Event location"
+                placeholder={t("expressEvent.eventLocationPlaceholder")}
                 value={formData.location}
                 onChange={(e) => handleInputChange("location", e.target.value)}
                 className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-lg pr-10 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors ${
@@ -1900,7 +1901,7 @@ const MainData = ({
           {/* Font for registration page and badge – font_name used as font-family in user registration and print badges. Custom dropdown with fixed max height so list doesn't fill screen. */}
           <div ref={fontDropdownRef} className="relative">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Font (registration & badge)
+              {t("expressEvent.fontRegistrationBadge")}
             </label>
             <button
               type="button"
@@ -1908,7 +1909,7 @@ const MainData = ({
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors bg-white text-left flex items-center justify-between gap-2"
             >
               <span>
-                {EVENT_FONT_OPTIONS.find((o) => o.value === (formData.fontFamily ?? ""))?.label ?? "Default (app font)"}
+                {(() => { const opt = EVENT_FONT_OPTIONS.find((o) => o.value === (formData.fontFamily ?? "")); return opt?.labelKey ? t(`expressEvent.${opt.labelKey}`) : opt?.label ?? t("expressEvent.defaultAppFont"); })()}
               </span>
               <ChevronDown className={`w-4 h-4 text-gray-500 shrink-0 transition-transform ${fontDropdownOpen ? "rotate-180" : ""}`} />
             </button>
@@ -1930,22 +1931,22 @@ const MainData = ({
                         (formData.fontFamily ?? "") === opt.value ? "bg-teal-50 text-teal-700 font-medium" : "text-gray-700"
                       }`}
                     >
-                      {opt.label}
+                      {opt.labelKey ? t(`expressEvent.${opt.labelKey}`) : opt.label}
                     </button>
                   ))}
                 </div>
               </div>
             )}
             <p className="mt-1 text-xs text-gray-500">
-              Applied to the public registration form and printed badges. Default uses the app font.
+              {t("expressEvent.fontDescription")}
             </p>
           </div>
 
           {/* Registration Limit – optional, both express & advance */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Registration Limit{" "}
-              <span className="text-gray-400">(optional)</span>
+              {t("expressEvent.registrationLimit")}{" "}
+              <span className="text-gray-400">({t("expressEvent.optional")})</span>
             </label>
             <div className="relative">
               <input
@@ -1972,7 +1973,7 @@ const MainData = ({
           {/* Language Support */}
           <div className="space-y-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Language support
+              {t("expressEvent.languageSupport")}
             </label>
             <div>
               <select
@@ -1985,14 +1986,14 @@ const MainData = ({
                 }
                 className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
               >
-                <option value="single">Single</option>
-                <option value="dual">Dual</option>
+                <option value="single">{t("expressEvent.single")}</option>
+                <option value="dual">{t("expressEvent.dual")}</option>
               </select>
             </div>
             {formData.languageSupport === "single" ? (
               <div>
                 <label className="block text-xs text-gray-500 mb-1.5">
-                  Primary language
+                  {t("expressEvent.primaryLanguage")}
                 </label>
                 <select
                   value={formData.primaryLanguage ?? "english"}
@@ -2012,7 +2013,7 @@ const MainData = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5">
-                    Primary language
+                    {t("expressEvent.primaryLanguage")}
                   </label>
                   <select
                     value={formData.primaryLanguage ?? "english"}
@@ -2030,7 +2031,7 @@ const MainData = ({
                 </div>
                 <div>
                   <label className="block text-xs text-gray-500 mb-1.5">
-                    Secondary language
+                    {t("expressEvent.secondaryLanguage")}
                   </label>
                   <select
                     value={formData.secondaryLanguage ?? "arabic"}
@@ -2063,7 +2064,7 @@ const MainData = ({
           {/* Primary Color */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Primary Color <span className="text-red-500">*</span>
+              {t("expressEvent.primaryColor")} <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -2080,7 +2081,7 @@ const MainData = ({
           {/* Secondary Color */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Secondary Color <span className="text-red-500">*</span>
+              {t("expressEvent.secondaryColor")} <span className="text-red-500">*</span>
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -2100,7 +2101,7 @@ const MainData = ({
           <div>
             <div className="flex items-center gap-2 mb-2">
               <label className="block text-sm font-medium text-gray-700">
-                Add Guest Types <span className="text-red-500">*</span>
+                {t("expressEvent.addGuestTypes")} <span className="text-red-500">*</span>
               </label>
               {/* <Info size={14} className="text-gray-400" /> */}
             </div>
@@ -2113,7 +2114,7 @@ const MainData = ({
                     value={newGuestType}
                     onChange={(e) => setNewGuestType(e.target.value)}
                     onKeyPress={handleKeyPress}
-                    placeholder="e.g. Speaker, VIP"
+                    placeholder={t("expressEvent.guestTypePlaceholder")}
                     className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
                   />
                   <button
@@ -2121,7 +2122,7 @@ const MainData = ({
                     className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
                   >
                     <Plus size={16} />
-                    Add
+                    {t("expressEvent.add")}
                   </button>
                 </div>
               </div>
@@ -2132,7 +2133,7 @@ const MainData = ({
                   value={eventguesttype}
                   onChange={(e) => setEventguesttype(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="e.g. Speaker, VIP"
+                  placeholder={t("expressEvent.guestTypePlaceholder")}
                   className="flex-1 px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors"
                 />
                 <button
@@ -2140,7 +2141,7 @@ const MainData = ({
                   className="px-4 py-2.5 sm:py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center justify-center gap-2 text-sm text-gray-700 transition-colors"
                 >
                   <Plus size={16} />
-                  Add
+                  {t("expressEvent.add")}
                 </button>
               </div>
             )}
@@ -2154,7 +2155,7 @@ const MainData = ({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">
-              Guest Types
+              {t("expressEvent.guestTypes")}
             </label>
 
             {isLoadingBadges && (
@@ -2163,7 +2164,7 @@ const MainData = ({
                   size={16}
                   className="animate-spin text-teal-500 mr-2"
                 />
-                <span className="text-sm text-gray-600">Loading badges...</span>
+                <span className="text-sm text-gray-600">{t("expressEvent.loadingBadges")}</span>
               </div>
             )}
 
@@ -2364,7 +2365,7 @@ const MainData = ({
                 : "text-slate-800 border-gray-300 hover:bg-gray-50"
             }`}
         >
-          ← Previous
+          {t("expressEvent.previous")}
         </button>
         <button
           onClick={handleNext}
@@ -2379,12 +2380,12 @@ const MainData = ({
           {isLoading ? (
             <>
               <Loader2 size={16} className="animate-spin" />
-              {currentStep === totalSteps - 1 ? "Creating..." : "Loading..."}
+              {currentStep === totalSteps - 1 ? t("expressEvent.creating") : t("expressEvent.loading")}
             </>
           ) : currentStep === totalSteps - 1 ? (
-            "Create Event"
+            t("expressEvent.createEvent")
           ) : (
-            "Next →"
+            t("expressEvent.next")
           )}
         </button>
       </div>
@@ -2397,7 +2398,7 @@ const MainData = ({
             className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 p-4 sm:p-6 bg-gray-50 rounded-2xl transition-colors"
           >
             <span className="text-center sm:text-left">
-              Can't find what you're looking for?
+              {t("expressEvent.cantFindLooking")}
             </span>
             <ChevronLeft className="rotate-90" size={14} />
           </button>
@@ -2416,16 +2417,13 @@ const MainData = ({
             </div>
 
             <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
-              Convert to Advanced Event?
+              {t("expressEvent.convertToAdvancedTitle")}
             </h3>
             <p className="text-sm text-gray-600 text-center mb-6">
-              Are you sure you want to convert this Express event to an Advanced
-              event? This will unlock additional features and customization
-              options.
+              {t("expressEvent.convertToAdvancedDescription")}
             </p>
             <p className="text-xs text-gray-500 text-center mb-6">
-              <strong>Note:</strong> Once converted to Advanced, you cannot
-              switch back to Express. This action is permanent.
+              <strong>{t("expressEvent.note")}:</strong> {t("expressEvent.convertToAdvancedNote")}
             </p>
 
             <div className="flex space-x-3">
@@ -2434,7 +2432,7 @@ const MainData = ({
                 disabled={isConverting}
                 className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {t("expressEvent.cancel")}
               </button>
               <button
                 onClick={handleConvertToAdvanced}
@@ -2444,10 +2442,10 @@ const MainData = ({
                 {isConverting ? (
                   <>
                     <Loader2 size={16} className="animate-spin" />
-                    Converting...
+                    {t("expressEvent.converting")}
                   </>
                 ) : (
-                  "Submit"
+                  t("expressEvent.submit")
                 )}
               </button>
             </div>

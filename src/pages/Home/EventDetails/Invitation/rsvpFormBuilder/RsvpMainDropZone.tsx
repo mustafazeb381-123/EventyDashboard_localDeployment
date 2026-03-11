@@ -1,6 +1,7 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { Edit, GripVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface RsvpMainDropZoneProps {
   children?: React.ReactNode;
@@ -11,6 +12,7 @@ export const RsvpMainDropZone: React.FC<RsvpMainDropZoneProps> = ({
   children,
   isEmpty = false,
 }) => {
+  const { t } = useTranslation("dashboard");
   const { setNodeRef, isOver } = useDroppable({
     id: "rsvp-main-drop-zone",
   });
@@ -28,18 +30,17 @@ export const RsvpMainDropZone: React.FC<RsvpMainDropZoneProps> = ({
         <div className="text-center py-16 bg-gradient-to-br from-indigo-50 to-slate-50 rounded-lg border-2 border-dashed border-indigo-300 relative overflow-hidden">
           <div className="relative flex flex-col items-center">
             <p className="text-gray-700 font-semibold text-lg mb-2">
-              Your RSVP form
+              {t("invitation.rsvpBuilder.yourRsvpForm")}
             </p>
             <p className="text-sm text-gray-600 mb-4 max-w-md">
-              Add layout (Container, Row, Column) or fields from the left panel.
-              Select a field to customize label and placeholder.
+              {t("invitation.rsvpBuilder.rsvpFormDescription")}
             </p>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <GripVertical size={16} />
-              <span>Drag to reorder</span>
+              <span>{t("invitation.rsvpBuilder.dragToReorder")}</span>
               <span>•</span>
               <Edit size={16} />
-              <span>Click to edit</span>
+              <span>{t("invitation.rsvpBuilder.clickToEdit")}</span>
             </div>
           </div>
         </div>

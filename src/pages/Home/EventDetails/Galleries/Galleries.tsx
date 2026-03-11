@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Trash2,
   Plus,
@@ -47,6 +48,7 @@ const formatBytes = (bytes: number, decimals = 2) => {
 };
 
 function Galleries() {
+  const { t } = useTranslation("dashboard");
   const { id: eventId, galleryId } = useParams<{
     id: string;
     galleryId: string;
@@ -470,13 +472,13 @@ function Galleries() {
       <div className="w-32 h-32 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
         <Upload className="w-12 h-12 text-blue-400" />
       </div>
-      <h3 className="text-xl font-bold text-gray-800 mb-2">No images yet</h3>
+      <h3 className="text-xl font-bold text-gray-800 mb-2">{t("galleries.noImagesYet")}</h3>
       <p className="text-sm text-gray-500 mb-6 text-center max-w-xs">
-        Start building your gallery by uploading your first photos
+        {t("galleries.startBuildingGallery")}
       </p>
       <label className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl hover:from-blue-700 hover:to-blue-800 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center gap-2 font-medium">
         <Plus className="w-5 h-5" />
-        Add Images
+        {t("galleries.addImages")}
         <input
           type="file"
           multiple
@@ -551,7 +553,7 @@ function Galleries() {
             </button>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                {gallery?.title || "Gallery"}
+                {gallery?.title || t("galleries.gallery")}
               </h1>
               {gallery?.description && (
                 <p className="text-gray-500 text-sm mt-0.5">
@@ -564,7 +566,7 @@ function Galleries() {
           {/* Stats */}
           <div className="hidden sm:flex items-center gap-3 text-sm text-gray-500">
             <span className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full font-medium">
-              {images.length} {images.length === 1 ? "Photo" : "Photos"}
+              {images.length} {images.length === 1 ? t("galleries.photo") : t("galleries.photos")}
             </span>
           </div>
         </div>
@@ -583,11 +585,11 @@ function Galleries() {
                     onChange={handleSelectAll}
                     className="w-5 h-5 text-blue-600 rounded-md border-gray-300 cursor-pointer focus:ring-blue-500"
                   />
-                  <span className="text-gray-700 font-medium">Select All</span>
+                  <span className="text-gray-700 font-medium">{t("galleries.selectAll")}</span>
                 </label>
                 {selectedCount > 0 && (
                   <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
-                    {selectedCount} selected
+                    {selectedCount} {t("galleries.selected")}
                   </span>
                 )}
               </div>
@@ -599,12 +601,12 @@ function Galleries() {
                     className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-5 py-2.5 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md font-medium"
                   >
                     <Eye className="w-5 h-5" />
-                    <span>View All Images</span>
+                    <span>{t("galleries.viewAllImages")}</span>
                   </button>
                 )}
                 <label className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-5 py-2.5 rounded-xl cursor-pointer transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 font-medium">
                   <Plus className="w-5 h-5" />
-                  <span>Add Images</span>
+                  <span>{t("galleries.addImages")}</span>
                   <input
                     type="file"
                     multiple
@@ -641,14 +643,14 @@ function Galleries() {
                           {file.size}
                         </span>
                         {file.status === "failed" ? (
-                          <span className="text-xs text-red-600">Failed</span>
+                          <span className="text-xs text-red-600">{t("galleries.failed")}</span>
                         ) : file.status === "compressing" ? (
                           <span className="text-xs text-yellow-600">
-                            Compressing...
+                            {t("galleries.compressing")}
                           </span>
                         ) : (
                           <span className="text-xs text-blue-600">
-                            Uploading...
+                            {t("galleries.uploading")}
                           </span>
                         )}
                       </div>
@@ -674,7 +676,7 @@ function Galleries() {
                       {brokenImageIds.has(image.id) ? (
                         <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200 text-gray-500 p-2">
                           <ImageOff className="w-10 h-10 mb-1 shrink-0" />
-                          <span className="text-xs text-center line-clamp-2 mb-1">Image unavailable</span>
+                          <span className="text-xs text-center line-clamp-2 mb-1">{t("galleries.imageUnavailable")}</span>
                           <a
                             href={image.url}
                             target="_blank"
@@ -768,7 +770,7 @@ function Galleries() {
                 </button>
 
                 <span className="px-4 text-gray-600">
-                  Page {currentPage} of {totalPages}
+                  {t("galleries.pageOf", { current: currentPage, total: totalPages })}
                 </span>
 
                 <button
@@ -801,7 +803,7 @@ function Galleries() {
               </div>
 
               <h3 className="text-lg font-semibold text-center text-gray-900 mb-6">
-                Delete image?
+                {t("galleries.deleteImageQuestion")}
               </h3>
 
               <div className="flex space-x-3">
@@ -809,13 +811,13 @@ function Galleries() {
                   onClick={() => setShowDeleteModal(false)}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
                 >
-                  Cancel
+                  {t("galleries.cancel")}
                 </button>
                 <button
                   onClick={handleDeleteConfirm}
                   className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium cursor-pointer"
                 >
-                  Delete
+                  {t("galleries.delete")}
                 </button>
               </div>
             </div>
@@ -856,8 +858,8 @@ function Galleries() {
                 {images[currentImageIndex] && brokenImageIds.has(images[currentImageIndex].id) ? (
                   <div className="max-w-full max-h-[75vh] flex flex-col items-center justify-center bg-gray-800/80 rounded-lg p-12 min-h-[300px]">
                     <ImageOff className="w-20 h-20 text-gray-400 mb-3" />
-                    <p className="text-gray-400 text-sm">Image unavailable in page</p>
-                    <p className="text-gray-500 text-xs mt-1">Server may block embed. Open link in a new tab to view.</p>
+                    <p className="text-gray-400 text-sm">{t("galleries.imageUnavailableInPage")}</p>
+                    <p className="text-gray-500 text-xs mt-1">{t("galleries.serverMayBlockEmbed")}</p>
                     <a
                       href={images[currentImageIndex]?.url}
                       target="_blank"
@@ -944,7 +946,7 @@ function Galleries() {
                 className="flex items-center gap-2 px-5 py-2.5 bg-red-500/90 hover:bg-red-600 text-white rounded-lg transition-colors text-sm font-medium shadow-lg backdrop-blur-sm"
               >
                 <Trash2 size={18} />
-                <span>Delete Image</span>
+                <span>{t("galleries.deleteImage")}</span>
               </button>
             </div>
           </div>

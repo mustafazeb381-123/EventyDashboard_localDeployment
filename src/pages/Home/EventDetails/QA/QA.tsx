@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Lock, Check, X, User2, ThumbsUp } from "lucide-react";
 import {
@@ -38,6 +39,7 @@ const Qa: React.FC = () => {
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get("eventId");
   const agendaIdFromQuery = searchParams.get("agendaId");
+  const { t } = useTranslation("dashboard");
 
   const [activeTab, setActiveTab] = useState<"questions" | "requests">("questions");
   const [lockAsks, setLockAsks] = useState(false);
@@ -93,7 +95,7 @@ const Qa: React.FC = () => {
         }
       } catch (error) {
         console.error("Error fetching agendas:", error);
-        showNotification("Failed to load sessions", "error");
+        showNotification(t("qa.failedToLoadSessions"), "error");
         setAgendas([]);
         setSelectedAgendaId(null);
       } finally {
@@ -236,7 +238,7 @@ const Qa: React.FC = () => {
     } catch (error: any) {
       console.error("Error fetching questions:", error);
       if (error?.response?.status !== 404) {
-        showNotification("Failed to load questions", "error");
+        showNotification(t("qa.failedToLoadQuestions"), "error");
       }
       setQuestions([]);
       setPendingCount(0);
@@ -315,7 +317,7 @@ const Qa: React.FC = () => {
     // Use question's agenda_id if "All Sessions" is selected, otherwise use selectedAgendaId
     const agendaId = selectedAgendaId || question.agenda_id;
     if (!agendaId) {
-      showNotification("Unable to determine session for this question", "error");
+      showNotification(t("qa.unableToDetermineSession"), "error");
       return;
     }
 
@@ -327,12 +329,12 @@ const Qa: React.FC = () => {
         question.id,
         "accepted"
       );
-      showNotification("Question has been accepted", "success");
+      showNotification(t("qa.questionAccepted"), "success");
       fetchQuestions();
     } catch (error: any) {
       console.error("Error accepting question:", error);
       showNotification(
-        error?.response?.data?.message || "Failed to accept question",
+        error?.response?.data?.message || t("qa.failedToAccept"),
         "error"
       );
     } finally {
@@ -347,7 +349,7 @@ const Qa: React.FC = () => {
     // Use question's agenda_id if "All Sessions" is selected, otherwise use selectedAgendaId
     const agendaId = selectedAgendaId || question.agenda_id;
     if (!agendaId) {
-      showNotification("Unable to determine session for this question", "error");
+      showNotification(t("qa.unableToDetermineSession"), "error");
       return;
     }
 
@@ -359,12 +361,12 @@ const Qa: React.FC = () => {
         question.id,
         "rejected"
       );
-      showNotification("Question has been rejected", "error");
+      showNotification(t("qa.questionRejected"), "error");
       fetchQuestions();
     } catch (error: any) {
       console.error("Error rejecting question:", error);
       showNotification(
-        error?.response?.data?.message || "Failed to reject question",
+        error?.response?.data?.message || t("qa.failedToReject"),
         "error"
       );
     } finally {
@@ -429,7 +431,7 @@ const Qa: React.FC = () => {
       }
 
       if (allPendingQuestions.length === 0) {
-        showNotification("No pending questions to accept", "error");
+        showNotification(t("qa.noPendingQuestions"), "error");
         setIsAcceptingAll(false);
         return;
       }
@@ -443,7 +445,7 @@ const Qa: React.FC = () => {
           questionIds,
           "accepted"
         );
-        showNotification(`${allPendingQuestions.length} question(s) has been accepted`, "success");
+        showNotification(`${allPendingQuestions.length} ${t("qa.questionsAccepted")}`, "success");
       } else {
         // For "All Sessions", accept pending questions from each agenda
         let totalAccepted = 0;
@@ -472,9 +474,9 @@ const Qa: React.FC = () => {
           }
         }
         if (totalAccepted > 0) {
-          showNotification(`${totalAccepted} question(s) has been accepted`, "success");
+          showNotification(`${totalAccepted} ${t("qa.questionsAccepted")}`, "success");
         } else {
-          showNotification("No pending questions to accept", "error");
+          showNotification(t("qa.noPendingQuestions"), "error");
         }
       }
 
@@ -482,7 +484,7 @@ const Qa: React.FC = () => {
     } catch (error: any) {
       console.error("Error accepting all questions:", error);
       showNotification(
-        error?.response?.data?.message || "Failed to accept all questions",
+        error?.response?.data?.message || t("qa.failedToAcceptAll"),
         "error"
       );
     } finally {
@@ -504,14 +506,14 @@ const Qa: React.FC = () => {
 
   // Get display name for question
   const getDisplayName = (question: Question) => {
-    if (!question.display_name) return "Anonymous";
+    if (!question.display_name) return t("qa.anonymous");
     // Check if name exists and has content (not just whitespace)
     const userName = question.user?.name?.trim();
     if (userName && userName.length > 0) {
       return userName;
     }
     // Only fall back to email if name is not available or is just whitespace
-    return question.user?.email || "Anonymous";
+    return question.user?.email || t("qa.anonymous");
   };
 
   return (
@@ -533,7 +535,7 @@ const Qa: React.FC = () => {
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Communication</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">{t("qa.communication")}</h2>
 
         <div className="flex items-center gap-2 mt-3 sm:mt-0">
           <select
@@ -548,10 +550,10 @@ const Qa: React.FC = () => {
             className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoadingAgendas ? (
-              <option value="">Loading sessions...</option>
+              <option value="">{t("qa.loadingSessions")}</option>
             ) : (
               <>
-                <option value="">All Sessions</option>
+                <option value="">{t("qa.allSessions")}</option>
                 {(agendas || []).map((a) => (
                   <option key={a.id} value={a.id}>
                     {a.title}
@@ -564,7 +566,7 @@ const Qa: React.FC = () => {
           {/* Lock Asks Toggle */}
           <label className="flex items-center gap-2 px-3 py-3 rounded-lg text-sm cursor-pointer transition bg-blue-50">
             <Lock className="w-4 h-4 text-blue-700" />
-            <span className="text-gray-700">Lock Asks</span>
+            <span className="text-gray-700">{t("qa.lockAsks")}</span>
             <div className="relative">
               <input
                 type="checkbox"
@@ -617,7 +619,7 @@ const Qa: React.FC = () => {
                 disabled={isLoadingQuestions || isAcceptingAll}
                 className="text-sm bg-green-500 hover:bg-green-600 text-white px-3 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isAcceptingAll ? "Accepting..." : "Accept All Questions"}
+                {isAcceptingAll ? t("qa.accepting") : t("qa.acceptAllQuestions")}
               </Button>
             </>
           )}
@@ -634,7 +636,7 @@ const Qa: React.FC = () => {
           }`}
           onClick={() => setActiveTab("questions")}
         >
-          Questions
+          {t("qa.questions")}
         </button>
         <button
           className={`px-6 py-2 text-sm font-medium flex items-center gap-1 rounded-md transition-colors ${
@@ -644,7 +646,7 @@ const Qa: React.FC = () => {
           }`}
           onClick={() => setActiveTab("requests")}
         >
-          Requests
+          {t("qa.requests")}
           {pendingCount > 0 && (
           <span className="ml-1 bg-pink-100 text-pink-600 text-xs font-semibold px-2 py-0.5 rounded-full">
               {pendingCount}
@@ -681,16 +683,16 @@ const Qa: React.FC = () => {
           ) : questions.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               {!eventId
-                ? "Please select an event"
+                ? t("qa.pleaseSelectEvent")
                 : !selectedAgendaId
-                ? "No questions found across all sessions"
-                : "No questions found"}
+                ? t("qa.noQuestionsAllSessions")
+                : t("qa.noQuestionsFound")}
             </div>
           ) : (
             questions.map((q) => {
               const sessionName =
                 agendas.find((a) => a.id === q.agenda_id)?.title ||
-                "Session Name";
+                t("qa.sessionName");
               
               return (
               <div
@@ -727,15 +729,15 @@ const Qa: React.FC = () => {
 
                   {q.question_status === "pending" ? (
                     <span className="text-xs bg-blue-50 font-medium text-blue-700 px-4 py-2 rounded-full flex items-center gap-1">
-                    <Check className="w-4 h-4" /> Check Answered
+                    <Check className="w-4 h-4" /> {t("qa.checkAnswered")}
                   </span>
                   ) : q.question_status === "accepted" ? (
                     <span className="text-green-600 text-xs font-medium px-3 py-1 rounded-full bg-green-50">
-                      Accepted
+                      {t("qa.accepted")}
                   </span>
                 ) : (
                     <span className="text-red-600 text-xs font-medium px-3 py-1 rounded-full bg-red-50">
-                      Rejected
+                      {t("qa.rejected")}
                   </span>
                 )}
                  </div>
@@ -774,16 +776,16 @@ const Qa: React.FC = () => {
           ) : questions.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
               {!eventId
-                ? "Please select an event"
+                ? t("qa.pleaseSelectEvent")
                 : !selectedAgendaId
-                ? "No pending questions across all sessions"
-                : "No pending questions"}
+                ? t("qa.noPendingAllSessions")
+                : t("qa.noPendingQuestions")}
             </div>
           ) : (
             questions.map((r) => {
               const sessionName =
                 agendas.find((a) => a.id === r.agenda_id)?.title ||
-                "Session Name";
+                t("qa.sessionName");
               
               return (
               <div
@@ -816,10 +818,10 @@ const Qa: React.FC = () => {
                     className="text-sm px-4 py-2 text-red-600 border border-red-200 hover:bg-red-100 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isRejectingQuestion === r.id ? (
-                      "Rejecting..."
+                      t("qa.rejecting")
                     ) : (
                       <>
-                  <X className="w-4 h-4" /> Reject
+                  <X className="w-4 h-4" /> {t("qa.reject")}
                       </>
                     )}
                 </Button>
@@ -829,10 +831,10 @@ const Qa: React.FC = () => {
                     className="hover:bg-green-100 text-green-600 border border-green-200 text-sm px-4 py-2 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isAcceptingQuestion === r.id ? (
-                      "Accepting..."
+                      t("qa.accepting")
                     ) : (
                       <>
-                  <Check className="w-4 h-4" /> Accept
+                  <Check className="w-4 h-4" /> {t("qa.accept")}
                       </>
                     )}
                 </Button>

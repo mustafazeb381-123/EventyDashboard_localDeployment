@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, Plus, Mail, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,6 +26,7 @@ const mockSenders: Sender[] = [
 const RESEND_COOLDOWN_SEC = 60;
 
 export default function SettingsSenderManagement() {
+  const { t } = useTranslation("settings");
   const navigateTo = useWorkspaceNavigate();
   const params = useParams<{ id?: string }>();
   const eventId = params.id;
@@ -81,8 +83,8 @@ export default function SettingsSenderManagement() {
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "response" in err
-          ? String((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Failed to send verification code")
-          : "Failed to send verification code";
+          ? String((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? t("senderManagement.failedToSendCode"))
+          : t("senderManagement.failedToSendCode");
       setError(msg);
     } finally {
       setRequestLoading(false);
@@ -139,8 +141,8 @@ export default function SettingsSenderManagement() {
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "response" in err
-          ? String((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? "Invalid verification code")
-          : "Invalid verification code";
+          ? String((err as { response?: { data?: { message?: string } } }).response?.data?.message ?? t("senderManagement.invalidCode"))
+          : t("senderManagement.invalidCode");
       setError(msg);
     } finally {
       setVerifyLoading(false);
@@ -193,17 +195,17 @@ export default function SettingsSenderManagement() {
           onClick={() => navigateTo(settingsPath)}
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Settings
+          {t("senderManagement.backToSettings")}
         </Button>
 
         <div className="rounded-2xl border border-gray-200/80 bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h1 className="text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
-                Sender Management
+                {t("senderManagement.title")}
               </h1>
               <p className="mt-1.5 text-sm text-gray-500">
-                Add and manage senders for your emails.
+                {t("senderManagement.description")}
               </p>
             </div>
             <Button
@@ -211,7 +213,7 @@ export default function SettingsSenderManagement() {
               className="bg-blue-600 text-white hover:bg-blue-700"
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add sender
+              {t("senderManagement.addSender")}
             </Button>
           </div>
 
@@ -222,25 +224,25 @@ export default function SettingsSenderManagement() {
             >
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="senderName">Name</Label>
+                  <Label htmlFor="senderName">{t("senderManagement.name")}</Label>
                   <Input
                     id="senderName"
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="Sender name"
+                    placeholder={t("senderManagement.senderName")}
                     className="mt-1"
                   />
                 </div>
                 <div>
-                  <Label htmlFor="senderEmail">Email</Label>
+                  <Label htmlFor="senderEmail">{t("senderManagement.email")}</Label>
                   <Input
                     id="senderEmail"
                     name="email"
                     type="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="sender@example.com"
+                    placeholder={t("senderManagement.senderEmailPlaceholder")}
                     className="mt-1"
                   />
                 </div>
@@ -250,7 +252,7 @@ export default function SettingsSenderManagement() {
                   type="submit"
                   className="bg-blue-600 text-white hover:bg-blue-700"
                 >
-                  Save sender
+                  {t("senderManagement.saveSender")}
                 </Button>
                 <Button
                   type="button"
@@ -260,14 +262,14 @@ export default function SettingsSenderManagement() {
                     setFormData({ name: "", email: "" });
                   }}
                 >
-                  Cancel
+                  {t("senderManagement.cancel")}
                 </Button>
               </div>
             </form>
           )}
 
           <div className="mt-6">
-            <h2 className="text-sm font-medium text-gray-700">Your senders</h2>
+            <h2 className="text-sm font-medium text-gray-700">{t("senderManagement.yourSenders")}</h2>
             <ul className="mt-3 divide-y divide-gray-200">
               {senders.map((sender) => (
                 <li
@@ -283,7 +285,7 @@ export default function SettingsSenderManagement() {
                       <p className="text-sm text-gray-500">{sender.email}</p>
                       {sender.isDefault && (
                         <span className="mt-1 inline-block rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
-                          Default
+                          {t("senderManagement.default")}
                         </span>
                       )}
                     </div>
@@ -318,10 +320,10 @@ export default function SettingsSenderManagement() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 id="verification-title" className="text-lg font-semibold text-gray-900">
-              Verify sender
+              {t("senderManagement.verifySender")}
             </h2>
             <p className="mt-1 text-sm text-gray-500">
-              We sent a 6-digit code to <span className="font-medium text-gray-700">{verificationEmail}</span>
+              {t("senderManagement.verificationCodeSent", { email: verificationEmail })}
             </p>
             <div className="mt-4 flex gap-2">
               {codeDigits.map((digit, i) => (
@@ -350,7 +352,7 @@ export default function SettingsSenderManagement() {
                 {verifyLoading ? (
                   <Loader2 className="mx-auto h-4 w-4 animate-spin" />
                 ) : (
-                  "Verify sender"
+                  t("senderManagement.verifySender")
                 )}
               </Button>
               <button
@@ -360,8 +362,8 @@ export default function SettingsSenderManagement() {
                 className="text-sm text-blue-600 hover:underline disabled:text-gray-400"
               >
                 {resendCooldown > 0
-                  ? `Resend verification code (${resendCooldown}s)`
-                  : "Resend verification code"}
+                  ? t("senderManagement.resendVerificationCodeTimer", { seconds: resendCooldown })
+                  : t("senderManagement.resendVerificationCode")}
               </button>
               <Button
                 type="button"
@@ -369,7 +371,7 @@ export default function SettingsSenderManagement() {
                 className="text-gray-600 hover:bg-gray-100"
                 onClick={handleDoLater}
               >
-                Do this later
+                {t("senderManagement.doThisLater")}
               </Button>
             </div>
           </div>

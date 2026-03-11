@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   Check,
@@ -24,7 +25,8 @@ export default function AdvanceUserPermission({
   currentStep, 
   totalSteps 
 }: AdvanceAppVisulizationProps) {
-  const STEP_NAMES = ["App Visualization", "App Sections", "Admin Management"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.userPermission.appVisualization"), t("advance.userPermission.appSections"), t("advance.userPermission.adminManagement")];
 
   // App Sections Visibility state
   const [appSections, setAppSections] = useState({
@@ -169,7 +171,7 @@ export default function AdvanceUserPermission({
               size={20} 
               onClick={onPrevious}
             />
-            <h1 className="text-2xl font-semibold text-gray-800">Advanced Event</h1>
+            <h1 className="text-2xl font-semibold text-gray-800">{t("advance.userPermission.advancedEvent")}</h1>
           </div>
 
           {/* Step Indicator - USE DYNAMIC STEPS */}
@@ -222,9 +224,9 @@ export default function AdvanceUserPermission({
         </div>
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>Home</span>
+          <span>{t("advance.userPermission.home")}</span>
           <span>›</span>
-          <span className="text-gray-700">Advanced Event</span>
+          <span className="text-gray-700">{t("advance.userPermission.advancedEvent")}</span>
         </div>
       </div>
 
@@ -265,7 +267,7 @@ export default function AdvanceUserPermission({
               
               {isLoading ? (
                 <div className="text-center py-8 text-gray-500">
-                  Loading sections...
+                  {t("advance.userPermission.loadingSections")}
                 </div>
               ) : (
                 <>
@@ -299,7 +301,7 @@ export default function AdvanceUserPermission({
                     ))}
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Unchecked sections will be hidden in the app
+                    {t("advance.userPermission.uncheckedSectionsNote")}
                   </p>
                 </>
               )}
@@ -321,7 +323,7 @@ export default function AdvanceUserPermission({
               disabled={isSaving || isLoading}
               className="bg-indigo-950 text-white px-8 py-3 rounded-lg font-medium hover:bg-indigo-900 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSaving ? "Saving..." : "Next"}
+              {isSaving ? t("advance.userPermission.saving") : t("advance.userPermission.next")}
               {!isSaving && <span>→</span>}
             </button>
           </div>

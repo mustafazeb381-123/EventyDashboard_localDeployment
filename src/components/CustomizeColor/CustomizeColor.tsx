@@ -1,6 +1,8 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 const CustomizeColorPicker = () => {
+  const { t } = useTranslation("common");
   const [colors, setColors] = useState({
     primary: "#202242",
     secondary: "#FB64B6",
@@ -18,7 +20,7 @@ const CustomizeColorPicker = () => {
 
       {/* Primary Color */}
       <div className="flex items-center justify-between mb-4">
-        <label className="text-sm text-gray-600">Primary Color</label>
+        <label className="text-sm text-gray-600">{t("primaryColor")}</label>
         <div className="flex items-center gap-3">
           <div className="relative">
             <input
@@ -40,7 +42,7 @@ const CustomizeColorPicker = () => {
 
       {/* Secondary Color */}
       <div className="flex items-center justify-between">
-        <label className="text-sm text-gray-600">Secondary Color</label>
+        <label className="text-sm text-gray-600">{t("secondaryColor")}</label>
         <div className="flex items-center gap-3">
           <div className="relative">
             <input

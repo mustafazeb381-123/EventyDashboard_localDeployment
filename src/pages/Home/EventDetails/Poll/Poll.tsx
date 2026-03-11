@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { Loader2, Plus, Trash2, Pencil, BarChart3, Power } from "lucide-react";
 
@@ -72,6 +73,7 @@ const PollPage = () => {
   const navigateTo = useWorkspaceNavigate();
   const [searchParams] = useSearchParams();
   const eventId = searchParams.get("eventId");
+  const { t } = useTranslation("dashboard");
 
   const [agendas, setAgendas] = useState<AgendaLite[]>([]);
   const [selectedAgendaId, setSelectedAgendaId] = useState<number | null>(null);
@@ -143,7 +145,7 @@ const PollPage = () => {
         }
       } catch (error) {
         console.error("Error fetching agendas:", error);
-        showNotification("Failed to load sessions", "error");
+        showNotification(t("poll.failedToLoadSessions"), "error");
         setAgendas([]);
         setSelectedAgendaId(null);
       } finally {
@@ -230,7 +232,7 @@ const PollPage = () => {
       console.error("Error fetching polls:", error);
       // Don't show error toast for 404 (no polls yet)
       if (error?.response?.status !== 404) {
-        showNotification("Failed to load polls", "error");
+        showNotification(t("poll.failedToLoadPolls"), "error");
       }
       setPolls([]);
       setTotalCount(0);
@@ -276,7 +278,7 @@ const PollPage = () => {
 
   const submitForm = async () => {
     if (!eventId || !selectedAgendaId) {
-      showNotification("Missing event/agenda context", "error");
+      showNotification(t("poll.missingEventAgendaContext"), "error");
       return;
     }
 
@@ -285,11 +287,11 @@ const PollPage = () => {
       .filter((o) => o.option_text.length > 0);
 
     if (!form.question.trim()) {
-      showNotification("Question is required", "error");
+      showNotification(t("poll.questionRequired"), "error");
       return;
     }
     if (trimmedOptions.length < 2) {
-      showNotification("Please add at least 2 options", "error");
+      showNotification(t("poll.atLeastTwoOptions"), "error");
       return;
     }
 
@@ -311,10 +313,10 @@ const PollPage = () => {
           editingPoll.id,
           payload
         );
-        showNotification("Poll updated", "success");
+        showNotification(t("poll.pollUpdated"), "success");
       } else {
         await createAgendaPoll(eventId, selectedAgendaId, payload);
-        showNotification("Poll created", "success");
+        showNotification(t("poll.pollCreated"), "success");
       }
 
       closeModal();
@@ -337,15 +339,15 @@ const PollPage = () => {
     try {
       if (poll.active) {
         await deactivateAgendaPoll(eventId, selectedAgendaId, poll.id);
-        showNotification("Poll deactivated", "success");
+        showNotification(t("poll.pollDeactivated"), "success");
       } else {
         await activateAgendaPoll(eventId, selectedAgendaId, poll.id);
-        showNotification("Poll activated", "success");
+        showNotification(t("poll.pollActivated"), "success");
       }
       await fetchPolls();
     } catch (error) {
       console.error("Toggle active error:", error);
-      showNotification("Failed to update poll status", "error");
+      showNotification(t("poll.failedToUpdateStatus"), "error");
     }
   };
 
@@ -360,13 +362,13 @@ const PollPage = () => {
     setIsDeletingPoll(true);
     try {
       await deleteAgendaPoll(eventId, selectedAgendaId, pollToDelete.id);
-      showNotification("Poll deleted", "success");
+      showNotification(t("poll.pollDeleted"), "success");
       await fetchPolls();
       setIsDeletePollModalOpen(false);
       setPollToDelete(null);
     } catch (error) {
       console.error("Delete poll error:", error);
-      showNotification("Failed to delete poll", "error");
+      showNotification(t("poll.failedToDeletePoll"), "error");
     } finally {
       setIsDeletingPoll(false);
     }
@@ -399,7 +401,7 @@ const PollPage = () => {
       )}
 
       {/* Page Title */}
-      <h1 className="text-2xl font-semibold text-gray-800 mb-6">Polls</h1>
+      <h1 className="text-2xl font-semibold text-gray-800 mb-6">{t("poll.title")}</h1>
 
       {/* Header Row */}
       <div className="flex items-center justify-between gap-4 mb-6">
@@ -417,7 +419,7 @@ const PollPage = () => {
             disabled={isLoadingAgendas || agendas.length === 0}
             className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-700 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[160px]"
           >
-            <option value="">All Sessions</option>
+            <option value="">{t("poll.allSessions")}</option>
             {(agendas || []).map((a) => (
               <option key={a.id} value={a.id}>
                 {a.title}
@@ -431,7 +433,7 @@ const PollPage = () => {
             className="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 px-4 py-2.5 font-medium"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Create New Poll
+            {t("poll.createNewPoll")}
           </Button>
         </div>
       </div>
@@ -485,14 +487,14 @@ const PollPage = () => {
           selectedAgendaId && (
             <div className="col-span-full bg-gray-50 border border-gray-200 rounded-xl p-8 text-center">
               <div className="text-gray-500 mb-2">
-                No polls for this session yet.
+                {t("poll.noPollsForSession")}
               </div>
               <Button
                 onClick={openCreateModal}
                 className="bg-blue-600 hover:bg-blue-700 text-white mt-2"
               >
                 <Plus className="w-4 h-4 mr-1" />
-                Create First Poll
+                {t("poll.createFirstPoll")}
               </Button>
             </div>
           )}
@@ -500,7 +502,7 @@ const PollPage = () => {
         {(polls || []).map((poll) => {
           const sessionName =
             agendas.find((a) => a.id === poll.agenda_id)?.title ||
-            "Session Name";
+            t("poll.sessionName");
           const questionCount = poll.poll_options?.length || 0;
 
           return (
@@ -512,10 +514,10 @@ const PollPage = () => {
               {/* Top row: Poll Name and question count */}
               <div className="flex items-start justify-between mb-1">
                 <h3 className="text-base font-semibold text-gray-900">
-                  {poll.question || "Poll Name"}
+                  {poll.question || t("poll.pollName")}
                 </h3>
                 <span className="text-sm text-gray-400 shrink-0 ml-2">
-                  {questionCount} {questionCount === 1 ? "option" : "options"}
+                  {questionCount} {questionCount === 1 ? t("poll.option") : t("poll.options")}
                 </span>
               </div>
 
@@ -526,7 +528,7 @@ const PollPage = () => {
 
               {/* Publish toggle */}
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-600">Publish :</span>
+                <span className="text-sm text-gray-600">{t("poll.publish")} :</span>
                 <button
                   className="text-gray-400 hover:text-gray-500"
                   onClick={(e) => e.stopPropagation()}
@@ -581,7 +583,7 @@ const PollPage = () => {
           <div className="bg-white rounded-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">
-                {editingPoll ? "Edit Poll" : "Create Poll"}
+                {editingPoll ? t("poll.editPoll") : t("poll.createPoll")}
               </h2>
               <button
                 onClick={closeModal}
@@ -594,7 +596,7 @@ const PollPage = () => {
             <div className="p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Question
+                  {t("poll.question")}
                 </label>
                 <input
                   value={form.question}
@@ -602,14 +604,14 @@ const PollPage = () => {
                     setForm((p) => ({ ...p, question: e.target.value }))
                   }
                   className="w-full px-3 py-2 border rounded-md"
-                  placeholder="Type the poll question"
+                  placeholder={t("poll.questionPlaceholder")}
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Poll Type
+                    {t("poll.pollType")}
                   </label>
                   <select
                     value={form.poll_type}
@@ -621,8 +623,8 @@ const PollPage = () => {
                     }
                     className="w-full px-3 py-2 border rounded-md"
                   >
-                    <option value="single_answer">Single answer</option>
-                    <option value="multiple_answer">Multiple answers</option>
+                    <option value="single_answer">{t("poll.singleAnswer")}</option>
+                    <option value="multiple_answer">{t("poll.multipleAnswers")}</option>
                   </select>
                 </div>
 
@@ -635,7 +637,7 @@ const PollPage = () => {
                         setForm((p) => ({ ...p, active: e.target.checked }))
                       }
                     />
-                    Active
+                    {t("poll.active")}
                   </label>
                 </div>
               </div>
@@ -643,7 +645,7 @@ const PollPage = () => {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Options
+                    {t("poll.optionsLabel")}
                   </label>
                   <button
                     onClick={() =>
@@ -655,7 +657,7 @@ const PollPage = () => {
                     className="text-sm text-blue-600 hover:text-blue-700"
                     type="button"
                   >
-                    + Add option
+                    + {t("poll.addOption")}
                   </button>
                 </div>
 
@@ -703,17 +705,17 @@ const PollPage = () => {
                 onClick={closeModal}
                 disabled={isSubmitting}
               >
-                Cancel
+                {t("poll.cancel")}
               </Button>
               <Button onClick={submitForm} disabled={isSubmitting}>
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 animate-spin" /> Saving…
+                    <Loader2 className="w-4 h-4 animate-spin" /> {t("poll.saving")}
                   </span>
                 ) : editingPoll ? (
-                  "Save Changes"
+                  t("poll.saveChanges")
                 ) : (
-                  "Create"
+                  t("poll.create")
                 )}
               </Button>
             </div>
@@ -737,7 +739,7 @@ const PollPage = () => {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold mb-2 text-gray-900">
-              Delete poll?
+              {t("poll.deletePollQuestion")}
             </h2>
             <p className="text-sm text-gray-600 mb-6">
               Are you sure you want to delete{" "}
@@ -755,14 +757,14 @@ const PollPage = () => {
                 className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isDeletingPoll}
               >
-                Cancel
+                {t("poll.cancel")}
               </button>
               <button
                 onClick={confirmDeletePoll}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isDeletingPoll}
               >
-                {isDeletingPoll ? "Deleting..." : "Delete"}
+                {isDeletingPoll ? t("poll.deleting") : t("poll.delete")}
               </button>
             </div>
           </div>

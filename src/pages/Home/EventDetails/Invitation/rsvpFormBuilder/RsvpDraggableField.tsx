@@ -1,6 +1,7 @@
 import React from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { GripVertical } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface RsvpDraggableFieldProps {
   fieldId: string;
@@ -14,6 +15,7 @@ export const RsvpDraggableField: React.FC<RsvpDraggableFieldProps> = ({
   children,
   disabled = false,
 }) => {
+  const { t } = useTranslation("dashboard");
   const {
     attributes,
     listeners,
@@ -43,7 +45,7 @@ export const RsvpDraggableField: React.FC<RsvpDraggableFieldProps> = ({
         {...attributes}
         {...listeners}
         className="absolute right-2 top-2 w-7 h-7 flex items-center justify-center rounded-md cursor-grab active:cursor-grabbing bg-white/90 shadow-sm border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-colors z-10"
-        title="Drag to move"
+        title={t("invitation.rsvpBuilder.dragToMove")}
       >
         <GripVertical size={16} />
       </div>

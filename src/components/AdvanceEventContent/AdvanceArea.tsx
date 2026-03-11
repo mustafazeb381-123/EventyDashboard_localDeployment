@@ -16,6 +16,7 @@ import {
   getBadgeType,
 } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
+import { useTranslation } from "react-i18next";
 
 interface AdvanceAreaProps {
   onNext?: (eventId?: string | number) => void;
@@ -78,7 +79,8 @@ function AdvanceArea({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [areaToDelete, setAreaToDelete] = useState<Area | null>(null);
 
-  const STEP_NAMES = ["Speakers", "Exhibitors", "Partners", "Agenda", "Area"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.area.speakers"), t("advance.area.exhibitors"), t("advance.area.partners"), t("advance.area.agenda"), t("advance.area.area")];
   const currentEventId = eventId || localStorage.getItem("create_eventId");
 
   // Fetch badges for user type dropdown
@@ -159,7 +161,7 @@ function AdvanceArea({
       }
     } catch (error) {
       console.error("Error fetching areas:", error);
-      showNotification("Failed to fetch areas", "error");
+      showNotification(t("advance.area.failedToFetchAreas"), "error");
       setAreas([]);
     } finally {
       setLoading(false);
@@ -222,7 +224,7 @@ function AdvanceArea({
       );
 
       if (response.status === 200 || response.status === 204) {
-        showNotification("Area deleted successfully!", "success");
+        showNotification(t("advance.area.deletedSuccess"), "success");
         setIsDeleteModalOpen(false);
         setAreaToDelete(null);
         // Refresh current page to show updated data
@@ -232,7 +234,7 @@ function AdvanceArea({
       }
     } catch (error) {
       console.error("Error deleting area:", error);
-      showNotification("Failed to delete area", "error");
+      showNotification(t("advance.area.failedToDelete"), "error");
       await fetchAreas(currentEventId as string, currentPage);
     } finally {
       setDeleteLoading(null);
@@ -241,7 +243,7 @@ function AdvanceArea({
 
   const handleAddArea = async () => {
     if (!currentEventId) {
-      showNotification("Event ID not found", "error");
+      showNotification(t("advance.area.eventIdNotFound"), "error");
       return;
     }
 
@@ -281,11 +283,11 @@ function AdvanceArea({
           type: "",
         });
         setAddModalOpen(false);
-        showNotification("Area added successfully!", "success");
+        showNotification(t("advance.area.addedSuccess"), "success");
         // Refresh current page to show updated data
         fetchAreas(currentEventId as string, currentPage);
       } else {
-        showNotification("Failed to add area: Invalid response", "error");
+        showNotification(t("advance.area.failedToAddInvalidResponse"), "error");
       }
     } catch (error: any) {
       const errorMessage =
@@ -304,7 +306,7 @@ function AdvanceArea({
 
   const handleSaveEdit = async () => {
     if (!editData || !currentEventId) {
-      showNotification("Edit data or Event ID not found", "error");
+      showNotification(t("advance.area.editDataNotFound"), "error");
       return;
     }
 
@@ -340,7 +342,7 @@ function AdvanceArea({
 
         setEditingRow(null);
         setEditData(null);
-        showNotification("Area updated successfully!", "success");
+        showNotification(t("advance.area.updatedSuccess"), "success");
         // Refresh current page to show updated data
         fetchAreas(currentEventId as string, currentPage);
       } else {
@@ -348,7 +350,7 @@ function AdvanceArea({
       }
     } catch (error) {
       console.error("Error updating area:", error);
-      showNotification("Failed to update area", "error");
+      showNotification(t("advance.area.failedToUpdate"), "error");
       await fetchAreas(currentEventId as string, currentPage);
     } finally {
       setSaveLoading(null);
@@ -441,9 +443,9 @@ function AdvanceArea({
       <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-medium text-gray-900">Area</h1>
+            <h1 className="text-xl font-medium text-gray-900">{t("advance.area.area")}</h1>
             <span className="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-md text-xs font-medium">
-              {areas.length} Area
+              {areas.length} {t("advance.area.area")}
             </span>
           </div>
 
@@ -452,7 +454,7 @@ function AdvanceArea({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Add Area
+            {t("advance.area.addArea")}
           </button>
         </div>
 
@@ -527,7 +529,7 @@ function AdvanceArea({
                     colSpan={6}
                     className="px-4 py-8 text-center text-gray-500"
                   >
-                    No Area found. Add your first Area above.
+                    {t("advance.area.noAreaFound")}
                   </td>
                 </tr>
               ) : (
@@ -650,7 +652,7 @@ function AdvanceArea({
                               disabled={saveLoading === area.id}
                               className="p-1.5 text-gray-500 hover:bg-gray-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Cancel
+                              {t("advance.area.cancel")}
                             </button>
                           </>
                         ) : (
@@ -718,7 +720,7 @@ function AdvanceArea({
             >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">
-                  Add Area
+                  {t("advance.area.addArea")}
                 </h2>
                 <button
                   onClick={() => setAddModalOpen(false)}
@@ -735,7 +737,7 @@ function AdvanceArea({
                   </label>
                   <input
                     type="text"
-                    placeholder="Click here"
+                    placeholder={t("advance.area.clickHere")}
                     value={newArea.title}
                     onChange={(e) =>
                       setNewArea({ ...newArea, title: e.target.value })
@@ -750,7 +752,7 @@ function AdvanceArea({
                   </label>
                   <input
                     type="text"
-                    placeholder="Location here"
+                    placeholder={t("advance.area.locationHere")}
                     value={newArea.location}
                     onChange={(e) =>
                       setNewArea({
@@ -768,7 +770,7 @@ function AdvanceArea({
                   </label>
                   <input
                     type="number"
-                    placeholder="Number"
+                    placeholder={t("advance.area.number")}
                     value={newArea.travelNumber || ""}
                     onChange={(e) =>
                       setNewArea({
@@ -792,11 +794,11 @@ function AdvanceArea({
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                   >
                     <option value="" disabled>
-                      Select User Type
+                      {t("advance.area.selectUserType")}
                     </option>
                     {badgeLoading ? (
                       <option value="" disabled>
-                        Loading badges...
+                        {t("advance.area.loadingBadges")}
                       </option>
                     ) : (
                       badges.map((badge) => (
@@ -821,7 +823,7 @@ function AdvanceArea({
                 }}
                 className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors mt-4"
               >
-                <Plus className="w-4 h-4" /> Add Area
+                <Plus className="w-4 h-4" /> {t("advance.area.addArea")}
               </button>
             </div>
           </div>
@@ -863,7 +865,7 @@ function AdvanceArea({
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Delete Area
+                  {t("advance.area.deleteArea")}
                 </h3>
                 <button
                   onClick={() => {
@@ -881,7 +883,7 @@ function AdvanceArea({
 
               <div className="mb-6">
                 <p className="text-gray-600 mb-2">
-                  Are you sure you want to delete this area?
+                  {t("advance.area.confirmDeleteArea")}
                 </p>
                 {areaToDelete && (
                   <div className="bg-gray-50 p-3 rounded-lg mt-3">
@@ -894,7 +896,7 @@ function AdvanceArea({
                   </div>
                 )}
                 <p className="text-sm text-red-600 mt-3">
-                  This action cannot be undone.
+                  {t("advance.area.cannotBeUndone")}
                 </p>
               </div>
 
@@ -907,7 +909,7 @@ function AdvanceArea({
                   disabled={deleteLoading !== null}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.area.cancel")}
                 </button>
                 <button
                   onClick={confirmDelete}
@@ -917,12 +919,12 @@ function AdvanceArea({
                   {deleteLoading !== null ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Deleting...
+                      {t("advance.area.deleting")}
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t("advance.area.delete")}
                     </>
                   )}
                 </button>

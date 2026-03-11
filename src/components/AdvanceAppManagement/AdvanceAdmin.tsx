@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   ChevronLeft,
   Check,
@@ -31,7 +32,8 @@ export default function AdminManagement({
   currentStep,
   totalSteps,
 }: AdminManagementProps) {
-  const STEP_NAMES = ["App Visualization", "App Sections", "Admin Management"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.admin.appVisualization"), t("advance.admin.appSections"), t("advance.admin.adminManagement")];
 
   const [admins, setAdmins] = useState<Admin[]>([
     { id: 1, email: "merom8703@gmail.com" },
@@ -97,7 +99,7 @@ export default function AdminManagement({
               onClick={onPrevious}
             />
             <h1 className="text-2xl font-semibold text-gray-800">
-              Admin Management
+              {t("advance.admin.adminManagement")}
             </h1>
           </div>
 
@@ -153,9 +155,9 @@ export default function AdminManagement({
         </div>
 
         <div className="flex items-center gap-2 text-sm text-gray-500">
-          <span>Home</span>
+          <span>{t("advance.admin.home")}</span>
           <span>›</span>
-          <span className="text-gray-700">Admin Management</span>
+          <span className="text-gray-700">{t("advance.admin.adminManagement")}</span>
         </div>
       </div>
 
@@ -178,7 +180,7 @@ export default function AdminManagement({
                 className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
               >
                 <Plus size={16} />
-                Add Admin
+                {t("advance.admin.addAdmin")}
               </button>
             </div>
           </div>
@@ -297,7 +299,7 @@ export default function AdminManagement({
           <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
             <div className="flex items-center justify-between px-6 py-4 border-b">
               <h2 className="text-lg font-semibold text-gray-800">
-                Add New Admin
+                {t("advance.admin.addNewAdmin")}
               </h2>
               <button
                 onClick={() => {
@@ -318,7 +320,7 @@ export default function AdminManagement({
                 type="email"
                 value={newAdminEmail}
                 onChange={(e) => setNewAdminEmail(e.target.value)}
-                placeholder="admin@example.com"
+                placeholder={t("advance.admin.adminEmailPlaceholder")}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
             </div>
@@ -331,13 +333,13 @@ export default function AdminManagement({
                 }}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
               >
-                Cancel
+                {t("advance.admin.cancel")}
               </button>
               <button
                 onClick={handleAddAdmin}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Add Admin
+                {t("advance.admin.addAdmin")}
               </button>
             </div>
           </div>

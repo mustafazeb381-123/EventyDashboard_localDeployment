@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import * as XLSX from "xlsx";
 import { deleteEventUser } from "@/apis/apiHelpers";
 import { updateEventUser } from "@/apis/apiHelpers";
@@ -147,6 +148,7 @@ const UserAvatar = ({ user }: { user: any }) => {
 
 function RegisterdUser() {
   const location = useLocation();
+  const { t } = useTranslation("dashboard");
   const [eventId, setEventId] = useState<string | null>(null);
   const [eventUsers, setUsers] = useState<any[]>([]);
   const [editingUser, setEditingUser] = useState<any | null>(null);
@@ -320,10 +322,10 @@ function RegisterdUser() {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      showNotification("Template downloaded successfully!", "success");
+      showNotification(t("registeredUsers.templateDownloaded"), "success");
     } catch (error) {
       console.error("Error downloading template:", error);
-      showNotification("Failed to download template.", "error");
+      showNotification(t("registeredUsers.failedToDownloadTemplate"), "error");
     } finally {
       setDownloadingTemplate(false); // stop loader
     }
@@ -331,11 +333,11 @@ function RegisterdUser() {
 
   const handleUploadTemplate = async () => {
     if (!uploadFile) {
-      showNotification("Please select a file!", "error");
+      showNotification(t("registeredUsers.pleaseSelectFile"), "error");
       return;
     }
     if (!eventId) {
-      showNotification("Event ID is required!", "error");
+      showNotification(t("registeredUsers.eventIdRequired"), "error");
       return;
     }
 
@@ -344,7 +346,7 @@ function RegisterdUser() {
     try {
       const response = await uploadEventUserTemplate(eventId, uploadFile);
       console.log("Import response:", response.data);
-      showNotification("Users imported successfully!", "success");
+      showNotification(t("registeredUsers.usersImported"), "success");
 
       fetchUsers(eventId, currentPage); // refresh user list
 
@@ -359,12 +361,12 @@ function RegisterdUser() {
       if (err.response) {
         console.error("Server response data:", err.response.data);
         showNotification(
-          `Import failed: ${err.response.data?.message || "Validation error"}`,
+          `${t("registeredUsers.importFailed")}: ${err.response.data?.message || t("registeredUsers.validationError")}`,
           "error",
         );
       } else {
         showNotification(
-          "Failed to import users. Check the file and try again.",
+          t("registeredUsers.failedToImportUsers"),
           "error",
         );
       }
@@ -390,10 +392,10 @@ function RegisterdUser() {
       console.log("API response:", response.data);
 
       if (isSingleUser) {
-        showNotification("Credentials sent to user successfully!", "success");
+        showNotification(t("registeredUsers.credentialsSentToUser"), "success");
       } else {
         showNotification(
-          `Credentials sent to ${idsToSend.length} users successfully!`,
+          t("registeredUsers.credentialsSentToUsers", { count: idsToSend.length }),
           "success",
         );
       }
@@ -403,12 +405,12 @@ function RegisterdUser() {
 
       if (isSingleUser) {
         showNotification(
-          "Failed to send credentials to user. Please try again.",
+          t("registeredUsers.failedToSendCredentialsToUser"),
           "error",
         );
       } else {
         showNotification(
-          "Failed to send credentials. Please try again.",
+          t("registeredUsers.failedToSendCredentials"),
           "error",
         );
       }
@@ -429,8 +431,8 @@ function RegisterdUser() {
       const count = res?.data?.approved_count ?? idsToUse.length;
       showNotification(
         count === 1
-          ? "User approved successfully!"
-          : `Successfully approved ${count} user(s).`,
+          ? t("registeredUsers.userApproved")
+          : t("registeredUsers.usersApproved", { count }),
         "success",
       );
       setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
@@ -458,8 +460,8 @@ function RegisterdUser() {
       const count = res?.data?.rejected_count ?? idsToUse.length;
       showNotification(
         count === 1
-          ? "User rejected successfully."
-          : `Successfully rejected ${count} user(s).`,
+          ? t("registeredUsers.userRejected")
+          : t("registeredUsers.usersRejected", { count }),
         "error",
       );
       setSelectedUsers((prev) => prev.filter((id) => !idsToUse.includes(id)));
@@ -541,7 +543,7 @@ function RegisterdUser() {
         ),
       );
 
-      showNotification("User updated successfully!", "success");
+      showNotification(t("registeredUsers.userUpdated"), "success");
       setEditingUser(null);
       setSelectedImageFile(null);
 
@@ -549,7 +551,7 @@ function RegisterdUser() {
       fetchUsers(eventId, currentPage);
     } catch (error) {
       console.error("Error updating user:", error);
-      showNotification("Failed to update user. Please try again.", "error");
+      showNotification(t("registeredUsers.failedToUpdateUser"), "error");
     } finally {
       setIsUpdating(false);
     }
@@ -671,7 +673,7 @@ function RegisterdUser() {
       }
     } catch (error) {
       console.error("Error fetching event users:", error);
-      showNotification("Failed to load users", "error");
+      showNotification(t("registeredUsers.failedToLoadUsers"), "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -776,7 +778,7 @@ function RegisterdUser() {
       });
     } catch (error) {
       console.error("Error searching users:", error);
-      showNotification("Failed to search users", "error");
+      showNotification(t("registeredUsers.failedToSearchUsers"), "error");
     } finally {
       setLoadingUsers(false);
     }
@@ -968,7 +970,7 @@ function RegisterdUser() {
 
   const handleExportCsv = async () => {
     if (!eventId) {
-      showNotification("Event ID is required.", "error");
+      showNotification(t("registeredUsers.eventIdRequired"), "error");
       return;
     }
     setExportingCsv(true);
@@ -1049,10 +1051,10 @@ function RegisterdUser() {
       a.download = `registered_users_${eventId}_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      showNotification(`Exported ${users.length} users (CSV).`, "success");
+      showNotification(t("registeredUsers.exportedUsersCsv", { count: users.length }), "success");
     } catch (e) {
       console.error(e);
-      showNotification("Export failed.", "error");
+      showNotification(t("registeredUsers.exportFailed"), "error");
     } finally {
       setExportingCsv(false);
     }
@@ -1060,7 +1062,7 @@ function RegisterdUser() {
 
   const handleExportExcel = async () => {
     if (!eventId) {
-      showNotification("Event ID is required.", "error");
+      showNotification(t("registeredUsers.eventIdRequired"), "error");
       return;
     }
     setExportingExcel(true);
@@ -1146,10 +1148,10 @@ function RegisterdUser() {
       a.download = `registered_users_${eventId}_${new Date().toISOString().slice(0, 10)}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
-      showNotification(`Exported ${users.length} users (Excel).`, "success");
+      showNotification(t("registeredUsers.exportedUsersExcel", { count: users.length }), "success");
     } catch (e) {
       console.error(e);
-      showNotification("Export failed.", "error");
+      showNotification(t("registeredUsers.exportFailed"), "error");
     } finally {
       setExportingExcel(false);
     }
@@ -1162,7 +1164,7 @@ function RegisterdUser() {
 
   const confirmDeleteUser = async () => {
     if (!eventId || !userToDelete) {
-      showNotification("Event ID is missing. Cannot delete user.", "error");
+      showNotification(t("registeredUsers.eventIdMissingDelete"), "error");
       setIsDeleteModalOpen(false);
       setUserToDelete(null);
       return;
@@ -1173,7 +1175,7 @@ function RegisterdUser() {
 
       await deleteEventUser(eventId, userToDelete.id);
 
-      showNotification("User deleted successfully", "success");
+      showNotification(t("registeredUsers.userDeleted"), "success");
 
       fetchUsers(eventId, currentPage);
       setUserToDelete(null);
@@ -1187,7 +1189,7 @@ function RegisterdUser() {
       });
 
       showNotification(
-        `Failed to delete user: ${error.response?.data?.error || error.message}`,
+        `${t("registeredUsers.failedToDeleteUser")}: ${error.response?.data?.error || error.message}`,
         "error",
       );
     } finally {
@@ -1218,7 +1220,7 @@ function RegisterdUser() {
 
   const confirmResetCheckInOut = async () => {
     if (!eventId || !userToReset) {
-      showNotification("Event ID is missing.", "error");
+      showNotification(t("registeredUsers.eventIdMissing"), "error");
       setIsResetModalOpen(false);
       setUserToReset(null);
       return;
@@ -1229,12 +1231,12 @@ function RegisterdUser() {
       const response = await resetCheckInOutStatus(eventId, userToReset.id);
       console.log("Reset response:", response.data);
 
-      showNotification("Check-in/out status reset successfully!", "success");
+      showNotification(t("registeredUsers.checkInOutResetSuccess"), "success");
       setIsResetModalOpen(false);
       setUserToReset(null);
     } catch (error: any) {
       console.error("Error resetting status:", error);
-      showNotification("Failed to reset check-in/out status.", "error");
+      showNotification(t("registeredUsers.failedToResetCheckInOut"), "error");
     } finally {
       setResettingUserId(null);
     }
@@ -1261,13 +1263,12 @@ function RegisterdUser() {
         )}
 
         <div className="max-w-8xl mx-auto">
-          <h1 className="text-2xl font-bold mb-4">Registered Users</h1>
+          <h1 className="text-2xl font-bold mb-4">{t("registeredUsers.title")}</h1>
 
           {/* Export: respects current filters (Approval, Guest Type, Attendance, Date range, Search) */}
           <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-xl">
             <p className="text-sm text-gray-600 mb-3">
-              Export respects current filters (approval status, guest type,
-              attendance, date range, search).
+              {t("registeredUsers.exportDescription")}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <button
@@ -1276,7 +1277,7 @@ function RegisterdUser() {
                 className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
               >
                 <FileDown className="w-4 h-4" />
-                {exportingCsv ? "Exporting…" : "Export CSV"}
+                {exportingCsv ? t("registeredUsers.exporting") : t("registeredUsers.exportCsv")}
               </button>
               <button
                 onClick={handleExportExcel}
@@ -1284,7 +1285,7 @@ function RegisterdUser() {
                 className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 text-sm"
               >
                 <FileSpreadsheet className="w-4 h-4" />
-                {exportingExcel ? "Exporting…" : "Export Excel"}
+                {exportingExcel ? t("registeredUsers.exporting") : t("registeredUsers.exportExcel")}
               </button>
             </div>
           </div>
@@ -1293,7 +1294,7 @@ function RegisterdUser() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-semibold text-gray-900">Total</h1>
+                <h1 className="text-2xl font-semibold text-gray-900">{t("registeredUsers.total")}</h1>
                 <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
                   {filterStatus !== "all" ||
                   filterGuestType !== "all" ||
@@ -1301,8 +1302,8 @@ function RegisterdUser() {
                   filterDateFrom ||
                   filterDateTo ||
                   debouncedSearchTerm.trim() !== ""
-                    ? `${filteredUsers.length} Users (filtered)`
-                    : `${pagination?.total_count || eventUsers.length} Users`}
+                    ? `${filteredUsers.length} ${t("registeredUsers.usersFiltered")}`
+                    : `${pagination?.total_count || eventUsers.length} ${t("registeredUsers.users")}`}
                 </span>
               </div>
             </div>
@@ -1312,7 +1313,7 @@ function RegisterdUser() {
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Import Attendees
+              {t("registeredUsers.importAttendees")}
             </button>
 
             {isImportModalOpen && (
@@ -1325,7 +1326,7 @@ function RegisterdUser() {
                   onClick={(e) => e.stopPropagation()} // Prevent modal content clicks from closing
                 >
                   <h2 className="text-xl font-bold mb-4 text-center">
-                    Import Attendees
+                    {t("registeredUsers.importAttendees")}
                   </h2>
 
                   {/* Download Template */}
@@ -1335,8 +1336,8 @@ function RegisterdUser() {
                     disabled={downloadingTemplate}
                   >
                     {downloadingTemplate
-                      ? "...Downloading"
-                      : "Download Template"}
+                      ? t("registeredUsers.downloading")
+                      : t("registeredUsers.downloadTemplate")}
                   </button>
 
                   {/* File Upload */}
@@ -1354,7 +1355,7 @@ function RegisterdUser() {
                     className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
                     disabled={uploadingTemplate} // disable while uploading
                   >
-                    {uploadingTemplate ? "...Uploading" : "Submit"}
+                    {uploadingTemplate ? t("registeredUsers.uploading") : t("registeredUsers.submit")}
                   </button>
                 </div>
               </div>
@@ -1364,14 +1365,14 @@ function RegisterdUser() {
           {selectedUsers.length > 0 && (
             <div className="flex items-center justify-between mb-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-blue-700 font-medium">
-                {selectedUsers.length} user{selectedUsers.length > 1 ? "s" : ""}{" "}
-                selected
+                {selectedUsers.length} {t("registeredUsers.user")}{selectedUsers.length > 1 ? "s" : ""}{" "}
+                {t("registeredUsers.selected")}
               </p>
 
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => handleApproveUsers()}
-                  title="Approve selected"
+                  title={t("registeredUsers.approveSelected")}
                   className="p-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   disabled={approvingBulk}
                 >
@@ -1379,7 +1380,7 @@ function RegisterdUser() {
                 </button>
                 <button
                   onClick={() => handleRejectUsers()}
-                  title="Reject selected"
+                  title={t("registeredUsers.rejectSelected")}
                   className="p-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors disabled:opacity-50"
                   disabled={rejectingBulk}
                 >
@@ -1391,7 +1392,7 @@ function RegisterdUser() {
                   disabled={sendingCredentials}
                 >
                   <Mail className="w-4 h-4" />
-                  {sendingCredentials ? "...Sending" : "Send Credentials"}
+                  {sendingCredentials ? t("registeredUsers.sending") : t("registeredUsers.sendCredentials")}
                 </button>
               </div>
             </div>
@@ -1407,7 +1408,7 @@ function RegisterdUser() {
                     setSearchTerm(val);
                     setCurrentPage(1);
                   }}
-                  placeholder="Search users..."
+                  placeholder={t("registeredUsers.searchPlaceholder")}
                 />
               </div>
               <div className="relative w-full sm:w-40">
@@ -1419,10 +1420,10 @@ function RegisterdUser() {
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
                 >
-                  <option value="all">All approval</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
+                  <option value="all">{t("registeredUsers.allApproval")}</option>
+                  <option value="pending">{t("registeredUsers.pending")}</option>
+                  <option value="approved">{t("registeredUsers.approved")}</option>
+                  <option value="rejected">{t("registeredUsers.rejected")}</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
               </div>
@@ -1435,7 +1436,7 @@ function RegisterdUser() {
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
                 >
-                  <option value="all">All guest types</option>
+                  <option value="all">{t("registeredUsers.allGuestTypes")}</option>
                   {uniqueGuestTypes.map((type) => (
                     <option key={type} value={type}>
                       {type}
@@ -1453,10 +1454,10 @@ function RegisterdUser() {
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors appearance-none bg-white pr-10 text-sm"
                 >
-                  <option value="all">All attendance</option>
-                  <option value="attended">Attended</option>
-                  <option value="not_attended">Not attended</option>
-                  <option value="checked_in">Checked in</option>
+                  <option value="all">{t("registeredUsers.allAttendance")}</option>
+                  <option value="attended">{t("registeredUsers.attended")}</option>
+                  <option value="not_attended">{t("registeredUsers.notAttended")}</option>
+                  <option value="checked_in">{t("registeredUsers.checkedIn")}</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none w-5 h-5" />
               </div>
@@ -1592,30 +1593,30 @@ function RegisterdUser() {
                         />
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        ID
+                        {t("registeredUsers.id")}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
+                        {t("registeredUsers.name")}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Email
-                      </th>
-
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Organization
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Approval Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
+                        {t("registeredUsers.email")}
                       </th>
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
+                        {t("registeredUsers.organization")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("registeredUsers.type")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("registeredUsers.approvalStatus")}
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("registeredUsers.created")}
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        {t("registeredUsers.actions")}
                       </th>
                     </tr>
                   </thead>
@@ -1633,8 +1634,8 @@ function RegisterdUser() {
                           filterDateFrom ||
                           filterDateTo ||
                           debouncedSearchTerm.trim() !== ""
-                            ? "No users match the current filters."
-                            : "No users found"}
+                            ? t("registeredUsers.noUsersMatchFilters")
+                            : t("registeredUsers.noUsersFound")}
                         </td>
                       </tr>
                     ) : (
@@ -1681,7 +1682,7 @@ function RegisterdUser() {
                           <td className="px-6 py-4">
                             {getApprovalStatus(user) === "approved" && (
                               <span
-                                title="Approved"
+                                title={t("registeredUsers.approved")}
                                 className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700"
                               >
                                 <CheckCircle className="w-4 h-4" />
@@ -1689,7 +1690,7 @@ function RegisterdUser() {
                             )}
                             {getApprovalStatus(user) === "rejected" && (
                               <span
-                                title="Rejected"
+                                title={t("registeredUsers.rejected")}
                                 className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700"
                               >
                                 <XCircle className="w-4 h-4" />
@@ -1697,7 +1698,7 @@ function RegisterdUser() {
                             )}
                             {getApprovalStatus(user) === "pending" && (
                               <span
-                                title="Pending"
+                                title={t("registeredUsers.pending")}
                                 className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 text-amber-700"
                               >
                                 <Clock className="w-4 h-4" />
@@ -1725,7 +1726,7 @@ function RegisterdUser() {
                                   }
                                 }}
                                 className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Actions"
+                                title={t("registeredUsers.actions")}
                               >
                                 <MoreVertical className="w-4 h-4" />
                               </button>
@@ -1777,7 +1778,7 @@ function RegisterdUser() {
                                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 text-left"
                                         >
                                           <Info className="w-4 h-4 shrink-0" />
-                                          More Information
+                                          {t("registeredUsers.moreInformation")}
                                         </button>
                                         <button
                                           type="button"
@@ -1789,7 +1790,7 @@ function RegisterdUser() {
                                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-green-700 hover:bg-green-50 disabled:opacity-50 text-left"
                                         >
                                           <CheckCircle className="w-4 h-4 shrink-0" />
-                                          Accept
+                                          {t("registeredUsers.accept")}
                                         </button>
                                         <button
                                           type="button"
@@ -1801,7 +1802,7 @@ function RegisterdUser() {
                                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 disabled:opacity-50 text-left"
                                         >
                                           <XCircle className="w-4 h-4 shrink-0" />
-                                          Reject
+                                          {t("registeredUsers.reject")}
                                         </button>
                                         <button
                                           type="button"
@@ -1842,7 +1843,7 @@ function RegisterdUser() {
                                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-amber-700 hover:bg-amber-50 text-left"
                                         >
                                           <Edit className="w-4 h-4 shrink-0" />
-                                          Edit
+                                          {t("registeredUsers.edit")}
                                         </button>
                                         <button
                                           type="button"
@@ -1861,7 +1862,7 @@ function RegisterdUser() {
                                           ) : (
                                             <Mail className="w-4 h-4 shrink-0" />
                                           )}
-                                          Send Credentials
+                                          {t("registeredUsers.sendCredentials")}
                                         </button>
                                         <button
                                           type="button"
@@ -1873,7 +1874,7 @@ function RegisterdUser() {
                                           className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-700 hover:bg-red-50 text-left"
                                         >
                                           <Trash2 className="w-4 h-4 shrink-0" />
-                                          Delete
+                                          {t("registeredUsers.delete")}
                                         </button>
                                       </div>
                                     </div>
@@ -1895,22 +1896,22 @@ function RegisterdUser() {
                 <div className="text-sm text-gray-600">
                   {pagination ? (
                     <>
-                      Showing{" "}
+                      {t("registeredUsers.showing")}{" "}
                       <span className="font-medium">
                         {(currentPage - 1) * itemsPerPage + 1}
                       </span>{" "}
-                      to{" "}
+                      {t("registeredUsers.to")}{" "}
                       <span className="font-medium">
                         {Math.min(
                           currentPage * itemsPerPage,
                           pagination.total_count,
                         )}
                       </span>{" "}
-                      of{" "}
+                      {t("registeredUsers.of")}{" "}
                       <span className="font-medium">
                         {pagination.total_count}
                       </span>{" "}
-                      users
+                      {t("registeredUsers.users")}
                       {(filterStatus !== "all" ||
                         filterGuestType !== "all" ||
                         filterAttendanceStatus !== "all" ||
@@ -1918,13 +1919,13 @@ function RegisterdUser() {
                         filterDateTo ||
                         debouncedSearchTerm.trim() !== "") && (
                         <span className="ml-2 text-blue-600">
-                          • Filtered: {filteredUsers.length} user
+                          • {t("registeredUsers.filtered")}: {filteredUsers.length} {t("registeredUsers.user")}
                           {filteredUsers.length !== 1 ? "s" : ""}
                         </span>
                       )}
                     </>
                   ) : (
-                    <>Loading...</>
+                    <>{t("registeredUsers.loading")}</>
                   )}
                 </div>
                 {pagination && (
@@ -1958,12 +1959,10 @@ function RegisterdUser() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h2 className="text-xl font-bold mb-2 text-gray-900">
-                  Delete user?
+                  {t("registeredUsers.deleteUser")}
                 </h2>
                 <p className="text-sm text-gray-600 mb-6">
-                  Are you sure you want to delete{" "}
-                  {userToDelete.attributes?.name || "this user"}? This action
-                  cannot be undone.
+                  {t("registeredUsers.confirmDeleteUser", { name: userToDelete.attributes?.name || t("registeredUsers.thisUser") })}
                 </p>
                 <div className="flex justify-end gap-3">
                   <button
@@ -1974,14 +1973,14 @@ function RegisterdUser() {
                     className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                     disabled={!!deletingUserId}
                   >
-                    Cancel
+                    {t("registeredUsers.cancel")}
                   </button>
                   <button
                     onClick={confirmDeleteUser}
                     className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!!deletingUserId}
                   >
-                    {deletingUserId ? "Deleting..." : "Delete"}
+                    {deletingUserId ? t("registeredUsers.deleting") : t("registeredUsers.delete")}
                   </button>
                 </div>
               </div>
@@ -2003,14 +2002,10 @@ function RegisterdUser() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <h2 className="text-xl font-bold mb-2 text-gray-900">
-                  Reset check-in/out status?
+                  {t("registeredUsers.resetCheckInOutStatus")}
                 </h2>
                 <p className="text-sm text-gray-600 mb-6">
-                  Are you sure you want to reset the check-in/out status for{" "}
-                  <span className="font-semibold">
-                    {userToReset.attributes?.name || "this user"}
-                  </span>
-                  ? This action cannot be undone.
+                  {t("registeredUsers.confirmResetCheckInOut", { name: userToReset.attributes?.name || t("registeredUsers.thisUser") })}
                 </p>
                 <div className="flex justify-end gap-3">
                   <button
@@ -2021,14 +2016,14 @@ function RegisterdUser() {
                     className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!!resettingUserId}
                   >
-                    Cancel
+                    {t("registeredUsers.cancel")}
                   </button>
                   <button
                     onClick={confirmResetCheckInOut}
                     className="px-4 py-2 rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={!!resettingUserId}
                   >
-                    {resettingUserId ? "Resetting..." : "Reset"}
+                    {resettingUserId ? t("registeredUsers.resetting") : t("registeredUsers.reset")}
                   </button>
                 </div>
               </div>
@@ -2047,7 +2042,7 @@ function RegisterdUser() {
               >
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-bold text-gray-900">
-                    More Information
+                    {t("registeredUsers.moreInformation")}
                   </h2>
                   <button
                     type="button"
@@ -2103,26 +2098,26 @@ function RegisterdUser() {
                     <thead>
                       <tr className="border-b border-gray-200">
                         <th className="text-left py-2 px-3 font-semibold text-gray-600 uppercase tracking-wider w-[40%]">
-                          Key
+                          {t("registeredUsers.key")}
                         </th>
                         <th className="text-left py-2 px-3 font-semibold text-gray-600 uppercase tracking-wider">
-                          Value
+                          {t("registeredUsers.value")}
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {[
                         {
-                          key: "Phone",
+                          key: t("registeredUsers.phone"),
                           value:
                             userForInfoModal?.attributes?.phone_number ?? "—",
                         },
                         {
-                          key: "Position",
+                          key: t("registeredUsers.position"),
                           value: userForInfoModal?.attributes?.position ?? "—",
                         },
                         {
-                          key: "Organization",
+                          key: t("registeredUsers.organization"),
                           value:
                             userForInfoModal?.attributes?.organization ||
                             userForInfoModal?.attributes?.custom_fields
@@ -2130,56 +2125,56 @@ function RegisterdUser() {
                             "—",
                         },
                         {
-                          key: "Type",
+                          key: t("registeredUsers.type"),
                           value: userForInfoModal?.attributes?.user_type ?? "—",
                         },
                         {
-                          key: "Printed",
+                          key: t("registeredUsers.printed"),
                           value:
                             userForInfoModal?.attributes?.printed == null
                               ? "—"
                               : userForInfoModal?.attributes?.printed
-                                ? "Yes"
-                                : "No",
+                                ? t("registeredUsers.yes")
+                                : t("registeredUsers.no"),
                         },
                         {
-                          key: "Approval status",
+                          key: t("registeredUsers.approvalStatus"),
                           value:
                             userForInfoModal?.attributes?.approval_status ??
                             "—",
                         },
                         {
-                          key: "Approved",
+                          key: t("registeredUsers.approved"),
                           value:
                             userForInfoModal?.attributes?.approved == null
                               ? "—"
                               : userForInfoModal?.attributes?.approved
-                                ? "Yes"
-                                : "No",
+                                ? t("registeredUsers.yes")
+                                : t("registeredUsers.no"),
                         },
                         {
-                          key: "Created at",
+                          key: t("registeredUsers.createdAt"),
                           value: formatDateTime(
                             userForInfoModal?.attributes?.created_at ?? "",
                           ),
                         },
                         {
-                          key: "Updated at",
+                          key: t("registeredUsers.updatedAt"),
                           value: formatDateTime(
                             userForInfoModal?.attributes?.updated_at ?? "",
                           ),
                         },
                         {
-                          key: "Attended",
+                          key: t("registeredUsers.attended"),
                           value:
                             userForInfoModal?.attributes?.attended == null
                               ? "—"
                               : userForInfoModal?.attributes?.attended
-                                ? "Yes"
-                                : "No",
+                                ? t("registeredUsers.yes")
+                                : t("registeredUsers.no"),
                         },
                         {
-                          key: "Check-in/out statuses",
+                          key: t("registeredUsers.checkInOutStatuses"),
                           value: (() => {
                             const s =
                               userForInfoModal?.attributes
@@ -2194,7 +2189,7 @@ function RegisterdUser() {
                                     className="bg-gray-50 rounded-lg p-3 border border-gray-100 text-xs"
                                   >
                                     <div className="font-semibold text-gray-600 mb-2">
-                                      Session {idx + 1}
+                                      {t("registeredUsers.session")} {idx + 1}
                                       {item?.session_area_id != null &&
                                         ` (Area ID: ${item.session_area_id})`}
                                     </div>
@@ -2202,7 +2197,7 @@ function RegisterdUser() {
                                       <tbody>
                                         <tr>
                                           <td className="py-1 pr-2 font-medium text-gray-500 w-28">
-                                            Check in
+                                            {t("registeredUsers.checkIn")}
                                           </td>
                                           <td className="py-1 text-gray-900">
                                             {item?.check_in
@@ -2212,7 +2207,7 @@ function RegisterdUser() {
                                         </tr>
                                         <tr>
                                           <td className="py-1 pr-2 font-medium text-gray-500">
-                                            Check out
+                                            {t("registeredUsers.checkOut")}
                                           </td>
                                           <td className="py-1 text-gray-900">
                                             {item?.check_out
@@ -2223,7 +2218,7 @@ function RegisterdUser() {
                                         {item?.event_user_id != null && (
                                           <tr>
                                             <td className="py-1 pr-2 font-medium text-gray-500">
-                                              Event user ID
+                                              {t("registeredUsers.eventUserId")}
                                             </td>
                                             <td className="py-1 text-gray-900">
                                               {item.event_user_id}
@@ -2233,7 +2228,7 @@ function RegisterdUser() {
                                         {item?.event_id != null && (
                                           <tr>
                                             <td className="py-1 pr-2 font-medium text-gray-500">
-                                              Event ID
+                                              {t("registeredUsers.eventId")}
                                             </td>
                                             <td className="py-1 text-gray-900">
                                               {item.event_id}
@@ -2243,7 +2238,7 @@ function RegisterdUser() {
                                         {item?.session_area_id != null && (
                                           <tr>
                                             <td className="py-1 pr-2 font-medium text-gray-500">
-                                              Session area ID
+                                              {t("registeredUsers.sessionAreaId")}
                                             </td>
                                             <td className="py-1 text-gray-900">
                                               {item.session_area_id}
@@ -2259,7 +2254,7 @@ function RegisterdUser() {
                           })(),
                         },
                         {
-                          key: "Custom fields",
+                          key: t("registeredUsers.customFields"),
                           value: (() => {
                             const cf =
                               userForInfoModal?.attributes?.custom_fields;
@@ -2313,7 +2308,7 @@ function RegisterdUser() {
                     onClick={() => setUserForInfoModal(null)}
                     className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                   >
-                    Close
+                    {t("registeredUsers.close")}
                   </button>
                 </div>
               </div>
@@ -2332,7 +2327,7 @@ function RegisterdUser() {
                 {/* Header */}
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Edit User
+                    {t("registeredUsers.editUser")}
                   </h2>
                   <button
                     onClick={() => setEditingUser(null)}
@@ -2382,7 +2377,7 @@ function RegisterdUser() {
                         );
                         setSelectedImageFile(compressedFile);
                         showNotification(
-                          "Image compressed and ready to upload",
+                          t("registeredUsers.imageReady"),
                           "info",
                         );
                       }
@@ -2394,11 +2389,11 @@ function RegisterdUser() {
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Name
+                      {t("registeredUsers.name")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Full Name"
+                      placeholder={t("registeredUsers.fullNamePlaceholder")}
                       value={editForm.name}
                       onChange={(e) =>
                         setEditForm({ ...editForm, name: e.target.value })
@@ -2409,11 +2404,11 @@ function RegisterdUser() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Email
+                      {t("registeredUsers.email")}
                     </label>
                     <input
                       type="email"
-                      placeholder="user@example.com"
+                      placeholder={t("registeredUsers.emailPlaceholder")}
                       value={editForm.email}
                       onChange={(e) =>
                         setEditForm({ ...editForm, email: e.target.value })
@@ -2424,11 +2419,11 @@ function RegisterdUser() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Organization
+                      {t("registeredUsers.organization")}
                     </label>
                     <input
                       type="text"
-                      placeholder="Organization"
+                      placeholder={t("registeredUsers.organizationPlaceholder")}
                       value={editForm.organization}
                       onChange={(e) =>
                         setEditForm({
@@ -2442,11 +2437,11 @@ function RegisterdUser() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      User Type
+                      {t("registeredUsers.userType")}
                     </label>
                     {badgeTypesLoading ? (
                       <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-500 text-sm">
-                        Loading user types...
+                        {t("registeredUsers.loadingUserTypes")}
                       </div>
                     ) : (
                       <select
@@ -2467,7 +2462,7 @@ function RegisterdUser() {
                         }}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
                       >
-                        <option value="">Select user type</option>
+                        <option value="">{t("registeredUsers.selectUserType")}</option>
                         {badgeTypes.map((badge) => (
                           <option
                             key={badge.id}
@@ -2487,7 +2482,7 @@ function RegisterdUser() {
                     onClick={() => setEditingUser(null)}
                     className="flex-1 px-4 py-2 rounded-lg text-gray-700 bg-gray-100 hover:bg-gray-200 font-medium transition"
                   >
-                    Cancel
+                    {t("registeredUsers.cancel")}
                   </button>
                   <button
                     onClick={handleUpdateUser}
@@ -2498,7 +2493,7 @@ function RegisterdUser() {
                         : "bg-blue-600 hover:bg-blue-700"
                     }`}
                   >
-                    {isUpdating ? "Updating..." : "Update"}
+                    {isUpdating ? t("registeredUsers.updating") : t("registeredUsers.update")}
                   </button>
                 </div>
               </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import GateOnboarding from "./GateOnboarding";
 import { ArrowRight, Clipboard, Plus, Trash2, Pencil } from "lucide-react";
 import {
@@ -17,6 +18,7 @@ type BadgeOption = {
 };
 
 function Onboarding() {
+  const { t } = useTranslation("dashboard");
   const [showGateOnboarding, setShowGateOnboarding] = useState(false);
   const [selectedArea, setSelectedArea] = useState<any | null>(null);
   const [areasData, setAreasData] = useState<any[]>([]);
@@ -179,9 +181,9 @@ function Onboarding() {
 
   const handleAddArea = async () => {
     const errors = {
-      name: newArea.name ? "" : "Name is required",
-      location: newArea.location ? "" : "Location is required",
-      type: newArea.type ? "" : "Type is required",
+      name: newArea.name ? "" : t("onboarding.nameRequired"),
+      location: newArea.location ? "" : t("onboarding.locationRequired"),
+      type: newArea.type ? "" : t("onboarding.typeRequired"),
       guestNumbers: "", // optional
     };
     setValidationErrors(errors as any);
@@ -270,9 +272,9 @@ function Onboarding() {
 
   const handleUpdateArea = async () => {
     const errors = {
-      name: editForm.name ? "" : "Name is required",
-      location: editForm.location ? "" : "Location is required",
-      type: editForm.type ? "" : "Type is required",
+      name: editForm.name ? "" : t("onboarding.nameRequired"),
+      location: editForm.location ? "" : t("onboarding.locationRequired"),
+      type: editForm.type ? "" : t("onboarding.typeRequired"),
       guestNumbers: "", // optional
     };
     setEditValidationErrors(errors);
@@ -393,7 +395,7 @@ function Onboarding() {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              Check-In/out
+              {t("onboarding.checkInOut")}
             </h1>
             <p className="text-gray-600 mt-1">
               Areas: {pagination?.total_count ?? areasData.length}
@@ -406,7 +408,7 @@ function Onboarding() {
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Plus className="h-4 w-4" />
-            Add Area
+            {t("onboarding.addArea")}
           </button>
         </div>
 
@@ -461,7 +463,7 @@ function Onboarding() {
               </table>
             </div>
           ) : areasData.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No areas found</div>
+            <div className="text-center py-8 text-gray-500">{t("onboarding.noAreasFound")}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -498,7 +500,7 @@ function Onboarding() {
                           onClick={() => handleOpenGateOnboarding(area)}
                           className="font-medium text-blue-600 hover:text-blue-800 hover:underline transition text-left"
                         >
-                          {area.attributes?.name || "Unnamed Area"}
+                          {area.attributes?.name || t("onboarding.unnamedArea")}
                         </button>
                       </td>
                       <td className="px-6 py-4">
@@ -592,7 +594,7 @@ function Onboarding() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Add Area
+              {t("onboarding.addArea")}
             </h3>
             <div className="space-y-4">
               <div>
@@ -601,7 +603,7 @@ function Onboarding() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter area name"
+                  placeholder={t("onboarding.enterAreaName")}
                   value={newArea.name}
                   onChange={(e) =>
                     setNewArea((prev) => ({ ...prev, name: e.target.value }))
@@ -622,7 +624,7 @@ function Onboarding() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter area location"
+                  placeholder={t("onboarding.enterAreaLocation")}
                   value={newArea.location}
                   onChange={(e) =>
                     setNewArea((prev) => ({
@@ -655,8 +657,8 @@ function Onboarding() {
                     validationErrors.type ? "border-red-500" : "border-gray-300"
                   }`}
                 >
-                  <option value="">Select User Type</option>
-                  <option value="any">Any</option>
+                  <option value="">{t("onboarding.selectUserType")}</option>
+                  <option value="any">{t("onboarding.any")}</option>
                   {badgeLoading ? (
                     <option value="" disabled>
                       Loading...
@@ -681,7 +683,7 @@ function Onboarding() {
                 </label>
                 <input
                   type="number"
-                  placeholder="Type number"
+                  placeholder={t("onboarding.typeNumber")}
                   value={newArea.guestNumbers}
                   onChange={(e) =>
                     setNewArea((prev) => ({
@@ -709,7 +711,7 @@ function Onboarding() {
                 disabled={addLoading}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                Cancel
+                {t("onboarding.cancel")}
               </button>
               <button
                 type="button"
@@ -720,12 +722,12 @@ function Onboarding() {
                 {addLoading ? (
                   <>
                     <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Adding...
+                    {t("onboarding.adding")}
                   </>
                 ) : (
                   <>
                     <Plus className="h-4 w-4" />
-                    Add
+                    {t("onboarding.add")}
                   </>
                 )}
               </button>
@@ -745,7 +747,7 @@ function Onboarding() {
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Edit Area
+              {t("onboarding.editArea")}
             </h3>
             <div className="space-y-4">
               <div>
@@ -754,7 +756,7 @@ function Onboarding() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter area name"
+                  placeholder={t("onboarding.enterAreaName")}
                   value={editForm.name}
                   onChange={(e) =>
                     setEditForm((prev) => ({ ...prev, name: e.target.value }))
@@ -777,7 +779,7 @@ function Onboarding() {
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter area location"
+                  placeholder={t("onboarding.enterAreaLocation")}
                   value={editForm.location}
                   onChange={(e) =>
                     setEditForm((prev) => ({
@@ -812,8 +814,8 @@ function Onboarding() {
                       : "border-gray-300"
                   }`}
                 >
-                  <option value="">Select User Type</option>
-                  <option value="any">Any</option>
+                  <option value="">{t("onboarding.selectUserType")}</option>
+                  <option value="any">{t("onboarding.any")}</option>
                   {badgeLoading ? (
                     <option value="" disabled>
                       Loading...
@@ -838,7 +840,7 @@ function Onboarding() {
                 </label>
                 <input
                   type="number"
-                  placeholder="Type number"
+                  placeholder={t("onboarding.typeNumber")}
                   value={editForm.guestNumbers}
                   onChange={(e) =>
                     setEditForm((prev) => ({
@@ -866,7 +868,7 @@ function Onboarding() {
                 disabled={editLoading}
                 className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                Cancel
+                {t("onboarding.cancel")}
               </button>
               <button
                 type="button"
@@ -877,12 +879,12 @@ function Onboarding() {
                 {editLoading ? (
                   <>
                     <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Updating...
+                    {t("onboarding.updating")}
                   </>
                 ) : (
                   <>
                     <Pencil className="h-4 w-4" />
-                    Update
+                    {t("onboarding.update")}
                   </>
                 )}
               </button>
@@ -907,14 +909,10 @@ function Onboarding() {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold text-gray-900 mb-2">
-              Delete area?
+              {t("onboarding.deleteArea")}
             </h2>
             <p className="text-sm text-gray-600 mb-6">
-              Are you sure you want to delete{" "}
-              <span className="font-semibold">
-                {areaToDelete.attributes?.name || "this area"}
-              </span>
-              ? This action cannot be undone.
+              {t("onboarding.deleteAreaConfirm", { name: areaToDelete.attributes?.name || t("onboarding.thisArea") })}
             </p>
             <div className="flex justify-end gap-3">
               <button
@@ -926,7 +924,7 @@ function Onboarding() {
                 disabled={!!deletingAreaId}
                 className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-sm font-medium"
               >
-                Cancel
+                {t("onboarding.cancel")}
               </button>
               <button
                 type="button"
@@ -934,7 +932,7 @@ function Onboarding() {
                 disabled={!!deletingAreaId}
                 className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
               >
-                {deletingAreaId ? "Deleting..." : "Delete"}
+                {deletingAreaId ? t("onboarding.deleting") : t("onboarding.delete")}
               </button>
             </div>
           </div>

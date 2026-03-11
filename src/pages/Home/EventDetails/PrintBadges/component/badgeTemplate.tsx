@@ -1,5 +1,6 @@
 import React from "react";
 import QRCode from "react-qr-code";
+import { useTranslation } from "react-i18next";
 import UserAvatar from "./useAvatar";
 import {
   CardFooter,
@@ -73,6 +74,7 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
   event,
   user,
 }) => {
+  const { t } = useTranslation("dashboard");
   const templateData = template?.attributes?.template_data || {};
   const badgeColors = getBadgeColors(template, event);
 
@@ -236,7 +238,7 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             padding: "0 10px",
           }}
         >
-          {user?.attributes?.name || "Name Placeholder"}
+          {user?.attributes?.name || t("printBadges.namePlaceholder")}
         </div>
       )}
 
@@ -251,7 +253,7 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             color: templateData.companyText?.color || "#666666",
           }}
         >
-          {user?.attributes?.organization || "Company Placeholder"}
+          {user?.attributes?.organization || t("printBadges.companyPlaceholder")}
         </div>
       )}
 
@@ -266,7 +268,7 @@ export const CustomBadgeTemplate: React.FC<BadgeTemplateProps> = ({
             color: templateData.titleText?.color || "#999999",
           }}
         >
-          {user?.attributes?.user_type || "Title Placeholder"}
+          {user?.attributes?.user_type || t("printBadges.titlePlaceholder")}
         </div>
       )}
 
@@ -316,6 +318,7 @@ export const ExistingBadgeTemplate1: React.FC<BadgeTemplateProps> = ({
   event,
   user,
 }) => {
+  const { t } = useTranslation("dashboard");
   const badgeColors = getBadgeColors(template, event);
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = badgeColors.backgroundColor || "white";
@@ -467,6 +470,7 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
   event,
   user,
 }) => {
+  const { t } = useTranslation("dashboard");
   const badgeColors = getBadgeColors(template, event);
   const primaryColor = event?.attributes?.primary_color || "#4D4D4D";
   const secondaryColor = badgeColors.backgroundColor || "white";
@@ -578,12 +582,12 @@ export const ExistingBadgeTemplate2: React.FC<BadgeTemplateProps> = ({
         
         {/* Name */}
         <h2 className="text-2xl font-bold text-gray-900 mt-2 mb-1">
-          {user?.attributes?.name || "Name"}
+          {user?.attributes?.name || t("printBadges.name")}
         </h2>
         
         {/* Title */}
         <p className="text-gray-600 text-lg mt-1 mb-4">
-          {user?.attributes?.user_type || "Title"}
+          {user?.attributes?.user_type || t("printBadges.title")}
         </p>
 
         {/* QR Code on front side */}

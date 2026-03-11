@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 import { Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { getRsvpTemplate, rsvpResponse } from "@/apis/invitationService";
 import { RsvpFormPreview } from "./rsvpFormBuilder/RsvpFormPreview";
 import type {
@@ -60,6 +61,7 @@ function normalizeRsvpTemplate(raw: unknown): RsvpFormBuilderTemplate | null {
  * We use only these URL params for APIs – no localStorage. GET rsvp_template and POST rsvp_response both use them.
  */
 export default function RsvpPage() {
+  const { t } = useTranslation("dashboard");
   const params = useParams<{
     eventId?: string;
     invitationId?: string;
@@ -263,7 +265,7 @@ export default function RsvpPage() {
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-indigo-600 mx-auto mb-4" />
-          <p className="text-slate-600 font-medium">Loading RSVP…</p>
+          <p className="text-slate-600 font-medium">{t("invitation.rsvpPage.loadingRsvp")}</p>
         </div>
       </div>
     );
@@ -273,7 +275,7 @@ export default function RsvpPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6">
         <div className="text-center max-w-md">
-          <p className="text-red-600 font-medium mb-2">Unable to load RSVP</p>
+          <p className="text-red-600 font-medium mb-2">{t("invitation.rsvpPage.unableToLoadRsvp")}</p>
           <p className="text-slate-600 text-sm">{error}</p>
         </div>
       </div>

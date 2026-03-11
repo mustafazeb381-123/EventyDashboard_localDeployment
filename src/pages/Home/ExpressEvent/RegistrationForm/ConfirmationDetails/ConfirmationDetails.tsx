@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { QRCodeSVG } from "qrcode.react";
 import { Check, MapPin, Info, QrCode, Calendar, Clock, Loader2, Pencil, X, LayoutGrid, Palette } from "lucide-react";
 import { useParams } from "react-router-dom";
@@ -39,6 +40,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   const { id: routeId } = useParams();
   const effectiveEventId =
     (propEventId as string | undefined) || (routeId as string | undefined);
+
+  const { t } = useTranslation("dashboard");
 
   console.log("ConfirmationDetails - event id:", effectiveEventId);
 
@@ -225,8 +228,8 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
     if (!effectiveEventId) return;
     const trimmed = modalLocation.trim();
     if (!trimmed) {
-      setModalErrors({ location: "Event location is required" });
-      showNotification("Event location is required", "error");
+      setModalErrors({ location: t("expressEvent.eventLocationRequired") });
+      showNotification(t("expressEvent.eventLocationRequired"), "error");
       return;
     }
     setModalErrors({});
@@ -240,10 +243,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
       );
       setEditableLocation(trimmed);
       closeEditModal();
-      showNotification("Event location updated", "success");
+      showNotification(t("expressEvent.eventLocationUpdated"), "success");
     } catch (err: any) {
       console.error("Failed to save location:", err);
-      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? "Failed to save location";
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? t("expressEvent.failedSaveLocation");
       showNotification(msg, "error");
     } finally {
       setIsSavingModal(false);
@@ -256,12 +259,12 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
     const from = modalDateFrom.trim();
     const to = modalDateTo.trim();
     const errors: { location?: string; dateFrom?: string; dateTo?: string } = {};
-    if (!loc) errors.location = "Location is required";
-    if (!from) errors.dateFrom = "Start date is required";
-    if (!to) errors.dateTo = "End date is required";
+    if (!loc) errors.location = t("expressEvent.locationRequired");
+    if (!from) errors.dateFrom = t("expressEvent.startDateRequired");
+    if (!to) errors.dateTo = t("expressEvent.endDateRequired");
     if (Object.keys(errors).length > 0) {
       setModalErrors(errors);
-      showNotification("Please fill in all required fields: Location, Start Date, End Date", "error");
+      showNotification(t("expressEvent.fillAllRequiredFields"), "error");
       return;
     }
     setModalErrors({});
@@ -295,10 +298,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
       );
       setEditableLocation(loc);
       closeEditModal();
-      showNotification("Event details updated", "success");
+      showNotification(t("expressEvent.eventDetailsUpdated"), "success");
     } catch (err: any) {
       console.error("Failed to save event details:", err);
-      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? "Failed to save event details";
+      const msg = err?.response?.data?.message ?? err?.response?.data?.error ?? t("expressEvent.failedSaveEventDetails");
       showNotification(msg, "error");
     } finally {
       setIsSavingModal(false);
@@ -308,7 +311,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
   // Save event location and event details (about) via updateEventById - same pattern as MainData
   const handleSaveLocationAndDetails = async () => {
     if (!effectiveEventId) {
-      setLocationDetailsNotification({ message: "Event ID not found", type: "error" });
+      setLocationDetailsNotification({ message: t("expressEvent.eventIdNotFound"), type: "error" });
       return;
     }
     setIsSavingLocationDetails(true);
@@ -330,13 +333,13 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
             }
           : prev
       );
-      setLocationDetailsNotification({ message: "Location and event details updated", type: "success" });
+      setLocationDetailsNotification({ message: t("expressEvent.locationEventDetailsUpdated"), type: "success" });
     } catch (error: any) {
       console.error("Failed to save location/details:", error);
       const msg =
         error?.response?.data?.message ??
         error?.response?.data?.error ??
-        "Failed to save location and event details";
+        t("expressEvent.failedSaveLocationEventDetails");
       setLocationDetailsNotification({ message: msg, type: "error" });
     } finally {
       setIsSavingLocationDetails(false);
@@ -457,7 +460,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
             }`}
           >
             <LayoutGrid size={18} />
-            Quick toggles
+            {t("expressEvent.quickToggles")}
           </button>
           <button
             type="button"
@@ -469,7 +472,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
             }`}
           >
             <Palette size={18} />
-            Custom template
+            {t("expressEvent.customTemplate")}
           </button>
         </div>
       </div>
@@ -521,26 +524,26 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <StatusCard
                 icon={Check}
-                title="Confirmation message"
+                title={t("expressEvent.confirmationMessage")}
                 enabled={toggleStates.confirmationMsg}
                 onChange={(val) => updateToggle("confirmationMsg", val)}
               />
               <StatusCard
                 icon={QrCode}
-                title="User QR Code"
+                title={t("expressEvent.userQRCode")}
                 enabled={toggleStates.userQRCode}
                 onChange={(val) => updateToggle("userQRCode", val)}
                 showQR
               />
               <StatusCard
                 icon={MapPin}
-                title="Location"
+                title={t("expressEvent.location")}
                 enabled={toggleStates.location}
                 onChange={(val) => updateToggle("location", val)}
               />
               <StatusCard
                 icon={Info}
-                title="Event details"
+                title={t("expressEvent.eventDetails")}
                 enabled={toggleStates.eventDetails}
                 onChange={(val) => updateToggle("eventDetails", val)}
               />
@@ -559,7 +562,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                   <div className="w-3 h-3 bg-green-400 rounded-full"></div>
                 </div>
                 <span className="text-xs text-gray-500 font-medium ml-2">
-                  Preview
+                  {t("expressEvent.preview")}
                 </span>
               </div>
               <div className="w-8 h-6 bg-white border border-gray-300 rounded text-xs text-gray-400 flex items-center justify-center">
@@ -585,7 +588,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                   <Calendar className="text-white" size={32} />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3 font-poppins">
-                  {eventName || "Event Name"}
+                  {eventName || t("expressEvent.eventName")}
                 </h2>
                 <div className="flex items-center justify-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1.5">
@@ -620,7 +623,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 {eventData?.attributes?.about && (
                   <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
                     <h3 className="font-semibold text-gray-900 mb-2 font-poppins">
-                      About Event
+                      {t("expressEvent.aboutEvent")}
                     </h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       {eventData.attributes.about}
@@ -635,10 +638,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                       <Check size={32} className="text-white" strokeWidth={3} />
                     </div>
                     <p className="text-green-600 font-semibold text-lg font-poppins">
-                      Registration Complete!
+                      {t("expressEvent.registrationComplete")}
                     </p>
                     <p className="text-gray-500 text-xs mt-1">
-                      Your registration has been confirmed
+                      {t("expressEvent.registrationConfirmed")}
                     </p>
                   </div>
                 </div>
@@ -651,10 +654,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-green-800 font-poppins">
-                        Registration Confirmed Successfully!
+                        {t("expressEvent.registrationConfirmedSuccess")}
                       </p>
                       <p className="text-xs text-green-600 mt-0.5">
-                        You will receive a confirmation email shortly
+                        {t("expressEvent.confirmationEmailShortly")}
                       </p>
                     </div>
                   </div>
@@ -666,7 +669,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                     <div className="flex items-center justify-center gap-3 mb-3">
                       <QrCode size={20} className="text-blue-600" />
                       <span className="text-sm font-semibold text-blue-800 font-poppins">
-                        Your Event QR Code
+                        {t("expressEvent.yourEventQRCode")}
                       </span>
                     </div>
                     <div className="w-32 h-32 mx-auto bg-white rounded-xl p-3 shadow-inner border-2 border-blue-200 flex items-center justify-center">
@@ -679,7 +682,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                       />
                     </div>
                     <p className="text-xs text-blue-600 mt-3">
-                      Present this QR code at the event entrance
+                      {t("expressEvent.presentQRCode")}
                     </p>
                   </div>
                 )}
@@ -697,7 +700,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-orange-800 font-poppins">
-                          Event Location
+                          {t("expressEvent.eventLocation")}
                         </p>
                         <p className="text-xs text-orange-600 mt-0.5 truncate">
                           {eventData?.attributes?.location ?? "—"}
@@ -722,7 +725,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                     <div className="flex items-center justify-center gap-2 mb-4 relative">
                       <Info size={18} className="text-purple-600" />
                       <span className="text-sm font-semibold text-purple-800 font-poppins">
-                        Event Details
+                        {t("expressEvent.eventDetails")}
                       </span>
                       <button
                         type="button"
@@ -741,7 +744,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                           <div className="flex-1">
                             <p className="text-xs font-medium text-purple-900">
                               <span className="font-semibold">
-                                Start Date:{" "}
+                                {t("expressEvent.startDateLabel")}{" "}
                               </span>
                               {formatDate(eventData.attributes.event_date_from)}
                             </p>
@@ -756,7 +759,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                             <div className="flex-1">
                               <p className="text-xs font-medium text-purple-900">
                                 <span className="font-semibold">
-                                  End Date:{" "}
+                                  {t("expressEvent.endDateLabel")}{" "}
                                 </span>
                                 {formatDate(eventData.attributes.event_date_to)}
                               </p>
@@ -768,7 +771,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                           <Clock size={16} className="text-purple-500" />
                           <div className="flex-1">
                             <p className="text-xs font-medium text-purple-900">
-                              <span className="font-semibold">Time: </span>
+                              <span className="font-semibold">{t("expressEvent.timeLabel")} </span>
                               {formatTime(eventData.attributes.event_time_from)}
                               {eventData?.attributes?.event_time_to
                                 ? ` - ${formatTime(eventData.attributes.event_time_to)}`
@@ -782,7 +785,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                           <MapPin size={16} className="text-purple-500" />
                           <div className="flex-1">
                             <p className="text-xs font-medium text-purple-900">
-                              <span className="font-semibold">Location: </span>
+                              <span className="font-semibold">{t("expressEvent.locationLabel")} </span>
                               {eventData.attributes.location}
                             </p>
                           </div>
@@ -803,14 +806,14 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Event Location</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("expressEvent.editEventLocation")}</h3>
               <button type="button" onClick={closeEditModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Event Location <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">{t("expressEvent.eventLocation")} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={modalLocation}
@@ -818,7 +821,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                     setModalLocation(e.target.value);
                     if (modalErrors.location) setModalErrors((p) => ({ ...p, location: undefined }));
                   }}
-                  placeholder="Event location"
+                  placeholder={t("expressEvent.eventLocationPlaceholder")}
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
                     modalErrors.location ? "border-red-500" : "border-gray-300"
                   }`}
@@ -829,10 +832,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={closeEditModal} className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
-                  Cancel
+                  {t("expressEvent.cancel")}
                 </button>
                 <button type="button" onClick={handleSaveLocationModal} disabled={isSavingModal} className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2">
-                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save"}
+                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> {t("expressEvent.saving")}</> : t("expressEvent.save")}
                 </button>
               </div>
             </div>
@@ -845,14 +848,14 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Edit Event Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900">{t("expressEvent.editEventDetails")}</h3>
               <button type="button" onClick={closeEditModal} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors">
                 <X size={20} />
               </button>
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Start Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("expressEvent.startDate")} <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   value={modalDateFrom}
@@ -869,7 +872,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">End Date <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("expressEvent.endDate")} <span className="text-red-500">*</span></label>
                 <input
                   type="date"
                   value={modalDateTo}
@@ -887,7 +890,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Time From</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("expressEvent.timeFrom")}</label>
                   <input
                     type="time"
                     value={modalTimeFrom}
@@ -896,7 +899,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Time To</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("expressEvent.timeTo")}</label>
                   <input
                     type="time"
                     value={modalTimeTo}
@@ -906,7 +909,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Location <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">{t("expressEvent.location")} <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   value={modalLocation}
@@ -914,7 +917,7 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
                     setModalLocation(e.target.value);
                     if (modalErrors.location) setModalErrors((p) => ({ ...p, location: undefined }));
                   }}
-                  placeholder="Event location"
+                  placeholder={t("expressEvent.eventLocationPlaceholder")}
                   className={`w-full px-3 py-2.5 border rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     modalErrors.location ? "border-red-500" : "border-gray-300"
                   }`}
@@ -925,10 +928,10 @@ const ConfirmationDetails: React.FC<ConfirmationDetailsProps> = ({
               </div>
               <div className="flex gap-3 justify-end pt-2">
                 <button type="button" onClick={closeEditModal} className="px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm font-medium">
-                  Cancel
+                  {t("expressEvent.cancel")}
                 </button>
                 <button type="button" onClick={handleSaveEventDetailsModal} disabled={isSavingModal} className="px-4 py-2.5 bg-purple-500 hover:bg-purple-600 text-white rounded-lg text-sm font-medium disabled:opacity-60 flex items-center gap-2">
-                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> Saving...</> : "Save"}
+                  {isSavingModal ? <><Loader2 size={16} className="animate-spin" /> {t("expressEvent.saving")}</> : t("expressEvent.save")}
                 </button>
               </div>
             </div>

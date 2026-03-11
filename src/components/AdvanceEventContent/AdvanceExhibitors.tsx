@@ -15,6 +15,7 @@ import {
   updateExhibitorApi,
 } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
+import { useTranslation } from "react-i18next";
 
 interface AdvanceExhibitorsProps {
   onNext?: (eventId?: string | number) => void;
@@ -48,7 +49,8 @@ function AdvanceExhibitors({
   totalSteps = 4,
   eventId,
 }: AdvanceExhibitorsProps) {
-  const STEP_NAMES = ["Speakers", "Exhibitors", "Partners", "Agenda", "Area"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.exhibitors.speakers"), t("advance.exhibitors.exhibitors"), t("advance.exhibitors.partners"), t("advance.exhibitors.agenda"), t("advance.exhibitors.area")];
   // currentStep is passed from parent (0-3 for 4 steps)
   const [eventUsers, setEventUsers] = useState<Exhibitor[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -147,11 +149,11 @@ function AdvanceExhibitors({
           setPagination(paginationMeta);
         }
       } else {
-        showNotification("Failed to fetch exhibitors", "error");
+        showNotification(t("advance.exhibitors.failedToFetch"), "error");
       }
     } catch (error: any) {
       console.log("💥 GET exhibitors error:", error);
-      showNotification("Network error: Cannot fetch exhibitors", "error");
+      showNotification(t("advance.exhibitors.networkErrorFetch"), "error");
     } finally {
       setIsFetchingExhibitors(false);
     }
@@ -198,19 +200,19 @@ function AdvanceExhibitors({
 
       // Backend returns 200 or 204 on successful deletion
       if (response.status === 200 || response.status === 204) {
-        showNotification("Exhibitor deleted successfully!", "success");
+        showNotification(t("advance.exhibitors.deletedSuccess"), "success");
         setIsDeleteModalOpen(false);
         setExhibitorToDelete(null);
         // Refresh current page to show updated data
         fetchExhibitors(eventId!, currentPage);
       } else {
-        showNotification("Failed to delete exhibitor", "error");
+        showNotification(t("advance.exhibitors.failedToDelete"), "error");
       }
     } catch (error: any) {
       console.error("Delete exhibitor error:", error);
       showNotification(
         error.response?.data?.message ||
-          "Network error: Cannot delete exhibitor",
+          t("advance.exhibitors.networkErrorDelete"),
         "error"
       );
     } finally {
@@ -233,7 +235,7 @@ function AdvanceExhibitors({
 
   const handleAddExhibitor = async () => {
     if (!newExhibitor.name || !newExhibitor.organization) {
-      showNotification("Please fill all required fields!", "error");
+      showNotification(t("advance.exhibitors.fillRequired"), "error");
       return;
     }
 
@@ -250,7 +252,7 @@ function AdvanceExhibitors({
       }
 
       if (!eventId) {
-        showNotification("Event ID is required!", "error");
+        showNotification(t("advance.exhibitors.eventIdRequired"), "error");
         setIsAddingExhibitor(false);
         return;
       }
@@ -288,7 +290,7 @@ function AdvanceExhibitors({
           _imageVersion: Date.now(),
         };
 
-        showNotification("Exhibitor added successfully!", "success");
+        showNotification(t("advance.exhibitors.addedSuccess"), "success");
 
         // Reset UI
         setNewExhibitor({
@@ -309,11 +311,11 @@ function AdvanceExhibitors({
 
       if (error.response) {
         showNotification(
-          error.response.data?.message || "Failed to add exhibitor",
+          error.response.data?.message || t("advance.exhibitors.failedToAdd"),
           "error"
         );
       } else {
-        showNotification("Network error: Cannot connect to server.", "error");
+        showNotification(t("advance.exhibitors.networkErrorConnect"), "error");
       }
     } finally {
       setIsAddingExhibitor(false);
@@ -324,7 +326,7 @@ function AdvanceExhibitors({
     if (!editingExhibitor) return;
 
     if (!editExhibitorData.name || !editExhibitorData.organization) {
-      showNotification("Please fill all required fields!", "error");
+      showNotification(t("advance.exhibitors.fillRequired"), "error");
       return;
     }
 
@@ -353,7 +355,7 @@ function AdvanceExhibitors({
         console.log("Update API response:", updated);
         console.log("New image_url:", updated.attributes.image_url);
 
-        showNotification("Exhibitor updated successfully!", "success");
+        showNotification(t("advance.exhibitors.updatedSuccess"), "success");
         setEditModalOpen(false);
         setEditingExhibitor(null);
         setEditSelectedImageFile(null);
@@ -366,7 +368,7 @@ function AdvanceExhibitors({
       console.error("Update exhibitor error:", error);
       showNotification(
         error.response?.data?.message ||
-          "Network error: Cannot update exhibitor",
+          t("advance.exhibitors.networkErrorUpdate"),
         "error"
       );
     } finally {
@@ -503,15 +505,15 @@ function AdvanceExhibitors({
       <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Exhibitors</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t("advance.exhibitors.exhibitors")}</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
               {isFetchingExhibitors ? (
                 <span className="flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading...
+                  {t("advance.exhibitors.loading")}
                 </span>
               ) : (
-                `${eventUsers.length} Exhibitors`
+                `${eventUsers.length} ${t("advance.exhibitors.exhibitors")}`
               )}
             </span>
           </div>
@@ -522,7 +524,7 @@ function AdvanceExhibitors({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isFetchingExhibitors ? "Loading..." : "Add Exhibitor"}
+            {isFetchingExhibitors ? t("advance.exhibitors.loading") : t("advance.exhibitors.addExhibitor")}
           </button>
         </div>
 
@@ -583,13 +585,13 @@ function AdvanceExhibitors({
           </div>
         ) : eventUsers.length === 0 ? (
           <div className="text-center py-12 border border-gray-200 rounded-lg">
-            <p className="text-gray-500 mb-4">No exhibitors found</p>
+            <p className="text-gray-500 mb-4">{t("advance.exhibitors.noExhibitorsFound")}</p>
             <button
               onClick={() => setAddModalOpen(true)}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add Your First Exhibitor
+              {t("advance.exhibitors.addYourFirstExhibitor")}
             </button>
           </div>
         ) : (
@@ -714,7 +716,7 @@ function AdvanceExhibitors({
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">
-                Add Exhibitor
+                {t("advance.exhibitors.addExhibitor")}
               </h2>
 
               <div className="space-y-4">
@@ -724,7 +726,7 @@ function AdvanceExhibitors({
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter exhibitor name"
+                    placeholder={t("advance.exhibitors.enterExhibitorName")}
                     value={newExhibitor.name}
                     onChange={(e) =>
                       setNewExhibitor({ ...newExhibitor, name: e.target.value })
@@ -782,7 +784,7 @@ function AdvanceExhibitors({
                     Description
                   </label>
                   <textarea
-                    placeholder="Enter exhibitor description"
+                    placeholder={t("advance.exhibitors.enterExhibitorDescription")}
                     value={newExhibitor.description}
                     onChange={(e) =>
                       setNewExhibitor({
@@ -802,7 +804,7 @@ function AdvanceExhibitors({
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter organization name"
+                    placeholder={t("advance.exhibitors.enterOrganizationName")}
                     value={newExhibitor.organization}
                     onChange={(e) =>
                       setNewExhibitor({
@@ -822,7 +824,7 @@ function AdvanceExhibitors({
                   disabled={isAddingExhibitor}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.exhibitors.cancel")}
                 </button>
                 <button
                   onClick={handleAddExhibitor}
@@ -832,12 +834,12 @@ function AdvanceExhibitors({
                   {isAddingExhibitor ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Adding Exhibitor...
+                      {t("advance.exhibitors.addingExhibitor")}
                     </>
                   ) : (
                     <>
                       <Plus className="w-4 h-4" />
-                      Add Exhibitor
+                      {t("advance.exhibitors.addExhibitor")}
                     </>
                   )}
                 </button>
@@ -857,7 +859,7 @@ function AdvanceExhibitors({
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold mb-4 text-gray-900">
-                Edit Exhibitor
+                {t("advance.exhibitors.editExhibitor")}
               </h2>
 
               <div className="space-y-4">
@@ -867,7 +869,7 @@ function AdvanceExhibitors({
                   </label>
                   <input
                     type="text"
-                    placeholder="Enter exhibitor name"
+                    placeholder={t("advance.exhibitors.enterExhibitorName")}
                     value={editExhibitorData.name}
                     onChange={(e) =>
                       setEditExhibitorData({
@@ -886,7 +888,7 @@ function AdvanceExhibitors({
                   </label>
                   <input
                     type="text"
-                    placeholder="Organization"
+                    placeholder={t("advance.exhibitors.organization")}
                     value={editExhibitorData.organization}
                     onChange={(e) =>
                       setEditExhibitorData({
@@ -904,7 +906,7 @@ function AdvanceExhibitors({
                     Description
                   </label>
                   <textarea
-                    placeholder="Description"
+                    placeholder={t("advance.exhibitors.description")}
                     value={editExhibitorData.description}
                     onChange={(e) =>
                       setEditExhibitorData({
@@ -979,7 +981,7 @@ function AdvanceExhibitors({
                   disabled={isUpdatingExhibitor}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.exhibitors.cancel")}
                 </button>
                 <button
                   onClick={handleUpdateExhibitor}
@@ -989,10 +991,10 @@ function AdvanceExhibitors({
                   {isUpdatingExhibitor ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Updating...
+                      {t("advance.exhibitors.updating")}
                     </>
                   ) : (
-                    "Update Exhibitor"
+                    t("advance.exhibitors.updateExhibitor")
                   )}
                 </button>
               </div>
@@ -1039,7 +1041,7 @@ function AdvanceExhibitors({
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Delete Exhibitor
+                  {t("advance.exhibitors.deleteExhibitor")}
                 </h3>
                 <button
                   onClick={() => {
@@ -1057,7 +1059,7 @@ function AdvanceExhibitors({
 
               <div className="mb-6">
                 <p className="text-gray-600 mb-2">
-                  Are you sure you want to delete this exhibitor?
+                  {t("advance.exhibitors.confirmDeleteExhibitor")}
                 </p>
                 {exhibitorToDelete && (
                   <div className="bg-gray-50 p-3 rounded-lg mt-3">
@@ -1070,7 +1072,7 @@ function AdvanceExhibitors({
                   </div>
                 )}
                 <p className="text-sm text-red-600 mt-3">
-                  This action cannot be undone.
+                  {t("advance.exhibitors.cannotBeUndone")}
                 </p>
               </div>
 
@@ -1083,7 +1085,7 @@ function AdvanceExhibitors({
                   disabled={isDeletingExhibitor !== null}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.exhibitors.cancel")}
                 </button>
                 <button
                   onClick={confirmDelete}
@@ -1093,12 +1095,12 @@ function AdvanceExhibitors({
                   {isDeletingExhibitor !== null ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Deleting...
+                      {t("advance.exhibitors.deleting")}
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t("advance.exhibitors.delete")}
                     </>
                   )}
                 </button>

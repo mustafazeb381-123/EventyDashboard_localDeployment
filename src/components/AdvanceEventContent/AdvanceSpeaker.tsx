@@ -15,6 +15,7 @@ import {
   updateSpeakerApi,
 } from "@/apis/apiHelpers";
 import Pagination from "../Pagination";
+import { useTranslation } from "react-i18next";
 
 interface AdvanceSpeakerProps {
   onNext?: (eventId?: string | number) => void;
@@ -105,7 +106,8 @@ function AdvanceSpeaker({
   totalSteps = 5,
   eventId,
 }: AdvanceSpeakerProps) {
-  const STEP_NAMES = ["Speakers", "Exhibitors", "Partners", "Agenda", "Area"];
+  const { t } = useTranslation("dashboard");
+  const STEP_NAMES = [t("advance.speaker.speakers"), t("advance.speaker.exhibitors"), t("advance.speaker.partners"), t("advance.speaker.agenda"), t("advance.speaker.area")];
   // currentStep is passed from parent (0-3 for 4 steps)
   console.log("-------event id---------------", eventId);
 
@@ -199,11 +201,11 @@ function AdvanceSpeaker({
           setPagination(paginationMeta);
         }
       } else {
-        showNotification("Failed to fetch speakers", "error");
+        showNotification(t("advance.speaker.failedToFetch"), "error");
       }
     } catch (error: any) {
       console.log("💥 GET speakers error:", error);
-      showNotification("Network error: Cannot fetch speakers", "error");
+      showNotification(t("advance.speaker.networkErrorFetch"), "error");
     } finally {
       setIsFetchingSpeakers(false);
     }
@@ -249,18 +251,18 @@ function AdvanceSpeaker({
       const response = await deleteSpeakerApi(eventId!, speakerToDelete.id);
 
       if (response.status === 200 || response.status === 204) {
-        showNotification("Speaker deleted successfully!", "success");
+        showNotification(t("advance.speaker.deletedSuccess"), "success");
         setIsDeleteModalOpen(false);
         setSpeakerToDelete(null);
         // Refresh current page to show updated data
         fetchSpeakers(eventId!, currentPage);
       } else {
-        showNotification("Failed to delete speaker", "error");
+        showNotification(t("advance.speaker.failedToDelete"), "error");
       }
     } catch (error: any) {
       console.error("Delete speaker error:", error);
       showNotification(
-        error.response?.data?.message || "Network error: Cannot delete speaker",
+        error.response?.data?.message || t("advance.speaker.networkErrorDelete"),
         "error"
       );
     } finally {
@@ -282,7 +284,7 @@ function AdvanceSpeaker({
 
   const handleAddSpeaker = async () => {
     if (!newSpeaker.name || !newSpeaker.organization) {
-      showNotification("Please fill all required fields!", "error");
+      showNotification(t("advance.speaker.fillRequired"), "error");
       return;
     }
 
@@ -298,7 +300,7 @@ function AdvanceSpeaker({
       }
 
       if (!eventId) {
-        showNotification("Event ID is required!", "error");
+        showNotification(t("advance.speaker.eventIdRequired"), "error");
         setIsAddingSpeaker(false);
         return;
       }
@@ -323,7 +325,7 @@ function AdvanceSpeaker({
           },
         };
 
-        showNotification("Speaker added successfully!", "success");
+        showNotification(t("advance.speaker.addedSuccess"), "success");
         // Refresh current page to show updated data
         fetchSpeakers(eventId, currentPage);
 
@@ -342,11 +344,11 @@ function AdvanceSpeaker({
 
       if (error.response) {
         showNotification(
-          error.response.data?.message || "Failed to add speaker",
+          error.response.data?.message || t("advance.speaker.failedToAdd"),
           "error"
         );
       } else {
-        showNotification("Network error: Cannot connect to server.", "error");
+        showNotification(t("advance.speaker.networkErrorConnect"), "error");
       }
     } finally {
       setIsAddingSpeaker(false);
@@ -357,7 +359,7 @@ function AdvanceSpeaker({
     if (!editingSpeaker) return;
 
     if (!editSpeakerData.name || !editSpeakerData.organization) {
-      showNotification("Please fill all required fields!", "error");
+      showNotification(t("advance.speaker.fillRequired"), "error");
       return;
     }
 
@@ -380,7 +382,7 @@ function AdvanceSpeaker({
 
       if (response.status === 200) {
         const updated = response.data.data;
-        showNotification("Speaker updated successfully!", "success");
+        showNotification(t("advance.speaker.updatedSuccess"), "success");
         setEditModalOpen(false);
         setEditingSpeaker(null);
         // Refresh current page to show updated data
@@ -389,7 +391,7 @@ function AdvanceSpeaker({
     } catch (error: any) {
       console.error("Update speaker error:", error);
       showNotification(
-        error.response?.data?.message || "Network error: Cannot update speaker",
+        error.response?.data?.message || t("advance.speaker.networkErrorUpdate"),
         "error"
       );
     } finally {
@@ -494,15 +496,15 @@ function AdvanceSpeaker({
       <div className="mx-auto">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-semibold text-gray-900">Speakers</h1>
+            <h1 className="text-2xl font-semibold text-gray-900">{t("advance.speaker.speakers")}</h1>
             <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">
               {isFetchingSpeakers ? (
                 <span className="flex items-center gap-1">
                   <Loader2 className="w-3 h-3 animate-spin" />
-                  Loading...
+                  {t("advance.speaker.loading")}
                 </span>
               ) : (
-                `${eventUsers.length} Speakers`
+                `${eventUsers.length} ${t("advance.speaker.speakers")}`
               )}
             </span>
           </div>
@@ -513,7 +515,7 @@ function AdvanceSpeaker({
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Plus className="w-4 h-4" />
-            {isFetchingSpeakers ? "Loading..." : "Add Speaker"}
+            {isFetchingSpeakers ? t("advance.speaker.loading") : t("advance.speaker.addSpeaker")}
           </button>
         </div>
 
@@ -574,13 +576,13 @@ function AdvanceSpeaker({
           </div>
         ) : eventUsers.length === 0 ? (
           <div className="text-center py-12 border border-gray-200 rounded-lg">
-            <p className="text-gray-500 mb-4">No speakers found</p>
+            <p className="text-gray-500 mb-4">{t("advance.speaker.noSpeakersFound")}</p>
             <button
               onClick={() => setAddModalOpen(true)}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              Add Your First Speaker
+              {t("advance.speaker.addYourFirstSpeaker")}
             </button>
           </div>
         ) : (
@@ -708,7 +710,7 @@ function AdvanceSpeaker({
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Add Speaker
+              {t("advance.speaker.addSpeaker")}
             </h2>
 
             <div className="space-y-4">
@@ -718,7 +720,7 @@ function AdvanceSpeaker({
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter speaker name"
+                  placeholder={t("advance.speaker.enterSpeakerName")}
                   value={newSpeaker.name}
                   onChange={(e) =>
                     setNewSpeaker({ ...newSpeaker, name: e.target.value })
@@ -776,7 +778,7 @@ function AdvanceSpeaker({
                   Description
                 </label>
                 <textarea
-                  placeholder="Enter speaker description"
+                  placeholder={t("advance.speaker.enterSpeakerDescription")}
                   value={newSpeaker.description}
                   onChange={(e) =>
                     setNewSpeaker({
@@ -796,7 +798,7 @@ function AdvanceSpeaker({
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter organization name"
+                  placeholder={t("advance.speaker.enterOrganizationName")}
                   value={newSpeaker.organization}
                   onChange={(e) =>
                     setNewSpeaker({
@@ -816,7 +818,7 @@ function AdvanceSpeaker({
                 disabled={isAddingSpeaker}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {t("advance.speaker.cancel")}
               </button>
               <button
                 onClick={handleAddSpeaker}
@@ -826,12 +828,12 @@ function AdvanceSpeaker({
                 {isAddingSpeaker ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Adding Speaker...
+                    {t("advance.speaker.addingSpeaker")}
                   </>
                 ) : (
                   <>
                     <Plus className="w-4 h-4" />
-                    Add Speaker
+                    {t("advance.speaker.addSpeaker")}
                   </>
                 )}
               </button>
@@ -851,7 +853,7 @@ function AdvanceSpeaker({
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold mb-4 text-gray-900">
-              Edit Speaker
+              {t("advance.speaker.editSpeaker")}
             </h2>
 
             <div className="space-y-4">
@@ -861,7 +863,7 @@ function AdvanceSpeaker({
                 </label>
                 <input
                   type="text"
-                  placeholder="Enter speaker name"
+                  placeholder={t("advance.speaker.enterSpeakerName")}
                   value={editSpeakerData.name}
                   onChange={(e) =>
                     setEditSpeakerData({
@@ -880,7 +882,7 @@ function AdvanceSpeaker({
                 </label>
                 <input
                   type="text"
-                  placeholder="Organization"
+                  placeholder={t("advance.speaker.organization")}
                   value={editSpeakerData.organization}
                   onChange={(e) =>
                     setEditSpeakerData({
@@ -898,7 +900,7 @@ function AdvanceSpeaker({
                   Description
                 </label>
                 <textarea
-                  placeholder="Description"
+                  placeholder={t("advance.speaker.description")}
                   value={editSpeakerData.description}
                   onChange={(e) =>
                     setEditSpeakerData({
@@ -960,7 +962,7 @@ function AdvanceSpeaker({
                 disabled={isUpdatingSpeaker}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Cancel
+                {t("advance.speaker.cancel")}
               </button>
               <button
                 onClick={handleUpdateSpeaker}
@@ -970,10 +972,10 @@ function AdvanceSpeaker({
                 {isUpdatingSpeaker ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Updating...
+                    {t("advance.speaker.updating")}
                   </>
                 ) : (
-                  "Update Speaker"
+                  t("advance.speaker.updateSpeaker")
                 )}
               </button>
             </div>
@@ -1019,7 +1021,7 @@ function AdvanceSpeaker({
               {/* Header */}
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Delete Speaker
+                  {t("advance.speaker.deleteSpeaker")}
                 </h3>
                 <button
                   onClick={() => {
@@ -1038,7 +1040,7 @@ function AdvanceSpeaker({
               {/* Content */}
               <div className="mb-6">
                 <p className="text-gray-600 mb-2">
-                  Are you sure you want to delete this speaker?
+                  {t("advance.speaker.confirmDeleteSpeaker")}
                 </p>
                 {speakerToDelete && (
                   <div className="bg-gray-50 p-3 rounded-lg mt-3">
@@ -1051,7 +1053,7 @@ function AdvanceSpeaker({
                   </div>
                 )}
                 <p className="text-sm text-red-600 mt-3">
-                  This action cannot be undone.
+                  {t("advance.speaker.cannotBeUndone")}
                 </p>
               </div>
 
@@ -1065,7 +1067,7 @@ function AdvanceSpeaker({
                   disabled={isDeletingSpeaker !== null}
                   className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Cancel
+                  {t("advance.speaker.cancel")}
                 </button>
                 <button
                   onClick={confirmDelete}
@@ -1075,12 +1077,12 @@ function AdvanceSpeaker({
                   {isDeletingSpeaker !== null ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Deleting...
+                      {t("advance.speaker.deleting")}
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Delete
+                      {t("advance.speaker.delete")}
                     </>
                   )}
                 </button>

@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { CustomFormField, FieldType } from "../types";
 import { updateFieldLabelWithAutoProps } from "../utils/fieldAuto";
+import { useTranslation } from "react-i18next";
 
 interface SortableFieldItemProps {
   field: CustomFormField;
@@ -42,6 +43,7 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
   onUpdate,
   isInsideContainer = false,
 }) => {
+  const { t } = useTranslation("dashboard");
   const {
     attributes,
     listeners,
@@ -182,8 +184,8 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
             }
             title={
               canEdit
-                ? "Click or double-click to edit label"
-                : "Use edit button to configure this field"
+                ? t("advance.formBuilder.clickToEditLabel")
+                : t("advance.formBuilder.useEditButton")
             }
           >
             {field.label || field.name || "Field"}
@@ -251,7 +253,7 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
                     e.stopPropagation();
                     setIsEditingLabel(true);
                   }}
-                  title="Click or double-click to edit label"
+                  title={t("advance.formBuilder.clickToEditLabel")}
                 >
                   {field.label}
                 </span>
@@ -277,7 +279,7 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
             onEdit(field);
           }}
           className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-          title="Edit field configuration"
+          title={t("advance.formBuilder.editFieldConfig")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Edit size={18} />
@@ -288,7 +290,7 @@ export const SortableFieldItem: React.FC<SortableFieldItemProps> = ({
             onDelete(field.id);
           }}
           className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-          title="Delete field"
+          title={t("advance.formBuilder.deleteField")}
           onPointerDown={(e) => e.stopPropagation()}
         >
           <Trash2 size={18} />
