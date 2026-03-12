@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
+import React, { useCallback, useEffect, useState, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
   ChevronLeft,
@@ -21,21 +21,9 @@ import {
   setRegistrationFormTemplateAsDefault,
   createEventUser,
 } from "@/apis/apiHelpers";
-import TemplateOne from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateOne/TemplateOne";
-import TemplateTwo from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateTwo/TemplateTwo";
-import TemplateThree from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateThree/TemplateThree";
-import TemplateFour from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFour/TemplateFour";
-import TemplateFive from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFive/TemplateFive";
-import TemplateSix from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateSix/TemplateSix";
-import TemplateSeven from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateSeven/TemplateSeven";
-import TemplateFormOne from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateOne/TemplateForm";
-import TemplateFormTwo from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateTwo/TemplateForm";
-import TemplateFormThree from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateThree/TemplateForm";
-import TemplateFormFour from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFour/TemplateForm";
-import TemplateFormFive from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateFive/TemplateForm";
-import TemplateFormSix from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateSix/TemplateForm";
-import TemplateFormSeven from "@/pages/Home/ExpressEvent/RegistrationForm/RegistrationTemplates/TemplateSeven/TemplateForm";
 import ReusableRegistrationForm from "@/pages/Home/ExpressEvent/RegistrationForm/components/ReusableRegistrationForm";
+import { PREBUILT_TEMPLATES, type PrebuiltTemplate } from "@/pages/Home/ExpressEvent/RegistrationForm/prebuiltTemplates";
+import PrebuiltTemplateCard from "@/pages/Home/ExpressEvent/RegistrationForm/PrebuiltTemplateCard";
 import CustomFormBuilder from "./CustomFormBuilder";
 import type {
   CustomFormField,
@@ -2321,74 +2309,6 @@ export const FormBuilderTemplateForm: React.FC<
   );
 };
 
-// -------------------- MODAL COMPONENT (Default Templates) --------------------
-const TemplateModal = ({
-  selectedTemplate,
-  onClose,
-  onUseTemplate,
-  formData,
-  isLoading,
-  isLoadingFormData,
-  eventId,
-}: ModalProps) => {
-  if (!selectedTemplate) return null;
-
-  const renderTemplate = (Component: any) => {
-    if (isLoadingFormData || !formData || formData.length === 0) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-slate-600 mb-4" />
-          <p className="text-slate-600 text-lg font-medium">
-            Loading template...
-          </p>
-          <p className="text-slate-500 text-sm mt-2">
-            Preparing registration form
-          </p>
-        </div>
-      );
-    }
-    return (
-      <Component
-        data={formData}
-        eventId={eventId}
-        isLoading={isLoading || isLoadingFormData}
-        onUseTemplate={(tid: string) => onUseTemplate(tid)}
-      />
-    );
-  };
-
-  const templateMap: Record<string, any> = {
-    "template-one": TemplateOne,
-    "template-two": TemplateTwo,
-    "template-three": TemplateThree,
-    "template-four": TemplateFour,
-    "template-five": TemplateFive,
-    "template-six": TemplateSix,
-    "template-seven": TemplateSeven,
-  };
-
-  const TemplateComponent = templateMap[selectedTemplate];
-
-  return (
-    <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-40">
-      <div className="bg-white rounded-3xl p-6 md:p-8 w-[80%] max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-end">
-          <button
-            onClick={onClose}
-            disabled={isLoading}
-            className={`text-gray-400 hover:text-gray-800 bg-gray-200 rounded p-1 ${
-              isLoading ? "cursor-not-allowed opacity-50" : ""
-            }`}
-          >
-            <X />
-          </button>
-        </div>
-        {TemplateComponent && renderTemplate(TemplateComponent)}
-      </div>
-    </div>
-  );
-};
-
 // -------------------- MAIN COMPONENT --------------------
 const AdvanceRegistration = ({
   onNext,
@@ -2447,6 +2367,12 @@ const AdvanceRegistration = ({
   const [isDeleteFormBuilderModalOpen, setIsDeleteFormBuilderModalOpen] =
     useState(false);
   const [isDeletingFormBuilder, setIsDeletingFormBuilder] = useState(false);
+
+  // Prebuilt templates (from prebuiltTemplates.ts – no old default template-one..seven)
+  const [prebuiltPreviewTemplate, setPrebuiltPreviewTemplate] =
+    useState<PrebuiltTemplate | null>(null);
+  const [isPrebuiltPreviewOpen, setIsPrebuiltPreviewOpen] = useState(false);
+  const [isSavingPrebuilt, setIsSavingPrebuilt] = useState(false);
 
   // Notification state
   const [notification, setNotification] = useState<{
@@ -2851,23 +2777,6 @@ const AdvanceRegistration = ({
   useEffect(() => {
     if (effectiveEventId) getFieldAPi(effectiveEventId);
   }, [selectedTemplate, effectiveEventId]);
-
-  const getTemplateData = (templateId: string) => {
-    if (templateId === selectedTemplateName) {
-      return getTemplatesData.length > 0 ? getTemplatesData : formData;
-    }
-    return formData;
-  };
-
-  const defaultTemplates = [
-    { id: "template-one", component: TemplateFormOne },
-    { id: "template-two", component: TemplateFormTwo },
-    { id: "template-three", component: TemplateFormThree },
-    { id: "template-four", component: TemplateFormFour },
-    { id: "template-five", component: TemplateFormFive },
-    { id: "template-six", component: TemplateFormSix },
-    { id: "template-seven", component: TemplateFormSeven },
-  ];
 
   // -------------------- FORM BUILDER FUNCTIONS --------------------
   // const handleOpenFormBuilder = () => {
@@ -3349,12 +3258,11 @@ const AdvanceRegistration = ({
 
       // Prepare API payload - match exact API spec
       // Include formBuilderData to preserve complete field structure with all properties
+      // When editing or creating, set this template as default so it stays selected after save
       const payload = {
         registration_form_template: {
           name: template.title.trim(),
-          default: isEditFormBuilderMode
-            ? false
-            : confirmedTemplate === template.id,
+          default: true,
           form_template_data: {
             fields: fields, // Complete CustomFormField[] with all properties (id, type, label, name, placeholder, required, fieldStyle, layoutProps, etc.)
             formBuilderData: {
@@ -3446,6 +3354,7 @@ const AdvanceRegistration = ({
 
       // Save to API - use UPDATE if editing, CREATE if new
       let response;
+      let savedTemplateId: string | null = null;
       if (isEditFormBuilderMode && editingFormBuilderTemplate?.id) {
         // Update existing template
         response = await updateRegistrationFormTemplate(
@@ -3517,6 +3426,7 @@ const AdvanceRegistration = ({
             "✅ Banner image unchanged - preserving existing (no base64 to send)",
           );
         }
+        savedTemplateId = String(editingFormBuilderTemplate.id);
       } else {
         // Create new template
         response = await createRegistrationFormTemplate(
@@ -3524,17 +3434,17 @@ const AdvanceRegistration = ({
           payload,
         );
         console.log("Template created successfully:", response);
+        const newData = response?.data?.data;
+        if (newData?.id != null) savedTemplateId = String(newData.id);
       }
 
       // Reload templates from API to get the updated list
       await loadFormBuilderTemplates();
 
-      // If this is a new template or it's being set as default, update confirmed template
-      if (!isEditFormBuilderMode || confirmedTemplate === template.id) {
-        const savedTemplate = response?.data?.data;
-        if (savedTemplate) {
-          setConfirmedTemplate(savedTemplate.id.toString());
-        }
+      // Re-apply selection after load so the saved form stays selected (same flow as RegistrationForm)
+      if (savedTemplateId != null) {
+        setLastSelectedSystem("custom");
+        setConfirmedTemplate(savedTemplateId);
       }
 
       showNotification(
@@ -3753,13 +3663,18 @@ const AdvanceRegistration = ({
   };
 
   const handleUseFormBuilderTemplate = async (templateId: string) => {
+    if (!effectiveEventId) return;
+    const template = formBuilderTemplates.find((t) => t.id === templateId);
+    if (!template) return;
+
+    // If this template is already selected, avoid unnecessary API calls (same flow as RegistrationForm)
+    if (confirmedTemplate === String(templateId)) {
+      showNotification("This form is already selected.", "info");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      if (!effectiveEventId) throw new Error("Event ID not found");
-
-      const template = formBuilderTemplates.find((t) => t.id === templateId);
-      if (!template) throw new Error("Template not found");
-
       console.log("🔄 Setting custom template as default:", {
         templateId,
         eventId: effectiveEventId,
@@ -3824,56 +3739,9 @@ const AdvanceRegistration = ({
           dataStringified: JSON.stringify(apiError, null, 2),
         });
 
-        // Handle validation errors (422)
+        // Handle validation errors (422) - e.g. already default; show friendly message (same as RegistrationForm)
         if (error.response.status === 422) {
-          const validationErrors: string[] = [];
-
-          // Check for errors object (Rails-style validation errors)
-          if (apiError?.errors) {
-            Object.keys(apiError.errors).forEach((field) => {
-              const fieldErrors = apiError.errors[field];
-              if (Array.isArray(fieldErrors)) {
-                fieldErrors.forEach((err: any) => {
-                  const errorText =
-                    typeof err === "string" ? err : JSON.stringify(err);
-                  validationErrors.push(`${field}: ${errorText}`);
-                });
-              } else if (typeof fieldErrors === "string") {
-                validationErrors.push(`${field}: ${fieldErrors}`);
-              } else {
-                validationErrors.push(
-                  `${field}: ${JSON.stringify(fieldErrors)}`,
-                );
-              }
-            });
-          }
-
-          // Check for error array
-          if (apiError?.error && Array.isArray(apiError.error)) {
-            apiError.error.forEach((err: any) => {
-              const errorText =
-                typeof err === "string" ? err : JSON.stringify(err);
-              validationErrors.push(errorText);
-            });
-          }
-
-          // Check for single error message
-          if (apiError?.error && typeof apiError.error === "string") {
-            validationErrors.push(apiError.error);
-          }
-
-          // Check for message
-          if (apiError?.message) {
-            validationErrors.push(apiError.message);
-          }
-
-          // If we have validation errors, format them
-          if (validationErrors.length > 0) {
-            errorMessage = `Validation failed:\n${validationErrors.join("\n")}`;
-          } else {
-            // Fallback: show the full error object as JSON
-            errorMessage = `Validation failed. Details:\n${JSON.stringify(apiError, null, 2)}`;
-          }
+          errorMessage = "This form is already selected.";
         } else if (apiError?.error) {
           // Handle error field (could be string, object, or array)
           if (typeof apiError.error === "string") {
@@ -3899,7 +3767,105 @@ const AdvanceRegistration = ({
     }
   };
 
-  // -------------------- DEFAULT TEMPLATE HANDLERS --------------------
+  // -------------------- PREBUILT TEMPLATE HANDLERS (from prebuiltTemplates.ts) --------------------
+  const handlePrebuiltPreview = useCallback((key: string) => {
+    const tpl = PREBUILT_TEMPLATES.find((t) => t.key === key);
+    if (tpl) {
+      setPrebuiltPreviewTemplate(tpl);
+      setIsPrebuiltPreviewOpen(true);
+    }
+  }, []);
+
+  const handleUsePrebuiltTemplate = useCallback(
+    async (key: string) => {
+      if (!effectiveEventId) return;
+      const tpl = PREBUILT_TEMPLATES.find((t) => t.key === key);
+      if (!tpl) return;
+
+      const prebuiltName = t(tpl.nameKey);
+      const existingSameName = formBuilderTemplates.find(
+        (t) => (t.title || "").trim() === (prebuiltName || "").trim(),
+      );
+      if (existingSameName && confirmedTemplate === String(existingSameName.id)) {
+        showNotification("This form is already selected.", "info");
+        return;
+      }
+
+      setIsSavingPrebuilt(true);
+      try {
+        const cleanTheme: Record<string, unknown> = {
+          formBackgroundColor: "#ffffff",
+          formPadding: "24px",
+          ...Object.fromEntries(
+            Object.entries(tpl.theme).filter(
+              ([, v]) =>
+                v != null &&
+                typeof v !== "object" &&
+                !(v instanceof File),
+            ),
+          ),
+        };
+
+        const payload = {
+          registration_form_template: {
+            name: t(tpl.nameKey),
+            default: true,
+            form_template_data: {
+              fields: tpl.fields,
+              formBuilderData: {
+                formData: tpl.fields,
+                theme: cleanTheme,
+                languageMode: "single" as const,
+              },
+              theme: cleanTheme,
+            },
+          },
+        };
+
+        const createRes = await createRegistrationFormTemplate(
+          effectiveEventId,
+          payload as any,
+        );
+        const newId =
+          createRes?.data?.data?.id ?? createRes?.data?.id;
+
+        if (newId != null) {
+          await setRegistrationFormTemplateAsDefault(
+            effectiveEventId,
+            String(newId),
+          );
+          setLastSelectedSystem("custom");
+          setConfirmedTemplate(String(newId));
+          showNotification(t("prebuiltTemplates.templateApplied"), "success");
+        }
+
+        await loadFormBuilderTemplates();
+        setIsPrebuiltPreviewOpen(false);
+        setPrebuiltPreviewTemplate(null);
+      } catch (err: any) {
+        if (err?.response?.status === 422) {
+          showNotification("This form is already selected.", "info");
+        } else {
+          showNotification(
+            err?.message || t("expressEvent.failedApplyTemplate"),
+            "error",
+          );
+        }
+      } finally {
+        setIsSavingPrebuilt(false);
+      }
+    },
+    [
+      effectiveEventId,
+      formBuilderTemplates,
+      confirmedTemplate,
+      t,
+      loadFormBuilderTemplates,
+      showNotification,
+    ],
+  );
+
+  // -------------------- DEFAULT TEMPLATE HANDLERS (unused – default templates removed in favor of prebuilt) --------------------
   const handleOpenModal = (id: string) => {
     setSelectedTemplate(id);
     setIsModalOpen(true);
@@ -3913,10 +3879,16 @@ const AdvanceRegistration = ({
   };
 
   const handleUseTemplate = async (templateId: string) => {
+    if (!effectiveEventId) return;
+
+    // If this default template is already selected, avoid unnecessary API call (same as RegistrationForm)
+    if (confirmedTemplate === templateId) {
+      showNotification("This form is already selected.", "info");
+      return;
+    }
+
     setIsLoading(true);
     try {
-      if (!effectiveEventId) throw new Error("Event ID not found");
-
       const templateData = {
         name: templateId,
         description: `Registration template for ${templateId}`,
@@ -4012,7 +3984,12 @@ const AdvanceRegistration = ({
       console.log("✅ Final confirmedTemplate set to default:", templateId);
     } catch (error: any) {
       console.error("Error applying default template:", error);
-      showNotification("Failed to apply template", "error");
+      // When already default / validation conflict, API may return 422; show friendly message (same as RegistrationForm)
+      if (error?.response?.status === 422) {
+        showNotification("This form is already selected.", "info");
+      } else {
+        showNotification("Failed to apply template", "error");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -4258,72 +4235,99 @@ const AdvanceRegistration = ({
               );
             })}
 
-            {/* Default Templates */}
-            {defaultTemplates.map((tpl) => {
-              const FormComponent = tpl.component;
-              return (
-                <div
-                  key={tpl.id}
-                  onClick={() => !isLoadingFormData && handleUseTemplate(tpl.id)}
-                  className={`border-2 rounded-3xl p-4 cursor-pointer transition-colors aspect-square flex flex-col relative overflow-hidden ${
-                    confirmedTemplate === tpl.id
-                      ? "border-pink-500 bg-pink-50"
-                      : "border-gray-200 hover:border-pink-500"
-                  }`}
-                >
-                  {/* Edit: open modal to view template and use if required */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleOpenModal(tpl.id);
-                    }}
-                    className="absolute top-2 right-2 z-10 p-1.5 bg-white rounded-lg shadow-sm text-pink-500 hover:bg-pink-50 transition-colors"
-                    title="View / Edit Template"
-                  >
-                    <Edit size={14} />
-                  </button>
-                  <div className="w-full h-48 overflow-hidden rounded-xl flex items-center justify-center bg-gray-50 relative">
-                    {isLoadingFormData && (
-                      <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-slate-600" />
-                      </div>
-                    )}
-                    <div className="transform scale-[0.15] pointer-events-none">
-                      <div className="w-[1200px]">
-                        <FormComponent
-                          data={getTemplateData(tpl.id)}
-                          eventId={effectiveEventId}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {confirmedTemplate === tpl.id && (
-                    <div className="mt-2 flex items-center justify-center">
-                      <Check size={16} className="text-pink-500 mr-1" />
-                      <span className="text-sm text-pink-500 font-medium">
-                        Selected
-                      </span>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {/* Pre-built Templates (from prebuiltTemplates.ts) */}
+            <div className="col-span-full mt-4 mb-2">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-gray-200" />
+                <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                  {t("prebuiltTemplates.sectionTitle")}
+                </span>
+                <div className="h-px flex-1 bg-gray-200" />
+              </div>
+              <p className="text-center text-xs text-gray-400 mt-1">
+                {t("prebuiltTemplates.sectionSubtitle")}
+              </p>
+            </div>
+            {PREBUILT_TEMPLATES.map((tpl) => (
+              <PrebuiltTemplateCard
+                key={tpl.key}
+                template={tpl}
+                isSelected={false}
+                isLoading={isSavingPrebuilt}
+                onUse={handleUsePrebuiltTemplate}
+                onPreview={handlePrebuiltPreview}
+              />
+            ))}
           </div>
         )}
 
-        {/* Default Template Modal */}
-        {isModalOpen && (
-          <TemplateModal
-            formData={formData}
-            selectedTemplate={selectedTemplate}
-            onClose={handleCloseModal}
-            onUseTemplate={handleUseTemplate}
-            isLoading={isLoading}
-            isLoadingFormData={isLoadingFormData}
-            eventId={effectiveEventId}
-          />
+        {/* Prebuilt template full-preview modal */}
+        {isPrebuiltPreviewOpen && prebuiltPreviewTemplate && (
+          <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    {t(prebuiltPreviewTemplate.nameKey)}
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-0.5">
+                    {t(prebuiltPreviewTemplate.descriptionKey)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      handleUsePrebuiltTemplate(prebuiltPreviewTemplate.key)
+                    }
+                    disabled={isSavingPrebuilt}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isSavingPrebuilt
+                        ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                        : "bg-pink-500 hover:bg-pink-600 text-white"
+                    }`}
+                  >
+                    {isSavingPrebuilt ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} />
+                    )}
+                    {isSavingPrebuilt
+                      ? t("expressEvent.applying")
+                      : t("prebuiltTemplates.useTemplate")}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsPrebuiltPreviewOpen(false);
+                      setPrebuiltPreviewTemplate(null);
+                    }}
+                    className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div
+                  className="mx-auto"
+                  style={{
+                    maxWidth:
+                      prebuiltPreviewTemplate.theme.formMaxWidth || "600px",
+                  }}
+                >
+                  <FormBuilderTemplateForm
+                    data={prebuiltPreviewTemplate.fields}
+                    eventId={effectiveEventId}
+                    formBuilderData={{
+                      formData: prebuiltPreviewTemplate.fields,
+                      theme: prebuiltPreviewTemplate.theme,
+                      languageMode: "single",
+                    }}
+                    theme={prebuiltPreviewTemplate.theme}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* Delete Form Builder Template Modal */}
@@ -4525,7 +4529,9 @@ const AdvanceRegistration = ({
                     ? "bg-red-500 text-white"
                     : notification.type === "warning"
                       ? "bg-yellow-500 text-white"
-                      : "bg-green-500 text-white"
+                      : notification.type === "info"
+                        ? "bg-blue-500 text-white"
+                        : "bg-green-500 text-white"
               }`}
             >
               {notification.message}

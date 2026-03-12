@@ -592,7 +592,8 @@ const RegistrationForm = ({
     const payload = {
       registration_form_template: {
         name: template.title.trim() || "Custom Form",
-        default: !isEditFormBuilderMode && confirmedTemplate === template.id,
+        // When editing or creating, set this template as default so it stays selected after save
+        default: true,
         form_template_data: {
           fields,
           formBuilderData: {
@@ -608,6 +609,7 @@ const RegistrationForm = ({
       },
     };
 
+    let savedTemplateId: string | null = null;
     if (isEditFormBuilderMode && editingFormBuilderTemplate?.id) {
       await updateRegistrationFormTemplate(effectiveEventId, editingFormBuilderTemplate.id, payload);
 
@@ -632,17 +634,29 @@ const RegistrationForm = ({
           showNotification("Template saved, but one or more image updates failed. You can try updating images again.", "warning");
         }
       }
+
+      savedTemplateId = String(editingFormBuilderTemplate.id);
+      setLastSelectedSystem("custom");
+      setConfirmedTemplate(editingFormBuilderTemplate.id);
+      setSelectedTemplateData(template.formBuilderData || { name: template.title });
     } else {
       const createRes = await createRegistrationFormTemplate(effectiveEventId, payload);
       const newId = createRes?.data?.data?.id ?? createRes?.data?.id;
       if (newId != null) {
+        savedTemplateId = String(newId);
         setLastSelectedSystem("custom");
         setConfirmedTemplate(String(newId));
+        setSelectedTemplateData(template.formBuilderData || { name: template.title });
       }
     }
     await loadFormBuilderTemplates();
+    // Re-apply selection after load (checkAndSetDefaultTemplate can overwrite); ensures UI shows saved form as selected
+    if (savedTemplateId != null) {
+      setConfirmedTemplate(savedTemplateId);
+      setSelectedTemplateData(template.formBuilderData || { name: template.title });
+    }
     showNotification(t("expressEvent.templateSavedSuccess"), "success");
-  }, [effectiveEventId, isEditFormBuilderMode, editingFormBuilderTemplate, confirmedTemplate, loadFormBuilderTemplates]);
+  }, [effectiveEventId, isEditFormBuilderMode, editingFormBuilderTemplate, loadFormBuilderTemplates]);
 
   const handleSaveCustomForm = useCallback(
     async (
@@ -729,6 +743,12 @@ const RegistrationForm = ({
     if (!effectiveEventId) return;
     const template = formBuilderTemplates.find((t) => t.id === templateId);
     if (!template) return;
+
+    // If this template is already selected as default, avoid unnecessary API calls (compare as strings)
+    if (confirmedTemplate === String(templateId)) {
+      showNotification("This form is already selected.", "info");
+      return;
+    }
     setIsLoading(true);
     try {
       setLastSelectedSystem("custom");
@@ -744,7 +764,7 @@ const RegistrationForm = ({
     } finally {
       setIsLoading(false);
     }
-  }, [effectiveEventId, formBuilderTemplates, loadFormBuilderTemplates]);
+  }, [effectiveEventId, formBuilderTemplates, confirmedTemplate, loadFormBuilderTemplates]);
 
   const handleDeleteFormBuilderTemplate = useCallback((templateId: string) => {
     const template = formBuilderTemplates.find((t) => t.id === templateId) ?? null;
@@ -792,6 +812,16 @@ const RegistrationForm = ({
     const tpl = PREBUILT_TEMPLATES.find((t) => t.key === key);
     if (!tpl) return;
 
+    const prebuiltName = t(tpl.nameKey);
+    // If we already have a custom template with this prebuilt's name and it's the selected one, show message and skip API
+    const existingSameName = formBuilderTemplates.find(
+      (t) => (t.title || "").trim() === (prebuiltName || "").trim()
+    );
+    if (existingSameName && confirmedTemplate === String(existingSameName.id)) {
+      showNotification("This form is already selected.", "info");
+      return;
+    }
+
     setIsSavingPrebuilt(true);
     try {
       // Build the payload in the same shape as handleSaveFormBuilderTemplate
@@ -829,6 +859,7 @@ const RegistrationForm = ({
         await setRegistrationFormTemplateAsDefault(effectiveEventId, String(newId));
         setLastSelectedSystem("custom");
         setConfirmedTemplate(String(newId));
+        setSelectedTemplateData(payload.registration_form_template.form_template_data);
         showNotification(t("prebuiltTemplates.templateApplied"), "success");
       }
 
@@ -838,15 +869,17 @@ const RegistrationForm = ({
       // Close preview if open
       setIsPrebuiltPreviewOpen(false);
       setPrebuiltPreviewTemplate(null);
-
-      // Advance to confirmation step
-      setTimeout(() => setInternalStep(1), 600);
     } catch (err: any) {
-      showNotification(err?.message || t("expressEvent.failedApplyTemplate"), "error");
+      // When template is already saved / already default, API may return 422; show friendly message
+      if (err?.response?.status === 422) {
+        showNotification("This form is already selected.", "info");
+      } else {
+        showNotification(err?.message || t("expressEvent.failedApplyTemplate"), "error");
+      }
     } finally {
       setIsSavingPrebuilt(false);
     }
-  }, [effectiveEventId, loadFormBuilderTemplates, t]);
+  }, [effectiveEventId, formBuilderTemplates, confirmedTemplate, loadFormBuilderTemplates, t]);
 
   // Memoize getFieldAPi function
   const getFieldAPi = useCallback(async (id: string) => {
@@ -1126,11 +1159,8 @@ const RegistrationForm = ({
         setConfirmedTemplate(templateId);
         showNotification(t("expressEvent.eventTemplateAddedSuccess"), "success");
 
-        // Close modal and advance internal step after a short delay
-        setTimeout(() => {
-          setInternalStep(1);
-          handleCloseModal();
-        }, 1000);
+        // Close modal but do not auto-advance; user will move to next step manually
+        handleCloseModal();
 
         // Reload both systems to ensure state is in sync
         await Promise.all([
@@ -1390,7 +1420,7 @@ const RegistrationForm = ({
                   {/* Custom Form Builder card (same as advance) */}
                   <div
                     onClick={() => handleOpenCustomFormBuilder()}
-                    className="relative border-2 border-dashed border-pink-300 rounded-3xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center h-[240px]"
+                    className="relative border-2 border-dashed border-pink-300 rounded-3xl p-4 cursor-pointer transition-all duration-200 hover:border-pink-500 hover:bg-pink-50 flex flex-col items-center justify-center"
                   >
                     <div className="absolute top-2 right-2 bg-pink-500 text-white text-xs px-2 py-1 rounded-full hidden sm:block">
                       {t("expressEvent.new")}
