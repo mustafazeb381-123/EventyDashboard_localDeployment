@@ -52,6 +52,7 @@
     "default": "Default",
     "verifySender": "Verify sender",
     "verificationCodeSent": "We sent a 6-digit code to {{email}}",
+    "loadingInvitation": "Loading invitation… If no invitation exists yet, create one first.",
     "resendVerificationCode": "Resend verification code",
     "resendVerificationCodeTimer": "Resend verification code ({{seconds}}s)",
     "doThisLater": "Do this later",

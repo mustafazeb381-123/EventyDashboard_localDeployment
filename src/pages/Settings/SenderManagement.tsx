@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, Plus, Mail, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import toast, { Toaster } from "react-hot-toast";
 import { getEventInvitations } from "@/apis/invitationService";
 import {
   requestSenderEmailVerification,
@@ -46,17 +47,38 @@ export default function SettingsSenderManagement() {
   const [error, setError] = useState<string | null>(null);
   const codeInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const resendTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasRequestedVerificationForCurrentModal = useRef(false);
 
+  // Parse invitation list: support both { data: [{ id }] } and JSON:API { data: [{ id, attributes }] }
   useEffect(() => {
     if (!eventId) return;
     getEventInvitations(eventId, { page: 1, per_page: 1 })
       .then((res) => {
-        const data = (res.data as { data?: { id: number }[] })?.data;
-        const first = data?.[0];
-        if (first) setFirstInvitationId(Number(first.id));
+        const body = res.data as unknown;
+        const data = Array.isArray((body as { data?: unknown }).data)
+          ? (body as { data: Array<{ id?: number; attributes?: { id?: number } }> }).data
+          : [];
+        const first = data[0];
+        const rawId = first?.id ?? (first as { attributes?: { id?: number } })?.attributes?.id;
+        const numId = rawId != null ? Number(rawId) : NaN;
+        if (!Number.isNaN(numId)) setFirstInvitationId(numId);
       })
       .catch(() => setFirstInvitationId(null));
   }, [eventId]);
+
+  // When modal is open and we have invitation id, send verification (once per modal open)
+  useEffect(() => {
+    if (
+      verificationOpen &&
+      verificationEmail &&
+      eventId &&
+      firstInvitationId != null &&
+      !hasRequestedVerificationForCurrentModal.current
+    ) {
+      hasRequestedVerificationForCurrentModal.current = true;
+      requestVerification(verificationEmail);
+    }
+  }, [verificationOpen, verificationEmail, eventId, firstInvitationId]);
 
   useEffect(() => {
     if (resendCooldown <= 0 && resendTimerRef.current) {
@@ -75,6 +97,7 @@ export default function SettingsSenderManagement() {
     setError(null);
     try {
       await requestSenderEmailVerification(eventId, firstInvitationId, email);
+      toast.success("Verification code sent!");
       setResendCooldown(RESEND_COOLDOWN_SEC);
       if (resendTimerRef.current) clearInterval(resendTimerRef.current);
       resendTimerRef.current = setInterval(() => {
@@ -94,13 +117,14 @@ export default function SettingsSenderManagement() {
   const handleSubmitForm = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.email) return;
-    if (eventId && firstInvitationId != null) {
+    if (eventId) {
+      // Always show verification modal when we have eventId; verification request runs in useEffect when firstInvitationId is available
+      hasRequestedVerificationForCurrentModal.current = false;
       setVerificationEmail(formData.email);
       setVerificationName(formData.name);
       setCodeDigits(["", "", "", "", "", ""]);
       setError(null);
       setVerificationOpen(true);
-      await requestVerification(formData.email);
     } else {
       setSenders((prev) => [
         ...prev,
@@ -126,6 +150,7 @@ export default function SettingsSenderManagement() {
         sender_email: verificationEmail,
         verification_code: code,
       });
+      toast.success("Sender verified successfully!");
       setSenders((prev) => [
         ...prev,
         {
@@ -138,6 +163,7 @@ export default function SettingsSenderManagement() {
       setFormData({ name: "", email: "" });
       setVerificationOpen(false);
       setShowForm(false);
+      hasRequestedVerificationForCurrentModal.current = false;
     } catch (err: unknown) {
       const msg =
         err && typeof err === "object" && "response" in err
@@ -151,6 +177,7 @@ export default function SettingsSenderManagement() {
 
   const handleDoLater = () => {
     setVerificationOpen(false);
+    hasRequestedVerificationForCurrentModal.current = false;
     setResendCooldown(0);
     if (resendTimerRef.current) {
       clearInterval(resendTimerRef.current);
@@ -188,6 +215,7 @@ export default function SettingsSenderManagement() {
 
   return (
     <div className="min-h-screen bg-[#F7FAFF] p-6">
+      <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
       <div className="space-y-6">
         <Button
           variant="ghost"
@@ -322,9 +350,15 @@ export default function SettingsSenderManagement() {
             <h2 id="verification-title" className="text-lg font-semibold text-gray-900">
               {t("senderManagement.verifySender")}
             </h2>
-            <p className="mt-1 text-sm text-gray-500">
-              {t("senderManagement.verificationCodeSent", { email: verificationEmail })}
-            </p>
+            {firstInvitationId == null ? (
+              <p className="mt-1 text-sm text-amber-600">
+                {t("senderManagement.loadingInvitation")}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-gray-500">
+                {t("senderManagement.verificationCodeSent", { email: verificationEmail })}
+              </p>
+            )}
             <div className="mt-4 flex gap-2">
               {codeDigits.map((digit, i) => (
                 <Input
@@ -346,7 +380,11 @@ export default function SettingsSenderManagement() {
             <div className="mt-6 flex flex-col gap-2">
               <Button
                 onClick={handleVerify}
-                disabled={codeDigits.join("").length !== 6 || verifyLoading}
+                disabled={
+                  codeDigits.join("").length !== 6 ||
+                  verifyLoading ||
+                  firstInvitationId == null
+                }
                 className="w-full bg-blue-600 text-white hover:bg-blue-700"
               >
                 {verifyLoading ? (
@@ -358,7 +396,11 @@ export default function SettingsSenderManagement() {
               <button
                 type="button"
                 onClick={() => requestVerification(verificationEmail)}
-                disabled={resendCooldown > 0 || requestLoading}
+                disabled={
+                  resendCooldown > 0 ||
+                  requestLoading ||
+                  firstInvitationId == null
+                }
                 className="text-sm text-blue-600 hover:underline disabled:text-gray-400"
               >
                 {resendCooldown > 0

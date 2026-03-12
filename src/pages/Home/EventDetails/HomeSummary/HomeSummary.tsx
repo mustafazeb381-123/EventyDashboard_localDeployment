@@ -1141,7 +1141,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               used={capacity.used}
               total={capacity.total}
               remaining={capacity.remaining}
-              onUpgrade={() => showNotification(t("homeSummary.upgradePlanComingSoon"), "info")}
+              onUpgrade={() => navigateTo(`home/${eventId ?? paramId}/upgrade-plan`)}
             />
           </div>
 

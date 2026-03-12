@@ -281,7 +281,7 @@ const MainData = ({
     }
   };
 
-  // Registration limit: optional, only positive integers (no decimals, no negative)
+  // Registration limit: optional, only positive integers (no decimals, no negative) and max 400
   const handleRegistrationLimitChange = (value: string) => {
     const digitsOnly = value.replace(/\D/g, "");
     if (digitsOnly === "") {
@@ -290,6 +290,15 @@ const MainData = ({
     }
     const num = parseInt(digitsOnly, 10);
     if (Number.isNaN(num) || num < 1) return;
+    if (num > 400) {
+      // Cap at 400 and show a field error
+      handleInputChange("registrationLimit", "400");
+      setValidationErrors((prev) => ({
+        ...prev,
+        registrationLimit: "Registration limit cannot be greater than 400",
+      }));
+      return;
+    }
     handleInputChange("registrationLimit", String(num));
   };
 
@@ -324,11 +333,13 @@ const MainData = ({
       errors.location = t("expressEvent.locationRequired");
     }
 
-    // Registration limit (optional): if provided, must be a positive integer (both express & advance)
+    // Registration limit (optional): if provided, must be a positive integer (both express & advance) and max 400
     if (formData.registrationLimit?.trim()) {
       const num = parseInt(formData.registrationLimit, 10);
       if (Number.isNaN(num) || num < 1 || !Number.isInteger(num)) {
         errors.registrationLimit = t("expressEvent.mustBePositiveInteger");
+      } else if (num > 400) {
+        errors.registrationLimit = "Registration limit cannot be greater than 400";
       }
     }
 
@@ -1521,6 +1532,9 @@ const MainData = ({
                 </p>
                 <p className="text-xs text-neutral-500">
                   {t("expressEvent.anyImageFormat")}
+                </p>
+                <p className="text-xs text-neutral-500 mt-1 font-medium text-[#202242]">
+                  {t("expressEvent.logoSizeRecommendation")}
                 </p>
               </>
             )}

@@ -52,6 +52,7 @@
     "default": "افتراضي",
     "verifySender": "التحقق من المرسل",
     "verificationCodeSent": "تم إرسال رمز مكون من 6 أرقام إلى {{email}}",
+    "loadingInvitation": "جاري تحميل الدعوة… إن لم توجد دعوة بعد، أنشئ واحدة أولاً.",
     "resendVerificationCode": "إعادة إرسال رمز التحقق",
     "resendVerificationCodeTimer": "إعادة إرسال رمز التحقق ({{seconds}} ث)",
     "doThisLater": "لاحقاً",

@@ -11,6 +11,7 @@ import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
 
 import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
+import UpgradePlan from "@/pages/Home/EventDetails/UpgradePlan/UpgradePlan";
 import SummaryCardData from "@/pages/Home/EventDetails/SummaryCardData/SummaryCardData";
 import EventContentPage from "@/pages/Home/EventDetails/EventContent/EventContentPage";
 import RegisterdUser from "@/pages/Home/EventDetails/RegisterdUser/RegisterdUser";
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
           {
             path: "home/:id/event-content/:section",
             element: <EventContentPage />,
+          },
+          {
+            path: "home/:id/upgrade-plan",
+            element: <UpgradePlan />,
           },
           {
             path: "home/:id/summary-card",

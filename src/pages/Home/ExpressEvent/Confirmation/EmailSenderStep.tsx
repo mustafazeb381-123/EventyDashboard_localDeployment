@@ -2,6 +2,13 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, User, Folder, Trash2, MoreVertical, Signal, Wifi, Battery } from "lucide-react";
 
+/** Static list of senders for "Use existing sender" dropdown. Replace with API later. */
+const STATIC_SENDERS = [
+  { id: "1", name: "John Doe", email: "john.doe@company.com" },
+  { id: "2", name: "Jane Smith", email: "jane.smith@company.com" },
+  { id: "3", name: "Event Team", email: "events@company.com" },
+];
+
 export interface EmailSenderStepProps {
   useExistingSender: boolean;
   onUseExistingSenderChange: (value: boolean) => void;
@@ -58,6 +65,40 @@ export function EmailSenderStep({
               <span className="text-gray-700 font-medium">{t("expressEvent.createNewSender")}</span>
             </label>
           </div>
+          {useExistingSender && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t("expressEvent.selectSender")} <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={
+                  STATIC_SENDERS.find(
+                    (s) =>
+                      s.email === senderFromEmail || s.name === senderFromName,
+                  )?.id ?? ""
+                }
+                onChange={(e) => {
+                  const id = e.target.value;
+                  const sender = STATIC_SENDERS.find((s) => s.id === id);
+                  if (sender) {
+                    onSenderFromNameChange(sender.name);
+                    onSenderFromEmailChange(sender.email);
+                  }
+                }}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-pink-500 outline-none transition-colors bg-white"
+              >
+                <option value="">— {t("expressEvent.selectSender")} —</option>
+                {STATIC_SENDERS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.email}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1.5 text-sm text-gray-500">
+                {t("expressEvent.fromNameHelp")}
+              </p>
+            </div>
+          )}
           {!useExistingSender && (
             <>
               <div>
