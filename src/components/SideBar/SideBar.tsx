@@ -316,7 +316,7 @@ const SideBar = ({
       path: currentEventId
         ? `home/${currentEventId}/event-content`
         : "#",
-      availableForExpress: false,
+      availableForExpress: true,
       submenu: [
         {
           label: "Galleries",
@@ -324,7 +324,7 @@ const SideBar = ({
           path: currentEventId
             ? `home/${currentEventId}/galleries`
             : "galleries",
-          availableForExpress: false,
+          availableForExpress: true,
           sidebarActiveKey: "Galleries",
         },
         {
@@ -333,7 +333,7 @@ const SideBar = ({
           path: currentEventId
             ? `home/${currentEventId}/event-content/speakers`
             : "#",
-          availableForExpress: false,
+          availableForExpress: true,
           sidebarActiveKey: "Speakers",
         },
         {
@@ -342,7 +342,7 @@ const SideBar = ({
           path: currentEventId
             ? `home/${currentEventId}/event-content/exhibitors`
             : "#",
-          availableForExpress: false,
+          availableForExpress: true,
           sidebarActiveKey: "Exhibitors",
         },
         {
@@ -351,7 +351,7 @@ const SideBar = ({
           path: currentEventId
             ? `home/${currentEventId}/event-content/partners`
             : "#",
-          availableForExpress: false,
+          availableForExpress: true,
           sidebarActiveKey: "Partners",
         },
         {
@@ -360,7 +360,7 @@ const SideBar = ({
           path: currentEventId
             ? `home/${currentEventId}/event-content/agenda`
             : "#",
-          availableForExpress: false,
+          availableForExpress: true,
           sidebarActiveKey: "Event Content Agenda",
         },
         {
@@ -369,7 +369,7 @@ const SideBar = ({
           path: currentEventId
             ? `home/${currentEventId}/event-content/area`
             : "#",
-          availableForExpress: false,
+          availableForExpress: true,
           sidebarActiveKey: "Area",
         },
       ],
