@@ -175,12 +175,12 @@ function Signup() {
         type={show ? "text" : "password"}
         placeholder={placeholder}
         {...register(id)}
-        className={`w-full h-10 sm:h-11 text-sm border-[#A3ADBC] rounded-2xl ${isRTL ? "pl-10" : "pr-10"}`}
+        className={`w-full h-10 sm:h-11 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-2xl ${isRTL ? "pl-10" : "pr-10"}`}
       />
       <button
         type="button"
         onClick={toggle}
-        className={`absolute top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 ${isRTL ? "left-3" : "right-3"}`}
+        className={`absolute top-1/2 transform -translate-y-1/2 text-white/50 hover:text-white/80 ${isRTL ? "left-3" : "right-3"}`}
       >
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
@@ -213,21 +213,21 @@ function Signup() {
                 e.target.value = v.slice(0, SUBDOMAIN_MAX_LENGTH);
               },
             })}
-            className={`w-full h-10 sm:h-11 text-sm border-[#A3ADBC] rounded-2xl lowercase ${isRTL ? "pl-24" : "pr-24"}`}
+            className={`w-full h-10 sm:h-11 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-2xl lowercase ${isRTL ? "pl-24" : "pr-24"}`}
             maxLength={SUBDOMAIN_MAX_LENGTH}
             autoComplete="off"
           />
           <span
-            className={`absolute top-1/2 -translate-y-1/2 text-xs text-gray-400 ${isRTL ? "left-3" : "right-3"}`}
+            className={`absolute top-1/2 -translate-y-1/2 text-xs text-white/50 ${isRTL ? "left-3" : "right-3"}`}
           >
             .{suffix}
           </span>
         </div>
-        <Text size="xs" color="text-gray-500">
+        <Text size="xs" className="text-white/70">
           {t("subdomainHint")} {preview}
         </Text>
         {isLocalhost && (
-          <Text size="xs" color="text-gray-500" className="italic">
+          <Text size="xs" className="text-white/60 italic">
             {t("subdomainLocalhostNote")}
           </Text>
         )}
@@ -251,7 +251,7 @@ function Signup() {
         type={type}
         placeholder={placeholder}
         {...register(id)}
-        className="w-full h-10 sm:h-11 text-sm border-[#A3ADBC] rounded-2xl"
+        className="w-full h-10 sm:h-11 text-sm bg-white/10 border-white/20 text-white placeholder:text-white/50 rounded-2xl"
       />
       {errors[id] && (
         <Text size="xs" color="text-red-500" className="animate-slide-down">
@@ -266,35 +266,45 @@ function Signup() {
   };
 
   return (
-    <div className="h-[100svh] p-2 sm:p-4 self-center" dir={dir} lang={lang}>
-      <div
-        className={`flex flex-1 h-full flex-col gap-2 sm:gap-4 ${isRTL ? "lg:flex-row-reverse" : "lg:flex-row"}`}
-      >
-        {/* Form panel */}
-        <div className="w-full lg:w-1/2 flex rounded-2xl sm:rounded-4xl justify-center items-center flex-col bg-[linear-gradient(150deg,rgba(228,230,238,1)_1%,rgba(255,255,255,1)_29%)] overflow-hidden p-4 sm:p-6">
+    <div className="signup-wrapper" dir={dir} lang={lang}>
+      {/* Notification Toast - same as Login */}
+      {notification && (
+        <div className={`notification-toast ${notification.type}`}>
+          {notification.message}
+        </div>
+      )}
+
+      {/* Background Image - same as Login */}
+      <div className="signup-background">
+        <img src={AppAssets.images.loginbg} alt="Background" />
+      </div>
+
+      <div className="signup-content">
+        {/* Centered form card - same as Login */}
+        <div className="signup-card">
           <div className="pb-2 flex flex-col items-center">
             <img
               className="h-[60px] sm:h-[80px]"
               src={AppAssets.images.eventyLoginLogo}
               alt="Eventy Logo"
             />
-            <span className="pb-2 text-lg font-semibold text-[#0F4999]">
+            <span className="pb-2 text-lg font-semibold text-white">
               {t("signupTitle")}
             </span>
             {/* Language toggle: English | Arabic (direction follows language) */}
-            <div className="flex items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white/90 px-2 py-1.5 shadow-sm pt-1 pb-2">
+            <div className="flex items-center justify-center gap-1 rounded-lg border border-white/20 bg-white/10 px-2 py-1.5 shadow-sm pt-1 pb-2">
               <button
                 type="button"
                 onClick={() => handleChangeLanguage("en")}
-                className={`rounded px-2 py-1 text-sm font-medium transition-colors ${lang.startsWith("en") ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"}`}
+                className={`rounded px-2 py-1 text-sm font-medium transition-colors ${lang.startsWith("en") ? "bg-white/20 text-white" : "text-white/70 hover:bg-white/10"}`}
               >
                 English
               </button>
-              <span className="text-gray-300">|</span>
+              <span className="text-white/40">|</span>
               <button
                 type="button"
                 onClick={() => handleChangeLanguage("ar")}
-                className={`rounded px-2 py-1 text-sm font-medium transition-colors ${isArabic ? "bg-blue-100 text-blue-700" : "text-gray-600 hover:bg-gray-100"}`}
+                className={`rounded px-2 py-1 text-sm font-medium transition-colors ${isArabic ? "bg-white/20 text-white" : "text-white/70 hover:bg-white/10"}`}
               >
                 العربية
               </button>
@@ -329,11 +339,11 @@ function Signup() {
               </Button>
 
               <div className="text-center pt-1">
-                <Text size="xs" color="text-gray-600">
+                <Text size="xs" className="text-white/80">
                   {t("doYouHaveAccount")}{" "}
                   <Link
                     to="/login"
-                    className="text-blue-600 hover:underline font-medium"
+                    className="text-[#93c5fd] hover:text-[#60a5fa] hover:underline font-medium"
                   >
                     {t("signInLink")}
                   </Link>
@@ -342,35 +352,84 @@ function Signup() {
             </form>
           </div>
         </div>
-
-        {/* Right side Image */}
-        <div className="hidden lg:flex w-full lg:w-1/2 overflow-hidden rounded-2xl sm:rounded-4xl">
-          <img
-            className="h-full w-full object-cover object-top"
-            src={AppAssets.images.loginRightImage}
-            alt="Signup illustration"
-          />
-        </div>
       </div>
 
-      {notification && (
-        <div
-          className={`fixed top-4 z-[100] animate-slide-in ${isRTL ? "left-4" : "right-4"}`}
-        >
-          <div
-            className={`px-6 py-3 rounded-lg shadow-lg ${
-              notification.type === "success"
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
-            }`}
-          >
-            {notification.message}
-          </div>
-        </div>
-      )}
-
       <style>{`
-        @keyframes slide-in {
+        .signup-wrapper {
+          position: relative;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .signup-background {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .signup-background img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          object-position: center;
+        }
+
+        .signup-content {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 1rem;
+        }
+
+        .signup-card {
+          width: 90%;
+          max-width: 500px;
+          padding: 48px 44px;
+          background: linear-gradient(180deg, rgba(60, 65, 75, 0.95) 0%, rgba(70, 75, 85, 0.92) 50%, rgba(80, 85, 95, 0.88) 100%);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 24px;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+          animation: signupFadeInUp 0.6s ease-out;
+        }
+
+        @keyframes signupFadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .notification-toast {
+          position: fixed;
+          top: 24px;
+          right: 24px;
+          padding: 16px 24px;
+          border-radius: 12px;
+          color: #ffffff;
+          font-size: 14px;
+          font-weight: 500;
+          z-index: 1000;
+          animation: slideInRight 0.3s ease-out;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes slideInRight {
           from {
             transform: translateX(100%);
             opacity: 0;
@@ -380,8 +439,13 @@ function Signup() {
             opacity: 1;
           }
         }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
+
+        .notification-toast.success {
+          background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .notification-toast.error {
+          background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
         }
       `}</style>
     </div>
