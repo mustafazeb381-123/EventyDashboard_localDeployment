@@ -1,5 +1,5 @@
 import React from "react";
-import { Eye, Printer, Clock, Users as UsersIcon } from "lucide-react";
+import { Eye, Printer, Clock, User, CheckCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface PrintBadgesHeaderProps {
@@ -10,7 +10,6 @@ interface PrintBadgesHeaderProps {
   lastPrintedAt: Date | null;
   onPreviewSelected: () => void;
   disablePreview: boolean;
-  // onSettingsClick: () => void; // Add if Settings button needs functionality
 }
 
 const formatLastPrinted = (date: Date) =>
@@ -23,80 +22,82 @@ const formatLastPrinted = (date: Date) =>
     hour12: true,
   });
 
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+}> = ({ icon, label, value }) => (
+  <div className="flex items-center gap-3 rounded-xl bg-white px-4 py-3 shadow-sm border border-gray-100 min-w-0 flex-1">
+    <div className="flex-shrink-0">{icon}</div>
+    <div className="min-w-0">
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
+      <p className="text-lg font-bold text-gray-900 truncate">{value}</p>
+    </div>
+  </div>
+);
+
 const PrintBadgesHeader: React.FC<PrintBadgesHeaderProps> = ({
   filteredUsersCount,
   selectedUsersCount,
-  searchTerm,
+  searchTerm: _searchTerm,
   printCount,
   lastPrintedAt,
   onPreviewSelected,
   disablePreview,
 }) => {
   const { t } = useTranslation("dashboard");
+
+  const lastPrintedLabel = lastPrintedAt
+    ? formatLastPrinted(lastPrintedAt)
+    : t("printBadges.never");
+
   return (
     <div className="mb-8">
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
-        <div className="p-3 bg-indigo-600 rounded-xl shadow-lg">
-          <UsersIcon className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-            {t("printBadges.manageBadges")}
-          </h1>
-          <p className="text-gray-600 mt-1 flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
-              {filteredUsersCount}
-            </span>
-            {t("printBadges.users")} •{" "}
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
-              {selectedUsersCount}
-            </span>
-            {t("printBadges.selected")}
-            {searchTerm && (
-              <span className="text-indigo-600"> • {t("printBadges.filteredResults")}</span>
-            )}
-          </p>
-          {/* Print count & last printed below the subtitle - full-rounded badge like Printed/Pending */}
-          <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-            <span className="flex items-center gap-1.5">
-              <Printer className="w-4 h-4 text-indigo-600" />
-              <span>
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
-                  {printCount}
-                </span>
-                {" "}{t("printBadges.badgesPrinted")}
-              </span>
-            </span>
-            <span className="flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-indigo-600" />
-              <span>
-                {t("printBadges.lastPrinted")}{" "}
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-indigo-50 text-indigo-700 border-indigo-200">
-                  {lastPrintedAt ? formatLastPrinted(lastPrintedAt) : t("printBadges.never")}
-                </span>
-              </span>
-            </span>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-indigo-600 rounded-xl shadow-lg">
+              <User className="w-6 h-6 text-white" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+              {t("printBadges.manageBadges")}
+            </h1>
           </div>
+          <button
+            onClick={onPreviewSelected}
+            disabled={disablePreview}
+            className="flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium shadow-lg transition-all duration-200 w-fit"
+          >
+            <Eye size={18} />
+            {t("printBadges.previewSelected")} ({selectedUsersCount})
+          </button>
         </div>
-        </div>
-        <div className="flex items-center gap-3">
-        <button
-          onClick={onPreviewSelected}
-          disabled={disablePreview}
-          className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-xl font-medium shadow-lg shadow-indigo-600/25 hover:shadow-xl hover:shadow-indigo-600/30 transition-all duration-200 transform hover:-translate-y-0.5"
-        >
-          <Eye size={18} />
-          {t("printBadges.previewSelected")} (
-          <span className="inline-flex items-center min-w-[1.5rem] justify-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-white/20 border border-white/30">
-            {selectedUsersCount}
-          </span>
-          )
-        </button>
-        {/* <button className="flex items-center gap-2 px-4 py-3 border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors">
-          <Settings size={16} />
-          Settings 
-        </button> */}
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <StatCard
+            icon={<User className="w-6 h-6 text-gray-400" />}
+            label={t("printBadges.users")}
+            value={filteredUsersCount}
+          />
+          <StatCard
+            icon={
+              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+              </div>
+            }
+            label={t("printBadges.selected")}
+            value={selectedUsersCount}
+          />
+          <StatCard
+            icon={<Printer className="w-6 h-6 text-blue-500" />}
+            label={t("printBadges.badgesPrinted")}
+            value={printCount}
+          />
+          <StatCard
+            icon={<Clock className="w-6 h-6 text-amber-500" />}
+            label={t("printBadges.lastPrinted")}
+            value={lastPrintedLabel}
+          />
         </div>
       </div>
     </div>
