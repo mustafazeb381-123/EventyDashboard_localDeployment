@@ -18,6 +18,11 @@ const DEFAULT_CONTACT = {
   phone: "+358 50 1234567",
 };
 
+const PLAN_PRICES = {
+  express: 1000,
+  advance: 2000,
+} as const;
+
 interface PaymentProps {
   onNext: (id?: string | number, _plan?: string) => void;
   onPrevious: () => void;
@@ -33,6 +38,7 @@ const Payment: React.FC<PaymentProps> = ({
   onPrevious,
   currentStep,
   totalSteps = 0,
+  plan = "express",
 }) => {
   const { company: companySlug } = useParams<{ company?: string }>();
   const { t } = useTranslation("dashboard");
@@ -50,12 +56,15 @@ const Payment: React.FC<PaymentProps> = ({
   const [postalCode, setPostalCode] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
 
-  const [badgePrinting, setBadgePrinting] = useState(false);
   const [needSupportContact, setNeedSupportContact] = useState(false);
   const [supportLevel, setSupportLevel] = useState<SupportLevel>("none");
 
-  const planName = t("expressEvent.standardPlan");
-  const planPrice = 99;
+  const normalizedPlan = plan === "advance" ? "advance" : "express";
+  const planName =
+    normalizedPlan === "advance"
+      ? t("pricing.advanced")
+      : t("pricing.express");
+  const planPrice = PLAN_PRICES[normalizedPlan];
   const supportLevelPrice: Record<SupportLevel, number> = {
     none: 0,
     basic: 25,
