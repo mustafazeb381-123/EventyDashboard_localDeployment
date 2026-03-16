@@ -404,7 +404,7 @@ const SideBar = ({
       path: currentEventId
         ? `communication?eventId=${currentEventId}`
         : "communication",
-      availableForExpress: false,
+      availableForExpress: true,
       submenu: [
         {
           label: "Poll",
@@ -412,7 +412,7 @@ const SideBar = ({
           path: currentEventId
             ? `communication/poll?eventId=${currentEventId}`
             : "communication/poll",
-          availableForExpress: false,
+          availableForExpress: true,
         },
         {
           label: "Q & A",
@@ -420,7 +420,7 @@ const SideBar = ({
           path: currentEventId
             ? `communication/QA?eventId=${currentEventId}`
             : "communication/QA",
-          availableForExpress: false,
+          availableForExpress: true,
         },
       ],
     },
