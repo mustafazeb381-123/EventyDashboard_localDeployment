@@ -1,16 +1,21 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const VAT_RATE = 0.15;
+const SUPPORT_HOURLY_RATE = 350;
+const SUPPORT_HOURS_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const CURRENT_CAPACITY = 400;
+const REGISTRATION_PRICE_PER_100 = 10;
+const REGISTRATION_OPTIONS = [100, 200, 300, 400] as const;
 
 type BillingType = "individual" | "company";
-type SupportLevel = "none" | "basic" | "standard" | "premium";
+type SupportHours = (typeof SUPPORT_HOURS_OPTIONS)[number];
 
 const DEFAULT_CONTACT = {
   name: "Abdullah Saleh",
@@ -56,8 +61,8 @@ const Payment: React.FC<PaymentProps> = ({
   const [postalCode, setPostalCode] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
 
-  const [needSupportContact, setNeedSupportContact] = useState(false);
-  const [supportLevel, setSupportLevel] = useState<SupportLevel>("none");
+  const [supportHours, setSupportHours] = useState<SupportHours>(1);
+  const [additionalRegistrations, setAdditionalRegistrations] = useState(200);
 
   const normalizedPlan = plan === "advance" ? "advance" : "express";
   const planName =
@@ -65,16 +70,14 @@ const Payment: React.FC<PaymentProps> = ({
       ? t("pricing.advanced")
       : t("pricing.express");
   const planPrice = PLAN_PRICES[normalizedPlan];
-  const supportLevelPrice: Record<SupportLevel, number> = {
-    none: 0,
-    basic: 25,
-    standard: 50,
-    premium: 100,
-  };
-  const supportTotal = supportLevelPrice[supportLevel];
-  const subtotal = planPrice + supportTotal;
+  const supportTotal = supportHours * SUPPORT_HOURLY_RATE;
+  const registrationPrice =
+    (additionalRegistrations / 100) * REGISTRATION_PRICE_PER_100;
+  const subtotal = planPrice + supportTotal + registrationPrice;
   const vatAmount = subtotal * VAT_RATE;
   const totalAmount = subtotal + vatAmount;
+  const newCapacity = CURRENT_CAPACITY + additionalRegistrations;
+  const supportSummary = `${supportHours} Hour${supportHours > 1 ? "s" : ""} - ${supportTotal} SR`;
 
   function validateSaudiVat(value: string): boolean {
     if (!value.trim()) return false;
@@ -124,7 +127,11 @@ const Payment: React.FC<PaymentProps> = ({
         billingType === "company"
           ? { companyName, vatNumber, country, city, district, buildingNo, postalCode, additionalInfo }
           : { personName: companyName, country, city, district, buildingNo, postalCode, additionalInfo },
-      support_level: supportLevel,
+      support_hours: supportHours,
+      support_total: supportTotal,
+      additional_registrations: additionalRegistrations,
+      registration_price: registrationPrice,
+      new_capacity: newCapacity,
       subtotal,
       vat: vatAmount,
       total_amount: totalAmount,
@@ -139,7 +146,7 @@ const Payment: React.FC<PaymentProps> = ({
         {/* 01 Plan */}
         <div className="flex flex-col items-center shrink-0">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-violet-500 text-white flex items-center justify-center text-sm font-semibold tabular-nums">
-            01
+            <Check className="w-5 h-5" aria-hidden />
           </div>
           <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">{t("expressEvent.plan")}</span>
         </div>
@@ -147,7 +154,7 @@ const Payment: React.FC<PaymentProps> = ({
         {/* 02 Billing */}
         <div className="flex flex-col items-center shrink-0">
           <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-pink-500 text-white flex items-center justify-center text-sm font-semibold tabular-nums shadow-md">
-            02
+            <Check className="w-5 h-5" aria-hidden />
           </div>
           <span className="text-xs md:text-sm font-medium text-gray-700 mt-2 whitespace-nowrap">{t("expressEvent.billing")}</span>
         </div>
@@ -414,32 +421,96 @@ const Payment: React.FC<PaymentProps> = ({
             <h2 className="text-base font-semibold text-gray-800 mb-4">
               {t("expressEvent.additionalServices")}
             </h2>
-            <div className="space-y-4">
-              <label className="flex items-start gap-3 cursor-pointer">
-                <Checkbox
-                  checked={needSupportContact}
-                  onCheckedChange={(c) => setNeedSupportContact(c === true)}
-                />
-                <span className="text-gray-800 text-sm pt-0.5">
-                  {t("expressEvent.needTeamManage")}
-                </span>
-              </label>
+            <div className="space-y-6">
               <div>
                 <Label className="text-gray-700 text-sm block mb-2">
                   {t("expressEvent.supportLevel")}
                 </Label>
                 <select
-                  value={supportLevel}
+                  value={String(supportHours)}
                   onChange={(e) =>
-                    setSupportLevel(e.target.value as SupportLevel)
+                    setSupportHours(Number(e.target.value) as SupportHours)
                   }
                   className="h-10 rounded-lg border border-gray-300 bg-white px-3 text-sm w-full max-w-xs"
                 >
-                  <option value="none">{t("expressEvent.none")}</option>
-                  <option value="basic">{t("expressEvent.basicSupport")}</option>
-                  <option value="standard">{t("expressEvent.standardSupport")}</option>
-                  <option value="premium">{t("expressEvent.premiumSupport")}</option>
+                  {SUPPORT_HOURS_OPTIONS.map((hours) => (
+                    <option key={hours} value={hours}>
+                      {hours} Hour{hours > 1 ? "s" : ""} - {hours * SUPPORT_HOURLY_RATE} SR
+                    </option>
+                  ))}
                 </select>
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex items-center justify-between gap-4">
+                  <p className="text-sm font-semibold text-gray-900">
+                    Current Capacity
+                  </p>
+                  <span className="text-base font-semibold text-fuchsia-600">
+                    {CURRENT_CAPACITY} Users
+                  </span>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-gray-900 mb-3">
+                    Add More Registrations
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {REGISTRATION_OPTIONS.map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setAdditionalRegistrations(option)}
+                        className={`min-w-16 rounded-xl border px-4 py-2 text-sm font-semibold transition-colors ${
+                          additionalRegistrations === option
+                            ? "border-fuchsia-500 bg-fuchsia-50 text-fuchsia-600"
+                            : "border-gray-200 bg-white text-gray-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        +{option}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <Label
+                    htmlFor="customRegistrationsLeft"
+                    className="text-sm font-semibold text-gray-900"
+                  >
+                    Custom
+                  </Label>
+                  <Input
+                    id="customRegistrationsLeft"
+                    type="number"
+                    min={0}
+                    step={100}
+                    value={additionalRegistrations}
+                    onChange={(e) =>
+                      setAdditionalRegistrations(Math.max(0, Number(e.target.value) || 0))
+                    }
+                    className="mt-2 h-12 rounded-xl border-gray-200 text-lg font-medium text-gray-700"
+                  />
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-gray-900">
+                    New Capacity
+                  </p>
+                  <p className="mt-1 text-lg font-bold text-gray-900">
+                    {CURRENT_CAPACITY} + {additionalRegistrations} ={" "}
+                    <span className="text-fuchsia-600">{newCapacity}</span>
+                  </p>
+                </div>
+
+                <div className="mt-4">
+                  <p className="text-sm font-semibold text-gray-900">
+                    Price
+                  </p>
+                  <p className="mt-1 text-xl font-bold text-blue-600">
+                    ${registrationPrice.toFixed(0)}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -459,6 +530,10 @@ const Payment: React.FC<PaymentProps> = ({
               <li>
                 <span className="font-medium text-gray-800">{t("expressEvent.billingType")}:</span>{" "}
                 {billingType === "individual" ? t("expressEvent.individual") : t("expressEvent.company")}
+              </li>
+              <li>
+                <span className="font-medium text-gray-800">{t("expressEvent.supportLevel")}:</span>{" "}
+                {supportSummary}
               </li>
               {/* {badgePrinting && (
                 <li>
