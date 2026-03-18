@@ -11,7 +11,7 @@ const VAT_RATE = 0.15;
 const SUPPORT_HOURLY_RATE = 350;
 const SUPPORT_HOURS_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const CURRENT_CAPACITY = 400;
-const REGISTRATION_PRICE_PER_100 = 10;
+const REGISTRATION_PRICE_PER_USER = 3.75;
 const REGISTRATION_OPTIONS = [100, 200, 300, 400] as const;
 
 type BillingType = "individual" | "company";
@@ -71,13 +71,13 @@ const Payment: React.FC<PaymentProps> = ({
       : t("pricing.express");
   const planPrice = PLAN_PRICES[normalizedPlan];
   const supportTotal = supportHours * SUPPORT_HOURLY_RATE;
-  const registrationPrice =
-    (additionalRegistrations / 100) * REGISTRATION_PRICE_PER_100;
+  const registrationPrice = additionalRegistrations * REGISTRATION_PRICE_PER_USER;
   const subtotal = planPrice + supportTotal + registrationPrice;
   const vatAmount = subtotal * VAT_RATE;
   const totalAmount = subtotal + vatAmount;
   const newCapacity = CURRENT_CAPACITY + additionalRegistrations;
-  const supportSummary = `${supportHours} Hour${supportHours > 1 ? "s" : ""} - ${supportTotal} SR`;
+  const formatSar = (amount: number) => `SAR ${amount.toFixed(2)}`;
+  const supportSummary = `${supportHours} Hour${supportHours > 1 ? "s" : ""} - ${formatSar(supportTotal)}`;
 
   function validateSaudiVat(value: string): boolean {
     if (!value.trim()) return false;
@@ -424,7 +424,7 @@ const Payment: React.FC<PaymentProps> = ({
             <div className="space-y-6">
               <div>
                 <Label className="text-gray-700 text-sm block mb-2">
-                  {t("expressEvent.supportLevel")}
+                  Support Hours
                 </Label>
                 <select
                   value={String(supportHours)}
@@ -435,7 +435,9 @@ const Payment: React.FC<PaymentProps> = ({
                 >
                   {SUPPORT_HOURS_OPTIONS.map((hours) => (
                     <option key={hours} value={hours}>
-                      {hours} Hour{hours > 1 ? "s" : ""} - {hours * SUPPORT_HOURLY_RATE} SR
+                      {hours} Hour{hours > 1 ? "s" : ""} - {formatSar(
+                        hours * SUPPORT_HOURLY_RATE
+                      )}
                     </option>
                   ))}
                 </select>
@@ -484,7 +486,7 @@ const Payment: React.FC<PaymentProps> = ({
                     id="customRegistrationsLeft"
                     type="number"
                     min={0}
-                    step={100}
+                    step={1}
                     value={additionalRegistrations}
                     onChange={(e) =>
                       setAdditionalRegistrations(Math.max(0, Number(e.target.value) || 0))
@@ -508,7 +510,7 @@ const Payment: React.FC<PaymentProps> = ({
                     Price
                   </p>
                   <p className="mt-1 text-xl font-bold text-blue-600">
-                    ${registrationPrice.toFixed(0)}
+                    {formatSar(registrationPrice)}
                   </p>
                 </div>
               </div>
@@ -525,14 +527,14 @@ const Payment: React.FC<PaymentProps> = ({
             <ul className="space-y-2 text-sm text-gray-700">
               <li>
                 <span className="font-medium text-gray-800">{t("expressEvent.plan")}:</span>{" "}
-                {planName} – ${planPrice}/mo
+                {planName} – {formatSar(planPrice)}/mo
               </li>
               <li>
                 <span className="font-medium text-gray-800">{t("expressEvent.billingType")}:</span>{" "}
                 {billingType === "individual" ? t("expressEvent.individual") : t("expressEvent.company")}
               </li>
               <li>
-                <span className="font-medium text-gray-800">{t("expressEvent.supportLevel")}:</span>{" "}
+                <span className="font-medium text-gray-800">Support Hours:</span>{" "}
                 {supportSummary}
               </li>
               {/* {badgePrinting && (
@@ -549,15 +551,15 @@ const Payment: React.FC<PaymentProps> = ({
             <div className="mt-5 pt-4 border-t border-gray-200 space-y-2">
               <div className="flex justify-between text-sm text-gray-700">
                 <span>{t("expressEvent.subtotal")}</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatSar(subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm text-gray-700">
                 <span>{t("expressEvent.vatPercent")}</span>
-                <span>${vatAmount.toFixed(2)}</span>
+                <span>{formatSar(vatAmount)}</span>
               </div>
               <div className="flex justify-between text-lg font-bold text-gray-900 pt-2">
                 <span>{t("expressEvent.total")}</span>
-                <span>${totalAmount.toFixed(2)}</span>
+                <span>{formatSar(totalAmount)}</span>
               </div>
             </div>
 

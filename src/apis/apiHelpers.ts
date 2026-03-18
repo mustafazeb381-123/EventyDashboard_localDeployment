@@ -1189,6 +1189,16 @@ export const getEventPayments = (
   return axiosInstance.get(`/events/${eventId}/payments`, { params });
 };
 
+export const chargeEventPayment = (
+  eventId: string | number,
+  data: {
+    package_name: string;
+    redirect_url: string;
+  }
+) => {
+  return axiosInstance.post(`/events/${eventId}/charge_event_payment`, data);
+};
+
 
 
 
