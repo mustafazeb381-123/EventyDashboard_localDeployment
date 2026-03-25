@@ -113,6 +113,7 @@ const ExpressEvent = () => {
 
   const emailConfirmationRef = useRef<EmailConfirmationHandle>(null);
   const isLastStep = steps.length > 0 && currentStep === steps.length - 1;
+  const isPaymentStep = steps[currentStep]?.id === "payment";
 
   // --- Step-based API fetchers ---
   const stepEventFetchers: Record<string, (eventId: string) => void> = {
@@ -197,7 +198,7 @@ const ExpressEvent = () => {
           </Button>
         </div>
         <div className="col-auto flex items-center gap-2">
-          {isLastStep && (
+          {isLastStep && !isPaymentStep && (
             <Button
               onClick={() => {
                 const step = steps[currentStep];

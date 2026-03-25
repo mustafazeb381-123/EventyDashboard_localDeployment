@@ -1194,10 +1194,39 @@ export const chargeEventPayment = (
   data: {
     package_name: string;
     redirect_url: string;
+    total_amount?: number;
+    addons?: Array<{
+      name: "support_hours" | "additional_registration_capacity";
+      quantity: number;
+    }>;
+    company_billing_details?: {
+      company_name: string;
+      country: string;
+      city: string;
+      postal_code: string;
+      district: string;
+      building_number: string;
+      additional_info?: string;
+      vat_number?: string;
+    };
   }
 ) => {
   return axiosInstance.post(`/events/${eventId}/charge_event_payment`, data);
 };
+
+export const getEventPaymentStatus = (
+  eventId: string | number,
+  chargeId: string,
+  paymentType: "event" | "app" = "event"
+) => {
+  return axiosInstance.get(`/events/${eventId}/get_payment_status`, {
+    params: {
+      charge_id: chargeId,
+      payment_type: paymentType,
+    },
+  });
+};
+
 
 
 

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { Check, ChevronLeft, ChevronRight, Info } from "lucide-react";
+import { Check, ChevronLeft, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { chargeEventPayment } from "@/apis/apiHelpers";
+import { savePendingEventPayment } from "./paymentSession";
 
 const VAT_RATE = 0.15;
 const SUPPORT_HOURLY_RATE = 350;
@@ -13,6 +15,27 @@ const SUPPORT_HOURS_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const CURRENT_CAPACITY = 400;
 const REGISTRATION_PRICE_PER_USER = 3.75;
 const REGISTRATION_OPTIONS = [100, 200, 300, 400] as const;
+const BACKEND_PACKAGE_NAME_BY_PLAN = {
+  express: "express",
+  advance: "premium",
+} as const;
+const BACKEND_PACKAGE_PRICES = {
+  express: 1000,
+  premium: 1000,
+} as const;
+const COUNTRY_NAMES: Record<string, string> = {
+  SA: "Saudi Arabia",
+  AE: "UAE",
+  KW: "Kuwait",
+  BH: "Bahrain",
+  OM: "Oman",
+};
+const CITY_NAMES: Record<string, string> = {
+  RUH: "Riyadh",
+  JED: "Jeddah",
+  DMM: "Dammam",
+  MEC: "Mecca",
+};
 
 type BillingType = "individual" | "company";
 type SupportHours = (typeof SUPPORT_HOURS_OPTIONS)[number];
@@ -22,11 +45,6 @@ const DEFAULT_CONTACT = {
   email: "abdt23@gmail.com",
   phone: "+358 50 1234567",
 };
-
-const PLAN_PRICES = {
-  express: 1000,
-  advance: 2000,
-} as const;
 
 interface PaymentProps {
   onNext: (id?: string | number, _plan?: string) => void;
@@ -44,12 +62,15 @@ const Payment: React.FC<PaymentProps> = ({
   currentStep,
   totalSteps = 0,
   plan = "express",
+  eventId,
 }) => {
   const { company: companySlug } = useParams<{ company?: string }>();
   const { t } = useTranslation("dashboard");
   const [contact] = useState(DEFAULT_CONTACT);
   const [billingType, setBillingType] = useState<BillingType>("individual");
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [isInitiatingPayment, setIsInitiatingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState("");
 
   const [companyName, setCompanyName] = useState("");
   const [vatNumber, setVatNumber] = useState("");
@@ -65,16 +86,18 @@ const Payment: React.FC<PaymentProps> = ({
   const [additionalRegistrations, setAdditionalRegistrations] = useState(200);
 
   const normalizedPlan = plan === "advance" ? "advance" : "express";
+  const backendPackageName = BACKEND_PACKAGE_NAME_BY_PLAN[normalizedPlan];
   const planName =
     normalizedPlan === "advance"
       ? t("pricing.advanced")
       : t("pricing.express");
-  const planPrice = PLAN_PRICES[normalizedPlan];
+  const planPrice = BACKEND_PACKAGE_PRICES[backendPackageName];
   const supportTotal = supportHours * SUPPORT_HOURLY_RATE;
   const registrationPrice = additionalRegistrations * REGISTRATION_PRICE_PER_USER;
   const subtotal = planPrice + supportTotal + registrationPrice;
   const vatAmount = subtotal * VAT_RATE;
   const totalAmount = subtotal + vatAmount;
+  const checkoutTotal = Number(totalAmount.toFixed(2));
   const newCapacity = CURRENT_CAPACITY + additionalRegistrations;
   const formatSar = (amount: number) => `SAR ${amount.toFixed(2)}`;
   const supportSummary = `${supportHours} Hour${supportHours > 1 ? "s" : ""} - ${formatSar(supportTotal)}`;
@@ -119,24 +142,123 @@ const Payment: React.FC<PaymentProps> = ({
 
   const canPay = isCompanyValid && termsAccepted;
 
-  function handlePayNow() {
+  function buildRedirectUrl(currentEventId: string | number) {
+    const basePath = companySlug
+      ? `/${companySlug}/express-event/${currentEventId}/payment/callback`
+      : `/express-event/${currentEventId}/payment/callback`;
+
+    const redirectUrl = new URL(`${window.location.origin}${basePath}`);
+    redirectUrl.searchParams.set("plan", plan);
+    return redirectUrl.toString();
+  }
+
+  function getCountryName(value: string) {
+    return COUNTRY_NAMES[value] ?? value;
+  }
+
+  function getCityName(value: string) {
+    return CITY_NAMES[value] ?? value;
+  }
+
+  function getPaymentErrorMessage(error: unknown) {
+    const response = (error as {
+      response?: { status?: number; data?: { error?: string; message?: string } };
+    })?.response;
+
+    if (response?.status === 401) {
+      return t("expressEvent.paymentUnauthorized");
+    }
+
+    if (response?.status === 404) {
+      return t("expressEvent.paymentNotFound");
+    }
+
+    if (response?.status === 422) {
+      return (
+        response.data?.error ||
+        response.data?.message ||
+        t("expressEvent.paymentValidationError")
+      );
+    }
+
+    return (
+      response?.data?.message ||
+      response?.data?.error ||
+      t("expressEvent.paymentUnexpectedError")
+    );
+  }
+
+  async function handlePayNow() {
     if (!canPay) return;
-    console.log("Billing payload (API not connected yet):", {
-      billing_type: billingType,
-      billing_details:
-        billingType === "company"
-          ? { companyName, vatNumber, country, city, district, buildingNo, postalCode, additionalInfo }
-          : { personName: companyName, country, city, district, buildingNo, postalCode, additionalInfo },
-      support_hours: supportHours,
-      support_total: supportTotal,
-      additional_registrations: additionalRegistrations,
-      registration_price: registrationPrice,
-      new_capacity: newCapacity,
-      subtotal,
-      vat: vatAmount,
-      total_amount: totalAmount,
-      customer_email: contact.email,
-    });
+
+    if (!eventId) {
+      setPaymentError(t("expressEvent.eventIdMissing"));
+      return;
+    }
+
+    setIsInitiatingPayment(true);
+    setPaymentError("");
+
+    try {
+      const redirectUrl = buildRedirectUrl(eventId);
+      const response = await chargeEventPayment(eventId, {
+        package_name: backendPackageName,
+        redirect_url: redirectUrl,
+        total_amount: checkoutTotal,
+        addons: [
+          {
+            name: "support_hours",
+            quantity: supportHours,
+          },
+          {
+            name: "additional_registration_capacity",
+            quantity: additionalRegistrations,
+          },
+        ],
+        company_billing_details: {
+          company_name: companyName.trim(),
+          country: getCountryName(country),
+          city: getCityName(city),
+          postal_code: postalCode.trim(),
+          district: district.trim(),
+          building_number: buildingNo.trim(),
+          additional_info: additionalInfo.trim(),
+          ...(billingType === "company" && vatNumber.trim()
+            ? { vat_number: vatNumber.trim() }
+            : {}),
+        },
+      });
+
+      const {
+        transaction_url: transactionUrl,
+        transaction_id: transactionId,
+        order_id: orderId,
+        charge_id: chargeId,
+        total_price: totalPrice,
+        tax,
+      } = response.data ?? {};
+
+      if (!transactionUrl || !transactionId || !orderId || !chargeId) {
+        throw new Error("Missing payment redirect data");
+      }
+
+      savePendingEventPayment({
+        eventId: String(eventId),
+        plan,
+        chargeId,
+        transactionId,
+        orderId,
+        transactionUrl,
+        totalPrice,
+        tax,
+        initiatedAt: new Date().toISOString(),
+      });
+
+      window.location.assign(transactionUrl);
+    } catch (error) {
+      setPaymentError(getPaymentErrorMessage(error));
+      setIsInitiatingPayment(false);
+    }
   }
 
   return (
@@ -577,12 +699,28 @@ const Payment: React.FC<PaymentProps> = ({
               </Label>
             </div>
 
+            {paymentError && (
+              <div
+                className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+                role="alert"
+              >
+                {paymentError}
+              </div>
+            )}
+
             <Button
               onClick={handlePayNow}
-              disabled={!canPay}
+              disabled={!canPay || isInitiatingPayment}
               className="w-full mt-4 py-6 text-base font-semibold bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:pointer-events-none rounded-xl"
             >
-              {t("expressEvent.payNow")}
+              {isInitiatingPayment ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {t("expressEvent.redirectingToCheckout")}
+                </span>
+              ) : (
+                t("expressEvent.payNow")
+              )}
             </Button>
 
             <div className="mt-5 pt-4 border-t border-gray-100">
@@ -621,10 +759,10 @@ const Payment: React.FC<PaymentProps> = ({
         </span>
         <Button
           onClick={() => onNext()}
-          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 rounded-lg"
+          disabled
+          className="flex items-center gap-2 bg-teal-600 hover:bg-teal-700 rounded-lg disabled:pointer-events-none"
         >
-          {t("expressEvent.next")}
-          <ChevronRight size={20} />
+          {t("expressEvent.completePaymentFirst")}
         </Button>
       </div>
     </div>

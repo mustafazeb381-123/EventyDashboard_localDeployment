@@ -8,6 +8,7 @@ import ErrorPage from "../pages/ErrorPage/ErrorPage";
 import Login from "../pages/Login/Login";
 import Signup from "../pages/Signup/Signup";
 import ExpressEvent from "@/pages/Home/ExpressEvent/ExpressEvent";
+import PaymentCallback from "@/pages/Home/ExpressEvent/Payment/PaymentCallback";
 
 import RejectionTemplateTwo from "@/pages/Home/ExpressEvent/Confirmation/Templates/RejectionEmailTemplate/RejectionTemplateTwo";
 import HomeSummary from "@/pages/Home/EventDetails/HomeSummary/HomeSummary";
@@ -200,6 +201,10 @@ const router = createBrowserRouter([
           {
             path: "express-event/:id?",
             element: <ExpressEvent />,
+          },
+          {
+            path: "express-event/:id/payment/callback",
+            element: <PaymentCallback />,
           },
           {
             path: "settings",
