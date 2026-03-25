@@ -1301,7 +1301,7 @@ const MainData = ({
   };
 
   return (
-    <div className="w-full bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8">
+    <div className="w-full rounded-2xl bg-white p-4 sm:rounded-3xl sm:p-6 lg:p-8 dark:bg-slate-900">
       <h2 className="text-lg sm:text-xl lg:text-2xl font-normal mb-4 sm:mb-6 lg:mb-8 text-neutral-900"></h2>
 
       {/* Loading State */}
@@ -1465,10 +1465,10 @@ const MainData = ({
       )} */}
 
       {/* Mobile-First Responsive Grid */}
-      <div className="w-full space-y-6 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-6 xl:gap-8">
+      <div className="w-full space-y-6 lg:grid lg:grid-cols-3 lg:gap-6 lg:space-y-0 xl:gap-8">
         {/* Event Logo Section */}
-        <div className="w-full border rounded-2xl border-gray-200 p-4 sm:p-5">
-          <label className="block text-xs font-normal text-neutral-700 mb-2">
+        <div className="w-full rounded-2xl border border-gray-200 p-4 dark:border-slate-700 dark:bg-slate-950 sm:p-5">
+          <label className="mb-2 block text-xs font-normal text-neutral-700 dark:text-slate-300">
             {t("expressEvent.eventLogo")}
           </label>
           <div
@@ -1547,7 +1547,7 @@ const MainData = ({
           )}
 
           {/* Require Approval Toggle */}
-          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="mt-4 flex flex-col items-start justify-between gap-2 rounded-2xl bg-gray-100 p-3 dark:bg-slate-900 sm:flex-row sm:items-center sm:gap-0 sm:p-4">
             <div className="relative">
               <button
                 type="button"
@@ -1559,13 +1559,13 @@ const MainData = ({
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                 title="Registration waits for admin approval or rejection."
               >
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                   {t("expressEvent.requireApproval")}
                 </span>
-                <Info size={17} className="text-gray-400 flex-shrink-0" />
+                <Info size={17} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
               </button>
               {openInfoTooltip === "requireApproval" && (
-                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                <div className="absolute top-full left-0 z-10 mt-1.5 max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                   Registration waits for admin approval or rejection.
                 </div>
               )}
@@ -1587,11 +1587,11 @@ const MainData = ({
               />
               <div
                 className={`w-11 h-6 rounded-full transition-colors ${
-                  formData.requireApproval ? "bg-teal-500" : "bg-gray-200"
+                  formData.requireApproval ? "bg-teal-500" : "bg-gray-300 dark:bg-slate-700"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 dark:bg-slate-950 ${
                     formData.requireApproval
                       ? "translate-x-5"
                       : "translate-x-0.5"
@@ -1602,7 +1602,7 @@ const MainData = ({
           </div>
 
           {/* Duplicate Registration Toggle */}
-          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="mt-4 flex flex-col items-start justify-between gap-2 rounded-2xl bg-gray-100 p-3 dark:bg-slate-900 sm:flex-row sm:items-center sm:gap-0 sm:p-4">
             <div className="relative">
               <button
                 type="button"
@@ -1616,13 +1616,13 @@ const MainData = ({
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                 title="Blocks duplicate entries automatically."
               >
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                   {t("expressEvent.duplicateRegistration")}
                 </span>
-                <Info size={17} className="text-gray-400 flex-shrink-0" />
+                <Info size={17} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
               </button>
               {openInfoTooltip === "duplicateRegistration" && (
-                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                <div className="absolute top-full left-0 z-10 mt-1.5 max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                   Blocks duplicate entries automatically.
                 </div>
               )}
@@ -1644,11 +1644,11 @@ const MainData = ({
               />
               <div
                 className={`w-11 h-6 rounded-full transition-colors ${
-                  formData.duplicateRegistration ? "bg-teal-500" : "bg-gray-200"
+                  formData.duplicateRegistration ? "bg-teal-500" : "bg-gray-300 dark:bg-slate-700"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 dark:bg-slate-950 ${
                     formData.duplicateRegistration
                       ? "translate-x-5"
                       : "translate-x-0.5"
@@ -1657,7 +1657,7 @@ const MainData = ({
               </div>
             </label>
           </div>
-          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="mt-4 flex flex-col items-start justify-between gap-2 rounded-2xl bg-gray-100 p-3 dark:bg-slate-900 sm:flex-row sm:items-center sm:gap-0 sm:p-4">
             <div className="relative">
               <button
                 type="button"
@@ -1671,13 +1671,13 @@ const MainData = ({
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                 title="Allow attendees to register via a public link."
               >
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                   {t("expressEvent.enableRegistrationLink")}
                 </span>
-                <Info size={17} className="text-gray-400 flex-shrink-0" />
+                <Info size={17} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
               </button>
               {openInfoTooltip === "enableRegistrationLink" && (
-                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                <div className="absolute top-full left-0 z-10 mt-1.5 max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                   Allow Users to register via a public link.
                 </div>
               )}
@@ -1693,11 +1693,11 @@ const MainData = ({
               />
               <div
                 className={`w-11 h-6 rounded-full transition-colors ${
-                  formData.enableRegistrationLink ? "bg-teal-500" : "bg-gray-200"
+                  formData.enableRegistrationLink ? "bg-teal-500" : "bg-gray-300 dark:bg-slate-700"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 dark:bg-slate-950 ${
                     formData.enableRegistrationLink
                       ? "translate-x-5"
                       : "translate-x-0.5"
@@ -1708,7 +1708,7 @@ const MainData = ({
           </div>
 
           {/* Enable Email Toggle */}
-          <div className="flex flex-col sm:flex-row p-3 sm:p-4 mt-4 rounded-2xl bg-gray-100 items-start sm:items-center justify-between gap-2 sm:gap-0">
+          <div className="mt-4 flex flex-col items-start justify-between gap-2 rounded-2xl bg-gray-100 p-3 dark:bg-slate-900 sm:flex-row sm:items-center sm:gap-0 sm:p-4">
             <div className="relative">
               <button
                 type="button"
@@ -1720,13 +1720,13 @@ const MainData = ({
                 className="flex items-center gap-2 sm:gap-3 cursor-pointer hover:opacity-80 transition-opacity"
                 title="Send email notifications for registrations and updates."
               >
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-200">
                   {t("expressEvent.enableEmail")}
                 </span>
-                <Info size={17} className="text-gray-400 flex-shrink-0" />
+                <Info size={17} className="text-gray-400 dark:text-slate-500 flex-shrink-0" />
               </button>
               {openInfoTooltip === "enableEmail" && (
-                <div className="absolute left-0 top-full mt-1.5 z-10 px-3 py-2 text-xs text-gray-700 bg-white border border-gray-200 rounded-lg shadow-lg max-w-xs">
+                <div className="absolute top-full left-0 z-10 mt-1.5 max-w-xs rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs text-gray-700 shadow-lg dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                   Send email notifications for registrations.
                 </div>
               )}
@@ -1742,11 +1742,11 @@ const MainData = ({
               />
               <div
                 className={`w-11 h-6 rounded-full transition-colors ${
-                  formData.enableEmail ? "bg-teal-500" : "bg-gray-200"
+                  formData.enableEmail ? "bg-teal-500" : "bg-gray-300 dark:bg-slate-700"
                 }`}
               >
                 <div
-                  className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+                  className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform duration-200 dark:bg-slate-950 ${
                     formData.enableEmail
                       ? "translate-x-5"
                       : "translate-x-0.5"
@@ -1758,7 +1758,7 @@ const MainData = ({
         </div>
 
         {/* Event Details Section */}
-        <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">
+        <div className="w-full space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-slate-700 dark:bg-slate-950 sm:space-y-6 sm:p-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t("expressEvent.eventName")} <span className="text-red-500">*</span>
@@ -2111,7 +2111,7 @@ const MainData = ({
         </div>
 
         {/* Guest Types Section */}
-        <div className="w-full space-y-4 sm:space-y-6 border border-gray-200 p-4 sm:p-6 rounded-2xl">
+        <div className="w-full space-y-4 rounded-2xl border border-gray-200 p-4 dark:border-slate-700 dark:bg-slate-950 sm:space-y-6 sm:p-6">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <label className="block text-sm font-medium text-gray-700">

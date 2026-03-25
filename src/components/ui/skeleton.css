@@ -4,6 +4,10 @@
   background-color: #e5e7eb;
 }
 
+.dark .skeleton-loader {
+  background-color: #1e293b;
+}
+
 .skeleton-loader::after {
   position: absolute;
   top: 0;
@@ -19,6 +23,15 @@
   );
   animation: shimmer 2s infinite;
   content: "";
+}
+
+.dark .skeleton-loader::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(148, 163, 184, 0.18),
+    transparent
+  );
 }
 
 @keyframes shimmer {

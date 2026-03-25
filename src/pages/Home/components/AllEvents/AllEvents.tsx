@@ -595,16 +595,19 @@ function AllEvents() {
         </div>
       )}
 
-      <div style={{ padding: 24 }} className="bg-white w-full rounded-2xl shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md">
+      <div
+        style={{ padding: 24 }}
+        className="w-full rounded-2xl border border-slate-100/80 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+      >
         <div className="flex flex-col gap-4 mb-6">
           {/* Title and Counter */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <p className="font-poppins text-md font-medium text-neutral-900">
+              <p className="font-poppins text-md font-medium text-neutral-900 dark:text-slate-100">
                 {t("home.allEvents")}
               </p>
               {!isLoading && (
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
                   {searchQuery ? (
                     <>
                       {t("home.showingEvents", { count: paginatedEvents.length, total: filteredEvents.length })}
@@ -620,7 +623,7 @@ function AllEvents() {
               )}
               {isLoading && <Skeleton className="h-4 w-32 mt-1" />}
               {searching && (
-                <p className="text-sm text-blue-500 mt-1">
+                <p className="mt-1 text-sm text-blue-500 dark:text-blue-400">
                   {t("home.searchingAllPages")}
                 </p>
               )}
@@ -629,20 +632,20 @@ function AllEvents() {
             {/* Search Input */}
             <div className="relative w-full sm:w-64">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+                <Search className="h-4 w-4 text-gray-400 dark:text-slate-500" />
               </div>
               <input
                 type="text"
                 placeholder={t("home.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="block w-full rounded-lg border border-gray-300 bg-white py-2 pr-10 pl-10 text-sm leading-5 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none focus:placeholder-gray-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder-slate-500"
                 // input is never disabled
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"
                   // button is never disabled
                 >
                   <svg
@@ -666,16 +669,16 @@ function AllEvents() {
           {/* View Mode Toggle */}
           {!isLoading || events.length > 0 ? (
             <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 dark:text-slate-400">
                 {t("home.pageOfPages", { page: currentPage, pages: totalPages })}
               </div>
-              <div className="flex items-center bg-gray-100 rounded-lg p-1">
+              <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-slate-800">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-md transition-all duration-200 ${
                     viewMode === "grid"
-                      ? "bg-white shadow-sm text-blue-600"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
+                      : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
                   }`}
                   title={t("home.gridView")}
                 >
@@ -685,8 +688,8 @@ function AllEvents() {
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-md transition-all duration-200 ${
                     viewMode === "list"
-                      ? "bg-white shadow-sm text-blue-600"
-                      : "text-gray-500 hover:text-gray-700"
+                      ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
+                      : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
                   }`}
                   title={t("home.listView")}
                 >
@@ -762,19 +765,23 @@ function AllEvents() {
                       backgroundSize: "auto 100%",
                       cursor: isDeleting ? "wait" : "pointer",
                     }}
-                    className={`relative flex flex-col bg-neutral-100 rounded-2xl transition-all duration-300 ease-out border border-transparent group overflow-hidden ${isDeleting ? "pointer-events-none" : "hover:bg-white hover:shadow-lg hover:shadow-slate-200/50 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.99] hover:border-slate-200"}`}
+                    className={`group relative flex flex-col overflow-hidden rounded-2xl border border-transparent bg-neutral-100 transition-all duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 ${
+                      isDeleting
+                        ? "pointer-events-none"
+                        : "hover:bg-white hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/50 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.99] dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:shadow-slate-950/50"
+                    }`}
                   >
                     {/* Deleting overlay – blocks navigation and shows loading state */}
                     {isDeleting && (
                       <div
-                        className="absolute inset-0 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white/80 backdrop-blur-sm z-10"
+                          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-slate-950/80"
                         aria-live="polite"
                         aria-busy="true"
                       >
                         <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
                         <div className="text-center px-2">
-                          <p className="text-slate-700 font-medium text-sm">{t("home.deleting")}</p>
-                          <p className="text-slate-500 text-xs mt-0.5 truncate max-w-[180px]" title={event.name}>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t("home.deleting")}</p>
+                          <p className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500 dark:text-slate-400" title={event.name}>
                             {event.name}
                           </p>
                         </div>
@@ -821,10 +828,10 @@ function AllEvents() {
                     </div>
 
                     <div className="flex flex-col gap-2 mt-10">
-                      <p className="text-slate-800 font-poppins font-medium text-md group-hover:text-slate-900 transition-colors duration-300">
+                      <p className="text-md font-poppins font-medium text-slate-800 transition-colors duration-300 group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
                         {event.name}
                       </p>
-                      <p className="text-neutral-500 font-poppins font-normal text-xs">
+                      <p className="font-poppins text-xs font-normal text-neutral-500 dark:text-slate-400">
                         {event.date}
                       </p>
                     </div>
@@ -858,19 +865,23 @@ function AllEvents() {
                       handleEventClick(event.id);
                     }}
                     key={event.id}
-                    className={`relative flex items-center justify-between p-4 rounded-xl border border-transparent group overflow-hidden ${isDeleting ? "bg-neutral-100 cursor-wait pointer-events-none" : "bg-neutral-50 cursor-pointer transition-all duration-300 ease-out hover:bg-white hover:shadow-md hover:shadow-slate-200/40 hover:scale-[1.01] hover:border-slate-200"}`}
+                    className={`group relative flex items-center justify-between overflow-hidden rounded-xl border border-transparent p-4 dark:border-slate-700 ${
+                      isDeleting
+                        ? "pointer-events-none cursor-wait bg-neutral-100 dark:bg-slate-900"
+                        : "cursor-pointer bg-neutral-50 transition-all duration-300 ease-out hover:border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/40 hover:scale-[1.01] dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:shadow-slate-950/50"
+                    }`}
                   >
                     {/* Deleting overlay – blocks navigation and shows loading state */}
                     {isDeleting && (
                       <div
-                        className="absolute inset-0 rounded-xl flex flex-row items-center justify-center gap-3 bg-white/80 backdrop-blur-sm z-10"
+                        className="absolute inset-0 z-10 flex flex-row items-center justify-center gap-3 rounded-xl bg-white/80 backdrop-blur-sm dark:bg-slate-950/80"
                         aria-live="polite"
                         aria-busy="true"
                       >
                         <Loader2 className="w-6 h-6 text-rose-500 animate-spin shrink-0" />
                         <div className="text-center min-w-0">
-                          <p className="text-slate-700 font-medium text-sm">{t("home.deleting")}</p>
-                          <p className="text-slate-500 text-xs truncate" title={event.name}>
+                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t("home.deleting")}</p>
+                          <p className="truncate text-xs text-slate-500 dark:text-slate-400" title={event.name}>
                             {event.name}
                           </p>
                         </div>
@@ -902,10 +913,10 @@ function AllEvents() {
 
                       {/* Event Info */}
                       <div className="flex flex-col gap-1 flex-1 min-w-0">
-                        <p className="text-slate-800 font-poppins font-medium text-md truncate group-hover:text-slate-900 transition-colors duration-300">
+                        <p className="text-md font-poppins font-medium truncate text-slate-800 transition-colors duration-300 group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
                           {event.name}
                         </p>
-                        <p className="text-neutral-500 font-poppins font-normal text-xs">
+                        <p className="font-poppins text-xs font-normal text-neutral-500 dark:text-slate-400">
                           {event.date}
                         </p>
                       </div>

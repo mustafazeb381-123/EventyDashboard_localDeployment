@@ -28,7 +28,7 @@ const Home = () => {
     setSelectedPlan("");
   };
   return (
-    <div className="w-full bg-[#F7FAFF] min-h-screen p-4">
+    <div className="w-full bg-[#F7FAFF] min-h-screen p-4 dark:bg-slate-950 dark:text-slate-100">
       <div className="flex flex-wrap gap-4">
         {/* Express Event Card */}
 
@@ -50,10 +50,11 @@ const Home = () => {
             hover:scale-[1.02] hover:-translate-y-0.5 hover:border-sky-400
             active:scale-[0.99] active:translate-y-0
             group
+            dark:border-slate-700 dark:bg-slate-900 dark:hover:border-slate-500 dark:hover:shadow-slate-950/40
           "
         >
           <div className="flex items-center gap-4">
-            <div className="bg-sky-50 p-6 rounded-2xl shadow-sm transition-all duration-300 group-hover:bg-white group-hover:shadow-md group-hover:scale-105">
+            <div className="bg-sky-50 p-6 rounded-2xl shadow-sm transition-all duration-300 group-hover:bg-white group-hover:shadow-md group-hover:scale-105 dark:bg-slate-800 dark:group-hover:bg-slate-700">
               <img
                 src={Assets.icons.setting}
                 alt="Setting Icon"
@@ -61,10 +62,10 @@ const Home = () => {
               />
             </div>
             <div>
-              <p className="text-lg font-semibold text-sky-800 group-hover:text-sky-900 transition-colors duration-300">
+              <p className="text-lg font-semibold text-sky-800 group-hover:text-sky-900 transition-colors duration-300 dark:text-slate-100 dark:group-hover:text-white">
                 {t("home.createEvent")}
               </p>
-              <p className="font-poppins font-normal text-xs text-sky-950/90">
+              <p className="font-poppins font-normal text-xs text-sky-950/90 dark:text-slate-300">
                 {t("home.startSettingUp")}
               </p>
             </div>

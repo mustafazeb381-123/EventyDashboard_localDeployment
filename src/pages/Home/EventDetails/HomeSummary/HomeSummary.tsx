@@ -100,14 +100,14 @@ const StatCard = ({
           }
         : undefined
     }
-    className={`bg-white rounded-2xl p-4 flex items-center gap-3 shadow-sm border border-gray-50 ${onClick ? "cursor-pointer hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500" : ""}`}
+    className={`flex items-center gap-3 rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 ${onClick ? "cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500" : ""}`}
   >
     <div className={`${bgColor} p-2.5 rounded-xl shrink-0`}>
       <Icon size={18} className={iconColor} />
     </div>
     <div className="min-w-0 flex-1">
-      <p className="text-xs text-[#656C95] leading-tight line-clamp-2">{label}</p>
-      <p className="text-lg font-semibold text-[#202242] mt-0.5 leading-tight">
+      <p className="line-clamp-2 text-xs leading-tight text-[#656C95] dark:text-slate-400">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold leading-tight text-[#202242] dark:text-slate-100">
         {typeof value === "number" ? value.toLocaleString() : value}
       </p>
     </div>
@@ -140,9 +140,9 @@ const CapacityCard = ({
   const filled = (Math.min(100, Math.max(0, percent)) / 100) * totalArc;
 
   return (
-    <div className="bg-white rounded-2xl p-5 flex flex-col shadow-sm border border-gray-50">
+    <div className="flex flex-col rounded-2xl border border-gray-50 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
       {/* Title */}
-      <p className="text-sm font-medium text-[#656C95] mb-3">{t("homeSummary.registrationCapacity")}</p>
+      <p className="mb-3 text-sm font-medium text-[#656C95] dark:text-slate-400">{t("homeSummary.registrationCapacity")}</p>
 
       {/* Gauge — centered */}
       <div className="relative mx-auto" style={{ width: 160, height: 92 }}>
@@ -167,20 +167,20 @@ const CapacityCard = ({
         </svg>
         {/* Percent label centered inside arc */}
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-          <span className="text-2xl font-bold text-[#202242] leading-none">
+          <span className="text-2xl font-bold leading-none text-[#202242] dark:text-slate-100">
             {total > 0 ? `${percent}%` : "0%"}
           </span>
         </div>
       </div>
 
       {/* used / total */}
-      <p className="text-center text-sm font-semibold text-[#202242] mt-1">
+      <p className="mt-1 text-center text-sm font-semibold text-[#202242] dark:text-slate-100">
         {used.toLocaleString()} / {total > 0 ? total.toLocaleString() : "—"}
       </p>
 
       {/* dots row */}
       {total > 0 && (
-        <p className="text-center text-xs text-[#656C95] mt-1.5 flex items-center justify-center gap-3">
+        <p className="mt-1.5 flex items-center justify-center gap-3 text-center text-xs text-[#656C95] dark:text-slate-400">
           <span className="flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-[#202242] inline-block" />
             {remaining.toLocaleString()} {t("homeSummary.spotsRemaining")}
@@ -230,12 +230,12 @@ const RegistrationsActivityChart = ({
   // Import Bar, Line, ComposedChart at the top — we'll use inline recharts primitives here
 
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
+    <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.registrationsActivity")}</h3>
-          <span className="flex items-center gap-1.5 text-xs text-[#656C95]">
+          <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.registrationsActivity")}</h3>
+          <span className="flex items-center gap-1.5 text-xs text-[#656C95] dark:text-slate-400">
             <span className="w-2 h-2 rounded-full bg-[#202242] inline-block" />
             {t("homeSummary.registered")}
           </span>
@@ -246,7 +246,7 @@ const RegistrationsActivityChart = ({
             setRange(e.target.value);
             onRangeChange?.(e.target.value);
           }}
-          className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none"
+          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
         >
           <option value="6 Month">{t("homeSummary.sixMonth")}</option>
           <option value="3 Month">{t("homeSummary.threeMonth")}</option>
@@ -423,10 +423,10 @@ const DonutChart = ({
         </ResponsiveContainer>
         {/* Center label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xl font-bold text-[#202242]">
+          <span className="text-xl font-bold text-[#202242] dark:text-slate-100">
             {typeof totalValue === "number" ? totalValue.toLocaleString() : totalValue}
           </span>
-          <span className="text-[10px] text-[#656C95] text-center leading-tight max-w-[72px]">
+          <span className="max-w-[72px] text-center text-[10px] leading-tight text-[#656C95] dark:text-slate-400">
             {totalLabel}
           </span>
         </div>
@@ -435,7 +435,7 @@ const DonutChart = ({
       <div className="w-full mt-1 space-y-1.5">
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-[#656C95]">
+            <span className="flex items-center gap-1.5 text-[#656C95] dark:text-slate-400">
               <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
               {item.label}
             </span>
@@ -452,15 +452,15 @@ const DonutChart = ({
 // ─── Skeleton ────────────────────────────────────────────────────────────────
 
 const SkeletonLoader = () => (
-  <div className="w-full px-4 sm:px-6 lg:px-8 animate-pulse space-y-6">
+    <div className="w-full animate-pulse space-y-6 px-4 sm:px-6 lg:px-8">
     <div className="h-8 w-40 bg-gray-200 rounded-lg" />
-    <div className="bg-white rounded-2xl p-6 h-40 w-full" />
+    <div className="h-40 w-full rounded-2xl bg-white dark:bg-slate-900 p-6" />
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
       {[...Array(8)].map((_, i) => (
-        <div key={i} className="bg-white rounded-2xl h-20" />
+        <div key={i} className="h-20 rounded-2xl bg-white dark:bg-slate-900" />
       ))}
     </div>
-    <div className="bg-white rounded-2xl h-72 w-full" />
+    <div className="h-72 w-full rounded-2xl bg-white dark:bg-slate-900" />
   </div>
 );
 
@@ -922,10 +922,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         {/* Page title */}
 
         {/* ── Event header card ── */}
-        <div className="p-4 sm:p-6 lg:p-6 bg-white rounded-2xl flex flex-col lg:flex-row items-start justify-between gap-4 lg:gap-0">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-white p-4 dark:bg-slate-900 lg:flex-row lg:gap-0 sm:p-6 lg:p-6">
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
-            <div className="relative h-[150px] w-[150px] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px] bg-neutral-50 items-center justify-center flex rounded-2xl shrink-0">
+            <div className="relative flex h-[150px] w-[150px] shrink-0 items-center justify-center rounded-2xl bg-neutral-50 dark:bg-slate-800 sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px]">
               {/* Upload Loading Overlay */}
               {isUploading && (
                 <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
@@ -1005,7 +1005,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               </div>
 
               {/* event name */}
-              <p className="mt-4 lg:mt-4 text-sm sm:text-base lg:text-lg text-slate-800 font-medium">
+              <p className="mt-4 text-sm font-medium text-slate-800 dark:text-slate-100 sm:text-base lg:mt-4 lg:text-lg">
                 {name}
               </p>
 
@@ -1015,7 +1015,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   className="sm:w-5 sm:h-5 lg:w-5 lg:h-5"
                   color="#525252"
                 />
-                <p className="text-neutral-500 text-xs sm:text-sm font-normal">
+                <p className="text-xs font-normal text-neutral-500 dark:text-slate-400 sm:text-sm">
                   {event_date_from} {formatTime(event_time_from)} to{" "}
                   {event_date_to} {formatTime(event_time_to)}
                 </p>
@@ -1027,12 +1027,12 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   className="sm:w-5 sm:h-5 lg:w-5 lg:h-5"
                   color="#525252"
                 />
-                <p className="text-neutral-500 text-xs sm:text-sm font-normal">
+                <p className="text-xs font-normal text-neutral-500 dark:text-slate-400 sm:text-sm">
                   {eventLocation}
                 </p>
               </div>
 
-              <p className="mt-4 lg:mt-6 text-neutral-500 text-xs sm:text-sm font-normal">
+              <p className="mt-4 text-xs font-normal text-neutral-500 dark:text-slate-400 sm:text-sm lg:mt-6">
                 {t("homeSummary.lastEdit", { time: "3hr" })}
               </p>
             </div>
@@ -1172,10 +1172,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
 
           {/* Registration Sources donut */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
+          <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.registrationSources")}</h3>
-              <select className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none">
+              <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.registrationSources")}</h3>
+              <select className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                 <option>2 Month</option>
                 <option>6 Month</option>
               </select>
@@ -1202,10 +1202,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         {/* ── Registration Status + Recent Activity ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Registration Status */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50 relative">
+          <div className="relative rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.registrationStatus")}</h3>
-              <select className="text-xs border border-gray-200 rounded-lg px-2.5 py-1.5 text-[#656C95] bg-white focus:outline-none">
+              <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.registrationStatus")}</h3>
+              <select className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                 <option>2 Month</option>
                 <option>6 Month</option>
               </select>
@@ -1214,14 +1214,14 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             {/* FAB + Quick Actions Menu dropdown - fixed in main content area (right of sidebar), aligned with content */}
             <div ref={quickActionsRef} className="fixed bottom-6 z-50 left-[calc(280px+3rem)]">
               {quickActionsOpen && (
-                <div className="absolute bottom-full left-0 mb-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 min-w-[200px]">
-                  <p className="px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-100">
+                <div className="absolute bottom-full left-0 mb-2 min-w-[200px] w-56 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl dark:border-slate-700 dark:bg-slate-950">
+                  <p className="border-b border-gray-100 px-4 py-2 text-sm font-medium text-gray-500 dark:border-slate-700 dark:text-slate-400">
                     {t("homeSummary.quickActionsMenu")}
                   </p>
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
                   >
                     <div className="p-1.5 rounded-lg bg-blue-50">
                       <UserPlus className="h-4 w-4 text-blue-600" />
@@ -1231,7 +1231,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
                   >
                     <div className="p-1.5 rounded-lg bg-emerald-50">
                       <Send className="h-4 w-4 text-emerald-600" />
@@ -1241,7 +1241,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
                   >
                     <div className="p-1.5 rounded-lg bg-violet-50">
                       <Printer className="h-4 w-4 text-violet-600" />
@@ -1251,7 +1251,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 hover:bg-gray-50 transition-colors"
+                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
                   >
                     <div className="p-1.5 rounded-lg bg-red-50">
                       <FileText className="h-4 w-4 text-red-600" />
@@ -1289,9 +1289,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-gray-50">
+          <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[#202242]">{t("homeSummary.recentActivity")}</h3>
+              <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.recentActivity")}</h3>
               <button type="button" className="text-sm font-medium text-blue-500 hover:text-blue-600">{t("homeSummary.viewAll")}</button>
             </div>
             <ul className="space-y-4">
@@ -1308,8 +1308,8 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <item.Icon className={`h-4 w-4 ${item.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-                    <p className="text-sm text-[#202242] leading-snug">{item.text}</p>
-                    <p className="text-xs text-[#9CA3AF] shrink-0 whitespace-nowrap">{item.time}</p>
+                    <p className="text-sm leading-snug text-[#202242] dark:text-slate-200">{item.text}</p>
+                    <p className="shrink-0 whitespace-nowrap text-xs text-[#9CA3AF] dark:text-slate-400">{item.time}</p>
                   </div>
                 </li>
               ))}

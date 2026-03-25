@@ -5,9 +5,7 @@
 @import "tw-animate-css";
 @import "react-day-picker/dist/style.css";
 
-/* @custom-variant dark (&:is(.dark *)); */
-
-/* @custom-variant dark (&:is(.dark *)); */
+@custom-variant dark (&:is(.dark *));
 
 @theme {
   --font-poppins: "Poppins", sans-serif;
@@ -15,8 +13,40 @@
   /* Custom animations */
   --animate-slide-down: slide-down 0.3s ease-out forwards;
 }
+
+:root {
+  color-scheme: light;
+  --app-bg: #f7faff;
+  --app-surface: #ffffff;
+  --app-surface-alt: #f8fafc;
+  --app-border: #e5e7eb;
+  --app-text: #111827;
+  --app-text-muted: #4b5563;
+}
+
+.dark {
+  color-scheme: dark;
+  --app-bg: #020617;
+  --app-surface: #0f172a;
+  --app-surface-alt: #111827;
+  --app-border: #334155;
+  --app-text: #e5e7eb;
+  --app-text-muted: #94a3b8;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
 body {
   font-family: var(--font-poppins);
+  background-color: var(--app-bg);
+  color: var(--app-text);
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
 }
 
 /* Custom keyframe animation for slide-down */
@@ -48,6 +78,78 @@ body {
 
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+.dark body {
+  background-color: var(--app-bg);
+  color: var(--app-text);
+}
+
+.dark .bg-white {
+  background-color: #0f172a;
+}
+
+.dark .bg-white\/30,
+.dark .bg-white\/50,
+.dark .bg-white\/80,
+.dark .bg-white\/90 {
+  background-color: rgba(15, 23, 42, 0.82);
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/30,
+.dark .bg-gray-50\/50,
+.dark .bg-gray-50\/80,
+.dark .bg-neutral-50,
+.dark .bg-neutral-100,
+.dark .bg-slate-50,
+.dark .bg-slate-100,
+.dark .bg-\[\#F7FAFF\] {
+  background-color: #111827;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-slate-200,
+.dark .border-slate-300 {
+  border-color: #334155;
+}
+
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-slate-900,
+.dark .text-slate-800,
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #e5e7eb;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-slate-500,
+.dark .text-slate-400 {
+  color: #94a3b8;
+}
+
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-100:hover,
+.dark .hover\:bg-slate-50:hover,
+.dark .hover\:bg-slate-100:hover {
+  background-color: #1e293b;
+}
+
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark select,
+.dark textarea {
+  background-color: #0f172a;
+  border-color: #334155;
+  color: #e5e7eb;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8;
 }
 
 /* :root {

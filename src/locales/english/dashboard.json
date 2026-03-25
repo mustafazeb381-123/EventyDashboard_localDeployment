@@ -28,7 +28,11 @@
   },
   "header": {
     "dashboard": "Dashboard",
-    "myAccount": "My Account"
+    "myAccount": "My Account",
+    "lightMode": "Light mode",
+    "darkMode": "Dark mode",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
   },
   "home": {
     "createEvent": "Create Event",

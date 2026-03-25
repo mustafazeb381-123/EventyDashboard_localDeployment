@@ -27,6 +27,7 @@ import {
 import { useNavigate, useLocation, useParams } from "react-router-dom";
 import Assets from "@/utils/Assets";
 import { getEventbyId } from "@/apis/apiHelpers";
+import { useTheme } from "@/context/ThemeContext";
 
 interface SideBarProps {
   isExpanded: boolean;
@@ -44,7 +45,42 @@ const SideBar = ({
   currentEventId,
 }: SideBarProps) => {
   const { t } = useTranslation("dashboard");
+  const { theme } = useTheme();
+  const isDarkTheme = theme === "dark";
 
+  const sidebarShellClass = isDarkTheme
+    ? "bg-linear-to-b from-slate-950 via-slate-900 to-black border-r border-slate-800/80"
+    : "bg-linear-to-b from-slate-800 via-slate-900 to-blue-900";
+  const sectionBorderClass = isDarkTheme
+    ? "border-slate-800/70"
+    : "border-slate-700/50";
+  const sectionTitleClass = isDarkTheme ? "text-slate-400" : "text-slate-400";
+  const navItemClass = (isActive: boolean, isDisabled: boolean) => {
+    if (isActive) {
+      return "bg-blue-600/30 text-white border border-blue-500/30";
+    }
+
+    if (isDisabled) {
+      return "text-slate-500 cursor-not-allowed opacity-60";
+    }
+
+    return isDarkTheme
+      ? "text-slate-300 hover:bg-slate-800/70 hover:text-white"
+      : "text-slate-300 hover:bg-slate-700/50 hover:text-white";
+  };
+  const submenuItemClass = (isActive: boolean, isDisabled: boolean) => {
+    if (isActive) {
+      return "bg-blue-500/20 text-white border border-blue-400/30";
+    }
+
+    if (isDisabled) {
+      return "text-slate-500 cursor-not-allowed opacity-60";
+    }
+
+    return isDarkTheme
+      ? "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+      : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300";
+  };
   // Translation map: internal label key -> translation key in dashboard.sidebar
   const labelTranslations: Record<string, string> = {
     "Home summary": t("sidebar.homeSummary"),
@@ -85,6 +121,12 @@ const SideBar = ({
     message: string;
     type: "success" | "error";
   } | null>(null);
+  const settingsButtonClass =
+    activeItem === "Settings"
+      ? "bg-blue-600/30 text-white border border-blue-500/30"
+      : isDarkTheme
+        ? "text-slate-300 hover:bg-slate-800/70 hover:text-white"
+        : "text-slate-300 hover:bg-slate-700/50 hover:text-white";
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -500,17 +542,20 @@ const SideBar = ({
       <aside
         className={`fixed ${
           isRTL ? "right-0" : "left-0"
-        } top-0 h-screen bg-linear-to-b from-slate-800 via-slate-900 to-blue-900 shadow-2xl transition-all duration-300 ease-in-out z-50 ${
+        } top-0 z-50 h-screen shadow-2xl transition-all duration-300 ease-in-out ${
+          sidebarShellClass
+        } ${
           isExpanded ? "w-[280px]" : "w-20"
         }`}
       >
         {isExpanded && (
-          <div className="px-4 py-4 border-b">
+          <div className={`border-b px-4 py-4 ${isDarkTheme ? sectionBorderClass : ""}`}>
             <div className="flex items-center">
               {canToggle && (
                 <Button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className=" h-2/3  flex flex-row items-center justify-evenly cursor-pointer"
+                  variant={isDarkTheme ? "ghost" : "default"}
+                  className="h-2/3 cursor-pointer justify-evenly"
                 >
                   <img src={Assets.icons.leftArrow} height={24} width={24} />
                 </Button>
@@ -535,9 +580,12 @@ const SideBar = ({
         )}
 
         {!isExpanded && (
-          <div className="px-4 py-4 border-b border-slate-700/50 flex justify-center">
+          <div
+            className={`flex justify-center border-b px-4 py-4 ${sectionBorderClass}`}
+          >
             <Button
               onClick={() => canToggle && setIsExpanded(!isExpanded)}
+              variant={isDarkTheme ? "ghost" : "default"}
               className="h-20 w-20"
               disabled={!canToggle}
             >
@@ -551,8 +599,12 @@ const SideBar = ({
         )}
 
         {isExpanded && (
-          <div className="px-4 py-3 border-b border-slate-700/30">
-            <span className="text-slate-400 text-sm font-medium">
+          <div
+            className={`border-b px-4 py-3 ${
+              isDarkTheme ? sectionBorderClass : "border-slate-700/30"
+            }`}
+          >
+            <span className={`text-sm font-medium ${sectionTitleClass}`}>
               {t("sidebar.eventDetails")}
             </span>
           </div>
@@ -574,13 +626,10 @@ const SideBar = ({
                 return (
                   <div key={index}>
                     <div
-                      className={`flex items-center justify-start px-3 py-2.5 rounded-lg text-left transition-all duration-200 group cursor-pointer relative ${
-                        isActive
-                          ? "bg-blue-600/30 text-white border border-blue-500/30"
-                          : isDisabled
-                            ? "text-slate-500 cursor-not-allowed opacity-60"
-                            : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-                      }`}
+                      className={`group relative flex cursor-pointer items-center justify-start rounded-lg px-3 py-2.5 text-left transition-all duration-200 ${navItemClass(
+                        isActive,
+                        isDisabled,
+                      )}`}
                       onClick={() => {
                         if (isDisabled) {
                           return; // Prevent click for disabled items
@@ -636,13 +685,10 @@ const SideBar = ({
                           return (
                             <div
                               key={subIndex}
-                              className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
-                                isSubActive
-                                  ? "bg-blue-500/20 text-white border border-blue-400/30"
-                                  : isSubDisabled
-                                    ? "text-slate-500 cursor-not-allowed opacity-60"
-                                    : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300"
-                              }`}
+                              className={`flex cursor-pointer items-center space-x-3 rounded-lg px-3 py-2 transition-colors ${submenuItemClass(
+                                isSubActive,
+                                isSubDisabled,
+                              )}`}
                               onClick={() => {
                                 if (isSubDisabled) {
                                   return; // Prevent click for disabled sub-items
@@ -683,7 +729,7 @@ const SideBar = ({
         )}
 
         {/* Fixed Bottom Section */}
-        <div className="absolute bottom-0 left-0 right-0 p-2 border-slate-700/50 space-y-2">
+        <div className="absolute bottom-0 left-0 right-0 space-y-2 p-2">
           <Button
             variant="ghost"
             onClick={() =>
@@ -697,11 +743,7 @@ const SideBar = ({
             }
             className={`w-full ${
               isExpanded ? "justify-start px-3" : "justify-center px-3"
-            } py-2.5 rounded-lg ${
-              activeItem === "Settings"
-                ? "bg-blue-600/30 text-white border border-blue-500/30"
-                : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
-            }`}
+            } rounded-lg py-2.5 ${settingsButtonClass}`}
           >
             <Settings className="h-4 w-4" />
             {isExpanded && (
@@ -715,7 +757,7 @@ const SideBar = ({
             variant="ghost"
             className={`w-full ${
               isExpanded ? "justify-start px-3" : "justify-center px-3"
-            } py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 rounded-lg`}
+            } rounded-lg py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 dark:hover:bg-red-900/30`}
           >
             <LogOut className="h-4 w-4" />
             {isExpanded && (
@@ -729,25 +771,49 @@ const SideBar = ({
       {showLogoutModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center">
           <div
-            className="absolute inset-0 backdrop-blur-sm bg-white/30"
+            className={`absolute inset-0 backdrop-blur-sm ${
+              isDarkTheme ? "bg-black/40" : "bg-white/30"
+            }`}
             onClick={handleLogoutCancel}
           />
-          <div className="relative bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4 animate-fade-in">
+          <div
+            className={`relative mx-4 w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-fade-in ${
+              isDarkTheme
+                ? "border border-slate-800 bg-slate-900 text-slate-100"
+                : "bg-white text-gray-900"
+            }`}
+          >
             <div className="flex flex-col items-center text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
+              <div
+                className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
+                  isDarkTheme ? "bg-red-950/40" : "bg-red-100"
+                }`}
+              >
                 <LogOut className="h-8 w-8 text-red-500" />
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              <h3
+                className={`mb-2 text-xl font-semibold ${
+                  isDarkTheme ? "text-slate-100" : "text-gray-900"
+                }`}
+              >
                 {t("sidebar.confirmLogout")}
               </h3>
-              <p className="text-gray-500 mb-6">
+              <p
+                className={`mb-6 ${
+                  isDarkTheme ? "text-slate-400" : "text-gray-500"
+                }`}
+              >
                 {t("sidebar.confirmLogoutMessage")}
               </p>
               <div className="flex gap-3 w-full">
                 <Button
                   onClick={handleLogoutCancel}
                   variant="outline"
-                  className="flex-1 py-2.5 rounded-xl border-gray-300 text-gray-700 hover:bg-gray-100"
+                  className={`flex-1 rounded-xl py-2.5 ${
+                    isDarkTheme
+                      ? "border-slate-700 text-slate-100 hover:bg-slate-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
                 >
                   {t("common:cancel")}
                 </Button>

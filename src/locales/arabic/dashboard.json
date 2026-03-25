@@ -28,7 +28,11 @@
   },
   "header": {
     "dashboard": "لوحة التحكم",
-    "myAccount": "حسابي"
+    "myAccount": "حسابي",
+    "lightMode": "الوضع الفاتح",
+    "darkMode": "الوضع الداكن",
+    "switchToLight": "التبديل إلى الوضع الفاتح",
+    "switchToDark": "التبديل إلى الوضع الداكن"
   },
   "home": {
     "createEvent": "إنشاء حدث",

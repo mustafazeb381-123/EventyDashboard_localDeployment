@@ -115,7 +115,7 @@ function MainRoutes() {
 
   // --- Layout ---
   return (
-    <div className="min-h-screen bg-gray-50/30">
+    <div className="min-h-screen bg-gray-50/30 text-inherit transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
       {/* Sidebar */}
       <SideBar
         isExpanded={isExpanded}
@@ -132,7 +132,7 @@ function MainRoutes() {
 
       {/* Main content */}
       <main
-        className={`relative bg-[#F7FAFF] p-4 h-full pt-20 transition-all duration-300 ease-in-out ${
+        className={`relative h-full bg-[#F7FAFF] p-4 pt-20 transition-all duration-300 ease-in-out dark:bg-slate-950 ${
           isRTL
             ? isExpanded
               ? "mr-[280px]"

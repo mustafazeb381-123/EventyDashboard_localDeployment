@@ -1,6 +1,6 @@
 // src/components/LanguageToggle.tsx
-import React from "react";
 import { useTranslation } from "react-i18next";
+// @ts-expect-error Typed JS i18n helper module
 import { updateDirection } from "../../utils/i18n";
 
 const LanguageToggle = () => {
@@ -17,7 +17,7 @@ const LanguageToggle = () => {
   return (
     <button
       onClick={toggleLanguage}
-      className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer text-sm font-medium"
+      className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition cursor-pointer text-sm font-medium dark:bg-blue-500 dark:hover:bg-blue-400"
       title={i18n.language === "en" ? "Switch to Arabic" : "التبديل إلى الإنجليزية"}
     >
       {i18n.language === "en" ? "العربية" : "English"}

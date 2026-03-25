@@ -1,17 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
+import { useTheme } from "@/context/ThemeContext";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
-  Printer,
   Calendar,
   Users,
   Send,
   UserCheck,
   UserPlus,
-  UserX,
-  Percent,
   Copy,
   Download,
   Search,
@@ -110,7 +108,8 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 function InvitationReport() {
   const { t } = useTranslation("dashboard");
-  const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
   const navigateTo = useWorkspaceNavigate();
   const { invitationId } = useParams<{ invitationId: string }>();
   const location = useLocation();
@@ -336,10 +335,6 @@ function InvitationReport() {
     navigateTo(path, { state: location.state });
   };
 
-  const handlePrintReport = () => {
-    window.print();
-  };
-
   const handlePageSizeChange = (value: number) => {
     setPageSize(value);
     setCurrentPage(1);
@@ -463,8 +458,8 @@ function InvitationReport() {
 
   if (loadingInvitation) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
+      <div className="min-h-screen bg-gray-50 p-6 dark:bg-slate-950">
+        <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-slate-900">
           <div className="flex items-center gap-3 mb-4">
             <Skeleton className="h-10 w-10 rounded-lg" />
             <Skeleton className="h-7 w-48" />
@@ -475,7 +470,7 @@ function InvitationReport() {
               <Skeleton key={i} className="h-20 rounded-lg" />
             ))}
           </div>
-          <div className="mt-6 border border-gray-200 rounded-lg overflow-hidden">
+          <div className="mt-6 overflow-hidden rounded-lg border border-gray-200 dark:border-slate-700">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex gap-4 p-4 border-b border-gray-100 last:border-0">
                 <Skeleton className="h-4 w-4 rounded" />
@@ -491,13 +486,13 @@ function InvitationReport() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="bg-white rounded-xl shadow-sm p-6">
-          <p className="text-red-600 mb-4">{loadError}</p>
+      <div className="min-h-screen bg-gray-50 p-6 dark:bg-slate-950">
+        <div className="rounded-xl bg-white p-6 shadow-sm dark:bg-slate-900">
+          <p className="mb-4 text-red-600 dark:text-red-400">{loadError}</p>
           <button
             type="button"
             onClick={() => navigateTo(state?.eventId ? `invitation?eventId=${state.eventId}` : "invitation")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200"
+            className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             <ArrowLeft size={18} />
             {t("invitation.report.backToList")}
@@ -510,20 +505,23 @@ function InvitationReport() {
   return (
     <>
       <style>{printStyles}</style>
-      <div className="min-h-screen bg-gray-50 p-6">
+      <div className="min-h-screen bg-gray-50 p-6 dark:bg-slate-950">
       {/* Header - White with black text */}
-      <div className="bg-white rounded-xl shadow-sm mb-6" style={{ backgroundColor: "#F7FAFF" }}>
-        <div className="px-6 py-5 border-b border-gray-200">
+      <div
+        className="mb-6 rounded-xl bg-white shadow-sm dark:bg-slate-900"
+        style={{ backgroundColor: isDark ? "#0f172a" : "#F7FAFF" }}
+      >
+        <div className="border-b border-gray-200 px-6 py-5 dark:border-slate-700">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center overflow-hidden">
                   <img src={icons.reports} alt="" className="w-6 h-6 object-contain brightness-0 invert" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">{t("invitation.report.invitationReport")}</h1>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{t("invitation.report.invitationReport")}</h1>
               </div>
-              <p className="text-gray-900 text-base font-medium mb-2">{invitationName}</p>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+              <p className="mb-2 text-base font-medium text-gray-900 dark:text-slate-100">{invitationName}</p>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-slate-400">
                 <span className="inline-flex items-center gap-1.5">
                   <Tag size={14} />
                   {type}
@@ -537,7 +535,7 @@ function InvitationReport() {
             <div className="flex items-center gap-3 flex-shrink-0 no-print">
               <button
                 onClick={handleBackToList}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-gray-300 text-gray-700 text-sm font-medium hover:bg-gray-50 transition-colors"
+                className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
               >
                 <ArrowLeft size={18} />
                 {t("invitation.report.backToList")}
@@ -555,47 +553,65 @@ function InvitationReport() {
 
         <div className="flex items-center gap-2 px-6 pt-6 pb-2">
               <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.registrationStatus")}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t("invitation.report.registrationStatus")}</h2>
             </div>
 
         {/* Statistics Cards - Inside white container */}
         <div className="px-6 pb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {/* Total Invitations */}
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+              style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                   <Users size={20} className="text-purple-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.totalInvitations")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{stats.totalInvitations}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.totalInvitations")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{stats.totalInvitations}</p>
                 </div>
               </div>
             </div>
 
             {/* Sent */}
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+              style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                   <Send size={20} className="text-cyan-500" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.notRegistered")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{stats.sent}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.notRegistered")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{stats.sent}</p>
                 </div>
               </div>
             </div>
 
             {/* Registered */}
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+              style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                   <UserCheck size={20} className="text-green-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.registered")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{stats.registered}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.registered")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{stats.registered}</p>
                 </div>
               </div>
             </div>
@@ -616,14 +632,20 @@ function InvitationReport() {
 
           {/* Duplicate Emails - Single card */}
           <div className="max-w-xs mb-6">
-                  <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+                  <div
+                    className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+                    style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+                  >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{backgroundColor:"#FAFAFA"}}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                   <Copy size={20} className="text-red-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.duplicateEmails")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{stats.duplicateEmails}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.duplicateEmails")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{stats.duplicateEmails}</p>
                 </div>
               </div>
             </div>
@@ -632,60 +654,81 @@ function InvitationReport() {
           {/* RSVP Cards */}
           <div className="flex items-center gap-2 mb-4">
               <Calendar size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.rsvpStatus")}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t("invitation.report.rsvpStatus")}</h2>
             </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+              style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                 <Users size={20} className="text-purple-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.totalInvitations")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.total}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.totalInvitations")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{rsvpStatus.total}</p>
                 </div>
               </div>
             </div>
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+              style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                   <CalendarCheck size={20} className="text-green-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.approved")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.attended}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.approved")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{rsvpStatus.attended}</p>
                 </div>
               </div>
             </div>
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div
+              className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+              style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+            >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
+                <div
+                  className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center"
+                  style={{ backgroundColor: isDark ? "#111827" : "#FAFAFA" }}
+                >
                   <XCircle size={20} className="text-red-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.rejected")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.decline}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.rejected")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{rsvpStatus.decline}</p>
                 </div>
               </div>
             </div>
-            <div className="rounded-lg border border-gray-200 p-5 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+            <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-950">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 shrink-0 rounded-lg flex items-center justify-center" style={{ backgroundColor: "#FAFAFA" }}>
                   <Clock size={20} className="text-amber-600" strokeWidth={2} />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm text-gray-600 mb-0.5">{t("invitation.report.pending")}</p>
-                  <p className="text-2lg font-bold text-gray-700">{rsvpStatus.pending}</p>
+                  <p className="mb-0.5 text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.pending")}</p>
+                  <p className="text-2lg font-bold text-gray-700 dark:text-slate-100">{rsvpStatus.pending}</p>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Registration Status Section - background #E3EFF9 */}
-          <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+          <div
+            className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+            style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+          >
             <div className="flex items-center gap-2 mb-6 ">
               <UserPlus size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.registrationStatus")}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t("invitation.report.registrationStatus")}</h2>
             </div>
 
             <div className="space-y-4">
@@ -696,9 +739,9 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                       <UserCheck size={18} className="text-green-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.registered")}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{t("invitation.report.registered")}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{registrationStatus.approved}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{registrationStatus.approved}</span>
                 </div>
                 <div className="h-2 bg-green-200 rounded-full overflow-hidden">
                   <div
@@ -715,9 +758,9 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-pink-50 flex items-center justify-center shrink-0">
                       <Send size={18} className="text-red-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.notRegistered")}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{t("invitation.report.notRegistered")}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{registrationStatus.rejected}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{registrationStatus.rejected}</span>
                 </div>
                 <div className="h-2 bg-red-200 rounded-full overflow-hidden">
                   <div
@@ -749,21 +792,24 @@ function InvitationReport() {
               {/* Conversion Rate - only this section has pri-color/100 background */}
               <div
                 className="pt-4 pb-4 px-3 -mx-3 rounded-lg border-t border-gray-200 mt-4"
-                style={{ backgroundColor: "#EAF1FF" }}
+                style={{ backgroundColor: isDark ? "#111827" : "#EAF1FF" }}
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-regular text-gray-700">{t("invitation.report.conversionRateLabel")}</span>
-                  <span className="text-sm font-medium text-gray-700">{stats.conversionRate}</span>
+                  <span className="text-sm font-regular text-gray-700 dark:text-slate-300">{t("invitation.report.conversionRateLabel")}</span>
+                  <span className="text-sm font-medium text-gray-700 dark:text-slate-100">{stats.conversionRate}</span>
                 </div>
               </div>
             </div>
           </div>
 
           {/* RSVP Status Section - progress bars (values dynamic later) */}
-          <div className="rounded-lg border border-gray-200 p-6 mb-6 shadow-sm" style={{ backgroundColor: "#FFFFFF" }}>
+          <div
+            className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-950"
+            style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+          >
             <div className="flex items-center gap-2 mb-6">
               <Calendar size={20} className="shrink-0" strokeWidth={2} style={{ color: "#656C95" }} />
-              <h2 className="text-lg font-semibold text-gray-900">{t("invitation.report.rsvpStatus")}</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-slate-100">{t("invitation.report.rsvpStatus")}</h2>
             </div>
 
             <div className="space-y-4">
@@ -774,9 +820,9 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
                       <CalendarCheck size={18} className="text-green-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.approved")}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{t("invitation.report.approved")}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{rsvpStatus.attended}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{rsvpStatus.attended}</span>
                 </div>
                 <div className="h-2 bg-green-200 rounded-full overflow-hidden">
                   <div
@@ -793,9 +839,9 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
                       <XCircle size={18} className="text-red-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.rejected")}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{t("invitation.report.rejected")}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{rsvpStatus.decline}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{rsvpStatus.decline}</span>
                 </div>
                 <div className="h-2 bg-red-200 rounded-full overflow-hidden">
                   <div
@@ -812,9 +858,9 @@ function InvitationReport() {
                     <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
                       <Clock size={18} className="text-amber-600" strokeWidth={2} />
                     </div>
-                    <span className="text-sm font-medium text-gray-700">{t("invitation.report.pending")}</span>
+                    <span className="text-sm font-medium text-gray-700 dark:text-slate-300">{t("invitation.report.pending")}</span>
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">{rsvpStatus.pending}</span>
+                  <span className="text-sm font-semibold text-gray-900 dark:text-slate-100">{rsvpStatus.pending}</span>
                 </div>
                 <div className="h-2 bg-amber-200 rounded-full overflow-hidden">
                   <div
@@ -827,23 +873,26 @@ function InvitationReport() {
           </div>
 
           {/* Users Table */}
-          <div className="bg-white rounded-lg border border-gray-200">
-            <div className="p-4 border-b border-gray-200 no-print">
+          <div
+            className="rounded-lg border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-950"
+            style={{ backgroundColor: isDark ? "#0f172a" : "#FFFFFF" }}
+          >
+            <div className="border-b border-gray-200 p-4 no-print dark:border-slate-700">
               <div className="flex items-center justify-between gap-4 flex-wrap">
-                <h3 className="text-base font-semibold text-gray-900">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-slate-100">
                   {t("invitation.report.invitationUsers")} ({filteredUsers.length})
                 </h3>
                 <div className="flex items-center gap-3">
-                  <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                  <button className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
                     <Download size={16} />
                     {t("invitation.report.exportCsv")}
                   </button>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">{t("invitation.report.showInPage")}</span>
+                    <span className="text-sm text-gray-600 dark:text-slate-400">{t("invitation.report.showInPage")}</span>
                     <select
                       value={pageSize}
                       onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                      className="px-3 py-2 text-sm border border-gray-300 rounded-lg bg-white"
+                      className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                     >
                       {PAGE_SIZE_OPTIONS.map((n) => (
                         <option key={n} value={n}>
@@ -853,7 +902,7 @@ function InvitationReport() {
                     </select>
                   </div>
                   <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
                     <input
                       type="text"
                       placeholder={t("invitation.report.searchUsersPlaceholder")}
@@ -862,7 +911,7 @@ function InvitationReport() {
                         setSearchQuery(e.target.value);
                         setCurrentPage(1);
                       }}
-                      className="pl-9 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="rounded-lg border border-gray-300 py-2 pr-4 pl-9 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder-slate-500"
                     />
                   </div>
                 </div>
@@ -871,7 +920,7 @@ function InvitationReport() {
 
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-800 text-white">
+                <thead className="bg-gray-800 text-white dark:bg-slate-900">
                   <tr>
                     <th className="px-4 py-3 text-left">
                       <input
@@ -896,16 +945,16 @@ function InvitationReport() {
                     )}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-200 dark:divide-slate-700">
                   {paginatedUsers.length === 0 ? (
                     <tr>
-                      <td colSpan={tableColumnCount} className="px-4 py-12 text-center text-gray-500 text-sm">
+                      <td colSpan={tableColumnCount} className="px-4 py-12 text-center text-sm text-gray-500 dark:text-slate-400">
                         {allUsers.length === 0 ? t("invitation.report.noInvitationUsers") : t("invitation.report.noUsersMatchSearch")}
                       </td>
                     </tr>
                   ) : (
                   paginatedUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-slate-900">
                       <td className="px-4 py-3 no-print">
                         <input
                           type="checkbox"
@@ -914,11 +963,11 @@ function InvitationReport() {
                           onChange={() => handleSelectOne(user.id)}
                         />
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.name}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.organization}</td>
-                      <td className="px-4 py-3 text-sm text-gray-900">{user.position}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
-                      <td className="px-4 py-3 text-sm text-gray-600">{user.phone}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-slate-100">{user.name}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-slate-100">{user.organization}</td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-slate-100">{user.position}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-400">{user.email}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600 dark:text-slate-400">{user.phone}</td>
                       <td className="px-4 py-3">
                         <StatusBadge delivery={user.delivery} />
                       </td>
@@ -951,9 +1000,9 @@ function InvitationReport() {
             </div>
 
             {/* Pagination - only show when more than 10 users */}
-            <div className="p-4 border-t border-gray-200 no-print">
+            <div className="border-t border-gray-200 p-4 no-print dark:border-slate-700">
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 dark:text-slate-400">
                   {t("invitation.report.showing")} {startItem}–{endItem} {t("invitation.report.of")} {filteredUsers.length}
                 </p>
                 {filteredUsers.length > 10 && (
@@ -962,7 +1011,7 @@ function InvitationReport() {
                       type="button"
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={safePage <= 1}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
+                      className="rounded px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       {t("invitation.report.previous")}
                     </button>
@@ -977,7 +1026,7 @@ function InvitationReport() {
                         .map((p, idx, arr) => (
                           <span key={p} className="flex items-center gap-1">
                             {idx > 0 && arr[idx - 1] !== p - 1 && (
-                              <span className="px-1 text-gray-400">…</span>
+                              <span className="px-1 text-gray-400 dark:text-slate-500">…</span>
                             )}
                             <button
                               type="button"
@@ -985,7 +1034,7 @@ function InvitationReport() {
                               className={`min-w-[2rem] px-3 py-1 text-sm font-medium rounded ${
                                 p === safePage
                                   ? "bg-blue-600 text-white"
-                                  : "text-gray-700 hover:bg-gray-100"
+                                  : "text-gray-700 hover:bg-gray-100 dark:text-slate-300 dark:hover:bg-slate-800"
                               }`}
                             >
                               {p}
@@ -997,7 +1046,7 @@ function InvitationReport() {
                       type="button"
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={safePage >= totalPages}
-                      className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded disabled:opacity-50 disabled:pointer-events-none"
+                      className="rounded px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:pointer-events-none disabled:opacity-50 dark:text-slate-300 dark:hover:bg-slate-800"
                     >
                       {t("invitation.report.next")}
                     </button>
