@@ -1,9 +1,14 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  downloadBillInvoice,
+  getBills,
+  type Bill,
+} from "@/apis/apiHelpers";
 
 // Static invoice data for now (total, invoice date, due date) — format: "Mon DD, YYYY, HH:MM AM/PM"
 const STATIC_INVOICES = [
@@ -44,13 +49,131 @@ const STATIC_INVOICES = [
   },
 ];
 
+function formatInvoiceDate(value?: string) {
+  if (!value) return "-";
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(parsed);
+}
+
+function getFileNameFromDisposition(disposition?: string, fallback = "invoice.pdf") {
+  if (!disposition) return fallback;
+
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match?.[1]) {
+    return decodeURIComponent(utf8Match[1]);
+  }
+
+  const plainMatch = disposition.match(/filename="?([^"]+)"?/i);
+  if (plainMatch?.[1]) {
+    return plainMatch[1];
+  }
+
+  return fallback;
+}
+
+type BillingRow = {
+  id: string;
+  total: string;
+  status: string;
+  invoiceDate: string;
+  dueDate: string;
+  paymentableId?: number;
+};
+
 export default function SettingsBilling() {
   const { t } = useTranslation("settings");
-  const navigate = useNavigate();
   const params = useParams<{ id?: string }>();
   const navigateTo = useWorkspaceNavigate();
   const settingsPath = params.id ? `home/${params.id}/settings` : "settings";
-  const [invoices] = useState(STATIC_INVOICES);
+  const [bills, setBills] = useState<Bill[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [downloadingPaymentableId, setDownloadingPaymentableId] = useState<
+    number | null
+  >(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function fetchBills() {
+      try {
+        const response = await getBills();
+        if (!isActive) return;
+        setBills(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        if (!isActive) return;
+        console.error("Failed to load bills", error);
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    fetchBills();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const invoices = useMemo<BillingRow[]>(() => {
+    if (!bills.length) {
+      return STATIC_INVOICES.map((invoice) => ({
+        ...invoice,
+      }));
+    }
+
+    return bills.map((bill, index) => {
+      const staticInvoice = STATIC_INVOICES[index];
+
+      return {
+        id: bill.invoice_id || staticInvoice?.id || String(bill.id),
+        total: staticInvoice?.total || bill.currency || "-",
+        status: staticInvoice?.status || t("billing.paid"),
+        invoiceDate:
+          formatInvoiceDate(bill.created_at) || staticInvoice?.invoiceDate || "-",
+        dueDate: staticInvoice?.dueDate || formatInvoiceDate(bill.created_at),
+        paymentableId: bill.paymentable_id,
+      };
+    });
+  }, [bills, t]);
+
+  async function handleDownloadInvoice(paymentableId?: number) {
+    if (!paymentableId) return;
+
+    try {
+      setDownloadingPaymentableId(paymentableId);
+      const response = await downloadBillInvoice(paymentableId);
+      const blob = new Blob([response.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = getFileNameFromDisposition(
+        response.headers["content-disposition"],
+        `invoice-${paymentableId}.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download invoice", error);
+    } finally {
+      setDownloadingPaymentableId(null);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#F7FAFF] p-6">
@@ -102,6 +225,13 @@ export default function SettingsBilling() {
                 </tr>
               </thead>
               <tbody>
+                {isLoading && !invoices.length && (
+                  <tr className="border-b border-gray-100 bg-white">
+                    <td colSpan={6} className="px-4 py-6 text-center text-sm text-gray-500">
+                      {t("loading")}
+                    </td>
+                  </tr>
+                )}
                 {invoices.map((inv, index) => (
                   <tr
                     key={inv.id}
@@ -131,9 +261,11 @@ export default function SettingsBilling() {
                       <Button
                         size="sm"
                         className="h-7 bg-blue-600 px-2.5 text-xs text-white hover:bg-blue-700"
-                        onClick={() => {
-                          // TODO: open invoice details
-                        }}
+                        disabled={
+                          !inv.paymentableId ||
+                          downloadingPaymentableId === inv.paymentableId
+                        }
+                        onClick={() => handleDownloadInvoice(inv.paymentableId)}
                       >
                         {t("billing.viewInvoice")}
                       </Button>

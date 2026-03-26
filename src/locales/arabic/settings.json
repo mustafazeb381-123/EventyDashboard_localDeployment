@@ -25,7 +25,7 @@
     "invoiceDate": "تاريخ الفاتورة",
     "dueDate": "تاريخ الاستحقاق",
     "details": "التفاصيل",
-    "viewInvoice": "عرض الفاتورة",
+    "viewInvoice": "تنزيل PDF",
     "paid": "مدفوع"
   },
   "security": {

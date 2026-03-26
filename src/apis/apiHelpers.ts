@@ -1227,6 +1227,32 @@ export const getEventPaymentStatus = (
   });
 };
 
+export interface Bill {
+  id: number;
+  invoice_id: string;
+  customer_name: string;
+  currency: string;
+  paymentable_id: number;
+  paymentable_type: string;
+  created_at: string;
+}
+
+export const getBills = () => {
+  return axiosInstance.get<Bill[]>("/bills");
+};
+
+export const downloadBillInvoice = (paymentableId: number) => {
+  return axiosInstance.get("/bills/download_invoice", {
+    params: {
+      paymentable_id: paymentableId,
+    },
+    responseType: "blob",
+    headers: {
+      Accept: "application/pdf",
+    },
+  });
+};
+
 
 
 
