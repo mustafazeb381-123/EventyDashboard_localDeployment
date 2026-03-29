@@ -78,6 +78,19 @@ interface CustomFormTemplate {
   isCustom?: boolean;
 }
 
+const splitUserName = (fullName: string) => {
+  const trimmedName = fullName.trim();
+  if (!trimmedName) {
+    return { firstName: "", lastName: "" };
+  }
+
+  const nameParts = trimmedName.split(/\s+/);
+  return {
+    firstName: nameParts[0] ?? "",
+    lastName: nameParts.slice(1).join(" "),
+  };
+};
+
 type ModalProps = {
   selectedTemplate: string | null;
   onClose: () => void;
@@ -974,58 +987,65 @@ export const FormBuilderTemplateForm: React.FC<
       // Standard fields that the API expects
       const fieldMapping: Record<string, string> = {
         name: "event_user[name]",
-        firstname: "event_user[name]", // Map firstname to name
-        first_name: "event_user[name]", // Map first_name to name
+        firstname: "event_user[first_name]",
+        first_name: "event_user[first_name]",
+        lastname: "event_user[last_name]",
+        last_name: "event_user[last_name]",
         fullname: "event_user[name]", // Map fullname to name
         full_name: "event_user[name]", // Map full_name to name
         email: "event_user[email]",
         email_address: "event_user[email]", // Map email_address to email
+        work_email: "event_user[email]",
         phone_number: "event_user[phone_number]",
         phone: "event_user[phone_number]",
         phoneNumber: "event_user[phone_number]", // Map phoneNumber to phone_number
         position: "event_user[position]",
+        job_title: "event_user[position]",
+        organization: "event_user[organization]",
         // Note: organization field will be saved to custom_fields.title (handled below)
         company: "event_user[organization]", // Map company to organization
       };
 
       // ✅ Collect name fields that might be split (firstname, lastname, etc.)
-      let combinedName = "";
-      const nameFields = [
-        "name",
-        "firstname",
-        "first_name",
-        "fullname",
-        "full_name",
-      ];
-      const nameValues: string[] = [];
-
-      nameFields.forEach((fieldName) => {
-        const value = formData[fieldName];
-        if (value && typeof value === "string" && value.trim() !== "") {
-          nameValues.push(value.trim());
-        }
-      });
-
-      // Combine name fields (e.g., "John" + "Doe" = "John Doe")
-      if (nameValues.length > 0) {
-        combinedName = nameValues.join(" ");
-      } else {
-        // Fallback: check if there's a lastname field
-        const lastName = formData["lastname"] || formData["last_name"];
-        if (
-          lastName &&
-          typeof lastName === "string" &&
-          lastName.trim() !== ""
-        ) {
-          combinedName = lastName.trim();
-        }
-      }
+      const firstNameValue =
+        typeof formData["first_name"] === "string"
+          ? formData["first_name"].trim()
+          : typeof formData["firstname"] === "string"
+            ? formData["firstname"].trim()
+            : "";
+      const lastNameValue =
+        typeof formData["last_name"] === "string"
+          ? formData["last_name"].trim()
+          : typeof formData["lastname"] === "string"
+            ? formData["lastname"].trim()
+            : "";
+      const explicitFullName =
+        typeof formData["name"] === "string"
+          ? formData["name"].trim()
+          : typeof formData["fullname"] === "string"
+            ? formData["fullname"].trim()
+            : typeof formData["full_name"] === "string"
+              ? formData["full_name"].trim()
+              : "";
+      const combinedName = explicitFullName || [firstNameValue, lastNameValue].filter(Boolean).join(" ").trim();
+      const { firstName, lastName } = splitUserName(combinedName);
 
       // ✅ Always append name field (even if empty) - CRITICAL for API
       formDataToSend.append("event_user[name]", combinedName || "");
+      formDataToSend.append(
+        "event_user[first_name]",
+        firstNameValue || firstName,
+      );
+      formDataToSend.append(
+        "event_user[last_name]",
+        lastNameValue || lastName,
+      );
 
       // ✅ Always append email (even if empty) - CRITICAL for API
-      const emailValue = formData["email"] || formData["email_address"];
+      const emailValue =
+        formData["email"] ||
+        formData["email_address"] ||
+        formData["work_email"];
       formDataToSend.append(
         "event_user[email]",
         emailValue && typeof emailValue === "string" ? emailValue : "",
@@ -1073,15 +1093,16 @@ export const FormBuilderTemplateForm: React.FC<
       );
 
       // ✅ Append optional standard fields if they have values
-      if (formData["position"]) {
+      const positionValue = formData["position"] || formData["job_title"];
+      if (positionValue) {
         formDataToSend.append(
           "event_user[position]",
-          String(formData["position"]),
+          String(positionValue),
         );
       }
 
       // ✅ Save organization field to both custom_fields.title AND event_user[organization]
-      const orgValue = formData["organization"];
+      const orgValue = formData["organization"] || formData["company"];
       if (orgValue) {
         // Save to custom_fields.title (for display in registered users table)
         formDataToSend.append(
@@ -1275,6 +1296,8 @@ export const FormBuilderTemplateForm: React.FC<
       console.log("📤 FormData contents:", {
         tenant_uuid: formDataToSend.get("tenant_uuid"),
         name: formDataToSend.get("event_user[name]"),
+        first_name: formDataToSend.get("event_user[first_name]"),
+        last_name: formDataToSend.get("event_user[last_name]"),
         email: formDataToSend.get("event_user[email]"),
         phone_number: formDataToSend.get("event_user[phone_number]"),
         position: formDataToSend.get("event_user[position]"),

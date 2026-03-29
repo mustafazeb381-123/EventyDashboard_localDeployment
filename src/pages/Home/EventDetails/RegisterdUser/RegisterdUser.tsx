@@ -121,6 +121,47 @@ const getAttendanceStatus = (
   return "not_attended";
 };
 
+const splitUserName = (fullName: string) => {
+  const trimmedName = fullName.trim();
+  if (!trimmedName) {
+    return { firstName: "", lastName: "" };
+  }
+
+  const nameParts = trimmedName.split(/\s+/);
+  return {
+    firstName: nameParts[0] ?? "",
+    lastName: nameParts.slice(1).join(" "),
+  };
+};
+
+const getEventUserNameParts = (user: any) => {
+  const attributes = user?.attributes ?? {};
+  const firstName =
+    typeof attributes.first_name === "string" ? attributes.first_name.trim() : "";
+  const lastName =
+    typeof attributes.last_name === "string" ? attributes.last_name.trim() : "";
+
+  if (firstName || lastName) {
+    return { firstName, lastName };
+  }
+
+  return splitUserName(String(attributes.name ?? ""));
+};
+
+const normalizeEventUser = (user: any) => {
+  const attributes = user?.attributes ?? {};
+  const { firstName, lastName } = getEventUserNameParts(user);
+
+  return {
+    ...user,
+    attributes: {
+      ...attributes,
+      first_name: attributes.first_name || firstName || null,
+      last_name: attributes.last_name || lastName || null,
+    },
+  };
+};
+
 // Avatar component with image fallback
 const UserAvatar = ({ user }: { user: any }) => {
   const [loadError, setLoadError] = useState(false);
@@ -485,9 +526,15 @@ function RegisterdUser() {
 
     try {
       const formData = new FormData();
+      const trimmedName = editForm.name.trim();
+      const { firstName, lastName } = splitUserName(trimmedName);
 
       // Append user fields
-      if (editForm.name) formData.append("event_user[name]", editForm.name);
+      if (trimmedName) {
+        formData.append("event_user[name]", trimmedName);
+        formData.append("event_user[first_name]", firstName);
+        formData.append("event_user[last_name]", lastName);
+      }
       if (editForm.phone_number)
         formData.append("event_user[phone_number]", editForm.phone_number);
       if (editForm.email) formData.append("event_user[email]", editForm.email);
@@ -524,11 +571,18 @@ function RegisterdUser() {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === editingUser.id
-            ? {
+            ? normalizeEventUser({
                 ...u,
                 attributes: {
                   ...u.attributes,
                   ...editForm, // includes user_type now
+                  name: trimmedName || u.attributes?.name,
+                  first_name:
+                    updatedUser?.attributes?.first_name ??
+                    (trimmedName ? firstName : u.attributes?.first_name),
+                  last_name:
+                    updatedUser?.attributes?.last_name ??
+                    (trimmedName ? lastName : u.attributes?.last_name),
                   custom_fields: {
                     ...u.attributes?.custom_fields,
                     title: editForm.organization, // Update title in custom_fields with organization value
@@ -538,7 +592,7 @@ function RegisterdUser() {
                     : u.attributes.image,
                   updated_at: new Date().toISOString(),
                 },
-              }
+              })
             : u,
         ),
       );
@@ -655,7 +709,7 @@ function RegisterdUser() {
         ? responseData
         : responseData?.data || [];
 
-      setUsers(users);
+      setUsers(users.map(normalizeEventUser));
 
       // Set pagination metadata
       const paginationMeta =
@@ -762,7 +816,7 @@ function RegisterdUser() {
       const endIndex = startIndex + itemsPerPage;
       const paginatedResults = allMatchingUsers.slice(startIndex, endIndex);
 
-      setUsers(paginatedResults);
+      setUsers(paginatedResults.map(normalizeEventUser));
 
       // Set pagination metadata for search results
       setPagination({
@@ -1000,6 +1054,7 @@ function RegisterdUser() {
       ];
       const rows = users.map((user: any) => {
         const status = getApprovalStatus(user);
+        const { firstName, lastName } = getEventUserNameParts(user);
         const org =
           user?.attributes?.custom_fields?.title ||
           user?.attributes?.organization ||
@@ -1012,6 +1067,8 @@ function RegisterdUser() {
         const baseValues = [
           user.id,
           user?.attributes?.name ?? "",
+          firstName,
+          lastName,
           user?.attributes?.email ?? "",
           user?.attributes?.phone_number ?? "",
           org,
@@ -1072,6 +1129,8 @@ function RegisterdUser() {
       const baseHeaders = [
         "ID",
         "Name",
+        "First Name",
+        "Last Name",
         "Email",
         "Phone",
         "Organization",
@@ -1092,6 +1151,7 @@ function RegisterdUser() {
       ];
       const rowArrays = users.map((user: any) => {
         const status = getApprovalStatus(user);
+        const { firstName, lastName } = getEventUserNameParts(user);
         const org =
           user?.attributes?.custom_fields?.title ||
           user?.attributes?.organization ||
@@ -1104,6 +1164,8 @@ function RegisterdUser() {
         const baseValues = [
           user.id,
           user?.attributes?.name ?? "",
+          firstName,
+          lastName,
           user?.attributes?.email ?? "",
           user?.attributes?.phone_number ?? "",
           org,
@@ -2107,6 +2169,16 @@ function RegisterdUser() {
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {[
+                        {
+                          key: "First Name",
+                          value:
+                            getEventUserNameParts(userForInfoModal).firstName || "—",
+                        },
+                        {
+                          key: "Last Name",
+                          value:
+                            getEventUserNameParts(userForInfoModal).lastName || "—",
+                        },
                         {
                           key: t("registeredUsers.phone"),
                           value:
