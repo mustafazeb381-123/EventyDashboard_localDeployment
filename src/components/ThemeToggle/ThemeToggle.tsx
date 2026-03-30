@@ -20,7 +20,7 @@ const ThemeToggle = () => {
       onClick={toggleTheme}
       title={title}
       aria-label={title}
-      className="h-10 rounded-md border border-gray-200 bg-white px-3 text-gray-700 shadow-sm hover:bg-gray-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+      className="h-10 rounded-md border border-gray-200 bg-white px-3 text-gray-700 shadow-sm hover:bg-gray-100 dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
     >
       <Icon className="h-4 w-4 shrink-0" />
       <span className="text-sm font-medium">{label}</span>

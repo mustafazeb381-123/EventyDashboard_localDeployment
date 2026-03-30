@@ -76,7 +76,7 @@ function Pagination({
       <button
         onClick={() => goToPage(currentPage - 1)}
         disabled={currentPage === 1}
-        className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+        className="rounded-md border border-gray-300 px-3 py-1 text-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[color:var(--app-border)] dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
       >
         {t("home.prev")}
       </button>
@@ -87,8 +87,8 @@ function Pagination({
           onClick={() => goToPage(i + 1)}
           className={`px-3 py-1 rounded-md text-sm transition ${
             currentPage === i + 1
-              ? "bg-blue-600 text-white"
-              : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+              ? "bg-blue-600 text-white shadow-[0_10px_24px_rgba(37,99,235,0.24)]"
+              : "border border-gray-300 text-gray-700 hover:bg-gray-100 dark:border-[color:var(--app-border)] dark:text-[var(--app-text-muted)] dark:hover:bg-[var(--app-hover)]"
           }`}
         >
           {i + 1}
@@ -98,7 +98,7 @@ function Pagination({
       <button
         onClick={() => goToPage(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="px-3 py-1 rounded-md border border-gray-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition"
+        className="rounded-md border border-gray-300 px-3 py-1 text-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-[color:var(--app-border)] dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
       >
         {t("home.next")}
       </button>
@@ -597,17 +597,17 @@ function AllEvents() {
 
       <div
         style={{ padding: 24 }}
-        className="w-full rounded-2xl border border-slate-100/80 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900"
+        className="w-full rounded-2xl border border-slate-100/80 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] dark:hover:shadow-[0_16px_36px_rgba(8,10,28,0.3)]"
       >
         <div className="flex flex-col gap-4 mb-6">
           {/* Title and Counter */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <p className="font-poppins text-md font-medium text-neutral-900 dark:text-slate-100">
+              <p className="font-poppins text-md font-medium text-neutral-900 dark:text-[var(--app-text)]">
                 {t("home.allEvents")}
               </p>
               {!isLoading && (
-                <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
+                <p className="mt-1 text-sm text-gray-500 dark:text-[var(--app-text-muted)]">
                   {searchQuery ? (
                     <>
                       {t("home.showingEvents", { count: paginatedEvents.length, total: filteredEvents.length })}
@@ -623,7 +623,7 @@ function AllEvents() {
               )}
               {isLoading && <Skeleton className="h-4 w-32 mt-1" />}
               {searching && (
-                <p className="mt-1 text-sm text-blue-500 dark:text-blue-400">
+                <p className="mt-1 text-sm text-blue-500 dark:text-blue-300">
                   {t("home.searchingAllPages")}
                 </p>
               )}
@@ -639,7 +639,7 @@ function AllEvents() {
                 placeholder={t("home.searchPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="block w-full rounded-lg border border-gray-300 bg-white py-2 pr-10 pl-10 text-sm leading-5 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none focus:placeholder-gray-400 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder-slate-500"
+                className="block w-full rounded-lg border border-gray-300 bg-white py-2 pr-10 pl-10 text-sm leading-5 placeholder-gray-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none focus:placeholder-gray-400 dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text)] dark:placeholder-[color:var(--app-text-muted)]"
                 // input is never disabled
               />
               {searchQuery && (
@@ -669,16 +669,16 @@ function AllEvents() {
           {/* View Mode Toggle */}
           {!isLoading || events.length > 0 ? (
             <div className="flex justify-between items-center">
-              <div className="text-sm text-gray-600 dark:text-slate-400">
+              <div className="text-sm text-gray-600 dark:text-[var(--app-text-muted)]">
                 {t("home.pageOfPages", { page: currentPage, pages: totalPages })}
               </div>
-              <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-slate-800">
+              <div className="flex items-center rounded-lg bg-gray-100 p-1 dark:bg-[var(--app-surface-alt)]">
                 <button
                   onClick={() => setViewMode("grid")}
                   className={`p-2 rounded-md transition-all duration-200 ${
                     viewMode === "grid"
-                      ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
-                      : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+                      ? "bg-white text-blue-600 shadow-sm dark:bg-[var(--app-surface-elevated)] dark:text-blue-300"
+                      : "text-gray-500 hover:text-gray-700 dark:text-[var(--app-text-muted)] dark:hover:text-[var(--app-text)]"
                   }`}
                   title={t("home.gridView")}
                 >
@@ -688,8 +688,8 @@ function AllEvents() {
                   onClick={() => setViewMode("list")}
                   className={`p-2 rounded-md transition-all duration-200 ${
                     viewMode === "list"
-                      ? "bg-white text-blue-600 shadow-sm dark:bg-slate-700 dark:text-blue-400"
-                      : "text-gray-500 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200"
+                      ? "bg-white text-blue-600 shadow-sm dark:bg-[var(--app-surface-elevated)] dark:text-blue-300"
+                      : "text-gray-500 hover:text-gray-700 dark:text-[var(--app-text-muted)] dark:hover:text-[var(--app-text)]"
                   }`}
                   title={t("home.listView")}
                 >
@@ -765,23 +765,23 @@ function AllEvents() {
                       backgroundSize: "auto 100%",
                       cursor: isDeleting ? "wait" : "pointer",
                     }}
-                    className={`group relative flex flex-col overflow-hidden rounded-2xl border border-transparent bg-neutral-100 transition-all duration-300 ease-out dark:border-slate-700 dark:bg-slate-900 ${
+                    className={`group relative flex flex-col overflow-hidden rounded-2xl border border-transparent bg-neutral-100 transition-all duration-300 ease-out dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)] ${
                       isDeleting
                         ? "pointer-events-none"
-                        : "hover:bg-white hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/50 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.99] dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:shadow-slate-950/50"
+                        : "hover:bg-white hover:border-slate-200 hover:shadow-lg hover:shadow-slate-200/50 hover:scale-[1.02] hover:-translate-y-0.5 active:scale-[0.99] dark:hover:border-[color:var(--app-border-strong)] dark:hover:bg-[var(--app-hover)] dark:hover:shadow-[0_18px_42px_rgba(8,10,28,0.36)]"
                     }`}
                   >
                     {/* Deleting overlay – blocks navigation and shows loading state */}
                     {isDeleting && (
                       <div
-                          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-slate-950/80"
+                          className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-2xl bg-white/80 backdrop-blur-sm dark:bg-[var(--app-overlay)]"
                         aria-live="polite"
                         aria-busy="true"
                       >
                         <Loader2 className="w-8 h-8 text-rose-500 animate-spin" />
                         <div className="text-center px-2">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t("home.deleting")}</p>
-                          <p className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500 dark:text-slate-400" title={event.name}>
+                          <p className="text-sm font-medium text-slate-700 dark:text-[var(--app-text)]">{t("home.deleting")}</p>
+                          <p className="mt-0.5 max-w-[180px] truncate text-xs text-slate-500 dark:text-[var(--app-text-muted)]" title={event.name}>
                             {event.name}
                           </p>
                         </div>
@@ -828,10 +828,10 @@ function AllEvents() {
                     </div>
 
                     <div className="flex flex-col gap-2 mt-10">
-                      <p className="text-md font-poppins font-medium text-slate-800 transition-colors duration-300 group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
+                      <p className="text-md font-poppins font-medium text-slate-800 transition-colors duration-300 group-hover:text-slate-900 dark:text-[var(--app-text)] dark:group-hover:text-white">
                         {event.name}
                       </p>
-                      <p className="font-poppins text-xs font-normal text-neutral-500 dark:text-slate-400">
+                      <p className="font-poppins text-xs font-normal text-neutral-500 dark:text-[var(--app-text-muted)]">
                         {event.date}
                       </p>
                     </div>
@@ -865,23 +865,23 @@ function AllEvents() {
                       handleEventClick(event.id);
                     }}
                     key={event.id}
-                    className={`group relative flex items-center justify-between overflow-hidden rounded-xl border border-transparent p-4 dark:border-slate-700 ${
+                    className={`group relative flex items-center justify-between overflow-hidden rounded-xl border border-transparent p-4 dark:border-[color:var(--app-border)] ${
                       isDeleting
-                        ? "pointer-events-none cursor-wait bg-neutral-100 dark:bg-slate-900"
-                        : "cursor-pointer bg-neutral-50 transition-all duration-300 ease-out hover:border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/40 hover:scale-[1.01] dark:bg-slate-900 dark:hover:border-slate-600 dark:hover:bg-slate-800 dark:hover:shadow-slate-950/50"
+                        ? "pointer-events-none cursor-wait bg-neutral-100 dark:bg-[var(--app-surface-alt)]"
+                        : "cursor-pointer bg-neutral-50 transition-all duration-300 ease-out hover:border-slate-200 hover:bg-white hover:shadow-md hover:shadow-slate-200/40 hover:scale-[1.01] dark:bg-[var(--app-surface-alt)] dark:hover:border-[color:var(--app-border-strong)] dark:hover:bg-[var(--app-hover)] dark:hover:shadow-[0_18px_42px_rgba(8,10,28,0.36)]"
                     }`}
                   >
                     {/* Deleting overlay – blocks navigation and shows loading state */}
                     {isDeleting && (
                       <div
-                        className="absolute inset-0 z-10 flex flex-row items-center justify-center gap-3 rounded-xl bg-white/80 backdrop-blur-sm dark:bg-slate-950/80"
+                        className="absolute inset-0 z-10 flex flex-row items-center justify-center gap-3 rounded-xl bg-white/80 backdrop-blur-sm dark:bg-[var(--app-overlay)]"
                         aria-live="polite"
                         aria-busy="true"
                       >
                         <Loader2 className="w-6 h-6 text-rose-500 animate-spin shrink-0" />
                         <div className="text-center min-w-0">
-                          <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{t("home.deleting")}</p>
-                          <p className="truncate text-xs text-slate-500 dark:text-slate-400" title={event.name}>
+                          <p className="text-sm font-medium text-slate-700 dark:text-[var(--app-text)]">{t("home.deleting")}</p>
+                          <p className="truncate text-xs text-slate-500 dark:text-[var(--app-text-muted)]" title={event.name}>
                             {event.name}
                           </p>
                         </div>
@@ -913,10 +913,10 @@ function AllEvents() {
 
                       {/* Event Info */}
                       <div className="flex flex-col gap-1 flex-1 min-w-0">
-                        <p className="text-md font-poppins font-medium truncate text-slate-800 transition-colors duration-300 group-hover:text-slate-900 dark:text-slate-100 dark:group-hover:text-white">
+                        <p className="text-md font-poppins font-medium truncate text-slate-800 transition-colors duration-300 group-hover:text-slate-900 dark:text-[var(--app-text)] dark:group-hover:text-white">
                           {event.name}
                         </p>
-                        <p className="font-poppins text-xs font-normal text-neutral-500 dark:text-slate-400">
+                        <p className="font-poppins text-xs font-normal text-neutral-500 dark:text-[var(--app-text-muted)]">
                           {event.date}
                         </p>
                       </div>
@@ -967,15 +967,15 @@ function AllEvents() {
               src={Assets.images.eventEmptyCard}
               alt="No Events"
             />
-            <p className="text-gray-500 mt-4 text-sm">{t("home.noEventsFound")}</p>
+            <p className="mt-4 text-sm text-gray-500 dark:text-[var(--app-text-muted)]">{t("home.noEventsFound")}</p>
           </div>
         )}
 
         {!isLoading && !searching && events.length === 0 && searchQuery && (
           <div className="w-full flex flex-col justify-center items-center py-10">
-            <Search className="h-16 w-16 text-gray-300 mb-4" />
-            <p className="text-gray-500 text-lg font-medium">{t("home.noEventsFound")}</p>
-            <p className="text-gray-400 text-sm mt-2">
+            <Search className="mb-4 h-16 w-16 text-gray-300 dark:text-[var(--app-text-muted)]" />
+            <p className="text-lg font-medium text-gray-500 dark:text-[var(--app-text)]">{t("home.noEventsFound")}</p>
+            <p className="mt-2 text-sm text-gray-400 dark:text-[var(--app-text-muted)]">
               {t("home.noEventsMatch", { search: searchQuery })}
             </p>
           </div>
@@ -988,24 +988,24 @@ function AllEvents() {
             onClick={handleCloseDeleteModal}
           >
             <div
-              className="bg-white rounded-2xl p-6 max-w-sm w-full mx-4 shadow-xl"
+              className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)]"
               onClick={(e) => e.stopPropagation()} // Prevent closing modal when clicking inside
             >
               <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
                 <Trash2 className="w-6 h-6 text-red-500" />
               </div>
 
-              <h3 className="text-lg font-semibold text-center text-gray-900 mb-2">
+              <h3 className="mb-2 text-center text-lg font-semibold text-gray-900 dark:text-[var(--app-text)]">
                 {t("home.deleteEvent")}
               </h3>
-              <p className="text-sm text-gray-600 text-center mb-6">
+              <p className="mb-6 text-center text-sm text-gray-600 dark:text-[var(--app-text-muted)]">
                 {t("home.deleteEventConfirm", { name: eventToDelete.name || t("home.thisEvent") })}
               </p>
 
               <div className="flex space-x-3">
                 <button
                   onClick={handleCloseDeleteModal}
-                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+                  className="flex-1 cursor-pointer rounded-xl border border-gray-300 px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 dark:border-[color:var(--app-border)] dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
                 >
                   {t("home.cancel")}
                 </button>

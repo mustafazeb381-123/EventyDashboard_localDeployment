@@ -49,15 +49,19 @@ const SideBar = ({
   const isDarkTheme = theme === "dark";
 
   const sidebarShellClass = isDarkTheme
-    ? "bg-linear-to-b from-slate-950 via-slate-900 to-black border-r border-slate-800/80"
+    ? "bg-linear-to-b from-[var(--app-sidebar-alt)] via-[var(--app-sidebar)] to-[var(--app-sidebar-alt)] border-r border-[color:var(--app-border)]"
     : "bg-linear-to-b from-slate-800 via-slate-900 to-blue-900";
   const sectionBorderClass = isDarkTheme
-    ? "border-slate-800/70"
+    ? "border-[color:var(--app-border)]"
     : "border-slate-700/50";
-  const sectionTitleClass = isDarkTheme ? "text-slate-400" : "text-slate-400";
+  const sectionTitleClass = isDarkTheme
+    ? "text-[var(--app-text-muted)]"
+    : "text-slate-400";
   const navItemClass = (isActive: boolean, isDisabled: boolean) => {
     if (isActive) {
-      return "bg-blue-600/30 text-white border border-blue-500/30";
+      return isDarkTheme
+        ? "border border-white/10 bg-white/10 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+        : "bg-blue-600/30 text-white border border-blue-500/30";
     }
 
     if (isDisabled) {
@@ -65,12 +69,14 @@ const SideBar = ({
     }
 
     return isDarkTheme
-      ? "text-slate-300 hover:bg-slate-800/70 hover:text-white"
+      ? "text-[var(--app-text-muted)] hover:bg-white/6 hover:text-white"
       : "text-slate-300 hover:bg-slate-700/50 hover:text-white";
   };
   const submenuItemClass = (isActive: boolean, isDisabled: boolean) => {
     if (isActive) {
-      return "bg-blue-500/20 text-white border border-blue-400/30";
+      return isDarkTheme
+        ? "border border-white/10 bg-white/5 text-white"
+        : "bg-blue-500/20 text-white border border-blue-400/30";
     }
 
     if (isDisabled) {
@@ -78,7 +84,7 @@ const SideBar = ({
     }
 
     return isDarkTheme
-      ? "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
+      ? "text-[var(--app-text-muted)] hover:bg-white/5 hover:text-white"
       : "text-slate-400 hover:bg-slate-700/30 hover:text-slate-300";
   };
   // Translation map: internal label key -> translation key in dashboard.sidebar
@@ -123,9 +129,11 @@ const SideBar = ({
   } | null>(null);
   const settingsButtonClass =
     activeItem === "Settings"
-      ? "bg-blue-600/30 text-white border border-blue-500/30"
+      ? isDarkTheme
+        ? "border border-white/10 bg-white/10 text-white"
+        : "bg-blue-600/30 text-white border border-blue-500/30"
       : isDarkTheme
-        ? "text-slate-300 hover:bg-slate-800/70 hover:text-white"
+        ? "text-[var(--app-text-muted)] hover:bg-white/6 hover:text-white"
         : "text-slate-300 hover:bg-slate-700/50 hover:text-white";
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const navigate = useNavigate();
@@ -662,7 +670,7 @@ const SideBar = ({
                         )}
                       </div>
                       {item.badge && (
-                        <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                        <span className="ml-auto rounded-full bg-pink-500 px-2 py-0.5 text-xs font-medium text-white shadow-[0_8px_20px_rgba(236,72,153,0.28)]">
                           {item.badge}
                         </span>
                       )}
@@ -757,7 +765,7 @@ const SideBar = ({
             variant="ghost"
             className={`w-full ${
               isExpanded ? "justify-start px-3" : "justify-center px-3"
-            } rounded-lg py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 dark:hover:bg-red-900/30`}
+            } rounded-lg py-2.5 text-red-400 hover:bg-red-900/20 hover:text-red-300 dark:text-red-300 dark:hover:bg-red-500/12 dark:hover:text-red-200`}
           >
             <LogOut className="h-4 w-4" />
             {isExpanded && (
@@ -779,14 +787,14 @@ const SideBar = ({
           <div
             className={`relative mx-4 w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-fade-in ${
               isDarkTheme
-                ? "border border-slate-800 bg-slate-900 text-slate-100"
+                ? "border border-[color:var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)]"
                 : "bg-white text-gray-900"
             }`}
           >
             <div className="flex flex-col items-center text-center">
               <div
                 className={`mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
-                  isDarkTheme ? "bg-red-950/40" : "bg-red-100"
+                  isDarkTheme ? "bg-red-500/12" : "bg-red-100"
                 }`}
               >
                 <LogOut className="h-8 w-8 text-red-500" />
@@ -811,7 +819,7 @@ const SideBar = ({
                   variant="outline"
                   className={`flex-1 rounded-xl py-2.5 ${
                     isDarkTheme
-                      ? "border-slate-700 text-slate-100 hover:bg-slate-800"
+                      ? "border-[color:var(--app-border)] text-[var(--app-text)] hover:bg-[var(--app-hover)]"
                       : "border-gray-300 text-gray-700 hover:bg-gray-100"
                   }`}
                 >

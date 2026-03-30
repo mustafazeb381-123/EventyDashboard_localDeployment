@@ -6,7 +6,6 @@ import {
   Loader2,
   Share2,
   XCircle,
-  UserX,
   ArrowUp,
   Plus,
   QrCode,
@@ -36,7 +35,7 @@ import {
   YAxis,
   CartesianGrid,
 } from "recharts";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useWorkspaceNavigate } from "@/hooks/useWorkspaceNavigate";
 import {
   getEventbyId,
@@ -76,14 +75,13 @@ const StatCard = ({
   value,
   icon: Icon,
   iconColor,
-  bgColor,
   onClick,
 }: {
   label: string;
   value: number | string;
   icon: React.ElementType;
   iconColor: string;
-  bgColor: string;
+  bgColor?: string;
   onClick?: () => void;
 }) => (
   <div
@@ -100,14 +98,14 @@ const StatCard = ({
           }
         : undefined
     }
-    className={`flex items-center gap-3 rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 ${onClick ? "cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500" : ""}`}
+    className={`flex items-center gap-3 rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] ${onClick ? "cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:hover:bg-[var(--app-hover)]" : ""}`}
   >
-    <div className={`${bgColor} p-2.5 rounded-xl shrink-0`}>
+    <div className="flex h-9 w-9 shrink-0 items-center justify-center">
       <Icon size={18} className={iconColor} />
     </div>
     <div className="min-w-0 flex-1">
-      <p className="line-clamp-2 text-xs leading-tight text-[#656C95] dark:text-slate-400">{label}</p>
-      <p className="mt-0.5 text-lg font-semibold leading-tight text-[#202242] dark:text-slate-100">
+      <p className="line-clamp-2 text-xs leading-tight text-[#656C95] dark:text-[var(--app-text-muted)]">{label}</p>
+      <p className="mt-0.5 text-lg font-semibold leading-tight text-[#202242] dark:text-[var(--app-text)]">
         {typeof value === "number" ? value.toLocaleString() : value}
       </p>
     </div>
@@ -140,9 +138,9 @@ const CapacityCard = ({
   const filled = (Math.min(100, Math.max(0, percent)) / 100) * totalArc;
 
   return (
-    <div className="flex flex-col rounded-2xl border border-gray-50 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+    <div className="flex flex-col rounded-2xl border border-gray-50 bg-white p-5 shadow-sm dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)]">
       {/* Title */}
-      <p className="mb-3 text-sm font-medium text-[#656C95] dark:text-slate-400">{t("homeSummary.registrationCapacity")}</p>
+      <p className="mb-3 text-sm font-medium text-[#656C95] dark:text-[var(--app-text-muted)]">{t("homeSummary.registrationCapacity")}</p>
 
       {/* Gauge — centered */}
       <div className="relative mx-auto" style={{ width: 160, height: 92 }}>
@@ -151,7 +149,7 @@ const CapacityCard = ({
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
-            stroke="#E5E7EB"
+            stroke="var(--app-border)"
             strokeWidth="16"
             strokeLinecap="round"
           />
@@ -159,7 +157,7 @@ const CapacityCard = ({
           <path
             d={`M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`}
             fill="none"
-            stroke="#202242"
+            stroke="var(--app-text)"
             strokeWidth="16"
             strokeLinecap="round"
             strokeDasharray={`${filled} ${totalArc}`}
@@ -167,26 +165,26 @@ const CapacityCard = ({
         </svg>
         {/* Percent label centered inside arc */}
         <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-          <span className="text-2xl font-bold leading-none text-[#202242] dark:text-slate-100">
+          <span className="text-2xl font-bold leading-none text-[#202242] dark:text-[var(--app-text)]">
             {total > 0 ? `${percent}%` : "0%"}
           </span>
         </div>
       </div>
 
       {/* used / total */}
-      <p className="mt-1 text-center text-sm font-semibold text-[#202242] dark:text-slate-100">
+      <p className="mt-1 text-center text-sm font-semibold text-[#202242] dark:text-[var(--app-text)]">
         {used.toLocaleString()} / {total > 0 ? total.toLocaleString() : "—"}
       </p>
 
       {/* dots row */}
       {total > 0 && (
-        <p className="mt-1.5 flex items-center justify-center gap-3 text-center text-xs text-[#656C95] dark:text-slate-400">
+        <p className="mt-1.5 flex items-center justify-center gap-3 text-center text-xs text-[#656C95] dark:text-[var(--app-text-muted)]">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#202242] inline-block" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-[#202242] dark:bg-[var(--app-text)]" />
             {remaining.toLocaleString()} {t("homeSummary.spotsRemaining")}
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-gray-300 inline-block" />
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-300 dark:bg-[var(--app-border-strong)]" />
             {used.toLocaleString()} {t("homeSummary.spotsUsed")}
           </span>
         </p>
@@ -196,7 +194,7 @@ const CapacityCard = ({
       <button
         type="button"
         onClick={onUpgrade}
-        className="mt-3 flex items-center justify-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700"
+        className="mt-3 flex items-center justify-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-blue-300 dark:hover:text-blue-200"
       >
         <ArrowUp size={12} />
         {t("homeSummary.upgradePlan")}
@@ -230,13 +228,13 @@ const RegistrationsActivityChart = ({
   // Import Bar, Line, ComposedChart at the top — we'll use inline recharts primitives here
 
   return (
-    <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+    <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] sm:p-5">
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.registrationsActivity")}</h3>
-          <span className="flex items-center gap-1.5 text-xs text-[#656C95] dark:text-slate-400">
-            <span className="w-2 h-2 rounded-full bg-[#202242] inline-block" />
+          <h3 className="text-base font-semibold text-[#202242] dark:text-[var(--app-text)]">{t("homeSummary.registrationsActivity")}</h3>
+          <span className="flex items-center gap-1.5 text-xs text-[#656C95] dark:text-[var(--app-text-muted)]">
+            <span className="inline-block h-2 w-2 rounded-full bg-[#202242] dark:bg-[var(--app-text)]" />
             {t("homeSummary.registered")}
           </span>
         </div>
@@ -246,7 +244,7 @@ const RegistrationsActivityChart = ({
             setRange(e.target.value);
             onRangeChange?.(e.target.value);
           }}
-          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text-muted)]"
         >
           <option value="6 Month">{t("homeSummary.sixMonth")}</option>
           <option value="3 Month">{t("homeSummary.threeMonth")}</option>
@@ -279,12 +277,12 @@ const _ActivityChart = ({
     return (
       <g>
         {/* Dark pill badge */}
-        <rect x={cx - pillW / 2} y={cy - 34} width={pillW} height={24} rx={12} fill="#202242" />
+        <rect x={cx - pillW / 2} y={cy - 34} width={pillW} height={24} rx={12} fill="var(--app-text)" />
         <text x={cx} y={cy - 17} textAnchor="middle" fill="#fff" fontSize={12} fontWeight={700}>
           {labelText}
         </text>
         {/* White circle with dark border */}
-        <circle cx={cx} cy={cy} r={7} fill="#fff" stroke="#202242" strokeWidth={2.5} />
+        <circle cx={cx} cy={cy} r={7} fill="#fff" stroke="var(--app-text)" strokeWidth={2.5} />
       </g>
     );
   };
@@ -304,7 +302,7 @@ const _ActivityChart = ({
         height={height}
         rx={8}
         ry={8}
-        fill={isActive ? "#B8C4F0" : "#E8EEFF"}
+        fill={isActive ? "var(--app-surface-elevated)" : "rgba(255, 255, 255, 0.12)"}
       />
     );
   };
@@ -317,31 +315,32 @@ const _ActivityChart = ({
         barCategoryGap="30%"
         onMouseLeave={() => setActiveBar(null)}
       >
-        <CartesianGrid strokeDasharray="3 3" stroke="#F0F2F8" vertical={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--app-chart-grid)" vertical={false} />
         <XAxis
           dataKey="label"
-          tick={{ fontSize: 11, fill: "#9CA3AF", fontWeight: 500 }}
+          tick={{ fontSize: 11, fill: "var(--app-text-muted)", fontWeight: 500 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#9CA3AF" }}
+          tick={{ fontSize: 11, fill: "var(--app-text-muted)" }}
           axisLine={false}
           tickLine={false}
           width={36}
           allowDecimals={false}
         />
         <Tooltip
-          cursor={{ stroke: "#C4C9E8", strokeWidth: 1, fill: "transparent" }}
+          cursor={{ stroke: "var(--app-border-strong)", strokeWidth: 1, fill: "transparent" }}
           contentStyle={{
-            background: "#fff",
+            background: "var(--app-surface)",
             border: "none",
             borderRadius: 12,
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+            boxShadow: "0 16px 32px rgba(8,10,28,0.34)",
             fontSize: 13,
             padding: "10px 16px",
+            color: "var(--app-text)",
           }}
-          labelStyle={{ fontWeight: 600, color: "#202242", marginBottom: 4 }}
+          labelStyle={{ fontWeight: 600, color: "var(--app-text)", marginBottom: 4 }}
           formatter={(v: unknown) => [
             `${typeof v === "number" ? v.toLocaleString() : v}`,
             t("homeSummary.registered"),
@@ -359,10 +358,10 @@ const _ActivityChart = ({
         <Line
           type="monotone"
           dataKey="registered"
-          stroke="#202242"
+          stroke="var(--app-text)"
           strokeWidth={2.5}
           dot={<CustomDot />}
-          activeDot={{ r: 5, fill: "#202242", strokeWidth: 0 }}
+          activeDot={{ r: 5, fill: "var(--app-text)", strokeWidth: 0 }}
           isAnimationActive={false}
         />
       </ComposedChart>
@@ -416,17 +415,19 @@ const DonutChart = ({
                 fontSize: 12,
               }}
               formatter={(v: unknown, name: unknown) =>
-                name === noDataLabel ? [] : [typeof v === "number" ? v.toLocaleString() : v, String(name ?? "")]
+                name === noDataLabel
+                  ? null
+                  : [typeof v === "number" ? v.toLocaleString() : String(v ?? ""), String(name ?? "")]
               }
             />
           </PieChart>
         </ResponsiveContainer>
         {/* Center label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xl font-bold text-[#202242] dark:text-slate-100">
+          <span className="text-xl font-bold text-[#202242] dark:text-[var(--app-text)]">
             {typeof totalValue === "number" ? totalValue.toLocaleString() : totalValue}
           </span>
-          <span className="max-w-[72px] text-center text-[10px] leading-tight text-[#656C95] dark:text-slate-400">
+          <span className="max-w-[72px] text-center text-[10px] leading-tight text-[#656C95] dark:text-[var(--app-text-muted)]">
             {totalLabel}
           </span>
         </div>
@@ -435,8 +436,8 @@ const DonutChart = ({
       <div className="w-full mt-1 space-y-1.5">
         {legendItems.map((item) => (
           <div key={item.label} className="flex items-center justify-between text-xs">
-            <span className="flex items-center gap-1.5 text-[#656C95] dark:text-slate-400">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: item.color }} />
+            <span className="flex items-center gap-1.5 text-[#656C95] dark:text-[var(--app-text-muted)]">
+              <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: item.color }} />
               {item.label}
             </span>
             <span className="font-semibold" style={{ color: item.color }}>
@@ -453,14 +454,14 @@ const DonutChart = ({
 
 const SkeletonLoader = () => (
     <div className="w-full animate-pulse space-y-6 px-4 sm:px-6 lg:px-8">
-    <div className="h-8 w-40 bg-gray-200 rounded-lg" />
-    <div className="h-40 w-full rounded-2xl bg-white dark:bg-slate-900 p-6" />
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="h-8 w-40 rounded-lg bg-gray-200 dark:bg-[var(--app-surface-elevated)]" />
+    <div className="h-40 w-full rounded-2xl bg-white p-6 dark:bg-[var(--app-surface)]" />
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       {[...Array(8)].map((_, i) => (
-        <div key={i} className="h-20 rounded-2xl bg-white dark:bg-slate-900" />
+        <div key={i} className="h-20 rounded-2xl bg-white dark:bg-[var(--app-surface)]" />
       ))}
     </div>
-    <div className="h-72 w-full rounded-2xl bg-white dark:bg-slate-900" />
+    <div className="h-72 w-full rounded-2xl bg-white dark:bg-[var(--app-surface)]" />
   </div>
 );
 
@@ -509,7 +510,6 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
   // ── routing ─────────────────────────────────────────────────────────────
 
-  const navigate = useNavigate();
   const navigateTo = useWorkspaceNavigate();
   const location = useLocation();
   const { id: paramId } = useParams();
@@ -922,13 +922,13 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         {/* Page title */}
 
         {/* ── Event header card ── */}
-        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-white p-4 dark:bg-slate-900 lg:flex-row lg:gap-0 sm:p-6 lg:p-6">
+        <div className="flex flex-col items-start justify-between gap-4 rounded-2xl bg-white p-4 dark:bg-[var(--app-surface)] lg:flex-row lg:gap-0 sm:p-6 lg:p-6">
           {/* logo and event name */}
           <div className="gap-3 flex flex-col sm:flex-row items-center w-full lg:w-auto">
-            <div className="relative flex h-[150px] w-[150px] shrink-0 items-center justify-center rounded-2xl bg-neutral-50 dark:bg-slate-800 sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px]">
+            <div className="relative flex h-[150px] w-[150px] shrink-0 items-center justify-center rounded-2xl bg-neutral-50 dark:bg-[var(--app-surface-elevated)] sm:h-[180px] sm:w-[180px] lg:h-[200px] lg:w-[200px]">
               {/* Upload Loading Overlay */}
               {isUploading && (
-                <div className="absolute inset-0 bg-white bg-opacity-80 backdrop-blur-sm rounded-2xl flex flex-col items-center justify-center z-10">
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-white bg-opacity-80 backdrop-blur-sm dark:bg-[var(--app-overlay)]">
                   <div className="relative">
                     <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
                     <div className="absolute inset-0 h-8 w-8 border-2 border-blue-100 rounded-full"></div>
@@ -942,10 +942,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               {/* Edit button - directly triggers file selection */}
               <div
                 onClick={() => !isUploading && fileInputRef.current?.click()}
-                className={`h-9 w-9 sm:h-10 sm:w-10 lg:h-11 lg:w-11 flex items-center justify-center absolute top-2 right-2 rounded-xl bg-white drop-shadow-2xl transition-all duration-200 z-20 ${
+                className={`absolute top-2 right-2 z-20 flex h-9 w-9 items-center justify-center rounded-xl bg-white drop-shadow-2xl transition-all duration-200 dark:bg-[var(--app-surface-alt)] sm:h-10 sm:w-10 lg:h-11 lg:w-11 ${
                   isUploading
                     ? "cursor-not-allowed opacity-75"
-                    : "cursor-pointer hover:bg-gray-50 hover:scale-105"
+                    : "cursor-pointer hover:bg-gray-50 hover:scale-105 dark:hover:bg-[var(--app-hover)]"
                 }`}
               >
                 {isUploading ? (
@@ -959,7 +959,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 ) : (
                   <Edit
                     size={16}
-                    className="sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600"
+                    className="text-gray-600 dark:text-[var(--app-text-muted)] sm:h-5 sm:w-5 lg:h-6 lg:w-6"
                   />
                 )}
               </div>
@@ -985,7 +985,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                 />
               ) : (
                 <div
-                  className={`h-20 w-20 sm:h-24 sm:w-24 lg:h-28 lg:w-28 bg-gray-300 flex items-center justify-center rounded-2xl text-gray-500 text-xs font-medium transition-opacity duration-200 ${
+                  className={`flex h-20 w-20 items-center justify-center rounded-2xl bg-gray-300 text-xs font-medium text-gray-500 transition-opacity duration-200 dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text-muted)] sm:h-24 sm:w-24 lg:h-28 lg:w-28 ${
                     isUploading ? "opacity-50" : "opacity-100"
                   }`}
                 >
@@ -997,15 +997,15 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             {/* text detail part */}
             <div className="items-center text-center sm:text-left w-full sm:w-auto">
               {/* express or advance event */}
-              <div className="p-3 lg:p-3 bg-emerald-50 rounded-3xl items-center flex gap-2 justify-center sm:justify-start w-fit mx-auto sm:mx-0">
+              <div className="mx-auto flex w-fit items-center justify-center gap-2 rounded-3xl bg-emerald-50 p-3 dark:bg-emerald-500/12 sm:mx-0 sm:justify-start lg:p-3">
                 <img src={Assets.icons.expressDot} className="h-2 w-2" alt="" />
-                <p className="text-emerald-500 text-xs sm:text-sm">
+                <p className="text-xs text-emerald-500 dark:text-emerald-300 sm:text-sm">
                   {event_type}
                 </p>
               </div>
 
               {/* event name */}
-              <p className="mt-4 text-sm font-medium text-slate-800 dark:text-slate-100 sm:text-base lg:mt-4 lg:text-lg">
+              <p className="mt-4 text-sm font-medium text-slate-800 dark:text-[var(--app-text)] sm:text-base lg:mt-4 lg:text-lg">
                 {name}
               </p>
 
@@ -1015,7 +1015,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   className="sm:w-5 sm:h-5 lg:w-5 lg:h-5"
                   color="#525252"
                 />
-                <p className="text-xs font-normal text-neutral-500 dark:text-slate-400 sm:text-sm">
+                <p className="text-xs font-normal text-neutral-500 dark:text-[var(--app-text-muted)] sm:text-sm">
                   {event_date_from} {formatTime(event_time_from)} to{" "}
                   {event_date_to} {formatTime(event_time_to)}
                 </p>
@@ -1027,12 +1027,12 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   className="sm:w-5 sm:h-5 lg:w-5 lg:h-5"
                   color="#525252"
                 />
-                <p className="text-xs font-normal text-neutral-500 dark:text-slate-400 sm:text-sm">
+                <p className="text-xs font-normal text-neutral-500 dark:text-[var(--app-text-muted)] sm:text-sm">
                   {eventLocation}
                 </p>
               </div>
 
-              <p className="mt-4 text-xs font-normal text-neutral-500 dark:text-slate-400 sm:text-sm lg:mt-6">
+              <p className="mt-4 text-xs font-normal text-neutral-500 dark:text-[var(--app-text-muted)] sm:text-sm lg:mt-6">
                 {t("homeSummary.lastEdit", { time: "3hr" })}
               </p>
             </div>
@@ -1073,10 +1073,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     showNotification(t("homeSummary.failedToCopyLink"), "error");
                   });
               }}
-              className="rounded-2xl bg-green-50 py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-green-100 transition-colors justify-center shrink-0 border-0 text-left"
+              className="flex shrink-0 items-center justify-center gap-2 rounded-2xl border-0 bg-green-50 px-4 py-2 text-left transition-colors hover:bg-green-100 dark:bg-emerald-500/12 dark:hover:bg-emerald-500/15 lg:px-4 lg:py-2.5"
             >
-              <Share2 size={16} className="lg:w-5 lg:h-5 text-green-600 shrink-0" />
-              <span className="text-green-700 text-xs sm:text-sm font-normal">
+              <Share2 size={16} className="shrink-0 text-green-600 dark:text-emerald-300 lg:h-5 lg:w-5" />
+              <span className="text-xs font-normal text-green-700 dark:text-emerald-200 sm:text-sm">
                 {t("homeSummary.copyRegistrationLink")}
               </span>
             </button>
@@ -1122,10 +1122,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   },
                 });
               }}
-              className="rounded-2xl bg-[#F2F6FF] py-2 px-4 lg:py-2.5 lg:px-4 flex items-center gap-2 cursor-pointer hover:bg-[#E8F1FF] transition-colors justify-center shrink-0 border-0 text-left"
+              className="flex shrink-0 items-center justify-center gap-2 rounded-2xl border-0 bg-[#F2F6FF] px-4 py-2 text-left transition-colors hover:bg-[#E8F1FF] dark:bg-white/6 dark:hover:bg-white/10 lg:px-4 lg:py-2.5"
             >
               <Edit size={16} className="lg:w-5 lg:h-5 shrink-0 pointer-events-none" aria-hidden />
-              <span className="text-[#202242] text-xs sm:text-sm font-normal">
+              <span className="text-xs font-normal text-[#202242] dark:text-[var(--app-text)] sm:text-sm">
                 {t("homeSummary.editEvent")}
               </span>
             </button>
@@ -1172,10 +1172,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
 
           {/* Registration Sources donut */}
-          <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+          <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] sm:p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.registrationSources")}</h3>
-              <select className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+              <h3 className="text-base font-semibold text-[#202242] dark:text-[var(--app-text)]">{t("homeSummary.registrationSources")}</h3>
+              <select className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text-muted)]">
                 <option>2 Month</option>
                 <option>6 Month</option>
               </select>
@@ -1202,10 +1202,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
         {/* ── Registration Status + Recent Activity ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Registration Status */}
-          <div className="relative rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+          <div className="relative rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] sm:p-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.registrationStatus")}</h3>
-              <select className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+              <h3 className="text-base font-semibold text-[#202242] dark:text-[var(--app-text)]">{t("homeSummary.registrationStatus")}</h3>
+              <select className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-[#656C95] focus:outline-none dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text-muted)]">
                 <option>2 Month</option>
                 <option>6 Month</option>
               </select>
@@ -1214,16 +1214,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
             {/* FAB + Quick Actions Menu dropdown - fixed in main content area (right of sidebar), aligned with content */}
             <div ref={quickActionsRef} className="fixed bottom-6 z-50 left-[calc(280px+3rem)]">
               {quickActionsOpen && (
-                <div className="absolute bottom-full left-0 mb-2 min-w-[200px] w-56 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl dark:border-slate-700 dark:bg-slate-950">
-                  <p className="border-b border-gray-100 px-4 py-2 text-sm font-medium text-gray-500 dark:border-slate-700 dark:text-slate-400">
+                <div className="absolute bottom-full left-0 mb-2 min-w-[200px] w-56 rounded-2xl border border-gray-100 bg-white py-2 shadow-xl dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)]">
+                  <p className="border-b border-gray-100 px-4 py-2 text-sm font-medium text-gray-500 dark:border-[color:var(--app-border)] dark:text-[var(--app-text-muted)]">
                     {t("homeSummary.quickActionsMenu")}
                   </p>
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
                   >
-                    <div className="p-1.5 rounded-lg bg-blue-50">
+                    <div className="rounded-lg bg-blue-50 p-1.5 dark:bg-blue-500/12">
                       <UserPlus className="h-4 w-4 text-blue-600" />
                     </div>
                     {t("homeSummary.addUser")}
@@ -1231,9 +1231,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
                   >
-                    <div className="p-1.5 rounded-lg bg-emerald-50">
+                    <div className="rounded-lg bg-emerald-50 p-1.5 dark:bg-emerald-500/12">
                       <Send className="h-4 w-4 text-emerald-600" />
                     </div>
                     {t("homeSummary.sendInvitation")}
@@ -1241,9 +1241,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
                   >
-                    <div className="p-1.5 rounded-lg bg-violet-50">
+                    <div className="rounded-lg bg-violet-50 p-1.5 dark:bg-violet-500/12">
                       <Printer className="h-4 w-4 text-violet-600" />
                     </div>
                     {t("homeSummary.printBadge")}
@@ -1251,9 +1251,9 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                   <button
                     type="button"
                     onClick={() => setQuickActionsOpen(false)}
-                    className="w-full text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 flex items-center gap-3 px-4 py-2.5 dark:text-slate-100 dark:hover:bg-slate-900"
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-gray-800 transition-colors hover:bg-gray-50 dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]"
                   >
-                    <div className="p-1.5 rounded-lg bg-red-50">
+                    <div className="rounded-lg bg-red-50 p-1.5 dark:bg-red-500/12">
                       <FileText className="h-4 w-4 text-red-600" />
                     </div>
                     {t("homeSummary.viewReport")}
@@ -1263,7 +1263,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               <button
                 type="button"
                 onClick={() => setQuickActionsOpen((prev) => !prev)}
-                className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 shadow-lg"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 dark:shadow-[0_16px_34px_rgba(37,99,235,0.35)]"
                 aria-expanded={quickActionsOpen}
                 aria-haspopup="true"
                 aria-label="Quick actions"
@@ -1289,10 +1289,10 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
           </div>
 
           {/* Recent Activity */}
-          <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+          <div className="rounded-2xl border border-gray-50 bg-white p-4 shadow-sm dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] sm:p-5">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[#202242] dark:text-slate-100">{t("homeSummary.recentActivity")}</h3>
-              <button type="button" className="text-sm font-medium text-blue-500 hover:text-blue-600">{t("homeSummary.viewAll")}</button>
+              <h3 className="text-base font-semibold text-[#202242] dark:text-[var(--app-text)]">{t("homeSummary.recentActivity")}</h3>
+              <button type="button" className="text-sm font-medium text-blue-500 hover:text-blue-600 dark:text-blue-300 dark:hover:text-blue-200">{t("homeSummary.viewAll")}</button>
             </div>
             <ul className="space-y-4">
               {[
@@ -1308,8 +1308,8 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
                     <item.Icon className={`h-4 w-4 ${item.iconColor}`} />
                   </div>
                   <div className="flex-1 min-w-0 flex items-start justify-between gap-2">
-                    <p className="text-sm leading-snug text-[#202242] dark:text-slate-200">{item.text}</p>
-                    <p className="shrink-0 whitespace-nowrap text-xs text-[#9CA3AF] dark:text-slate-400">{item.time}</p>
+                    <p className="text-sm leading-snug text-[#202242] dark:text-[var(--app-text)]">{item.text}</p>
+                    <p className="shrink-0 whitespace-nowrap text-xs text-[#9CA3AF] dark:text-[var(--app-text-muted)]">{item.time}</p>
                   </div>
                 </li>
               ))}
@@ -1320,16 +1320,16 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
 
       {/* ── Crop Modal ── */}
       {isCropping && originalImageSrc && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-2xl bg-white p-6 dark:border dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)]">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">{t("homeSummary.cropImage")}</h3>
-              <button onClick={cancelCrop} disabled={isUploading} className="text-gray-400 hover:text-gray-600">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-[var(--app-text)]">{t("homeSummary.cropImage")}</h3>
+              <button onClick={cancelCrop} disabled={isUploading} className="text-gray-400 hover:text-gray-600 dark:text-[var(--app-text-muted)] dark:hover:text-[var(--app-text)]">
                 <XCircle size={24} />
               </button>
             </div>
             <div
-              className="relative mx-auto border border-gray-200 rounded-xl overflow-hidden bg-gray-50 flex items-center justify-center"
+              className="relative mx-auto flex items-center justify-center overflow-hidden rounded-xl border border-gray-200 bg-gray-50 dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface-alt)]"
               style={{ maxWidth: 600, maxHeight: 400 }}
               onMouseDown={handleCropStart} onMouseMove={handleCropMove} onMouseUp={handleCropEnd} onMouseLeave={handleCropEnd}
               onTouchStart={handleCropStart} onTouchMove={handleCropMove} onTouchEnd={handleCropEnd}
@@ -1348,7 +1348,7 @@ function HomeSummary({ chartData, onTimeRangeChange }: HomeSummaryProps) {
               )}
             </div>
             <div className="flex justify-end gap-3 mt-5">
-              <button onClick={cancelCrop} disabled={isUploading} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors text-sm">{t("homeSummary.cancel")}</button>
+              <button onClick={cancelCrop} disabled={isUploading} className="rounded-xl bg-gray-100 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-200 dark:bg-[var(--app-surface-alt)] dark:text-[var(--app-text)] dark:hover:bg-[var(--app-hover)]">{t("homeSummary.cancel")}</button>
               <button onClick={handleCropComplete} disabled={isUploading} className="px-4 py-2 text-white bg-blue-600 rounded-xl hover:bg-blue-700 transition-colors text-sm flex items-center gap-2">
                 {isUploading ? <><Loader2 className="h-4 w-4 animate-spin" />{t("homeSummary.processing")}</> : t("homeSummary.cropAndUpload")}
               </button>

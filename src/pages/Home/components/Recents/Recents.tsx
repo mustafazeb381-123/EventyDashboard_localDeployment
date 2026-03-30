@@ -237,8 +237,8 @@ function Recents() {
   };
 
   return (
-    <div className="bg-white w-full rounded-2xl p-6 shadow-sm border border-slate-100/80 transition-shadow duration-300 hover:shadow-md">
-      <p className="font-poppins text-md font-medium text-neutral-900 mb-4">
+    <div className="w-full rounded-2xl border border-slate-100/80 bg-white p-6 shadow-sm transition-shadow duration-300 hover:shadow-md dark:border-[color:var(--app-border)] dark:bg-[var(--app-surface)] dark:hover:shadow-[0_16px_36px_rgba(8,10,28,0.3)]">
+      <p className="mb-4 font-poppins text-md font-medium text-neutral-900 dark:text-[var(--app-text)]">
         {t("home.recents")}
       </p>
 
@@ -247,7 +247,7 @@ function Recents() {
           {[...Array(2)].map((_, index) => (
             <div
               key={index}
-              className="flex flex-col w-full sm:w-[48%] bg-gradient-to-br from-[#2E3166] to-[#202242] rounded-2xl p-6 animate-pulse"
+              className="flex w-full flex-col rounded-2xl bg-gradient-to-br from-[#31346b] to-[#202246] p-6 animate-pulse sm:w-[48%]"
             >
               <Skeleton className="h-8 w-24 mb-10" />
               <Skeleton className="h-5 w-3/4 mb-2" />
@@ -265,11 +265,11 @@ function Recents() {
                 <div
                   key={event.id}
                   onClick={() => handleEventClick(event.id)}
-                  className="flex flex-col w-full sm:w-[48%] bg-gradient-to-br from-[#2E3166] to-[#202242] rounded-2xl p-6 cursor-pointer transition-all duration-300 ease-out hover:scale-[1.02] hover:-translate-y-1 hover:shadow-xl hover:shadow-indigo-900/20 active:scale-[0.99] group"
+                  className="group flex w-full cursor-pointer flex-col rounded-2xl bg-gradient-to-br from-[#31346b] to-[#202246] p-6 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] hover:shadow-xl hover:shadow-indigo-950/25 active:scale-[0.99] sm:w-[48%]"
                 >
                   <div className="flex">
                     <div
-                      className="flex items-center gap-2 px-3 py-2 rounded-2xl transition-all duration-300 group-hover:bg-white/15"
+                      className="flex items-center gap-2 rounded-2xl px-3 py-2 transition-all duration-300 group-hover:bg-white/12"
                       style={{
                         backgroundColor: "#EBF7FF33",
                         width: "auto",
