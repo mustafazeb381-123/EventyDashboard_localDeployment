@@ -11,7 +11,7 @@ import { savePendingEventPayment } from "./paymentSession";
 
 const VAT_RATE = 0.15;
 const SUPPORT_HOURLY_RATE = 350;
-const SUPPORT_HOURS_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
+const SUPPORT_HOURS_OPTIONS = [0, 1, 2, 3, 4, 5, 6, 7, 8] as const;
 const CURRENT_CAPACITY = 400;
 const REGISTRATION_PRICE_PER_USER = 3.75;
 const REGISTRATION_OPTIONS = [100, 200, 300, 400] as const;
@@ -82,8 +82,8 @@ const Payment: React.FC<PaymentProps> = ({
   const [postalCode, setPostalCode] = useState("");
   const [additionalInfo, setAdditionalInfo] = useState("");
 
-  const [supportHours, setSupportHours] = useState<SupportHours>(1);
-  const [additionalRegistrations, setAdditionalRegistrations] = useState(200);
+  const [supportHours, setSupportHours] = useState<SupportHours>(0);
+  const [additionalRegistrations, setAdditionalRegistrations] = useState(0);
 
   const normalizedPlan = plan === "advance" ? "advance" : "express";
   const backendPackageName = BACKEND_PACKAGE_NAME_BY_PLAN[normalizedPlan];
@@ -101,6 +101,27 @@ const Payment: React.FC<PaymentProps> = ({
   const newCapacity = CURRENT_CAPACITY + additionalRegistrations;
   const formatSar = (amount: number) => `SAR ${amount.toFixed(2)}`;
   const supportSummary = `${supportHours} Hour${supportHours > 1 ? "s" : ""} - ${formatSar(supportTotal)}`;
+  const selectedAddons = [
+    supportHours > 0
+      ? {
+          name: "support_hours",
+          quantity: supportHours,
+        }
+      : null,
+    additionalRegistrations > 0
+      ? {
+          name: "additional_registration_capacity",
+          quantity: additionalRegistrations,
+        }
+      : null,
+  ].filter(
+    (
+      addon,
+    ): addon is {
+      name: "support_hours" | "additional_registration_capacity";
+      quantity: number;
+    } => addon !== null,
+  );
 
   function validateSaudiVat(value: string): boolean {
     if (!value.trim()) return false;
@@ -205,16 +226,7 @@ const Payment: React.FC<PaymentProps> = ({
         package_name: backendPackageName,
         redirect_url: redirectUrl,
         total_amount: checkoutTotal,
-        addons: [
-          {
-            name: "support_hours",
-            quantity: supportHours,
-          },
-          {
-            name: "additional_registration_capacity",
-            quantity: additionalRegistrations,
-          },
-        ],
+        addons: selectedAddons,
         company_billing_details: {
           company_name: companyName.trim(),
           country: getCountryName(country),
@@ -557,9 +569,11 @@ const Payment: React.FC<PaymentProps> = ({
                 >
                   {SUPPORT_HOURS_OPTIONS.map((hours) => (
                     <option key={hours} value={hours}>
-                      {hours} Hour{hours > 1 ? "s" : ""} - {formatSar(
-                        hours * SUPPORT_HOURLY_RATE
-                      )}
+                      {hours === 0
+                        ? `0 Hours - ${formatSar(0)}`
+                        : `${hours} Hour${hours > 1 ? "s" : ""} - ${formatSar(
+                            hours * SUPPORT_HOURLY_RATE
+                          )}`}
                     </option>
                   ))}
                 </select>
